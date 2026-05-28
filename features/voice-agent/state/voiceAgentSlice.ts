@@ -73,6 +73,16 @@ interface MarkInterruptedPayload extends InstanceIdPayload {
   audioDurationMs?: number;
 }
 
+interface SetAudioStartedPayload extends InstanceIdPayload {
+  turnId: string;
+  audioStartedAtMs: number;
+}
+
+interface SetTextRevealIndexPayload extends InstanceIdPayload {
+  turnId: string;
+  revealIndex: number;
+}
+
 const voiceAgentSlice = createSlice({
   name: "voiceAgent",
   initialState,
@@ -153,6 +163,8 @@ const voiceAgentSlice = createSlice({
         id: action.payload.turnId,
         role: "user",
         text: "",
+        text_reveal_index: 0,
+        text_delta_arrivals: [],
         status: "pending",
         started_at_ms: action.payload.startedAtMs,
       });
@@ -169,6 +181,8 @@ const voiceAgentSlice = createSlice({
       );
       if (!turn) return;
       turn.text += action.payload.deltaText;
+      // User-turn text comes from STT on already-recorded audio; nothing to gate.
+      turn.text_reveal_index = turn.text.length;
     },
 
     completeUserTurn(state, action: PayloadAction<CompleteUserTurnPayload>) {
@@ -180,6 +194,7 @@ const voiceAgentSlice = createSlice({
       if (!turn) return;
       turn.status = "completed";
       turn.ended_at_ms = action.payload.endedAtMs;
+      turn.text_reveal_index = turn.text.length;
       if (action.payload.itemId) turn.item_id = action.payload.itemId;
     },
 
@@ -190,6 +205,8 @@ const voiceAgentSlice = createSlice({
         id: action.payload.turnId,
         role: "assistant",
         text: "",
+        text_reveal_index: 0,
+        text_delta_arrivals: [],
         status: "pending",
         started_at_ms: action.payload.startedAtMs,
       });
@@ -206,6 +223,45 @@ const voiceAgentSlice = createSlice({
       );
       if (!turn) return;
       turn.text += action.payload.deltaText;
+      // Log arrival so the rAF reveal loop can map audio-elapsed → safe char count.
+      turn.text_delta_arrivals.push({
+        char_offset: turn.text.length,
+        arrived_at_ms: Date.now(),
+      });
+    },
+
+    /** Anchors the assistant-turn audio clock — set when the first audio chunk is enqueued. */
+    setAssistantTurnAudioStarted(
+      state,
+      action: PayloadAction<SetAudioStartedPayload>,
+    ) {
+      const inst = getInstance(state, action.payload.instanceId);
+      if (!inst) return;
+      const turn = inst.turns.find(
+        (t) => t.id === action.payload.turnId && t.role === "assistant",
+      );
+      if (!turn) return;
+      if (turn.audio_started_at_ms === undefined) {
+        turn.audio_started_at_ms = action.payload.audioStartedAtMs;
+      }
+    },
+
+    /** Advances the reveal cutoff for an in-flight assistant turn. Monotonic — never moves backwards. */
+    setTextRevealIndexForTurn(
+      state,
+      action: PayloadAction<SetTextRevealIndexPayload>,
+    ) {
+      const inst = getInstance(state, action.payload.instanceId);
+      if (!inst) return;
+      const turn = inst.turns.find(
+        (t) => t.id === action.payload.turnId && t.role === "assistant",
+      );
+      if (!turn) return;
+      const clamped = Math.min(
+        Math.max(action.payload.revealIndex, turn.text_reveal_index),
+        turn.text.length,
+      );
+      turn.text_reveal_index = clamped;
     },
 
     completeAssistantTurn(
@@ -221,6 +277,11 @@ const voiceAgentSlice = createSlice({
       // Don't clobber 'interrupted' that arrived earlier from the speech_started path.
       if (turn.status !== "interrupted") turn.status = "completed";
       turn.ended_at_ms = action.payload.endedAtMs;
+      // Reveal everything that hadn't been revealed yet — once audio is done,
+      // text is the only artifact, so showing it in full is the right contract.
+      turn.text_reveal_index = turn.text.length;
+      // Arrival log served its purpose; drop it so long sessions don't bloat the store.
+      turn.text_delta_arrivals = [];
       if (action.payload.itemId) turn.item_id = action.payload.itemId;
       if (action.payload.responseId) turn.response_id = action.payload.responseId;
       if (action.payload.audioDurationMs !== undefined) {
@@ -238,6 +299,9 @@ const voiceAgentSlice = createSlice({
       if (!turn) return;
       turn.status = "interrupted";
       turn.ended_at_ms = action.payload.endedAtMs;
+      // Flush remaining text so the user still sees what was said before the cut.
+      turn.text_reveal_index = turn.text.length;
+      turn.text_delta_arrivals = [];
       if (action.payload.audioDurationMs !== undefined) {
         turn.audio_duration_ms = action.payload.audioDurationMs;
       }
@@ -301,6 +365,8 @@ export const {
   completeUserTurn,
   appendAssistantTurn,
   updateAssistantTranscriptDelta,
+  setAssistantTurnAudioStarted,
+  setTextRevealIndexForTurn,
   completeAssistantTurn,
   markTurnInterrupted,
   addLatencySample,

@@ -22,6 +22,14 @@ export type VoiceStatus =
   | "interrupting"
   | "error";
 
+/** One transcript delta and when it arrived from xAI (assistant turns only). */
+export interface TranscriptDeltaArrival {
+  /** Length of `text` AFTER this delta was applied — i.e. the high-watermark char offset this delta brought us to. */
+  char_offset: number;
+  /** `Date.now()` at the moment the delta event was received. */
+  arrived_at_ms: number;
+}
+
 /** One conversational turn. `id` is the idempotency key for Supabase writes. */
 export interface VoiceTurn {
   /** Client-generated UUID; mirrored into `cx_message.metadata.voice.turn_id`. */
@@ -29,6 +37,22 @@ export interface VoiceTurn {
   role: "user" | "assistant";
   /** Running text — mutated as transcript deltas arrive. */
   text: string;
+  /**
+   * Char cutoff for what's safe to RENDER on screen — drives the audio-
+   * gated reveal. Assistant turns only; user turns are unaffected (their
+   * text comes from STT on completed audio, so it's never ahead). On
+   * turn end / interrupt the writer floors this to `text.length` so the
+   * full transcript is visible afterward.
+   */
+  text_reveal_index: number;
+  /**
+   * Per-delta arrival log used to map "audio elapsed" → "chars safe to
+   * show". Cleared on turn completion to avoid unbounded growth.
+   * Assistant turns only.
+   */
+  text_delta_arrivals: TranscriptDeltaArrival[];
+  /** `Date.now()` at which the FIRST assistant audio chunk was scheduled for playback. Assistant turns only. */
+  audio_started_at_ms?: number;
   status: "pending" | "completed" | "interrupted";
   started_at_ms: number;
   ended_at_ms?: number;

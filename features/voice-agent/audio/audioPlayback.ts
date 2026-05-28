@@ -31,6 +31,14 @@ export interface AudioPlaybackHandle {
   interrupt: () => number;
   /** Called once a turn finishes (response.done). Resets per-turn duration accounting. */
   markTurnEnded: () => number;
+  /**
+   * Ms of audio actually played so far in the current turn, in real wall-
+   * clock time. Returns 0 before the first byte of a turn arrives. Clamped
+   * to `turnPlayedMs` (the total scheduled duration) so we never report
+   * more elapsed than has been queued. Used by the orchestrator to gate
+   * transcript reveal on audible playback position.
+   */
+  getTurnElapsedMs: () => number;
   onIdle: (cb: () => void) => () => void;
   stop: () => Promise<void>;
 }
@@ -48,6 +56,8 @@ export function createAudioPlayback(): AudioPlaybackHandle {
   const queued: AudioBufferSourceNode[] = [];
   let nextPlayTime = 0;
   let turnPlayedMs = 0;
+  /** ctx.currentTime at which the first buffer of the active turn was scheduled. Null between turns. */
+  let turnStartedAtCtxTime: number | null = null;
   let rmsRafId: number | null = null;
 
   const idleCallbacks = new Set<() => void>();
@@ -134,6 +144,10 @@ export function createAudioPlayback(): AudioPlaybackHandle {
     const startAt = Math.max(now, nextPlayTime);
     src.start(startAt);
 
+    if (turnStartedAtCtxTime === null) {
+      // First chunk of a new turn — anchor the elapsed clock at its scheduled play time.
+      turnStartedAtCtxTime = startAt;
+    }
     nextPlayTime = startAt + buf.duration;
     turnPlayedMs += buf.duration * 1000;
     queued.push(src);
@@ -167,6 +181,7 @@ export function createAudioPlayback(): AudioPlaybackHandle {
     queued.length = 0;
     nextPlayTime = ctx ? ctx.currentTime : 0;
     turnPlayedMs = 0;
+    turnStartedAtCtxTime = null;
     writeAmplitude("assistant", 0);
     if (rmsRafId !== null) {
       cancelAnimationFrame(rmsRafId);
@@ -179,7 +194,15 @@ export function createAudioPlayback(): AudioPlaybackHandle {
   function markTurnEnded(): number {
     const playedMs = turnPlayedMs;
     turnPlayedMs = 0;
+    turnStartedAtCtxTime = null;
     return playedMs;
+  }
+
+  function getTurnElapsedMs(): number {
+    if (!ctx || turnStartedAtCtxTime === null) return 0;
+    const elapsedMs = Math.max(0, (ctx.currentTime - turnStartedAtCtxTime) * 1000);
+    // Never report more elapsed than we've actually scheduled.
+    return Math.min(elapsedMs, turnPlayedMs);
   }
 
   function onIdle(cb: () => void): () => void {
@@ -210,5 +233,13 @@ export function createAudioPlayback(): AudioPlaybackHandle {
     writeAmplitude("assistant", 0);
   }
 
-  return { warmupSync, enqueue, interrupt, markTurnEnded, onIdle, stop };
+  return {
+    warmupSync,
+    enqueue,
+    interrupt,
+    markTurnEnded,
+    getTurnElapsedMs,
+    onIdle,
+    stop,
+  };
 }
