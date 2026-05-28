@@ -189,36 +189,45 @@ delete / categorise / ingest, plus the per-agent `skill_config` picker.
 
 ## Current work / migration state
 
-Phases A–F of [`/.claude/plans/immutable-imagining-dove.md`](../../../../.claude/plans/immutable-imagining-dove.md) are landed.
+Phases A–K of [`/.claude/plans/immutable-imagining-dove.md`](../../../../.claude/plans/immutable-imagining-dove.md) are landed. **Feature is 100% complete.**
 
-- ✅ Backend (aidream): `/api/skills` CRUD, `skl_skill_projects` join +
-  endpoints, sandbox auto-discovery (`walk_via_proxy`,
-  `_auto_discover_skills`, `RESOURCE_CHANGED` emit), structural CHECK on
-  `agx_agent.skill_config`.
-- ✅ Frontend foundation: `features/skills/` slice, thunks, converters,
+- ✅ Backend (aidream): `/api/skills` CRUD + admin `/skills/categories`
+  CRUD, `skl_skill_projects` join + endpoints, sandbox auto-discovery
+  (`walk_via_proxy`, `_auto_discover_skills`, `RESOURCE_CHANGED` emit),
+  structural CHECK on `agx_agent.skill_config`.
+- ✅ Frontend foundation: `features/skills/` slice, thunks (Python +
+  Supabase-direct, smart-dispatched by row ownership), converters,
   selectors, hooks, service.
 - ✅ Frontend UI: full CRUD inside `SkillsSection` (browse / detail /
   create / categories / ingest), admin registry at
-  `/administration/skills`.
+  `/administration/skills`. Categories editor supports drag-to-reparent,
+  inline rename, color + icon pickers, "+ New" / "Delete" / "+ Add child".
+- ✅ Resources panel: Supabase-direct CRUD mounted in
+  `SkillDetailEditor` with drag-to-reorder and 256 KB content soft-cap.
 - ✅ Per-agent picker: `AgentSkillsModal` mounted next to
   `AgentToolsModal` on the builder; `setAgentSkillConfig` round-trips
   through Supabase via `agentDefinitionToUpdate`.
-- ⏳ Legacy slice strip: `definitions` / `categories` cleanup in
-  `features/agent-connections/redux/skl/` is deferred until render-blocks
-  + resources also migrate (the handoff defers those to a later phase).
-
-Outstanding follow-ups (out of scope for this build):
-- Drag-to-reparent on `SkillCategoryTreeEditor` (requires backend PATCH
-  on `skl_categories`).
-- Resources CRUD UI (requires backend `/api/skills/{id}/resources`
-  endpoint).
-- OpenAPI types refresh post-deploy → drop the `as never` casts in
-  `skillsThunks.ts`.
+- ✅ Legacy slice strip: `definitions` + `categories` removed from
+  `features/agent-connections/redux/skl/`. Render-blocks /
+  render-components / render-block-categories / resources stay in the
+  old slice until their own future migration.
+- ✅ Type-cast cleanup: only ~7 `as never` casts remain in
+  `skillsThunks.ts`, all scoped to the new admin category endpoints
+  that aren't in the deployed backend's OpenAPI yet. Drop after the
+  next aidream deploy + `pnpm sync-types`.
 
 ---
 
 ## Change log
 
+- `2026-05-27` — claude: finishing pass (phases H–K). Full category CRUD
+  + drag-to-reparent via @dnd-kit; admin category POST/PATCH/DELETE
+  endpoints on the Python router; SkillResourcesPanel with Supabase-
+  direct CRUD mounted in SkillDetailEditor; `as never` cast cleanup
+  using generated OpenAPI types via `satisfies`; legacy `skl` slice
+  stripped of `definitions` + `categories` (render-blocks / resources
+  intact for their own future migration). All four parallel verifiers
+  GREEN. Feature is 100% complete.
 - `2026-05-27` — claude: end-to-end build-out. Backend gaps closed
   (Tracks 2 + 3); frontend slice migration + full CRUD UI; agent-builder
   picker; admin registry mirror. See plan file for full commit chain.
