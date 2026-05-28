@@ -17,8 +17,9 @@ import type { SkillRow } from "@/features/skills/types";
  * type when the value isn't in the known SKILL_TYPES list (the backend wire
  * shape is free-string by design). */
 function labelForType(skillType: string): string {
-  const known = SKILL_TYPE_LABELS as unknown as Record<string, string>;
-  if (known[skillType]) return known[skillType];
+  if ((SKILL_TYPES as readonly string[]).includes(skillType)) {
+    return SKILL_TYPE_LABELS[skillType as (typeof SKILL_TYPES)[number]];
+  }
   return skillType
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
