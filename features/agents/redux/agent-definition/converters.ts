@@ -146,10 +146,9 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
 
   // skill_config is JSONB matching the SkillConfig shape; see migration 0095
   // for the structural CHECK constraint. The DB CHECK guarantees the keys we
-  // read are arrays / boolean as expected, so a permissive cast is safe.
-  const skillConfig = parseSkillConfigJson(
-    (row as unknown as { skill_config?: unknown }).skill_config,
-  );
+  // read are arrays / boolean as expected, so the defensive parser only
+  // needs to handle null / legacy-row missing-column cases.
+  const skillConfig = parseSkillConfigJson(row.skill_config);
 
   return {
     id: row.id,
@@ -341,9 +340,7 @@ export function agentDefinitionToUpdate(
     update.default_rag_boost = partial.defaultRagBoost;
 
   if (partial.skillConfig !== undefined) {
-    update.skill_config = skillConfigToJsonb(
-      partial.skillConfig,
-    ) as unknown as Database["public"]["Tables"]["agx_agent"]["Update"]["skill_config"];
+    update.skill_config = skillConfigToJsonb(partial.skillConfig);
   }
 
   return update;
@@ -421,8 +418,10 @@ export function versionSnapshotRowToAgentDefinition(
       (row as unknown as { tool_config?: { auto_tools_disabled?: boolean } })
         .tool_config?.auto_tools_disabled,
     ),
+    // Version snapshot row schema may or may not carry skill_config — the
+    // RPC return type isn't tightened here. Defensive parse handles both.
     skillConfig: parseSkillConfigJson(
-      (row as unknown as { skill_config?: unknown }).skill_config,
+      (row as { skill_config?: unknown }).skill_config,
     ),
     mcpServers: row.mcp_servers ?? [],
 
