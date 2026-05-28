@@ -161,15 +161,8 @@ export async function ragDiagnose(
 // kind on that side maps to one variant of the union below.
 // ---------------------------------------------------------------------------
 
-export interface DiagnoseScope {
-  user_id: string;
-  organization_id: string | null;
-  is_admin: boolean;
-  admin_bypass_acl: boolean;
-}
-
 export type DiagnoseEvent =
-  | { kind: "rag.diagnose.started"; query: string; scope: DiagnoseScope }
+  | { kind: "rag.diagnose.started"; query: string; scope: InventoryScope }
   | { kind: "rag.diagnose.note"; message: string }
   | {
       kind: "rag.diagnose.query_expansion";
