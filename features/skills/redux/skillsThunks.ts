@@ -1,17 +1,24 @@
 /**
  * features/skills/redux/skillsThunks.ts
  *
- * Async thunks that wrap `callApi()` calls to /api/skills. Each thunk:
+ * Async thunks that wrap `callApi()` calls to /api/skills + Supabase-
+ * direct reads/writes for owned rows (categories, resources). Each
+ * thunk:
  *   1. Marks the slice loading.
- *   2. Dispatches `callApi` with strongly-typed paths where the OpenAPI
- *      schema has them (list / get / create / patch / delete / ingest /
- *      categories) and `as never` casts where it doesn't yet (project
- *      association — added in Phase A of the build-out, ahead of the
- *      next `pnpm sync-types`).
+ *   2. Dispatches `callApi` with fully-typed paths (the OpenAPI schema
+ *      has every public endpoint after `pnpm sync-types`). The only
+ *      remaining `as never` casts are for the new admin category
+ *      endpoints — they exist server-side but haven't been picked up
+ *      by sync-types yet; drop those once the aidream deploy lands.
  *   3. Converts the wire shape to a view model and dispatches `Received`
  *      / `Upserted` etc.
  *   4. On error, dispatches `Error` and re-throws so call sites can
  *      surface a toast or inline message.
+ *
+ * Supabase-direct path: simple table CRUD on user-owned rows
+ * (`skl_categories`, `skl_resources`) goes through the Supabase client
+ * per CLAUDE.md doctrine. RLS gates everything. System rows (where
+ * RLS would block) route through the Python admin endpoints instead.
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
@@ -20,6 +27,14 @@ import { callApi } from "@/lib/api/call-api";
 import type { RootState } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
 import { selectUserId, selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import type { components } from "@/types/python-generated/api-types";
+
+/** Generated body types from the synced OpenAPI schema. Replaces the
+ * earlier `as never` casts so the call sites are fully type-checked. */
+type SkillCreateBody = components["schemas"]["SkillCreate"];
+type SkillPatchBody = components["schemas"]["SkillPatch"];
+type IngestRequestBody =
+  components["schemas"]["aidream__api__routers__skills__IngestRequest"];
 
 import { skillsActions } from "./skillsSlice";
 import {
@@ -154,12 +169,12 @@ export const createSkill = createAsyncThunk<
   { draft: SkillDraft },
   { state: RootState }
 >("skills/createSkill", async ({ draft }, { dispatch }) => {
-  const body: SkillCreateWire = draftToCreateBody(draft);
+  const body = draftToCreateBody(draft) satisfies SkillCreateBody;
   const result = await dispatch(
     callApi({
       path: "/api/skills",
       method: "POST",
-      body: body as never,
+      body,
     }),
   );
   if (result.error) {
@@ -175,12 +190,13 @@ export const patchSkill = createAsyncThunk<
   { skillId: string; patch: SkillPatchWire },
   { state: RootState }
 >("skills/patchSkill", async ({ skillId, patch }, { dispatch }) => {
+  const body = patch satisfies SkillPatchBody;
   const result = await dispatch(
     callApi({
       path: "/api/skills/{skill_id}",
       method: "PATCH",
       pathParams: { skill_id: skillId },
-      body: patch as never,
+      body,
     }),
   );
   if (result.error) {
@@ -240,11 +256,12 @@ export const ingestSkills = createAsyncThunk<
   { state: RootState }
 >("skills/ingest", async ({ roots, dryRun }, { dispatch }) => {
   dispatch(skillsActions.ingestLoading());
+  const body: IngestRequestBody = { roots, dry_run: dryRun };
   const result = await dispatch(
     callApi({
       path: "/api/skills/ingest",
       method: "POST",
-      body: { roots, dry_run: dryRun } as never,
+      body,
     }),
   );
   if (result.error) {
@@ -262,7 +279,7 @@ export const ingestSkills = createAsyncThunk<
 });
 
 // ---------------------------------------------------------------------------
-// Skill ↔ Project association (Phase A endpoints — not yet in OpenAPI types)
+// Skill ↔ Project association
 // ---------------------------------------------------------------------------
 
 export const addSkillProject = createAsyncThunk<
@@ -274,9 +291,9 @@ export const addSkillProject = createAsyncThunk<
   async ({ skillId, projectId }, { dispatch, getState }) => {
     const result = await dispatch(
       callApi({
-        path: "/api/skills/{skill_id}/projects/{project_id}" as never,
+        path: "/api/skills/{skill_id}/projects/{project_id}",
         method: "POST",
-        pathParams: { skill_id: skillId, project_id: projectId } as never,
+        pathParams: { skill_id: skillId, project_id: projectId },
       }),
     );
     if (result.error) {
@@ -305,9 +322,9 @@ export const removeSkillProject = createAsyncThunk<
   async ({ skillId, projectId }, { dispatch, getState }) => {
     const result = await dispatch(
       callApi({
-        path: "/api/skills/{skill_id}/projects/{project_id}" as never,
+        path: "/api/skills/{skill_id}/projects/{project_id}",
         method: "DELETE",
-        pathParams: { skill_id: skillId, project_id: projectId } as never,
+        pathParams: { skill_id: skillId, project_id: projectId },
       }),
     );
     if (result.error) {

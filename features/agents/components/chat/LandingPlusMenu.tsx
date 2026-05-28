@@ -246,7 +246,7 @@ export function LandingPlusMenu({ conversationId }: LandingPlusMenuProps) {
         align="start"
         side="top"
         sideOffset={8}
-        className="w-80 p-0 border-border"
+        className="w-[440px] max-w-[calc(100vw-1rem)] p-0 border-border"
         container={dialogContainer ?? undefined}
       >
         <div
@@ -291,18 +291,23 @@ export function LandingPlusMenu({ conversationId }: LandingPlusMenuProps) {
           })}
         </div>
 
+        {/* Fixed height across every tab so the popover doesn't visibly resize
+            when the user switches between Attach/Model/Tools/Sandbox/Settings.
+            Each panel scrolls internally. */}
         <div
           role="tabpanel"
           id={`plusmenu-panel-${conversationId}`}
           aria-labelledby={`plusmenu-tab-${activeTab}-${conversationId}`}
-          className={activeTab === "attach" ? "" : "h-80"}
+          className="h-96 overflow-hidden"
         >
           {activeTab === "attach" && (
-            <ResourcePickerMenu
-              onResourceSelected={handleResourceSelected}
-              onClose={() => setOpen(false)}
-              attachmentCapabilities={attachmentCapabilities}
-            />
+            <div className="h-full overflow-y-auto">
+              <ResourcePickerMenu
+                onResourceSelected={handleResourceSelected}
+                onClose={() => setOpen(false)}
+                attachmentCapabilities={attachmentCapabilities}
+              />
+            </div>
           )}
           {activeTab === "model" && (
             <div className="h-full overflow-y-auto">
@@ -311,7 +316,9 @@ export function LandingPlusMenu({ conversationId }: LandingPlusMenuProps) {
             </div>
           )}
           {activeTab === "tools" && (
-            <RunToolPicker conversationId={conversationId} />
+            <div className="h-full overflow-hidden">
+              <RunToolPicker conversationId={conversationId} />
+            </div>
           )}
           {activeTab === "sandbox" && (
             <div className="h-full overflow-y-auto">
