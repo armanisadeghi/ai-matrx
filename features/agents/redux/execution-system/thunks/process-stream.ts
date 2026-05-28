@@ -832,10 +832,46 @@ export async function processStream({
             }),
           );
         } else {
-          // Non-widget delegated tool — preserve the legacy pause for any
-          // server-coordinated flow that still expects the client to
-          // suspend the instance while it executes.
+          // Unknown delegated tool — neither a widget nor a ui-first tool.
+          // The aidream backend has hard-suspended the loop awaiting a
+          // result; if we just sit on `paused` we're silently stuck. POST
+          // an error result through the funnel so the server can either
+          // recover or surface the failure rather than leaving the agent
+          // wedged forever. Set status to `paused` first so the UI shows
+          // a truthful "waiting on a tool answer" state during the
+          // microtask window before the error POST is dispatched.
           dispatch(setInstanceStatus({ conversationId, status: "paused" }));
+          dispatch(
+            upsertToolLifecycle({
+              requestId,
+              callId: toolData.call_id,
+              toolName: toolData.tool_name,
+              status: "error",
+              isDelegated: true,
+              errorType: "unsupported_client_tool",
+              errorMessage: `Client has no handler for tool '${toolData.tool_name}'.`,
+            }),
+          );
+          // Dynamic import — submitToolResult lives in features/agents/api/
+          // which imports stream-events types that route back here.
+          void import("@/features/agents/api/submit-tool-results").then(
+            ({ submitToolResult }) => {
+              dispatch(
+                submitToolResult({
+                  conversationId,
+                  call_id: toolData.call_id,
+                  tool_name: toolData.tool_name,
+                  is_error: true,
+                  output: {
+                    ok: false,
+                    reason: "unsupported_client_tool",
+                    message: `Client has no handler for tool '${toolData.tool_name}'.`,
+                  },
+                  error_message: `Client has no handler for tool '${toolData.tool_name}'.`,
+                }),
+              );
+            },
+          );
         }
       } else {
         const lifecycleStatus = toolData.event.replace(
