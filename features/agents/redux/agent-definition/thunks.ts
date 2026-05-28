@@ -636,6 +636,12 @@ export const createAgent = createAsyncThunk<
     outputSchema: partial.outputSchema ?? null,
     customTools: partial.customTools ?? [],
     autoToolsDisabled: partial.autoToolsDisabled ?? false,
+    skillConfig: partial.skillConfig ?? {
+      included: [],
+      listed: [],
+      forbidden: [],
+      disabled: false,
+    },
     mcpServers: partial.mcpServers ?? [],
     userId,
     organizationId: partial.organizationId ?? null,

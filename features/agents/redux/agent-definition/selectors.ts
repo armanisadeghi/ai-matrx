@@ -358,6 +358,20 @@ export const selectAgentMcpServers = createSelector(
   (record) => record?.mcpServers,
 );
 
+/** Per-agent skill visibility config. Returns the empty default when the
+ * record is missing or hasn't loaded yet so the picker UI renders without
+ * a null-check noise. */
+export const selectAgentSkillConfig = createSelector(
+  [selectAgentById],
+  (record) =>
+    record?.skillConfig ?? {
+      included: [],
+      listed: [],
+      forbidden: [],
+      disabled: false,
+    },
+);
+
 export const selectAgentModelTiers = createSelector(
   [selectAgentById],
   (record) => record?.modelTiers ?? null,

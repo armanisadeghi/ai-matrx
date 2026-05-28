@@ -7,6 +7,7 @@ import { AgentDefinitionMessage } from "@/features/agents/types/agent-message-ty
 import { OutputSchema } from "@/features/agents/types/json-schema";
 import type { DbRpcRow } from "@/types/supabase-rpc";
 import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
+import type { SkillConfig } from "@/features/skills/types";
 
 export type AgentType = "user" | "builtin";
 
@@ -233,6 +234,22 @@ export interface AgentDefinition {
    * aidream's agx_manager. Defaults false (injection allowed).
    */
   autoToolsDisabled: boolean;
+
+  /**
+   * Per-agent skill visibility tiering. Persisted in `agx_agent.skill_config`
+   * JSONB. UUIDs reference `skl_definitions.id`. See migration 0095 for the
+   * structural CHECK constraint.
+   *
+   * - `included`: full skill body baked into the system preamble.
+   * - `listed`: name + description only (the agent can `skill_get` to fetch
+   *   the body on demand).
+   * - `forbidden`: hidden from this agent entirely.
+   * - `disabled`: global kill switch — when true, skip the skill preamble +
+   *   capability entirely.
+   *
+   * Defaults to all empty arrays / `disabled: false`.
+   */
+  skillConfig: SkillConfig;
 
   // Ownership & Hierarchy (null on version records)
   userId: string | null;

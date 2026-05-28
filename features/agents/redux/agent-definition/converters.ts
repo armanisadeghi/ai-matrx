@@ -22,6 +22,7 @@
 
 import type { Database } from "@/types/database.types";
 import { stripNullish } from "@/utils/supabase/payload";
+import type { SkillConfig } from "@/features/skills/types";
 import type {
   AgentDefinition,
   AgentType,
@@ -97,6 +98,29 @@ function splitToolConfig(toolConfig: unknown): {
 // DB → Frontend
 // ---------------------------------------------------------------------------
 
+/** Defensive parser for the `agx_agent.skill_config` JSONB. Returns the
+ * empty default when the column is missing / malformed; the DB CHECK from
+ * migration 0095 guarantees the shape when present, so this is mainly
+ * about old rows + tests. */
+function parseSkillConfigJson(raw: unknown): SkillConfig {
+  const empty: SkillConfig = {
+    included: [],
+    listed: [],
+    forbidden: [],
+    disabled: false,
+  };
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return empty;
+  const obj = raw as Record<string, unknown>;
+  const arrOrEmpty = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((s): s is string => typeof s === "string") : [];
+  return {
+    included: arrOrEmpty(obj.included),
+    listed: arrOrEmpty(obj.listed),
+    forbidden: arrOrEmpty(obj.forbidden),
+    disabled: typeof obj.disabled === "boolean" ? obj.disabled : false,
+  };
+}
+
 /**
  * Converts a full agents Row into the frontend AgentDefinition shape.
  * Safe to call with any row — all JSONB fields are cast but not key-converted.
@@ -119,6 +143,13 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     tc && typeof tc === "object" && !Array.isArray(tc)
       ? Boolean((tc as ToolConfigJson).auto_tools_disabled)
       : false;
+
+  // skill_config is JSONB matching the SkillConfig shape; see migration 0095
+  // for the structural CHECK constraint. The DB CHECK guarantees the keys we
+  // read are arrays / boolean as expected, so a permissive cast is safe.
+  const skillConfig = parseSkillConfigJson(
+    (row as unknown as { skill_config?: unknown }).skill_config,
+  );
 
   return {
     id: row.id,
@@ -152,6 +183,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
       (row.output_schema as unknown as AgentDefinition["outputSchema"]) ?? null,
     customTools,
     autoToolsDisabled,
+    skillConfig,
     mcpServers: row.mcp_servers ?? [],
 
     userId: row.user_id,
@@ -237,6 +269,11 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
     task_id: agent.taskId,
 
     default_rag_boost: agent.defaultRagBoost,
+
+    // skill_config: send only when non-default so brand-new rows take the
+    // DB's `{}` default. The server's CHECK constraint (migration 0095)
+    // accepts both an empty object and the full shape.
+    skill_config: skillConfigToJsonb(agent.skillConfig),
   };
 
   return stripNullish(raw) as AgentInsert;
@@ -303,7 +340,32 @@ export function agentDefinitionToUpdate(
   if (partial.defaultRagBoost !== undefined)
     update.default_rag_boost = partial.defaultRagBoost;
 
+  if (partial.skillConfig !== undefined) {
+    update.skill_config = skillConfigToJsonb(
+      partial.skillConfig,
+    ) as unknown as Database["public"]["Tables"]["agx_agent"]["Update"]["skill_config"];
+  }
+
   return update;
+}
+
+/** SkillConfig → JSONB-shaped object for the agx_agent row. Returns the
+ * `{}` empty-default when every field is at its zero value so we don't
+ * spam the DB with redundant `{"included":[],"listed":[],...}` rows. */
+function skillConfigToJsonb(cfg: SkillConfig | undefined): Record<string, unknown> {
+  if (!cfg) return {};
+  const isEmpty =
+    cfg.included.length === 0 &&
+    cfg.listed.length === 0 &&
+    cfg.forbidden.length === 0 &&
+    !cfg.disabled;
+  if (isEmpty) return {};
+  return {
+    included: cfg.included,
+    listed: cfg.listed,
+    forbidden: cfg.forbidden,
+    disabled: cfg.disabled,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -358,6 +420,9 @@ export function versionSnapshotRowToAgentDefinition(
     autoToolsDisabled: Boolean(
       (row as unknown as { tool_config?: { auto_tools_disabled?: boolean } })
         .tool_config?.auto_tools_disabled,
+    ),
+    skillConfig: parseSkillConfigJson(
+      (row as unknown as { skill_config?: unknown }).skill_config,
     ),
     mcpServers: row.mcp_servers ?? [],
 

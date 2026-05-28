@@ -18,6 +18,7 @@ import { setAgentField } from "@/features/agents/redux/agent-definition/slice";
 import { AgentSettingsModal } from "@/features/agents/components/settings-management/AgentSettingsModal";
 import { AgentVariablesModal } from "@/features/agents/components/variables-management/AgentVariablesModal";
 import { AgentToolsModal } from "@/features/agents/components/tools-management/AgentToolsModal";
+import { AgentSkillsModal } from "@/features/agents/components/skills-management/AgentSkillsModal";
 import { Label } from "@/components/ui/label";
 import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
 import { cn } from "@/lib/utils";
@@ -71,6 +72,7 @@ export function AgentModelConfiguration({
         <AgentSettingsModal agentId={agentId} />
         <AgentVariablesModal agentId={agentId} />
         <AgentToolsModal agentId={agentId} />
+        <AgentSkillsModal agentId={agentId} />
       </div>
     </div>
   );

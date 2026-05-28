@@ -58,6 +58,12 @@ function makeEmptyRecord(id: string): AgentDefinitionRecord {
     customTools: [],
     mcpServers: [],
     autoToolsDisabled: false,
+    skillConfig: {
+      included: [],
+      listed: [],
+      forbidden: [],
+      disabled: false,
+    },
 
     userId: null,
     organizationId: null,
@@ -452,6 +458,12 @@ export const agentDefinitionSlice = createSlice({
         outputSchema: data.outputSchema ?? null,
         customTools: data.customTools ?? [],
         autoToolsDisabled: data.autoToolsDisabled ?? false,
+        skillConfig: data.skillConfig ?? {
+          included: [],
+          listed: [],
+          forbidden: [],
+          disabled: false,
+        },
         mcpServers: data.mcpServers ?? [],
         userId: data.userId ?? null,
         organizationId: data.organizationId ?? null,
@@ -606,6 +618,24 @@ export const agentDefinitionSlice = createSlice({
       const record = state.agents[action.payload.id];
       if (!record) return;
       applyFieldEdit(record, "mcpServers", action.payload.mcpServers);
+    },
+
+    /**
+     * Per-agent skill visibility config. The full SkillConfig object is
+     * replaced atomically; the picker UI computes the next value and
+     * dispatches once. Marked dirty so the next save flushes it through
+     * to `agx_agent.skill_config`.
+     */
+    setAgentSkillConfig(
+      state,
+      action: PayloadAction<{
+        id: string;
+        skillConfig: AgentDefinition["skillConfig"];
+      }>,
+    ) {
+      const record = state.agents[action.payload.id];
+      if (!record) return;
+      applyFieldEdit(record, "skillConfig", action.payload.skillConfig);
     },
 
     setAgentModelTiers(
@@ -860,6 +890,7 @@ export const {
   setAgentTools,
   setAgentCustomTools,
   setAgentMcpServers,
+  setAgentSkillConfig,
   setAgentModelTiers,
   setAgentOutputSchema,
   resetAgentField,
