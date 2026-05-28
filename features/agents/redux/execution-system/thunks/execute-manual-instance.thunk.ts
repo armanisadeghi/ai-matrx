@@ -474,35 +474,18 @@ export const executeManualInstance = createAsyncThunk<
       const userInputText = userInputEntry?.text ?? "";
       const userMessageParts = userInputEntry?.messageParts ?? undefined;
 
-      const payload = await assembleManualRequest(state, conversationId);
-      if (!payload) {
-        throw new Error(
-          `Failed to assemble manual request for ${conversationId}. ` +
-            `Check that the agent has a modelId set.`,
-        );
-      }
-      if (debug) payload.debug = true;
-
-      if (typeof payload.memory === "boolean") {
-        dispatch(
-          setMemoryEnabledOptimistic({
-            conversationId,
-            enabled: payload.memory,
-            model: payload.memory_model ?? null,
-            scope: payload.memory_scope ?? null,
-          }),
-        );
-        dispatch(clearMemoryToggleRequest());
-      }
-
-      const backend = resolveBackendForConversation(state, conversationId);
-      if (!backend) throw new Error("No backend URL configured");
-      const baseUrl = backend.baseUrl;
-      const headers = backend.headers;
-
-      // Optimistic user message — push BEFORE the network call so the bubble
-      // appears immediately and the response column has something to render
-      // even on slow / failing networks.
+      // ─────────────────────────────────────────────────────────────────────
+      // OPTIMISTIC USER BUBBLE — fire synchronously BEFORE any await so the
+      // user's message lands in the column the instant they hit send. The
+      // textarea was already cleared by `markInputSubmitted` upstream; if we
+      // wait for `assembleManualRequest` (which awaits `buildToolInjection`
+      // — sandbox token mint, capability providers) the message visibly
+      // "disappears" for a beat. Resources come straight from the sync
+      // selector below — no need to wait for tool injection to render them.
+      // The same `userMessageClientTempId` is then handed to processStream so
+      // `record_reserved cx_message role=user` promotes this bubble to the
+      // real server id (no duplicate).
+      // ─────────────────────────────────────────────────────────────────────
       const resourcePayloads = selectResourcePayloads(conversationId)(state);
       const resourceBlocks = resourcePayloads.filter((b) => b.type !== "text");
       let userMessageClientTempId: string | undefined;
@@ -528,6 +511,32 @@ export const executeManualInstance = createAsyncThunk<
       dispatch(createRequest({ requestId, conversationId }));
       dispatch(setInstanceStatus({ conversationId, status: "running" }));
       dispatch(setRequestStatus({ requestId, status: "connecting" }));
+
+      const payload = await assembleManualRequest(state, conversationId);
+      if (!payload) {
+        throw new Error(
+          `Failed to assemble manual request for ${conversationId}. ` +
+            `Check that the agent has a modelId set.`,
+        );
+      }
+      if (debug) payload.debug = true;
+
+      if (typeof payload.memory === "boolean") {
+        dispatch(
+          setMemoryEnabledOptimistic({
+            conversationId,
+            enabled: payload.memory,
+            model: payload.memory_model ?? null,
+            scope: payload.memory_scope ?? null,
+          }),
+        );
+        dispatch(clearMemoryToggleRequest());
+      }
+
+      const backend = resolveBackendForConversation(state, conversationId);
+      if (!backend) throw new Error("No backend URL configured");
+      const baseUrl = backend.baseUrl;
+      const headers = backend.headers;
 
       // Global net-requests slice. The Creator Panel and RequestRecoveryProvider
       // read this — without it, manual runs are invisible in the connection-

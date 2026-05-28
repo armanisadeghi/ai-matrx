@@ -276,6 +276,69 @@ export const executeInstance = createAsyncThunk<
         }
       }
 
+      // ─────────────────────────────────────────────────────────────────────
+      // OPTIMISTIC USER BUBBLE — fire synchronously BEFORE any await so the
+      // user's message lands in the conversation column the instant they hit
+      // send. The textarea has already been cleared by `markInputSubmitted`
+      // in smartExecute; without this early dispatch the bubble doesn't
+      // appear until `buildToolInjection` resolves (the sandbox provider may
+      // mint a token, the cache-bypass module may be lazy-loaded), creating
+      // a visible gap where the message looks "lost". The variables formatted
+      // for display and the assembled text both come from the sync payload
+      // above — no need to wait for tool/client injection to render the bubble.
+      // ─────────────────────────────────────────────────────────────────────
+      const variablesForDisplay = payload.variables;
+      const variableLinesEarly = variablesForDisplay
+        ? formatVariablesForDisplay(variablesForDisplay)
+        : "";
+      const resourceBlocks = Array.isArray(payload.user_input)
+        ? payload.user_input.filter((b) => b.type !== "text")
+        : [];
+      const assembledUserText = Array.isArray(payload.user_input)
+        ? ((
+            payload.user_input.find((b) => b.type === "text") as
+              | (MessagePart & { text?: string })
+              | undefined
+          )?.text ?? "")
+        : typeof payload.user_input === "string"
+          ? payload.user_input
+          : "";
+      const displayContent = [variableLinesEarly, assembledUserText]
+        .filter(Boolean)
+        .join("\n");
+
+      let userMessageClientTempId: string | undefined;
+      if (
+        !retry &&
+        (displayContent || userMessageParts || resourceBlocks.length > 0)
+      ) {
+        const content: MessagePart[] = [];
+        if (displayContent) {
+          content.push({ type: "text", text: displayContent });
+        }
+        if (userMessageParts) content.push(...userMessageParts);
+        content.push(...resourceBlocks);
+        userMessageClientTempId = uuidv4();
+        const nextPosition = selectMessageCount(conversationId)(
+          getState() as RootState,
+        );
+        dispatch(
+          addOptimisticUserMessage({
+            conversationId,
+            clientTempId: userMessageClientTempId,
+            content,
+            position: nextPosition,
+          }),
+        );
+      }
+
+      // Create the request tracking entry up-front too — same reason: any UI
+      // bound to `activeRequests` (status pills, "thinking" indicators) gets
+      // wired to the in-flight turn before we yield to the network/registry.
+      dispatch(createRequest({ requestId, conversationId }));
+      dispatch(setInstanceStatus({ conversationId, status: "running" }));
+      dispatch(setRequestStatus({ requestId, status: "connecting" }));
+
       // Layer the unified tool-injection envelope (`tools`, `tools_replace`,
       // `client`) onto the assembled payload. Async because capability
       // providers may need network calls (sandbox token mint).
@@ -316,13 +379,6 @@ export const executeInstance = createAsyncThunk<
         dispatch(clearMemoryToggleRequest());
       }
 
-      const variables = payload.variables;
-
-      // Format variables for display in the user message bubble.
-      const variableLines = variables
-        ? formatVariablesForDisplay(variables)
-        : "";
-
       // Resolve backend channel: per-conversation override (sandbox-mode
       // editor sets this) wins over the global server toggle. The
       // resolver picks the matching auth scheme automatically — Supabase
@@ -338,7 +394,10 @@ export const executeInstance = createAsyncThunk<
       // Multi-turn routing: if there's any prior history (committed turns from a
       // previous send or rehydrated from the database), continue via the
       // /conversations/{id} endpoint. Otherwise start a fresh agent run via
-      // /agents/{id}. Captured before the optimistic user turn is added below.
+      // /agents/{id}. We read from the pre-dispatch `state` snapshot captured
+      // at the top of this thunk, NOT `getState()`, so the optimistic user
+      // message we just added above doesn't flip a fresh turn-1 into a
+      // continuation.
       const isContinuation = selectMessageCount(conversationId)(state) > 0;
 
       // Ephemeral conversations stream without writing any cx_* rows. The
@@ -348,64 +407,9 @@ export const executeInstance = createAsyncThunk<
       // honors the same `store:false` semantics.
       const isEphemeral = instance.isEphemeral === true;
 
-      // Add the user's message to history immediately — before the API call fires.
-      // Include resource payload parts so they display even before the DB round-trip.
-      // The condition covers: typed text, content parts, resources, OR variables.
-      const resourceBlocks = Array.isArray(payload.user_input)
-        ? payload.user_input.filter((b) => b.type !== "text")
-        : [];
-      // Pull the assembled text (with editor-resource XML appended) so the
-      // optimistic bubble matches what the DB will serve back.
-      const assembledUserText = Array.isArray(payload.user_input)
-        ? ((
-            payload.user_input.find((b) => b.type === "text") as
-              | (MessagePart & { text?: string })
-              | undefined
-          )?.text ?? "")
-        : typeof payload.user_input === "string"
-          ? payload.user_input
-          : "";
-
-      const displayContent = [variableLines, assembledUserText]
-        .filter(Boolean)
-        .join("\n");
-
-      let userMessageClientTempId: string | undefined;
-      // On a retry we send NO new input, so there is no optimistic user
-      // bubble to add — the existing (persisted) user message stays put and
-      // the backend re-attempts it.
-      if (
-        !retry &&
-        (displayContent || userMessageParts || resourceBlocks.length > 0)
-      ) {
-        // Optimistically push the user's message into messages.byId under a
-        // client-generated UUID. When `record_reserved cx_message role=user`
-        // lands on the stream, process-stream promotes this temp id to the
-        // real server `cx_message.id` — one Redux record, no duplicates.
-        const content: MessagePart[] = [];
-        if (displayContent) {
-          content.push({ type: "text", text: displayContent });
-        }
-        if (userMessageParts) content.push(...userMessageParts);
-        content.push(...resourceBlocks);
-        userMessageClientTempId = uuidv4();
-        const nextPosition = selectMessageCount(conversationId)(
-          getState() as RootState,
-        );
-        dispatch(
-          addOptimisticUserMessage({
-            conversationId,
-            clientTempId: userMessageClientTempId,
-            content,
-            position: nextPosition,
-          }),
-        );
-      }
-
-      // Create the request tracking entry
-      dispatch(createRequest({ requestId, conversationId }));
-      dispatch(setInstanceStatus({ conversationId, status: "running" }));
-      dispatch(setRequestStatus({ requestId, status: "connecting" }));
+      // (Optimistic user bubble + request status were dispatched up-front,
+      // before the tool-injection await, so the message renders in the column
+      // the instant the user submits — see block above `buildToolInjection`.)
 
       let url: string;
       let routedPayload: Record<string, unknown>;
@@ -541,9 +545,8 @@ export const executeInstance = createAsyncThunk<
         }),
       );
       if (!retry) {
-        const { clearUserInput } = await import(
-          "../instance-user-input/instance-user-input.slice"
-        );
+        const { clearUserInput } =
+          await import("../instance-user-input/instance-user-input.slice");
         dispatch(clearUserInput(conversationId));
       }
       return rejectWithValue(message);
@@ -573,4 +576,3 @@ export const clearAfterSend = createAsyncThunk<void, string>(
     dispatch(clearAllResources(conversationId));
   },
 );
-
