@@ -11,6 +11,7 @@ import type {
   CategoryRowWire,
   IngestReport,
   IngestReportWire,
+  ResourceRow,
   SkillCreateWire,
   SkillDraft,
   SkillPatchWire,
@@ -23,6 +24,10 @@ import type {
  * go direct via the Supabase client (vs. the Python `/api/skills/
  * categories` GET which strips `user_id`). */
 type SklCategoryRow = Database["public"]["Tables"]["skl_categories"]["Row"];
+
+/** Supabase-generated Row shape for skl_resources — reads + writes go
+ * direct (no backend endpoint today). */
+type SklResourceRow = Database["public"]["Tables"]["skl_resources"]["Row"];
 
 // ---------------------------------------------------------------------------
 // Wire → view model (inbound)
@@ -70,6 +75,21 @@ export function wireToCategoryRow(wire: CategoryRowWire): CategoryRow {
     isActive: Boolean(wire.is_active),
     // user_id may be absent on Python wire shape; preserve when present.
     userId: wire.user_id === undefined ? undefined : wire.user_id ?? null,
+  };
+}
+
+/** Adapter for rows read straight off `skl_resources` via Supabase. */
+export function supabaseRowToResourceRow(row: SklResourceRow): ResourceRow {
+  return {
+    id: row.id,
+    skillId: row.skill_id,
+    resourceType: row.resource_type ?? "reference",
+    filename: row.filename,
+    content: row.content ?? null,
+    storagePath: row.storage_path ?? null,
+    mimeType: row.mime_type ?? null,
+    sortOrder: row.sort_order ?? 0,
+    isActive: Boolean(row.is_active),
   };
 }
 

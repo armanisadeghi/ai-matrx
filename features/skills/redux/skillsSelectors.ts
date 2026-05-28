@@ -129,5 +129,34 @@ export const selectSkillsGroupedByType = createSelector(
   },
 );
 
+// ---------------------------------------------------------------------------
+// Resources (lazy per-skill)
+// ---------------------------------------------------------------------------
+
+export const selectResourcesBySkillId = (state: RootState) =>
+  state.skills.resources.bySkillId;
+export const selectResourcesStatusBySkillId = (state: RootState) =>
+  state.skills.resources.statusBySkillId;
+export const selectResourcesErrorBySkillId = (state: RootState) =>
+  state.skills.resources.errorBySkillId;
+
+/** Selector factory: resources for a given skill (already sorted). */
+export const makeSelectResourcesForSkill = () =>
+  createSelector(
+    [selectResourcesBySkillId, (_state: RootState, skillId: string) => skillId],
+    (bySkillId, skillId) => bySkillId[skillId] ?? [],
+  );
+
+/** Selector factory: per-skill fetch status. */
+export const makeSelectResourcesStatusForSkill = () =>
+  createSelector(
+    [
+      selectResourcesStatusBySkillId,
+      (_state: RootState, skillId: string) => skillId,
+    ],
+    (statusBySkillId, skillId): AsyncStatus =>
+      statusBySkillId[skillId] ?? "idle",
+  );
+
 // Silence unused export warning when consumer only uses derived selectors.
 export { selectSkillsBranch };

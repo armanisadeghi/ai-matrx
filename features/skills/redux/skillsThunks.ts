@@ -26,6 +26,7 @@ import {
   draftToCreateBody,
   draftToPatchBody,
   supabaseRowToCategoryRow,
+  supabaseRowToResourceRow,
   wireToCategoryRow,
   wireToIngestReport,
   wireToSkillRow,
@@ -35,6 +36,8 @@ import type {
   CategoryRowWire,
   IngestReport,
   IngestReportWire,
+  ResourceDraft,
+  ResourceRow,
   SkillCreateWire,
   SkillDraft,
   SkillPatchWire,
@@ -612,5 +615,181 @@ export const reparentCategoryThunk = createAsyncThunk<
         orderedIds: newSiblingOrder,
       }),
     );
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Resources (Supabase direct — RLS gates by parent-skill ownership)
+// ---------------------------------------------------------------------------
+//
+// Doctrine: `skl_resources` has no user_id; RLS subqueries on
+// `skl_definitions` to determine if the caller owns the parent skill.
+// All writes go Supabase direct — the Python backend has no resource
+// endpoint today. For admin curation of system-skill resources we'd
+// need a server admin endpoint; deferred per the plan (Phase I §I4).
+// ---------------------------------------------------------------------------
+
+export const fetchSkillResourcesThunk = createAsyncThunk<
+  ResourceRow[],
+  { skillId: string },
+  { state: RootState }
+>("skills/fetchResources", async ({ skillId }, { dispatch }) => {
+  dispatch(skillsActions.resourcesLoading({ skillId }));
+
+  const { data, error } = await supabase
+    .from("skl_resources")
+    .select(
+      "id, skill_id, resource_type, filename, content, storage_path, mime_type, sort_order, is_active",
+    )
+    .eq("skill_id", skillId)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    dispatch(
+      skillsActions.resourcesError({ skillId, error: error.message }),
+    );
+    throw new Error(error.message);
+  }
+
+  const rows = (data ?? []).map(supabaseRowToResourceRow);
+  dispatch(skillsActions.resourcesReceived({ skillId, rows }));
+  return rows;
+});
+
+export const createSkillResourceThunk = createAsyncThunk<
+  ResourceRow,
+  { draft: ResourceDraft },
+  { state: RootState }
+>("skills/createResource", async ({ draft }, { dispatch, getState }) => {
+  // Pick a sort_order at the end of the current list if not specified.
+  const existing = getState().skills.resources.bySkillId[draft.skillId] ?? [];
+  const nextSort =
+    draft.sortOrder ??
+    (existing.length === 0
+      ? 0
+      : Math.max(...existing.map((r) => r.sortOrder ?? 0)) + 1);
+
+  const insertPayload = {
+    skill_id: draft.skillId,
+    resource_type: draft.resourceType || "reference",
+    filename: draft.filename,
+    content: draft.content || null,
+    mime_type: draft.mimeType || null,
+    sort_order: nextSort,
+  };
+
+  const { data, error } = await supabase
+    .from("skl_resources")
+    .insert(insertPayload)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+
+  const row = supabaseRowToResourceRow(data);
+  dispatch(skillsActions.resourceUpserted(row));
+  return row;
+});
+
+export interface ResourcePatchInput {
+  resourceType?: string;
+  filename?: string;
+  content?: string | null;
+  mimeType?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export const updateSkillResourceThunk = createAsyncThunk<
+  ResourceRow,
+  { resourceId: string; patch: ResourcePatchInput },
+  { state: RootState }
+>(
+  "skills/updateResource",
+  async ({ resourceId, patch }, { dispatch }) => {
+    const updateBody: Record<string, unknown> = {};
+    if (patch.resourceType !== undefined)
+      updateBody.resource_type = patch.resourceType;
+    if (patch.filename !== undefined) updateBody.filename = patch.filename;
+    if (patch.content !== undefined) updateBody.content = patch.content;
+    if (patch.mimeType !== undefined) updateBody.mime_type = patch.mimeType;
+    if (patch.sortOrder !== undefined) updateBody.sort_order = patch.sortOrder;
+    if (patch.isActive !== undefined) updateBody.is_active = patch.isActive;
+
+    if (Object.keys(updateBody).length === 0) {
+      throw new Error("Empty resource patch.");
+    }
+
+    const { data, error } = await supabase
+      .from("skl_resources")
+      .update(updateBody)
+      .eq("id", resourceId)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+
+    const row = supabaseRowToResourceRow(data);
+    dispatch(skillsActions.resourceUpserted(row));
+    return row;
+  },
+);
+
+export const deleteSkillResourceThunk = createAsyncThunk<
+  string,
+  { resourceId: string; skillId: string },
+  { state: RootState }
+>(
+  "skills/deleteResource",
+  async ({ resourceId, skillId }, { dispatch }) => {
+    // Soft-delete (mirrors skill delete semantics — admins can re-activate
+    // by setting is_active=true via patch).
+    const { error } = await supabase
+      .from("skl_resources")
+      .update({ is_active: false })
+      .eq("id", resourceId);
+    if (error) throw new Error(error.message);
+    dispatch(skillsActions.resourceRemoved({ skillId, resourceId }));
+    return resourceId;
+  },
+);
+
+export const reorderSkillResourcesThunk = createAsyncThunk<
+  void,
+  { skillId: string; orderedIds: string[] },
+  { state: RootState }
+>(
+  "skills/reorderResources",
+  async ({ skillId, orderedIds }, { dispatch }) => {
+    // One sequential update per touched row — Supabase doesn't have a
+    // batch UPDATE primitive for per-row values. Fail-soft: if one row
+    // fails to renumber the others still get applied.
+    const failures: string[] = [];
+    for (let i = 0; i < orderedIds.length; i += 1) {
+      const id = orderedIds[i];
+      try {
+        await dispatch(
+          updateSkillResourceThunk({
+            resourceId: id,
+            patch: { sortOrder: i },
+          }),
+        ).unwrap();
+      } catch (err) {
+        failures.push(id);
+        console.warn(
+          "[skills.resources.reorder] failed to renumber",
+          id,
+          err,
+        );
+      }
+    }
+    // Apply the slice reorder regardless so the UI is consistent.
+    dispatch(skillsActions.resourcesReordered({ skillId, orderedIds }));
+    if (failures.length) {
+      throw new Error(
+        `Failed to renumber ${failures.length} resource${
+          failures.length === 1 ? "" : "s"
+        }.`,
+      );
+    }
   },
 );

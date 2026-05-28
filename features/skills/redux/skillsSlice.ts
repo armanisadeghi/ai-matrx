@@ -30,6 +30,7 @@ import type {
   AsyncStatus,
   CategoryRow,
   IngestReport,
+  ResourceRow,
   SkillRow,
 } from "../types";
 
@@ -68,6 +69,15 @@ export interface SkillsState {
     status: AsyncStatus;
     error: string | null;
   };
+  /** Resources are loaded lazily per-skill, so the slot is keyed by
+   * skillId. `bySkillId[skillId]` is the ordered list of resources
+   * for that skill (sorted by sort_order asc); `statusBySkillId`
+   * tracks the per-skill fetch status independently. */
+  resources: {
+    bySkillId: Record<string, ResourceRow[]>;
+    statusBySkillId: Record<string, AsyncStatus>;
+    errorBySkillId: Record<string, string | null>;
+  };
 }
 
 const initialState: SkillsState = {
@@ -89,6 +99,11 @@ const initialState: SkillsState = {
     lastReport: null,
     status: "idle",
     error: null,
+  },
+  resources: {
+    bySkillId: {},
+    statusBySkillId: {},
+    errorBySkillId: {},
   },
 };
 
@@ -250,6 +265,66 @@ const slice = createSlice({
           roots,
         };
       }
+    },
+
+    // ── Resources ───────────────────────────────────────────────────────────
+    resourcesLoading(state, action: PayloadAction<{ skillId: string }>) {
+      state.resources.statusBySkillId[action.payload.skillId] = "loading";
+      state.resources.errorBySkillId[action.payload.skillId] = null;
+    },
+    resourcesReceived(
+      state,
+      action: PayloadAction<{ skillId: string; rows: ResourceRow[] }>,
+    ) {
+      const { skillId, rows } = action.payload;
+      state.resources.bySkillId[skillId] = [...rows].sort(
+        (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+      );
+      state.resources.statusBySkillId[skillId] = "ready";
+      state.resources.errorBySkillId[skillId] = null;
+    },
+    resourcesError(
+      state,
+      action: PayloadAction<{ skillId: string; error: string }>,
+    ) {
+      state.resources.statusBySkillId[action.payload.skillId] = "error";
+      state.resources.errorBySkillId[action.payload.skillId] = action.payload.error;
+    },
+    resourceUpserted(state, action: PayloadAction<ResourceRow>) {
+      const row = action.payload;
+      const list = state.resources.bySkillId[row.skillId] ?? [];
+      const idx = list.findIndex((r) => r.id === row.id);
+      if (idx === -1) {
+        list.push(row);
+      } else {
+        list[idx] = row;
+      }
+      list.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+      state.resources.bySkillId[row.skillId] = list;
+    },
+    resourceRemoved(
+      state,
+      action: PayloadAction<{ skillId: string; resourceId: string }>,
+    ) {
+      const { skillId, resourceId } = action.payload;
+      const list = state.resources.bySkillId[skillId] ?? [];
+      state.resources.bySkillId[skillId] = list.filter(
+        (r) => r.id !== resourceId,
+      );
+    },
+    resourcesReordered(
+      state,
+      action: PayloadAction<{ skillId: string; orderedIds: string[] }>,
+    ) {
+      const { skillId, orderedIds } = action.payload;
+      const list = state.resources.bySkillId[skillId] ?? [];
+      const indexMap = new Map(orderedIds.map((id, idx) => [id, idx]));
+      for (const row of list) {
+        const idx = indexMap.get(row.id);
+        if (idx !== undefined) row.sortOrder = idx;
+      }
+      list.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+      state.resources.bySkillId[skillId] = list;
     },
 
     // ── Cross-cutting reset (matches the agent-connections scope-change hook) ─

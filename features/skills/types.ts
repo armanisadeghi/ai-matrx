@@ -72,6 +72,21 @@ export interface CategoryListWire {
   categories: CategoryRowWire[];
 }
 
+/** `skl_resources` row as it comes off Supabase. The Python backend
+ * doesn't yet expose a CRUD surface for resources; reads + writes go
+ * direct via the Supabase client (RLS gates on parent-skill ownership). */
+export interface ResourceRowWire {
+  id: string;
+  skill_id: string;
+  resource_type: string;
+  filename: string;
+  content: string | null;
+  storage_path: string | null;
+  mime_type: string | null;
+  sort_order: number;
+  is_active: boolean;
+}
+
 export interface IngestRequestWire {
   roots: string[];
   dry_run: boolean;
@@ -162,6 +177,32 @@ export interface SkillRow {
   projectId: string | null;
   /** Multi-project membership via skl_skill_projects join. */
   projectIds: string[];
+}
+
+/** Resource row tied to a skill — markdown / text attachment, or a
+ * storage-path pointer (the storage-bucket integration is deferred;
+ * inline `content` covers the cases we use today). */
+export interface ResourceRow {
+  id: string;
+  skillId: string;
+  resourceType: string; // 'reference' | 'snippet' | 'example' | free-string
+  filename: string;
+  content: string | null;
+  storagePath: string | null;
+  mimeType: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+/** Local form draft for create / edit. */
+export interface ResourceDraft {
+  id?: string;
+  skillId: string;
+  resourceType: string;
+  filename: string;
+  content: string;
+  mimeType: string | null;
+  sortOrder: number;
 }
 
 export interface CategoryRow {

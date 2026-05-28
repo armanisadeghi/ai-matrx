@@ -35,6 +35,7 @@ import {
 } from "../redux/skillsThunks";
 import type { SkillDraft, SkillType } from "../types";
 import { SkillProjectAssociations } from "./SkillProjectAssociations";
+import { SkillResourcesPanel } from "./SkillResourcesPanel";
 
 interface SkillDetailEditorProps {
   skillId: string;
@@ -389,8 +390,12 @@ export function SkillDetailEditor({
           />
 
           {!isNew && skill && (
-            <div className="pt-4 border-t border-border/60">
+            <div className="pt-4 border-t border-border/60 space-y-5">
               <SkillProjectAssociations
+                skillId={skill.id}
+                editable={!readOnly}
+              />
+              <SkillResourcesPanel
                 skillId={skill.id}
                 editable={!readOnly}
               />
