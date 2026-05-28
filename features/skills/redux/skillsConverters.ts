@@ -5,6 +5,7 @@
  * camelCase lives everywhere else. One converter per direction, per shape.
  */
 
+import type { Database } from "@/types/database.types";
 import type {
   CategoryRow,
   CategoryRowWire,
@@ -17,6 +18,11 @@ import type {
   SkillRowWire,
   SkillType,
 } from "../types";
+
+/** Supabase-generated Row shape for skl_categories — used when reads
+ * go direct via the Supabase client (vs. the Python `/api/skills/
+ * categories` GET which strips `user_id`). */
+type SklCategoryRow = Database["public"]["Tables"]["skl_categories"]["Row"];
 
 // ---------------------------------------------------------------------------
 // Wire → view model (inbound)
@@ -64,6 +70,24 @@ export function wireToCategoryRow(wire: CategoryRowWire): CategoryRow {
     isActive: Boolean(wire.is_active),
     // user_id may be absent on Python wire shape; preserve when present.
     userId: wire.user_id === undefined ? undefined : wire.user_id ?? null,
+  };
+}
+
+/** Adapter for rows read straight off `skl_categories` via Supabase
+ * (`.from('skl_categories').select(...)`). Accepts the Supabase-
+ * generated Row type — no double-cast. */
+export function supabaseRowToCategoryRow(row: SklCategoryRow): CategoryRow {
+  return {
+    id: row.id,
+    categoryKey: row.category_key,
+    label: row.label,
+    description: row.description ?? null,
+    iconName: row.icon_name ?? null,
+    color: row.color ?? null,
+    parentCategoryId: row.parent_category_id ?? null,
+    sortOrder: row.sort_order ?? 0,
+    isActive: Boolean(row.is_active),
+    userId: row.user_id ?? null,
   };
 }
 

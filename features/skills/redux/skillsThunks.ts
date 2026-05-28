@@ -25,6 +25,7 @@ import { skillsActions } from "./skillsSlice";
 import {
   draftToCreateBody,
   draftToPatchBody,
+  supabaseRowToCategoryRow,
   wireToCategoryRow,
   wireToIngestReport,
   wireToSkillRow,
@@ -131,9 +132,7 @@ export const fetchSkillCategories = createAsyncThunk<
     throw new Error(error.message);
   }
 
-  const rows = (data ?? []).map((r) =>
-    wireToCategoryRow(r as unknown as CategoryRowWire),
-  );
+  const rows = (data ?? []).map(supabaseRowToCategoryRow);
   rows.sort(
     (a, b) =>
       (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
@@ -408,7 +407,7 @@ export const createCategoryThunk = createAsyncThunk<
     .select()
     .single();
   if (error) throw new Error(error.message);
-  const row = wireToCategoryRow(data as unknown as CategoryRowWire);
+  const row = supabaseRowToCategoryRow(data);
   dispatch(skillsActions.categoryUpserted(row));
   return row;
 });
@@ -497,7 +496,7 @@ export const updateCategoryThunk = createAsyncThunk<
     .select()
     .single();
   if (error) throw new Error(error.message);
-  const row = wireToCategoryRow(data as unknown as CategoryRowWire);
+  const row = supabaseRowToCategoryRow(data);
   dispatch(skillsActions.categoryUpserted(row));
   // Silence unused-var lint for userId — it's documented as the
   // ownership hint even when not interpolated.
