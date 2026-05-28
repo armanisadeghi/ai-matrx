@@ -140,7 +140,7 @@ export default function PdRatingsCalculatorLanding() {
               className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
               asChild
             >
-              <Link href="/ssr/demos/ca-pd-calculator">
+              <Link href="/demos/ssr/ca-pd-calculator">
                 Launch the calculator
                 <ArrowRight className="h-4 w-4" />
               </Link>
@@ -319,7 +319,7 @@ export default function PdRatingsCalculatorLanding() {
             className="min-h-[44px] text-base px-10 gap-2"
             asChild
           >
-            <Link href="/ssr/demos/ca-pd-calculator">
+            <Link href="/demos/ssr/ca-pd-calculator">
               Launch the calculator
               <ArrowRight className="h-4 w-4" />
             </Link>

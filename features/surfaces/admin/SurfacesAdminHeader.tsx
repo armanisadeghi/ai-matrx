@@ -7,7 +7,7 @@ import {
   ViewTapButton,
   TestTubeTapButton,
 } from "@/components/icons/tap-buttons";
-import { usePanelControls } from "@/app/(ssr)/ssr/demos/resizables/_lib/PanelControlProvider";
+import { usePanelControls } from "@/app/(ssr)/demos/ssr/resizables/_lib/PanelControlProvider";
 
 /**
  * Header controls for the surfaces admin shell. Lives inside `<PageHeader>`

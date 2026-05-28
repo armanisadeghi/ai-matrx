@@ -1,4 +1,4 @@
-import { readLayoutCookie } from "@/app/(ssr)/ssr/demos/resizables/_lib/readLayoutCookie";
+import { readLayoutCookie } from "@/app/(ssr)/demos/ssr/resizables/_lib/readLayoutCookie";
 import { SettingsRouteShell } from "@/features/settings/route-shell/SettingsRouteShell";
 import { createRouteMetadata } from "@/utils/route-metadata";
 

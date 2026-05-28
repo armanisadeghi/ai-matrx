@@ -6,7 +6,7 @@
 // data-sidebar-view on .shell-mobile-sheet controls visibility.
 //
 // All links carry data-nav-href. Active state is driven entirely by CSS:
-//   .shell-root[data-pathname^="/ssr/chat"] [data-nav-href="/ssr/chat"] { ... }
+//   .shell-root[data-pathname^="/demos/ssr/chat"] [data-nav-href="/demos/ssr/chat"] { ... }
 //
 // NavActiveSync keeps .shell-root[data-pathname] live after client navigation.
 

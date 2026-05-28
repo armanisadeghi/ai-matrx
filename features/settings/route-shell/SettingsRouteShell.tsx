@@ -3,10 +3,10 @@
 import React from "react";
 import { Panel, type Layout } from "react-resizable-panels";
 import { Check, Loader2 } from "lucide-react";
-import { ClientGroup } from "@/app/(ssr)/ssr/demos/resizables/_lib/ClientGroup";
-import { Handle } from "@/app/(ssr)/ssr/demos/resizables/_lib/Handle";
-import { RegisteredPanel } from "@/app/(ssr)/ssr/demos/resizables/_lib/RegisteredPanel";
-import { PanelControlProvider } from "@/app/(ssr)/ssr/demos/resizables/_lib/PanelControlProvider";
+import { ClientGroup } from "@/app/(ssr)/demos/ssr/resizables/_lib/ClientGroup";
+import { Handle } from "@/app/(ssr)/demos/ssr/resizables/_lib/Handle";
+import { RegisteredPanel } from "@/app/(ssr)/demos/ssr/resizables/_lib/RegisteredPanel";
+import { PanelControlProvider } from "@/app/(ssr)/demos/ssr/resizables/_lib/PanelControlProvider";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { SettingsRouteSidebar } from "./SettingsRouteSidebar";

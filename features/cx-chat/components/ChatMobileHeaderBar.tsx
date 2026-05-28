@@ -34,7 +34,7 @@ export default function ChatMobileHeaderBar() {
       </span>
 
       <Link
-        href="/ssr/chat"
+        href="/demos/ssr/chat"
         aria-label="New chat"
         className="flex-shrink-0 pointer-events-auto"
       >

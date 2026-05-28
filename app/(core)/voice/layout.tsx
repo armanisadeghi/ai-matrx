@@ -1,9 +1,9 @@
 import React from "react";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/demo", {
+export const metadata = createRouteMetadata("/voice", {
   titlePrefix: "Voice Manager",
-  title: "Demo",
+  title: "Voice",
   description: "Browse and preview voices for TTS and in-app playback",
   letter: "Vm",
 });

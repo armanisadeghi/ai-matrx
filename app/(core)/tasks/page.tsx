@@ -1,6 +1,6 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { PanelControlProvider } from "@/app/(ssr)/ssr/demos/resizables/_lib/PanelControlProvider";
-import { readLayoutCookie } from "@/app/(ssr)/ssr/demos/resizables/_lib/readLayoutCookie";
+import { PanelControlProvider } from "@/app/(ssr)/demos/ssr/resizables/_lib/PanelControlProvider";
+import { readLayoutCookie } from "@/app/(ssr)/demos/ssr/resizables/_lib/readLayoutCookie";
 import { TasksHeaderControls } from "@/features/tasks/components/TasksHeaderControls";
 import { TasksDesktopShell } from "@/features/tasks/components/TasksDesktopShell";
 import { TaskUrlSync } from "@/features/tasks/components/TaskUrlSync";
