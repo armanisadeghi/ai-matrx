@@ -17714,6 +17714,39 @@ export type Database = {
         }
         Relationships: []
       }
+      system_personal_org_failures: {
+        Row: {
+          created_at: string
+          email: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          resolved_at: string | null
+          resolved_org_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          resolved_at?: string | null
+          resolved_org_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          resolved_at?: string | null
+          resolved_org_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       system_prompt_executions: {
         Row: {
           created_at: string | null
@@ -24798,6 +24831,10 @@ export type Database = {
         }[]
       }
       encrypt_mcp_token: { Args: { p_plaintext: string }; Returns: string }
+      ensure_personal_organization: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
       execute_admin_query: { Args: { query: string }; Returns: Json }
       execute_complex_save: {
         Args: { operations: Json; options?: Json }
