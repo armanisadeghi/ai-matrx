@@ -218,12 +218,15 @@ export async function POST(request: NextRequest) {
           },
         });
         if (envResp.ok) {
-          const secretsEnv = (await envResp.json()) as Record<string, string>;
+          const body = (await envResp.json()) as {
+            env: Record<string, string>;
+            count: number;
+          };
           const existingEnv =
             (mergedConfig as { env?: Record<string, string> }).env || {};
           (mergedConfig as { env?: Record<string, string> }).env = {
             ...existingEnv,
-            ...secretsEnv,
+            ...body.env,
           };
         } else {
           console.warn(
