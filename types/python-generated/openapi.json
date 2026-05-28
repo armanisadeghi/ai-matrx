@@ -5159,7 +5159,7 @@
           "skills"
         ],
         "summary": "List Skills",
-        "description": "List skills visible to the caller (user-owned + system + public).",
+        "description": "List skills visible to the caller (user-owned + system + public).\n\nFilters:\n  - category_id: only skills in that category\n  - is_public_only: skip system + own; only is_public=true\n  - project_id: only skills associated with that ctx_project via\n    skl_skill_projects (the many-to-many join)",
         "operationId": "list_skills_api_skills_get",
         "parameters": [
           {
@@ -5187,6 +5187,23 @@
               "type": "boolean",
               "default": false,
               "title": "Is Public Only"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
             }
           },
           {
@@ -5448,6 +5465,107 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/skills/{skill_id}/projects/{project_id}": {
+      "post": {
+        "tags": [
+          "Skills",
+          "skills"
+        ],
+        "summary": "Associate Skill With Project",
+        "description": "Associate a skill with a ctx_project. Requires skill ownership\n(or admin) OR project owner/admin role; RLS enforces the same check\nserver-side.\n\nIdempotent: existing rows are returned as-is.",
+        "operationId": "associate_skill_with_project_api_skills__skill_id__projects__project_id__post",
+        "parameters": [
+          {
+            "name": "skill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Skill Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectAssociation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Skills",
+          "skills"
+        ],
+        "summary": "Disassociate Skill From Project",
+        "description": "Remove a skill ↔ project association. RLS enforces who can delete.",
+        "operationId": "disassociate_skill_from_project_api_skills__skill_id__projects__project_id__delete",
+        "parameters": [
+          {
+            "name": "skill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Skill Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -57837,6 +57955,27 @@
         ],
         "title": "ProcessResponse"
       },
+      "ProjectAssociation": {
+        "properties": {
+          "skill_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Skill Id"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "skill_id",
+          "project_id"
+        ],
+        "title": "ProjectAssociation"
+      },
       "ProjectionResponse": {
         "properties": {
           "rows": {
@@ -63747,6 +63886,15 @@
               }
             ],
             "title": "Project Id"
+          },
+          "project_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Project Ids",
+            "description": "ctx_projects that this skill is associated with via skl_skill_projects (many-to-many)."
           }
         },
         "type": "object",

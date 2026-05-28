@@ -56,6 +56,10 @@ export interface CategoryRowWire {
   parent_category_id: string | null;
   sort_order: number;
   is_active: boolean;
+  /** `user_id IS NULL` → system category. Populated when reading direct
+   * from Supabase; the Python wire shape currently strips this on its
+   * CategoryRow response model (it's still on the row server-side). */
+  user_id?: string | null;
 }
 
 export interface SkillsListWire {
@@ -170,6 +174,11 @@ export interface CategoryRow {
   parentCategoryId: string | null;
   sortOrder: number;
   isActive: boolean;
+  /** `null` → system category (visible to every user). Populated when
+   * the row was fetched via Supabase direct; may be undefined when read
+   * via the Python `/api/skills/categories` GET (which strips it
+   * today). The editor uses this to gate write-paths. */
+  userId?: string | null;
 }
 
 export interface IngestReport {

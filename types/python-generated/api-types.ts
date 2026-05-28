@@ -2241,6 +2241,12 @@ export interface paths {
         /**
          * List Skills
          * @description List skills visible to the caller (user-owned + system + public).
+         *
+         *     Filters:
+         *       - category_id: only skills in that category
+         *       - is_public_only: skip system + own; only is_public=true
+         *       - project_id: only skills associated with that ctx_project via
+         *         skl_skill_projects (the many-to-many join)
          */
         get: operations["list_skills_api_skills_get"];
         put?: never;
@@ -2325,6 +2331,34 @@ export interface paths {
          */
         post: operations["admin_ingest_filesystem_api_skills_ingest_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/skills/{skill_id}/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Associate Skill With Project
+         * @description Associate a skill with a ctx_project. Requires skill ownership
+         *     (or admin) OR project owner/admin role; RLS enforces the same check
+         *     server-side.
+         *
+         *     Idempotent: existing rows are returned as-is.
+         */
+        post: operations["associate_skill_with_project_api_skills__skill_id__projects__project_id__post"];
+        /**
+         * Disassociate Skill From Project
+         * @description Remove a skill ↔ project association. RLS enforces who can delete.
+         */
+        delete: operations["disassociate_skill_from_project_api_skills__skill_id__projects__project_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -20726,6 +20760,19 @@ export interface components {
             /** Variants */
             variants: components["schemas"]["StudioVariantOut"][];
         };
+        /** ProjectAssociation */
+        ProjectAssociation: {
+            /**
+             * Skill Id
+             * Format: uuid
+             */
+            skill_id: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+        };
         /**
          * ProjectionResponse
          * @description Projection result — each row is a free-form subset of the requested fields.
@@ -22988,6 +23035,11 @@ export interface components {
             organization_id?: string | null;
             /** Project Id */
             project_id?: string | null;
+            /**
+             * Project Ids
+             * @description ctx_projects that this skill is associated with via skl_skill_projects (many-to-many).
+             */
+            project_ids?: string[];
         };
         /** SkillsList */
         SkillsList: {
@@ -29424,6 +29476,7 @@ export interface operations {
             query?: {
                 category_id?: string | null;
                 is_public_only?: boolean;
+                project_id?: string | null;
                 limit?: number;
             };
             header?: never;
@@ -29621,6 +29674,68 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["IngestReport"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    associate_skill_with_project_api_skills__skill_id__projects__project_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill_id: string;
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectAssociation"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disassociate_skill_from_project_api_skills__skill_id__projects__project_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                skill_id: string;
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

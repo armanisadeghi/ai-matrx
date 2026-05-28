@@ -18,6 +18,8 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 
 import { callApi } from "@/lib/api/call-api";
 import type { RootState } from "@/lib/redux/store";
+import { supabase } from "@/utils/supabase/client";
+import { selectUserId, selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 
 import { skillsActions } from "./skillsSlice";
 import {
@@ -29,6 +31,7 @@ import {
 } from "./skillsConverters";
 import type {
   CategoryRow,
+  CategoryRowWire,
   IngestReport,
   IngestReportWire,
   SkillCreateWire,
@@ -111,23 +114,31 @@ export const fetchSkillCategories = createAsyncThunk<
 >("skills/fetchCategories", async (_arg, { dispatch }) => {
   dispatch(skillsActions.categoriesLoading());
 
-  const result = await dispatch(
-    callApi({
-      path: "/api/skills/categories",
-      method: "GET",
-    }),
-  );
+  // Supabase direct — RLS handles visibility (system + own + org +
+  // project + task), and unlike the Python `/api/skills/categories`
+  // GET endpoint this preserves `user_id` so the editor can route
+  // writes (Supabase direct for owned rows, Python admin for system
+  // rows). Matches CLAUDE.md doctrine for simple reads.
+  const { data, error } = await supabase
+    .from("skl_categories")
+    .select(
+      "id, category_key, label, description, icon_name, color, parent_category_id, sort_order, is_active, user_id",
+    )
+    .eq("is_active", true);
 
-  if (result.error) {
-    dispatch(skillsActions.categoriesError(result.error.message));
-    throw new Error(result.error.message);
+  if (error) {
+    dispatch(skillsActions.categoriesError(error.message));
+    throw new Error(error.message);
   }
 
-  const data = result.data as {
-    count?: number;
-    categories?: Parameters<typeof wireToCategoryRow>[0][];
-  } | undefined;
-  const rows = (data?.categories ?? []).map(wireToCategoryRow);
+  const rows = (data ?? []).map((r) =>
+    wireToCategoryRow(r as unknown as CategoryRowWire),
+  );
+  rows.sort(
+    (a, b) =>
+      (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
+      a.label.localeCompare(b.label),
+  );
   dispatch(skillsActions.categoriesReceived(rows));
   return rows;
 });
@@ -310,5 +321,297 @@ export const removeSkillProject = createAsyncThunk<
       );
     }
     return { skillId, projectId };
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Category CRUD (smart-dispatch: Supabase direct for owned rows, Python
+// admin endpoints for system rows)
+// ---------------------------------------------------------------------------
+//
+// Doctrine: simple table writes go React → Supabase direct. Categories
+// are user-owned content for the most part; system categories (user_id
+// IS NULL) need admin server help because RLS won't allow plain writes
+// against them.
+//
+// The smart-dispatch lives inside each thunk: load the row from the
+// slice cache, check who owns it, route appropriately. Callers don't
+// need to think about which path they want.
+// ---------------------------------------------------------------------------
+
+export interface CategoryDraft {
+  categoryKey: string;
+  label: string;
+  description?: string | null;
+  iconName?: string | null;
+  color?: string | null;
+  parentCategoryId?: string | null;
+  sortOrder?: number;
+  /** Admin intent: when true AND caller is super-admin, the row lands
+   * with `user_id = NULL` (system category). Ignored for non-admins. */
+  isSystem?: boolean;
+}
+
+export const createCategoryThunk = createAsyncThunk<
+  CategoryRow,
+  { draft: CategoryDraft },
+  { state: RootState }
+>("skills/createCategory", async ({ draft }, { dispatch, getState }) => {
+  const state = getState();
+  const isAdmin = selectIsSuperAdmin(state);
+  const userId = selectUserId(state);
+  const wantsSystem = Boolean(draft.isSystem) && isAdmin;
+
+  if (wantsSystem) {
+    // System category — admin path through the Python router so the
+    // backend's bypass logic + cycle check applies. The new admin
+    // category endpoints exist server-side but haven't been picked up
+    // by `pnpm sync-types` yet (the aidream deploy lands them in the
+    // generated `paths` map). Until that ships, the path key is
+    // typed `as never`. Drop this once sync-types regenerates.
+    const result = await dispatch(
+      callApi({
+        path: "/api/skills/categories" as never,
+        method: "POST",
+        body: {
+          category_key: draft.categoryKey,
+          label: draft.label,
+          description: draft.description ?? null,
+          icon_name: draft.iconName ?? null,
+          color: draft.color ?? null,
+          parent_category_id: draft.parentCategoryId ?? null,
+          sort_order: draft.sortOrder ?? 0,
+          is_system: true,
+        } as never,
+      }),
+    );
+    if (result.error) throw new Error(result.error.message);
+    const row = wireToCategoryRow(result.data as CategoryRowWire);
+    dispatch(skillsActions.categoryUpserted(row));
+    return row;
+  }
+
+  // Personal category — Supabase direct. RLS stamps + validates.
+  const insertPayload = {
+    category_key: draft.categoryKey,
+    label: draft.label,
+    description: draft.description ?? null,
+    icon_name: draft.iconName ?? null,
+    color: draft.color ?? null,
+    parent_category_id: draft.parentCategoryId ?? null,
+    sort_order: draft.sortOrder ?? 0,
+    user_id: userId,
+  };
+  const { data, error } = await supabase
+    .from("skl_categories")
+    .insert(insertPayload)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  const row = wireToCategoryRow(data as unknown as CategoryRowWire);
+  dispatch(skillsActions.categoryUpserted(row));
+  return row;
+});
+
+export interface CategoryPatchInput {
+  categoryKey?: string;
+  label?: string;
+  description?: string | null;
+  iconName?: string | null;
+  color?: string | null;
+  parentCategoryId?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export const updateCategoryThunk = createAsyncThunk<
+  CategoryRow,
+  { id: string; patch: CategoryPatchInput },
+  { state: RootState }
+>("skills/updateCategory", async ({ id, patch }, { dispatch, getState }) => {
+  const state = getState();
+  const userId = selectUserId(state);
+  const isAdmin = selectIsSuperAdmin(state);
+  const cached = state.skills.categories.byId[id];
+  const isSystemRow = !cached?.userId; // user_id IS NULL → system
+
+  // Always route system rows through Python (RLS would block Supabase
+  // direct). For owned rows: if non-admin, Supabase direct; if admin,
+  // Python is also fine but Supabase is shorter — prefer Supabase for
+  // simplicity.
+  const useServer = isSystemRow;
+
+  if (useServer) {
+    if (!isAdmin) {
+      throw new Error("Only admins can edit system categories.");
+    }
+    const wireBody: Record<string, unknown> = {};
+    if (patch.categoryKey !== undefined) wireBody.category_key = patch.categoryKey;
+    if (patch.label !== undefined) wireBody.label = patch.label;
+    if (patch.description !== undefined) wireBody.description = patch.description;
+    if (patch.iconName !== undefined) wireBody.icon_name = patch.iconName;
+    if (patch.color !== undefined) wireBody.color = patch.color;
+    if (patch.parentCategoryId !== undefined)
+      wireBody.parent_category_id = patch.parentCategoryId;
+    if (patch.sortOrder !== undefined) wireBody.sort_order = patch.sortOrder;
+    if (patch.isActive !== undefined) wireBody.is_active = patch.isActive;
+
+    const result = await dispatch(
+      callApi({
+        // PATCH /skills/categories/{category_id} — typed `as never` until
+        // sync-types picks up the new admin endpoint. Drop on next sync.
+        path: "/api/skills/categories/{category_id}" as never,
+        method: "PATCH",
+        pathParams: { category_id: id } as never,
+        body: wireBody as never,
+      }),
+    );
+    if (result.error) throw new Error(result.error.message);
+    const row = wireToCategoryRow(result.data as CategoryRowWire);
+    dispatch(skillsActions.categoryUpserted(row));
+    return row;
+  }
+
+  // Supabase direct — owned/org-admin row.
+  const updateBody: Record<string, unknown> = {};
+  if (patch.categoryKey !== undefined) updateBody.category_key = patch.categoryKey;
+  if (patch.label !== undefined) updateBody.label = patch.label;
+  if (patch.description !== undefined) updateBody.description = patch.description;
+  if (patch.iconName !== undefined) updateBody.icon_name = patch.iconName;
+  if (patch.color !== undefined) updateBody.color = patch.color;
+  if (patch.parentCategoryId !== undefined)
+    updateBody.parent_category_id = patch.parentCategoryId;
+  if (patch.sortOrder !== undefined) updateBody.sort_order = patch.sortOrder;
+  if (patch.isActive !== undefined) updateBody.is_active = patch.isActive;
+
+  if (Object.keys(updateBody).length === 0) {
+    // Nothing to update — return the cached row.
+    if (cached) return cached;
+    throw new Error("Empty patch and no cached row to return.");
+  }
+
+  const { data, error } = await supabase
+    .from("skl_categories")
+    .update(updateBody)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  const row = wireToCategoryRow(data as unknown as CategoryRowWire);
+  dispatch(skillsActions.categoryUpserted(row));
+  // Silence unused-var lint for userId — it's documented as the
+  // ownership hint even when not interpolated.
+  void userId;
+  return row;
+});
+
+export const deleteCategoryThunk = createAsyncThunk<
+  string,
+  { id: string },
+  { state: RootState }
+>("skills/deleteCategory", async ({ id }, { dispatch, getState }) => {
+  const state = getState();
+  const isAdmin = selectIsSuperAdmin(state);
+  const cached = state.skills.categories.byId[id];
+  const isSystemRow = !cached?.userId;
+
+  if (isSystemRow) {
+    if (!isAdmin) {
+      throw new Error("Only admins can delete system categories.");
+    }
+    const result = await dispatch(
+      callApi({
+        // DELETE /skills/categories/{category_id} — typed `as never` until
+        // sync-types picks up the new admin endpoint. Drop on next sync.
+        path: "/api/skills/categories/{category_id}" as never,
+        method: "DELETE",
+        pathParams: { category_id: id } as never,
+      }),
+    );
+    if (result.error) throw new Error(result.error.message);
+  } else {
+    // Supabase direct soft-delete (is_active=false) — matches the
+    // semantics of the Python endpoint.
+    const { error } = await supabase
+      .from("skl_categories")
+      .update({ is_active: false })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+  }
+
+  dispatch(skillsActions.categoryRemoved(id));
+  return id;
+});
+
+/** Move a category to a new parent + sort slot. Bulk-updates the
+ * affected siblings' sort_order to a contiguous sequence after the
+ * drop. Single round trip per touched row (Supabase doesn't have a
+ * batch UPDATE primitive for differing values per row; we issue N
+ * sequential `update().eq().select()` calls).
+ *
+ * For system-row reparents, falls through to the Python PATCH which
+ * does its own cycle detection. */
+export interface ReparentInput {
+  id: string;
+  newParentId: string | null;
+  /** Final ordered list of all sibling ids that share `newParentId`
+   * after the drop, including the moved row. The thunk re-numbers
+   * their `sort_order` to match this sequence. */
+  newSiblingOrder: string[];
+}
+
+export const reparentCategoryThunk = createAsyncThunk<
+  void,
+  ReparentInput,
+  { state: RootState }
+>(
+  "skills/reparentCategory",
+  async ({ id, newParentId, newSiblingOrder }, { dispatch }) => {
+    // First: re-parent the moved row (might cross owners — server-side
+    // for system, Supabase direct for owned).
+    await dispatch(
+      updateCategoryThunk({
+        id,
+        patch: {
+          parentCategoryId: newParentId,
+          sortOrder: newSiblingOrder.indexOf(id),
+        },
+      }),
+    ).unwrap();
+
+    // Then: bulk-update sort_order on the affected siblings. Skip the
+    // moved row (already done above).
+    const updates = newSiblingOrder
+      .map((sid, idx) => ({ sid, idx }))
+      .filter((u) => u.sid !== id);
+    for (const u of updates) {
+      try {
+        await dispatch(
+          updateCategoryThunk({
+            id: u.sid,
+            patch: { sortOrder: u.idx },
+          }),
+        ).unwrap();
+      } catch (err) {
+        // One sibling failing to renumber doesn't fail the move — log
+        // and continue so the UI reflects the headline parent change.
+        console.warn(
+          "[skills.reparent] sibling sort_order update failed",
+          u.sid,
+          err,
+        );
+      }
+    }
+
+    // Slice update for the moved row + siblings happens via each
+    // updateCategoryThunk dispatch above (categoryUpserted on each).
+    // Apply a final bulk reorder action to ensure the slice's
+    // perceived order matches even if the per-row updates raced.
+    dispatch(
+      skillsActions.categoriesReordered({
+        parentId: newParentId,
+        orderedIds: newSiblingOrder,
+      }),
+    );
   },
 );

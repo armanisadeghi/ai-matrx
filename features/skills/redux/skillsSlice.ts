@@ -171,6 +171,25 @@ const slice = createSlice({
       );
     },
 
+    /** Bulk-reorder siblings under a parent. The reparent thunk dispatches
+     * this after the per-row sort_order updates so the slice's perceived
+     * order is consistent even if individual writes raced. */
+    categoriesReordered(
+      state,
+      action: PayloadAction<{
+        parentId: string | null;
+        orderedIds: string[];
+      }>,
+    ) {
+      const { parentId, orderedIds } = action.payload;
+      orderedIds.forEach((id, idx) => {
+        const row = state.categories.byId[id];
+        if (!row) return;
+        row.sortOrder = idx;
+        row.parentCategoryId = parentId;
+      });
+    },
+
     // ── Skill ↔ Project association (mutates the projectIds slot in place) ─
     skillProjectsUpdated(
       state,

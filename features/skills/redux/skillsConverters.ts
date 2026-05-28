@@ -62,6 +62,8 @@ export function wireToCategoryRow(wire: CategoryRowWire): CategoryRow {
     parentCategoryId: wire.parent_category_id ?? null,
     sortOrder: wire.sort_order ?? 0,
     isActive: Boolean(wire.is_active),
+    // user_id may be absent on Python wire shape; preserve when present.
+    userId: wire.user_id === undefined ? undefined : wire.user_id ?? null,
   };
 }
 
