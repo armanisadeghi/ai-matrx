@@ -39,14 +39,12 @@ export function ChatRunHeader({
     router.push(`/chat/a/${encodeURIComponent(id)}`);
   };
 
-  // `+` starts a NEW conversation with the ACTIVE agent (the agent route always
-  // mints a fresh conversation). No active agent → the default greeting landing.
+  // `+` always lands on the greeting/new-chat surface. Routing to
+  // `/chat/a/[activeAgentId]` from the same route is a Next.js no-op (same URL),
+  // which silently kept users in the existing conversation. `/chat/new` is the
+  // single, canonical "start a new chat" entry point.
   const handleNewChat = () => {
-    if (activeAgentId) {
-      router.push(`/chat/a/${encodeURIComponent(activeAgentId)}`);
-    } else {
-      router.push("/chat/new");
-    }
+    router.push("/chat/new");
   };
 
   // Desktop: `lg:w-full` makes this fill the header center slot so its contents

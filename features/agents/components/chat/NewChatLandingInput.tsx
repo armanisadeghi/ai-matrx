@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { ArrowUp, CircleStop, Plus } from "lucide-react";
+import { ArrowUp, CircleStop } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { AgentMicrophoneButton } from "@/features/agents/components/inputs/smart-input/AgentMicrophoneButton";
-import { SmartAgentResourcePickerButton } from "@/features/agents/components/inputs/resources/SmartAgentResourcePickerButton";
+import { LandingPlusMenu } from "./LandingPlusMenu";
 import {
   smartExecute,
   cancelExecution,
@@ -37,9 +37,11 @@ const MAX_TEXTAREA_HEIGHT = 220; // px — beyond this the textarea scrolls
  * so submitting here flows through the identical `smartExecute` path and the
  * conversation is already streaming by the time the URL promotes.
  *
- * Controls, intentionally minimal: upload (Plus → canonical resource
- * picker), voice (AgentMicrophoneButton), send. No variables, no Creator
- * Panel, no resource-chip strip — this is the pre-first-message surface.
+ * Controls: a single `+` button that opens the unified LandingPlusMenu
+ * (Attach + Model + Tools + Sandbox + Settings — same panels the production
+ * SmartAgentInputStacked toolbar uses, just folded behind one trigger),
+ * voice (AgentMicrophoneButton), and send. No variables, no Creator Panel,
+ * no resource-chip strip — this is the pre-first-message surface.
  */
 export function NewChatLandingInput({
   conversationId,
@@ -106,23 +108,9 @@ export function NewChatLandingInput({
         "transition-colors focus-within:border-foreground/25",
       )}
     >
-      {/* Leading — attach */}
+      {/* Leading — unified `+` popover (Attach / Model / Tools / Sandbox / Settings) */}
       <div className="[grid-area:leading]" onClick={(e) => e.stopPropagation()}>
-        <SmartAgentResourcePickerButton
-          conversationId={conversationId}
-          triggerSlot={
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 w-9 p-0 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60"
-              tabIndex={-1}
-              title="Attach a file"
-              aria-label="Attach a file"
-            >
-              <Plus className="w-5 h-5" />
-            </Button>
-          }
-        />
+        <LandingPlusMenu conversationId={conversationId} />
       </div>
 
       {/* Primary — textarea */}
