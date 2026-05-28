@@ -16,6 +16,12 @@ interface VoiceTranscriptTurnProps {
 export function VoiceTranscriptTurn({ turn }: VoiceTranscriptTurnProps) {
   const isUser = turn.role === "user";
   const isInterrupted = turn.status === "interrupted";
+  // Assistant transcript reveal is gated on audio playback position
+  // (see useXaiVoiceSession's reveal rAF loop). User turns are unaffected —
+  // their text comes from STT on already-recorded audio, so it's never ahead.
+  const visibleText = isUser
+    ? turn.text
+    : turn.text.slice(0, turn.text_reveal_index);
 
   return (
     <motion.div
@@ -34,7 +40,7 @@ export function VoiceTranscriptTurn({ turn }: VoiceTranscriptTurnProps) {
           isUser ? "text-foreground" : "text-muted-foreground",
         )}
       >
-        {turn.text}
+        {visibleText}
         {turn.status === "pending" && (
           <span
             className="ml-1 inline-block h-4 w-[2px] -mb-0.5 bg-current align-middle opacity-60 motion-safe:animate-pulse"

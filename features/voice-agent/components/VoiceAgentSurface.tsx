@@ -26,6 +26,7 @@ import {
   selectVoiceTurns,
 } from "../state/selectors";
 import { VoiceAmbientGlow } from "./VoiceAmbientGlow";
+import { VoiceListenHalo } from "./VoiceListenHalo";
 import { VoiceMicButton } from "./VoiceMicButton";
 import { VoiceStatusPill } from "./VoiceStatusPill";
 import { VoiceTranscriptStream } from "./VoiceTranscriptStream";
@@ -194,10 +195,11 @@ export function VoiceAgentSurface({ preset }: VoiceAgentSurfaceProps) {
       </section>
 
       {/* ─── Hero: status + mic + error ─────────────────────────────
-          The old centered orb visualizer was removed — the ambient glow
-          layer behind the surface now carries the "I'm listening / I'm
-          speaking" feedback. This leaves the mic button as the single,
-          unambiguous control. */}
+          Ambient glow (agent-speaking) sits behind the whole surface
+          via the top-level layer. A focal warm halo (user-listening)
+          sits inside this hero section, anchored to the mic button, so
+          the user-side cue is structurally distinct from the agent-side
+          cue. The mic button itself stays the single tappable control. */}
       <section
         className={cn(
           "relative z-10 shrink-0 flex flex-col items-center justify-end gap-5",
@@ -205,7 +207,10 @@ export function VoiceAgentSurface({ preset }: VoiceAgentSurfaceProps) {
         )}
       >
         <VoiceStatusPill status={liveStatus} />
-        <VoiceMicButton status={liveStatus} onToggle={toggle} />
+        <div className="relative inline-flex items-center justify-center">
+          <VoiceListenHalo status={liveStatus} />
+          <VoiceMicButton status={liveStatus} onToggle={toggle} />
+        </div>
         <VoiceErrorBanner error={liveError} />
       </section>
     </div>

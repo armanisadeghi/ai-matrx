@@ -22,7 +22,7 @@
 //      same speech_started handler microtask.
 
 import { useCallback, useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   addLatencySample,
   appendAssistantTurn,
@@ -30,12 +30,15 @@ import {
   completeAssistantTurn,
   completeUserTurn,
   markTurnInterrupted,
+  setAssistantTurnAudioStarted,
   setError,
   setSessionStartedAt,
   setStatus,
+  setTextRevealIndexForTurn,
   updateAssistantTranscriptDelta,
   updateUserTranscriptDelta,
 } from "../state/voiceAgentSlice";
+import { TRANSCRIPT_REVEAL_LAG_MS } from "../constants";
 import {
   selectVoiceError,
   selectVoiceInstructions,
@@ -77,6 +80,9 @@ function makeTurnId(): string {
 export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionApi {
   const { instanceId, devTokenTtlSeconds } = opts;
   const dispatch = useAppDispatch();
+  // Read store directly inside the reveal rAF so we don't subscribe / re-render
+  // every time a transcript delta lands.
+  const store = useAppStore();
 
   const status = useAppSelector((s) => selectVoiceStatus(s, instanceId));
   const error = useAppSelector((s) => selectVoiceError(s, instanceId));
@@ -111,6 +117,73 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
   const speechEndedAtMsRef = useRef<number | null>(null);
   const assistantTurnStartedAtMsRef = useRef<number | null>(null);
   const firstAudioReceivedRef = useRef(false);
+  /** Wall-clock ms at which the FIRST audio chunk of the active assistant turn was scheduled. */
+  const assistantAudioStartedAtMsRef = useRef<number | null>(null);
+  /** rAF id for the transcript-reveal loop. Only runs while an assistant turn is speaking. */
+  const revealRafIdRef = useRef<number | null>(null);
+
+  // ─── Transcript reveal loop ────────────────────────────────────────────
+  //
+  // xAI ships transcript deltas a few hundred ms BEFORE the audio bytes
+  // they describe. Without gating, the text races past what the user is
+  // hearing. This loop walks the per-turn arrival log on every rAF tick
+  // and advances the reveal index so visible text lags audio by
+  // TRANSCRIPT_REVEAL_LAG_MS.
+  //
+  // Stopped on turn end / interrupt; both paths also flush the reveal
+  // index to text.length so the user sees the full transcript after the
+  // turn finishes.
+  const stopRevealLoop = useCallback(() => {
+    if (revealRafIdRef.current !== null) {
+      cancelAnimationFrame(revealRafIdRef.current);
+      revealRafIdRef.current = null;
+    }
+  }, []);
+
+  const startRevealLoop = useCallback(() => {
+    if (revealRafIdRef.current !== null) return;
+    const playback = playbackRef.current;
+    if (!playback) return;
+
+    const tick = () => {
+      const turnId = pendingAssistantTurnIdRef.current;
+      const audioStartedAt = assistantAudioStartedAtMsRef.current;
+      if (!turnId || audioStartedAt === null) {
+        revealRafIdRef.current = null;
+        return;
+      }
+      const elapsedMs = playback.getTurnElapsedMs();
+      const audioWallClockMs = audioStartedAt + elapsedMs;
+      const cutoffMs = audioWallClockMs - TRANSCRIPT_REVEAL_LAG_MS;
+
+      // Find the highest char_offset whose arrival timestamp is <= cutoff.
+      // Arrivals are append-order chronological by construction, so we can
+      // stop scanning at the first one past the cutoff.
+      const turn = store
+        .getState()
+        .voiceAgent.instances[instanceId]?.turns.find(
+          (t) => t.id === turnId && t.role === "assistant",
+        );
+      if (turn && turn.text_delta_arrivals.length > 0) {
+        let revealIndex = turn.text_reveal_index;
+        for (const arr of turn.text_delta_arrivals) {
+          if (arr.arrived_at_ms <= cutoffMs) {
+            if (arr.char_offset > revealIndex) revealIndex = arr.char_offset;
+          } else {
+            break;
+          }
+        }
+        if (revealIndex > turn.text_reveal_index) {
+          dispatch(
+            setTextRevealIndexForTurn({ instanceId, turnId, revealIndex }),
+          );
+        }
+      }
+
+      revealRafIdRef.current = requestAnimationFrame(tick);
+    };
+    revealRafIdRef.current = requestAnimationFrame(tick);
+  }, [dispatch, instanceId, store]);
 
   // ─── Module construction (idempotent) ──────────────────────────────────
   const ensureModules = useCallback(() => {
@@ -197,6 +270,7 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
           if (pendingAssistantTurnIdRef.current && playbackRef.current) {
             const playedMs = playbackRef.current.interrupt();
             xaiClientRef.current?.cancelResponse();
+            stopRevealLoop();
             dispatch(
               markTurnInterrupted({
                 instanceId,
@@ -207,6 +281,7 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
             );
             pendingAssistantTurnIdRef.current = null;
             assistantTurnStartedAtMsRef.current = null;
+            assistantAudioStartedAtMsRef.current = null;
             // Brief flash state; we go straight back to listening below.
             dispatch(setStatus({ instanceId, status: "interrupting" }));
           }
@@ -262,6 +337,7 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
           const turnId = makeTurnId();
           pendingAssistantTurnIdRef.current = turnId;
           assistantTurnStartedAtMsRef.current = Date.now();
+          assistantAudioStartedAtMsRef.current = null;
           firstAudioReceivedRef.current = false;
           dispatch(
             appendAssistantTurn({
@@ -306,15 +382,28 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
           playbackRef.current.enqueue(event.delta);
           if (!firstAudioReceivedRef.current) {
             firstAudioReceivedRef.current = true;
+            const audioStartedAtMs = Date.now();
+            assistantAudioStartedAtMsRef.current = audioStartedAtMs;
+            if (pendingAssistantTurnIdRef.current) {
+              dispatch(
+                setAssistantTurnAudioStarted({
+                  instanceId,
+                  turnId: pendingAssistantTurnIdRef.current,
+                  audioStartedAtMs,
+                }),
+              );
+            }
             if (speechEndedAtMsRef.current !== null) {
               dispatch(
                 addLatencySample({
                   instanceId,
-                  ms: Date.now() - speechEndedAtMsRef.current,
+                  ms: audioStartedAtMs - speechEndedAtMsRef.current,
                 }),
               );
             }
             dispatch(setStatus({ instanceId, status: "speaking" }));
+            // Begin gating transcript reveal on audio playback position.
+            startRevealLoop();
           }
           break;
         }
@@ -342,6 +431,7 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
             assistantTurnStartedAtMsRef.current !== null
               ? assistantTurnStartedAtMsRef.current - speechEndedAtMsRef.current
               : undefined;
+          stopRevealLoop();
           dispatch(
             completeAssistantTurn({
               instanceId,
@@ -364,6 +454,7 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
 
           pendingAssistantTurnIdRef.current = null;
           assistantTurnStartedAtMsRef.current = null;
+          assistantAudioStartedAtMsRef.current = null;
           speechEndedAtMsRef.current = null;
           break;
         }
@@ -424,10 +515,12 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
 
   // ─── start / stop ──────────────────────────────────────────────────────
   const stop = useCallback(async (): Promise<void> => {
+    stopRevealLoop();
     pendingUserTurnIdRef.current = null;
     pendingAssistantTurnIdRef.current = null;
     speechEndedAtMsRef.current = null;
     assistantTurnStartedAtMsRef.current = null;
+    assistantAudioStartedAtMsRef.current = null;
     firstAudioReceivedRef.current = false;
 
     xaiClientRef.current?.disconnect();
@@ -435,7 +528,7 @@ export function useXaiVoiceSession(opts: UseXaiVoiceSessionOpts): VoiceSessionAp
     await playbackRef.current?.stop();
 
     dispatch(setStatus({ instanceId, status: "idle" }));
-  }, [dispatch, instanceId]);
+  }, [dispatch, instanceId, stopRevealLoop]);
 
   const start = useCallback(async (): Promise<void> => {
     ensureModules();

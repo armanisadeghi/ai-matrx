@@ -24,6 +24,17 @@ export const TOKEN_REFRESH_SKEW_SECONDS = 30;
 /** Safety cap on the pre-`session.updated` mic buffer. ~10s at 24kHz mono. */
 export const MIC_PREBUFFER_MAX_SAMPLES = 240_000;
 
+/**
+ * How far behind the actually-played audio the transcript reveal lags.
+ *
+ * xAI streams transcript deltas a few hundred ms AHEAD of the audio bytes
+ * they describe. Without a lag the visible text races past what the user
+ * is hearing; with the lag the reveal stays slightly behind the sound,
+ * which reads as natural ("I see it as I hear it"). 250 ms hits the
+ * sweet spot for most voices — tune here if it feels off.
+ */
+export const TRANSCRIPT_REVEAL_LAG_MS = 250;
+
 export const VOICES: ReadonlyArray<{ id: VoiceId; label: string }> = [
   { id: "ara", label: "Ara" },
   { id: "eve", label: "Eve" },
