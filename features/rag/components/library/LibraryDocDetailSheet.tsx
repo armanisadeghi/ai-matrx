@@ -47,6 +47,8 @@ import {
   Trash2,
   Pencil,
   RefreshCw,
+  Sparkles,
+  Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { del, getJson, patchJson, postJson } from "@/lib/python-client";
@@ -160,29 +162,48 @@ export function LibraryDocDetailSheet({
     }
   };
 
-  const handleReprocess = async () => {
-    if (!doc) return;
+  /**
+   * Kick the FULL extract → clean → chunk → embed pipeline through the
+   * shared useProcessingRunner so the inline ProcessingJobView in the
+   * Stages tab streams every progress event, exactly like a manual
+   * stage click. Caller (LibraryPage) wires this to runStage(docId,
+   * "run_all", …); the inline view picks the new job up automatically
+   * because LibraryPage filters runner.jobs by processedDocumentId.
+   *
+   * Replaces the legacy POST /rag/library/{id}/reprocess fire-and-forget,
+   * which a) hit Next.js with no auth and b) showed zero progress.
+   */
+  const handleReprocess = () => {
+    if (!doc || !onRequestStageRun) {
+      toast.error(
+        "Reprocess is unavailable in this view — no stage runner wired.",
+      );
+      return;
+    }
     setReprocessing(true);
     try {
-      // Fire-and-forget — the response is a stream. We don't consume it
-      // here; the user can watch progress on the backend logs or come
-      // back to the library to see the new row appear.
-      const resp = await fetch(`/rag/library/${doc.id}/reprocess`, {
-        method: "POST",
-      });
-      if (!resp.ok) {
-        throw new Error(`HTTP ${resp.status}`);
-      }
+      onRequestStageRun("run_all", doc.id, doc.name);
       toast.success(
-        "Re-processing started. A new entry will appear in the library when complete.",
+        "Re-processing started — watch the Stages tab below for live progress.",
       );
       onMutated?.();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Re-process failed");
     } finally {
-      setReprocessing(false);
+      // The actual job runs asynchronously in the runner; the sheet
+      // re-enables the button immediately so the user can stop or
+      // re-trigger if they need to.
+      setTimeout(() => setReprocessing(false), 800);
     }
   };
+
+  // "Process Document" — same path as reprocess but labeled / iconed
+  // differently when the doc has never finished a full pipeline yet, so
+  // first-time users get a primary CTA instead of an ambiguous
+  // "Re-process" button. The runner doesn't care which label triggered
+  // it.
+  const handleProcess = handleReprocess;
+  const hasNeverBeenProcessed = !!doc && doc.chunks === 0;
+  const isPartiallyProcessed =
+    !!doc && doc.chunks > 0 && doc.embeddingsOai < doc.chunks;
 
   const open = Boolean(processedDocumentId);
 
@@ -266,6 +287,61 @@ export function LibraryDocDetailSheet({
 
               {/* Action row */}
               <div className="flex flex-wrap gap-2 mt-3">
+                {/* Primary CTA: "Process Document" (never run) or
+                    "Finish Processing" (chunks exist but embeddings
+                    missing) or "Re-process" (everything is there but
+                    the user wants to rebuild). Always routes through
+                    the same run_all pipeline via the runner so the
+                    inline ProcessingJobView shows live progress. */}
+                {hasNeverBeenProcessed ? (
+                  <Button
+                    size="sm"
+                    onClick={handleProcess}
+                    disabled={reprocessing}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Sparkles
+                      className={
+                        "h-3.5 w-3.5 mr-1 " +
+                        (reprocessing ? "animate-spin" : "")
+                      }
+                    />
+                    {reprocessing ? "Starting…" : "Process Document"}
+                  </Button>
+                ) : isPartiallyProcessed ? (
+                  <Button
+                    size="sm"
+                    onClick={handleProcess}
+                    disabled={reprocessing}
+                    className="bg-amber-500 text-white hover:bg-amber-500/90"
+                    title={`${doc.embeddingsOai} of ${doc.chunks} chunks have embeddings — run the pipeline to finish.`}
+                  >
+                    <Wand2
+                      className={
+                        "h-3.5 w-3.5 mr-1 " +
+                        (reprocessing ? "animate-spin" : "")
+                      }
+                    />
+                    {reprocessing
+                      ? "Resuming…"
+                      : `Finish Processing (${doc.chunks - doc.embeddingsOai} left)`}
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleReprocess}
+                    disabled={reprocessing}
+                  >
+                    <RefreshCw
+                      className={
+                        "h-3.5 w-3.5 mr-1 " +
+                        (reprocessing ? "animate-spin" : "")
+                      }
+                    />
+                    {reprocessing ? "Re-processing…" : "Re-process"}
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
@@ -276,19 +352,6 @@ export function LibraryDocDetailSheet({
                 >
                   <Pencil className="h-3.5 w-3.5 mr-1" />
                   Rename
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleReprocess}
-                  disabled={reprocessing}
-                >
-                  <RefreshCw
-                    className={
-                      "h-3.5 w-3.5 mr-1 " + (reprocessing ? "animate-spin" : "")
-                    }
-                  />
-                  {reprocessing ? "Re-processing…" : "Re-process"}
                 </Button>
                 <div className="ml-auto flex gap-2">
                   <Button

@@ -40,10 +40,13 @@ import {
   Activity,
   Database,
   ExternalLink,
+  Eye,
   FileText,
   Layers,
   RefreshCw,
   Search,
+  Sparkles,
+  Wand2,
   Zap,
   AlertTriangle,
   Trash2,
@@ -52,6 +55,14 @@ import {
   MoreHorizontal,
   CheckCircle2
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { fileHandler } from "@/features/files";
 import { useProcessingRunner } from "@/features/rag/hooks/useProcessingRunner";
@@ -66,7 +77,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { postJson } from "@/lib/python-client";
+import { del, postJson } from "@/lib/python-client";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useLibrary, useLibrarySummary } from "@/features/rag/hooks/useLibrary";
 import type {
   DocStatus,
@@ -273,6 +285,44 @@ export function LibraryPage() {
   const openSheetForJob = (jobId: string) => {
     setFocusJobId(jobId);
     setSheetOpen(true);
+  };
+
+  /**
+   * Inline delete from the row "..." menu — keeps the user out of the
+   * detail sheet for the simple "purge this thing" case. Mode 'processing'
+   * drops chunks/embeddings but keeps the cld_file binary so a future
+   * Process click rebuilds; 'file' wipes both. Uses window.confirm for
+   * the safety prompt because the row dropdown doesn't have a dedicated
+   * confirm dialog wired in here.
+   */
+  const handleDeleteDoc = async (
+    doc: LibraryDocSummary,
+    mode: "processing" | "file",
+  ) => {
+    const proceed = await confirm({
+      title: mode === "file" ? `Delete "${doc.name}"?` : "Delete processing?",
+      description:
+        mode === "file"
+          ? "Removes the document, all chunks/embeddings, AND the source file from cloud storage. Cannot be undone."
+          : "Removes chunks and embeddings but keeps the source file. You can re-process to rebuild.",
+      variant: "destructive",
+      confirmLabel: mode === "file" ? "Delete file" : "Delete processing",
+    });
+    if (!proceed) return;
+    try {
+      if (mode === "file") {
+        await del<{ deleted_documents: number }>(
+          `/rag/library/${doc.id}/full`,
+        );
+        toast.success(`Deleted file "${doc.name}"`);
+      } else {
+        await del<{ deleted_documents: number }>(`/rag/library/${doc.id}`);
+        toast.success(`Deleted processing for "${doc.name}"`);
+      }
+      setRefreshKey((n) => n + 1);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
+    }
   };
 
   const handleRequestStageRun = async (
@@ -582,6 +632,26 @@ export function LibraryPage() {
                     setSearchDocId(d.id);
                     setSearchDocName(d.name);
                   }}
+                  onRunPipeline={() => {
+                    // Open the detail sheet so the user sees the live
+                    // ProcessingJobView in the Stages tab as the run
+                    // streams progress events.
+                    setSelectedDocId(d.id);
+                    void handleRequestStageRun("run_all", d.id, d.name);
+                  }}
+                  onPreview={() => {
+                    window.open(
+                      `/rag/library/${d.id}/preview`,
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                  }}
+                  onDeleteProcessing={() => {
+                    void handleDeleteDoc(d, "processing");
+                  }}
+                  onDeleteFile={() => {
+                    void handleDeleteDoc(d, "file");
+                  }}
                 />
               ))}
             </TableBody>
@@ -700,11 +770,19 @@ function DocRow({
   pulsed,
   onSelect,
   onSearch,
+  onRunPipeline,
+  onPreview,
+  onDeleteProcessing,
+  onDeleteFile,
 }: {
   doc: LibraryDocSummary;
   pulsed: boolean;
   onSelect: () => void;
   onSearch: () => void;
+  onRunPipeline: () => void;
+  onPreview: () => void;
+  onDeleteProcessing: () => void;
+  onDeleteFile: () => void;
 }) {
   const isInFlight =
     doc.status === "embedding" ||
@@ -800,6 +878,32 @@ function DocRow({
       </TableCell>
       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-end gap-1">
+          {/* Inline Process button — primary CTA when nothing's been
+              done yet, secondary when partial, hidden when complete (the
+              "..." menu still exposes Re-process). */}
+          {doc.chunks === 0 ? (
+            <Button
+              size="sm"
+              variant="default"
+              title="Run the full RAG pipeline on this document"
+              onClick={onRunPipeline}
+              className="h-7 px-2 text-[11px]"
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1" />
+              Process
+            </Button>
+          ) : doc.embeddingsOai < doc.chunks ? (
+            <Button
+              size="sm"
+              variant="default"
+              title={`Resume the pipeline — ${doc.chunks - doc.embeddingsOai} chunks still need embeddings`}
+              onClick={onRunPipeline}
+              className="h-7 px-2 text-[11px] bg-amber-500 hover:bg-amber-500/90 text-white"
+            >
+              <Wand2 className="h-3.5 w-3.5 mr-1" />
+              Finish
+            </Button>
+          ) : null}
           <Button
             size="sm"
             variant="ghost"
@@ -809,14 +913,76 @@ function DocRow({
           >
             <SearchAction className="h-4 w-4" />
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            title="Open detail panel"
-            onClick={onSelect}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                title="Actions"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DropdownMenuLabel className="text-[11px] uppercase tracking-wide">
+                Document
+              </DropdownMenuLabel>
+              <DropdownMenuItem onSelect={onSelect}>
+                <Eye className="h-3.5 w-3.5 mr-2" />
+                Open details
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onPreview}>
+                <ExternalLink className="h-3.5 w-3.5 mr-2" />
+                Preview
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={onSearch}
+                disabled={doc.chunks === 0}
+              >
+                <SearchAction className="h-3.5 w-3.5 mr-2" />
+                Search inside
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-[11px] uppercase tracking-wide">
+                Processing
+              </DropdownMenuLabel>
+              {doc.chunks === 0 ? (
+                <DropdownMenuItem onSelect={onRunPipeline}>
+                  <Sparkles className="h-3.5 w-3.5 mr-2 text-primary" />
+                  Process Document
+                </DropdownMenuItem>
+              ) : doc.embeddingsOai < doc.chunks ? (
+                <DropdownMenuItem onSelect={onRunPipeline}>
+                  <Wand2 className="h-3.5 w-3.5 mr-2 text-amber-500" />
+                  Finish processing ({doc.chunks - doc.embeddingsOai} left)
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onSelect={onRunPipeline}>
+                  <RefreshCw className="h-3.5 w-3.5 mr-2" />
+                  Re-process
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={onDeleteProcessing}
+                className="text-amber-700 dark:text-amber-400 focus:text-amber-800"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" />
+                Delete processing
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={onDeleteFile}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" />
+                Delete file
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </TableCell>
     </TableRow>
