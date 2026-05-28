@@ -82,12 +82,18 @@ export async function ragSearch(
 // Citation routing
 //
 // A hit's `source_kind` decides where the user lands when clicking it:
-//   - cld_file  → /files/f/<source_id>?tab=document&chunk=<chunk_id>[&page=]
-//   - note      → /notes/<source_id> (noteid is the row id)
-//   - code_file → /code/<source_id>  (legacy code workspace)
+//   - cld_file    → /files/f/<source_id>?tab=document&chunk=<chunk_id>[&page=]
+//   - note        → /notes/<source_id> (noteid is the row id)
+//   - code_file   → /code/<source_id>  (legacy code workspace)
+//   - library_doc → /rag/viewer/<source_id>?chunk=<chunk_id>
+//   - transcript  → /transcription/studio?session=<source_id>
+//   - scraped     → /scraper?url=<source_id>   (source_id is the page URL)
 //
 // The `metadata` dict on a hit may carry `page_number` for pdf-extracted
 // chunks; the helper looks it up and adds &page= when present.
+//
+// Anything else falls through to the standalone /rag/viewer (works whenever
+// the chunk's underlying processed_document can be derived from source_id).
 // ---------------------------------------------------------------------------
 
 export function citationHrefFor(hit: RagSearchHit): string {
@@ -109,10 +115,20 @@ export function citationHrefFor(hit: RagSearchHit): string {
       return `/notes/${encodeURIComponent(hit.source_id)}`;
     case "code_file":
       return `/code/${encodeURIComponent(hit.source_id)}`;
+    case "library_doc":
+      return `/rag/viewer/${encodeURIComponent(
+        hit.source_id,
+      )}?chunk=${encodeURIComponent(hit.chunk_id)}${pageQs}`;
+    case "transcript":
+      return `/transcription/studio?session=${encodeURIComponent(
+        hit.source_id,
+      )}`;
+    case "scraped":
+      // Scraped pages don't have a row id today — source_id is the URL
+      // the scraper feature already keys results by. Opening the
+      // scraper window with ?url=… restores the page in its viewer.
+      return `/scraper?url=${encodeURIComponent(hit.source_id)}`;
     default:
-      // Unknown source kinds fall through to the standalone document
-      // viewer — works whenever the chunk's underlying processed_document
-      // can be derived server-side from its source_id.
       return `/rag/viewer/${encodeURIComponent(
         hit.source_id,
       )}?chunk=${encodeURIComponent(hit.chunk_id)}${pageQs}`;

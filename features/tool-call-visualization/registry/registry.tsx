@@ -36,6 +36,7 @@ import {
   deepResearchOverlayTabs,
 } from "../renderers/deep-research";
 import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
+import { RagSearchInline } from "../renderers/rag-search";
 import BraveSearchDisplay from "@/features/workflows/results/registered-components/BraveSearchDisplay";
 
 import {
@@ -422,6 +423,54 @@ export const toolRendererRegistry: ToolRegistry = {
     InlineComponent: DeepResearchInline,
     OverlayTabs: deepResearchOverlayTabs,
     keepExpandedOnStream: true,
+  },
+
+  rag_search: {
+    toolName: "rag_search",
+    displayName: "RAG Search",
+    phaseLabels: {
+      running: "Searching indexed content",
+      complete: "Searched indexed content",
+      errorPrefix: "RAG search failed",
+    },
+    resultsLabel: "RAG Hits",
+    InlineComponent: RagSearchInline,
+    OverlayComponent: RagSearchInline,
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const query = getArg<string>(entry, "query");
+      return typeof query === "string" && query ? query : null;
+    },
+    getHeaderExtras: (entry) => {
+      const result = resultAsObject(entry);
+      if (!result) return null;
+      const hits = result.hits as unknown[] | undefined;
+      const totalCandidates =
+        typeof result.total_candidates === "number"
+          ? (result.total_candidates as number)
+          : null;
+      const latency =
+        typeof result.latency_ms === "number"
+          ? (result.latency_ms as number)
+          : null;
+      const reranker =
+        typeof result.reranker_model === "string"
+          ? (result.reranker_model as string)
+          : null;
+      const nHits = Array.isArray(hits) ? hits.length : 0;
+      return (
+        <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
+          <span>
+            {nHits} {nHits === 1 ? "hit" : "hits"}
+          </span>
+          {totalCandidates != null && (
+            <span>{totalCandidates} candidates</span>
+          )}
+          {latency != null && <span>{latency} ms</span>}
+          {reranker && <span className="ml-auto">{reranker}</span>}
+        </div>
+      );
+    },
   },
 };
 
