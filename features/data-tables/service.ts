@@ -45,10 +45,12 @@ export type UpsertRowArgs = {
 export async function upsertRow(
   args: UpsertRowArgs,
 ): Promise<ServiceResult<DatasetRow>> {
+  // p_row_id is optional in the SQL signature (DEFAULT NULL); omit it to
+  // get the insert path, pass it to get the update path.
   const { data, error } = await supabase.rpc("udt_upsert_row", {
     p_table_id: args.tableId,
-    p_row_id: args.rowId ?? null,
-    p_data: args.data,
+    ...(args.rowId ? { p_row_id: args.rowId } : {}),
+    p_data: args.data as never,
   });
   if (error) return { success: false, error: error.message };
   return { success: true, data: data as unknown as DatasetRow };

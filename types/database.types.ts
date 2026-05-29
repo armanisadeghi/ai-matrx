@@ -27800,7 +27800,7 @@ export type Database = {
         Returns: Json
       }
       udt_upsert_row: {
-        Args: { p_data: Json; p_row_id: string; p_table_id: string }
+        Args: { p_data?: Json; p_row_id?: string; p_table_id: string }
         Returns: Json
       }
       udt_validate_row: {

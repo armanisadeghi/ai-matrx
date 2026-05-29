@@ -246,6 +246,12 @@ Multi-phase "spreadsheet UX" initiative on branch `claude/spreadsheet-ux-solutio
 
 ## Change log
 
+- `2026-05-29` — claude: P2-prep wave 2 (fixes from independent service-layer review).
+  Migration `udt_v2_upsert_row_default_null`: `udt_upsert_row.p_row_id` and `p_data` now
+  have `DEFAULT NULL` in the SQL signature so the generated TS types correctly mark
+  `p_row_id` as optional (PostgREST emits `p_row_id?: string`). Service layer no longer
+  needs the `?? null` workaround. Also: `useRowVersions` hook now catches pre-response
+  network throws so it cannot get stuck in `loading: true` (`.then(ok, err)` overload).
 - `2026-05-29` — claude: P2-prep wave 1. Typed service layer (`service.ts`) wrapping the 4 new
   RPCs; canonical domain types (`types.ts`); read-only `useRowVersions` hook for history UI.
   Also: hardening v2 migration applied (`udt_v2_backbone_hardening_v2`) addressing 4 issues

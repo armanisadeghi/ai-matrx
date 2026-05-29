@@ -398,10 +398,13 @@ CREATE TRIGGER udt_dataset_rows_validate
 -- ---------------------------------------------------------------------------
 
 -- Insert if p_row_id is NULL, else update by id (scoped to table).
+-- p_row_id has DEFAULT NULL so the generated TS types correctly mark it
+-- optional. p_data is required at runtime even though defaulted (defaults
+-- only exist so PostgREST emits the right Args shape).
 CREATE OR REPLACE FUNCTION udt_upsert_row(
   p_table_id UUID,
-  p_row_id   UUID,
-  p_data     JSONB
+  p_row_id   UUID DEFAULT NULL,
+  p_data     JSONB DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -415,6 +418,9 @@ DECLARE
 BEGIN
   IF v_caller IS NULL THEN
     RAISE EXCEPTION 'udt_upsert_row: not authenticated';
+  END IF;
+  IF p_data IS NULL THEN
+    RAISE EXCEPTION 'udt_upsert_row: p_data is required';
   END IF;
 
   SELECT * INTO v_dataset FROM udt_datasets WHERE id = p_table_id;

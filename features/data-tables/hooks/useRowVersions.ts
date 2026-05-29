@@ -61,7 +61,21 @@ export function useRowVersions(
           loading: false,
           error: null,
         });
-      });
+      })
+      // Supabase's PostgrestBuilder resolves with {data, error}, but a
+      // pre-response network throw bypasses .then entirely. Guard so the
+      // hook can never get stuck in `loading: true`.
+      .then(
+        () => {},
+        (err: unknown) => {
+          if (cancelled) return;
+          setState({
+            versions: [],
+            loading: false,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        },
+      );
 
     return () => {
       cancelled = true;

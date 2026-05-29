@@ -83,9 +83,17 @@ export type BulkOp = BulkInsertOp | BulkUpdateOp | BulkCellOp | BulkDeleteOp;
  * envelope (soft failure — the rest of the batch continues). Inserts that
  * fail RAISE and abort the entire batch.
  */
-export type BulkOpResult =
-  | DatasetRow
-  | { error: "row_not_found"; row_id: string };
+export type BulkOpError = { error: "row_not_found"; row_id: string };
+export type BulkOpResult = DatasetRow | BulkOpError;
+
+/**
+ * Narrow a bulk-write result slot to the error variant.
+ * Successful results carry the full DatasetRow shape (no discriminator key
+ * on the success side, so consumers narrow via this guard).
+ */
+export function isBulkOpError(r: BulkOpResult): r is BulkOpError {
+  return typeof r === "object" && r !== null && "error" in r;
+}
 
 export type BulkWriteResponse = {
   table_id: string;
