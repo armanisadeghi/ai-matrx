@@ -253,6 +253,7 @@ CREATE OR REPLACE FUNCTION udt_validate_row(
 RETURNS JSONB
 LANGUAGE plpgsql
 STABLE
+SET search_path = public
 AS $$
 DECLARE
   v_field      RECORD;
@@ -266,6 +267,14 @@ BEGIN
   SELECT validation_mode INTO v_mode FROM udt_datasets WHERE id = p_table_id;
   IF v_mode IS NULL THEN
     RAISE EXCEPTION 'udt_validate_row: table % not found', p_table_id;
+  END IF;
+
+  -- permissive (the default for every pre-existing dataset) enforces NOTHING:
+  -- a pure backward-compat passthrough so existing insert/update flows keep
+  -- their exact current behavior and this migration changes zero semantics for
+  -- live data. Enforcement is opt-in via validation_mode='strict'.
+  IF v_mode <> 'strict' THEN
+    RETURN p_data;
   END IF;
 
   FOR v_field IN
@@ -366,6 +375,7 @@ $$;
 CREATE OR REPLACE FUNCTION udt_dataset_rows_validate_trigger()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SET search_path = public
 AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
@@ -710,11 +720,34 @@ BEGIN
 END$$;
 
 -- ---------------------------------------------------------------------------
--- 9. Grants
+-- 9. Grants — pull every new function out of the anonymous API surface and
+--    grant only to authenticated + service_role. Strictly safer than the
+--    pre-existing udt RPC convention (which left functions anon-executable).
+--    The user-facing RPCs additionally guard with auth.uid() internally.
 -- ---------------------------------------------------------------------------
-GRANT EXECUTE ON FUNCTION udt_upsert_row(uuid, uuid, jsonb) TO authenticated;
-GRANT EXECUTE ON FUNCTION udt_upsert_cell(uuid, uuid, text, jsonb) TO authenticated;
-GRANT EXECUTE ON FUNCTION udt_bulk_write(uuid, jsonb) TO authenticated;
-GRANT EXECUTE ON FUNCTION udt_change_field_type(uuid, uuid, field_data_type, text) TO authenticated;
+DO $$
+DECLARE
+  fn TEXT;
+  sigs TEXT[] := ARRAY[
+    'public.udt_log_row_version()',
+    'public.udt_upsert_row(uuid, uuid, jsonb)',
+    'public.udt_upsert_cell(uuid, uuid, text, jsonb)',
+    'public.udt_bulk_write(uuid, jsonb)',
+    'public.udt_change_field_type(uuid, uuid, public.field_data_type, text)',
+    'public.udt_validate_row(uuid, jsonb, jsonb)'
+  ];
+BEGIN
+  FOREACH fn IN ARRAY sigs LOOP
+    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC', fn);
+    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM anon', fn);
+  END LOOP;
+END$$;
+
+GRANT EXECUTE ON FUNCTION udt_upsert_row(uuid, uuid, jsonb) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION udt_upsert_cell(uuid, uuid, text, jsonb) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION udt_bulk_write(uuid, jsonb) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION udt_change_field_type(uuid, uuid, field_data_type, text) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION udt_validate_row(uuid, jsonb, jsonb) TO authenticated, service_role;
+-- udt_log_row_version is an internal trigger function: no role grant.
 
 COMMIT;
