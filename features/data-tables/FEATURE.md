@@ -238,8 +238,9 @@ Multi-phase "spreadsheet UX" initiative on branch `claude/spreadsheet-ux-solutio
 - **P1 (done, live):** data-layer backbone — this migration (`migrations/udt_v2_backbone.sql`,
   applied as `udt_v2_backbone` + `udt_v2_backbone_hardening`). Workbooks table, version history,
   validation, agent write RPCs, type-change RPC, realtime, sharing registry, `workbook_id` hook.
-- **P2 (next):** consume P1 from the frontend — agent write path through the new RPCs; version
-  history UI; strict-mode toggle; version-table retention policy.
+- **P2 (next):** consume P1 from the frontend — migrate call sites to the typed service layer,
+  surface version history in the UI, add a strict-mode toggle, schedule a version-table
+  retention policy. See "P2 call-site migration plan" below.
 - **P3:** smart importer — route uploaded files to typed dataset vs workbook; uses
   `utils/user-table-utls/type-inference.ts`.
 - **P4:** workbook surface — full-collab from day one; Univer snapshot storage; `/workbooks/{id}`
@@ -247,6 +248,64 @@ Multi-phase "spreadsheet UX" initiative on branch `claude/spreadsheet-ux-solutio
 - **P5:** consolidate scattered code under `features/data-tables/`.
 
 ---
+
+## P2 call-site migration plan
+
+Concrete, ordered migration of the 21 active RPC call sites (audited 2026-05-29) onto the new
+typed service layer (`features/data-tables/service.ts`). Order is "safest → riskiest" — each
+wave should ship and bake before the next.
+
+**Wave A — read paths (no behavior change, only types).** These don't go through the new RPCs
+at all; they just need typed wrappers around the existing reads. Lowest possible risk.
+- `components/user-generated-table-data/UserTableViewer.tsx:278,312,362,725` and the 5 other
+  `get_user_tables` / `get_user_table_complete` / `get_user_table_data_paginated_v2` sites →
+  add `getUserTables()`, `getUserTableComplete(tableId)`, `getUserTableData({ tableId, ... })`
+  to `service.ts` (thin typed wrappers; the body is the same `.rpc()` call). Migrate the 18
+  read call sites one at a time. Verify each: page renders unchanged, no console errors.
+
+**Wave B — single-row writes through `udt_upsert_row`.** These already work today; the only
+behavior change is that mutations now go through validation + version-logging triggers.
+- `components/user-generated-table-data/EditRowModal.tsx:132` (`update_data_row_in_user_table`)
+  → `upsertRow({ tableId, rowId, data })`. Verify: edits save, page reloads, edit appears in
+  `udt_dataset_row_versions` table. The old RPC stays available for one release as a fallback.
+- `components/user-generated-table-data/UserTableViewer.tsx:250` (inline-edit save) → same.
+- `components/user-generated-table-data/UserTableViewer.tsx:1030` (text cleanup update) → same.
+
+**Wave C — surgical cell writes through `udt_upsert_cell`.** Pure win — avoids serializing the
+full row payload. No existing call site does this today (the old RPCs are row-shaped); this is
+where the new shape opens performance / network savings.
+- Future inline-cell-edit refactor of `UserTableViewer` (currently sends whole row even for a
+  one-field change). Migrate when the cell-edit UX work happens.
+- Agent-tool writes (new code, no existing call site).
+
+**Wave D — bulk import through `udt_bulk_write`.** The big-bang performance win.
+- `components/user-generated-table-data/ImportTableModal.tsx` — currently uses N round-trips
+  (per Agent 2: no `append_rows_to_user_table` consumer, suggesting the import does individual
+  `add_data_row_to_user_table` calls or `.from().insert()`). Migrate to one
+  `bulkWrite({ tableId, operations: [{op:'insert', data}, ...] })` call. Verify: 1k+-row
+  imports succeed, complete in one transaction, fire one version-log batch.
+
+**Wave E — column type changes through `udt_change_field_type`.** New capability — nothing to
+migrate, but the column-editor UI should expose the "change type" action and call this RPC
+(strategy picker: cast-or-null vs cast-or-skip; show `rows_skipped`/`rows_total` after).
+- `components/user-generated-table-data/TableConfigModal.tsx` → add type-change action per field.
+
+**Wave F — surface version history in the UI.** Drop `VersionHistoryViewer` (already built)
+into:
+- `UserTableViewer` row context menu → "Show history" → opens a Sheet containing the viewer.
+- Future agent-tool inspector surfaces.
+
+**Wave G — strict-mode toggle.** Add a "Strict validation" switch in `TableSettingsModal` that
+writes `validation_mode` on `udt_datasets`. Permissive remains the default for existing tables;
+new tables created via the import flow should default to `strict` (the importer knows the
+column types because it just inferred them).
+
+**Wave H — retention policy for `udt_dataset_row_versions`.** Pick one of:
+- A weekly cron (`pg_cron`) that keeps the last N versions per row + everything from the last K
+  days. Simplest.
+- An archival table (versions older than K days → `udt_dataset_row_versions_archive`).
+- A `keep_versions` setting per dataset.
+Decide before agent-heavy workloads land.
 
 ## Change log
 
