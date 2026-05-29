@@ -50,6 +50,10 @@ become 5 linked datasets under one workbook.
   `ExportTableModal.tsx`, `TableCards.tsx`, `TableListItem.tsx`
 - `features/udt-picklist/` — picklist (dropdown) management: `PicklistLanding.tsx`,
   `PicklistManagerV1/V2/V3.tsx`, `usePicklists.ts`
+- `features/data-tables/components/VersionHistoryViewer.tsx` — read-only row audit log;
+  consumes `useRowVersions`. Drop into any sheet/dialog/inline panel that wants to show
+  a single row's edit history. Renders insert/update/delete with key-level diffs, honours
+  `changed_by = NULL` as "System".
 
 **Services / business logic**
 - `utils/user-tables-rpc.ts` — RPC response unwrapping (`unwrapGetUserTableComplete`,
@@ -246,6 +250,10 @@ Multi-phase "spreadsheet UX" initiative on branch `claude/spreadsheet-ux-solutio
 
 ## Change log
 
+- `2026-05-29` — claude: P2-prep wave 3. Added `VersionHistoryViewer` component
+  (`features/data-tables/components/`) — self-contained row-history reader on top of
+  `useRowVersions`. Renders insert/update/delete + per-key diffs, treats `changed_by=NULL`
+  as "System" (never falls back to row owner). Drop-in for any surface that wants audit UI.
 - `2026-05-29` — claude: P2-prep wave 2 (fixes from independent service-layer review).
   Migration `udt_v2_upsert_row_default_null`: `udt_upsert_row.p_row_id` and `p_data` now
   have `DEFAULT NULL` in the SQL signature so the generated TS types correctly mark
