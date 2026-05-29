@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS udt_dataset_row_versions (
   data        JSONB,
   prior_data  JSONB,
   change_kind row_change_kind NOT NULL,
-  changed_by  UUID NOT NULL,
+  changed_by  UUID,                              -- NULL on system writes (no JWT user)
   changed_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -194,6 +194,9 @@ CREATE POLICY udt_row_versions_select ON udt_dataset_row_versions FOR SELECT
 -- ---------------------------------------------------------------------------
 -- 4. Trigger: write row version on every change
 -- ---------------------------------------------------------------------------
+-- changed_by is intentionally nullable: when there is no JWT user (service_role
+-- writes, cron, admin tools), we record NULL rather than falsely attributing
+-- the change to the row's owner.
 CREATE OR REPLACE FUNCTION udt_log_row_version()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -201,10 +204,8 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_actor UUID;
+  v_actor UUID := auth.uid();  -- NULL on system writes; do NOT fall back to row owner
 BEGIN
-  v_actor := COALESCE(auth.uid(), NEW.user_id, OLD.user_id);
-
   IF TG_OP = 'INSERT' THEN
     INSERT INTO udt_dataset_row_versions(row_id, table_id, data, prior_data, change_kind, changed_by)
     VALUES (NEW.id, NEW.table_id, NEW.data, NULL, 'insert', v_actor);
@@ -252,7 +253,7 @@ CREATE OR REPLACE FUNCTION udt_validate_row(
 )
 RETURNS JSONB
 LANGUAGE plpgsql
-STABLE
+VOLATILE
 SET search_path = public
 AS $$
 DECLARE
@@ -552,6 +553,13 @@ BEGIN
         COALESCE(v_result, jsonb_build_object('error', 'row_not_found', 'row_id', v_row_id))
       );
     ELSIF v_op_kind = 'cell' THEN
+      -- Mirror udt_upsert_cell: reject undeclared fields so bulk callers
+      -- cannot pollute rows with keys that aren't columns of this dataset.
+      IF NOT EXISTS (SELECT 1 FROM udt_dataset_fields
+                     WHERE table_id = p_table_id AND field_name = v_op ->> 'field_name') THEN
+        RAISE EXCEPTION 'udt_bulk_write: cell op references undeclared field % on table %',
+          v_op ->> 'field_name', p_table_id;
+      END IF;
       UPDATE udt_dataset_rows
          SET data = jsonb_set(COALESCE(data, '{}'::jsonb), ARRAY[v_op ->> 'field_name'], v_op -> 'value', true),
              updated_at = now()
@@ -599,6 +607,7 @@ DECLARE
   v_dataset udt_datasets%ROWTYPE;
   v_field   udt_dataset_fields%ROWTYPE;
   v_changed INTEGER := 0;
+  v_total   INTEGER := 0;
 BEGIN
   IF v_caller IS NULL THEN
     RAISE EXCEPTION 'udt_change_field_type: not authenticated';
@@ -670,20 +679,27 @@ BEGIN
                     true
                   ),
            updated_at = now()
+     -- Skip rows that don't have this field at all. Absent == null semantically;
+     -- nothing to cast, no audit entry to write, no realtime broadcast to emit.
      WHERE r.table_id = p_table_id
+       AND r.data ? v_field.field_name
      RETURNING 1
   )
   SELECT COUNT(*) INTO v_changed FROM updated;
+
+  SELECT COUNT(*) INTO v_total FROM udt_dataset_rows WHERE table_id = p_table_id;
 
   UPDATE udt_dataset_fields
      SET data_type = p_new_type, updated_at = now()
    WHERE id = p_field_id;
 
   RETURN jsonb_build_object(
-    'field_id', p_field_id,
-    'new_type', p_new_type,
-    'strategy', p_strategy,
-    'rows_rewritten', v_changed
+    'field_id',       p_field_id,
+    'new_type',       p_new_type,
+    'strategy',       p_strategy,
+    'rows_rewritten', v_changed,
+    'rows_skipped',   v_total - v_changed,
+    'rows_total',     v_total
   );
 END;
 $$;

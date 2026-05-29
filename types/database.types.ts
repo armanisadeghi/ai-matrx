@@ -19218,7 +19218,7 @@ export type Database = {
         Row: {
           change_kind: Database["public"]["Enums"]["row_change_kind"]
           changed_at: string
-          changed_by: string
+          changed_by: string | null
           data: Json | null
           id: number
           prior_data: Json | null
@@ -19228,7 +19228,7 @@ export type Database = {
         Insert: {
           change_kind: Database["public"]["Enums"]["row_change_kind"]
           changed_at?: string
-          changed_by: string
+          changed_by?: string | null
           data?: Json | null
           id?: number
           prior_data?: Json | null
@@ -19238,7 +19238,7 @@ export type Database = {
         Update: {
           change_kind?: Database["public"]["Enums"]["row_change_kind"]
           changed_at?: string
-          changed_by?: string
+          changed_by?: string | null
           data?: Json | null
           id?: number
           prior_data?: Json | null

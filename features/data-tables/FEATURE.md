@@ -206,6 +206,27 @@ the `shareable_resource_registry` (both `udt_datasets` and `udt_workbooks` are r
 
 ---
 
+## Known tech debt (audited 2026-05-29)
+
+**Dead RPCs — zero call sites in the repo.** Safe to drop after a final external-consumer audit
+(matrx-extend, aidream backend) — surfaced here so the user can decide:
+- `append_rows_to_user_table` — superseded by `udt_bulk_write` with `op:'insert'`
+- `batch_update_rows_in_user_table` — superseded by `udt_bulk_write` with `op:'update'`
+- `remove_column_from_user_table` — no live UI consumer; column delete goes through the
+  table-config RPC
+- `create_new_user_table` — duplicate of `_dynamic` variant (active)
+- `create_new_user_table_wrapper` — duplicate of `_dynamic` variant (active)
+- `create_user_table_with_fields` — duplicate of `_dynamic` variant (active)
+
+**Untyped RPC params at 21 call sites** across `components/user-generated-table-data/**`,
+`app/(core)/data/**`, and `utils/user-table-utls/**`. P2 migrates these to typed service helpers
+(start with the new `features/data-tables/service.ts`).
+
+**Code scattered across 3 directories** instead of one. P5 consolidates under
+`features/data-tables/`.
+
+---
+
 ## Current work / migration state
 
 Multi-phase "spreadsheet UX" initiative on branch `claude/spreadsheet-ux-solutions-fqRqP`.
@@ -225,6 +246,15 @@ Multi-phase "spreadsheet UX" initiative on branch `claude/spreadsheet-ux-solutio
 
 ## Change log
 
+- `2026-05-29` — claude: P2-prep wave 1. Typed service layer (`service.ts`) wrapping the 4 new
+  RPCs; canonical domain types (`types.ts`); read-only `useRowVersions` hook for history UI.
+  Also: hardening v2 migration applied (`udt_v2_backbone_hardening_v2`) addressing 4 issues
+  flagged by independent review — `udt_validate_row` marked VOLATILE (was STABLE — memoization
+  risk on bulk paths); `udt_change_field_type` now skips rows missing the target field (no
+  spurious UPDATEs / realtime fanout) and returns `rows_skipped`/`rows_total`; `udt_bulk_write`
+  `cell` op now rejects undeclared fields (matches `udt_upsert_cell`); `udt_log_row_version`
+  stores NULL `changed_by` for system writes instead of falsely attributing to row owner
+  (`udt_dataset_row_versions.changed_by` made nullable).
 - `2026-05-29` — claude: P1 backbone applied live (`udt_v2_backbone` + hardening): `udt_workbooks`,
   `udt_dataset_row_versions`, `validation_mode`, validation + version triggers, `udt_upsert_row` /
   `udt_upsert_cell` / `udt_bulk_write` / `udt_change_field_type` RPCs, realtime publication,

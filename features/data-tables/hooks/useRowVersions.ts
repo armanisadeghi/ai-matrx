@@ -1,0 +1,75 @@
+/**
+ * useRowVersions — read-only history for a single dataset row.
+ *
+ * Queries the `udt_dataset_row_versions` append-only log via Supabase. RLS
+ * scopes results to versions of rows in datasets the current user can view.
+ *
+ * Returns versions newest-first. Each version has the full `data` and
+ * `prior_data` snapshots, so the caller can diff or replay without further
+ * fetches. `changed_by` is NULL for system writes (service_role / cron / admin
+ * tools) — render that case explicitly rather than falsely attributing it.
+ */
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { supabase } from "@/utils/supabase/client";
+
+import type { RowVersion } from "../types";
+
+type UseRowVersionsState = {
+  versions: RowVersion[];
+  loading: boolean;
+  error: string | null;
+};
+
+export function useRowVersions(
+  rowId: string | null | undefined,
+  options?: { limit?: number },
+): UseRowVersionsState & { refresh: () => void } {
+  const limit = options?.limit ?? 50;
+  const [state, setState] = useState<UseRowVersionsState>({
+    versions: [],
+    loading: false,
+    error: null,
+  });
+  const [reloadToken, setReloadToken] = useState(0);
+
+  useEffect(() => {
+    if (!rowId) {
+      setState({ versions: [], loading: false, error: null });
+      return;
+    }
+
+    let cancelled = false;
+    setState((s) => ({ ...s, loading: true, error: null }));
+
+    supabase
+      .from("udt_dataset_row_versions")
+      .select("*")
+      .eq("row_id", rowId)
+      .order("changed_at", { ascending: false })
+      .limit(limit)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          setState({ versions: [], loading: false, error: error.message });
+          return;
+        }
+        setState({
+          versions: (data ?? []) as RowVersion[],
+          loading: false,
+          error: null,
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rowId, limit, reloadToken]);
+
+  return {
+    ...state,
+    refresh: () => setReloadToken((t) => t + 1),
+  };
+}
