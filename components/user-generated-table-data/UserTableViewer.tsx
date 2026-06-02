@@ -35,8 +35,19 @@ import {
   Link,
   Zap,
   Eye,
-  AlertCircle
+  AlertCircle,
+  History,
 } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
+import { upsertCell } from "@/features/data-tables/service";
+import { isServiceFailure } from "@/features/data-tables/types";
 import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
 import { useRouter } from "next/navigation";
 import {
@@ -128,6 +139,10 @@ const UserTableViewer = ({
   const [selectedRowData, setSelectedRowData] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Row history sheet state. historyRowId is the udt_dataset_rows.id whose
+  // version log is currently visible; null = sheet closed.
+  const [historyRowId, setHistoryRowId] = useState<string | null>(null);
 
   // Additional modals
   const [showAddColumnModal, setShowAddColumnModal] = useState(false);
@@ -243,20 +258,16 @@ const UserTableViewer = ({
         return;
       }
 
-      // Update the row data
-      const updatedData = { [fieldName]: cleanedText };
-
-      const { data, error } = await supabase.rpc(
-        "update_data_row_in_user_table",
-        {
-          p_row_id: rowId,
-          p_data: updatedData,
-        },
-      );
-
-      if (error) throw error;
-      assertRpcSuccessEnvelope(data);
-      if (!data.success) throw new Error(data.error || "Failed to update row");
+      // Surgical single-field write via udt_upsert_cell — uses jsonb_set so
+      // it cannot accidentally drop other fields, fires validation + version
+      // triggers, and is permission-gated by owner-or-editor.
+      const result = await upsertCell({
+        tableId,
+        rowId,
+        fieldName,
+        value: cleanedText,
+      });
+      if (isServiceFailure(result)) throw new Error(result.error);
 
       // Clear sorted data cache when data is modified
       setAllSortedData(null);
@@ -719,19 +730,14 @@ const UserTableViewer = ({
     try {
       setSavingExpandedText(true);
 
-      const updatedData = { [expandedFieldKey]: expandedText };
-
-      const { data, error } = await supabase.rpc(
-        "update_data_row_in_user_table",
-        {
-          p_row_id: expandedRowId,
-          p_data: updatedData,
-        },
-      );
-
-      if (error) throw error;
-      assertRpcSuccessEnvelope(data);
-      if (!data.success) throw new Error(data.error || "Failed to update row");
+      // Surgical single-field write via udt_upsert_cell.
+      const result = await upsertCell({
+        tableId,
+        rowId: expandedRowId,
+        fieldName: expandedFieldKey,
+        value: expandedText,
+      });
+      if (isServiceFailure(result)) throw new Error(result.error);
 
       // Clear sorted data cache when data is modified
       setAllSortedData(null);
@@ -1017,7 +1023,13 @@ const UserTableViewer = ({
         return;
       }
 
-      // Process updates in batches to avoid overwhelming the database
+      // Process updates in batches to avoid overwhelming the database.
+      // NOTE: this site still uses the legacy update_data_row_in_user_table
+      // RPC because each `update.data` contains MULTIPLE changed fields per
+      // row, and `udt_upsert_row` would replace the whole row payload (losing
+      // unchanged fields). A future enhancement to add `op:'merge'` to
+      // udt_bulk_write — doing `data = data || v_op->'data'` — would let this
+      // become a single bulkWrite call. Tracked in FEATURE.md tech debt.
       const batchSize = 10;
       let processedCount = 0;
 
@@ -1555,6 +1567,17 @@ const UserTableViewer = ({
                               size="icon"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                setHistoryRowId(row.id);
+                              }}
+                              title="View row history"
+                            >
+                              <History className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 handleDeleteRow(row.id);
                               }}
                               title="Delete Row"
@@ -1744,6 +1767,26 @@ const UserTableViewer = ({
         rowData={referenceRowData}
         fields={fields}
       />
+
+      {/* Row version history (P1 audit log surface) */}
+      <Sheet
+        open={historyRowId !== null}
+        onOpenChange={(open) => {
+          if (!open) setHistoryRowId(null);
+        }}
+      >
+        <SheetContent className="overflow-y-auto sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Row history</SheetTitle>
+            <SheetDescription>
+              Every change to this row, newest first.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4">
+            <VersionHistoryViewer rowId={historyRowId} />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

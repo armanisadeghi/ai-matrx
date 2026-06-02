@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/select";
 import {
   createTable,
-  addRow,
   VALID_DATA_TYPES,
   normalizeDataType,
 } from "@/utils/user-table-utls/table-utils";
@@ -43,6 +42,12 @@ import {
   analyzeData,
   type DetectedField,
 } from "@/utils/user-table-utls/type-inference";
+import { bulkWrite } from "@/features/data-tables/service";
+import {
+  isBulkOpError,
+  isServiceFailure,
+  type BulkInsertOp,
+} from "@/features/data-tables/types";
 
 interface ImportTableModalProps {
   isOpen: boolean;
@@ -298,14 +303,14 @@ export default function ImportTableModal({
 
       const tableId = createResult.tableId;
 
-      // Insert all rows (use the full data, not just preview)
-      const dataToInsert = fullData;
-
-      for (const row of dataToInsert) {
-        // Map the row data to field names (only included fields)
-        const rowData: Record<string, any> = {};
+      // Build one bulk-write payload from every parsed row.
+      // udt_bulk_write inserts the whole batch in a single transaction — fast
+      // (one round-trip instead of N) and atomic (any failure rolls everything
+      // back). The pre-existing loop here did N round-trips and silently
+      // swallowed per-row errors; the atomicity upgrade is intentional.
+      const operations: BulkInsertOp[] = fullData.map((row) => {
+        const rowData: Record<string, unknown> = {};
         includedFields.forEach((field) => {
-          // Use sanitizeFieldName consistently to match how field_name was created
           const originalKey = Object.keys(row).find(
             (key) => sanitizeFieldName(key) === field.field_name,
           );
@@ -313,15 +318,23 @@ export default function ImportTableModal({
             rowData[field.field_name] = row[originalKey];
           }
         });
+        return { op: "insert", data: rowData };
+      });
 
-        const rowResult = await addRow(supabase, {
-          tableId,
-          data: rowData,
-        });
+      const bulkResult = await bulkWrite({ tableId, operations });
+      if (isServiceFailure(bulkResult)) {
+        throw new Error(`Failed to import rows: ${bulkResult.error}`);
+      }
 
-        if (!rowResult.success) {
-          console.warn(`Failed to add row:`, rowResult.error);
-        }
+      // Sanity-check the per-op envelope. With insert ops this is belt-and-
+      // suspenders — insert failures RAISE rather than soft-fail — but we
+      // check so a future op-mix change cannot silently lose rows.
+      const failedRows = bulkResult.data.results.filter(isBulkOpError);
+      if (failedRows.length > 0) {
+        console.warn(
+          `Import: ${failedRows.length} of ${operations.length} rows reported errors`,
+          failedRows,
+        );
       }
 
       // Reset form

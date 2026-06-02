@@ -19214,6 +19214,39 @@ export type Database = {
           },
         ]
       }
+      udt_dataset_row_versions: {
+        Row: {
+          change_kind: Database["public"]["Enums"]["row_change_kind"]
+          changed_at: string
+          changed_by: string | null
+          data: Json | null
+          id: number
+          prior_data: Json | null
+          row_id: string
+          table_id: string
+        }
+        Insert: {
+          change_kind: Database["public"]["Enums"]["row_change_kind"]
+          changed_at?: string
+          changed_by?: string | null
+          data?: Json | null
+          id?: number
+          prior_data?: Json | null
+          row_id: string
+          table_id: string
+        }
+        Update: {
+          change_kind?: Database["public"]["Enums"]["row_change_kind"]
+          changed_at?: string
+          changed_by?: string | null
+          data?: Json | null
+          id?: number
+          prior_data?: Json | null
+          row_id?: string
+          table_id?: string
+        }
+        Relationships: []
+      }
       udt_dataset_rows: {
         Row: {
           created_at: string
@@ -19261,11 +19294,14 @@ export type Database = {
           organization_id: string | null
           project_id: string | null
           row_ordering_config: Json | null
+          sheet_index: number | null
           table_name: string
           task_id: string | null
           updated_at: string
           user_id: string
+          validation_mode: string
           version: number
+          workbook_id: string | null
         }
         Insert: {
           created_at?: string
@@ -19275,11 +19311,14 @@ export type Database = {
           organization_id?: string | null
           project_id?: string | null
           row_ordering_config?: Json | null
+          sheet_index?: number | null
           table_name: string
           task_id?: string | null
           updated_at?: string
           user_id: string
+          validation_mode?: string
           version?: number
+          workbook_id?: string | null
         }
         Update: {
           created_at?: string
@@ -19289,11 +19328,14 @@ export type Database = {
           organization_id?: string | null
           project_id?: string | null
           row_ordering_config?: Json | null
+          sheet_index?: number | null
           table_name?: string
           task_id?: string | null
           updated_at?: string
           user_id?: string
+          validation_mode?: string
           version?: number
+          workbook_id?: string | null
         }
         Relationships: [
           {
@@ -19315,6 +19357,13 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "ctx_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "udt_datasets_workbook_id_fkey"
+            columns: ["workbook_id"]
+            isOneToOne: false
+            referencedRelation: "udt_workbooks"
             referencedColumns: ["id"]
           },
         ]
@@ -19402,6 +19451,54 @@ export type Database = {
           public_read?: boolean | null
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      udt_workbooks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          metadata: Json | null
+          organization_id: string | null
+          original_file_id: string | null
+          project_id: string | null
+          source: Database["public"]["Enums"]["workbook_source"]
+          task_id: string | null
+          updated_at: string
+          user_id: string
+          workbook_name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          metadata?: Json | null
+          organization_id?: string | null
+          original_file_id?: string | null
+          project_id?: string | null
+          source?: Database["public"]["Enums"]["workbook_source"]
+          task_id?: string | null
+          updated_at?: string
+          user_id?: string
+          workbook_name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          metadata?: Json | null
+          organization_id?: string | null
+          original_file_id?: string | null
+          project_id?: string | null
+          source?: Database["public"]["Enums"]["workbook_source"]
+          task_id?: string | null
+          updated_at?: string
+          user_id?: string
+          workbook_name?: string
         }
         Relationships: []
       }
@@ -20185,6 +20282,54 @@ export type Database = {
           preferences?: Json
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_secrets: {
+        Row: {
+          category: string | null
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          inject_into_sandbox: boolean
+          is_active: boolean
+          key: string
+          last_used_at: string | null
+          updated_at: string
+          user_id: string
+          value_encrypted: string
+          value_hint: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          inject_into_sandbox?: boolean
+          is_active?: boolean
+          key: string
+          last_used_at?: string | null
+          updated_at?: string
+          user_id: string
+          value_encrypted: string
+          value_hint?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          inject_into_sandbox?: boolean
+          is_active?: boolean
+          key?: string
+          last_used_at?: string | null
+          updated_at?: string
+          user_id?: string
+          value_encrypted?: string
+          value_hint?: string | null
         }
         Relationships: []
       }
@@ -27632,6 +27777,36 @@ export type Database = {
               isSetofReturn: false
             }
           }
+      udt_bulk_write: {
+        Args: { p_operations: Json; p_table_id: string }
+        Returns: Json
+      }
+      udt_change_field_type: {
+        Args: {
+          p_field_id: string
+          p_new_type: Database["public"]["Enums"]["field_data_type"]
+          p_strategy?: string
+          p_table_id: string
+        }
+        Returns: Json
+      }
+      udt_upsert_cell: {
+        Args: {
+          p_field_name: string
+          p_row_id: string
+          p_table_id: string
+          p_value: Json
+        }
+        Returns: Json
+      }
+      udt_upsert_row: {
+        Args: { p_data?: Json; p_row_id?: string; p_table_id: string }
+        Returns: Json
+      }
+      udt_validate_row: {
+        Args: { p_data: Json; p_prior: Json; p_table_id: string }
+        Returns: Json
+      }
       update_all_bucket_tree_structures: { Args: never; Returns: Json }
       update_all_trending_scores: { Args: never; Returns: undefined }
       update_arg: {
@@ -28688,6 +28863,7 @@ export type Database = {
         | "Executors"
         | "API"
         | "Other"
+      row_change_kind: "insert" | "update" | "delete"
       size:
         | "3xs"
         | "2xs"
@@ -28726,6 +28902,12 @@ export type Database = {
       task_priority: "low" | "medium" | "high"
       wc_finger_type: "index" | "middle" | "ring" | "little" | "thumb"
       wc_side: "right" | "left" | "default"
+      workbook_source:
+        | "created"
+        | "imported_xlsx"
+        | "imported_gsheet"
+        | "imported_csv"
+        | "linked_gsheet"
     }
     CompositeTypes: {
       operation_record: {
@@ -29446,6 +29628,7 @@ export const Constants = {
         "API",
         "Other",
       ],
+      row_change_kind: ["insert", "update", "delete"],
       size: [
         "3xs",
         "2xs",
@@ -29487,6 +29670,13 @@ export const Constants = {
       task_priority: ["low", "medium", "high"],
       wc_finger_type: ["index", "middle", "ring", "little", "thumb"],
       wc_side: ["right", "left", "default"],
+      workbook_source: [
+        "created",
+        "imported_xlsx",
+        "imported_gsheet",
+        "imported_csv",
+        "linked_gsheet",
+      ],
     },
   },
 } as const

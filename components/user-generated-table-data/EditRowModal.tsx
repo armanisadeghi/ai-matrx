@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { supabase } from "@/utils/supabase/client";
-import { unwrapUserTableMutation } from "@/utils/user-tables-rpc";
+import { upsertRow } from "@/features/data-tables/service";
+import { isServiceFailure } from "@/features/data-tables/types";
 import {
   Dialog,
   DialogContent,
@@ -127,17 +127,13 @@ export default function EditRowModal({
       setLoading(true);
       setError(null);
 
-      // Call the RPC function
-      const { data, error } = await supabase.rpc(
-        "update_data_row_in_user_table",
-        {
-          p_row_id: rowId,
-          p_data: rowData,
-        },
-      );
-
-      if (error) throw error;
-      unwrapUserTableMutation(data ?? null);
+      // udt_upsert_row scopes by both table_id and row_id, fires the validation
+      // and version triggers, and routes through the owner-or-editor permission
+      // gate — replaces the legacy update_data_row_in_user_table RPC.
+      const result = await upsertRow({ tableId, rowId, data: rowData });
+      if (isServiceFailure(result)) {
+        throw new Error(result.error);
+      }
 
       onSuccess();
       onClose();
