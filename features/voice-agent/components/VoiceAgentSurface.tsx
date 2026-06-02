@@ -36,13 +36,21 @@ import type { VoiceAgentPreset } from "../types";
 
 interface VoiceAgentSurfaceProps {
   preset: VoiceAgentPreset;
+  /**
+   * Optional builtin or user-owned `agx_agent.id`. When set (intro
+   * route does this with the built-in introduction agent), the hook
+   * pulls voice_id / instructions / tools from the agent record and
+   * the playground sheet is unused. The playground route omits this
+   * to preserve constants-based ad-hoc config.
+   */
+  agentId?: string;
 }
 
-export function VoiceAgentSurface({ preset }: VoiceAgentSurfaceProps) {
+export function VoiceAgentSurface({ preset, agentId }: VoiceAgentSurfaceProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
-  const instanceId = useVoiceAgentInstance({ preset });
+  const instanceId = useVoiceAgentInstance({ preset, agentId });
   const { status, error, toggle } = useXaiVoiceSession({ instanceId });
   usePersistVoiceTranscript({ instanceId });
 

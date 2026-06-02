@@ -2,6 +2,8 @@
 
 import "./notes.css";
 import { NotesView } from "@/features/notes/components/NotesView";
+import { UnauthSurfaceLanding } from "@/features/auth/components/UnauthSurfaceLanding";
+import { StickyNote } from "lucide-react";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/notes", {
@@ -40,7 +42,18 @@ export default function NotesV2Layout({
     >
       <style dangerouslySetInnerHTML={{ __html: highlightStyles }} />
       <span className="shell-hide-dock" aria-hidden="true" />
-      <NotesView className="h-full" />
+      <UnauthSurfaceLanding
+        featureName="Notes"
+        icon={StickyNote}
+        description="Capture thoughts, drafts, and reference material — all searchable and synced across your devices."
+        bullets={[
+          "Markdown notes with rich previews",
+          "Pin notes to scopes and projects",
+          "Drop into chat or share by link",
+        ]}
+      >
+        <NotesView className="h-full" />
+      </UnauthSurfaceLanding>
       <div style={{ display: "none" }}>{children}</div>
     </div>
   );

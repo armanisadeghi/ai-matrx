@@ -13,6 +13,8 @@
  */
 
 import type { ReactNode } from "react";
+import { FolderOpen } from "lucide-react";
+import { UnauthSurfaceLanding } from "@/features/auth/components/UnauthSurfaceLanding";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/files", {
@@ -36,5 +38,18 @@ export default function CloudFilesLayout({
 }: {
   children: ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <UnauthSurfaceLanding
+      featureName="Files"
+      icon={FolderOpen}
+      description="A real-time synced file system for uploads, previews, and sharing."
+      bullets={[
+        "Upload and organize files across folders",
+        "Share via link with granular permissions",
+        "Drop files straight into chat or agents",
+      ]}
+    >
+      {children}
+    </UnauthSurfaceLanding>
+  );
 }

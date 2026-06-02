@@ -110,6 +110,22 @@ import {
 } from "../messages/messages.slice";
 import { fromImageOutputData } from "@/features/files/blocks/image/adapters/from-image-output-data";
 import { fromPartialImageData } from "@/features/files/blocks/image/adapters/from-partial-image-data";
+import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
+import type { ContentType } from "@/features/ai-models/capabilities/types";
+
+/**
+ * Maps a render-block `type` onto the canonical content type, when it
+ * corresponds to a modality we track. Tool blocks, thinking, etc. return
+ * null and are skipped by the capability guard.
+ */
+function renderBlockToContentType(type: string): ContentType | null {
+  if (type === "image" || type === "image_output") return "image";
+  if (type === "audio_output") return "audio";
+  if (type === "video_output") return "video";
+  if (type === "document_output") return "document";
+  if (type === "text" || type === "markdown") return "text";
+  return null;
+}
 import { fromRenderBlock } from "@/features/files/blocks/image/adapters/from-render-block";
 import {
   fromMediaBlock,
@@ -935,6 +951,22 @@ export async function processStream({
           data: unified as unknown as Record<string, unknown>,
         };
       }
+
+      // ── Render-time capability guard (warn-only, Step 3d) ──
+      // Surfaces data bugs: a model that claims it doesn't produce
+      // images but somehow emitted an image block. Doesn't suppress
+      // the block — the user still sees what the model sent.
+      const _caps = getCapabilitiesForConversation(getState(), conversationId);
+      if (_caps) {
+        const _ct = renderBlockToContentType(block.type);
+        if (_ct && !_caps.output.includes(_ct)) {
+          console.warn(
+            `[process-stream] capability mismatch: model produced ${block.type} but capabilities.output is [${_caps.output.join(", ")}]`,
+            { requestId, conversationId, blockType: block.type },
+          );
+        }
+      }
+
       dispatch(
         upsertRenderBlock({
           requestId,

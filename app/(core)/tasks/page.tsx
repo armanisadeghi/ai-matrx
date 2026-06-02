@@ -4,6 +4,8 @@ import { readLayoutCookie } from "@/app/(ssr)/demos/ssr/resizables/_lib/readLayo
 import { TasksHeaderControls } from "@/features/tasks/components/TasksHeaderControls";
 import { TasksDesktopShell } from "@/features/tasks/components/TasksDesktopShell";
 import { TaskUrlSync } from "@/features/tasks/components/TaskUrlSync";
+import { UnauthSurfaceLanding } from "@/features/auth/components/UnauthSurfaceLanding";
+import { CheckSquare } from "lucide-react";
 
 const COOKIE_NAME = "panels:tasks:v2";
 
@@ -24,17 +26,28 @@ export default async function TasksPage() {
   const defaultLayout = await readLayoutCookie(COOKIE_NAME);
 
   return (
-    <PanelControlProvider>
-      <PageHeader>
-        <TasksHeaderControls />
-      </PageHeader>
-      <TaskUrlSync />
-      <div className="h-full overflow-hidden">
-        <TasksDesktopShell
-          defaultLayout={defaultLayout}
-          cookieName={COOKIE_NAME}
-        />
-      </div>
-    </PanelControlProvider>
+    <UnauthSurfaceLanding
+      featureName="Tasks"
+      icon={CheckSquare}
+      description="Plan work, track progress, and hand tasks off to agents — all in one place."
+      bullets={[
+        "Group tasks into projects and scopes",
+        "Assign to agents for hands-off execution",
+        "Track completions and run history",
+      ]}
+    >
+      <PanelControlProvider>
+        <PageHeader>
+          <TasksHeaderControls />
+        </PageHeader>
+        <TaskUrlSync />
+        <div className="h-full overflow-hidden">
+          <TasksDesktopShell
+            defaultLayout={defaultLayout}
+            cookieName={COOKIE_NAME}
+          />
+        </div>
+      </PanelControlProvider>
+    </UnauthSurfaceLanding>
   );
 }

@@ -56,6 +56,8 @@ import {
   StreamCancelledError,
   StreamPhaseError,
 } from "./run-ai-stream";
+import { validateMessageBlocks } from "@/features/agents/runtime/validation";
+import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
 import { formatVariablesForDisplay } from "@/features/agents/utils/variable-utils";
 import {
   selectIsBlockMode,
@@ -262,6 +264,23 @@ export const executeInstance = createAsyncThunk<
         throw new Error(`Failed to assemble request for ${conversationId}`);
       }
       if (debug) payload.debug = true;
+
+      // ── Capabilities pre-flight (warn-only) ──────────────────────────
+      // Catches user-attaches-image to a text-only model before the
+      // request hits the model. Warn-only in this rollout phase — the
+      // request still goes through. A follow-up ticket flips this to
+      // block once we've shaken out any latent data bugs in the
+      // capabilities registry.
+      const _caps = getCapabilitiesForConversation(state, conversationId);
+      if (_caps) {
+        const _validation = validateMessageBlocks(payload.user_input, _caps);
+        if (!_validation.ok) {
+          console.warn(
+            `[executeInstance] capabilities warning (rejected: ${_validation.rejected.join(", ")}): ${_validation.message}`,
+            { conversationId, modelInput: _caps.input },
+          );
+        }
+      }
 
       // First-turn-only ambient context. The agent gets `user`,
       // `route_brief`, `organization`, `active_scopes`, etc. once — on the

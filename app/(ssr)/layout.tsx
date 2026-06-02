@@ -56,6 +56,7 @@ export default async function SSRLayout({
 
   let initialReduxState: InitialReduxState;
   let userData: UserData;
+  const isAuthenticated = !!user;
 
   if (user) {
     // Phase 3: admin check is now a narrow single-row lookup; preferences
@@ -100,7 +101,7 @@ export default async function SSRLayout({
         <input type="checkbox" id="shell-panel-mobile" aria-hidden="true" />
 
         <Sidebar pathname={pathname} />
-        <Header userData={userData} />
+        <Header userData={userData} isAuthenticated={isAuthenticated} />
 
         <main className="shell-main">{children}</main>
 

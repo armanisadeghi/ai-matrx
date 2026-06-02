@@ -3,6 +3,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { AiModel } from "../types";
+import {
+  parseCapabilities as parseCapabilitiesCanonical,
+  toAuditRecord,
+} from "../capabilities/parse";
 
 // ── Capability definitions ─────────────────────────────────────────────────
 
@@ -171,31 +175,26 @@ export interface ModelAuditResult {
 /** Capabilities stored in DB can be array, object, or null — we normalise to this */
 export type CapabilitiesRecord = Partial<Record<CapabilityKey, boolean>>;
 
-export function parseCapabilities(raw: unknown): CapabilitiesRecord {
-  if (!raw) return {};
-  if (Array.isArray(raw)) {
-    // Array of string keys — treat each as true
-    const rec: CapabilitiesRecord = {};
-    for (const item of raw) {
-      if (
-        typeof item === "string" &&
-        ALL_CAPABILITY_KEYS.includes(item as CapabilityKey)
-      ) {
-        rec[item as CapabilityKey] = true;
-      }
-    }
-    return rec;
-  }
-  if (typeof raw === "object") {
-    const rec: CapabilitiesRecord = {};
-    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
-      if (ALL_CAPABILITY_KEYS.includes(k as CapabilityKey)) {
-        rec[k as CapabilityKey] = Boolean(v);
-      }
-    }
-    return rec;
-  }
-  return {};
+/**
+ * Audit-facing flat view of model capabilities. As of the May 2026
+ * canonical-shape migration this is now a DERIVED projection of
+ * `ModelCapabilities` (`features/ai-models/capabilities/types.ts`),
+ * computed via `toAuditRecord` after `parseCapabilities` from the
+ * canonical module. The signature is preserved so audit consumers
+ * (`CapabilitiesAuditTab`, rule evaluation below) keep working
+ * unchanged.
+ *
+ * Hints (api_class, provider) are forwarded so null/empty rows still
+ * resolve sanely — without hints, a null row collapses to an all-false
+ * record, which historically tripped the `capabilities_min_true` rule
+ * for unrelated reasons.
+ */
+export function parseCapabilities(
+  raw: unknown,
+  hints: { api_class?: string | null; provider?: string | null } = {},
+): CapabilitiesRecord {
+  const canonical = parseCapabilitiesCanonical(raw, hints);
+  return toAuditRecord(canonical);
 }
 
 // ── Audit runner ──────────────────────────────────────────────────────────
@@ -305,7 +304,10 @@ export function auditModel(
   }
 
   // ── Capabilities ───────────────────────────────────────────────────────
-  const caps = parseCapabilities(model.capabilities);
+  const caps = parseCapabilities(model.capabilities, {
+    api_class: model.api_class,
+    provider: model.provider,
+  });
   if (rules.capabilities_object_required && !model.capabilities) {
     issues.push({
       category: "capabilities",
