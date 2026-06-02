@@ -350,6 +350,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  kgSuggestionsDrawer: {
+    label: "Knowledge Graph Suggestions",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   listManagerWindow: {
     label: "List Manager Window",
     instanceMode: "singleton",

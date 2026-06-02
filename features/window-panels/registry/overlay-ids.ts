@@ -84,6 +84,7 @@ export const OVERLAY_IDS = [
   "imageViewer",
   "instanceUIStateWindow",
   "jsonTruncator",
+  "kgSuggestionsDrawer",
   "listManagerWindow",
   "markdownEditor",
   "markdownEditorWindow",

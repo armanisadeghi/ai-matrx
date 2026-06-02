@@ -21,6 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { KgSuggestionsNavButton } from "@/features/kg-suggestions/components/KgSuggestionsNavButton";
+import { HeavyHitterSuggestionsInbox } from "@/features/kg-suggestions/components/HeavyHitterSuggestionsInbox";
 import { cn } from "@/utils/cn";
 
 export function ScopesHub() {
@@ -92,6 +94,7 @@ export function ScopesHub() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <KgSuggestionsNavButton variant="outline" />
           <QuickLink href="/scopes/templates" icon={Zap}>
             Templates
           </QuickLink>
@@ -100,6 +103,10 @@ export function ScopesHub() {
           </QuickLink>
         </div>
       </div>
+
+      {/* Heavy-hitter "Suggest a scope" inbox — recurring unaffiliated
+          entities the KG proposes promoting to scopes (Phase F.4). */}
+      <HeavyHitterSuggestionsInbox />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {orderedOrgs.map((org) => {

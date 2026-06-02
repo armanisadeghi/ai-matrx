@@ -100,6 +100,7 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 
 ## Change log
 
+- `2026-06-02` — Phase F (kg-suggestions): added `<KgSuggestionsChip filter={{ sourceKind: "note", sourceId }} />` to `NoteContextPicker` beneath the scope tagger. Surfaces pending KG → scope-item fill suggestions for the note; hidden at count 0. No notes-slice changes. See `features/kg-suggestions/FEATURE.md`.
 - `2026-05-15` — Added a Refresh button to the desktop notes header that mirrors the route-start fetches: `fetchNotesList()`, plus `fetchScopeTypes` / `fetchScopes` when an org is active, plus a forced refetch of every currently-open tab. Introduces `refreshNoteContent` thunk in `redux/thunks.ts` — a force-fetch sibling of `fetchNoteContent` that bypasses the `_fetchStatus === "full"` short-circuit but skips dirty notes to protect unsaved local edits.
 - `2026-05-15` — Notes now emits the `matrx-user/notes` surface scope when launching an agent shortcut from the context menu. Adds `hooks/useNotesSurfaceScope.ts` (the scope builder) and `utils/markdown-headings.ts` (heading-aware section slicing). The surface manifest at `features/surfaces/manifests/notes-editor.manifest.ts` declares 19 surface-specific values covering active-note metadata, selection/scope mirror, workspace context, and editor pane state.
 - `2026-04-25` — Removed `@/features/notes` barrel imports; consumers use `components/NotesLayout`, `service/notesApi`, `actions/CategoryNotesModal`, `types` (no new barrel file).

@@ -21,6 +21,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { KgSuggestionsChip } from "@/features/kg-suggestions/components/KgSuggestionsChip";
 import { cn } from "@/utils/cn";
 
 interface TaskScopeTagsProps {
@@ -253,6 +254,9 @@ export default function TaskScopeTags({
           </div>
         </PopoverContent>
       </Popover>
+
+      {/* KG suggestion chip — pending scope-fill proposals for this task. */}
+      <KgSuggestionsChip filter={{ sourceKind: "task", sourceId: taskId }} />
     </div>
   );
 }

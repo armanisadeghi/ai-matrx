@@ -21,6 +21,7 @@ import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
 import { EntityTargetPicker } from "@/features/scopes/components/entity-context/EntityTargetPicker";
+import { KgSuggestionsChip } from "@/features/kg-suggestions/components/KgSuggestionsChip";
 import { setNoteField } from "../redux/slice";
 import { selectNoteById } from "../redux/selectors";
 
@@ -134,6 +135,11 @@ export function NoteContextPicker({
           showHeader={false}
         />
       )}
+
+      {/* KG suggestion chip — pending scope-fill proposals for this note. */}
+      <div className="px-2">
+        <KgSuggestionsChip filter={{ sourceKind: "note", sourceId: noteId }} />
+      </div>
 
       <div className="mx-2 my-0.5 border-t border-border/40" />
 

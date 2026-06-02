@@ -292,6 +292,7 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- **2026-06-02** — Phase F (kg-suggestions): added the `kgSuggestionsDrawer` overlay — the global Knowledge-Graph suggestion inbox (Drawer on mobile / right Sheet on desktop). Registered via overlay-ids + catalogue + opener (`openers/kgSuggestionsDrawer.tsx`) + a gated block in `OverlayController.tsx`. Opened with `useOpenKgSuggestionsDrawer`; data-less singleton. See `features/kg-suggestions/FEATURE.md`.
 - **2026-05-19** — Added the `creatorHub` overlay — a global Creator Hub window (WindowPanel with a tab-list sidebar), the creator analogue of the admin Bug indicator. Opened from a Crown in the main sidebar; registered via overlay-ids + catalogue + windowRegistryMetadata + opener (`openers/creatorHub.tsx`).
 - **2026-05-18** — Cutover instrumentation: production-safe console signals on both controllers. `cb732f222`
 - **2026-05-18** — Stage 3b+3d: 35/41 controller `as never` casts tightened with real type imports; first dispatch-site migration (AgentOptionsMenu). `ec67ca9c6`

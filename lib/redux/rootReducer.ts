@@ -61,6 +61,7 @@ import pageExtractionReducer from "@/features/page-extraction/redux/pageExtracti
 import { pdfStudioReducer } from "@/features/pdf-extractor/state/pdfStudioSlice";
 import transcriptStudioReducer from "@/features/transcript-studio/redux/slice";
 import recordingsReducer from "@/lib/redux/slices/recordingsSlice";
+import kgSuggestionsReducer from "@/lib/redux/slices/kgSuggestionsSlice";
 import { codeFilesReducer } from "@/features/code-files/redux/slice";
 import codeWorkspaceReducer from "@/features/code/redux/codeWorkspaceSlice";
 import codeTabsReducer from "@/features/code/redux/tabsSlice";
@@ -388,6 +389,8 @@ export const slimReducerMap = {
 
   pageExtraction: pageExtractionReducer,
   pdfStudio: pdfStudioReducer,
+
+  kgSuggestions: kgSuggestionsReducer,
 
   agentComparison: agentComparisonReducer,
   agentComparisonSettings: agentComparisonSettingsReducer,

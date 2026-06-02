@@ -540,6 +540,13 @@ const QuickNotesSheet = dynamic(
     })),
   { ssr: false },
 );
+const GlobalSuggestionsDrawer = dynamic(
+  () =>
+    import(
+      "@/features/kg-suggestions/components/GlobalSuggestionsDrawer"
+    ).then((m) => ({ default: m.GlobalSuggestionsDrawer })),
+  { ssr: false },
+);
 const QuickTasksSheet = dynamic(
   () =>
     import("@/features/tasks/components/QuickTasksSheet").then((m) => ({
@@ -867,6 +874,9 @@ export default function OverlayController() {
     ),
     quickNoteSaveWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickNoteSaveWindow"),
+    ),
+    kgSuggestionsDrawer: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "kgSuggestionsDrawer"),
     ),
     quickNotes: useAppSelector((s) => selectIsOverlayOpen(s, "quickNotes")),
     quickTasks: useAppSelector((s) => selectIsOverlayOpen(s, "quickTasks")),
@@ -3444,6 +3454,20 @@ export default function OverlayController() {
             }
             initialEditorMode={
               data?.initialEditorMode as EditorMode | undefined
+            }
+          />
+        );
+      })()}
+
+      {/* kgSuggestionsDrawer — global KG suggestion inbox */}
+      {(() => {
+        const isOpen = isOpenById.kgSuggestionsDrawer;
+        if (!isOpen) return null;
+        return (
+          <GlobalSuggestionsDrawer
+            isOpen={isOpen}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "kgSuggestionsDrawer" }))
             }
           />
         );
