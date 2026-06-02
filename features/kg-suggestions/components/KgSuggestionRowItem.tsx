@@ -7,9 +7,9 @@
 //
 // Accept / reject / defer are SUGGESTIONS — accept is primary and explicit;
 // reject and defer are easy and non-destructive (no ConfirmDialog). Results
-// surface via toast. Heavy-hitter accept is gated: the current backend can't
-// create a scope from this endpoint (returns 422), so the Accept button shows
-// "Create scope" disabled with a tooltip until Phase E lands the contract.
+// surface via toast. Heavy-hitter accept opens a lightweight "Create scope"
+// step (HeavyHitterAcceptDialog) where the user confirms the scope name + picks
+// a scope type; confirming runs accept → create scope → tag source mentions.
 
 "use client";
 
@@ -17,17 +17,16 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowRight, Check, Clock, Network, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/utils/cn";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKgRowMutation } from "@/lib/redux/slices/kgSuggestionsSlice";
-import type { KgMatchKind, KgSuggestionRow } from "@/features/kg-suggestions/types";
-import type { KgAcceptBody } from "@/features/kg-suggestions/service/kgSuggestionsService";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import type {
+  KgAcceptResult,
+  KgMatchKind,
+  KgSuggestionRow,
+} from "@/features/kg-suggestions/types";
+import { HeavyHitterAcceptDialog } from "./HeavyHitterAcceptDialog";
 import { extractErrorMessage } from "@/utils/errors";
 
 const MATCH_LABEL: Record<KgMatchKind, string> = {
@@ -46,7 +45,7 @@ const MATCH_TONE: Record<KgMatchKind, string> = {
 
 export interface KgSuggestionRowItemProps {
   row: KgSuggestionRow;
-  accept: (id: string, body?: KgAcceptBody) => Promise<unknown>;
+  accept: (id: string) => Promise<KgAcceptResult>;
   reject: (id: string) => Promise<unknown>;
   defer: (id: string) => Promise<unknown>;
   /** Compact (popover/panel) trims secondary metadata. Default false. */
@@ -63,7 +62,9 @@ export function KgSuggestionRowItem({
   className,
 }: KgSuggestionRowItemProps) {
   const mutation = useAppSelector((s) => selectKgRowMutation(s, row.id));
+  const organizationId = useAppSelector(selectActiveOrganizationId);
   const [localBusy, setLocalBusy] = useState(false);
+  const [scopeDialogOpen, setScopeDialogOpen] = useState(false);
   const busy = localBusy || mutation !== "idle";
 
   const isHeavyHitter = row.match_kind === "heavy_hitter";
@@ -90,12 +91,16 @@ export function KgSuggestionRowItem({
   };
 
   const onAccept = () => {
-    if (isHeavyHitter) return; // gated below; button is disabled
-    const before = row.target.slot_name ? `→ ${slotLabel}` : "";
+    // Heavy-hitter accept is a scope-creation flow — open the dialog (which
+    // confirms name + type, then runs accept → create scope → tag sources).
+    if (isHeavyHitter) {
+      setScopeDialogOpen(true);
+      return;
+    }
     void run(
       "accept",
       () => accept(row.id),
-      `Filled ${slotLabel}${before ? "" : ""} with “${row.suggested_value ?? entityName}”`,
+      `Filled ${slotLabel} with “${row.suggested_value ?? entityName}”`,
     );
   };
 
@@ -191,40 +196,35 @@ export function KgSuggestionRowItem({
           Reject
         </button>
 
-        {isHeavyHitter ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span>
-                  <button
-                    type="button"
-                    disabled
-                    className="inline-flex items-center gap-1 rounded bg-primary/40 px-2 py-1 text-[11px] font-medium text-primary-foreground cursor-not-allowed"
-                  >
-                    <Network className="h-3 w-3" />
-                    Create scope
-                  </button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                {/* TODO(Phase E): wire scope-creation accept once the
-                    heavy_hitter contract lands (choose-scope-type step). */}
-                Creating a scope from a recurring entity is coming soon.
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onAccept}
-            className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
-          >
-            <Check className="h-3 w-3" />
-            Accept
-          </button>
-        )}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onAccept}
+          className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+        >
+          {isHeavyHitter ? (
+            <>
+              <Network className="h-3 w-3" />
+              Create scope
+            </>
+          ) : (
+            <>
+              <Check className="h-3 w-3" />
+              Accept
+            </>
+          )}
+        </button>
       </div>
+
+      {isHeavyHitter ? (
+        <HeavyHitterAcceptDialog
+          open={scopeDialogOpen}
+          onOpenChange={setScopeDialogOpen}
+          row={row}
+          organizationId={organizationId}
+          accept={accept}
+        />
+      ) : null}
     </div>
   );
 }

@@ -110,14 +110,38 @@ one click and never destructive. Phase F of the Knowledge-Graph plan.
   splits out `heavy_hitter` rows into a "Suggest a scope" section.
 - Accept/reject/defer behave exactly as in flow 1 (shared row + hook).
 
-**3. Heavy-hitter (Phase E coupling)**
+**3. Heavy-hitter → create scope (wired 2026-06-02)**
 - `HeavyHitterSuggestionsInbox` filters the global list to
   `match_kind === "heavy_hitter"`.
-- The LIVE accept contract (read 2026-06-02) does NOT yet support creating a
-  scope from `/kg-suggestions/{id}/accept` (returns 422). So the row's Accept
-  renders as a disabled "Create scope" button + "coming soon" tooltip. TODO
-  markers reference Phase E in `KgSuggestionRowItem.tsx`,
-  `HeavyHitterSuggestionsInbox.tsx`, and `service/kgSuggestionsService.ts`.
+- The LIVE accept contract (read 2026-06-02,
+  `aidream/api/routers/kg_suggestions.py`): `POST /kg-suggestions/{id}/accept`
+  on a heavy_hitter row takes NO request body. It flips the suggestion to
+  `accepted` server-side and returns a `KgHeavyHitterAcceptPlan` — the entity,
+  a suggested scope name, and the owner-scoped source mentions to tag. Scope
+  creation is a frontend-owned write path (React → Supabase, per the scopes
+  invariant), so the backend hands back a plan rather than creating the scope.
+- The row's "Create scope" button opens `HeavyHitterAcceptDialog` (Dialog
+  desktop / Drawer mobile): the user confirms/edits the scope name and picks a
+  scope type from their org's existing types (loaded via the agent-context
+  `fetchScopeTypes` / `list_scope_types` RPC, default pre-selected by matching
+  the KG entity kind to a type label). Confirm runs `useHeavyHitterAccept`:
+  accept → create scope (`createScope` thunk → `create_scope` RPC) → tag each
+  mappable source via `scopesService.getEntityScopes` + `setEntityScopes`
+  (additive — preserves a source's existing tags).
+- **Reused primitives, no forks.** Scope creation uses the SAME `createScope`
+  thunk as `NewScopeInline` / `HierarchyCascade`. Tagging uses the canonical
+  `ctx_scope_assignments` chokepoint. No parallel scope-create or tagging path
+  was introduced.
+- **Source-kind mapping.** `kgSourceKindToEntityType` maps RAG source kinds to
+  taggable `ScopeAssignmentEntityType`s (`note`→note, `task`→task,
+  `project`→project, `conversation`→conversation, `cld_file`→file). Untaggable
+  kinds (`transcript`, `scraped`, `code_file`, `repository`, `library_doc`) are
+  counted and reported in the toast — never silently dropped.
+- **Accept-succeeded-but-create-failed edge.** `accept` flips status
+  server-side BEFORE scope creation. If creation then fails,
+  `useHeavyHitterAccept` returns `failedStage: "create"` and the dialog surfaces
+  a recoverable error ("Suggestion accepted, but scope creation failed — create
+  the scope manually from /scopes") rather than a confusing silent failure.
 
 **4. Auto-RAG opt-out**
 - `PrivacyTab` → "Auto knowledge-graph" switch → `useAutoRagPreference.setEnabled`
@@ -147,9 +171,12 @@ one click and never destructive. Phase F of the Knowledge-Graph plan.
 - **`auto_rag_enabled` is not in generated `database.types` yet** (Phase A
   applied the column to the DB; FE types regen is pending). The hook bridges the
   gap with a localized cast and a TODO. Regenerate Supabase types to remove it.
-- **Heavy-hitter accept is gated until Phase E.** Do not wire a scope-creation
-  call until the backend contract exists; `service.acceptKgSuggestion` already
-  forwards an optional body for that future contract.
+- **Heavy-hitter accept returns a plan, the FE creates the scope.** The accept
+  endpoint never creates the scope itself (scopes are a frontend-owned write
+  path). `service.acceptKgSuggestion` returns the `KgAcceptResult` union; narrow
+  on `isHeavyHitterPlan(res)`. Scope creation goes through the canonical
+  `createScope` thunk — never hand-roll a `ctx_scopes` insert (the scopes
+  service chokepoint forbids it and `scopesService.createScope` is still a stub).
 
 ---
 
@@ -207,10 +234,11 @@ also names `lib/redux/slices/kgSuggestionsSlice.ts` as the canonical home.
 
 ## Current work / migration state
 
-Phase F of the Knowledge-Graph plan. Backend Phases A–D are shipped; Phase E
-(heavy-hitter scope creation) is in flight — heavy-hitter accept is gated in the
-UI until that contract lands. Cannot be end-to-end tested until NER runs live
-and produces suggestion rows; built against the typed contract.
+Phase F of the Knowledge-Graph plan. Backend Phases A–E are shipped. The
+heavy-hitter accept → create-scope → tag-sources flow is now wired end to end
+(consumes the Phase E `HeavyHitterAcceptPlan`). Cannot be end-to-end runtime
+tested until NER runs live and produces heavy-hitter suggestion rows; built and
+compile-verified against the typed contract.
 
 ---
 
@@ -220,3 +248,12 @@ and produces suggestion rows; built against the typed contract.
   chip/popover/panel/drawer/nav-button/heavy-hitter components, drop-ins (notes,
   tasks, scopes hub), global drawer via overlay system, auto-RAG toggle in
   PrivacyTab. Heavy-hitter accept gated pending Phase E.
+- `2026-06-02` — Phase F↔E seam: wired heavy-hitter accept → create scope → tag
+  sources end to end. Typed the accept response as the `KgAcceptResult` union
+  (`KgAcceptResponse` | `KgHeavyHitterAcceptPlan`) + `isHeavyHitterPlan` guard;
+  added `useHeavyHitterAccept` (reuses the canonical `createScope` thunk and the
+  `ctx_scope_assignments` chokepoint — no forked write paths) and
+  `HeavyHitterAcceptDialog` (Dialog/Drawer, scope-name confirm + scope-type
+  picker). Replaced the disabled "coming soon" button. Removed the obsolete
+  `KgAcceptBody` request shape (live contract takes no body). Handles the
+  accept-succeeded-but-create-failed edge with a recoverable error.

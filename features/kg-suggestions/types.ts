@@ -72,10 +72,87 @@ export interface KgAcceptedValue {
   source_type: string;
 }
 
-/** `POST /{id}/accept` response (`AcceptResponse`). */
+/**
+ * `POST /{id}/accept` response for a cell-value (slot-fill) suggestion
+ * (`AcceptResponse`). Distinguished from the heavy-hitter plan below by the
+ * presence of `value` (the heavy-hitter plan has none).
+ */
 export interface KgAcceptResponse {
   suggestion: KgSuggestionRow;
   value: KgAcceptedValue;
+}
+
+/**
+ * One source the heavy-hitter entity was mentioned in (`HeavyHitterSource`).
+ * The FE tags each of these to the newly-created scope via
+ * ctx_scope_assignments after creation. `source_kind` is a RAG source kind
+ * (note | task | project | cld_file | transcript | scraped | code_file |
+ * repository | library_doc) — only a subset maps to a taggable
+ * `ScopeAssignmentEntityType`; see `kgSourceKindToEntityType`.
+ */
+export interface KgHeavyHitterSource {
+  source_kind: string;
+  source_id: string;
+  mention_count: number;
+}
+
+/**
+ * `POST /{id}/accept` response for a `match_kind="heavy_hitter"` suggestion
+ * (`HeavyHitterAcceptPlan`). Heavy-hitter acceptance CREATES A NEW SCOPE
+ * (not a cell value): the backend flips the suggestion to `accepted` and
+ * returns this plan; the FE creates the scope (canonical `create_scope` RPC)
+ * and tags every `sources` mention to it via `ctx_scope_assignments`.
+ *
+ * The discriminator `kind === "heavy_hitter_plan"` lets the accept caller
+ * branch without inspecting other fields.
+ */
+export interface KgHeavyHitterAcceptPlan {
+  kind: "heavy_hitter_plan";
+  suggestion: KgSuggestionRow;
+  entity_id: string;
+  entity_kind: string;
+  suggested_scope_name: string;
+  sources: KgHeavyHitterSource[];
+}
+
+/**
+ * Union returned by `POST /{id}/accept`. A slot-fill accept yields
+ * `KgAcceptResponse`; a heavy-hitter accept yields `KgHeavyHitterAcceptPlan`.
+ * Narrow on the `"kind"` discriminator (only the plan carries it).
+ */
+export type KgAcceptResult = KgAcceptResponse | KgHeavyHitterAcceptPlan;
+
+/** Type guard: is this accept response the heavy-hitter scope-creation plan? */
+export function isHeavyHitterPlan(
+  res: KgAcceptResult,
+): res is KgHeavyHitterAcceptPlan {
+  return "kind" in res && res.kind === "heavy_hitter_plan";
+}
+
+// ── Source-kind → taggable entity-type mapping ───────────────────────────────
+//
+// Heavy-hitter sources carry a RAG `source_kind` (note | task | project |
+// cld_file | transcript | scraped | code_file | repository | library_doc —
+// matrx-rag/sources.py). Only a subset corresponds to a taggable
+// `ScopeAssignmentEntityType` (features/scopes/types.ts). Sources without a
+// taggable counterpart are NOT silently dropped — the accept flow counts and
+// reports them so the user knows N mentions couldn't be tagged. The string
+// values below MUST match the `ScopeAssignmentEntityType` union; we keep this
+// as a plain record (not importing the union here) to avoid a cross-feature
+// type cycle — the caller passes the result straight into `setEntityScopes`,
+// which validates against the union at its own boundary.
+
+export const KG_SOURCE_KIND_TO_ENTITY_TYPE: Record<string, string> = {
+  note: "note",
+  task: "task",
+  project: "project",
+  conversation: "conversation",
+  cld_file: "file",
+};
+
+/** Map a RAG source_kind to a taggable entity type, or `null` if untaggable. */
+export function kgSourceKindToEntityType(sourceKind: string): string | null {
+  return KG_SOURCE_KIND_TO_ENTITY_TYPE[sourceKind] ?? null;
 }
 
 /** `POST /{id}/reject` and `/defer` response (`DecisionResponse`). */
@@ -130,8 +207,9 @@ export interface KgSuggestionsListParams {
 //
 // The slice caches lists keyed by a stable string derived from the filter.
 // Every consumer (slice, hook, selector) derives the same key from the same
-// filter so reads and writes line up. Heavy-hitter accept needs a scope_type
-// — see service for the request shape.
+// filter so reads and writes line up. Heavy-hitter accept takes no request
+// body — it returns a KgHeavyHitterAcceptPlan the FE drives (create scope +
+// tag sources). See service + useHeavyHitterAccept for the flow.
 
 export function kgFilterKey(filter: KgSuggestionsFilter): string {
   const status = filter.status ?? "pending";

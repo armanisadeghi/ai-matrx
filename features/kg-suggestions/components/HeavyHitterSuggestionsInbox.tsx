@@ -5,14 +5,12 @@
 // promoting to a new scope ("Acme Corp appears in 5 places — make it a
 // Client?"). Drops into the /scopes hub.
 //
-// Heavy-hitter ACCEPT (scope creation) is owned by Phase E on the backend.
-// The LIVE contract (read 2026-06-02) does NOT yet support creating a scope
-// from this endpoint — POST /{id}/accept returns 422 for a heavy_hitter row.
-// So the row renders with a disabled "Create scope" button + a "coming soon"
-// tooltip (handled inside KgSuggestionRowItem) and an easy Reject/Defer.
-// TODO(Phase E): once the heavy_hitter accept contract lands (likely a
-// scope_type_id selection), render a "choose scope type" step here and call
-// accept(id, { scope_type_id }) — the service already forwards the body.
+// Heavy-hitter ACCEPT is fully wired (2026-06-02): the row's "Create scope"
+// button opens HeavyHitterAcceptDialog (confirm name + pick scope type), and
+// confirming runs accept → create scope → tag the entity's source mentions.
+// The accept contract (aidream Phase E) returns a KgHeavyHitterAcceptPlan that
+// useHeavyHitterAccept consumes. All of that lives inside KgSuggestionRowItem,
+// so this inbox just lists the rows and an easy Reject/Defer.
 //
 // Hidden entirely when there are no heavy-hitter suggestions, so it costs zero
 // space on the hub until the detector finds something.

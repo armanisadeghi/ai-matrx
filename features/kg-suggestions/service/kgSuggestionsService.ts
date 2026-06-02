@@ -12,7 +12,7 @@
 
 import { getJson, postJson } from "@/lib/python-client";
 import type {
-  KgAcceptResponse,
+  KgAcceptResult,
   KgDecisionResponse,
   KgSuggestionsListParams,
   KgSuggestionsPage,
@@ -52,27 +52,30 @@ export async function listKgSuggestions(
 }
 
 /**
- * POST /kg-suggestions/{id}/accept — writes the suggested value into the
- * user's scope-item slot and returns the updated suggestion + new cell value.
+ * POST /kg-suggestions/{id}/accept — the explicit "apply this suggestion"
+ * action. Takes NO request body (verified against the live backend contract,
+ * 2026-06-02: `aidream/api/routers/kg_suggestions.py::accept_suggestion`).
  *
- * The LIVE backend contract (read 2026-06-02) takes NO request body: a
- * slot-fill suggestion writes `suggested_value` into its target slot. A
- * `heavy_hitter` suggestion (target_scope_id/target_scope_item_id NULL)
- * currently returns 422 ("creates a scope, not a cell value — not yet
- * supported here"). The optional `body` param is reserved for the Phase E
- * scope-creation contract (e.g. a chosen scope_type); it is sent verbatim if
- * provided so this client doesn't need a breaking change once Phase E lands.
- * TODO(Phase E): once the heavy_hitter accept contract is defined, type
- * `body` concretely instead of the permissive shape below.
+ * The backend branches on the suggestion's `match_kind` and the response is a
+ * discriminated union (`KgAcceptResult`):
+ *  - slot-fill (exact/fuzzy/semantic) → writes `suggested_value` into the
+ *    target scope-item slot and returns `KgAcceptResponse` (carries `value`).
+ *  - `heavy_hitter` → flips the suggestion to `accepted` server-side and
+ *    returns a `KgHeavyHitterAcceptPlan` (`kind: "heavy_hitter_plan"`). Scope
+ *    creation is a frontend-owned write path (React → Supabase direct, per the
+ *    scopes invariant), so the backend hands back a plan instead of creating
+ *    the scope itself. The FE creates the scope and tags the plan's source
+ *    mentions — see `useHeavyHitterAccept`.
+ *
+ * Either branch returns 409 if the suggestion was already accepted.
  */
 export async function acceptKgSuggestion(
   id: string,
-  body?: KgAcceptBody,
   opts: { signal?: AbortSignal } = {},
-): Promise<KgAcceptResponse> {
-  const { data } = await postJson<KgAcceptResponse, KgAcceptBody | undefined>(
+): Promise<KgAcceptResult> {
+  const { data } = await postJson<KgAcceptResult, undefined>(
     `/kg-suggestions/${encodeURIComponent(id)}/accept`,
-    body,
+    undefined,
     { signal: opts.signal },
   );
   return data;
@@ -102,15 +105,4 @@ export async function deferKgSuggestion(
     { signal: opts.signal },
   );
   return data;
-}
-
-/**
- * Reserved accept body for the Phase E heavy-hitter scope-creation flow.
- * The current backend ignores any body for slot-fill accepts and rejects
- * heavy_hitter accepts entirely. When Phase E lands the create-scope path,
- * this is where `scope_type_id` (and friends) will be typed.
- */
-export interface KgAcceptBody {
-  /** Phase E: the scope_type the user chose when promoting a heavy hitter. */
-  scope_type_id?: string;
 }

@@ -37,12 +37,11 @@ import {
   deferKgSuggestion,
   listKgSuggestions,
   rejectKgSuggestion,
-  type KgAcceptBody,
 } from "@/features/kg-suggestions/service/kgSuggestionsService";
 import {
   kgFilterKey,
   kgFilterToParams,
-  type KgAcceptResponse,
+  type KgAcceptResult,
   type KgDecisionResponse,
   type KgSuggestionRow,
   type KgSuggestionsFilter,
@@ -53,7 +52,15 @@ export interface UseKgSuggestionsResult {
   count: number;
   status: KgListStatus;
   error: string | null;
-  accept: (id: string, body?: KgAcceptBody) => Promise<KgAcceptResponse>;
+  /**
+   * Accept the suggestion. Returns the discriminated `KgAcceptResult` so the
+   * caller can branch: a slot-fill accept is fully done here (the row is
+   * dropped optimistically); a heavy-hitter accept returns the scope-creation
+   * plan the caller must still consume (create scope + tag sources). In BOTH
+   * cases the suggestion is already `accepted` server-side, so the row is
+   * removed from every list regardless.
+   */
+  accept: (id: string) => Promise<KgAcceptResult>;
   reject: (id: string) => Promise<KgDecisionResponse>;
   defer: (id: string) => Promise<KgDecisionResponse>;
   refresh: () => void;
@@ -113,10 +120,15 @@ export function useKgSuggestions(
   }, [autoFetch, refresh]);
 
   const accept = useCallback(
-    async (id: string, body?: KgAcceptBody): Promise<KgAcceptResponse> => {
+    async (id: string): Promise<KgAcceptResult> => {
       dispatch(setRowMutation({ id, mutation: "accepting" }));
       try {
-        const res = await acceptKgSuggestion(id, body);
+        const res = await acceptKgSuggestion(id);
+        // Both branches carry `.suggestion` (now status=accepted). Drop the
+        // row from every cached list — the server already flipped it, so a
+        // heavy-hitter row that later fails scope creation is still correctly
+        // gone (the suggestion IS accepted; the recoverable error tells the
+        // user to finish creating the scope manually).
         dispatch(upsertRow(res.suggestion));
         dispatch(removeFromLists({ id }));
         return res;
