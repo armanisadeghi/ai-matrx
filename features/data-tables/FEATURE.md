@@ -263,11 +263,13 @@ at all; they just need typed wrappers around the existing reads. Lowest possible
   to `service.ts` (thin typed wrappers; the body is the same `.rpc()` call). Migrate the 18
   read call sites one at a time. Verify each: page renders unchanged, no console errors.
 
-**Wave B — single-row writes through `udt_upsert_row`.** These already work today; the only
-behavior change is that mutations now go through validation + version-logging triggers.
+**Wave B — single-row writes through `udt_upsert_row` / `udt_upsert_cell`.** These already
+work today; the only behavior change is that mutations now go through validation +
+version-logging triggers.
 - ✅ `components/user-generated-table-data/EditRowModal.tsx` — migrated to `upsertRow({ tableId, rowId, data })`.
-- ⏳ `components/user-generated-table-data/UserTableViewer.tsx:250` (inline-edit save) — pending.
-- ⏳ `components/user-generated-table-data/UserTableViewer.tsx:1030` (text cleanup update) — pending.
+- ✅ `components/user-generated-table-data/UserTableViewer.tsx` per-field HTML cleanup — migrated to `upsertCell` (surgical jsonb_set so it cannot drop other fields).
+- ✅ `components/user-generated-table-data/UserTableViewer.tsx` expanded-text save — migrated to `upsertCell`.
+- ⏳ `components/user-generated-table-data/UserTableViewer.tsx` bulk HTML-cleanup batch loop — **deferred**. Each batch entry is a partial-row update with multiple changed fields per row; migrating cleanly requires a new `op:'merge'` (jsonb_concat) in `udt_bulk_write`. Tracked in tech debt below.
 
 **Wave C — surgical cell writes through `udt_upsert_cell`.** Pure win — avoids serializing the
 full row payload. No existing call site does this today (the old RPCs are row-shaped); this is
@@ -294,10 +296,13 @@ into:
   group; clicking opens a right-side `Sheet` containing `<VersionHistoryViewer rowId={...} />`.
 - ⏳ Future agent-tool inspector surfaces.
 
-**Wave G — strict-mode toggle.** Add a "Strict validation" switch in `TableSettingsModal` that
-writes `validation_mode` on `udt_datasets`. Permissive remains the default for existing tables;
-new tables created via the import flow should default to `strict` (the importer knows the
-column types because it just inferred them).
+**Wave G — strict-mode toggle.**
+- ✅ `components/user-generated-table-data/TableSettingsModal.tsx` — "Strict Validation" Switch
+  added. Writes `validation_mode` via `supabase.from('udt_datasets').update(...)` (the existing
+  RLS UPDATE policy already gates owner-or-editor). Only fires when the value actually changed.
+- ⏳ Auto-strict on import (`ImportTableModal`) — **deliberately deferred**. Defaulting newly
+  imported tables to strict would surprise users mid-flow; the Settings toggle lets them opt
+  in when they're ready.
 
 **Wave H — retention policy for `udt_dataset_row_versions`.** Pick one of:
 - A weekly cron (`pg_cron`) that keeps the last N versions per row + everything from the last K
@@ -308,6 +313,11 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-05-29` — claude: P2 execution continues. Wave B finished for two of three remaining
+  call sites (HTML cleanup per-field + expanded-text save → `upsertCell`); third site (bulk
+  HTML cleanup) deferred pending `op:'merge'` addition to `udt_bulk_write`. Wave G done —
+  strict-mode Switch in `TableSettingsModal` writes `validation_mode` via direct RLS-gated
+  update.
 - `2026-05-29` — claude: P2 execution starts. Wave D (`ImportTableModal` → `bulkWrite`), Wave F
   (row-history `Sheet` wired into `UserTableViewer` via a new `History` row-action icon), and
   half of Wave B (`EditRowModal` → `upsertRow`) landed. Also added `isServiceFailure<T>()` type

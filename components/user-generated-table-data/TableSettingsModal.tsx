@@ -19,11 +19,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
+import type { ValidationMode } from "@/features/data-tables/types";
+
 interface TableInfo {
   id: string;
   table_name: string;
   description: string;
   is_public: boolean;
+  validation_mode: ValidationMode;
 }
 
 interface TableSettingsModalProps {
@@ -37,11 +40,13 @@ function tableRecordToTableInfo(
   table: Record<string, unknown>,
   fallbackId: string,
 ): TableInfo {
+  const mode = table.validation_mode;
   return {
     id: typeof table.id === "string" ? table.id : fallbackId,
     table_name: typeof table.table_name === "string" ? table.table_name : "",
     description: typeof table.description === "string" ? table.description : "",
     is_public: typeof table.is_public === "boolean" ? table.is_public : false,
+    validation_mode: mode === "strict" ? "strict" : "permissive",
   };
 }
 
@@ -56,6 +61,8 @@ export default function TableSettingsModal({
   const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(false);
   const [authenticatedRead, setAuthenticatedRead] = useState(false);
+  const [validationMode, setValidationMode] =
+    useState<ValidationMode>("permissive");
   const [loading, setLoading] = useState(false);
   const [loadingInfo, setLoadingInfo] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +86,7 @@ export default function TableSettingsModal({
         setTableName(info.table_name);
         setDescription(info.description || "");
         setIsPublic(info.is_public);
+        setValidationMode(info.validation_mode);
         const ar = u.table.authenticated_read;
         setAuthenticatedRead(typeof ar === "boolean" ? ar : false);
       } catch (err) {
@@ -107,7 +115,7 @@ export default function TableSettingsModal({
       setLoading(true);
       setError(null);
 
-      // Call the RPC function
+      // Metadata via the existing RPC.
       const { data, error } = await supabase.rpc("update_user_table_metadata", {
         p_table_id: tableId,
         p_table_name: tableName,
@@ -118,6 +126,16 @@ export default function TableSettingsModal({
 
       if (error) throw error;
       unwrapUserTableMutation(data ?? null);
+
+      // validation_mode goes through the standard RLS UPDATE path on
+      // udt_datasets (owner OR editor). Only sent when it actually changed.
+      if (tableInfo && validationMode !== tableInfo.validation_mode) {
+        const { error: modeError } = await supabase
+          .from("udt_datasets")
+          .update({ validation_mode: validationMode })
+          .eq("id", tableId);
+        if (modeError) throw modeError;
+      }
 
       onSuccess();
       onClose();
@@ -199,6 +217,28 @@ export default function TableSettingsModal({
                   </Label>
                   <p className="text-xs text-muted-foreground">
                     Any authenticated user can view this table
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium">Data Validation</h3>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="strictValidation"
+                  checked={validationMode === "strict"}
+                  onCheckedChange={(checked) =>
+                    setValidationMode(checked ? "strict" : "permissive")
+                  }
+                />
+                <div>
+                  <Label htmlFor="strictValidation">Strict Validation</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Reject writes that violate the column types or drop a
+                    required field. Existing rows are grandfathered (their
+                    other fields stay editable). Recommended for newly
+                    imported tables where column types are well-defined.
                   </p>
                 </div>
               </div>
