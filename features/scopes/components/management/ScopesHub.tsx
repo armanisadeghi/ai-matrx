@@ -13,6 +13,7 @@ import {
   Building,
   FileText,
   FolderKanban,
+  Network,
   Settings as SettingsIcon,
   Zap,
 } from "lucide-react";
@@ -95,6 +96,9 @@ export function ScopesHub() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <KgSuggestionsNavButton variant="outline" />
+          <QuickLink href="/knowledge-graph" icon={Network}>
+            Graph
+          </QuickLink>
           <QuickLink href="/scopes/templates" icon={Zap}>
             Templates
           </QuickLink>

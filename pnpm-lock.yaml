@@ -293,6 +293,12 @@ importers:
       cronstrue:
         specifier: ^3.14.0
         version: 3.14.0
+      cytoscape:
+        specifier: ^3.34.0
+        version: 3.34.0
+      cytoscape-fcose:
+        specifier: ^2.2.0
+        version: 2.2.0(cytoscape@3.34.0)
       dagre:
         specifier: ^0.8.5
         version: 0.8.5
@@ -392,6 +398,9 @@ importers:
       react-colorful:
         specifier: latest
         version: 5.6.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react-cytoscapejs:
+        specifier: ^2.0.0
+        version: 2.0.0(cytoscape@3.34.0)(react@19.2.4)
       react-day-picker:
         specifier: ^9.14.0
         version: 9.14.0(react@19.2.4)
@@ -567,6 +576,9 @@ importers:
       '@types/chroma-js':
         specifier: ^3.1.2
         version: 3.1.2
+      '@types/cytoscape':
+        specifier: ^3.31.0
+        version: 3.31.0
       '@types/jest':
         specifier: latest
         version: 30.0.0
@@ -579,6 +591,9 @@ importers:
       '@types/react':
         specifier: latest
         version: 19.2.14
+      '@types/react-cytoscapejs':
+        specifier: ^1.2.6
+        version: 1.2.6
       '@types/react-dom':
         specifier: latest
         version: 19.2.3(@types/react@19.2.14)
@@ -713,10 +728,10 @@ importers:
     dependencies:
       '@reduxjs/toolkit':
         specifier: ^2.0.0
-        version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
+        version: 2.11.2(react-redux@9.2.0(@types/react@19.2.16)(react@19.2.4)(redux@5.0.1))(react@19.2.4)
       react-redux:
         specifier: ^9.0.0
-        version: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
+        version: 9.2.0(@types/react@19.2.16)(react@19.2.4)(redux@5.0.1)
       reselect:
         specifier: ^5.0.0
         version: 5.1.1
@@ -4182,6 +4197,10 @@ packages:
   '@types/cors@2.8.19':
     resolution: {integrity: sha512-mFNylyeyqN93lfe/9CSxOGREz8cpzAhH+E93xJ4xWQf62V8sQ/24reV2nyzUWM6H6Xji+GGHpkbLe7pVoUEskg==}
 
+  '@types/cytoscape@3.31.0':
+    resolution: {integrity: sha512-EXHOHxqQjGxLDEh5cP4te6J0bi7LbCzmZkzsR6f703igUac8UGMdEohMyU3GHAayCTZrLQOMnaE/lqB2Ekh8Ww==}
+    deprecated: This is a stub types definition. cytoscape provides its own type definitions, so you do not need this installed.
+
   '@types/d3-array@3.2.2':
     resolution: {integrity: sha512-hOLWVbm7uRza0BYXpIIW5pxfrKe0W+D5lrFiAEYR+pb6w3N2SwSMaJbXdUfSEv+dT4MfHBLtn5js0LAWaO6otw==}
 
@@ -4391,6 +4410,9 @@ packages:
     peerDependencies:
       '@types/react': '*'
 
+  '@types/react-cytoscapejs@1.2.6':
+    resolution: {integrity: sha512-Nivfky/kuzT4BtIXpv5hV79Kfn+DUiBiftQeCvFCLUhqxz2ADgUxMYdHtxAUpfHiYZYuU9CWM8tGBTaybTH5+A==}
+
   '@types/react-dom@19.2.3':
     resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
     peerDependencies:
@@ -4417,6 +4439,9 @@ packages:
 
   '@types/react@19.2.14':
     resolution: {integrity: sha512-ilcTH/UniCkMdtexkoCN0bI7pMcJDvmQFPvuPvmEaYA/NSfFTAgdUSLAoVjaRJm7+6PvcM+q1zYOwS4wTYMF9w==}
+
+  '@types/react@19.2.16':
+    resolution: {integrity: sha512-esJiCAnl0kfpNdE69f3So4WJUXy95dLZydX0KwK46riIHDzHM7O9Vtf9xCHW0PXIqvgqNrswl522kA/5yx+F4w==}
 
   '@types/reactcss@1.2.13':
     resolution: {integrity: sha512-gi3S+aUi6kpkF5vdhUsnkwbiSEIU/BEJyD7kBy2SudWBUuKmJk8AQKE0OVcQQeEy40Azh0lV6uynxlikYIJuwg==}
@@ -5663,6 +5688,9 @@ packages:
     resolution: {integrity: sha512-tJtZBBHA6vjIAaF6EnIaq6laBBP9aq/Y3ouVJjEfoHbRBcHBAHYcMh/w8LDrk2PvIMMq8gmopa5D4V8RmbrxGw==}
     engines: {node: '>= 0.10'}
 
+  cose-base@2.2.0:
+    resolution: {integrity: sha512-AzlgcsCbUMymkADOJtQm3wO9S3ltPfYOFD5033keQn9NJzIbtnZj+UdBJe7DYml/8TdbtHJW3j58SOnKhWY/5g==}
+
   cosmiconfig@7.1.0:
     resolution: {integrity: sha512-AdmX6xUzdNASswsFtmwSt7Vj8po9IuqXm0UXz7QKPuEUmPB4XyjGfaAr2PSuELMwkRMVH1EpIkX5bTZGRB3eCA==}
     engines: {node: '>=10'}
@@ -5743,6 +5771,15 @@ packages:
 
   cyclist@1.0.2:
     resolution: {integrity: sha512-0sVXIohTfLqVIW3kb/0n6IiWF3Ifj5nm2XaSrLq2DI6fKIGa2fYAZdk917rUneaeLVpYfFcyXE2ft0fe3remsA==}
+
+  cytoscape-fcose@2.2.0:
+    resolution: {integrity: sha512-ki1/VuRIHFCzxWNrsshHYPs6L7TvLu3DL+TyIGEsRcvVERmxokbf5Gdk7mFxZnTdiGtnA4cfSmjZJMviqSuZrQ==}
+    peerDependencies:
+      cytoscape: ^3.2.0
+
+  cytoscape@3.34.0:
+    resolution: {integrity: sha512-62rNSrioXw93uliKFBwjukeQyeWwH2PqDrTac31r2P6464u3AUvTk0xS4LVvT251g7IgkFunrI48ZEZGjywSOg==}
+    engines: {node: '>=0.10'}
 
   d3-array@3.2.4:
     resolution: {integrity: sha512-tdQAmyA18i4J7wprpYq8ClcxZy3SC31QMeByyCFyRt7BVHdREQZ5lpzoe5mFEYZUWe+oq8HBvk9JjpibyEV4Jg==}
@@ -7865,6 +7902,9 @@ packages:
     resolution: {integrity: sha512-MbjN408fEndfiQXbFQ1vnd+1NoLDsnQW41410oQBXiyXDMYH5z505juWa4KUE1LqxRC7DgOgZDbKLxHIwm27hA==}
     engines: {node: '>=0.10'}
 
+  layout-base@2.0.1:
+    resolution: {integrity: sha512-dp3s92+uNI1hWIpPGH3jK2kxE2lMjdXdr+DH8ynZHpd6PUlH6x6cbuXnoMmiNumznqaNO31xu9e79F0uuZ0JFg==}
+
   leac@0.6.0:
     resolution: {integrity: sha512-y+SqErxb8h7nE/fiEX07jsbuhrpO9lL8eca7/Y1nuWV2moNlXhyd59iDGcRf6moVyDMbmTNzL40SUyrFU/yDpg==}
 
@@ -9258,6 +9298,12 @@ packages:
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
+
+  react-cytoscapejs@2.0.0:
+    resolution: {integrity: sha512-t3SSl1DQy7+JQjN+8QHi1anEJlM3i3aAeydHTsJwmjo/isyKK7Rs7oCvU6kZsB9NwZidzZQR21Vm2PcBLG/Tjg==}
+    peerDependencies:
+      cytoscape: ^3.2.19
+      react: '>=15.0.0'
 
   react-day-picker@9.14.0:
     resolution: {integrity: sha512-tBaoDWjPwe0M5pGrum4H0SR6Lyk+BO9oHnp9JbKpGKW2mlraNPgP9BMfsg5pWpwrssARmeqk7YBl2oXutZTaHA==}
@@ -13729,6 +13775,18 @@ snapshots:
       react: 19.2.4
       react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.4)(redux@5.0.1)
 
+  '@reduxjs/toolkit@2.11.2(react-redux@9.2.0(@types/react@19.2.16)(react@19.2.4)(redux@5.0.1))(react@19.2.4)':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      '@standard-schema/utils': 0.3.0
+      immer: 11.1.4
+      redux: 5.0.1
+      redux-thunk: 3.1.0(redux@5.0.1)
+      reselect: 5.1.1
+    optionalDependencies:
+      react: 19.2.4
+      react-redux: 9.2.0(@types/react@19.2.16)(react@19.2.4)(redux@5.0.1)
+
   '@remirror/core-constants@3.0.0': {}
 
   '@remirror/core-helpers@4.0.0':
@@ -15176,6 +15234,10 @@ snapshots:
     dependencies:
       '@types/node': 25.6.0
 
+  '@types/cytoscape@3.31.0':
+    dependencies:
+      cytoscape: 3.34.0
+
   '@types/d3-array@3.2.2': {}
 
   '@types/d3-axis@3.0.6':
@@ -15411,6 +15473,11 @@ snapshots:
       '@types/react': 19.2.14
       '@types/reactcss': 1.2.13(@types/react@19.2.14)
 
+  '@types/react-cytoscapejs@1.2.6':
+    dependencies:
+      '@types/react': 19.2.16
+      cytoscape: 3.34.0
+
   '@types/react-dom@19.2.3(@types/react@19.2.14)':
     dependencies:
       '@types/react': 19.2.14
@@ -15436,6 +15503,10 @@ snapshots:
       '@types/react': 19.2.14
 
   '@types/react@19.2.14':
+    dependencies:
+      csstype: 3.2.3
+
+  '@types/react@19.2.16':
     dependencies:
       csstype: 3.2.3
 
@@ -16883,6 +16954,10 @@ snapshots:
       object-assign: 4.1.1
       vary: 1.1.2
 
+  cose-base@2.2.0:
+    dependencies:
+      layout-base: 2.0.1
+
   cosmiconfig@7.1.0:
     dependencies:
       '@types/parse-json': 4.0.2
@@ -16988,6 +17063,13 @@ snapshots:
   csstype@3.2.3: {}
 
   cyclist@1.0.2: {}
+
+  cytoscape-fcose@2.2.0(cytoscape@3.34.0):
+    dependencies:
+      cose-base: 2.2.0
+      cytoscape: 3.34.0
+
+  cytoscape@3.34.0: {}
 
   d3-array@3.2.4:
     dependencies:
@@ -19697,6 +19779,8 @@ snapshots:
     dependencies:
       language-subtag-registry: 0.3.23
 
+  layout-base@2.0.1: {}
+
   leac@0.6.0: {}
 
   leaflet@1.9.4: {}
@@ -21456,6 +21540,12 @@ snapshots:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
 
+  react-cytoscapejs@2.0.0(cytoscape@3.34.0)(react@19.2.4):
+    dependencies:
+      cytoscape: 3.34.0
+      prop-types: 15.8.1
+      react: 19.2.4
+
   react-day-picker@9.14.0(react@19.2.4):
     dependencies:
       '@date-fns/tz': 1.4.1
@@ -21639,6 +21729,15 @@ snapshots:
       use-sync-external-store: 1.6.0(react@19.2.4)
     optionalDependencies:
       '@types/react': 19.2.14
+      redux: 5.0.1
+
+  react-redux@9.2.0(@types/react@19.2.16)(react@19.2.4)(redux@5.0.1):
+    dependencies:
+      '@types/use-sync-external-store': 0.0.6
+      react: 19.2.4
+      use-sync-external-store: 1.6.0(react@19.2.4)
+    optionalDependencies:
+      '@types/react': 19.2.16
       redux: 5.0.1
 
   react-remove-scroll-bar@2.3.8(@types/react@19.2.14)(react@19.2.4):

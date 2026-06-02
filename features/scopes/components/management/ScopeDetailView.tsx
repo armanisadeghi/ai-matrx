@@ -9,7 +9,13 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, ArrowLeft, Building, ExternalLink } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Building,
+  ExternalLink,
+  Network,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
@@ -116,6 +122,13 @@ export function ScopeDetailView({ scopeId }: ScopeDetailViewProps) {
           >
             {type.label_singular}
           </Badge>
+          <Link
+            href={`/scopes/${scopeId}/graph`}
+            className="ml-auto inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            <Network className="h-3.5 w-3.5" />
+            View graph
+          </Link>
         </div>
         <div className="text-xs text-muted-foreground flex items-center gap-1.5">
           <Building className="h-3 w-3" />
