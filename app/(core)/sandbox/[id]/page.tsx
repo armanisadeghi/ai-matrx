@@ -855,8 +855,12 @@ export default function SandboxDetailPage() {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({
+                                  // Read user-readable system logs only;
+                                  // `dmesg` requires CAP_SYSLOG inside the
+                                  // container and just produces a "Operation
+                                  // not permitted" error noise line, so drop it.
                                   command:
-                                    'tail -n 50 /var/log/syslog 2>/dev/null || dmesg | tail -n 50 2>/dev/null || echo "No logs available"',
+                                    'tail -n 50 /var/log/syslog 2>/dev/null || tail -n 50 /var/log/messages 2>/dev/null || echo "No user-readable system logs on this sandbox image. For container-level docker logs, use the Matrx Ship Admin portal."',
                                   timeout: 10,
                                 }),
                               },

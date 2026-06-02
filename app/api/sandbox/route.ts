@@ -196,70 +196,17 @@ export async function POST(request: NextRequest) {
       tierInput || (config?.tier as SandboxTier) || "ec2";
     const target = resolveOrchestratorByTier(tier);
 
-    // Merge the user's vaulted secrets into config.env before forwarding.
-    // aidream owns the decryption (Fernet key lives there); we authenticate
-    // with the user's Supabase JWT so RLS still pins to this user. Any
-    // failure here is non-fatal — the sandbox still creates, just without
-    // auto-injected secrets — so a temporary aidream blip doesn't break
-    // sandbox creation.
-    //
-    // Doctrine note: per CLAUDE.md, Next.js API routes should NOT sit
-    // between React and Python. This route already exists as the
-    // orchestrator-forwarding shim (per-user sandbox-quota check +
-    // project validation + reconcile happen here in Supabase before
-    // forwarding), so we're not adding a NEW middle tier — just one
-    // extra outbound fetch on a path that already brokers between
-    // clients and Python. If this route is ever refactored to live in
-    // aidream, the secrets-injection step moves with it; until then,
-    // this is the smallest possible patch that gets the vault wired up.
-    //
-    // Merge precedence: vault secrets WIN over caller-supplied
-    // config.env. That's intentional — the user spec is "set once,
-    // never lose it". If a caller passes a stale value for a key the
-    // user has rotated in the vault, the rotated value wins.
-    const mergedConfig: SandboxConfig = { ...(config || {}) };
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        const aidreamUrl =
-          process.env.NEXT_PUBLIC_BACKEND_URL || "https://server.app.matrxserver.com";
-        const envResp = await fetch(`${aidreamUrl}/api/user-secrets/sandbox-env`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        if (envResp.ok) {
-          const body = (await envResp.json()) as {
-            env: Record<string, string>;
-            count: number;
-          };
-          const existingEnv =
-            (mergedConfig as { env?: Record<string, string> }).env || {};
-          (mergedConfig as { env?: Record<string, string> }).env = {
-            ...existingEnv,
-            ...body.env,
-          };
-        } else {
-          console.warn(
-            `[sandbox-create] secrets fetch failed (${envResp.status}); continuing without auto-injected secrets`,
-          );
-        }
-      }
-    } catch (secretsErr) {
-      console.warn(
-        "[sandbox-create] secrets fetch threw; continuing without auto-injection:",
-        secretsErr,
-      );
-    }
+    // Secrets-vault injection happens INSIDE the orchestrator now (it
+    // fetches the user's secrets from aidream by user_id using the
+    // shared sandbox-service token). This Next.js route does not — and
+    // should not — fetch from aidream. See aidream CLAUDE.md (the
+    // "no Next.js middle tier" doctrine) and the orchestrator's
+    // sandbox_manager.py for the actual injection path.
 
     // Forward to the matching orchestrator.
     const orchestratorBody: Record<string, unknown> = {
       user_id: user.id,
-      config: mergedConfig,
+      config: config || {},
       tier,
     };
     if (template) orchestratorBody.template = template;
