@@ -120,6 +120,15 @@ export type ValidationMode = "permissive" | "strict";
 
 // ─── Service result envelope (matches existing convention) ───────────────────
 
-export type ServiceResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+export type ServiceOk<T> = { success: true; data: T };
+export type ServiceErr = { success: false; error: string };
+export type ServiceResult<T> = ServiceOk<T> | ServiceErr;
+
+/**
+ * Narrow a ServiceResult to the failure variant. Use instead of `!result.success`
+ * inside generic functions where TS's narrow through `Promise<ServiceResult<T>>`
+ * sometimes fails to discriminate the union members reliably.
+ */
+export function isServiceFailure<T>(r: ServiceResult<T>): r is ServiceErr {
+  return r.success === false;
+}

@@ -265,11 +265,9 @@ at all; they just need typed wrappers around the existing reads. Lowest possible
 
 **Wave B — single-row writes through `udt_upsert_row`.** These already work today; the only
 behavior change is that mutations now go through validation + version-logging triggers.
-- `components/user-generated-table-data/EditRowModal.tsx:132` (`update_data_row_in_user_table`)
-  → `upsertRow({ tableId, rowId, data })`. Verify: edits save, page reloads, edit appears in
-  `udt_dataset_row_versions` table. The old RPC stays available for one release as a fallback.
-- `components/user-generated-table-data/UserTableViewer.tsx:250` (inline-edit save) → same.
-- `components/user-generated-table-data/UserTableViewer.tsx:1030` (text cleanup update) → same.
+- ✅ `components/user-generated-table-data/EditRowModal.tsx` — migrated to `upsertRow({ tableId, rowId, data })`.
+- ⏳ `components/user-generated-table-data/UserTableViewer.tsx:250` (inline-edit save) — pending.
+- ⏳ `components/user-generated-table-data/UserTableViewer.tsx:1030` (text cleanup update) — pending.
 
 **Wave C — surgical cell writes through `udt_upsert_cell`.** Pure win — avoids serializing the
 full row payload. No existing call site does this today (the old RPCs are row-shaped); this is
@@ -279,11 +277,11 @@ where the new shape opens performance / network savings.
 - Agent-tool writes (new code, no existing call site).
 
 **Wave D — bulk import through `udt_bulk_write`.** The big-bang performance win.
-- `components/user-generated-table-data/ImportTableModal.tsx` — currently uses N round-trips
-  (per Agent 2: no `append_rows_to_user_table` consumer, suggesting the import does individual
-  `add_data_row_to_user_table` calls or `.from().insert()`). Migrate to one
-  `bulkWrite({ tableId, operations: [{op:'insert', data}, ...] })` call. Verify: 1k+-row
-  imports succeed, complete in one transaction, fire one version-log batch.
+- ✅ `components/user-generated-table-data/ImportTableModal.tsx` — migrated from a sequential
+  N-round-trip `for-await addRow` loop to a single `bulkWrite({ tableId, operations })` call.
+  Semantic improvement: insert failures now abort the whole import atomically rather than
+  silently `console.warn`-ing per-row. In practice, with `validation_mode='permissive'` the
+  failure modes are network/constraint only, so the atomic upgrade is correct.
 
 **Wave E — column type changes through `udt_change_field_type`.** New capability — nothing to
 migrate, but the column-editor UI should expose the "change type" action and call this RPC
@@ -292,8 +290,9 @@ migrate, but the column-editor UI should expose the "change type" action and cal
 
 **Wave F — surface version history in the UI.** Drop `VersionHistoryViewer` (already built)
 into:
-- `UserTableViewer` row context menu → "Show history" → opens a Sheet containing the viewer.
-- Future agent-tool inspector surfaces.
+- ✅ `UserTableViewer` — added a `History` icon between Pencil and Trash in the per-row action
+  group; clicking opens a right-side `Sheet` containing `<VersionHistoryViewer rowId={...} />`.
+- ⏳ Future agent-tool inspector surfaces.
 
 **Wave G — strict-mode toggle.** Add a "Strict validation" switch in `TableSettingsModal` that
 writes `validation_mode` on `udt_datasets`. Permissive remains the default for existing tables;
@@ -309,6 +308,11 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-05-29` — claude: P2 execution starts. Wave D (`ImportTableModal` → `bulkWrite`), Wave F
+  (row-history `Sheet` wired into `UserTableViewer` via a new `History` row-action icon), and
+  half of Wave B (`EditRowModal` → `upsertRow`) landed. Also added `isServiceFailure<T>()` type
+  guard in `types.ts` to work around a TS 5.9 narrowing quirk with discriminated unions
+  returned from async functions.
 - `2026-05-29` — claude: P2-prep wave 3. Added `VersionHistoryViewer` component
   (`features/data-tables/components/`) — self-contained row-history reader on top of
   `useRowVersions`. Renders insert/update/delete + per-key diffs, treats `changed_by=NULL`

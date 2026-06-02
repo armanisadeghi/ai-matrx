@@ -35,8 +35,17 @@ import {
   Link,
   Zap,
   Eye,
-  AlertCircle
+  AlertCircle,
+  History,
 } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
 import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
 import { useRouter } from "next/navigation";
 import {
@@ -128,6 +137,10 @@ const UserTableViewer = ({
   const [selectedRowData, setSelectedRowData] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Row history sheet state. historyRowId is the udt_dataset_rows.id whose
+  // version log is currently visible; null = sheet closed.
+  const [historyRowId, setHistoryRowId] = useState<string | null>(null);
 
   // Additional modals
   const [showAddColumnModal, setShowAddColumnModal] = useState(false);
@@ -1555,6 +1568,17 @@ const UserTableViewer = ({
                               size="icon"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                setHistoryRowId(row.id);
+                              }}
+                              title="View row history"
+                            >
+                              <History className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 handleDeleteRow(row.id);
                               }}
                               title="Delete Row"
@@ -1744,6 +1768,26 @@ const UserTableViewer = ({
         rowData={referenceRowData}
         fields={fields}
       />
+
+      {/* Row version history (P1 audit log surface) */}
+      <Sheet
+        open={historyRowId !== null}
+        onOpenChange={(open) => {
+          if (!open) setHistoryRowId(null);
+        }}
+      >
+        <SheetContent className="overflow-y-auto sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Row history</SheetTitle>
+            <SheetDescription>
+              Every change to this row, newest first.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4">
+            <VersionHistoryViewer rowId={historyRowId} />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
