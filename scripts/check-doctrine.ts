@@ -115,6 +115,7 @@ interface Report {
     newTypes: Finding[];             // new exported interface/type declarations in added lines
     coercions: Finding[];            // `as any` and `as unknown as X` introductions
     parallelSlices: Finding[];       // `createSlice(` in unexpected paths (ESLint catches imports, this catches usage)
+    frozenUrlCaptures: Finding[];    // capturing Asset.primary_url (freeze a URL that rots) without the file_id
 }
 
 const COMPONENT_FILE_RE = /(?:^|\/)[A-Z][A-Za-z0-9]+\.tsx$/;
@@ -123,6 +124,13 @@ const TYPE_DECL_RE = /^\s*export\s+(?:interface\s+([A-Z][A-Za-z0-9]*)|type\s+([A
 const AS_ANY_RE = /\bas\s+any\b/;
 const AS_UNKNOWN_AS_RE = /\bas\s+unknown\s+as\s+/;
 const CREATE_SLICE_CALL_RE = /\bcreateSlice\s*\(/;
+// A resolved upload URL (Asset.primary_url) being captured. Persisting it
+// without ALSO capturing the durable cld_files file_id is the "frozen URL
+// rots when the server re-keys" bug class — see
+// features/files/BRANDING_FILE_ID_PATTERN.md.
+const PRIMARY_URL_CAPTURE_RE = /\.primary_url\b/;
+// The file subsystem legitimately defines/maps primary_url; exempt it.
+const FILE_INFRA_RE = /^(features\/files\/|components\/official\/Image(Asset|Crop))/;
 
 const ALLOWED_SLICE_GLOBS = [
     /^lib\/redux\//,
@@ -196,6 +204,7 @@ function scan(args: Args, files: ChangedFile[]): Report {
         newTypes: [],
         coercions: [],
         parallelSlices: [],
+        frozenUrlCaptures: [],
     };
 
     for (const { status, path: file } of files) {
@@ -239,6 +248,10 @@ function scan(args: Args, files: ChangedFile[]): Report {
             if (CREATE_SLICE_CALL_RE.test(code) && !isInAllowedSlicePath(file)) {
                 report.parallelSlices.push({ file, detail: 'createSlice() call outside canonical slice dirs' });
             }
+
+            if (PRIMARY_URL_CAPTURE_RE.test(code) && !FILE_INFRA_RE.test(file)) {
+                report.frozenUrlCaptures.push({ file, detail: `captures .primary_url — ${trimmed.slice(0, 80)}` });
+            }
         });
     }
 
@@ -263,7 +276,8 @@ function hasAnyFindings(r: Report): boolean {
             r.newHooks.length +
             r.newTypes.length +
             r.coercions.length +
-            r.parallelSlices.length >
+            r.parallelSlices.length +
+            r.frozenUrlCaptures.length >
         0
     );
 }
@@ -322,6 +336,12 @@ function main() {
         'Parallel createSlice calls',
         report.parallelSlices,
         'createSlice() must live in lib/redux/**, features/*/redux/**, or features/*/state/**. Extend an existing slice rather than spinning up a parallel one. (Anti-pattern #3.) (ESLint catches the import; this catches dynamic-import / programmatic use.)'
+    );
+
+    section(
+        'Frozen upload-URL captures',
+        report.frozenUrlCaptures,
+        'Persisting result.primary_url into a DB column freezes a URL that rots when the server re-keys its storage. Also capture result.file_id, store it in a *_file_id column, and render via <InlineMediaRef ref={fileId ? { file_id: fileId } : url} />. See features/files/BRANDING_FILE_ID_PATTERN.md.'
     );
 
     const found = hasAnyFindings(report);

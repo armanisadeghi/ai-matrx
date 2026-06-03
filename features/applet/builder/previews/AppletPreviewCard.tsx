@@ -55,10 +55,10 @@ const AppletPreviewCard: React.FC<AppletPreviewCardProps> = ({ applet, className
         onClick={onClick}
       >
         {/* Applet Banner Image */}
-        {applet.imageUrl ? (
+        {(applet.imageFileId || applet.imageUrl) ? (
           <div className="w-full h-28 relative">
             <InlineMediaRef
-              ref={applet.imageUrl}
+              ref={applet.imageFileId ? { file_id: applet.imageFileId } : applet.imageUrl}
               size="fill"
               fit="cover"
               rounded="none"

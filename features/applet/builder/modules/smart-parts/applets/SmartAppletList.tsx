@@ -408,10 +408,10 @@ const SmartAppletList = forwardRef<
                                             {/* Banner image - only show in grid view */}
                                             {viewMode === "grid" && (
                                                 <div className="h-32 w-full relative">
-                                                    {applet.imageUrl ? (
+                                                    {(applet.imageFileId || applet.imageUrl) ? (
                                                         <>
                                                             <InlineMediaRef
-                                                                ref={applet.imageUrl}
+                                                                ref={applet.imageFileId ? { file_id: applet.imageFileId } : applet.imageUrl}
                                                                 size="fill"
                                                                 fit="cover"
                                                                 rounded="none"

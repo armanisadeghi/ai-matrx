@@ -129,6 +129,7 @@ export const normalizeCustomAppletConfig = (
     compiledRecipeId: config.compiledRecipeId || null,
     subcategoryId: config.subcategoryId || null,
     imageUrl: config.imageUrl || null,
+    imageFileId: config.imageFileId || null,
     appId: config.appId || null,
     brokerMap: config.brokerMap || [],
     overviewLabel: config.overviewLabel,
@@ -166,6 +167,7 @@ export const appletConfigToDBFormat = async (
     compiled_recipe_id: config.compiledRecipeId || null,
     subcategory_id: config.subcategoryId || null,
     image_url: config.imageUrl || null,
+    image_file_id: config.imageFileId || null,
     app_id: config.appId || null,
     broker_map: config.brokerMap || null,
   };
@@ -196,6 +198,7 @@ export const dbToAppletConfig = (
     compiledRecipeId: dbRecord.compiled_recipe_id,
     subcategoryId: dbRecord.subcategory_id,
     imageUrl: dbRecord.image_url,
+    imageFileId: dbRecord.image_file_id,
     appId: dbRecord.app_id,
     brokerMap: parseBrokerMapJson(dbRecord.broker_map),
     overviewLabel: dbRecord.overview_label ?? undefined,

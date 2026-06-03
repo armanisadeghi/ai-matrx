@@ -107,12 +107,12 @@ export const QuickAppMaker: React.FC<QuickAppMakerProps> = ({ currentAppId, onAp
         dispatch(setCreator({ id: appId, creator: e.target.value }));
     };
 
-    const handleImageSelected = (imageUrl: string) => {
-        dispatch(setImageUrl({ id: appId, imageUrl }));
+    const handleImageSelected = (imageUrl: string, imageFileId?: string) => {
+        dispatch(setImageUrl({ id: appId, imageUrl, imageFileId: imageFileId || "" }));
     };
 
     const handleImageRemoved = () => {
-        dispatch(setImageUrl({ id: appId, imageUrl: "" }));
+        dispatch(setImageUrl({ id: appId, imageUrl: "", imageFileId: "" }));
     };
 
     const handleSaveApp = async () => {

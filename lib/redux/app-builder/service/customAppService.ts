@@ -24,6 +24,7 @@ export type CustomAppConfigDB = {
   authenticated_read?: boolean;
   public_read?: boolean;
   image_url?: string;
+  image_file_id?: string | null;
 }
 
 
@@ -45,6 +46,7 @@ export const normalizeCustomAppConfig = (config: Partial<CustomAppConfig>): Cust
     extraButtons: config.extraButtons || [],
     layoutType: config.layoutType || 'tabbedApplets',
     imageUrl: config.imageUrl || null,
+    imageFileId: config.imageFileId || null,
     createdAt: config.createdAt || null,
     updatedAt: config.updatedAt || null,
     userId: config.userId || null,
@@ -77,7 +79,8 @@ export const customAppConfigToDBFormat = async (config: CustomAppConfig): Promis
     is_public: false,
     authenticated_read: true,
     public_read: false,
-    image_url: config.imageUrl || null
+    image_url: config.imageUrl || null,
+    image_file_id: config.imageFileId || null
   };
 };
 
@@ -99,6 +102,7 @@ export const dbToCustomAppConfig = (dbRecord: CustomAppConfigDB): CustomAppConfi
     extraButtons: dbRecord.extra_buttons,
     layoutType: dbRecord.layout_type as AppLayoutOptions,
     imageUrl: dbRecord.image_url,
+    imageFileId: dbRecord.image_file_id,
     createdAt: dbRecord.created_at,
     updatedAt: dbRecord.updated_at,
     userId: dbRecord.user_id,

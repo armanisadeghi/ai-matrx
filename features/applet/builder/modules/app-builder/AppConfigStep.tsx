@@ -167,12 +167,12 @@ export const AppConfigStep: React.FC<AppConfigStepProps> = ({ appId, onAppSaved,
         dispatch(setAccentColor({ id: appId, accentColor: color }));
     };
 
-    const handleImageSelected = (imageUrl: string) => {
-        dispatch(setImageUrl({ id: appId, imageUrl }));
+    const handleImageSelected = (imageUrl: string, imageFileId?: string) => {
+        dispatch(setImageUrl({ id: appId, imageUrl, imageFileId: imageFileId || "" }));
     };
 
     const handleImageRemoved = () => {
-        dispatch(setImageUrl({ id: appId, imageUrl: "" }));
+        dispatch(setImageUrl({ id: appId, imageUrl: "", imageFileId: "" }));
     };
 
     const handleSaveApp = async () => {

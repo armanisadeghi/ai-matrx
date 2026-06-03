@@ -274,7 +274,7 @@ export const executeInstance = createAsyncThunk<
       const _caps = getCapabilitiesForConversation(state, conversationId);
       if (_caps) {
         const _validation = validateMessageBlocks(payload.user_input, _caps);
-        if (!_validation.ok) {
+        if (_validation.ok === false) {
           console.warn(
             `[executeInstance] capabilities warning (rejected: ${_validation.rejected.join(", ")}): ${_validation.message}`,
             { conversationId, modelInput: _caps.input },

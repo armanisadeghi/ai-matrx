@@ -280,6 +280,8 @@ export type CustomAppConfig = {
   extraButtons?: CustomActionButton[];
   layoutType?: AppLayoutOptions;
   imageUrl?: string;
+  /** cld_files.id backing imageUrl. Source of truth for rendering; imageUrl is the durable fallback. */
+  imageFileId?: string;
   createdAt?: string;
   updatedAt?: string;
   userId?: string;
@@ -311,6 +313,8 @@ export type CustomAppletConfig = {
   compiledRecipeId?: string;
   subcategoryId?: string;
   imageUrl?: string;
+  /** cld_files.id backing imageUrl. Source of truth for rendering; imageUrl is the durable fallback. */
+  imageFileId?: string;
   appId?: string;
   brokerMap?: BrokerMapping[];
   overviewLabel?: string; // "This will replace the message for Minimalist Layout as well as show after submission if things are put together. (eg. What are you looking for?)"

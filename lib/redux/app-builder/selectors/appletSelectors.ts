@@ -180,6 +180,8 @@ export const selectAppletSubcategoryId =
   createAppletPropertySelector<string>("subcategoryId");
 export const selectAppletImageUrl =
   createAppletPropertySelector<string>("imageUrl");
+export const selectAppletImageFileId =
+  createAppletPropertySelector<string>("imageFileId");
 export const selectAppletAppId = createAppletPropertySelector<string>("appId");
 
 // ================================ Security and Status Selectors ================================

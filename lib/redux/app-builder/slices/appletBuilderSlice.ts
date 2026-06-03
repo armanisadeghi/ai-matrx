@@ -46,6 +46,7 @@ export const DEFAULT_APPLET: Partial<AppletBuilder> = {
     compiledRecipeId: "",
     subcategoryId: "",
     imageUrl: "",
+    imageFileId: "",
     appId: "",
     isPublic: false,
     authenticatedRead: true,
@@ -187,11 +188,11 @@ export const appletBuilderSlice = createSlice({
 
             state.applets[id] = { ...state.applets[id], subcategoryId, isDirty: true };
         },
-        setImageUrl: (state, action: PayloadAction<{ id: string; imageUrl?: string }>) => {
-            const { id, imageUrl } = action.payload;
+        setImageUrl: (state, action: PayloadAction<{ id: string; imageUrl?: string; imageFileId?: string }>) => {
+            const { id, imageUrl, imageFileId } = action.payload;
             if (!checkAppletExists(state, id)) return;
 
-            state.applets[id] = { ...state.applets[id], imageUrl, isDirty: true };
+            state.applets[id] = { ...state.applets[id], imageUrl, imageFileId: imageFileId ?? "", isDirty: true };
         },
         setAppId: (state, action: PayloadAction<{ id: string; appId?: string }>) => {
             const { id, appId } = action.payload;

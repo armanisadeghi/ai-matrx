@@ -389,10 +389,10 @@ const SmartAppList = forwardRef<
                                             {/* Banner image - only show in grid view */}
                                             {viewMode === "grid" && (
                                                 <div className="h-32 w-full relative">
-                                                    {app.imageUrl ? (
+                                                    {(app.imageFileId || app.imageUrl) ? (
                                                         <>
                                                             <InlineMediaRef
-                                                                ref={app.imageUrl}
+                                                                ref={app.imageFileId ? { file_id: app.imageFileId } : app.imageUrl}
                                                                 size="fill"
                                                                 fit="cover"
                                                                 rounded="none"

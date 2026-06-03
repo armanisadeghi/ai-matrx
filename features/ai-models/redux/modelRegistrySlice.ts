@@ -305,6 +305,7 @@ function emptyModelRecord(): Omit<AIModelRecord, "_fetchType"> {
     common_name: null,
     api_class: null,
     capabilities: null,
+    capabilities_pre_canonical: null,
     constraints: [],
     context_window: null,
     controls: null,

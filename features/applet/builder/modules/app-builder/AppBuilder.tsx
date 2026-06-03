@@ -40,6 +40,7 @@ export const DEFAULT_APP_CONFIG: CustomAppConfig = {
     extraButtons: [],
     layoutType: "tabbedApplets",
     imageUrl: "",
+    imageFileId: "",
 };
 
 export const AppBuilder = () => {
@@ -271,10 +272,11 @@ export const AppBuilder = () => {
         }
     };
 
-    const handleImageSelected = (imageUrl: string) => {
+    const handleImageSelected = (imageUrl: string, imageFileId?: string) => {
         setNewApp((prev) => ({
             ...prev,
             imageUrl,
+            imageFileId: imageFileId || "",
         }));
     };
 
@@ -283,6 +285,7 @@ export const AppBuilder = () => {
         setNewApp((prev) => ({
             ...prev,
             imageUrl: "",
+            imageFileId: "",
         }));
     };
 

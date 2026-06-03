@@ -110,6 +110,11 @@ export const selectAppImageUrl = createSelector(
   (app): string | undefined => app?.imageUrl
 );
 
+export const selectAppImageFileId = createSelector(
+  [selectAppById],
+  (app): string | undefined => app?.imageFileId
+);
+
 export const selectAppAuthenticatedRead = createSelector(
   [selectAppById],
   (app): boolean | undefined => app?.authenticatedRead

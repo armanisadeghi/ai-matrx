@@ -48,9 +48,13 @@ export interface SingleImageSelectProps extends React.HTMLAttributes<HTMLDivElem
     imageManagerProps?: Partial<Parameters<typeof ImageManager>[0]>;
 
     /**
-     * Callback when an image is selected - receives only the URL string
+     * Callback when an image is selected. Receives the URL string and, when
+     * the selection came from a cloud file / fresh upload, the durable
+     * cld_files `file_id` (empty string for external / library URLs that
+     * carry no file id). Persist the file_id when truthy and prefer it for
+     * rendering; the URL remains the fallback.
      */
-    onImageSelected?: (imageUrl: string) => void;
+    onImageSelected?: (imageUrl: string, fileId?: string) => void;
 
     /**
      * Callback when the image is removed
@@ -187,6 +191,8 @@ export function SingleImageSelect({
         // Process the selection after the manager is closed
         if (newSelectedImages.length > 0) {
             const newImageUrl = newSelectedImages[0].url;
+            // Durable cld_files id when the source was a cloud file / upload.
+            const newImageFileId = newSelectedImages[0].metadata?.fileId ?? "";
 
             // Only update if changed
             if (newImageUrl !== localImage) {
@@ -194,7 +200,7 @@ export function SingleImageSelect({
 
                 // Notify parent if needed
                 if (onImageSelected) {
-                    onImageSelected(newImageUrl);
+                    onImageSelected(newImageUrl, newImageFileId);
                 }
             }
         } else if (localImage && onImageRemoved) {

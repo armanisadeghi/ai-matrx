@@ -5993,6 +5993,313 @@
         }
       }
     },
+    "/user-secrets/": {
+      "get": {
+        "tags": [
+          "User Secrets"
+        ],
+        "summary": "List Secrets",
+        "operationId": "list_secrets_user_secrets__get",
+        "parameters": [
+          {
+            "name": "include_inactive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Inactive"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSecretListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "User Secrets"
+        ],
+        "summary": "Create Secret",
+        "operationId": "create_secret_user_secrets__post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserSecretCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSecretSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user-secrets/{key}": {
+      "patch": {
+        "tags": [
+          "User Secrets"
+        ],
+        "summary": "Update Secret",
+        "operationId": "update_secret_user_secrets__key__patch",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserSecretUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSecretSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "User Secrets"
+        ],
+        "summary": "Delete Secret",
+        "operationId": "delete_secret_user_secrets__key__delete",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          },
+          {
+            "name": "hard",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Hard"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user-secrets/sandbox-env": {
+      "get": {
+        "tags": [
+          "User Secrets"
+        ],
+        "summary": "Get Sandbox Env",
+        "description": "Return the decrypted env dict that should be injected into a new\nsandbox for this user. Used by both auto-provision\n(`ensure_default_sandbox`) and manual creation (the Next.js sandbox\nroute calls this before forwarding to the orchestrator).\n\nThe response is the same `config.env` shape the orchestrator expects:\na flat `{KEY: value}` dict of plaintext values. Auth gates this — no\nuser can pull another user's env. Caller is responsible for sending\nthese on the wire ONLY to trusted upstreams (the orchestrator over an\nauthenticated channel).",
+        "operationId": "get_sandbox_env_user_secrets_sandbox_env_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxEnvResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user-secrets/internal/sandbox-env-for-user": {
+      "get": {
+        "tags": [
+          "User Secrets"
+        ],
+        "summary": "Get Sandbox Env For User",
+        "description": "Return the decrypted sandbox env for `user_id`. Service-token-authed\nvia the existing sandbox-bridge auth path (X-Matrx-User-Id header is\nUUID-validated; Authorization: Bearer <AIDREAM_SANDBOX_SERVICE_TOKEN>\nis constant-time compared).\n\nCalled by the matrx-sandbox orchestrator at sandbox-create time so the\nuser's vaulted secrets land in `docker run -e KEY=value` regardless\nof how the sandbox was created (browser, Ship portal, agent tool,\nautomation). The browser-facing `/sandbox-env` above stays unchanged\nfor in-browser callers.",
+        "operationId": "get_sandbox_env_for_user_user_secrets_internal_sandbox_env_for_user_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "X-Matrx-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Matrx-User-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SandboxEnvResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user-secrets/bulk-env": {
+      "post": {
+        "tags": [
+          "User Secrets"
+        ],
+        "summary": "Bulk Import Env",
+        "description": "Paste a .env body (or upload one — the FE submits its text content here).\nEvery well-formed line upserts a secret. Malformed lines are skipped\nwith a server-side log; the response lists the rows that landed.",
+        "operationId": "bulk_import_env_user_secrets_bulk_env_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserSecretBulkEnvRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSecretBulkEnvResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/utilities/block-processing/process": {
       "post": {
         "tags": [
@@ -18471,6 +18778,887 @@
         }
       }
     },
+    "/kg-inspector/entities": {
+      "get": {
+        "tags": [
+          "KG Inspector"
+        ],
+        "summary": "List Entities",
+        "operationId": "list_entities_kg_inspector_entities_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntitiesPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kg-inspector/entities/{entity_id}/mentions": {
+      "get": {
+        "tags": [
+          "KG Inspector"
+        ],
+        "summary": "List Entity Mentions",
+        "operationId": "list_entity_mentions_kg_inspector_entities__entity_id__mentions_get",
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entity Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentionsPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kg-inspector/edges/top": {
+      "get": {
+        "tags": [
+          "KG Inspector"
+        ],
+        "summary": "Top Edges",
+        "operationId": "top_edges_kg_inspector_edges_top_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdgesTop"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kg-cost/summary": {
+      "get": {
+        "tags": [
+          "KG Cost"
+        ],
+        "summary": "Summary",
+        "operationId": "summary_kg_cost_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KgCostSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kg-cost/orgs": {
+      "get": {
+        "tags": [
+          "KG Cost"
+        ],
+        "summary": "List Orgs",
+        "operationId": "list_orgs_kg_cost_orgs_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgCostListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kg-cost/orgs/{org_id}": {
+      "get": {
+        "tags": [
+          "KG Cost"
+        ],
+        "summary": "Org Detail",
+        "operationId": "org_detail_kg_cost_orgs__org_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgCostDetailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kg-cost/batches/pending": {
+      "get": {
+        "tags": [
+          "KG Cost"
+        ],
+        "summary": "Pending Batches",
+        "operationId": "pending_batches_kg_cost_batches_pending_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingBatchListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kg-cost/batches/{batch_row_id}": {
+      "get": {
+        "tags": [
+          "KG Cost"
+        ],
+        "summary": "Batch Detail",
+        "operationId": "batch_detail_kg_cost_batches__batch_row_id__get",
+        "parameters": [
+          {
+            "name": "batch_row_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Batch Row Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchDetailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kg-suggestions": {
+      "get": {
+        "tags": [
+          "KG Suggestions"
+        ],
+        "summary": "List Suggestions",
+        "operationId": "list_suggestions_kg_suggestions_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "pending",
+              "title": "Status"
+            }
+          },
+          {
+            "name": "scope_item_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Scope Item Id"
+            }
+          },
+          {
+            "name": "source_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Kind"
+            }
+          },
+          {
+            "name": "source_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionsPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kg-suggestions/{suggestion_id}/accept": {
+      "post": {
+        "tags": [
+          "KG Suggestions"
+        ],
+        "summary": "Accept Suggestion",
+        "operationId": "accept_suggestion_kg_suggestions__suggestion_id__accept_post",
+        "parameters": [
+          {
+            "name": "suggestion_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Suggestion Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AcceptResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/HeavyHitterAcceptPlan"
+                    }
+                  ],
+                  "title": "Response Accept Suggestion Kg Suggestions  Suggestion Id  Accept Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kg-suggestions/{suggestion_id}/reject": {
+      "post": {
+        "tags": [
+          "KG Suggestions"
+        ],
+        "summary": "Reject Suggestion",
+        "operationId": "reject_suggestion_kg_suggestions__suggestion_id__reject_post",
+        "parameters": [
+          {
+            "name": "suggestion_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Suggestion Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kg-suggestions/{suggestion_id}/defer": {
+      "post": {
+        "tags": [
+          "KG Suggestions"
+        ],
+        "summary": "Defer Suggestion",
+        "operationId": "defer_suggestion_kg_suggestions__suggestion_id__defer_post",
+        "parameters": [
+          {
+            "name": "suggestion_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Suggestion Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kg/graph": {
+      "get": {
+        "tags": [
+          "KG Graph"
+        ],
+        "summary": "Get Graph",
+        "operationId": "get_graph_kg_graph_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "scope_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Scope Id"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "depth",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 3,
+              "minimum": 1,
+              "default": 2,
+              "title": "Depth"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2000,
+              "minimum": 1,
+              "default": 500,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphPayload"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kg/graph/entity/{entity_id}/mentions": {
+      "get": {
+        "tags": [
+          "KG Graph"
+        ],
+        "summary": "List Entity Mentions",
+        "operationId": "list_entity_mentions_kg_graph_entity__entity_id__mentions_get",
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entity Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentionsPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/rag/search-lab/expand": {
       "post": {
         "tags": [
@@ -18580,6 +19768,45 @@
                 "schema": {
                   "$ref": "#/components/schemas/DiagnoseResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rag/search-lab/diagnose/stream": {
+      "post": {
+        "tags": [
+          "RAG Search Lab"
+        ],
+        "summary": "Diagnose Stream Endpoint",
+        "operationId": "diagnose_stream_endpoint_rag_search_lab_diagnose_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnoseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -32502,6 +33729,70 @@
   },
   "components": {
     "schemas": {
+      "AcceptResponse": {
+        "properties": {
+          "suggestion": {
+            "$ref": "#/components/schemas/SuggestionRow"
+          },
+          "value": {
+            "$ref": "#/components/schemas/AcceptedValue"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "suggestion",
+          "value"
+        ],
+        "title": "AcceptResponse"
+      },
+      "AcceptedValue": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "context_item_id": {
+            "type": "string",
+            "title": "Context Item Id"
+          },
+          "scope_id": {
+            "type": "string",
+            "title": "Scope Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "value_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Text"
+          },
+          "source_type": {
+            "type": "string",
+            "title": "Source Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "context_item_id",
+          "scope_id",
+          "version",
+          "value_text",
+          "source_type"
+        ],
+        "title": "AcceptedValue",
+        "description": "The scope-item cell value written when a suggestion is accepted."
+      },
       "ActivePageIdsResponse": {
         "properties": {
           "file_id": {
@@ -35530,6 +36821,435 @@
         ],
         "title": "BatchDeleteResponse"
       },
+      "BatchDetailResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "custom_id": {
+            "type": "string",
+            "title": "Custom Id"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "anthropic"
+            ],
+            "title": "Provider"
+          },
+          "batch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "embedding"
+            ],
+            "title": "Kind"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "organization_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Name"
+          },
+          "source_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "failed",
+              "cancelled",
+              "expired"
+            ],
+            "title": "Status"
+          },
+          "est_cost_usd": {
+            "type": "number",
+            "title": "Est Cost Usd"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "tokens_in": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokens In"
+          },
+          "tokens_out": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokens Out"
+          },
+          "poll_count": {
+            "type": "integer",
+            "title": "Poll Count"
+          },
+          "last_polled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Polled At"
+          },
+          "response_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Uri"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "submitted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Submitted At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "next_poll_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Poll At"
+          },
+          "cost_recorded_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Recorded At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "custom_id",
+          "provider",
+          "batch_id",
+          "kind",
+          "user_id",
+          "organization_id",
+          "organization_name",
+          "source_kind",
+          "source_id",
+          "purpose",
+          "status",
+          "est_cost_usd",
+          "cost_usd",
+          "tokens_in",
+          "tokens_out",
+          "poll_count",
+          "last_polled_at",
+          "response_uri",
+          "error",
+          "metadata",
+          "submitted_at",
+          "completed_at",
+          "next_poll_at",
+          "cost_recorded_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "BatchDetailResponse",
+        "description": "Full row for one batch — drill-down view."
+      },
+      "BatchRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "custom_id": {
+            "type": "string",
+            "title": "Custom Id"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "openai",
+              "anthropic"
+            ],
+            "title": "Provider"
+          },
+          "batch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "embedding"
+            ],
+            "title": "Kind"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "organization_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Name"
+          },
+          "source_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "failed",
+              "cancelled",
+              "expired"
+            ],
+            "title": "Status"
+          },
+          "est_cost_usd": {
+            "type": "number",
+            "title": "Est Cost Usd"
+          },
+          "poll_count": {
+            "type": "integer",
+            "title": "Poll Count"
+          },
+          "submitted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Submitted At"
+          },
+          "last_polled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Polled At"
+          },
+          "next_poll_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Poll At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "custom_id",
+          "provider",
+          "batch_id",
+          "kind",
+          "user_id",
+          "organization_id",
+          "organization_name",
+          "source_kind",
+          "source_id",
+          "status",
+          "est_cost_usd",
+          "poll_count",
+          "submitted_at",
+          "last_polled_at",
+          "next_poll_at"
+        ],
+        "title": "BatchRow",
+        "description": "One row in the in-flight-batches table."
+      },
       "BatchScrapeRequest": {
         "properties": {
           "urls": {
@@ -35584,6 +37304,38 @@
           "results"
         ],
         "title": "BatchScrapeResponse"
+      },
+      "BatchSummaryByStatus": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in_progress",
+              "completed",
+              "failed",
+              "cancelled",
+              "expired"
+            ],
+            "title": "Status"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "total_cost_usd": {
+            "type": "number",
+            "title": "Total Cost Usd"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "count",
+          "total_cost_usd"
+        ],
+        "title": "BatchSummaryByStatus"
       },
       "BboxInput": {
         "properties": {
@@ -42557,6 +44309,25 @@
         "title": "DailyCostBreakdown",
         "description": "One day's slice of the workflow cost rollup."
       },
+      "DailySpendPoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "date",
+          "cost_usd"
+        ],
+        "title": "DailySpendPoint"
+      },
       "DataStoreAdminRow": {
         "properties": {
           "id": {
@@ -43160,6 +44931,20 @@
         ],
         "title": "DatasetSummary",
         "description": "The metadata-only projection of a dataset row.\n\nExtra keys are tolerated because the user_data SQL projections can add\ncolumns (counts, flags) without bumping this wire shape."
+      },
+      "DecisionResponse": {
+        "properties": {
+          "suggestion": {
+            "$ref": "#/components/schemas/SuggestionRow"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "suggestion"
+        ],
+        "title": "DecisionResponse",
+        "description": "Returned by reject / defer — the updated suggestion."
       },
       "DedupResponse": {
         "properties": {
@@ -44989,6 +46774,84 @@
         "title": "EdgeDef",
         "description": "User-authored edge in a ReactFlow-compatible definition.\n\nThe edge's semantic `kind` (DATA / CONTROL / CONDITIONAL / ERROR / STREAM)\nlives under data.kind. `type` on ReactFlow is purely a visual style hint.\nConditional edges carry a predicate expression under data.condition that\nthe compiler validates."
       },
+      "EdgeRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "src_id": {
+            "type": "string",
+            "title": "Src Id"
+          },
+          "src_name": {
+            "type": "string",
+            "title": "Src Name"
+          },
+          "src_kind": {
+            "type": "string",
+            "title": "Src Kind"
+          },
+          "dst_id": {
+            "type": "string",
+            "title": "Dst Id"
+          },
+          "dst_name": {
+            "type": "string",
+            "title": "Dst Name"
+          },
+          "dst_kind": {
+            "type": "string",
+            "title": "Dst Kind"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "src_id",
+          "src_name",
+          "src_kind",
+          "dst_id",
+          "dst_name",
+          "dst_kind",
+          "weight"
+        ],
+        "title": "EdgeRow"
+      },
+      "EdgesTop": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EdgeRow"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "EdgesTop"
+      },
       "EditInputsRetryProposal": {
         "properties": {
           "action": {
@@ -45053,6 +46916,38 @@
         ],
         "title": "EditWorkflowProposal",
         "description": "Suggest a graph edit (config / schema / structure). Cannot be applied\nautomatically — surfaced to the user as a recommendation."
+      },
+      "EntitiesPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EntityRow"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "EntitiesPage"
       },
       "EntityCreateBody": {
         "properties": {
@@ -45189,6 +47084,69 @@
           "is_user_named"
         ],
         "title": "EntityOut"
+      },
+      "EntityRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "canonical_name": {
+            "type": "string",
+            "title": "Canonical Name"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "mention_count": {
+            "type": "integer",
+            "title": "Mention Count"
+          },
+          "source_count": {
+            "type": "integer",
+            "title": "Source Count"
+          },
+          "confidence_avg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Avg"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "canonical_name",
+          "organization_id",
+          "mention_count",
+          "source_count",
+          "confidence_avg",
+          "created_at"
+        ],
+        "title": "EntityRow"
       },
       "EntityUpdateBody": {
         "properties": {
@@ -49050,6 +51008,123 @@
         ],
         "title": "GrantPermissionRequest"
       },
+      "GraphEdge": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "source",
+          "target",
+          "weight"
+        ],
+        "title": "GraphEdge"
+      },
+      "GraphNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "mention_count": {
+            "type": "integer",
+            "title": "Mention Count"
+          },
+          "source_count": {
+            "type": "integer",
+            "title": "Source Count"
+          },
+          "confidence_avg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Avg"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "mention_count",
+          "source_count",
+          "confidence_avg"
+        ],
+        "title": "GraphNode"
+      },
+      "GraphPayload": {
+        "properties": {
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNode"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/GraphEdge"
+            },
+            "type": "array",
+            "title": "Edges"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nodes",
+          "edges",
+          "truncated"
+        ],
+        "title": "GraphPayload"
+      },
       "GscOauthStartRequest": {
         "properties": {
           "display_name": {
@@ -49219,6 +51294,74 @@
           "distinct_sources"
         ],
         "title": "HealthResponse"
+      },
+      "HeavyHitterAcceptPlan": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "heavy_hitter_plan",
+            "title": "Kind",
+            "default": "heavy_hitter_plan"
+          },
+          "suggestion": {
+            "$ref": "#/components/schemas/SuggestionRow"
+          },
+          "entity_id": {
+            "type": "string",
+            "title": "Entity Id"
+          },
+          "entity_kind": {
+            "type": "string",
+            "title": "Entity Kind"
+          },
+          "suggested_scope_name": {
+            "type": "string",
+            "title": "Suggested Scope Name"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/HeavyHitterSource"
+            },
+            "type": "array",
+            "title": "Sources"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "suggestion",
+          "entity_id",
+          "entity_kind",
+          "suggested_scope_name",
+          "sources"
+        ],
+        "title": "HeavyHitterAcceptPlan",
+        "description": "Returned when a ``heavy_hitter`` suggestion is accepted. Heavy-hitter\nacceptance CREATES A NEW SCOPE (not a cell value), and scope creation is a\nfrontend-owned write path (React → Supabase direct, per the scopes\ninvariant). The backend cannot safely hand-roll scope creation without\nforking that mutation path, so it returns this typed plan and flips the\nsuggestion to ``accepted``; the FE drives scope creation + source tagging in\nPhase F.\n\n``entity_kind`` maps to the scope-type the FE should offer (e.g.\norganization → a Client/Org scope). ``sources`` are the mentions to tag to\nthe new scope via ctx_scope_assignments once it exists."
+      },
+      "HeavyHitterSource": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "mention_count": {
+            "type": "integer",
+            "title": "Mention Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_kind",
+          "source_id",
+          "mention_count"
+        ],
+        "title": "HeavyHitterSource",
+        "description": "One source the heavy-hitter entity was mentioned in — the FE tags each of\nthese to the newly-created scope via ctx_scope_assignments after creation."
       },
       "HideRequest": {
         "properties": {
@@ -50478,14 +52621,12 @@
           "source_file": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonValue"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Source File"
+            ]
           },
           "source_url": {
             "anyOf": [
@@ -51490,6 +53631,35 @@
         ],
         "title": "KeywordReorderRequest",
         "description": "Payload for PATCH /topics/{topic_id}/keywords/reorder.\n\n`keyword_ids` is the new full ordering of the topic's keywords. The\nserver assigns `position = index_in_list + 1` (1-indexed) to each\nrow inside a single ORM transaction, then returns the keywords in\ntheir new order. The list must contain exactly the topic's current\nkeyword IDs (no additions, no deletions) — that's a separate concern,\nhandled by POST/DELETE /topics/{topic_id}/keywords.\n\nWire shape:\n    {\"keyword_ids\": [\"uuid1\", \"uuid2\", \"uuid3\"]}"
+      },
+      "KgCostSummaryResponse": {
+        "properties": {
+          "spend_today_usd": {
+            "type": "number",
+            "title": "Spend Today Usd"
+          },
+          "spend_7d_usd": {
+            "type": "number",
+            "title": "Spend 7D Usd"
+          },
+          "orgs_over_80pct": {
+            "type": "integer",
+            "title": "Orgs Over 80Pct"
+          },
+          "pending_batches": {
+            "type": "integer",
+            "title": "Pending Batches"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "spend_today_usd",
+          "spend_7d_usd",
+          "orgs_over_80pct",
+          "pending_batches"
+        ],
+        "title": "KgCostSummaryResponse"
       },
       "LLMParams": {
         "properties": {
@@ -54526,6 +56696,117 @@
         ],
         "title": "MemoryCostSummary"
       },
+      "MentionRow": {
+        "properties": {
+          "chunk_id": {
+            "type": "string",
+            "title": "Chunk Id"
+          },
+          "source_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet"
+          },
+          "span_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Span Start"
+          },
+          "span_end": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Span End"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "chunk_id",
+          "source_kind",
+          "source_id",
+          "snippet",
+          "span_start",
+          "span_end",
+          "confidence"
+        ],
+        "title": "MentionRow"
+      },
+      "MentionsPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MentionRow"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "MentionsPage"
+      },
       "MergePdfSource": {
         "properties": {
           "media": {
@@ -55296,6 +57577,169 @@
           "unrecovered_24h"
         ],
         "title": "OpsSummaryResponse"
+      },
+      "OrgCostDetailResponse": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "organization_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Name"
+          },
+          "budget_usd": {
+            "type": "number",
+            "title": "Budget Usd"
+          },
+          "used_today_usd": {
+            "type": "number",
+            "title": "Used Today Usd"
+          },
+          "window_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Start"
+          },
+          "daily_series": {
+            "items": {
+              "$ref": "#/components/schemas/DailySpendPoint"
+            },
+            "type": "array",
+            "title": "Daily Series"
+          },
+          "top_sources": {
+            "items": {
+              "$ref": "#/components/schemas/TopSourceRow"
+            },
+            "type": "array",
+            "title": "Top Sources"
+          },
+          "batch_summary": {
+            "items": {
+              "$ref": "#/components/schemas/BatchSummaryByStatus"
+            },
+            "type": "array",
+            "title": "Batch Summary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "organization_id",
+          "organization_name",
+          "budget_usd",
+          "used_today_usd",
+          "window_start",
+          "daily_series",
+          "top_sources",
+          "batch_summary"
+        ],
+        "title": "OrgCostDetailResponse"
+      },
+      "OrgCostListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrgCostRow"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "OrgCostListResponse"
+      },
+      "OrgCostRow": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          },
+          "organization_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Name"
+          },
+          "daily_auto_rag_budget_usd": {
+            "type": "number",
+            "title": "Daily Auto Rag Budget Usd"
+          },
+          "daily_auto_rag_cost_used_usd": {
+            "type": "number",
+            "title": "Daily Auto Rag Cost Used Usd"
+          },
+          "daily_auto_rag_window_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Auto Rag Window Start"
+          },
+          "percent_used": {
+            "type": "number",
+            "title": "Percent Used"
+          },
+          "last_charge_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Charge At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "organization_id",
+          "organization_name",
+          "daily_auto_rag_budget_usd",
+          "daily_auto_rag_cost_used_usd",
+          "daily_auto_rag_window_start",
+          "percent_used",
+          "last_charge_at"
+        ],
+        "title": "OrgCostRow",
+        "description": "One row in the org-leaderboard table on /administration/kg-cost."
       },
       "OverlayBboxIn": {
         "properties": {
@@ -56789,6 +59233,28 @@
           "word_number"
         ],
         "title": "PdfTextWord"
+      },
+      "PendingBatchListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BatchRow"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "PendingBatchListResponse"
       },
       "PendingCallSummary": {
         "properties": {
@@ -62299,6 +64765,28 @@
         "title": "SandboxBindingState",
         "description": "Current sandbox binding for a conversation + whether the next agent run\nwill actually get the sandbox tools. ``armed`` tells the truth so a client\nnever has to guess why tools didn't appear (the failure mode that left users\nwith zero working boxes for days)."
       },
+      "SandboxEnvResponse": {
+        "properties": {
+          "env": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Env"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "env",
+          "count"
+        ],
+        "title": "SandboxEnvResponse",
+        "description": "Decrypted env dict for the current user's next sandbox.\n\nFree-form key/value because user-secret keys are user-chosen\nidentifiers (already validated against `^[A-Za-z_][A-Za-z0-9_]*$`).\nValues are plaintext — only ever transmitted on the authenticated\nserver-to-server hop (Next.js sandbox route → aidream); never lands\nin the browser DOM."
+      },
       "SaveAsTemplateRequest": {
         "properties": {
           "name": {
@@ -63774,9 +66262,7 @@
             "title": "Version"
           },
           "config": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Config"
+            "$ref": "#/components/schemas/JsonValue"
           },
           "category_id": {
             "anyOf": [
@@ -63956,14 +66442,12 @@
           "config": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonValue"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Config"
+            ]
           },
           "category_id": {
             "anyOf": [
@@ -64111,9 +66595,7 @@
             "title": "Version"
           },
           "config": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Config"
+            "$ref": "#/components/schemas/JsonValue"
           },
           "category_id": {
             "anyOf": [
@@ -65612,26 +68094,22 @@
           "params": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonValue"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Params"
+            ]
           },
           "overrides": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/JsonValue"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Overrides"
+            ]
           }
         },
         "type": "object",
@@ -65916,6 +68394,243 @@
         ],
         "title": "SuggestRequest",
         "description": "Wizard input for the Research Setup Suggest Agent.\n\nThe agent (`prompt_builtins.id = 4f802fd1-…`) takes ONE variable —\n`subject_name_or_description`. The frontend wizard's single textarea\nfeeds this directly. The user can paste a short name (\"Arman Sadeghi\"),\na paragraph (\"everything we know about photosynthesis cycles…\"), or\nanything in between. The agent decides how to title and describe the\nproject from that one string.\n\nThe legacy two-field shape (`topic_name` + `topic_description`) is\naccepted via the validator below so old clients don't 422; they are\nconcatenated with a space. New clients should send only\n`subject_name_or_description`."
+      },
+      "SuggestionEntity": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "SuggestionEntity",
+        "description": "The KG entity a suggestion points at."
+      },
+      "SuggestionRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "entity": {
+            "$ref": "#/components/schemas/SuggestionEntity"
+          },
+          "target": {
+            "$ref": "#/components/schemas/SuggestionTarget"
+          },
+          "suggested_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Value"
+          },
+          "match_kind": {
+            "type": "string",
+            "enum": [
+              "exact",
+              "fuzzy",
+              "semantic",
+              "heavy_hitter"
+            ],
+            "title": "Match Kind"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted",
+              "rejected",
+              "deferred",
+              "expired"
+            ],
+            "title": "Status"
+          },
+          "context_snippet": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Snippet"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "suppressed_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suppressed Until"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "source_kind",
+          "source_id",
+          "entity",
+          "target",
+          "suggested_value",
+          "match_kind",
+          "confidence",
+          "status",
+          "created_at"
+        ],
+        "title": "SuggestionRow",
+        "description": "One suggestion as returned to the owning user."
+      },
+      "SuggestionTarget": {
+        "properties": {
+          "scope_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Id"
+          },
+          "scope_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Item Id"
+          },
+          "slot_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slot Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scope_id",
+          "scope_item_id",
+          "slot_name"
+        ],
+        "title": "SuggestionTarget",
+        "description": "The scope-item slot a suggestion proposes to fill."
+      },
+      "SuggestionsPage": {
+        "properties": {
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestionRow"
+            },
+            "type": "array",
+            "title": "Suggestions"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "suggestions",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "SuggestionsPage",
+        "description": "Paginated suggestion list."
       },
       "SupabaseAuthWebhookPayload": {
         "properties": {
@@ -67934,6 +70649,31 @@
         ],
         "title": "TopSource"
       },
+      "TopSourceRow": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "cost_usd",
+          "count"
+        ],
+        "title": "TopSourceRow",
+        "description": "Aggregate of cost by source for one org over the last 30 days."
+      },
       "TopicCreate": {
         "properties": {
           "project_id": {
@@ -69851,6 +72591,327 @@
         "type": "object",
         "title": "UserOverrides",
         "description": "Per-request user-level inclusion / exclusion overrides.\n\nPer TOOL_ROUTING_RULES.md §5–§6, the user's add/remove pair has the\nhighest inclusion precedence: ``user.remove`` beats everything;\n``user.add`` beats ``agent.forbidden`` and surface defaults' implicit\nsilence on optional tools.\n\nValidation: ``add ∩ remove`` must be empty — the merge primitive\nrejects the request with HTTP 422 when the sets overlap."
+      },
+      "UserSecretBulkEnvRequest": {
+        "properties": {
+          "env_text": {
+            "type": "string",
+            "maxLength": 1048576,
+            "title": "Env Text"
+          },
+          "default_category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "github",
+                  "openai",
+                  "anthropic",
+                  "google",
+                  "aws",
+                  "stripe",
+                  "supabase",
+                  "vercel",
+                  "linear",
+                  "notion",
+                  "slack",
+                  "custom"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Category"
+          },
+          "inject_into_sandbox": {
+            "type": "boolean",
+            "title": "Inject Into Sandbox",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "env_text"
+        ],
+        "title": "UserSecretBulkEnvRequest"
+      },
+      "UserSecretBulkEnvResponse": {
+        "properties": {
+          "upserted": {
+            "items": {
+              "$ref": "#/components/schemas/UserSecretSummary"
+            },
+            "type": "array",
+            "title": "Upserted"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "upserted",
+          "count"
+        ],
+        "title": "UserSecretBulkEnvResponse"
+      },
+      "UserSecretCreateRequest": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 32768,
+            "title": "Value"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "github",
+                  "openai",
+                  "anthropic",
+                  "google",
+                  "aws",
+                  "stripe",
+                  "supabase",
+                  "vercel",
+                  "linear",
+                  "notion",
+                  "slack",
+                  "custom"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "inject_into_sandbox": {
+            "type": "boolean",
+            "title": "Inject Into Sandbox",
+            "default": true
+          },
+          "upsert": {
+            "type": "boolean",
+            "title": "Upsert",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "value"
+        ],
+        "title": "UserSecretCreateRequest"
+      },
+      "UserSecretListResponse": {
+        "properties": {
+          "secrets": {
+            "items": {
+              "$ref": "#/components/schemas/UserSecretSummary"
+            },
+            "type": "array",
+            "title": "Secrets"
+          }
+        },
+        "type": "object",
+        "required": [
+          "secrets"
+        ],
+        "title": "UserSecretListResponse"
+      },
+      "UserSecretSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "value_hint": {
+            "type": "string",
+            "title": "Value Hint",
+            "default": ""
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "github",
+                  "openai",
+                  "anthropic",
+                  "google",
+                  "aws",
+                  "stripe",
+                  "supabase",
+                  "vercel",
+                  "linear",
+                  "notion",
+                  "slack",
+                  "custom"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "inject_into_sandbox": {
+            "type": "boolean",
+            "title": "Inject Into Sandbox",
+            "default": true
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "key",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "UserSecretSummary",
+        "description": "Listing-row shape — NEVER carries the plaintext value."
+      },
+      "UserSecretUpdateRequest": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32768
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "github",
+                  "openai",
+                  "anthropic",
+                  "google",
+                  "aws",
+                  "stripe",
+                  "supabase",
+                  "vercel",
+                  "linear",
+                  "notion",
+                  "slack",
+                  "custom"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "inject_into_sandbox": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inject Into Sandbox"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UserSecretUpdateRequest"
       },
       "ValidateCronRequest": {
         "properties": {
@@ -71915,7 +74976,13 @@
             "enum": [
               "note",
               "code_file",
-              "cld_file"
+              "cld_file",
+              "transcript",
+              "scraped",
+              "repository",
+              "library_doc",
+              "task",
+              "project"
             ],
             "title": "Source Kind"
           },

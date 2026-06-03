@@ -18,6 +18,7 @@ import {
   selectAppAccentColor,
   selectAppLayoutType,
   selectAppImageUrl,
+  selectAppImageFileId,
   selectAppAppletList,
 } from '@/lib/redux/app-builder/selectors/appSelectors';
 
@@ -37,6 +38,7 @@ const AppPreviewCard: React.FC<AppPreviewCardProps> = ({ appId, className }) => 
   const accentColor = useAppSelector(state => selectAppAccentColor(state, appId)) || 'rose';
   const layoutType = useAppSelector(state => selectAppLayoutType(state, appId)) || 'Standard';
   const imageUrl = useAppSelector(state => selectAppImageUrl(state, appId)) || '';
+  const imageFileId = useAppSelector(state => selectAppImageFileId(state, appId)) || '';
   const appletList = useAppSelector(state => selectAppAppletList(state, appId)) || [];
 
   const getInitials = (name: string) => {
@@ -75,7 +77,7 @@ const AppPreviewCard: React.FC<AppPreviewCardProps> = ({ appId, className }) => 
         {imageUrl ? (
           <div className="w-full h-36 relative">
             <InlineMediaRef
-              ref={imageUrl}
+              ref={imageFileId ? { file_id: imageFileId } : imageUrl}
               size="fill"
               fit="cover"
               rounded="none"

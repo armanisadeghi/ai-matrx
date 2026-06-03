@@ -308,7 +308,12 @@ export const CreateAppletTab: React.FC<CreateAppletTabProps> = ({
               preset="web"
               currentUrl={newApplet.imageUrl || null}
               onComplete={(result) =>
-                setNewApplet((prev) => ({ ...prev, imageUrl: result?.primary_url ?? '' }))
+                setNewApplet((prev) => ({
+                  ...prev,
+                  imageUrl: result?.primary_url ?? '',
+                  // file_id is "" for external URLs — only persist a durable id when present.
+                  imageFileId: result?.file_id || '',
+                }))
               }
               folder={`${CloudFolders.AGENT_APPS}/icons`}
               label="Image"

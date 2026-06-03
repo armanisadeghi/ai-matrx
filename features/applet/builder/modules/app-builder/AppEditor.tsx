@@ -97,13 +97,13 @@ const AppEditor: React.FC<AppEditorProps> = ({ appId, isCreatingNew = false, onS
     };
 
     // Handle image selection
-    const handleImageSelected = (imageUrl: string) => {
-        dispatch({ type: "appBuilder/setImageUrl", payload: { id: appId, imageUrl } });
+    const handleImageSelected = (imageUrl: string, imageFileId?: string) => {
+        dispatch({ type: "appBuilder/setImageUrl", payload: { id: appId, imageUrl, imageFileId: imageFileId || "" } });
     };
 
     // Handle image removal
     const handleImageRemoved = () => {
-        dispatch({ type: "appBuilder/setImageUrl", payload: { id: appId, imageUrl: "" } });
+        dispatch({ type: "appBuilder/setImageUrl", payload: { id: appId, imageUrl: "", imageFileId: "" } });
     };
 
     // Handle icon selection

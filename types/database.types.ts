@@ -1537,6 +1537,30 @@ export type Database = {
           },
         ]
       }
+      ai_model_pricing: {
+        Row: {
+          batch_discount: number
+          input_per_1m: number
+          model_id: string
+          output_per_1m: number
+          updated_at: string
+        }
+        Insert: {
+          batch_discount?: number
+          input_per_1m: number
+          model_id: string
+          output_per_1m: number
+          updated_at?: string
+        }
+        Update: {
+          batch_discount?: number
+          input_per_1m?: number
+          model_id?: string
+          output_per_1m?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_provider: {
         Row: {
           company_description: string | null
@@ -2620,6 +2644,128 @@ export type Database = {
           id?: string
           metadata?: Json | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      auto_ingest_batch: {
+        Row: {
+          batch_id: string | null
+          completed_at: string | null
+          cost_recorded_at: string | null
+          cost_usd: number | null
+          created_at: string
+          custom_id: string
+          error: Json | null
+          est_cost_usd: number
+          id: string
+          kind: string
+          last_polled_at: string | null
+          metadata: Json
+          next_poll_at: string
+          organization_id: string | null
+          poll_count: number
+          provider: string
+          purpose: string
+          response_uri: string | null
+          source_id: string | null
+          source_kind: string | null
+          status: string
+          submitted_at: string
+          tokens_in: number | null
+          tokens_out: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          batch_id?: string | null
+          completed_at?: string | null
+          cost_recorded_at?: string | null
+          cost_usd?: number | null
+          created_at?: string
+          custom_id: string
+          error?: Json | null
+          est_cost_usd?: number
+          id?: string
+          kind: string
+          last_polled_at?: string | null
+          metadata?: Json
+          next_poll_at?: string
+          organization_id?: string | null
+          poll_count?: number
+          provider: string
+          purpose?: string
+          response_uri?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          status?: string
+          submitted_at?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          batch_id?: string | null
+          completed_at?: string | null
+          cost_recorded_at?: string | null
+          cost_usd?: number | null
+          created_at?: string
+          custom_id?: string
+          error?: Json | null
+          est_cost_usd?: number
+          id?: string
+          kind?: string
+          last_polled_at?: string | null
+          metadata?: Json
+          next_poll_at?: string
+          organization_id?: string | null
+          poll_count?: number
+          provider?: string
+          purpose?: string
+          response_uri?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          status?: string
+          submitted_at?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_ingest_batch_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auto_ingest_cost_event: {
+        Row: {
+          cost_usd: number
+          created_at: string
+          idempotency_key: string
+          organization_id: string | null
+          source: string | null
+          user_id: string
+        }
+        Insert: {
+          cost_usd: number
+          created_at?: string
+          idempotency_key: string
+          organization_id?: string | null
+          source?: string | null
+          user_id: string
+        }
+        Update: {
+          cost_usd?: number
+          created_at?: string
+          idempotency_key?: string
+          organization_id?: string | null
+          source?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -6102,6 +6248,7 @@ export type Database = {
           description: string | null
           extra_buttons: Json | null
           id: string
+          image_file_id: string | null
           image_url: string | null
           is_public: boolean | null
           layout_type: string | null
@@ -6123,6 +6270,7 @@ export type Database = {
           description?: string | null
           extra_buttons?: Json | null
           id?: string
+          image_file_id?: string | null
           image_url?: string | null
           is_public?: boolean | null
           layout_type?: string | null
@@ -6144,6 +6292,7 @@ export type Database = {
           description?: string | null
           extra_buttons?: Json | null
           id?: string
+          image_file_id?: string | null
           image_url?: string | null
           is_public?: boolean | null
           layout_type?: string | null
@@ -6173,6 +6322,7 @@ export type Database = {
           data_source_config: Json | null
           description: string | null
           id: string
+          image_file_id: string | null
           image_url: string | null
           is_public: boolean | null
           layout_type: string | null
@@ -6201,6 +6351,7 @@ export type Database = {
           data_source_config?: Json | null
           description?: string | null
           id?: string
+          image_file_id?: string | null
           image_url?: string | null
           is_public?: boolean | null
           layout_type?: string | null
@@ -6229,6 +6380,7 @@ export type Database = {
           data_source_config?: Json | null
           description?: string | null
           id?: string
+          image_file_id?: string | null
           image_url?: string | null
           is_public?: boolean | null
           layout_type?: string | null
@@ -6716,6 +6868,7 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           description: string | null
+          exclude_from_kg: boolean
           forked_at_position: number | null
           forked_from_id: string | null
           id: string
@@ -6753,6 +6906,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           description?: string | null
+          exclude_from_kg?: boolean
           forked_at_position?: number | null
           forked_from_id?: string | null
           id?: string
@@ -6790,6 +6944,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           description?: string | null
+          exclude_from_kg?: boolean
           forked_at_position?: number | null
           forked_from_id?: string | null
           id?: string
@@ -10731,6 +10886,44 @@ export type Database = {
           },
         ]
       }
+      organization_preferences: {
+        Row: {
+          auto_rag_enabled: boolean
+          created_at: string
+          daily_auto_rag_budget_usd: number
+          daily_auto_rag_cost_used_usd: number
+          daily_auto_rag_window_start: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_rag_enabled?: boolean
+          created_at?: string
+          daily_auto_rag_budget_usd?: number
+          daily_auto_rag_cost_used_usd?: number
+          daily_auto_rag_window_start?: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          auto_rag_enabled?: boolean
+          created_at?: string
+          daily_auto_rag_budget_usd?: number
+          daily_auto_rag_cost_used_usd?: number
+          daily_auto_rag_window_start?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_preferences_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null
@@ -10738,6 +10931,7 @@ export type Database = {
           description: string | null
           id: string
           is_personal: boolean | null
+          logo_file_id: string | null
           logo_url: string | null
           name: string
           settings: Json | null
@@ -10751,6 +10945,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_personal?: boolean | null
+          logo_file_id?: string | null
           logo_url?: string | null
           name: string
           settings?: Json | null
@@ -10764,6 +10959,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_personal?: boolean | null
+          logo_file_id?: string | null
           logo_url?: string | null
           name?: string
           settings?: Json | null
@@ -12041,6 +12237,7 @@ export type Database = {
           component_language: string
           created_at: string | null
           description: string | null
+          favicon_file_id: string | null
           favicon_url: string | null
           id: string
           is_featured: boolean | null
@@ -12085,6 +12282,7 @@ export type Database = {
           component_language?: string
           created_at?: string | null
           description?: string | null
+          favicon_file_id?: string | null
           favicon_url?: string | null
           id?: string
           is_featured?: boolean | null
@@ -12129,6 +12327,7 @@ export type Database = {
           component_language?: string
           created_at?: string | null
           description?: string | null
+          favicon_file_id?: string | null
           favicon_url?: string | null
           id?: string
           is_featured?: boolean | null
@@ -14558,6 +14757,87 @@ export type Database = {
           version?: number
         }
         Relationships: []
+      }
+      scope_association_suggestions: {
+        Row: {
+          confidence: number
+          context_snippet: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          kg_chunk_entity_id: string | null
+          kg_entity_id: string | null
+          match_kind: string
+          organization_id: string | null
+          source_id: string
+          source_kind: string
+          status: string
+          suggested_value: string | null
+          suppressed_until: string | null
+          target_scope_id: string | null
+          target_scope_item_id: string | null
+          target_slot_name: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence: number
+          context_snippet?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          kg_chunk_entity_id?: string | null
+          kg_entity_id?: string | null
+          match_kind: string
+          organization_id?: string | null
+          source_id: string
+          source_kind: string
+          status?: string
+          suggested_value?: string | null
+          suppressed_until?: string | null
+          target_scope_id?: string | null
+          target_scope_item_id?: string | null
+          target_slot_name?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          context_snippet?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          kg_chunk_entity_id?: string | null
+          kg_entity_id?: string | null
+          match_kind?: string
+          organization_id?: string | null
+          source_id?: string
+          source_kind?: string
+          status?: string
+          suggested_value?: string | null
+          suppressed_until?: string | null
+          target_scope_id?: string | null
+          target_scope_item_id?: string | null
+          target_slot_name?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scope_association_suggestions_target_scope_id_fkey"
+            columns: ["target_scope_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scope_association_suggestions_target_scope_item_id_fkey"
+            columns: ["target_scope_item_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_context_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scrape_base_config: {
         Row: {
@@ -20266,18 +20546,21 @@ export type Database = {
       }
       user_preferences: {
         Row: {
+          auto_rag_enabled: boolean
           created_at: string
           preferences: Json
           updated_at: string
           user_id: string
         }
         Insert: {
+          auto_rag_enabled?: boolean
           created_at?: string
           preferences: Json
           updated_at?: string
           user_id: string
         }
         Update: {
+          auto_rag_enabled?: boolean
           created_at?: string
           preferences?: Json
           updated_at?: string
@@ -22872,6 +23155,7 @@ export type Database = {
           data_source_config: Json | null
           description: string | null
           id: string
+          image_file_id: string | null
           image_url: string | null
           is_public: boolean | null
           layout_type: string | null
@@ -23965,10 +24249,6 @@ export type Database = {
         Args: { p_project_id: string }
         Returns: boolean
       }
-      batch_update_rows_in_user_table: {
-        Args: { p_table_id: string; p_updates: Json }
-        Returns: Json
-      }
       build_category_hierarchy: {
         Args: { p_placement_types: string[] }
         Returns: {
@@ -24443,27 +24723,7 @@ export type Database = {
         }
         Returns: Json
       }
-      create_new_user_table: {
-        Args: {
-          p_authenticated_read?: boolean
-          p_description: string
-          p_initial_fields?: Json
-          p_is_public: boolean
-          p_table_name: string
-        }
-        Returns: Json
-      }
       create_new_user_table_dynamic: {
-        Args: {
-          p_authenticated_read?: boolean
-          p_description: string
-          p_initial_fields?: Json
-          p_is_public: boolean
-          p_table_name: string
-        }
-        Returns: Json
-      }
-      create_new_user_table_wrapper: {
         Args: {
           p_authenticated_read?: boolean
           p_description: string
@@ -27162,10 +27422,6 @@ export type Database = {
         Args: { p_applet_id: string; p_group_id: string }
         Returns: boolean
       }
-      remove_column_from_user_table: {
-        Args: { p_field_id: string; p_table_id: string }
-        Returns: Json
-      }
       remove_field_from_group: {
         Args: { p_field_id: string; p_group_id: string }
         Returns: boolean
@@ -27460,6 +27716,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_context_value: { Args: { p_payload: Json }; Returns: Json }
       set_entity_scopes: {
         Args: {
           p_entity_id: string

@@ -2458,6 +2458,122 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/user-secrets/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Secrets */
+        get: operations["list_secrets_user_secrets__get"];
+        put?: never;
+        /** Create Secret */
+        post: operations["create_secret_user_secrets__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/user-secrets/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Secret */
+        delete: operations["delete_secret_user_secrets__key__delete"];
+        options?: never;
+        head?: never;
+        /** Update Secret */
+        patch: operations["update_secret_user_secrets__key__patch"];
+        trace?: never;
+    };
+    "/user-secrets/sandbox-env": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Sandbox Env
+         * @description Return the decrypted env dict that should be injected into a new
+         *     sandbox for this user. Used by both auto-provision
+         *     (`ensure_default_sandbox`) and manual creation (the Next.js sandbox
+         *     route calls this before forwarding to the orchestrator).
+         *
+         *     The response is the same `config.env` shape the orchestrator expects:
+         *     a flat `{KEY: value}` dict of plaintext values. Auth gates this — no
+         *     user can pull another user's env. Caller is responsible for sending
+         *     these on the wire ONLY to trusted upstreams (the orchestrator over an
+         *     authenticated channel).
+         */
+        get: operations["get_sandbox_env_user_secrets_sandbox_env_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/user-secrets/internal/sandbox-env-for-user": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Sandbox Env For User
+         * @description Return the decrypted sandbox env for `user_id`. Service-token-authed
+         *     via the existing sandbox-bridge auth path (X-Matrx-User-Id header is
+         *     UUID-validated; Authorization: Bearer <AIDREAM_SANDBOX_SERVICE_TOKEN>
+         *     is constant-time compared).
+         *
+         *     Called by the matrx-sandbox orchestrator at sandbox-create time so the
+         *     user's vaulted secrets land in `docker run -e KEY=value` regardless
+         *     of how the sandbox was created (browser, Ship portal, agent tool,
+         *     automation). The browser-facing `/sandbox-env` above stays unchanged
+         *     for in-browser callers.
+         */
+        get: operations["get_sandbox_env_for_user_user_secrets_internal_sandbox_env_for_user_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/user-secrets/bulk-env": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Import Env
+         * @description Paste a .env body (or upload one — the FE submits its text content here).
+         *     Every well-formed line upserts a secret. Malformed lines are skipped
+         *     with a server-side log; the response lists the rows that landed.
+         */
+        post: operations["bulk_import_env_user_secrets_bulk_env_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/utilities/block-processing/process": {
         parameters: {
             query?: never;
@@ -6772,6 +6888,244 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/kg-inspector/entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Entities */
+        get: operations["list_entities_kg_inspector_entities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kg-inspector/entities/{entity_id}/mentions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Entity Mentions */
+        get: operations["list_entity_mentions_kg_inspector_entities__entity_id__mentions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kg-inspector/edges/top": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Top Edges */
+        get: operations["top_edges_kg_inspector_edges_top_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kg-cost/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Summary */
+        get: operations["summary_kg_cost_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kg-cost/orgs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Orgs */
+        get: operations["list_orgs_kg_cost_orgs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kg-cost/orgs/{org_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Org Detail */
+        get: operations["org_detail_kg_cost_orgs__org_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kg-cost/batches/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pending Batches */
+        get: operations["pending_batches_kg_cost_batches_pending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kg-cost/batches/{batch_row_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Batch Detail */
+        get: operations["batch_detail_kg_cost_batches__batch_row_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kg-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Suggestions */
+        get: operations["list_suggestions_kg_suggestions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kg-suggestions/{suggestion_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept Suggestion */
+        post: operations["accept_suggestion_kg_suggestions__suggestion_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kg-suggestions/{suggestion_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject Suggestion */
+        post: operations["reject_suggestion_kg_suggestions__suggestion_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kg-suggestions/{suggestion_id}/defer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Defer Suggestion */
+        post: operations["defer_suggestion_kg_suggestions__suggestion_id__defer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kg/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Graph */
+        get: operations["get_graph_kg_graph_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kg/graph/entity/{entity_id}/mentions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Entity Mentions */
+        get: operations["list_entity_mentions_kg_graph_entity__entity_id__mentions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rag/search-lab/expand": {
         parameters: {
             query?: never;
@@ -6817,6 +7171,23 @@ export interface paths {
         put?: never;
         /** Diagnose Endpoint */
         post: operations["diagnose_endpoint_rag_search_lab_diagnose_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/search-lab/diagnose/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Diagnose Stream Endpoint */
+        post: operations["diagnose_stream_endpoint_rag_search_lab_diagnose_stream_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11634,6 +12005,29 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AcceptResponse */
+        AcceptResponse: {
+            suggestion: components["schemas"]["SuggestionRow"];
+            value: components["schemas"]["AcceptedValue"];
+        };
+        /**
+         * AcceptedValue
+         * @description The scope-item cell value written when a suggestion is accepted.
+         */
+        AcceptedValue: {
+            /** Id */
+            id: string;
+            /** Context Item Id */
+            context_item_id: string;
+            /** Scope Id */
+            scope_id: string;
+            /** Version */
+            version: number;
+            /** Value Text */
+            value_text: string | null;
+            /** Source Type */
+            source_type: string;
+        };
         /** ActivePageIdsResponse */
         ActivePageIdsResponse: {
             /** File Id */
@@ -12777,6 +13171,132 @@ export interface components {
             /** Dry Run */
             dry_run: boolean;
         };
+        /**
+         * BatchDetailResponse
+         * @description Full row for one batch — drill-down view.
+         */
+        BatchDetailResponse: {
+            /** Id */
+            id: string;
+            /** Custom Id */
+            custom_id: string;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "openai" | "anthropic";
+            /** Batch Id */
+            batch_id: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "chat" | "embedding";
+            /** User Id */
+            user_id: string;
+            /** Organization Id */
+            organization_id: string | null;
+            /** Organization Name */
+            organization_name: string | null;
+            /** Source Kind */
+            source_kind: string | null;
+            /** Source Id */
+            source_id: string | null;
+            /** Purpose */
+            purpose: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
+            /** Est Cost Usd */
+            est_cost_usd: number;
+            /** Cost Usd */
+            cost_usd: number | null;
+            /** Tokens In */
+            tokens_in: number | null;
+            /** Tokens Out */
+            tokens_out: number | null;
+            /** Poll Count */
+            poll_count: number;
+            /** Last Polled At */
+            last_polled_at: string | null;
+            /** Response Uri */
+            response_uri: string | null;
+            error: components["schemas"]["JsonValue"] | null;
+            metadata: components["schemas"]["JsonValue"] | null;
+            /**
+             * Submitted At
+             * Format: date-time
+             */
+            submitted_at: string;
+            /** Completed At */
+            completed_at: string | null;
+            /** Next Poll At */
+            next_poll_at: string | null;
+            /** Cost Recorded At */
+            cost_recorded_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * BatchRow
+         * @description One row in the in-flight-batches table.
+         */
+        BatchRow: {
+            /** Id */
+            id: string;
+            /** Custom Id */
+            custom_id: string;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "openai" | "anthropic";
+            /** Batch Id */
+            batch_id: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "chat" | "embedding";
+            /** User Id */
+            user_id: string;
+            /** Organization Id */
+            organization_id: string | null;
+            /** Organization Name */
+            organization_name: string | null;
+            /** Source Kind */
+            source_kind: string | null;
+            /** Source Id */
+            source_id: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
+            /** Est Cost Usd */
+            est_cost_usd: number;
+            /** Poll Count */
+            poll_count: number;
+            /**
+             * Submitted At
+             * Format: date-time
+             */
+            submitted_at: string;
+            /** Last Polled At */
+            last_polled_at: string | null;
+            /** Next Poll At */
+            next_poll_at: string | null;
+        };
         /** BatchScrapeRequest */
         BatchScrapeRequest: {
             /** Urls */
@@ -12802,6 +13322,18 @@ export interface components {
             results: {
                 [key: string]: unknown;
             }[];
+        };
+        /** BatchSummaryByStatus */
+        BatchSummaryByStatus: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
+            /** Count */
+            count: number;
+            /** Total Cost Usd */
+            total_cost_usd: number;
         };
         /** BboxInput */
         BboxInput: {
@@ -15215,6 +15747,13 @@ export interface components {
             /** Output Tokens */
             output_tokens: number;
         };
+        /** DailySpendPoint */
+        DailySpendPoint: {
+            /** Date */
+            date: string;
+            /** Cost Usd */
+            cost_usd: number;
+        };
         /** DataStoreAdminRow */
         DataStoreAdminRow: {
             /** Id */
@@ -15409,6 +15948,13 @@ export interface components {
             updated_at?: components["schemas"]["JsonValue"] | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * DecisionResponse
+         * @description Returned by reject / defer — the updated suggestion.
+         */
+        DecisionResponse: {
+            suggestion: components["schemas"]["SuggestionRow"];
         };
         /** DedupResponse */
         DedupResponse: {
@@ -16062,6 +16608,32 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** EdgeRow */
+        EdgeRow: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Src Id */
+            src_id: string;
+            /** Src Name */
+            src_name: string;
+            /** Src Kind */
+            src_kind: string;
+            /** Dst Id */
+            dst_id: string;
+            /** Dst Name */
+            dst_name: string;
+            /** Dst Kind */
+            dst_kind: string;
+            /** Weight */
+            weight: number | null;
+        };
+        /** EdgesTop */
+        EdgesTop: {
+            /** Items */
+            items: components["schemas"]["EdgeRow"][];
+        };
         /**
          * EditInputsRetryProposal
          * @description Replace the failed invocation's inputs and retry.
@@ -16098,6 +16670,17 @@ export interface components {
             };
             /** Rationale */
             rationale: string;
+        };
+        /** EntitiesPage */
+        EntitiesPage: {
+            /** Items */
+            items: components["schemas"]["EntityRow"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
         };
         /** EntityCreateBody */
         EntityCreateBody: {
@@ -16143,6 +16726,25 @@ export interface components {
             created_at?: string | null;
             /** Updated At */
             updated_at?: string | null;
+        };
+        /** EntityRow */
+        EntityRow: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Canonical Name */
+            canonical_name: string;
+            /** Organization Id */
+            organization_id: string | null;
+            /** Mention Count */
+            mention_count: number;
+            /** Source Count */
+            source_count: number;
+            /** Confidence Avg */
+            confidence_avg: number | null;
+            /** Created At */
+            created_at: string;
         };
         /** EntityUpdateBody */
         EntityUpdateBody: {
@@ -17535,6 +18137,43 @@ export interface components {
             /** Expires At */
             expires_at?: string | null;
         };
+        /** GraphEdge */
+        GraphEdge: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
+            /** Weight */
+            weight: number | null;
+        };
+        /** GraphNode */
+        GraphNode: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /** Mention Count */
+            mention_count: number;
+            /** Source Count */
+            source_count: number;
+            /** Confidence Avg */
+            confidence_avg: number | null;
+        };
+        /** GraphPayload */
+        GraphPayload: {
+            /** Nodes */
+            nodes: components["schemas"]["GraphNode"][];
+            /** Edges */
+            edges: components["schemas"]["GraphEdge"][];
+            /** Truncated */
+            truncated: boolean;
+        };
         /** GscOauthStartRequest */
         GscOauthStartRequest: {
             /** Display Name */
@@ -17639,6 +18278,50 @@ export interface components {
             embeddings_in_scope: number;
             /** Distinct Sources */
             distinct_sources: number;
+        };
+        /**
+         * HeavyHitterAcceptPlan
+         * @description Returned when a ``heavy_hitter`` suggestion is accepted. Heavy-hitter
+         *     acceptance CREATES A NEW SCOPE (not a cell value), and scope creation is a
+         *     frontend-owned write path (React → Supabase direct, per the scopes
+         *     invariant). The backend cannot safely hand-roll scope creation without
+         *     forking that mutation path, so it returns this typed plan and flips the
+         *     suggestion to ``accepted``; the FE drives scope creation + source tagging in
+         *     Phase F.
+         *
+         *     ``entity_kind`` maps to the scope-type the FE should offer (e.g.
+         *     organization → a Client/Org scope). ``sources`` are the mentions to tag to
+         *     the new scope via ctx_scope_assignments once it exists.
+         */
+        HeavyHitterAcceptPlan: {
+            /**
+             * Kind
+             * @default heavy_hitter_plan
+             * @constant
+             */
+            kind: "heavy_hitter_plan";
+            suggestion: components["schemas"]["SuggestionRow"];
+            /** Entity Id */
+            entity_id: string;
+            /** Entity Kind */
+            entity_kind: string;
+            /** Suggested Scope Name */
+            suggested_scope_name: string;
+            /** Sources */
+            sources: components["schemas"]["HeavyHitterSource"][];
+        };
+        /**
+         * HeavyHitterSource
+         * @description One source the heavy-hitter entity was mentioned in — the FE tags each of
+         *     these to the newly-created scope via ctx_scope_assignments after creation.
+         */
+        HeavyHitterSource: {
+            /** Source Kind */
+            source_kind: string;
+            /** Source Id */
+            source_id: string;
+            /** Mention Count */
+            mention_count: number;
         };
         /** HideRequest */
         HideRequest: {
@@ -18122,10 +18805,7 @@ export interface components {
             /** Local Path */
             local_path?: string | null;
             source_media?: components["schemas"]["MediaRef"] | null;
-            /** Source File */
-            source_file?: {
-                [key: string]: unknown;
-            } | null;
+            source_file?: components["schemas"]["JsonValue"] | null;
             /** Source Url */
             source_url?: string | null;
             /** Source Local Path */
@@ -18512,6 +19192,17 @@ export interface components {
         KeywordReorderRequest: {
             /** Keyword Ids */
             keyword_ids: string[];
+        };
+        /** KgCostSummaryResponse */
+        KgCostSummaryResponse: {
+            /** Spend Today Usd */
+            spend_today_usd: number;
+            /** Spend 7D Usd */
+            spend_7d_usd: number;
+            /** Orgs Over 80Pct */
+            orgs_over_80pct: number;
+            /** Pending Batches */
+            pending_batches: number;
         };
         /** LLMParams */
         LLMParams: {
@@ -19441,6 +20132,34 @@ export interface components {
                 [key: string]: components["schemas"]["MemoryCostByEventType"];
             };
         };
+        /** MentionRow */
+        MentionRow: {
+            /** Chunk Id */
+            chunk_id: string;
+            /** Source Kind */
+            source_kind: string | null;
+            /** Source Id */
+            source_id: string | null;
+            /** Snippet */
+            snippet: string;
+            /** Span Start */
+            span_start: number | null;
+            /** Span End */
+            span_end: number | null;
+            /** Confidence */
+            confidence: number | null;
+        };
+        /** MentionsPage */
+        MentionsPage: {
+            /** Items */
+            items: components["schemas"]["MentionRow"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
         /** MergePdfSource */
         MergePdfSource: {
             media?: components["schemas"]["MediaRef"] | null;
@@ -19728,6 +20447,52 @@ export interface components {
             events_24h: number;
             /** Unrecovered 24H */
             unrecovered_24h: number;
+        };
+        /** OrgCostDetailResponse */
+        OrgCostDetailResponse: {
+            /** Organization Id */
+            organization_id: string;
+            /** Organization Name */
+            organization_name: string | null;
+            /** Budget Usd */
+            budget_usd: number;
+            /** Used Today Usd */
+            used_today_usd: number;
+            /** Window Start */
+            window_start: string | null;
+            /** Daily Series */
+            daily_series: components["schemas"]["DailySpendPoint"][];
+            /** Top Sources */
+            top_sources: components["schemas"]["TopSourceRow"][];
+            /** Batch Summary */
+            batch_summary: components["schemas"]["BatchSummaryByStatus"][];
+        };
+        /** OrgCostListResponse */
+        OrgCostListResponse: {
+            /** Items */
+            items: components["schemas"]["OrgCostRow"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * OrgCostRow
+         * @description One row in the org-leaderboard table on /administration/kg-cost.
+         */
+        OrgCostRow: {
+            /** Organization Id */
+            organization_id: string;
+            /** Organization Name */
+            organization_name: string | null;
+            /** Daily Auto Rag Budget Usd */
+            daily_auto_rag_budget_usd: number;
+            /** Daily Auto Rag Cost Used Usd */
+            daily_auto_rag_cost_used_usd: number;
+            /** Daily Auto Rag Window Start */
+            daily_auto_rag_window_start: string | null;
+            /** Percent Used */
+            percent_used: number;
+            /** Last Charge At */
+            last_charge_at: string | null;
         };
         /** OverlayBboxIn */
         OverlayBboxIn: {
@@ -20308,6 +21073,13 @@ export interface components {
             line_number: number;
             /** Word Number */
             word_number: number;
+        };
+        /** PendingBatchListResponse */
+        PendingBatchListResponse: {
+            /** Items */
+            items: components["schemas"]["BatchRow"][];
+            /** Total */
+            total: number;
         };
         /** PendingCallSummary */
         PendingCallSummary: {
@@ -22383,6 +23155,24 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /**
+         * SandboxEnvResponse
+         * @description Decrypted env dict for the current user's next sandbox.
+         *
+         *     Free-form key/value because user-secret keys are user-chosen
+         *     identifiers (already validated against `^[A-Za-z_][A-Za-z0-9_]*$`).
+         *     Values are plaintext — only ever transmitted on the authenticated
+         *     server-to-server hop (Next.js sandbox route → aidream); never lands
+         *     in the browser DOM.
+         */
+        SandboxEnvResponse: {
+            /** Env */
+            env: {
+                [key: string]: string;
+            };
+            /** Count */
+            count: number;
+        };
         /** SaveAsTemplateRequest */
         SaveAsTemplateRequest: {
             /** Name */
@@ -22991,10 +23781,7 @@ export interface components {
             platform_targets?: string[];
             /** Version */
             version?: string | null;
-            /** Config */
-            config?: {
-                [key: string]: unknown;
-            };
+            config?: components["schemas"]["JsonValue"];
             /** Category Id */
             category_id?: string | null;
             /** Parent Skill Id */
@@ -23029,10 +23816,7 @@ export interface components {
             platform_targets?: string[] | null;
             /** Version */
             version?: string | null;
-            /** Config */
-            config?: {
-                [key: string]: unknown;
-            } | null;
+            config?: components["schemas"]["JsonValue"] | null;
             /** Category Id */
             category_id?: string | null;
             /** Parent Skill Id */
@@ -23080,10 +23864,7 @@ export interface components {
             platform_targets?: string[];
             /** Version */
             version?: string | null;
-            /** Config */
-            config?: {
-                [key: string]: unknown;
-            };
+            config?: components["schemas"]["JsonValue"];
             /** Category Id */
             category_id?: string | null;
             /** Parent Skill Id */
@@ -23583,14 +24364,8 @@ export interface components {
             preset_id?: string | null;
             /** Operation */
             operation?: ("render_page" | "render_all" | "render_thumbnail") | null;
-            /** Params */
-            params?: {
-                [key: string]: unknown;
-            } | null;
-            /** Overrides */
-            overrides?: {
-                [key: string]: unknown;
-            } | null;
+            params?: components["schemas"]["JsonValue"] | null;
+            overrides?: components["schemas"]["JsonValue"] | null;
         };
         /** StudioSourceOut */
         StudioSourceOut: {
@@ -23698,6 +24473,83 @@ export interface components {
             use_user_agent_overrides: boolean;
             /** Topic Id */
             topic_id?: string | null;
+        };
+        /**
+         * SuggestionEntity
+         * @description The KG entity a suggestion points at.
+         */
+        SuggestionEntity: {
+            /** Id */
+            id: string | null;
+            /** Kind */
+            kind?: string | null;
+            /** Name */
+            name?: string | null;
+        };
+        /**
+         * SuggestionRow
+         * @description One suggestion as returned to the owning user.
+         */
+        SuggestionRow: {
+            /** Id */
+            id: string;
+            /** Source Kind */
+            source_kind: string;
+            /** Source Id */
+            source_id: string;
+            entity: components["schemas"]["SuggestionEntity"];
+            target: components["schemas"]["SuggestionTarget"];
+            /** Suggested Value */
+            suggested_value: string | null;
+            /**
+             * Match Kind
+             * @enum {string}
+             */
+            match_kind: "exact" | "fuzzy" | "semantic" | "heavy_hitter";
+            /** Confidence */
+            confidence: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "accepted" | "rejected" | "deferred" | "expired";
+            /** Context Snippet */
+            context_snippet?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Decided At */
+            decided_at?: string | null;
+            /** Suppressed Until */
+            suppressed_until?: string | null;
+        };
+        /**
+         * SuggestionTarget
+         * @description The scope-item slot a suggestion proposes to fill.
+         */
+        SuggestionTarget: {
+            /** Scope Id */
+            scope_id: string | null;
+            /** Scope Item Id */
+            scope_item_id: string | null;
+            /** Slot Name */
+            slot_name: string | null;
+        };
+        /**
+         * SuggestionsPage
+         * @description Paginated suggestion list.
+         */
+        SuggestionsPage: {
+            /** Suggestions */
+            suggestions: components["schemas"]["SuggestionRow"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
         };
         /**
          * SupabaseAuthWebhookPayload
@@ -24411,6 +25263,18 @@ export interface components {
             /** Processed Document Id */
             processed_document_id: string | null;
         };
+        /**
+         * TopSourceRow
+         * @description Aggregate of cost by source for one org over the last 30 days.
+         */
+        TopSourceRow: {
+            /** Source */
+            source: string;
+            /** Cost Usd */
+            cost_usd: number;
+            /** Count */
+            count: number;
+        };
         /** TopicCreate */
         TopicCreate: {
             /**
@@ -25073,6 +25937,101 @@ export interface components {
             add?: string[];
             /** Remove */
             remove?: string[];
+        };
+        /** UserSecretBulkEnvRequest */
+        UserSecretBulkEnvRequest: {
+            /** Env Text */
+            env_text: string;
+            /** Default Category */
+            default_category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
+            /**
+             * Inject Into Sandbox
+             * @default true
+             */
+            inject_into_sandbox: boolean;
+        };
+        /** UserSecretBulkEnvResponse */
+        UserSecretBulkEnvResponse: {
+            /** Upserted */
+            upserted: components["schemas"]["UserSecretSummary"][];
+            /** Count */
+            count: number;
+        };
+        /** UserSecretCreateRequest */
+        UserSecretCreateRequest: {
+            /** Key */
+            key: string;
+            /** Value */
+            value: string;
+            /** Description */
+            description?: string | null;
+            /** Category */
+            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
+            /**
+             * Inject Into Sandbox
+             * @default true
+             */
+            inject_into_sandbox: boolean;
+            /**
+             * Upsert
+             * @default false
+             */
+            upsert: boolean;
+        };
+        /** UserSecretListResponse */
+        UserSecretListResponse: {
+            /** Secrets */
+            secrets: components["schemas"]["UserSecretSummary"][];
+        };
+        /**
+         * UserSecretSummary
+         * @description Listing-row shape — NEVER carries the plaintext value.
+         */
+        UserSecretSummary: {
+            /** Id */
+            id: string;
+            /** Key */
+            key: string;
+            /**
+             * Value Hint
+             * @default
+             */
+            value_hint: string;
+            /** Description */
+            description?: string | null;
+            /** Category */
+            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /**
+             * Inject Into Sandbox
+             * @default true
+             */
+            inject_into_sandbox: boolean;
+            /** Last Used At */
+            last_used_at?: string | null;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** UserSecretUpdateRequest */
+        UserSecretUpdateRequest: {
+            /** Value */
+            value?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Category */
+            category?: ("github" | "openai" | "anthropic" | "google" | "aws" | "stripe" | "supabase" | "vercel" | "linear" | "notion" | "slack" | "custom") | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Inject Into Sandbox */
+            inject_into_sandbox?: boolean | null;
         };
         /** ValidateCronRequest */
         ValidateCronRequest: {
@@ -25780,7 +26739,7 @@ export interface components {
              * Source Kind
              * @enum {string}
              */
-            source_kind: "note" | "code_file" | "cld_file";
+            source_kind: "note" | "code_file" | "cld_file" | "transcript" | "scraped" | "repository" | "library_doc" | "task" | "project";
             /** Source Id */
             source_id: string;
             /** Field Id */
@@ -30104,6 +31063,221 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OnSignInResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_secrets_user_secrets__get: {
+        parameters: {
+            query?: {
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSecretListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_secret_user_secrets__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserSecretCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSecretSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_secret_user_secrets__key__delete: {
+        parameters: {
+            query?: {
+                hard?: boolean;
+            };
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_secret_user_secrets__key__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserSecretUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSecretSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sandbox_env_user_secrets_sandbox_env_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxEnvResponse"];
+                };
+            };
+        };
+    };
+    get_sandbox_env_for_user_user_secrets_internal_sandbox_env_for_user_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Matrx-User-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxEnvResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_import_env_user_secrets_bulk_env_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserSecretBulkEnvRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserSecretBulkEnvResponse"];
                 };
             };
             /** @description Validation Error */
@@ -38412,6 +39586,452 @@ export interface operations {
             };
         };
     };
+    list_entities_kg_inspector_entities_get: {
+        parameters: {
+            query?: {
+                organization_id?: string | null;
+                kind?: string | null;
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntitiesPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_entity_mentions_kg_inspector_entities__entity_id__mentions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                entity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentionsPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    top_edges_kg_inspector_edges_top_get: {
+        parameters: {
+            query?: {
+                organization_id?: string | null;
+                kind?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EdgesTop"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    summary_kg_cost_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KgCostSummaryResponse"];
+                };
+            };
+        };
+    };
+    list_orgs_kg_cost_orgs_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgCostListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    org_detail_kg_cost_orgs__org_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgCostDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pending_batches_kg_cost_batches_pending_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingBatchListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_detail_kg_cost_batches__batch_row_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batch_row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_suggestions_kg_suggestions_get: {
+        parameters: {
+            query?: {
+                status?: string;
+                scope_item_id?: string | null;
+                source_kind?: string | null;
+                source_id?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestionsPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_suggestion_kg_suggestions__suggestion_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                suggestion_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptResponse"] | components["schemas"]["HeavyHitterAcceptPlan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_suggestion_kg_suggestions__suggestion_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                suggestion_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    defer_suggestion_kg_suggestions__suggestion_id__defer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                suggestion_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_graph_kg_graph_get: {
+        parameters: {
+            query?: {
+                organization_id?: string | null;
+                scope_id?: string | null;
+                kind?: string | null;
+                depth?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphPayload"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_entity_mentions_kg_graph_entity__entity_id__mentions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                entity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentionsPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     expand_endpoint_rag_search_lab_expand_post: {
         parameters: {
             query?: never;
@@ -38496,6 +40116,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiagnoseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diagnose_stream_endpoint_rag_search_lab_diagnose_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnoseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

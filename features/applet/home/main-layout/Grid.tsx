@@ -92,9 +92,9 @@ const GridMainLayout: React.FC<MainLayoutProps> = ({
               >
                 {/* Card image/banner top section */}
                 <div className="h-20 bg-gray-100 dark:bg-gray-700 relative">
-                  {applet.imageUrl ? (
+                  {(applet.imageFileId || applet.imageUrl) ? (
                     <InlineMediaRef
-                      ref={applet.imageUrl}
+                      ref={applet.imageFileId ? { file_id: applet.imageFileId } : applet.imageUrl}
                       size="fill"
                       fit="cover"
                       rounded="none"

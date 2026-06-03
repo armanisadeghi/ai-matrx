@@ -28,6 +28,7 @@ export const DEFAULT_APP: Partial<AppBuilder> = {
     extraButtons: [],
     layoutType: "tabbedApplets",
     imageUrl: "",
+    imageFileId: "",
     authenticatedRead: true,
     publicRead: false,
     isDirty: false,
@@ -195,11 +196,11 @@ export const appBuilderSlice = createSlice({
             
             state.apps[id] = { ...state.apps[id], layoutType, isDirty: true };
         },
-        setImageUrl: (state, action: PayloadAction<{ id: string; imageUrl?: string }>) => {
-            const { id, imageUrl } = action.payload;
+        setImageUrl: (state, action: PayloadAction<{ id: string; imageUrl?: string; imageFileId?: string }>) => {
+            const { id, imageUrl, imageFileId } = action.payload;
             if (!checkAppExists(state, id)) return;
-            
-            state.apps[id] = { ...state.apps[id], imageUrl, isDirty: true };
+
+            state.apps[id] = { ...state.apps[id], imageUrl, imageFileId: imageFileId ?? "", isDirty: true };
         },
         setIsPublic: (state, action: PayloadAction<{ id: string; isPublic?: boolean }>) => {
             const { id, isPublic } = action.payload;
