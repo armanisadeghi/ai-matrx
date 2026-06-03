@@ -247,14 +247,14 @@
   .shell-root[data-pathname="/ssr/dashboard"] .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/dashboard"]     .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/ssr"]           .shell-nav-item[data-nav-href="/dashboard"],
-  .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href="/agents"],
-  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href="/chat"],
-  .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href="/chat"],
+  .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href^="/agents"],
+  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/notes"]        .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
   .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
-  .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href^="/files"],
   .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-nav-item[data-nav-href="/tools/pdf-extractor"],
   .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
 ) {
@@ -267,14 +267,14 @@
   .shell-root[data-pathname="/ssr/dashboard"] .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/dashboard"]     .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/ssr"]           .shell-nav-item[data-nav-href="/dashboard"],
-  .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href="/agents"],
-  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href="/chat"],
-  .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href="/chat"],
+  .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href^="/agents"],
+  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/notes"]        .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
   .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
-  .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href^="/files"],
   .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-nav-item[data-nav-href="/tools/pdf-extractor"],
   .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
 ) svg,
@@ -282,14 +282,14 @@
   .shell-root[data-pathname="/ssr/dashboard"] .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/dashboard"]     .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/ssr"]           .shell-nav-item[data-nav-href="/dashboard"],
-  .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href="/agents"],
-  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href="/chat"],
-  .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href="/chat"],
+  .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href^="/agents"],
+  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/notes"]        .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
   .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
-  .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href^="/files"],
   .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-nav-item[data-nav-href="/tools/pdf-extractor"],
   .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
 ) .shell-nav-icon { color: var(--shell-pill-text); }
@@ -298,13 +298,13 @@
   .shell-root[data-pathname="/ssr/dashboard"] .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/dashboard"]     .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/ssr"]           .shell-nav-item[data-nav-href="/dashboard"],
-  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href="/chat"],
-  .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href="/chat"],
+  .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/notes"]        .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
   .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
-  .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href^="/files"],
   .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-nav-item[data-nav-href="/tools/pdf-extractor"],
   .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
 ) .shell-nav-label { color: var(--shell-pill-text); font-weight: 600; }
@@ -756,7 +756,7 @@
 
 /* Active state for child items — exact match vs prefix match */
 :where(
-  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href="/agents"][data-nav-exact="true"],
+  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href^="/agents"][data-nav-exact="true"],
   .shell-root[data-pathname^="/agents/templates"] .shell-nav-child[data-nav-href="/agents/templates"],
   .shell-root[data-pathname^="/agents/new"] .shell-nav-child[data-nav-href="/agents/new"]
 ) {
@@ -765,18 +765,18 @@
 }
 
 :where(
-  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href="/agents"][data-nav-exact="true"],
+  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href^="/agents"][data-nav-exact="true"],
   .shell-root[data-pathname^="/agents/templates"] .shell-nav-child[data-nav-href="/agents/templates"],
   .shell-root[data-pathname^="/agents/new"] .shell-nav-child[data-nav-href="/agents/new"]
 ) svg,
 :where(
-  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href="/agents"][data-nav-exact="true"],
+  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href^="/agents"][data-nav-exact="true"],
   .shell-root[data-pathname^="/agents/templates"] .shell-nav-child[data-nav-href="/agents/templates"],
   .shell-root[data-pathname^="/agents/new"] .shell-nav-child[data-nav-href="/agents/new"]
 ) .shell-nav-icon { color: var(--shell-pill-text); }
 
 :where(
-  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href="/agents"][data-nav-exact="true"],
+  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href^="/agents"][data-nav-exact="true"],
   .shell-root[data-pathname^="/agents/templates"] .shell-nav-child[data-nav-href="/agents/templates"],
   .shell-root[data-pathname^="/agents/new"] .shell-nav-child[data-nav-href="/agents/new"]
 ) .shell-nav-label { color: var(--shell-pill-text); font-weight: 600; }
@@ -1176,13 +1176,13 @@ body:has(.shell-root[data-pathname^="/transcription/scribe"]) .shell-dock {
   body:has(.shell-root[data-pathname="/ssr/dashboard"]) .shell-dock-item[data-nav-href="/dashboard"],
   body:has(.shell-root[data-pathname="/dashboard"])     .shell-dock-item[data-nav-href="/dashboard"],
   body:has(.shell-root[data-pathname="/ssr"])           .shell-dock-item[data-nav-href="/dashboard"],
-  body:has(.shell-root[data-pathname^="/ssr/chat"])     .shell-dock-item[data-nav-href="/chat"],
-  body:has(.shell-root[data-pathname^="/chat"])         .shell-dock-item[data-nav-href="/chat"],
+  body:has(.shell-root[data-pathname^="/ssr/chat"])     .shell-dock-item[data-nav-href^="/chat"],
+  body:has(.shell-root[data-pathname^="/chat"])         .shell-dock-item[data-nav-href^="/chat"],
   body:has(.shell-root[data-pathname^="/ssr/notes"])    .shell-dock-item[data-nav-href="/notes"],
   body:has(.shell-root[data-pathname^="/notes"])        .shell-dock-item[data-nav-href="/notes"],
   body:has(.shell-root[data-pathname^="/tasks"])        .shell-dock-item[data-nav-href="/tasks"],
   body:has(.shell-root[data-pathname^="/projects"])     .shell-dock-item[data-nav-href="/projects"],
-  body:has(.shell-root[data-pathname^="/files"])        .shell-dock-item[data-nav-href="/files"]
+  body:has(.shell-root[data-pathname^="/files"])        .shell-dock-item[data-nav-href^="/files"]
 ) {
   background: var(--shell-pill-bg);
   border: 1px solid var(--shell-pill-border);
@@ -1299,13 +1299,13 @@ body:has(.shell-root[data-pathname^="/transcription/scribe"]) .shell-dock {
   .shell-root[data-pathname="/ssr/dashboard"] .shell-mobile-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/dashboard"]     .shell-mobile-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname="/ssr"]           .shell-mobile-nav-item[data-nav-href="/dashboard"],
-  .shell-root[data-pathname^="/ssr/chat"]     .shell-mobile-nav-item[data-nav-href="/chat"],
-  .shell-root[data-pathname^="/chat"]         .shell-mobile-nav-item[data-nav-href="/chat"],
+  .shell-root[data-pathname^="/ssr/chat"]     .shell-mobile-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/chat"]         .shell-mobile-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-mobile-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/notes"]        .shell-mobile-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/tasks"]        .shell-mobile-nav-item[data-nav-href="/tasks"],
   .shell-root[data-pathname^="/projects"]     .shell-mobile-nav-item[data-nav-href="/projects"],
-  .shell-root[data-pathname^="/files"]        .shell-mobile-nav-item[data-nav-href="/files"],
+  .shell-root[data-pathname^="/files"]        .shell-mobile-nav-item[data-nav-href^="/files"],
   .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-mobile-nav-item[data-nav-href="/tools/pdf-extractor"],
   .shell-root[data-pathname^="/settings"]     .shell-mobile-nav-item[data-nav-href="/settings"]
 ) {

@@ -567,7 +567,7 @@ export default [
         // not apply to them. Every other path swap (`@/features/files/**`
         // → `@/features/files`) is still in force for the rest of the
         // codebase. See docs/SWEEP_INTERNAL_IMPORTS.md.
-        files: ['app/(a)/files/**/*'],
+        files: ['app/(a)/files/**/*', 'app/(core)/files/**/*'],
         rules: {
             'no-restricted-imports': 'off',
         },

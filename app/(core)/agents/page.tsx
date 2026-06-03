@@ -1,48 +1,30 @@
-import { Webhook } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
-import { getAgentListSeed } from "@/lib/agents/data";
-import { AgentListHydrator } from "@/features/agents/route/AgentListHydrator";
-import { AgentsGrid } from "@/features/agents/components/agent-listings/AgentsGrid";
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { AgentsListHeader } from "@/features/agents/components/shell/AgentsListHeader";
-import { UnauthSurfaceLanding } from "@/features/auth/components/UnauthSurfaceLanding";
+import type { Metadata } from "next";
+import AgentsLanding from "@/features/auth/components/module-landing/landings/AgentsLanding";
 
-export default async function AgentsListPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const metadata: Metadata = {
+  title: "Agents — AI Matrx",
+  description:
+    "Build agents that finish the work. Compose tools, models, scopes, and policies. Start from a template, customize in minutes, ship to chat, apps, or the API.",
+  openGraph: {
+    title: "Build agents that finish the work — AI Matrx",
+    description:
+      "Tools, models, scopes, policies — composed into agents that run end-to-end workflows.",
+    type: "website",
+  },
+};
 
-  // Skip the SSR data fetch entirely for guests — the landing card replaces
-  // the grid, and `agx_get_list` would return zero meaningful rows anyway.
-  if (!user) {
-    return (
-      <UnauthSurfaceLanding
-        featureName="Agents"
-        icon={Webhook}
-        description="Build and run AI agents tailored to your workflows. Compose tools, models, and scopes."
-        bullets={[
-          "Spin up agents from a template or from scratch",
-          "Chain tools, files, and live data sources",
-          "Share agents across your team or publicly",
-        ]}
-      />
-    );
-  }
-
-  const seeds = await getAgentListSeed();
-
+/**
+ * `/agents` is the public-facing marketing surface for the Agents module.
+ * The sidebar nav routes authenticated users straight to `/agents/all`
+ * (the gallery), so authed visitors land here only via external links;
+ * when they do, `AuthedWorkspaceCTA` (mounted by `ModuleLanding`) gives
+ * them a one-tap route to the gallery.
+ */
+export default function AgentsPage() {
   return (
-    <>
-      <PageHeader>
-        <AgentsListHeader />
-      </PageHeader>
-      <AgentListHydrator seeds={seeds} />
-      <div className="w-full">
-        <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 max-w-[1800px]">
-          <AgentsGrid />
-        </div>
-      </div>
-    </>
+    <div className="h-dvh w-full overflow-y-auto bg-textured">
+      <div style={{ height: "var(--shell-header-h, 2.75rem)" }} />
+      <AgentsLanding />
+    </div>
   );
 }

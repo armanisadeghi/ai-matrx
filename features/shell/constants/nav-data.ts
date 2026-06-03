@@ -66,8 +66,10 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "sky",
   },
   {
+    // Sidebar points at the workspace (`/chat/new`), not at the public
+    // marketing landing (`/chat`). Internal nav skips the landing.
     label: "Chat",
-    href: "/chat",
+    href: "/chat/new",
     iconName: "MessageCircle",
     section: "primary",
     dockOrder: 2,
@@ -88,8 +90,10 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "amber",
   },
   {
+    // Sidebar points at the gallery (`/agents/all`), not the marketing
+    // landing (`/agents`). Internal nav skips the landing.
     label: "Agents",
-    href: "/agents",
+    href: "/agents/all",
     iconName: "Webhook",
     section: "primary",
     profileMenu: true,
@@ -97,7 +101,7 @@ export const primaryNavItems: ShellNavItem[] = [
     description: "AI Agent Harness Management",
     color: "blue",
     children: [
-      { label: "All Agents", href: "/agents", iconName: "List", exact: true },
+      { label: "All Agents", href: "/agents/all", iconName: "List", exact: true },
       {
         label: "Templates",
         href: "/agents/templates",
@@ -157,8 +161,10 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "violet",
   },
   {
+    // Sidebar points at the workspace (`/files/all`), not the marketing
+    // landing (`/files`). Internal nav skips the landing.
     label: "Files",
-    href: "/files",
+    href: "/files/all",
     iconName: "FolderOpen",
     section: "primary",
     dockOrder: 6,
