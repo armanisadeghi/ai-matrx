@@ -14,7 +14,13 @@
  */
 
 import { useState } from "react";
-import { Server, GitBranch, Settings as SettingsIcon, Plus, Trash2 } from "lucide-react";
+import {
+  Server,
+  GitBranch,
+  Settings as SettingsIcon,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -54,8 +60,11 @@ const TEMPLATE_OPTIONS = [
   },
 ] as const;
 
+/** Radix Select forbids empty-string item values (reserved for "no selection"). */
+const TTL_SERVER_DEFAULT = "default" as const;
+
 const TTL_OPTIONS = [
-  { value: "", label: "Server default" },
+  { value: TTL_SERVER_DEFAULT, label: "Server default" },
   { value: "3600", label: "1 hour" },
   { value: "7200", label: "2 hours" },
   { value: "14400", label: "4 hours" },
@@ -85,7 +94,10 @@ export default function SandboxSettingsPage() {
   const [newEnvKey, setNewEnvKey] = useState("");
   const [newEnvValue, setNewEnvValue] = useState("");
 
-  const update = <K extends keyof typeof prefs>(key: K, value: (typeof prefs)[K]) => {
+  const update = <K extends keyof typeof prefs>(
+    key: K,
+    value: (typeof prefs)[K],
+  ) => {
     dispatch(
       setPreference({
         module: "sandbox",
@@ -131,10 +143,10 @@ export default function SandboxSettingsPage() {
           Sandbox defaults
         </h1>
         <p className="mt-2 text-sm text-muted-foreground md:text-base">
-          What every new sandbox starts with — template, tier, env vars, and
-          an optional git repo to clone right after creation. Applied to the
-          auto-provisioned default sandbox you get on sign-in and to every
-          "New sandbox" you create from the chat picker.
+          What every new sandbox starts with — template, tier, env vars, and an
+          optional git repo to clone right after creation. Applied to the
+          auto-provisioned default sandbox you get on sign-in and to every "New
+          sandbox" you create from the chat picker.
         </p>
       </div>
 
@@ -193,9 +205,16 @@ export default function SandboxSettingsPage() {
           <div className="space-y-2">
             <Label htmlFor="ttl">Auto-stop after</Label>
             <Select
-              value={prefs.ttl_seconds === null ? "" : String(prefs.ttl_seconds)}
+              value={
+                prefs.ttl_seconds === null
+                  ? TTL_SERVER_DEFAULT
+                  : String(prefs.ttl_seconds)
+              }
               onValueChange={(v) =>
-                update("ttl_seconds", v === "" ? null : Number(v))
+                update(
+                  "ttl_seconds",
+                  v === TTL_SERVER_DEFAULT ? null : Number(v),
+                )
               }
             >
               <SelectTrigger id="ttl" className="w-full">
