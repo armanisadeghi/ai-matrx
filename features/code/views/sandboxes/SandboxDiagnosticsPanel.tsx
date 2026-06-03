@@ -99,6 +99,20 @@ export type SandboxDiagnostics = {
     aidream_health_8001: DiagCheck;
     aidream_ready_8001: DiagCheck;
   };
+  /** Stamped by the orchestrator at create-time so the UI shows exactly
+   *  why secrets did or didn't land. Empty object {} when the sandbox was
+   *  created before this field was introduced. */
+  secrets_injection?: {
+    attempted?: boolean;
+    skipped_reason?: string | null;
+    fetched_count?: number;
+    fetched_at?: string | null;
+    status_code?: number | null;
+    error?: string | null;
+    aidream_url_set?: boolean;
+    aidream_service_token_set?: boolean;
+    user_id_set?: boolean;
+  };
 };
 
 const LOG_SOURCES = [
@@ -687,6 +701,9 @@ export function SandboxDiagnosticsPanel({
             )}
             {showEnv && <TabsTrigger value="agent-env">Agent env</TabsTrigger>}
             {showEnv && <TabsTrigger value="env">Passthrough</TabsTrigger>}
+            {showEnv && (
+              <TabsTrigger value="secrets">Secrets injection</TabsTrigger>
+            )}
             {showLogs && <TabsTrigger value="logs">Live logs</TabsTrigger>}
             {showRaw && <TabsTrigger value="raw">Raw response</TabsTrigger>}
           </TabsList>
@@ -958,6 +975,15 @@ export function SandboxDiagnosticsPanel({
                   </div>
                 )}
               </div>
+            </TabsContent>
+          )}
+
+          {showEnv && (
+            <TabsContent
+              value="secrets"
+              className="mt-2 md:h-[30rem] md:flex md:flex-col"
+            >
+              <SecretsInjectionPanel diag={diag} />
             </TabsContent>
           )}
 
@@ -1255,6 +1281,176 @@ function CheckCard({
       <div className="text-[11px] text-muted-foreground mt-1 font-mono break-all">
         {detail}
       </div>
+    </div>
+  );
+}
+
+// ── Secrets-injection panel ───────────────────────────────────────────────
+// Reads `diag.secrets_injection` (stamped by the orchestrator at create-
+// time onto sandbox_instances.config.secrets_injection) and renders a
+// clear status surface — no more "0 env vars landed" with no explanation
+// of WHY.
+
+function SecretsInjectionPanel({ diag }: { diag: SandboxDiagnostics }) {
+  const si = diag.secrets_injection;
+  const headline = headlineFor(si);
+
+  return (
+    <div className="text-xs space-y-3 md:flex md:flex-col md:flex-1 md:min-h-0">
+      <div className="shrink-0 flex items-center gap-2">
+        <Badge
+          variant={
+            headline.tone === "success"
+              ? "default"
+              : headline.tone === "warn"
+                ? "secondary"
+                : "destructive"
+          }
+        >
+          {headline.label}
+        </Badge>
+        <span className="text-muted-foreground">{headline.detail}</span>
+      </div>
+
+      {!si && (
+        <div className="rounded-md border border-border bg-muted/30 p-3 text-muted-foreground">
+          No <code>secrets_injection</code> field on this sandbox's config.
+          Sandboxes created before the diagnostic field was deployed don't
+          carry this stamp — create a fresh sandbox to see the full
+          status.
+        </div>
+      )}
+
+      {si && (
+        <div className="rounded-md border border-border bg-muted/20 p-3 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 font-mono">
+          <KV
+            k="Attempted"
+            v={si.attempted ? "yes" : "no"}
+            tone={si.attempted ? "success" : "warn"}
+          />
+          <KV
+            k="Fetched count"
+            v={`${si.fetched_count ?? 0} secret(s)`}
+            tone={(si.fetched_count ?? 0) > 0 ? "success" : "warn"}
+          />
+          <KV k="HTTP status" v={String(si.status_code ?? "—")} />
+          <KV k="Fetched at" v={si.fetched_at ?? "—"} />
+          <KV
+            k="MATRX_AIDREAM_URL set"
+            v={si.aidream_url_set ? "yes" : "NO ← fix"}
+            tone={si.aidream_url_set ? "success" : "danger"}
+          />
+          <KV
+            k="MATRX_AIDREAM_SERVICE_TOKEN set"
+            v={si.aidream_service_token_set ? "yes" : "NO ← fix"}
+            tone={si.aidream_service_token_set ? "success" : "danger"}
+          />
+          <KV
+            k="user_id on request"
+            v={si.user_id_set ? "yes" : "NO ← fix"}
+            tone={si.user_id_set ? "success" : "danger"}
+          />
+          {si.skipped_reason && (
+            <KV
+              k="Skipped because"
+              v={si.skipped_reason}
+              tone="warn"
+              full
+            />
+          )}
+          {si.error && (
+            <KV k="Error" v={si.error} tone="danger" full />
+          )}
+        </div>
+      )}
+
+      <div className="text-[11px] text-muted-foreground shrink-0">
+        This shows whether the orchestrator's call to aidream's
+        <code className="px-1">/api/user-secrets/internal/sandbox-env-for-user</code>
+        succeeded. Vault contents are merged into{" "}
+        <code>docker run -e KEY=value</code> on container create — so an
+        existing sandbox can't pick up new secrets; you need a fresh box.
+      </div>
+    </div>
+  );
+}
+
+function headlineFor(
+  si: SandboxDiagnostics["secrets_injection"],
+): { label: string; detail: string; tone: "success" | "warn" | "danger" } {
+  if (!si) {
+    return {
+      label: "Unknown",
+      detail: "no diagnostic stamp",
+      tone: "warn",
+    };
+  }
+  if (!si.attempted) {
+    return {
+      label: "Skipped",
+      detail: si.skipped_reason ?? "no reason recorded",
+      tone: "warn",
+    };
+  }
+  if ((si.status_code ?? 0) === 200 && (si.fetched_count ?? 0) > 0) {
+    return {
+      label: "Injected",
+      detail: `${si.fetched_count} secret(s) merged into container env`,
+      tone: "success",
+    };
+  }
+  if ((si.status_code ?? 0) === 200) {
+    return {
+      label: "Empty",
+      detail: "aidream returned 200 but no secrets for this user",
+      tone: "warn",
+    };
+  }
+  if (si.error) {
+    return {
+      label: "Failed",
+      detail: si.error,
+      tone: "danger",
+    };
+  }
+  return {
+    label: "Unknown",
+    detail: `attempted, HTTP ${si.status_code ?? "?"}`,
+    tone: "warn",
+  };
+}
+
+function KV({
+  k,
+  v,
+  tone,
+  full,
+}: {
+  k: string;
+  v: string;
+  tone?: "success" | "warn" | "danger";
+  full?: boolean;
+}) {
+  return (
+    <div
+      className={`flex flex-col gap-0.5 ${full ? "col-span-1 md:col-span-2" : ""}`}
+    >
+      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        {k}
+      </span>
+      <span
+        className={
+          tone === "success"
+            ? "text-success break-all"
+            : tone === "warn"
+              ? "text-warning break-all"
+              : tone === "danger"
+                ? "text-destructive break-all"
+                : "break-all"
+        }
+      >
+        {v}
+      </span>
     </div>
   );
 }
