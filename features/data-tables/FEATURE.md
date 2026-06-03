@@ -2,7 +2,51 @@
 
 **Status:** `migrating`
 **Tier:** `1`
-**Last updated:** `2026-05-29`
+**Last updated:** `2026-06-03`
+
+---
+
+## Active pending list (single source of truth)
+
+> ✅ done · ⏳ pending · 🚧 in progress · 🛑 blocked on user decision
+
+**Data layer (DB):**
+- ✅ `udt_v2_backbone` migration — workbooks, version history, validation, 4 agent RPCs
+- ✅ Hardening v1 + v2 + signature fix (4 reviewer-found bugs)
+- ✅ Dead-RPC drop (4 of 6; 2 kept because matrx-extend uses them)
+- ✅ Cross-repo audit (aidream + matrx-extend + matrx-local + DB internals)
+- ✅ Types regenerated to current live DB
+
+**Typed TS service layer:**
+- ✅ `service.ts` — `upsertRow / upsertCell / bulkWrite / changeFieldType`
+- ✅ `types.ts` — 22 domain types + `isBulkOpError` / `isServiceFailure` guards
+- ✅ `useRowVersions` hook + `VersionHistoryViewer` component
+- ✅ `useTableRealtime` hook — Postgres Changes subscription per tableId
+- ✅ `EditableCell` component — double-click inline editing per cell
+
+**Frontend wired through new primitives:**
+- ✅ Wave D — `ImportTableModal`: serial loop → one atomic `bulkWrite`
+- ✅ Wave F — `UserTableViewer`: row-action `History` icon → Sheet with `VersionHistoryViewer`
+- ✅ Wave B (3 of 4) — `EditRowModal` → `upsertRow`; `UserTableViewer` HTML cleanup + expanded-text save → `upsertCell`
+- ✅ Wave G — `TableSettingsModal`: strict-mode toggle persisting `validation_mode`
+- ✅ **Inline cell editing** — every `UserTableViewer` cell now wraps in `EditableCell` (double-click → type-aware input → `upsertCell` → success or toast)
+- ✅ **Realtime sync** — `UserTableViewer` subscribes to `udt_dataset_rows` changes for its tableId; debounced 400ms refetch
+- ✅ **Column-type badges** — every header now shows the `data_type` under the display name
+
+**Pending — user decision blockers (🛑):**
+- 🛑 **Wave H — version-history retention policy.** 3 options listed below; pick one before agent-heavy workloads land.
+- 🛑 **aidream backend audit attribution.** aidream's pool writes record `changed_by = NULL` (no JWT). Decide: keep honest NULL, or attribute the originating user via `set_config('request.jwt.claims', ...)` before each write.
+
+**Pending — needs UX design (⏳):**
+- ⏳ **Wave E — column type-change UI.** Need confirmation dialog, strategy picker (`cast_or_null` vs `cast_or_skip`), progress feedback for long row-rewrites. RPC already live and tested.
+- ⏳ **Wave P4 — full workbook surface (lossless XLSX, full collab).** Univer-class integration; multi-day work; `udt_workbooks` table and FK hook already live so this is unblocked architecturally.
+- ⏳ **Wave P3 — smart importer.** "Rational vs look-sensitive" detection that routes uploads to typed datasets vs workbook surface. Depends on P4 existing.
+
+**Pending — small + clear (🚧 ready when you say go):**
+- 🚧 **`op:'merge'` for `udt_bulk_write`.** Tiny SQL migration (`data = data || v_op->'data'`). Unblocks the deferred Wave B 4th site (bulk HTML-cleanup loop).
+- 🚧 **Wave B last site.** Migrate `UserTableViewer` bulk HTML-cleanup loop once `op:'merge'` lands.
+- 🚧 **Bulk paste from Excel / Sheets clipboard** into the grid.
+- 🚧 **Add row inline at bottom** of the grid.
 
 ---
 
@@ -313,6 +357,17 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-06-03` — claude: spreadsheet UX milestone. Three user-visible features landed:
+  (a) **Inline cell editing** — new `EditableCell` component wraps every cell display in
+  `UserTableViewer`; double-click enters edit mode, input shape adapts to `data_type`
+  (text / number / checkbox / date / datetime / textarea), Enter or blur commits via
+  `udt_upsert_cell`, Escape cancels, errors surface as toast. (b) **Realtime sync** — new
+  `useTableRealtime` hook subscribes to `udt_dataset_rows` changes for the current
+  tableId; `UserTableViewer` debounces refetch to 400ms so other users' edits appear
+  without thrashing on bulk imports. (c) **Column-type badges** in headers. Also Wave B
+  fully complete — bulk HTML-cleanup migrated to `bulkWrite({op:'merge'})` (one atomic
+  call, no per-row round-trips). Migration `udt_v2_bulk_write_merge_op` applied live and
+  verified via rollback test.
 - `2026-05-29` — claude: P2 execution continues. Wave B finished for two of three remaining
   call sites (HTML cleanup per-field + expanded-text save → `upsertCell`); third site (bulk
   HTML cleanup) deferred pending `op:'merge'` addition to `udt_bulk_write`. Wave G done —

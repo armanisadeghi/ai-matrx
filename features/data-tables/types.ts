@@ -58,6 +58,18 @@ export type BulkInsertOp = {
 export type BulkUpdateOp = {
   op: "update";
   row_id: string;
+  /** REPLACES the row's data wholesale. Keys not in `data` are dropped. */
+  data: Record<string, unknown>;
+};
+
+export type BulkMergeOp = {
+  op: "merge";
+  row_id: string;
+  /**
+   * Partial update — `data = existing_data || patch`. Keys in `data` overwrite
+   * the row's matching keys; keys absent from `data` are preserved. Use this
+   * when sending only changed fields.
+   */
   data: Record<string, unknown>;
 };
 
@@ -73,7 +85,12 @@ export type BulkDeleteOp = {
   row_id: string;
 };
 
-export type BulkOp = BulkInsertOp | BulkUpdateOp | BulkCellOp | BulkDeleteOp;
+export type BulkOp =
+  | BulkInsertOp
+  | BulkUpdateOp
+  | BulkMergeOp
+  | BulkCellOp
+  | BulkDeleteOp;
 
 /**
  * Per-op result envelope returned inside `udt_bulk_write.results[]`.
