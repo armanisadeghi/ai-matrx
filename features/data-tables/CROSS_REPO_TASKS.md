@@ -22,7 +22,9 @@
 **Pass 1** (agent with aidream + matrx-extend access) audited those two repos. **Pass 2** (agent
 with a `matrx-local` checkout **and** Supabase MCP on `txzxabzwovsujtloxrus`) closed the two gaps
 Pass 1 could not reach — `matrx-local` and DB-internal SQL callers — and independently re-verified
-all four repos against the live DB. **Every gate is now green; the 4-RPC drop is unblocked.**
+all four repos against the live DB. **Every gate is green; the 4-RPC drop has been EXECUTED and
+verified live on 2026-06-02** (Supabase migration `udt_v2_drop_legacy_unused_rpcs` — the 4 are gone,
+the 3 keepers remain).
 
 | RPC | live signature | ai-matrx | aidream | matrx-extend | matrx-local | DB-internal | Verdict |
 |---|---|---|---|---|---|---|---|
@@ -61,8 +63,8 @@ Its direct-pool named-SQL writes are trigger-compatible but record `changed_by =
 `auth.uid()`), and bulk imports fan out one realtime event per row. Nothing breaks (permissive
 validation = passthrough; version triggers are audit-only).
 
-➡️ **Full narrative, live-DB verification snapshot, and the ready-to-run reversible DROP migration:
-[`CROSS_REPO_HANDOFF.md`](./CROSS_REPO_HANDOFF.md) (§7 has the SQL).**
+➡️ **Full narrative, live-DB verification snapshot, and the applied (2026-06-02) reversible DROP
+migration: [`CROSS_REPO_HANDOFF.md`](./CROSS_REPO_HANDOFF.md) (§0 = executed status, §7 = SQL + rollback).**
 
 ---
 
@@ -341,5 +343,6 @@ green (all six confirmed dead in all three repos).
 > drop candidates — `batch_update_rows_in_user_table`, `remove_column_from_user_table`,
 > `create_new_user_table`, `create_new_user_table_wrapper` — are confirmed dead in all four repos
 > **and** the database internals, with zero `pg_depend` hard deps. ⚠️ Keep
-> `create_new_user_table_dynamic` (live canonical create, **not** a candidate). Ready-to-run reversible
-> drop SQL: [`CROSS_REPO_HANDOFF.md`](./CROSS_REPO_HANDOFF.md) §7.
+> `create_new_user_table_dynamic` (live canonical create, **not** a candidate). **Drop applied +
+> verified 2026-06-02** (migration `udt_v2_drop_legacy_unused_rpcs`); SQL + rollback + the one residual
+> (ai-matrx types regen): [`CROSS_REPO_HANDOFF.md`](./CROSS_REPO_HANDOFF.md) §0 / §7.

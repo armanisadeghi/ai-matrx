@@ -5,11 +5,30 @@
 > gaps pass 1 could not reach and re-verified everything against the live DB.
 > **To:** the data-tables agent who designed `udt_v2_backbone` and owns the next phases.
 > **TL;DR:** All four repos **and** the database internals are audited. Nothing is broken. The
-> dead-RPC drop is **4 RPCs, not 6** (two are live in the Chrome extension) and is now **fully
-> unblocked** — `matrx-local` is clean, there are **zero** DB-internal callers of the four, and
-> `pg_depend` shows **zero** hard dependencies. A ready-to-run, reversible DROP migration is in §7.
+> dead-RPC drop was **4 RPCs, not 6** (two are live in the Chrome extension) and is now **DONE** —
+> the four were **dropped and verified live on 2026-06-02** (Supabase migration
+> `udt_v2_drop_legacy_unused_rpcs`): the four are gone, the three keepers remain. `matrx-local` is
+> clean, there were **zero** DB-internal callers of the four, and `pg_depend` showed **zero** hard
+> dependencies. The applied SQL + rollback are in §7.
 > The companion [`CROSS_REPO_TASKS.md`](./CROSS_REPO_TASKS.md) has the per-item `file:line` evidence
 > (Sections A–E).
+
+---
+
+## 0. ✅ Status: DONE (executed 2026-06-02)
+
+- **Drop applied + verified live.** Supabase migration `udt_v2_drop_legacy_unused_rpcs` removed
+  `create_new_user_table`, `create_new_user_table_wrapper`, `batch_update_rows_in_user_table`,
+  `remove_column_from_user_table`. Post-drop catalog check: the 4 are **absent**; the 3 keepers
+  (`append_rows_to_user_table`, `create_user_table_with_fields`, `create_new_user_table_dynamic`)
+  **remain**. Schema-of-record file: `migrations/udt_v2_drop_legacy_unused_rpcs.sql` (this repo).
+- **Docs aligned.** aidream `docs/UDT_MIGRATION_FOR_FRONTENDS.md` no longer lists the 4 (removal note
+  added); this handoff + `CROSS_REPO_TASKS.md` updated.
+- **One residual (non-blocking, cosmetic):** regenerate ai-matrx `types/database.types.ts` via
+  `npm run db-types`. **Deliberately NOT done this session** — that generated file already carries
+  *unrelated* in-flight WIP in the working tree (`image_file_id` fields), so regenerating now would
+  clobber a colleague's edit. The 4 dropped functions linger only as **unused** type entries (nothing
+  calls them — they had zero call sites pre-drop) until the next routine regen.
 
 ---
 
@@ -141,14 +160,16 @@ drop is safe:
   references any candidate.
 - **Views:** zero references. **RLS policies:** zero references.
 - **`pg_depend` hard deps on the 4:** zero. The drop cascades to nothing.
+- **Post-drop (2026-06-02):** all four are now **absent** from the catalog; the three keepers remain.
+  This §4 snapshot otherwise reflects the **pre-drop** audit state — see §0 for the executed result.
 
 ## 5. What changed this session
 
 | Repo | Commit | Change |
 |---|---|---|
-| aidream | `40770d98` (pass 1) | `schema_check.py CRITICAL_TABLES` (`:78-79`) + `db/expected_schema.json` add the 2 v2 tables + the new `udt_datasets` columns; `docs/UDT_API_REFERENCE.md:21-30` gains a v2 note. No ORM regen (already current); no migration mirror (DB-as-source-of-truth). **Independently re-verified pass 2.** |
+| aidream | `40770d98` (pass 1) + pass-2 doc | pass 1: `schema_check.py CRITICAL_TABLES` (`:78-79`) + `db/expected_schema.json` add the 2 v2 tables + the new `udt_datasets` columns; `docs/UDT_API_REFERENCE.md:21-30` gains a v2 note (independently re-verified pass 2). **Pass 2:** `docs/UDT_MIGRATION_FOR_FRONTENDS.md` drops the 4 removed RPCs from its "live RPCs" contract list + adds a removal note. |
 | matrx-extend | `8a932d2` (pass 1) | `src/lib/supabase/user-tables.ts` header comment documents the v2 backbone + flags the 4 unused RPCs as "do not start calling — slated for removal." No functional change. **Re-verified pass 2.** |
-| matrx-frontend | (pass 1 + pass 2, this working tree) | pass 1 added `CROSS_REPO_TASKS.md` + `CROSS_REPO_HANDOFF.md`. **Pass 2** closed the `matrx-local` + DB-internal gaps (Sections D & E), added the live-DB snapshot (§4), the `_dynamic` footgun, the types-regen note, exact `.rpc()` lines, and the reversible drop migration (§7). |
+| matrx-frontend | (pass 1 + pass 2) | pass 1 added `CROSS_REPO_TASKS.md` + `CROSS_REPO_HANDOFF.md`. **Pass 2** closed the `matrx-local` + DB-internal gaps (Sections D & E), added the live-DB snapshot (§4), the `_dynamic` footgun + exact `.rpc()` lines, **executed the drop** (Supabase migration `udt_v2_drop_legacy_unused_rpcs`), and committed the schema-of-record `migrations/udt_v2_drop_legacy_unused_rpcs.sql`. |
 | matrx-local | none | clean; no change required. |
 
 ## 6. Exact live RPC signatures (for the drop + for type regen)
@@ -167,12 +188,14 @@ create_new_user_table_wrapper(text, text, boolean, boolean, jsonb)            SE
 ```
 All seven are owned by `postgres` and granted `EXECUTE` to `anon`, `authenticated`, `service_role`.
 
-## 7. Ready-to-run reversible DROP migration (the artifact)
+## 7. The DROP migration — ✅ APPLIED 2026-06-02 (reversible)
 
-Run as a single statement in a migration on the **ai-matrx schema-of-record** (not aidream — its
-migrations are reverse-engineered; see `CROSS_REPO_TASKS.md` A4.1). Drop `_wrapper` first for
-tidiness (plpgsql late-binds, so order is not strictly required and there is no `RESTRICT` blocker —
-`pg_depend` is empty).
+**Applied live** as Supabase migration `udt_v2_drop_legacy_unused_rpcs` on 2026-06-02 and verified
+(the 4 absent, 3 keepers present). Schema-of-record copy committed at
+`migrations/udt_v2_drop_legacy_unused_rpcs.sql` (this repo — the ai-matrx schema-of-record, not
+aidream, whose migrations are reverse-engineered; see `CROSS_REPO_TASKS.md` A4.1). `_wrapper` was
+dropped before the bare function for tidiness (plpgsql late-binds, so order is not strictly required
+and there was no `RESTRICT` blocker — `pg_depend` was empty). The statements that ran:
 
 ```sql
 -- forward (drop the 4 confirmed-dead legacy RPCs; KEEPs and _dynamic untouched)
@@ -226,10 +249,11 @@ one first if you ever roll back both.)
 
 ## 8. Open decisions / next-phase hooks (your call)
 
-1. **Drop the 4 confirmed-dead RPCs — UNBLOCKED.** Every prerequisite pass 1 listed is now met:
-   `matrx-local` clean, zero DB-internal callers, zero `pg_depend` deps. Run §7, then regen ai-matrx
-   types and update aidream's `UDT_MIGRATION_FOR_FRONTENDS.md` contract section. **Keep
-   `create_new_user_table_dynamic`.**
+1. **Drop the 4 confirmed-dead RPCs — ✅ DONE 2026-06-02.** Applied + verified (§0, §7); aidream
+   `UDT_MIGRATION_FOR_FRONTENDS.md` contract section updated; `create_new_user_table_dynamic` kept.
+   **Residual:** run `npm run db-types` to regenerate ai-matrx `types/database.types.ts` whenever the
+   unrelated `image_file_id` WIP in that file clears (it currently blocks a clean regen) — purely
+   cosmetic, the dropped functions had zero callers.
 2. **Backend audit attribution.** aidream's pool writes record `changed_by = NULL`. Decide: honest NULL
    (it genuinely wasn't a user-JWT write) or attribute the originating user via
    `set_config('request.jwt.claims', …)` before the write (the pattern in your migration's verification
