@@ -1,53 +1,42 @@
+// app/(core)/tasks/page.tsx
+//
+// Server Component page. Auth branch happens server-side via `getServerAuth()`
+// (request-scoped cache — see `utils/supabase/getServerAuth.ts`). Guests are
+// served the full `<TasksLanding />` directly with zero workspace code shipped;
+// authed users get the workspace shell with zero marketing code shipped.
+
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { PanelControlProvider } from "@/app/(ssr)/demos/ssr/resizables/_lib/PanelControlProvider";
 import { readLayoutCookie } from "@/app/(ssr)/demos/ssr/resizables/_lib/readLayoutCookie";
 import { TasksHeaderControls } from "@/features/tasks/components/TasksHeaderControls";
 import { TasksDesktopShell } from "@/features/tasks/components/TasksDesktopShell";
 import { TaskUrlSync } from "@/features/tasks/components/TaskUrlSync";
-import { UnauthSurfaceLanding } from "@/features/auth/components/UnauthSurfaceLanding";
-import { CheckSquare } from "lucide-react";
+import TasksLanding from "@/features/auth/components/module-landing/landings/TasksLanding";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
 const COOKIE_NAME = "panels:tasks:v2";
 
-/**
- * /tasks — Server Component shell mirroring `app/(a)/agents/[id]/build`:
- *  - Reads the panel layout cookie on the server so the first paint already
- *    has the user's saved column widths.
- *  - Portals title + toggle buttons into the shell's glass header via
- *    <PageHeader/>. No body-level header — the page reclaims that vertical
- *    space and content extends behind the transparent shell header.
- *  - Wraps everything in <PanelControlProvider/> so the header buttons in
- *    the portaled subtree can drive panel collapse via React Context (which
- *    propagates through the React tree, not the DOM tree).
- *  - Hands all mobile/desktop branching + per-panel mounting to a single
- *    client island, <TasksDesktopShell/>.
- */
 export default async function TasksPage() {
+  const { isAuthenticated } = await getServerAuth();
+
+  if (!isAuthenticated) {
+    return <TasksLanding />;
+  }
+
   const defaultLayout = await readLayoutCookie(COOKIE_NAME);
 
   return (
-    <UnauthSurfaceLanding
-      featureName="Tasks"
-      icon={CheckSquare}
-      description="Plan work, track progress, and hand tasks off to agents — all in one place."
-      bullets={[
-        "Group tasks into projects and scopes",
-        "Assign to agents for hands-off execution",
-        "Track completions and run history",
-      ]}
-    >
-      <PanelControlProvider>
-        <PageHeader>
-          <TasksHeaderControls />
-        </PageHeader>
-        <TaskUrlSync />
-        <div className="h-full overflow-hidden">
-          <TasksDesktopShell
-            defaultLayout={defaultLayout}
-            cookieName={COOKIE_NAME}
-          />
-        </div>
-      </PanelControlProvider>
-    </UnauthSurfaceLanding>
+    <PanelControlProvider>
+      <PageHeader>
+        <TasksHeaderControls />
+      </PageHeader>
+      <TaskUrlSync />
+      <div className="h-full overflow-hidden">
+        <TasksDesktopShell
+          defaultLayout={defaultLayout}
+          cookieName={COOKIE_NAME}
+        />
+      </div>
+    </PanelControlProvider>
   );
 }

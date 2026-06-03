@@ -1,40 +1,23 @@
-import { Webhook } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
+// app/(core)/agents/all/page.tsx
+//
+// Authenticated Agents gallery. The marketing landing lives one URL up at
+// `/agents` — guests are bounced there server-side instead of seeing a
+// compact in-place card. One canonical guest entry point per surface; no
+// icons or other non-serializable JSX cross the server→client boundary.
+
+import { redirect } from "next/navigation";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { getAgentListSeed } from "@/lib/agents/data";
 import { AgentListHydrator } from "@/features/agents/route/AgentListHydrator";
 import { AgentsGrid } from "@/features/agents/components/agent-listings/AgentsGrid";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentsListHeader } from "@/features/agents/components/shell/AgentsListHeader";
-import { UnauthSurfaceLanding } from "@/features/auth/components/UnauthSurfaceLanding";
 
-/**
- * `/agents/all` — the authenticated Agents gallery. `/agents` itself is
- * the public marketing landing; sidebar nav points here directly so
- * authed users skip the landing on every visit.
- *
- * Guests who deep-link straight to `/agents/all` (rare — the link is not
- * advertised) get a compact `UnauthSurfaceLanding` rather than a marketing
- * landing, because the marketing surface lives one URL up.
- */
 export default async function AgentsGalleryPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { isAuthenticated } = await getServerAuth();
 
-  if (!user) {
-    return (
-      <UnauthSurfaceLanding
-        featureName="Agents"
-        icon={Webhook}
-        description="Build and run AI agents tailored to your workflows. Compose tools, models, and scopes."
-        bullets={[
-          "Spin up agents from a template or from scratch",
-          "Chain tools, files, and live data sources",
-          "Share agents across your team or publicly",
-        ]}
-      />
-    );
+  if (!isAuthenticated) {
+    redirect("/agents");
   }
 
   const seeds = await getAgentListSeed();

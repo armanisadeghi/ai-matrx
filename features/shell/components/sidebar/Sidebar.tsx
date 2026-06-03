@@ -25,16 +25,18 @@ import SidebarCreatorHubToggle from "../controls/SidebarCreatorHubToggle";
 import SidebarEnvToggle from "../controls/SidebarEnvToggle";
 import SidebarWindowToggleIsland from "./SidebarWindowToggleIsland";
 import {
+  navItemsForViewer,
   primaryNavItems,
   settingsItem,
-  type ShellNavItem,
 } from "../../constants/nav-data";
 
 interface SidebarProps {
   pathname: string;
+  isAuthenticated: boolean;
 }
 
-export default function Sidebar({ pathname }: SidebarProps) {
+export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
+  const visibleItems = navItemsForViewer(primaryNavItems, isAuthenticated);
   return (
     <aside className="shell-sidebar">
       {/* Brand Section — Route header override + default toggle fallback */}
@@ -69,7 +71,7 @@ export default function Sidebar({ pathname }: SidebarProps) {
         <div className="shell-sidebar-main-nav">
           <DirectContextSelection />
 
-          {primaryNavItems.map((item) =>
+          {visibleItems.map((item) =>
             item.children ? (
               <NavItemGroup key={item.href} item={item} />
             ) : (

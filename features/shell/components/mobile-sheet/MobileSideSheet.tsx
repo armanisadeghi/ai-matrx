@@ -11,11 +11,20 @@
 // NavActiveSync keeps .shell-root[data-pathname] live after client navigation.
 
 import ShellIcon from "../ShellIcon";
-import { primaryNavItems, settingsItem } from "../../constants/nav-data";
+import {
+  navItemsForViewer,
+  primaryNavItems,
+  settingsItem,
+} from "../../constants/nav-data";
 import MobileSheetNavLink from "./MobileSheetNavLink";
 import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
 
-export default function MobileSideSheet() {
+interface MobileSideSheetProps {
+  isAuthenticated: boolean;
+}
+
+export default function MobileSideSheet({ isAuthenticated }: MobileSideSheetProps) {
+  const visibleItems = navItemsForViewer(primaryNavItems, isAuthenticated);
   return (
     <div className="shell-mobile-sheet-wrapper">
       {/* Backdrop — clicking closes the sheet */}
@@ -51,7 +60,7 @@ export default function MobileSideSheet() {
 
           {/* Standard nav — always server-rendered */}
           <div className="shell-mobile-main-nav">
-            {primaryNavItems.map((item) => (
+            {visibleItems.map((item) => (
               <MobileSheetNavLink
                 key={item.href}
                 href={item.href}

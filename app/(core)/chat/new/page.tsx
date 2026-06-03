@@ -4,6 +4,7 @@ import { ChatNewClient } from "@/features/agents/components/chat/ChatNewClient";
 import { ChatRunHeader } from "@/features/agents/components/chat/ChatRunHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { WorkspaceConversionNudge } from "@/features/auth/components/conversion/WorkspaceConversionNudge";
 
 /**
  * Single-column SSR lookup for the default agent's display name so the chat
@@ -39,6 +40,14 @@ export default async function NewChatPage() {
       >
         <ChatNewClient />
       </Suspense>
+      {/* Polite inline conversion card for guests who hit the send gate.
+          Renders nothing for authed users and for guests with zero attempts. */}
+      <WorkspaceConversionNudge
+        featureName="Chat"
+        threshold={1}
+        heading="Save your chat in 30 seconds"
+        description="Your messages, agents, files, and history all sync the moment you create a free account. No credit card required."
+      />
     </>
   );
 }

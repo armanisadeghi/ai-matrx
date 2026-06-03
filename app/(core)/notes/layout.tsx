@@ -1,9 +1,16 @@
-// app/(a)/notes/layout.tsx
+// app/(core)/notes/layout.tsx
+//
+// Server Component layout. The auth branch is made server-side via
+// `getServerAuth()` (request-scoped cache — no extra round-trip vs. the parent
+// layout's call). Guests are served the full `<NotesLanding />` marketing page
+// directly; authed users get the `<NotesView />` workspace. Neither tree leaks
+// into the other's bundle, and no Lucide icons (or other non-serializable
+// values) cross a server→client boundary.
 
 import "./notes.css";
 import { NotesView } from "@/features/notes/components/NotesView";
-import { UnauthSurfaceLanding } from "@/features/auth/components/UnauthSurfaceLanding";
-import { StickyNote } from "lucide-react";
+import NotesLanding from "@/features/auth/components/module-landing/landings/NotesLanding";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/notes", {
@@ -30,11 +37,19 @@ const highlightStyles = `
 }
 `;
 
-export default function NotesV2Layout({
+export default async function NotesV2Layout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { isAuthenticated } = await getServerAuth();
+
+  if (!isAuthenticated) {
+    // Guests: full marketing landing, fully server-rendered. The
+    // workspace tree (and its bundle) never loads.
+    return <NotesLanding />;
+  }
+
   return (
     <div
       className="notes-root h-full overflow-hidden relative z-0"
@@ -42,18 +57,7 @@ export default function NotesV2Layout({
     >
       <style dangerouslySetInnerHTML={{ __html: highlightStyles }} />
       <span className="shell-hide-dock" aria-hidden="true" />
-      <UnauthSurfaceLanding
-        featureName="Notes"
-        icon={StickyNote}
-        description="Capture thoughts, drafts, and reference material — all searchable and synced across your devices."
-        bullets={[
-          "Markdown notes with rich previews",
-          "Pin notes to scopes and projects",
-          "Drop into chat or share by link",
-        ]}
-      >
-        <NotesView className="h-full" />
-      </UnauthSurfaceLanding>
+      <NotesView className="h-full" />
       <div style={{ display: "none" }}>{children}</div>
     </div>
   );

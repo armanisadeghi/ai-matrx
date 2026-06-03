@@ -12,15 +12,15 @@
  * Falls back to the root view if the path can't be resolved.
  */
 
-import { FolderOpen } from "lucide-react";
+import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { PageShell } from "@/features/files/components/surfaces/PageShell";
 import { readSidebarModeCookie } from "@/features/files/utils/server-cookies";
 import {
   readFilesUiFromParams,
   type ServerSearchParams,
 } from "@/features/files/utils/server-search-params";
-import { UnauthSurfaceLanding } from "@/features/auth/components/UnauthSurfaceLanding";
 
 interface PageProps {
   params: Promise<{ path?: string[] }>;
@@ -31,28 +31,17 @@ export default async function CloudFilesDeepLinkPage({
   params,
   searchParams,
 }: PageProps) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { isAuthenticated } = await getServerAuth();
 
-  // Guests deep-linking to /files/all/* see the compact surface landing —
-  // the marketing landing at /files is the front door.
-  if (!user) {
-    return (
-      <UnauthSurfaceLanding
-        featureName="Files"
-        icon={FolderOpen}
-        description="A real-time synced file system for uploads, previews, and sharing."
-        bullets={[
-          "Upload and organize files across folders",
-          "Share via link with granular permissions",
-          "Drop files straight into chat or agents",
-        ]}
-      />
-    );
+  // Guests deep-linking to /files/all/* go straight to the marketing
+  // landing at /files — one canonical guest entry point per surface;
+  // server-side redirect so no icons or other non-serializable JSX
+  // cross the server→client boundary.
+  if (!isAuthenticated) {
+    redirect("/files");
   }
 
+  const supabase = await createClient();
   const { path } = await params;
   const folderPath = (path ?? []).map(decodeURIComponent).join("/");
   const sp = searchParams ? await searchParams : undefined;

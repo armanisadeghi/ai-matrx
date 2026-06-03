@@ -8,7 +8,7 @@
 
 import Link from "next/link";
 import ShellIcon from "../ShellIcon";
-import { dockItems } from "../../constants/nav-data";
+import { dockItems, navItemsForViewer } from "../../constants/nav-data";
 import type { ShellNavItem } from "../../constants/nav-data";
 
 /** Single dock link — reusable by custom route docks. */
@@ -26,10 +26,15 @@ export function MobileDockItem({ item }: { item: ShellNavItem }) {
 }
 
 /** Default shell dock — all nav items with a dockOrder in nav-data. */
-export default function MobileDockItems() {
+export default function MobileDockItems({
+  isAuthenticated,
+}: {
+  isAuthenticated: boolean;
+}) {
+  const items = navItemsForViewer(dockItems, isAuthenticated);
   return (
     <>
-      {dockItems.map((item) => (
+      {items.map((item) => (
         <MobileDockItem key={item.href} item={item} />
       ))}
     </>

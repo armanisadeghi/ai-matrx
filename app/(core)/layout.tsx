@@ -1,6 +1,7 @@
 import "@/styles/shell.css";
 import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { Providers } from "@/app/Providers";
 import { mapUserData } from "@/utils/userDataMapper";
 import { getAdminStatus, type AdminLevel } from "@/utils/supabase/userSessionData";
@@ -45,17 +46,17 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") || "/";
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Request-scoped cached auth lookup — child server layouts/pages that also
+  // call `getServerAuth()` share this validated `getUser()` result, so each
+  // request only pays one JWT-validation round-trip across the whole tree.
+  const { user, isAuthenticated } = await getServerAuth();
+  const supabase = await createClient();
 
   let initialReduxState: InitialReduxState;
   let userData: UserData;
-  const isAuthenticated = !!user;
 
   if (user) {
     // Phase 3: admin check is now a narrow single-row lookup on the `admins`
@@ -102,16 +103,16 @@ export default async function AppLayout({
         <input type="checkbox" id="shell-panel-toggle" aria-hidden="true" />
         <input type="checkbox" id="shell-panel-mobile" aria-hidden="true" />
 
-        <Sidebar pathname={pathname} />
+        <Sidebar pathname={pathname} isAuthenticated={isAuthenticated} />
         <Header userData={userData} isAuthenticated={isAuthenticated} />
 
         <main className="shell-main">{children}</main>
 
-        <MobileSideSheet />
+        <MobileSideSheet isAuthenticated={isAuthenticated} />
       </div>
 
       <GlassPortal>
-        <MobileDock />
+        <MobileDock isAuthenticated={isAuthenticated} />
       </GlassPortal>
 
       <NavActiveSync />

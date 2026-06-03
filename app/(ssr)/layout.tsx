@@ -100,16 +100,16 @@ export default async function SSRLayout({
         <input type="checkbox" id="shell-panel-toggle" aria-hidden="true" />
         <input type="checkbox" id="shell-panel-mobile" aria-hidden="true" />
 
-        <Sidebar pathname={pathname} />
+        <Sidebar pathname={pathname} isAuthenticated={isAuthenticated} />
         <Header userData={userData} isAuthenticated={isAuthenticated} />
 
         <main className="shell-main">{children}</main>
 
-        <MobileSideSheet />
+        <MobileSideSheet isAuthenticated={isAuthenticated} />
       </div>
 
       <GlassPortal>
-        <MobileDock />
+        <MobileDock isAuthenticated={isAuthenticated} />
       </GlassPortal>
 
       <NavActiveSync />

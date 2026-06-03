@@ -50,6 +50,21 @@ export interface ShellNavItem {
    * Default when omitted: sidebar + header Admin menu.
    */
   adminSurfaces?: AdminNavSurface[];
+  /**
+   * Hide this row from guest (unauthenticated) visitors. Use for surfaces
+   * that have no meaningful guest experience (e.g. personal DMs).
+   * Defaults to `false` — every row is guest-visible unless explicitly
+   * hidden. Children pages are still reachable by direct URL; the soft
+   * auth gate handles access there.
+   */
+  guestHidden?: boolean;
+  /**
+   * Where the row points for guest visitors. When set, the guest nav
+   * uses this href instead of `href` — typically a marketing landing
+   * (`/chat`) instead of the workspace URL (`/chat/new`) so guests
+   * don't bounce off a workspace they can't use yet.
+   */
+  guestHref?: string;
 }
 
 // Primary navigation items — canonical app URLs shared by (a), (ssr), and (authenticated).
@@ -66,10 +81,12 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "sky",
   },
   {
-    // Sidebar points at the workspace (`/chat/new`), not at the public
-    // marketing landing (`/chat`). Internal nav skips the landing.
+    // Sidebar points at the workspace (`/chat/new`) for authed users; for
+    // guests, the marketing landing (`/chat`) so they land somewhere
+    // meaningful instead of a composer they can't yet send from.
     label: "Chat",
     href: "/chat/new",
+    guestHref: "/chat",
     iconName: "MessageCircle",
     section: "primary",
     dockOrder: 2,
@@ -90,10 +107,12 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "amber",
   },
   {
-    // Sidebar points at the gallery (`/agents/all`), not the marketing
-    // landing (`/agents`). Internal nav skips the landing.
+    // Sidebar points at the gallery (`/agents/all`) for authed users; for
+    // guests, the marketing landing (`/agents`) so they see the pitch
+    // instead of the deep-link compact card.
     label: "Agents",
     href: "/agents/all",
+    guestHref: "/agents",
     iconName: "Webhook",
     section: "primary",
     profileMenu: true,
@@ -161,10 +180,11 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "violet",
   },
   {
-    // Sidebar points at the workspace (`/files/all`), not the marketing
-    // landing (`/files`). Internal nav skips the landing.
+    // Sidebar points at the workspace (`/files/all`) for authed users; for
+    // guests, the marketing landing (`/files`).
     label: "Files",
     href: "/files/all",
+    guestHref: "/files",
     iconName: "FolderOpen",
     section: "primary",
     dockOrder: 6,
@@ -245,6 +265,9 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "indigo",
   },
   {
+    // Hidden from guests — DMs and team threads have no meaningful guest
+    // experience. Direct-URL access still renders the marketing landing
+    // via the page-level server-side auth branch.
     label: "Messages",
     href: "/messages",
     iconName: "Mail",
@@ -253,6 +276,7 @@ export const primaryNavItems: ShellNavItem[] = [
     dashboard: true,
     description: "Direct messages and conversations",
     color: "pink",
+    guestHidden: true,
   },
   {
     label: "Workflows",
@@ -370,6 +394,31 @@ export const adminNavItems: ShellNavItem[] = [
 export const dockItems = primaryNavItems
   .filter((item) => item.dockOrder != null)
   .sort((a, b) => (a.dockOrder ?? 0) - (b.dockOrder ?? 0));
+
+/**
+ * Filter + rewrite nav items for the current viewer. Authenticated
+ * visitors get the full list with workspace hrefs; guests get the list
+ * minus `guestHidden` items, with `guestHref` swapped in where defined.
+ *
+ * Single source of truth for the rule — Sidebar, MobileSideSheet, and
+ * MobileDockItems all funnel through this so the three surfaces stay
+ * consistent.
+ */
+export function navItemsForViewer<T extends ShellNavItem | ShellNavChild>(
+  items: T[],
+  isAuthenticated: boolean,
+): T[] {
+  if (isAuthenticated) return items;
+  return items
+    .filter((item) =>
+      "guestHidden" in item ? !(item as ShellNavItem).guestHidden : true,
+    )
+    .map((item) => {
+      const guestHref =
+        "guestHref" in item ? (item as ShellNavItem).guestHref : undefined;
+      return guestHref ? { ...item, href: guestHref } : item;
+    });
+}
 
 export const settingsItem: ShellNavItem = {
   label: "Settings",
