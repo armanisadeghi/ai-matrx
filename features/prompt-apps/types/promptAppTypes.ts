@@ -80,6 +80,12 @@ export type PromptAppRow = Database["public"]["Tables"]["prompt_apps"]["Row"];
 
 /** Single source of truth: `prompt_apps` row, plus optional embedded prompt from RPCs. */
 export type PromptApp = PromptAppRow & {
+  /**
+   * Durable cld_files file_id backing the favicon. Hand-authored because the
+   * generated `PromptAppRow` does not yet expose `favicon_file_id`. Preferred
+   * over the frozen `favicon_url` (kept as a fallback for external URLs).
+   */
+  favicon_file_id?: string | null;
   prompt?: {
     messages: Json;
     settings: Record<string, Json | undefined> & { model_id?: string };

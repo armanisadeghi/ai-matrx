@@ -53,7 +53,7 @@ import { PromptAppHeader } from "@/components/layout/new-layout/PageSpecificHead
 import { UpdatePromptAppModal } from "./UpdatePromptAppModal";
 import { useOpenImageUploaderWindow } from "@/features/window-panels/windows/image/useOpenImageUploaderWindow";
 import { CloudFolders } from "@/features/files";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef, useFileAsset } from "@/features/files";
 
 // Lazy-load CodeBlock to avoid circular dependency with Providers
 const CodeBlock = lazy(
@@ -143,6 +143,15 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
     app.rate_limit_authenticated.toString(),
   );
   const [editFaviconUrl, setEditFaviconUrl] = useState(app.favicon_url || "");
+  // Durable cld_files file_id backing the favicon (preferred over the frozen URL).
+  const [editFaviconFileId, setEditFaviconFileId] = useState(
+    app.favicon_file_id || "",
+  );
+  // Prefer the durable file_id — re-resolve it fresh through the file handler.
+  const { primaryUrl: resolvedFaviconUrl } = useFileAsset(
+    editFaviconFileId || undefined,
+  );
+  const effectiveFaviconUrl = resolvedFaviconUrl ?? (editFaviconUrl || "");
   const [isIframeLoading, setIsIframeLoading] = useState(false);
   const [promptName, setPromptName] = useState<string | null>(null);
   const [promptUpdatedAt, setPromptUpdatedAt] = useState<string | null>(null);
@@ -159,10 +168,14 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
       currentUrl: editFaviconUrl || null,
       folder: CloudFolders.PROMPT_APPS_FAVICONS,
       onUploaded: (e) => {
+        // Capture the durable file_id (source of truth) AND the resolved URL
+        // (back-compat fallback / external URLs where file_id is "").
         setEditFaviconUrl(e.result.primary_url);
+        setEditFaviconFileId(e.result.file_id ?? "");
       },
       onCleared: () => {
         setEditFaviconUrl("");
+        setEditFaviconFileId("");
       },
     });
   };
@@ -213,10 +226,15 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
           component_code: editComponentCode,
           tags: tagsArray,
           favicon_url: editFaviconUrl || null,
+          // Persist the durable file_id alongside the frozen URL. Only write a
+          // real id (external URLs surface file_id === "").
+          favicon_file_id: editFaviconFileId || null,
           rate_limit_per_ip: parseInt(editRateLimitPerIp),
           rate_limit_window_hours: parseInt(editRateLimitWindowHours),
           rate_limit_authenticated: parseInt(editRateLimitAuthenticated),
-        })
+          // `favicon_file_id` is live in the DB but not yet in the generated
+          // row types — cast the payload at the boundary.
+        } as never)
         .eq("id", app.id);
 
       if (error) {
@@ -233,6 +251,8 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
         description: editDescription || undefined,
         component_code: editComponentCode,
         tags: tagsArray,
+        favicon_url: editFaviconUrl || null,
+        favicon_file_id: editFaviconFileId || null,
         rate_limit_per_ip: parseInt(editRateLimitPerIp),
         rate_limit_window_hours: parseInt(editRateLimitWindowHours),
         rate_limit_authenticated: parseInt(editRateLimitAuthenticated),
@@ -1018,10 +1038,14 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
                       App Icon / Favicon
                     </Label>
                     <div className="flex items-center gap-2">
-                      {editFaviconUrl && (
+                      {(editFaviconFileId || editFaviconUrl) && (
                         <div className="flex-shrink-0 w-8 h-8 rounded-md border border-border overflow-hidden bg-muted">
                           <InlineMediaRef
-                            ref={editFaviconUrl}
+                            ref={
+                              editFaviconFileId
+                                ? { file_id: editFaviconFileId }
+                                : editFaviconUrl
+                            }
                             alt="App favicon"
                             size="fill"
                             fit="cover"
@@ -1033,7 +1057,10 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
                         id="favicon"
                         value={editFaviconUrl}
                         onChange={(e) => setEditFaviconUrl(e.target.value)}
-                        placeholder="Auto-generated, uploaded, or pasted URL"
+                        placeholder={
+                          effectiveFaviconUrl ||
+                          "Auto-generated, uploaded, or pasted URL"
+                        }
                         className="flex-1 transition-all focus:ring-2 focus:ring-primary/20"
                       />
                       <Button

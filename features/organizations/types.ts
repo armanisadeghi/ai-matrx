@@ -23,6 +23,8 @@ export interface Organization {
   slug: string;
   description?: string | null;
   logoUrl?: string | null;
+  /** cld_files.id backing logoUrl. Source of truth for rendering; logoUrl is the fallback. */
+  logoFileId?: string | null;
   website?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -96,6 +98,7 @@ export interface CreateOrganizationOptions {
   slug: string;
   description?: string;
   logoUrl?: string;
+  logoFileId?: string;
   website?: string;
   settings?: Record<string, any>;
 }
@@ -107,6 +110,7 @@ export interface UpdateOrganizationOptions {
   name?: string;
   description?: string;
   logoUrl?: string;
+  logoFileId?: string;
   website?: string;
   settings?: Record<string, any>;
 }

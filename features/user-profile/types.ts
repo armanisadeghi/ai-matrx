@@ -74,6 +74,10 @@ export interface UserAccountData {
   name: string | null;
   preferred_username: string | null;
   avatar_url: string | null;
+  // Durable reference to the backing cld_files row. Source of truth for
+  // rendering; avatar_url is the back-compat fallback for legacy / external
+  // URLs. Persisted in auth.users.user_metadata (no DB column).
+  avatar_file_id: string | null;
   picture: string | null;
 
   // From public.profiles — chat-visible presence.
@@ -168,6 +172,7 @@ export const EMPTY_ACCOUNT_DATA: UserAccountData = {
   name: null,
   preferred_username: null,
   avatar_url: null,
+  avatar_file_id: null,
   picture: null,
   display_name: "User",
   status_text: null,

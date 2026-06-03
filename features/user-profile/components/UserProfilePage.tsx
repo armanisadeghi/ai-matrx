@@ -46,7 +46,7 @@ import { FaGoogle, FaGithub } from "react-icons/fa";
 
 import { ImageCropModal } from "@/components/official/ImageCropModal";
 import type { ImageUploaderResult } from "@/components/official/ImageAssetUploader";
-import { CloudFolders } from "@/features/files";
+import { CloudFolders, useFileAsset } from "@/features/files";
 import { toast } from "sonner";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { Button } from "@/components/ui/button";
@@ -258,18 +258,46 @@ function HeaderSection({ account }: { account: UserAccountData }) {
   const dispatch = useAppDispatch();
   const [photoOpen, setPhotoOpen] = useState(false);
 
+  // Durable reference to the backing cld_files row. Source of truth for
+  // rendering when present; the frozen URL is the back-compat fallback for
+  // legacy avatars + pasted external URLs. Persisted in auth user_metadata.
+  const [avatarFileId, setAvatarFileId] = useState(
+    account.avatar_file_id ?? "",
+  );
+  useEffect(() => {
+    setAvatarFileId(account.avatar_file_id ?? "");
+  }, [account.avatar_file_id]);
+
+  // Prefer the durable file_id (re-resolved fresh through the file handler)
+  // over the frozen URL. useFileAsset(undefined) is a safe no-op.
+  const { primaryUrl: resolvedAvatarUrl } = useFileAsset(
+    avatarFileId || undefined,
+  );
   const avatarUrl =
-    currentAvatarUrl ?? account.avatar_url ?? account.picture ?? null;
+    resolvedAvatarUrl ??
+    currentAvatarUrl ??
+    account.avatar_url ??
+    account.picture ??
+    null;
 
   const handlePhotoComplete = async (result: ImageUploaderResult | null) => {
     const url = result?.primary_url ?? result?.image_url ?? null;
+    // file_id is "" for pasted external URLs — only persist it when truthy.
+    // On removal (no url) we clear it back to null so a stale ref can't linger.
+    const fileId = result?.file_id || null;
+    const nextFileId = url ? fileId : null;
     try {
       const res = await fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ avatar_url: url, picture: url }),
+        body: JSON.stringify({
+          avatar_url: url,
+          picture: url,
+          avatar_file_id: nextFileId,
+        }),
       });
       if (!res.ok) throw new Error("Failed to save photo");
+      setAvatarFileId(nextFileId ?? "");
       dispatch(setUserMetadata({ avatarUrl: url, picture: url }));
       toast.success(url ? "Profile photo updated" : "Profile photo removed");
     } catch {

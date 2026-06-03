@@ -17,31 +17,52 @@
 
 ---
 
-## ✅ RESULT — completed 2026-06-02 (agent with aidream + matrx-extend access)
+## ✅ RESULT — fully closed 2026-06-02 (two passes)
 
-**Both repos audited.** Headline: **2 of the 6 RPCs are LIVE in matrx-extend** (expected, since
-only ai-matrx had been reviewed before) — the safe-to-drop set is **4, not 6**.
+**Pass 1** (agent with aidream + matrx-extend access) audited those two repos. **Pass 2** (agent
+with a `matrx-local` checkout **and** Supabase MCP on `txzxabzwovsujtloxrus`) closed the two gaps
+Pass 1 could not reach — `matrx-local` and DB-internal SQL callers — and independently re-verified
+all four repos against the live DB. **Every gate is now green; the 4-RPC drop is unblocked.**
 
-| RPC | ai-matrx | aidream | matrx-extend | Verdict |
-|---|---|---|---|---|
-| `create_user_table_with_fields` | none | none | **LIVE** `user-tables.ts:157` | **KEEP** |
-| `append_rows_to_user_table` | none | none | **LIVE** `user-tables.ts:203` | **KEEP** |
-| `batch_update_rows_in_user_table` | none | none | none | drop |
-| `remove_column_from_user_table` | none | none | none | drop |
-| `create_new_user_table` (bare) | none | none | none | drop |
-| `create_new_user_table_wrapper` | none | none | none | drop |
+| RPC | live signature | ai-matrx | aidream | matrx-extend | matrx-local | DB-internal | Verdict |
+|---|---|---|---|---|---|---|---|
+| `create_user_table_with_fields` | `(text,text,boolean,uuid,uuid,uuid,jsonb)` | types-only | none | **LIVE** `user-tables.ts:167` | none | none | **KEEP** |
+| `append_rows_to_user_table` | `(uuid,jsonb)` | types-only | none | **LIVE** `user-tables.ts:213` | none | none | **KEEP** |
+| `batch_update_rows_in_user_table` | `(uuid,jsonb)` | types-only | none | none | none | none | **DROP** |
+| `remove_column_from_user_table` | `(uuid,uuid)` | types-only | none | none | none | none | **DROP** |
+| `create_new_user_table` (bare) | `(text,text,boolean,boolean,jsonb)` | types-only | none | none | none | only `_wrapper` (intra-set) | **DROP** |
+| `create_new_user_table_wrapper` | `(text,text,boolean,boolean,jsonb)` | types-only | none | none | none | none | **DROP** |
 
-**Residual risk before dropping the 4:** `matrx-local` (Tauri) and DB-internal SQL callers were
-NOT audited this session. aidream's `docs/UDT_MIGRATION_FOR_FRONTENDS.md:79-84` documents all six
-as a preserved contract, so the drop must update that doc.
+- **"types-only"** = the name appears in ai-matrx's generated `types/database.types.ts`
+  (lines 23909–27165) as a *type entry*, never as a `.rpc()` call. ⚠️ That file goes **stale** the
+  moment the 4 drop — regenerate it after the drop.
+- **aidream "none"** = **zero call sites for all 6.** The names appear in aidream only as `CREATE
+  FUNCTION` in the **origin** migration `db/migrations/0011_udt_rename_and_rpc_consolidation.sql`
+  (+ one test *comment* at `user_data/registered_functions.py:620`). 0011 defines 5 of the 6 (both
+  KEEPs + 3 of the 4 drops); `create_new_user_table_wrapper` is **absent from aidream** — its only
+  source of truth is the live DB.
+- ⚠️ **Do NOT drop `create_new_user_table_dynamic`** — it is a **sibling name but NOT a candidate**.
+  It is the **live canonical create** (called at ai-matrx `utils/user-table-utls/table-utils.ts:194`,
+  defined at aidream `0011:429`). Dropping the whole `create_new_user_table*` family by loose grep
+  would break the product. Drop the bare + `_wrapper` ONLY.
 
-**Second-order:** aidream is a **heavy UDT writer**, not a passive consumer. Its direct-pool
-writes are trigger-compatible but record `changed_by = NULL` (no `auth.uid()`), and bulk imports
-fan out one realtime event per row. Nothing breaks (permissive validation = passthrough; version
-triggers are audit-only).
+**Residual risk that Pass 1 flagged: CLEARED.**
+- `matrx-local` (Tauri) — **zero** references to any of the 6 RPCs, any `udt_*` table, or
+  `dataset`/`picklist`. Its only Supabase client (`desktop/src/lib/supabase.ts`) makes **no**
+  `.rpc()` and **no** `.from('udt_*')` call anywhere in `desktop/src`; the Rust `src-tauri` side
+  mentions Supabase only in an auth-callback comment. (Section D below.)
+- DB-internal — the only function-body caller of any candidate is
+  `create_new_user_table_wrapper → create_new_user_table` (both in the drop set, so they die
+  together). **Zero** view refs, **zero** RLS-policy refs, and `pg_depend` reports **zero** hard
+  dependencies on the 4. The drop is non-cascading and reversible. (Section E below.)
 
-➡️ **Full narrative, what changed in each repo, and next-phase decisions:
-[`CROSS_REPO_HANDOFF.md`](./CROSS_REPO_HANDOFF.md).**
+**Second-order (unchanged from Pass 1):** aidream is a **heavy UDT writer**, not a passive consumer.
+Its direct-pool named-SQL writes are trigger-compatible but record `changed_by = NULL` (no
+`auth.uid()`), and bulk imports fan out one realtime event per row. Nothing breaks (permissive
+validation = passthrough; version triggers are audit-only).
+
+➡️ **Full narrative, live-DB verification snapshot, and the ready-to-run reversible DROP migration:
+[`CROSS_REPO_HANDOFF.md`](./CROSS_REPO_HANDOFF.md) (§7 has the SQL).**
 
 ---
 
@@ -253,13 +274,72 @@ dead in all three repos, they're safe to drop.
 
 ---
 
+## Section D — `armanisadeghi/matrx-local` (Tauri desktop) — **closed pass 2**
+
+### D1. Direct UDT writes / RPC calls in the desktop engine.
+
+- [N/A] **D1.1.** Search for `.rpc('udt_*' | '*user_table*')`, `.from('udt_*')`, or any `udt_*` /
+  `dataset` / `picklist` token across the whole repo (TS/TSX frontend, Rust `src-tauri`, Python `app/`).
+  - Finding: **Zero hits, repo-wide.** Unfiltered `grep -riw udt` → nothing; all 6 RPC names → nothing;
+    `dataset`/`picklist` → nothing. matrx-local does **not** touch UDT at all.
+
+- [N/A] **D1.2.** Confirm whether the Supabase client (if any) issues UDT writes.
+  - Finding: matrx-local *does* embed a Supabase client at `desktop/src/lib/supabase.ts` (created from
+    `VITE_SUPABASE_URL` + publishable key), but **`desktop/src` contains zero `.rpc(...)` calls and zero
+    `.from('udt_*')` calls** — the client is used for auth only. The Rust side (`desktop/src-tauri/src`)
+    references Supabase solely in an OAuth callback comment (`lib.rs:1645`). **matrx-local is clean for the
+    dead-RPC audit — it cannot keep any candidate alive.**
+
+## Section E — DB-internal SQL callers (live `txzxabzwovsujtloxrus`) — **closed pass 2**
+
+> Pass 2 has Supabase MCP. These checks query the catalog directly; they are the authoritative answer
+> to "does anything *inside the database* call a candidate RPC?"
+
+- [x] **E1.1.** Confirm all 6 candidate RPCs actually exist live + capture signatures/security.
+  - Finding: all 6 exist in `public`. `create_new_user_table` + `create_new_user_table_wrapper` are
+    `SECURITY DEFINER`; the other 4 are `security_invoker`. All granted `EXECUTE` to
+    `anon, authenticated, service_role`. Exact signatures are in the RESULT table above and
+    [`CROSS_REPO_HANDOFF.md`](./CROSS_REPO_HANDOFF.md) §6.
+
+- [x] **E1.2.** Search every `pg_proc` body (functions + trigger functions) for a word-boundary reference
+  to any candidate name, excluding each candidate's own definition.
+  - Finding: **exactly one** hit — `create_new_user_table_wrapper`'s body calls
+    `public.create_new_user_table(...)`. Both are drop candidates ⇒ intra-set coupling, **no external
+    caller**. (plpgsql bodies are late-bound, so this is not even a `DROP … RESTRICT` blocker; still, drop
+    both together.) `create_new_user_table_dynamic` does its own inserts and references **no** candidate.
+
+- [x] **E1.3.** Search `pg_views` and `pg_policies` (RLS `USING`/`WITH CHECK`) for candidate references.
+  - Finding: **zero** view references; **zero** RLS-policy references.
+
+- [x] **E1.4.** `pg_depend` hard-dependency sweep on the 4 drop candidates (defaults, generated cols,
+  index exprs, constraints, extension pins).
+  - Finding: **zero** hard dependencies on any of the 4. The drop cascades to nothing.
+
+- [x] **E1.5.** Verify the `udt_v2_backbone` migration is genuinely live (not just an on-disk SQL file).
+  - Finding: confirmed live — `udt_workbooks` + `udt_dataset_row_versions` tables exist; `udt_datasets`
+    carries `validation_mode text DEFAULT 'permissive'`, `workbook_id uuid`, `version int DEFAULT 1`;
+    `udt_dataset_rows` has the `udt_dataset_rows_validate` (BEFORE INS/UPD) + three
+    `udt_dataset_rows_version_{insert,update,delete}` (AFTER) triggers; the 4 new RPCs
+    (`udt_upsert_row`, `udt_upsert_cell`, `udt_bulk_write`, `udt_change_field_type`) exist as
+    `SECURITY DEFINER`; all 4 tables are in the `supabase_realtime` publication. Full snapshot in
+    [`CROSS_REPO_HANDOFF.md`](./CROSS_REPO_HANDOFF.md) §6.
+
+---
+
 ## Report format (when finished)
 
 Reply with the entire filled-in file. We will ingest the findings, decide on any
 follow-ups, and the dead-RPC drop will only proceed once Sections A2 and B2 are 100%
 green (all six confirmed dead in all three repos).
 
-> **Update 2026-06-02:** Sections A2 and B2 are filled in. They are **not** all-six-green —
+> **Update 2026-06-02 (pass 1):** Sections A2 and B2 filled in. Not all-six-green —
 > `create_user_table_with_fields` and `append_rows_to_user_table` are **LIVE in matrx-extend**.
-> The drop set is the **four** confirmed-dead RPCs only, and is still pending a `matrx-local` +
-> DB-internal-caller check (see [`CROSS_REPO_HANDOFF.md`](./CROSS_REPO_HANDOFF.md)).
+> Drop set narrowed to the **four** confirmed-dead RPCs, pending a `matrx-local` + DB-internal check.
+>
+> **Update 2026-06-02 (pass 2 — gates closed):** the `matrx-local` + DB-internal-caller checks are
+> now **done and clean** (Sections D & E). All gates are green. The two KEEP RPCs stay; the **four**
+> drop candidates — `batch_update_rows_in_user_table`, `remove_column_from_user_table`,
+> `create_new_user_table`, `create_new_user_table_wrapper` — are confirmed dead in all four repos
+> **and** the database internals, with zero `pg_depend` hard deps. ⚠️ Keep
+> `create_new_user_table_dynamic` (live canonical create, **not** a candidate). Ready-to-run reversible
+> drop SQL: [`CROSS_REPO_HANDOFF.md`](./CROSS_REPO_HANDOFF.md) §7.

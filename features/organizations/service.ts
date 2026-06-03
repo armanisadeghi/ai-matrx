@@ -46,7 +46,7 @@ export async function createOrganization(
   options: CreateOrganizationOptions,
 ): Promise<OrganizationResult> {
   try {
-    const { name, slug, description, logoUrl, website, settings } = options;
+    const { name, slug, description, logoUrl, logoFileId, website, settings } = options;
 
     // Validate
     const nameValidation = validateOrgName(name);
@@ -76,6 +76,7 @@ export async function createOrganization(
         slug,
         description,
         logo_url: logoUrl,
+        logo_file_id: logoFileId,
         website,
         created_by: currentUserId,
         is_personal: false,
@@ -166,6 +167,8 @@ export async function updateOrganization(
     if (updates.description !== undefined)
       updateData.description = updates.description;
     if (updates.logoUrl !== undefined) updateData.logo_url = updates.logoUrl;
+    if (updates.logoFileId !== undefined)
+      updateData.logo_file_id = updates.logoFileId;
     if (updates.website !== undefined) updateData.website = updates.website;
     if (updates.settings !== undefined) updateData.settings = updates.settings;
 
@@ -884,6 +887,7 @@ function transformOrganizationFromDb(dbRecord: any): Organization {
     slug: dbRecord.slug,
     description: dbRecord.description,
     logoUrl: dbRecord.logo_url,
+    logoFileId: dbRecord.logo_file_id,
     website: dbRecord.website,
     createdAt: dbRecord.created_at,
     updatedAt: dbRecord.updated_at,

@@ -52,6 +52,7 @@ export function CreateOrgModal({
   const [description, setDescription] = useState("");
   const [website, setWebsite] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [logoFileId, setLogoFileId] = useState("");
 
   // Manual slug edit tracking
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
@@ -93,6 +94,7 @@ export function CreateOrgModal({
         setDescription("");
         setWebsite("");
         setLogoUrl("");
+        setLogoFileId("");
         setIsSlugManuallyEdited(false);
       }, 200);
     }
@@ -116,6 +118,7 @@ export function CreateOrgModal({
         description,
         website: website || undefined,
         logoUrl: logoUrl || undefined,
+        logoFileId: logoFileId || undefined,
       });
 
       if (result.success && result.organization) {
@@ -286,7 +289,10 @@ export function CreateOrgModal({
             <ImageAssetUploader
               preset="logo"
               currentUrl={logoUrl || null}
-              onComplete={(result) => setLogoUrl(result?.primary_url ?? "")}
+              onComplete={(result) => {
+                setLogoUrl(result?.primary_url ?? "");
+                setLogoFileId(result?.file_id ?? "");
+              }}
               folder={`${CloudFolders.SHARED_ASSETS_ORGS}/logos`}
               disabled={isSubmitting}
               enableViewerAction

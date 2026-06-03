@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { updateOrganization } from "../service";
 import { validateOrgName, type Organization, type OrgRole } from "../types";
-import { InlineMediaRef } from "@/features/files";
+import { InlineMediaRef, useFileAsset } from "@/features/files";
 import { format } from "date-fns";
 import { ImageCropModal } from "@/components/official/ImageCropModal";
 import { folderForOrg } from "@/features/files";
@@ -55,6 +55,9 @@ export function GeneralSettings({
   );
   const [website, setWebsite] = useState(organization.website || "");
   const [logoUrl, setLogoUrl] = useState(organization.logoUrl || "");
+  // Durable reference to the backing cld_files row. Source of truth for
+  // rendering; logoUrl is the back-compat fallback for legacy / external URLs.
+  const [logoFileId, setLogoFileId] = useState(organization.logoFileId || "");
 
   // Reset form when organization changes
   useEffect(() => {
@@ -62,6 +65,7 @@ export function GeneralSettings({
     setDescription(organization.description || "");
     setWebsite(organization.website || "");
     setLogoUrl(organization.logoUrl || "");
+    setLogoFileId(organization.logoFileId || "");
     setIsEditing(false);
   }, [organization]);
 
@@ -70,13 +74,20 @@ export function GeneralSettings({
     name !== organization.name ||
     description !== (organization.description || "") ||
     website !== (organization.website || "") ||
-    logoUrl !== (organization.logoUrl || "");
+    logoUrl !== (organization.logoUrl || "") ||
+    logoFileId !== (organization.logoFileId || "");
 
   // Validation
   const nameValidation = name
     ? validateOrgName(name)
     : { valid: false, error: "Name is required" };
   const isFormValid = nameValidation.valid;
+
+  // Prefer the durable file_id (re-resolved fresh through the file handler)
+  // over the frozen logoUrl. Falls back to logoUrl for legacy / external URLs.
+  const { primaryUrl: resolvedLogoUrl } = useFileAsset(logoFileId || undefined);
+  const effectiveLogoUrl = resolvedLogoUrl ?? (logoUrl || "");
+  const hasLogo = Boolean(logoFileId || logoUrl);
 
   // Handle save
   const handleSave = async () => {
@@ -93,6 +104,7 @@ export function GeneralSettings({
         description,
         website: website || undefined,
         logoUrl: logoUrl || undefined,
+        logoFileId: logoFileId || undefined,
       });
 
       if (result.success) {
@@ -130,6 +142,7 @@ export function GeneralSettings({
     setDescription(organization.description || "");
     setWebsite(organization.website || "");
     setLogoUrl(organization.logoUrl || "");
+    setLogoFileId(organization.logoFileId || "");
     setIsEditing(false);
   };
 
@@ -268,9 +281,9 @@ export function GeneralSettings({
         <div className="space-y-2">
           <Label>Logo</Label>
           <div className="flex items-center gap-4">
-            {logoUrl ? (
+            {hasLogo ? (
               <InlineMediaRef
-                ref={logoUrl}
+                ref={logoFileId ? { file_id: logoFileId } : logoUrl}
                 size={{ width: 64, height: 64 }}
                 fit="cover"
                 rounded="lg"
@@ -291,12 +304,12 @@ export function GeneralSettings({
                 onClick={() => setLogoModalOpen(true)}
                 disabled={isSaving}
               >
-                {logoUrl ? "Change logo" : "Upload logo"}
+                {hasLogo ? "Change logo" : "Upload logo"}
               </Button>
             )}
-            {!isEditing && logoUrl && (
+            {!isEditing && hasLogo && effectiveLogoUrl && (
               <a
-                href={logoUrl}
+                href={effectiveLogoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
@@ -304,7 +317,7 @@ export function GeneralSettings({
                 View logo
               </a>
             )}
-            {!isEditing && !logoUrl && (
+            {!isEditing && !hasLogo && (
               <span className="text-sm text-muted-foreground italic">
                 No logo provided
               </span>
@@ -313,8 +326,13 @@ export function GeneralSettings({
           <ImageCropModal
             open={logoModalOpen}
             onOpenChange={setLogoModalOpen}
-            onComplete={(result) => setLogoUrl(result?.primary_url ?? "")}
-            currentUrl={logoUrl || null}
+            onComplete={(result) => {
+              // Capture the durable file_id (source of truth) AND the resolved
+              // URL (back-compat fallback / external URLs where file_id is "").
+              setLogoUrl(result?.primary_url ?? "");
+              setLogoFileId(result?.file_id ?? "");
+            }}
+            currentUrl={effectiveLogoUrl || null}
             preset="logo"
             folder={`${folderForOrg(organization.id)}/logo`}
             title="Update Organization Logo"

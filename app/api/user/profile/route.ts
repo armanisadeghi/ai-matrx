@@ -24,6 +24,9 @@ const AUTH_META_FIELDS = [
   "name",
   "preferred_username",
   "avatar_url",
+  // Durable cld_files reference for the avatar — stored alongside avatar_url
+  // in user_metadata. There is no DB column; this rides the JSONB blob.
+  "avatar_file_id",
   "picture",
 ] as const satisfies readonly (keyof UserAccountData)[];
 
@@ -79,6 +82,9 @@ export async function GET() {
         ? meta.preferred_username
         : null,
       avatar_url: isString(meta.avatar_url) ? meta.avatar_url : null,
+      avatar_file_id: isString(meta.avatar_file_id)
+        ? meta.avatar_file_id
+        : null,
       picture: isString(meta.picture) ? meta.picture : null,
       display_name:
         profileRow?.display_name ??
@@ -229,6 +235,9 @@ export async function PATCH(request: NextRequest) {
         ? echoMeta.preferred_username
         : null,
       avatar_url: isString(echoMeta.avatar_url) ? echoMeta.avatar_url : null,
+      avatar_file_id: isString(echoMeta.avatar_file_id)
+        ? echoMeta.avatar_file_id
+        : null,
       picture: isString(echoMeta.picture) ? echoMeta.picture : null,
       display_name:
         echoProfile?.display_name ?? EMPTY_ACCOUNT_DATA.display_name,
