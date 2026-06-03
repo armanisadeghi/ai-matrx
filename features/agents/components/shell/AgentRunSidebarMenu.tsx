@@ -121,6 +121,7 @@ export default function AgentRunSidebarMenu({
         title: conv.title,
         isFavorite: conv.isFavorite ?? false,
         isArchived: conv.status === "archived",
+        excludeFromKg: conv.excludeFromKg ?? false,
         isOwner: true,
         // Runner-route href — new tab + copy link land on the runner, not /chat.
         href: `/agents/${agentId}/run?conversationId=${conv.conversationId}`,

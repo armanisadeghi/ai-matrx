@@ -34,6 +34,8 @@ import {
   Share2,
   Archive,
   ArchiveRestore,
+  Eye,
+  EyeOff,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -45,6 +47,7 @@ import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
 import {
   setConversationFavorite,
   setConversationArchived,
+  setConversationExcludeFromKg,
   duplicateConversation,
 } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { softDeleteConversation } from "@/features/agents/redux/execution-system/message-crud/soft-delete-conversation.thunk";
@@ -61,6 +64,13 @@ export interface ConversationActionContext {
   isFavorite: boolean;
   /** Derived from `status === "archived"`. Drives the Archive/Unarchive toggle. */
   isArchived: boolean;
+  /**
+   * `cx_conversation.exclude_from_kg`. When `true`, the action reads
+   * "Include in knowledge graph"; when `false`, "Exclude from knowledge
+   * graph". Default `false` for rows from sources that don't project the
+   * column (the agent-scoped RPC).
+   */
+  excludeFromKg: boolean;
   /**
    * Used by Share. For lists in the current user's own sidebar this is
    * always true; surfaces that show conversations the user only has
@@ -240,6 +250,42 @@ export function getConversationRowActions(
       if (setConversationArchived.rejected.match(result)) {
         toast.error(
           result.payload?.message ?? "Failed to update archive status",
+        );
+      }
+    },
+  });
+
+  // Per-conversation KG opt-out. The icon flips to whatever the NEXT
+  // state is — `Eye` when currently excluded (clicking includes it),
+  // `EyeOff` when currently included (clicking excludes it).
+  items.push({
+    key: "conv-exclude-kg",
+    icon: ctx.excludeFromKg ? Eye : EyeOff,
+    label: ctx.excludeFromKg
+      ? "Include in knowledge graph"
+      : "Exclude from knowledge graph",
+    description: ctx.excludeFromKg
+      ? "Resume auto-ingesting messages from this conversation."
+      : "Stop auto-ingesting messages from this conversation.",
+    category: "Manage",
+    showToast: false,
+    action: async () => {
+      const next = !ctx.excludeFromKg;
+      const result = await ctx.dispatch(
+        setConversationExcludeFromKg({
+          conversationId: ctx.conversationId,
+          excludeFromKg: next,
+        }),
+      );
+      if (setConversationExcludeFromKg.rejected.match(result)) {
+        toast.error(
+          result.payload?.message ?? "Failed to update knowledge-graph setting",
+        );
+      } else {
+        toast.success(
+          next
+            ? "Excluded from knowledge graph"
+            : "Included in knowledge graph",
         );
       }
     },

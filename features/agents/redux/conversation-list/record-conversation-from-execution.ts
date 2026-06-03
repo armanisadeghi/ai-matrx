@@ -55,6 +55,7 @@ export function buildConversationListItemFromExecution(
     status: overrides?.status ?? "active",
     messageCount: overrides?.messageCount ?? 1,
     isFavorite: overrides?.isFavorite ?? false,
+    excludeFromKg: overrides?.excludeFromKg ?? false,
     agentVersionNumber: overrides?.agentVersionNumber ?? agent?.version ?? 0,
     initialAgentVersionId:
       overrides?.initialAgentVersionId ??

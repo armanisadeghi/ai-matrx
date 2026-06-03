@@ -32,6 +32,13 @@ export interface ConversationRowMenuData {
   title: string | null;
   isFavorite: boolean;
   isArchived: boolean;
+  /**
+   * Per-conversation knowledge-graph opt-out (`cx_conversation.exclude_from_kg`).
+   * When `true`, the menu shows the "Include" action; when `false`, "Exclude".
+   * Default `false` for rows that arrived through a source that doesn't
+   * project the column yet (e.g. the agent-scoped RPC).
+   */
+  excludeFromKg: boolean;
   isOwner: boolean;
   href: string;
   surfaceKey?: string;

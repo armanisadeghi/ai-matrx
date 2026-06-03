@@ -102,6 +102,7 @@ export function ConversationRowMenu({
       title: data.title,
       isFavorite: data.isFavorite,
       isArchived: data.isArchived,
+      excludeFromKg: data.excludeFromKg,
       isOwner: data.isOwner,
       href: data.href,
       surfaceKey: data.surfaceKey,

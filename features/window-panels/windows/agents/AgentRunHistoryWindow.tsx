@@ -414,6 +414,7 @@ function AgentRunHistoryWindowInner({
         title: conv.title,
         isFavorite: conv.isFavorite ?? false,
         isArchived: conv.status === "archived",
+        excludeFromKg: conv.excludeFromKg ?? false,
         isOwner: true,
         href: `/agents/${agentId}/run?conversationId=${conv.conversationId}`,
       };

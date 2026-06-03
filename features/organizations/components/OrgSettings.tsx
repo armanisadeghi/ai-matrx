@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Send,
   FolderTree,
+  ShieldCheck,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Organization, OrgRole } from "../types";
@@ -16,6 +17,7 @@ import { MemberManagement } from "./MemberManagement";
 import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
 import { OrgEmailTab } from "./OrgEmailTab";
+import { OrgPrivacyTab } from "./OrgPrivacyTab";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -84,6 +86,13 @@ export function OrgSettings({
             <TabsTrigger value="scopes" className={orgSettingsTabTriggerClass}>
               <FolderTree className="h-3.5 w-3.5 shrink-0" />
               Scopes
+            </TabsTrigger>
+          )}
+
+          {canManageSettings && (
+            <TabsTrigger value="privacy" className={orgSettingsTabTriggerClass}>
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+              Privacy
             </TabsTrigger>
           )}
 
@@ -163,6 +172,16 @@ export function OrgSettings({
                 </div>
               </div>
             </Card>
+          </TabsContent>
+        )}
+
+        {/* Privacy Tab — per-org auto-ingest toggle + daily budget. */}
+        {canManageSettings && (
+          <TabsContent value="privacy">
+            <OrgPrivacyTab
+              organizationId={displayOrganization.id}
+              canEdit={canManageSettings}
+            />
           </TabsContent>
         )}
 

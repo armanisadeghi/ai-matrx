@@ -19,6 +19,14 @@ export interface ConversationListItem {
    * fetch. Default `false` for legacy/uncached rows.
    */
   isFavorite: boolean;
+  /**
+   * Per-conversation opt-out for the knowledge-graph auto-ingest worker
+   * (`cx_conversation.exclude_from_kg`). Default `false`. Populated by
+   * the global sidebar fetch + history-scope fetch; the agent-scoped
+   * RPC does NOT yet project this column, so rows that arrived through
+   * that path default to `false` until the toggle is flipped.
+   */
+  excludeFromKg: boolean;
 
   // Expanded / agent-scoped fields (optional — may be absent on sidebar rows)
   description?: string | null;

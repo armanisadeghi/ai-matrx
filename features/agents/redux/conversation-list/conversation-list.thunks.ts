@@ -84,6 +84,10 @@ export function mapRpcRowToConversationListItem(
     status: row.status,
     messageCount: row.message_count,
     isFavorite: row.is_favorite ?? false,
+    // Agent-scoped RPC does NOT project `exclude_from_kg` yet — default
+    // false; the menu toggle writes through, and the next direct read
+    // (sidebar / history scope) reconciles to the true value.
+    excludeFromKg: false,
     agentVersionNumber: row.agent_version_number,
     initialAgentVersionId: row.initial_agent_version_id,
     lastModelId: row.last_model_id,
@@ -210,7 +214,7 @@ export const fetchGlobalConversations = createAsyncThunk<
     const { data, error } = await supabase
       .from("cx_conversation")
       .select(
-        "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at, is_favorite",
+        "id, title, description, status, message_count, initial_agent_id, last_model_id, source_app, source_feature, created_at, updated_at, is_favorite, exclude_from_kg",
       )
       .is("deleted_at", null)
       .eq("is_ephemeral", false)
@@ -232,6 +236,7 @@ export const fetchGlobalConversations = createAsyncThunk<
       status: row.status as string,
       messageCount: (row.message_count ?? 0) as number,
       isFavorite: (row.is_favorite ?? false) as boolean,
+      excludeFromKg: (row.exclude_from_kg ?? false) as boolean,
       agentId: (row.initial_agent_id ?? null) as string | null,
       lastModelId: (row.last_model_id ?? null) as string | null,
       sourceApp: (row.source_app ?? undefined) as string | undefined,

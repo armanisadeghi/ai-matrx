@@ -255,6 +255,76 @@ export const setConversationArchived = createAsyncThunk<
   },
 );
 
+// ── exclude / include from knowledge graph ───────────────────────────────────
+//
+// Per-conversation opt-out for the auto-ingest pipeline that feeds the
+// knowledge graph + scope-association suggestions (Step 3.2 of the KG
+// activation plan). When true, the downstream auto-ingest worker skips
+// this conversation entirely — both for new messages and any future
+// backfill. Mirrors `setConversationFavorite` exactly — direct supabase
+// update on `cx_conversation.exclude_from_kg`, optimistic + rollback.
+
+interface SetExcludeFromKgArgs {
+  conversationId: string;
+  excludeFromKg: boolean;
+}
+
+interface SetExcludeFromKgResult {
+  conversationId: string;
+  excludeFromKg: boolean;
+}
+
+export const setConversationExcludeFromKg = createAsyncThunk<
+  SetExcludeFromKgResult,
+  SetExcludeFromKgArgs,
+  ThunkApi
+>(
+  "conversationRow/setExcludeFromKg",
+  async (
+    { conversationId, excludeFromKg },
+    { dispatch, getState, rejectWithValue },
+  ) => {
+    const previous =
+      getState().conversationList.byConversationId[conversationId]
+        ?.excludeFromKg ?? false;
+
+    // Optimistic patches in both slices.
+    dispatch(patchConversation({ conversationId, patch: { excludeFromKg } }));
+    dispatch(
+      patchConversationInScopes({
+        conversationId,
+        patch: { excludeFromKg },
+      }),
+    );
+
+    const { error } = await supabase
+      .from("cx_conversation")
+      .update({
+        exclude_from_kg: excludeFromKg,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", conversationId);
+
+    if (error) {
+      dispatch(
+        patchConversation({
+          conversationId,
+          patch: { excludeFromKg: previous },
+        }),
+      );
+      dispatch(
+        patchConversationInScopes({
+          conversationId,
+          patch: { excludeFromKg: previous },
+        }),
+      );
+      return rejectWithValue({ message: error.message });
+    }
+
+    return { conversationId, excludeFromKg };
+  },
+);
+
 // ── duplicate ────────────────────────────────────────────────────────────────
 //
 // Reuses the server fork endpoint with NO selector — that's exactly the

@@ -244,6 +244,7 @@ compile-verified against the typed contract.
 
 ## Change log
 
+- `2026-06-03` — Dropped the `as unknown` Insert cast in `useAutoRagPreference` now that `auto_rag_enabled` is in the generated `user_preferences` row type. Rewrote the write path as UPDATE-then-INSERT (instead of `.upsert(..., { onConflict: "user_id" })`) so the `preferences` jsonb column is left untouched on existing rows and seeded with `{}` only when the row didn't yet exist — a `.upsert` would have clobbered live preferences. Behaviour identical for callers.
 - `2026-06-02` — Phase F agent: Initial scaffold — types, service, slice, hook,
   chip/popover/panel/drawer/nav-button/heavy-hitter components, drop-ins (notes,
   tasks, scopes hub), global drawer via overlay system, auto-RAG toggle in

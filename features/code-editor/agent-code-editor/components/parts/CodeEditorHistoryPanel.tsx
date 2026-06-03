@@ -73,6 +73,7 @@ export function CodeEditorHistoryPanel({
         title: row.item.title,
         isFavorite: row.item.isFavorite ?? false,
         isArchived: row.item.status === "archived",
+        excludeFromKg: row.item.excludeFromKg ?? false,
         isOwner: true,
         href: `/agents/${row.agentId}/run?conversationId=${row.conversationId}`,
       };

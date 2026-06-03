@@ -175,6 +175,7 @@ export function ChatHistorySidebar({
         title: conv.title,
         isFavorite: conv.isFavorite ?? false,
         isArchived: conv.status === "archived",
+        excludeFromKg: conv.excludeFromKg ?? false,
         isOwner: true,
         href: `/chat/${conv.conversationId}`,
       };

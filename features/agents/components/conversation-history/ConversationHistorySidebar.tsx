@@ -315,6 +315,7 @@ export const ConversationHistorySidebar: React.FC<
         title: conv.title,
         isFavorite: isFavoriteResolved(conv.conversationId),
         isArchived: conv.status === "archived",
+        excludeFromKg: conv.excludeFromKg ?? false,
         isOwner: true,
         href,
         surfaceKey,
