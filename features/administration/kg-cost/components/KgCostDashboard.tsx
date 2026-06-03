@@ -21,6 +21,7 @@ import {
   RefreshCw,
   ChevronRight,
   ExternalLink,
+  Sparkles,
 } from "lucide-react";
 
 import {
@@ -116,12 +117,14 @@ function KpiTile({
   icon,
   loading,
   highlight,
+  hint,
 }: {
   label: string;
   value: string | null;
   icon: React.ReactNode;
   loading: boolean;
   highlight?: boolean;
+  hint?: string;
 }) {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
@@ -138,13 +141,36 @@ function KpiTile({
           </span>
         )}
       </div>
+      {hint && !loading && (
+        <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }
 
+function fmtPercent(value: number | null | undefined): string | null {
+  if (value === null || value === undefined || !Number.isFinite(value))
+    return null;
+  return `${value.toFixed(1)}%`;
+}
+
 function KpiTiles({ summary, loading }: { summary: KgCostSummaryResponse | null; loading: boolean }) {
+  // Defensive: `ner_coverage_pct` is being added on the Python side; until
+  // it lands the tile renders "—" with the explainer copy. Once present,
+  // the value flows through cleanly.
+  const nerCoverage = summary?.ner_coverage_pct;
+  const nerValue = fmtPercent(nerCoverage);
+  const nerHint =
+    nerCoverage === undefined
+      ? "Backfill brings this up to 100%."
+      : nerValue
+        ? "of indexed chunks have entities extracted. Backfill brings this up to 100%."
+        : "Live coverage not yet reported by the backend.";
+
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
       <KpiTile
         label="Spend today (all orgs)"
         value={summary ? fmtUsdShort(summary.spend_today_usd) : null}
@@ -169,6 +195,13 @@ function KpiTiles({ summary, loading }: { summary: KgCostSummaryResponse | null;
         value={summary ? `${summary.pending_batches}` : null}
         icon={<Clock className="h-3.5 w-3.5" />}
         loading={loading}
+      />
+      <KpiTile
+        label="Live NER coverage"
+        value={nerValue}
+        icon={<Sparkles className="h-3.5 w-3.5" />}
+        loading={loading}
+        hint={nerHint}
       />
     </div>
   );

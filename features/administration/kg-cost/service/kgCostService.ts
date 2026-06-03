@@ -32,6 +32,13 @@ export interface KgCostSummaryResponse {
   spend_7d_usd: number;
   orgs_over_80pct: number;
   pending_batches: number;
+  /**
+   * Percentage of indexed chunks that have entities extracted. Surfaced by
+   * the live KG-cost widget so operators can watch backfill progress.
+   * Optional — the Python `/kg-cost/summary` handler is being extended in
+   * the aidream sibling commit; the FE renders "—" until the field lands.
+   */
+  ner_coverage_pct?: number | null;
 }
 
 export interface OrgCostRow {

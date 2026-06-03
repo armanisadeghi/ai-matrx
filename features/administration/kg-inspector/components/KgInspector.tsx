@@ -252,15 +252,16 @@ function EntitiesTab({
               <TableHead className="text-right">Sources</TableHead>
               <TableHead>Confidence</TableHead>
               <TableHead className="whitespace-nowrap">Created</TableHead>
+              <TableHead className="w-12 text-right">Graph</TableHead>
             </TableRow>
           </TableHeader>
           {loading ? (
-            <TableSkeleton rows={8} cols={6} />
+            <TableSkeleton rows={8} cols={7} />
           ) : (
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                     No entities match the current filters.
                   </TableCell>
                 </TableRow>
@@ -286,6 +287,21 @@ function EntitiesTab({
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                       {new Date(row.created_at).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {/* Deep-link to the org-wide knowledge-graph canvas. The
+                          canvas does not yet support a `?entity=<id>` preselect
+                          param, so we link without one — still useful as a
+                          jump-out from the forensic table to the visual graph. */}
+                      <Link
+                        href="/knowledge-graph"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center text-muted-foreground hover:text-primary"
+                        title="Open knowledge-graph canvas"
+                        aria-label="View graph"
+                      >
+                        <Network className="h-3.5 w-3.5" />
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))
