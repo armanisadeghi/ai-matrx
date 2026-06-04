@@ -106,6 +106,39 @@ export const KG_NODE_MIN_SIZE = 18;
 export const KG_NODE_MAX_SIZE = 64;
 
 // Default request shaping.
-export const KG_DEFAULT_LIMIT = 500;
 export const KG_DEFAULT_DEPTH = 2;
 export const KG_MAX_DEPTH = 3;
+
+// ── Detail budget (performance) ─────────────────────────────────────────────
+// We never fetch/render the whole graph: the backend returns the most-connected
+// entities degree-ranked, capped at `limit`. A smaller cap = a faster first paint
+// (less backend work, less payload, far less layout). The user dials in more via
+// the toolbar "Detail" control; the canvas shows "showing top N" when capped.
+// Above ~150 nodes the layout switches to fcose draft mode (≈16× faster).
+
+export type KgDetailId = "overview" | "standard" | "detailed" | "max";
+
+export interface KgDetailLevel {
+  id: KgDetailId;
+  label: string;
+  limit: number;
+}
+
+export const KG_DETAIL_LEVELS: KgDetailLevel[] = [
+  { id: "overview", label: "Overview", limit: 75 },
+  { id: "standard", label: "Standard", limit: 150 },
+  { id: "detailed", label: "Detailed", limit: 350 },
+  { id: "max", label: "Maximum", limit: 1000 },
+];
+
+export const KG_DEFAULT_DETAIL: KgDetailId = "standard";
+
+/** Node count past which the layout drops to fcose draft mode for speed. */
+export const KG_DRAFT_THRESHOLD = 150;
+
+export function kgDetailLimit(id: KgDetailId): number {
+  return (
+    KG_DETAIL_LEVELS.find((d) => d.id === id)?.limit ??
+    KG_DETAIL_LEVELS[1].limit
+  );
+}

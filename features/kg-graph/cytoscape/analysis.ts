@@ -99,13 +99,45 @@ export interface GraphAnalysis {
   communityCount: number;
 }
 
-/** Compute PageRank importance + Markov communities and cache them into node
- *  `data`. Run once after elements are added, before the first `applyEncoding`. */
-export function annotateGraph(cy: cytoscape.Core): GraphAnalysis {
-  const nodes = cy.nodes();
-  if (nodes.empty()) return { communityCount: 0 };
+// Per-instance analysis cache. The expensive passes (PageRank, Markov) run at
+// most ONCE per element set, and only when an encoding actually needs them — the
+// default kind/connections view triggers neither, which is the fast first paint.
+// A WeakMap is GC'd when the cy instance is destroyed (unmount).
+interface AnalysisState {
+  importanceDone: boolean;
+  communityDone: boolean;
+  communityCount: number;
+}
+const analysisCache = new WeakMap<cytoscape.Core, AnalysisState>();
 
-  // --- importance: PageRank, normalized to 0..1 across the graph ---
+function stateFor(cy: cytoscape.Core): AnalysisState {
+  let s = analysisCache.get(cy);
+  if (!s) {
+    s = { importanceDone: false, communityDone: false, communityCount: 0 };
+    analysisCache.set(cy, s);
+  }
+  return s;
+}
+
+/** Invalidate cached analysis — call after swapping the element set so the next
+ *  encoding recomputes against the new graph. */
+export function resetAnalysis(cy: cytoscape.Core): void {
+  const s = stateFor(cy);
+  s.importanceDone = false;
+  s.communityDone = false;
+  s.communityCount = 0;
+}
+
+/** PageRank importance → node data. Cheap (~10ms) but still skipped unless the
+ *  size encoding needs it. Computed at most once per element set. */
+function ensureImportance(cy: cytoscape.Core): void {
+  const s = stateFor(cy);
+  if (s.importanceDone) return;
+  const nodes = cy.nodes();
+  if (nodes.empty()) {
+    s.importanceDone = true;
+    return;
+  }
   const pr = cy.elements().pageRank({});
   let min = Infinity;
   let max = -Infinity;
@@ -117,8 +149,27 @@ export function annotateGraph(cy: cytoscape.Core): GraphAnalysis {
     if (r > max) max = r;
   });
   const span = max - min || 1;
+  cy.batch(() => {
+    nodes.forEach((n) => {
+      const importance = ((ranks.get(n.id()) ?? min) - min) / span;
+      n.data("importance", importance);
+      n.data("sizeImportance", importanceSize(importance));
+    });
+  });
+  s.importanceDone = true;
+}
 
-  // --- communities: Markov clustering, weighted by edge weight ---
+/** Markov community detection → node data. The heavier pass (~300ms at 5.6k
+ *  edges), so it only runs when the colour encoding needs it. Returns the
+ *  multi-node community count. Computed at most once per element set. */
+function ensureCommunity(cy: cytoscape.Core): number {
+  const s = stateFor(cy);
+  if (s.communityDone) return s.communityCount;
+  const nodes = cy.nodes();
+  if (nodes.empty()) {
+    s.communityDone = true;
+    return 0;
+  }
   // markovClustering returns one NodeCollection per cluster.
   let clusters: cytoscape.NodeCollection[] = [];
   try {
@@ -129,17 +180,9 @@ export function annotateGraph(cy: cytoscape.Core): GraphAnalysis {
   } catch {
     clusters = [];
   }
-
   let communityCount = 0;
   cy.batch(() => {
-    // importance
-    nodes.forEach((n) => {
-      const rank = ranks.get(n.id()) ?? min;
-      const importance = (rank - min) / span;
-      n.data("importance", importance);
-      n.data("sizeImportance", importanceSize(importance));
-    });
-    // communities — only groups of 2+ get a distinct colour
+    // only groups of 2+ get a distinct colour
     clusters.forEach((cluster) => {
       if (cluster.length >= 2) {
         const color =
@@ -153,17 +196,22 @@ export function annotateGraph(cy: cytoscape.Core): GraphAnalysis {
       }
     });
   });
-
-  return { communityCount };
+  s.communityDone = true;
+  s.communityCount = communityCount;
+  return communityCount;
 }
 
-/** Point each node's render `color`/`size` at the chosen encoding. Cheap — reads
- *  the values `annotateGraph` cached. Setting data re-evaluates style mappers. */
+/** Point each node's render `color`/`size` at the chosen encoding, lazily running
+ *  only the analysis that encoding requires (PageRank for "importance", Markov for
+ *  "community"). The default kind/connections encoding triggers NO analysis.
+ *  Returns the detected community count for the legend. */
 export function applyEncoding(
   cy: cytoscape.Core,
   colorBy: KgColorBy,
   sizeBy: KgSizeBy,
-): void {
+): GraphAnalysis {
+  if (colorBy === "community") ensureCommunity(cy);
+  if (sizeBy === "importance") ensureImportance(cy);
   cy.batch(() => {
     cy.nodes().forEach((n) => {
       n.data(
@@ -176,4 +224,5 @@ export function applyEncoding(
       );
     });
   });
+  return { communityCount: stateFor(cy).communityCount };
 }

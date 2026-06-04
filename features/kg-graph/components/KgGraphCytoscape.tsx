@@ -111,10 +111,13 @@ export default function KgGraphCytoscape({
     if (cy) applyTheme(cy, chrome);
   }, [mode]);
 
-  // ENCODING → repoint colour/size (cheap; no layout). Idempotent on mount.
+  // ENCODING → repoint colour/size, lazily running only the analysis the chosen
+  // encoding needs (PageRank for importance, Markov for community). Report the
+  // community count so the legend reflects it when colouring by community.
   useEffect(() => {
     const cy = getCy();
-    if (cy) applyEncoding(cy, colorBy, sizeBy);
+    if (!cy) return;
+    onAnalysis?.(applyEncoding(cy, colorBy, sizeBy));
   }, [colorBy, sizeBy]);
 
   // LAYOUT → re-run on switch (skip the mount run; the data effect already laid out).

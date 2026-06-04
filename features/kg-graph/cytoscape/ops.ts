@@ -11,9 +11,9 @@ import type cytoscape from "cytoscape";
 import type { GraphEdge, GraphNode } from "../types";
 import type { KgChromeTheme } from "../constants";
 import {
-  annotateGraph,
   applyEncoding,
   buildElements,
+  resetAnalysis,
   type GraphAnalysis,
   type KgColorBy,
   type KgSizeBy,
@@ -44,9 +44,11 @@ export function loadGraph(
     cy.elements().remove();
     cy.add(buildElements(nodes, edges));
   });
-  const analysis = annotateGraph(cy);
-  applyEncoding(cy, cfg.colorBy, cfg.sizeBy);
-  cy.layout(buildLayout(cfg.layoutId, cfg.animate)).run();
+  resetAnalysis(cy);
+  // applyEncoding lazily runs ONLY the analysis the encoding needs — the default
+  // kind/connections view runs none, for a fast first paint.
+  const analysis = applyEncoding(cy, cfg.colorBy, cfg.sizeBy);
+  cy.layout(buildLayout(cfg.layoutId, cfg.animate, nodes.length)).run();
   return analysis;
 }
 
@@ -62,7 +64,7 @@ export function runLayout(
   animate: boolean,
 ): void {
   cy.stop();
-  cy.layout(buildLayout(layoutId, animate)).run();
+  cy.layout(buildLayout(layoutId, animate, cy.nodes().length)).run();
 }
 
 /** Highlight a node's closed neighbourhood, fade the rest. */

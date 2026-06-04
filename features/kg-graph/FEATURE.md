@@ -163,6 +163,21 @@ NER entities once backfill runs).
 
 ## Change log
 
+- 2026-06-03 — Performance: fast first paint, never load the whole graph.
+  Toolbar **Detail** budget (Overview 75 / Standard 150 / Detailed 350 / Maximum
+  1000) — fetch only the top-N most-connected nodes; "top N — raise Detail" when
+  capped. **Lazy analysis** — PageRank (importance) and Markov (community) now run
+  only when the chosen encoding needs them, cached per-instance in a WeakMap, so
+  the default kind/connections view runs none. **Adaptive layout** — fcose drops
+  to draft quality + fewer iterations above 150 nodes. cytoscape perf flags
+  (`hideEdgesOnViewport`, `textureOnViewport`). Measured first-paint compute at
+  345 nodes / 5.6k edges: ~9.2s → ~0.26s (layout 1900→120ms; analysis ~325ms→0
+  on default). NOTE: the remaining latency at scale is the backend `/kg/graph`
+  handler (the DB query itself is ~3ms) and ultimately needs server-side
+  pagination / a neighbour-expansion endpoint for 100×+ corpora.
+- 2026-06-03 — Interaction fixes: select-trigger icon alignment (inline flex over
+  shadcn's `[&>span]:line-clamp-1`), click-to-pin focus (persist via selectedId,
+  hover suppressed while pinned), Ctrl/Cmd-click multi-select (`additive`).
 - 2026-06-03 — Pro rebuild of the render surface. Dropped `react-cytoscapejs`
   (unmaintained / React-19-incompatible) for a direct `useRef`+`useEffect`
   integration (`cytoscape/` engine: `useKgCytoscape`, `ops`, `analysis`, `style`,

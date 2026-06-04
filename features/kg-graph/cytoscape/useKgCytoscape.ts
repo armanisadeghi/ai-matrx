@@ -67,6 +67,11 @@ export function useKgCytoscape(args: UseKgCytoscapeArgs): KgController {
       minZoom: 0.05,
       maxZoom: 3,
       wheelSensitivity: 0.3,
+      // Perf for dense graphs: hide edges while panning/zooming and cache the
+      // viewport as a texture during interaction, so a 5k-edge graph stays smooth.
+      hideEdgesOnViewport: true,
+      textureOnViewport: true,
+      motionBlur: false,
       boxSelectionEnabled: true, // shift-drag rubber-band selects a region…
       selectionType: "additive", // …and Ctrl/Cmd-click adds individual nodes.
       // A plain tap is normalized back to single-select in the tap handler.

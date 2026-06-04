@@ -18,6 +18,7 @@ import dynamic from "next/dynamic";
 import {
   AlertTriangle,
   Circle,
+  Gauge,
   Network,
   Palette,
   RefreshCw,
@@ -37,7 +38,13 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/utils/cn";
 
 import { fetchKgGraph } from "../service/kgGraphService";
-import { KG_DEFAULT_DEPTH, KG_DEFAULT_LIMIT } from "../constants";
+import {
+  KG_DEFAULT_DEPTH,
+  KG_DEFAULT_DETAIL,
+  KG_DETAIL_LEVELS,
+  kgDetailLimit,
+  type KgDetailId,
+} from "../constants";
 import type { GraphNode, GraphPayload, KgGraphMode } from "../types";
 import type { KgColorBy, KgSizeBy } from "../cytoscape/analysis";
 import { KG_LAYOUTS, type KgLayoutId } from "../cytoscape/layouts";
@@ -92,6 +99,7 @@ export function KgGraphCanvas({
   const [reloadKey, setReloadKey] = useState(0);
 
   // Visualization controls.
+  const [detail, setDetail] = useState<KgDetailId>(KG_DEFAULT_DETAIL);
   const [layoutId, setLayoutId] = useState<KgLayoutId>("fcose");
   const [colorBy, setColorBy] = useState<KgColorBy>("kind");
   const [sizeBy, setSizeBy] = useState<KgSizeBy>("connections");
@@ -108,7 +116,9 @@ export function KgGraphCanvas({
         organizationId: mode === "org" ? organizationId : undefined,
         scopeId: mode === "scope" ? scopeId : undefined,
         depth: KG_DEFAULT_DEPTH,
-        limit: KG_DEFAULT_LIMIT,
+        // Only the top-N most-connected nodes — a smaller budget = a far faster
+        // first paint. The user dials in more via the "Detail" control.
+        limit: kgDetailLimit(detail),
       },
       { signal: controller.signal },
     )
@@ -122,7 +132,7 @@ export function KgGraphCanvas({
         setStatus("error");
       });
     return () => controller.abort();
-  }, [mode, scopeId, organizationId, reloadKey]);
+  }, [mode, scopeId, organizationId, reloadKey, detail]);
 
   // Available kinds for the filter dropdown.
   const kinds = useMemo(() => {
@@ -169,8 +179,12 @@ export function KgGraphCanvas({
             {nodeCount} node{nodeCount === 1 ? "" : "s"} · {edgeCount} edge
             {edgeCount === 1 ? "" : "s"}
             {payload?.truncated ? (
-              <span className="ml-1 inline-flex items-center gap-1 text-amber-500">
-                <AlertTriangle className="h-3 w-3" /> capped
+              <span
+                className="ml-1 inline-flex items-center gap-1 text-amber-500"
+                title="Showing the most-connected nodes. Raise Detail to load more."
+              >
+                <AlertTriangle className="h-3 w-3" /> top {nodeCount} — raise Detail
+                for more
               </span>
             ) : null}
           </span>
@@ -189,6 +203,23 @@ export function KgGraphCanvas({
               className="h-8 w-44 rounded-md border border-border bg-background pl-7 pr-2 text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
             />
           </div>
+
+          {/* Detail budget — how many top-ranked nodes to fetch/render */}
+          <Select value={detail} onValueChange={(v) => setDetail(v as KgDetailId)}>
+            <SelectTrigger className={cn(SELECT_TRIGGER, "w-[150px]")}>
+              <span style={KG_TRIGGER_INNER}>
+                <Gauge className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <SelectValue />
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              {KG_DETAIL_LEVELS.map((d) => (
+                <SelectItem key={d.id} value={d.id} className="text-xs">
+                  {d.label} · {d.limit}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {/* Layout switcher */}
           <Select
