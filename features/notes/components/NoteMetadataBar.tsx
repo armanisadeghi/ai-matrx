@@ -6,7 +6,6 @@
 // Props: noteId only. Everything from Redux.
 
 import React, { useState, useCallback, useMemo } from "react";
-import dynamic from "next/dynamic";
 import {
   FolderOpen,
   ChevronDown,
@@ -38,6 +37,7 @@ import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsD
 import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";
 import { cn } from "@/lib/utils";
 import { NoteContextPicker } from "./NoteContextPicker";
+import { computeNoteStats, formatStatNumber } from "../utils/noteStats";
 
 interface NoteMetadataBarProps {
   noteId: string;
@@ -72,10 +72,10 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
   const [tagInput, setTagInput] = useState("");
   const [scopePickerOpen, setScopePickerOpen] = useState(false);
 
-  const wordCount = useMemo(() => {
-    const trimmed = content.trim();
-    return trimmed ? trimmed.split(/\s+/).length : 0;
-  }, [content]);
+  // Derived content metrics — single memo keyed on content so this only
+  // recomputes when the note text actually changes (never on unrelated
+  // re-renders). Word/char/line/reading-time all come from one shared util.
+  const stats = useMemo(() => computeNoteStats(content), [content]);
 
   const saveStatus = isSaving ? "Saving..." : isDirty ? "Unsaved" : "Saved";
   const statusColor = isSaving
@@ -231,8 +231,16 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
         <span className={cn("text-[0.5625rem] shrink-0", statusColor)}>
           {saveStatus}
         </span>
-        <span className="text-[0.5625rem] text-muted-foreground/50 shrink-0">
-          {wordCount}w
+        <span
+          className="text-[0.5625rem] text-muted-foreground/50 shrink-0 tabular-nums"
+          title={`${formatStatNumber(stats.words)} words · ${formatStatNumber(
+            stats.characters,
+          )} characters · ${formatStatNumber(stats.lines)} lines · ~${
+            stats.readingTimeMinutes
+          } min read`}
+        >
+          {formatStatNumber(stats.words)} words ·{" "}
+          {formatStatNumber(stats.characters)} chars
         </span>
       </div>
 

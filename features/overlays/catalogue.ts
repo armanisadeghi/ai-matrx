@@ -400,6 +400,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  noteInfoWindow: {
+    label: "Note Info",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   notesBetaWindow: {
     label: "Notes Window",
     instanceMode: "multi",

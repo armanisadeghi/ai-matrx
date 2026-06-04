@@ -150,10 +150,13 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
   // ─── Compute the options for the active kind ───────────────────────────
   const { options, orphanOptions, displayName } = useMemo(() => {
     if (props.kind === "organization") {
-      const opts: OptionRow[] = organizations.map((o: OrgNode) => ({
-        id: o.id,
-        name: o.name,
-      }));
+      const seenOrgs = new Set<string>();
+      const opts: OptionRow[] = [];
+      for (const o of organizations as OrgNode[]) {
+        if (seenOrgs.has(o.id)) continue;
+        seenOrgs.add(o.id);
+        opts.push({ id: o.id, name: o.name });
+      }
       const name =
         organizations.find((o) => o.id === props.value)?.name ?? null;
       return {
@@ -169,7 +172,13 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
           : null;
       const mainOpts: OptionRow[] = [];
       const orphanOpts: OptionRow[] = [];
+      // Track every id we've emitted so the same project can never appear
+      // twice — orphanProjectsBucket can overlap with the org's projects
+      // list, which would otherwise produce duplicate React keys.
+      const seen = new Set<string>();
       for (const p of projects as ProjectNode[]) {
+        if (seen.has(p.id)) continue;
+        seen.add(p.id);
         const hasMatch =
           !scopeFilter || p.scope_ids.some((sid) => scopeFilter.has(sid));
         const row: OptionRow = { id: p.id, name: p.name };
@@ -178,6 +187,8 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
       }
       if (orphanProjectsBucket.status === "ready") {
         for (const p of orphanProjectsBucket.items) {
+          if (seen.has(p.id)) continue;
+          seen.add(p.id);
           orphanOpts.push({ id: p.id, name: p.name });
         }
       }
@@ -193,9 +204,14 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
     }
     // task
     const levelTasks = tasksForLevel ?? [];
-    const opts: OptionRow[] = levelTasks
-      .filter((t) => t.status !== "completed")
-      .map((t: TaskNode) => ({ id: t.id, name: t.title, status: t.status }));
+    const seenTasks = new Set<string>();
+    const opts: OptionRow[] = [];
+    for (const t of levelTasks as TaskNode[]) {
+      if (t.status === "completed") continue;
+      if (seenTasks.has(t.id)) continue;
+      seenTasks.add(t.id);
+      opts.push({ id: t.id, name: t.title, status: t.status });
+    }
     const name = levelTasks.find((t) => t.id === props.value)?.title ?? null;
     return {
       options: opts,

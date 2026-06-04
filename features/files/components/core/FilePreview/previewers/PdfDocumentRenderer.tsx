@@ -196,6 +196,25 @@ const ACTUAL_SIZE_SCALE = 1.5;
 // scrollbar / border.
 const VIEWPORT_PADDING_PX = 24;
 
+// ── Wheel-to-flip tuning ───────────────────────────────────────────────
+// We render ONE page at a time, so a mouse-wheel / trackpad gesture should
+// flip pages (like the prev/next buttons) rather than scroll randomly.
+//
+// `WHEEL_FLIP_THRESHOLD` is the accumulated |deltaY| (in wheel units) a
+// gesture must reach before it flips a single page. A standard mouse-wheel
+// notch is ~100 units, so the first notch flips immediately; trackpad
+// gestures emit many small deltas, which accumulate to the same effect.
+//
+// `WHEEL_GESTURE_IDLE_MS` is how long the wheel must be quiet before a new
+// gesture is allowed. Trackpads emit a long momentum tail after a single
+// swipe; the idle gate ensures that tail can't flip a dozen pages — one
+// continuous gesture flips at most one page.
+const WHEEL_FLIP_THRESHOLD = 40;
+const WHEEL_GESTURE_IDLE_MS = 180;
+// Native scroll within a zoomed page is only "exhausted" within this many
+// px of the edge. Keeps edge detection robust against sub-pixel rounding.
+const WHEEL_EDGE_EPSILON_PX = 2;
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -404,8 +423,7 @@ export default function PdfDocumentRenderer({
    * Explicit-percent / actual-size modes don't depend on the
    * container, so they're fine to compute regardless.
    */
-  const containerMeasured =
-    containerSize.width > 0 && containerSize.height > 0;
+  const containerMeasured = containerSize.width > 0 && containerSize.height > 0;
 
   const pageScale = useMemo(() => {
     // Explicit modes don't need a container measurement.
@@ -495,6 +513,114 @@ export default function PdfDocumentRenderer({
     },
     [],
   );
+
+  // ── Wheel-to-flip page navigation ──────────────────────────────────
+  // A scroll gesture over the viewport flips pages exactly like the
+  // prev/next buttons. Because the renderer paints a single page, the
+  // default fit-page view has no scrollable overflow and the wheel would
+  // otherwise do nothing. When the page IS zoomed past the viewport we
+  // defer to native scrolling first and only flip once the user has
+  // scrolled to the corresponding edge — standard PDF-reader behaviour.
+  //
+  // Implemented as a NATIVE non-passive listener (not React's onWheel) so
+  // we can call preventDefault() and stop the browser from rubber-banding
+  // / over-scrolling the parent while we consume the gesture for flipping.
+  const wheelAccum = useRef(0);
+  const wheelDir = useRef(0);
+  const wheelLocked = useRef(false);
+  const wheelIdleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Live values for the wheel handler. The listener is attached ONCE (so a
+  // page flip doesn't tear it down — doing so used to clear the idle timer
+  // that releases `wheelLocked`, leaving the viewer stuck after one flip).
+  // The handler reads the latest state through these refs instead.
+  const numPagesRef = useRef(numPages);
+  const pageNumberRef = useRef(pageNumber);
+  const setPageNumberRef = useRef(setPageNumber);
+  numPagesRef.current = numPages;
+  pageNumberRef.current = pageNumber;
+  setPageNumberRef.current = setPageNumber;
+
+  // Only (re)attach when the viewer surface itself mounts/unmounts — NOT on
+  // every page change. Stays stable across flips so the gesture state and
+  // idle timer survive.
+  const viewerReady = !combinedError && !loading && !!documentFile;
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      const numPages = numPagesRef.current;
+      const pageNumber = pageNumberRef.current;
+      const setPageNumber = setPageNumberRef.current;
+      // Single-page documents have nothing to flip to.
+      if (numPages <= 1) return;
+      // Horizontal-dominant gestures aren't page navigation — leave them
+      // to the browser (e.g. trackpad swipe-to-go-back).
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      if (e.deltaY === 0) return;
+
+      const goingDown = e.deltaY > 0;
+
+      // If the page is zoomed and the viewport can scroll, let native
+      // scrolling consume the gesture until we hit the edge in this
+      // direction. Only then do we take over to flip.
+      const canScroll =
+        node.scrollHeight - node.clientHeight > WHEEL_EDGE_EPSILON_PX;
+      if (canScroll) {
+        const atTop = node.scrollTop <= WHEEL_EDGE_EPSILON_PX;
+        const atBottom =
+          node.scrollTop + node.clientHeight >=
+          node.scrollHeight - WHEEL_EDGE_EPSILON_PX;
+        if (goingDown && !atBottom) return;
+        if (!goingDown && !atTop) return;
+      }
+
+      // We're committing this gesture to a page flip — suppress native
+      // over-scroll so the surrounding layout doesn't bounce.
+      e.preventDefault();
+
+      const dir = goingDown ? 1 : -1;
+      // Direction reversed → start a fresh gesture immediately.
+      if (dir !== wheelDir.current) {
+        wheelDir.current = dir;
+        wheelAccum.current = 0;
+        wheelLocked.current = false;
+      }
+      wheelAccum.current += Math.abs(e.deltaY);
+
+      // Reset the gesture once the wheel goes quiet, re-arming the next
+      // flip. This is what makes one continuous swipe flip one page.
+      if (wheelIdleTimer.current) clearTimeout(wheelIdleTimer.current);
+      wheelIdleTimer.current = setTimeout(() => {
+        wheelAccum.current = 0;
+        wheelDir.current = 0;
+        wheelLocked.current = false;
+      }, WHEEL_GESTURE_IDLE_MS);
+
+      if (wheelLocked.current) return;
+      if (wheelAccum.current < WHEEL_FLIP_THRESHOLD) return;
+
+      // Don't flip past the ends — mirrors the disabled prev/next buttons.
+      if (dir > 0 && pageNumber >= numPages) return;
+      if (dir < 0 && pageNumber <= 1) return;
+
+      wheelLocked.current = true;
+      wheelAccum.current = 0;
+      // Land at the top of the new page so reading continues naturally
+      // regardless of where the previous page was scrolled.
+      node.scrollTop = 0;
+      if (dir > 0) setPageNumber((p) => Math.min(numPages, p + 1));
+      else setPageNumber((p) => Math.max(1, p - 1));
+    };
+
+    node.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      node.removeEventListener("wheel", handleWheel);
+      if (wheelIdleTimer.current) clearTimeout(wheelIdleTimer.current);
+    };
+  }, [viewerReady]);
 
   // ── Render branches ────────────────────────────────────────────────
 
@@ -591,8 +717,7 @@ export default function PdfDocumentRenderer({
               onClick={() => setZoom({ kind: "fit-width" })}
               className={cn(
                 "flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground",
-                zoom.kind === "fit-width" &&
-                  "bg-accent text-accent-foreground",
+                zoom.kind === "fit-width" && "bg-accent text-accent-foreground",
               )}
             >
               <Maximize className="h-3.5 w-3.5" />
@@ -680,8 +805,8 @@ export default function PdfDocumentRenderer({
               onLoadSuccess={handlePageLoadSuccess}
             />
             {/* Overlay slot — annotation rectangles, search hits, etc.
-              * Mounts absolutely-positioned on top of the rendered Page.
-              * Caller positions children inside via PdfAnnotationLayer. */}
+             * Mounts absolutely-positioned on top of the rendered Page.
+             * Caller positions children inside via PdfAnnotationLayer. */}
             {renderOverlay && pageDims
               ? renderOverlay({
                   pageNumber,

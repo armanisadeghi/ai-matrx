@@ -135,6 +135,19 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
 
+  // ── Note Info ─────────────────────────────────────────────────────────────
+  // Per-note metadata + context inspector. Opened from the note tab's info
+  // icon; tied to a specific note so it's ephemeral (nothing to restore).
+  {
+    slug: "note-info-window",
+    overlayId: "noteInfoWindow",
+    kind: "window",
+    label: "Note Info",
+    defaultData: { noteId: null, title: undefined },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+
   // ── Notes (legacy) — kept until window-demo + persistence-test are retired
   {
     slug: "notes-window",

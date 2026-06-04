@@ -4,7 +4,8 @@
 // Matches ALL SSR workspace tab features:
 // - Editable title on active tab (debounced save)
 // - Dirty indicator (amber dot)
-// - Active tab action buttons: Save, Duplicate, Share, Folder, Delete, History, Voice
+// - Active tab action buttons: Save, Duplicate, Share, Info, Delete, Voice
+//   (Info opens the Note Info window — note metadata + context + folder)
 // - Close button on all tabs
 // - Right-click context menu
 // - DnD reordering
@@ -16,13 +17,11 @@ import {
   Copy,
   CopyPlus,
   Share2,
-  FolderInput,
   Trash2,
-  History,
   X,
   Download,
   Link2,
-  Network,
+  Info,
 } from "lucide-react";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -31,21 +30,18 @@ import {
   removeInstanceTab,
   updateNoteLabel,
   updateNoteContent,
-  updateNoteFolder,
   markTabInteraction,
 } from "../redux/slice";
 import {
   selectNoteLabel,
   selectNoteIsDirtyById,
   selectNoteIsSavingById,
-  selectNoteFolder,
-  selectAllFolders,
   selectNoteContent,
   selectInstanceTabs,
 } from "../redux/selectors";
 import { saveNote, copyNote, deleteNote } from "../redux/thunks";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
-import { NoteContextPicker } from "./NoteContextPicker";
+import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
 import { useNoteDelete } from "../hooks/useNoteDelete";
 import { useIsOwner } from "@/utils/permissions";
 import { cn } from "@/lib/utils";
@@ -82,21 +78,17 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const isActive = useAppSelector(
     (s) => s.notes?.instances?.[instanceId]?.activeTabId === noteId,
   );
-  const currentFolder = useAppSelector(selectNoteFolder(noteId)) ?? "Draft";
-  const allFolders = useAppSelector(selectAllFolders);
   const content = useAppSelector(selectNoteContent(noteId)) ?? "";
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
 
+  const openNoteInfo = useOpenNoteInfoWindow();
+
   // ── Local UI state ─────────────────────────────────────────────────
   const [localLabel, setLocalLabel] = useState(label);
-  const [showFolderDrop, setShowFolderDrop] = useState(false);
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
-  const [contextOpen, setContextOpen] = useState(false);
   const [titleFocused, setTitleFocused] = useState(false);
   const labelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const folderBtnRef = useRef<HTMLButtonElement>(null);
-  const contextBtnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Sync Redux label → local
@@ -168,12 +160,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   // a folder, etc. — even if they linger on the dialog without
   // touching anything else.
   const anyTabUiOpen =
-    !!ctxMenu ||
-    showFolderDrop ||
-    contextOpen ||
-    shareOpen ||
-    deleteConfirmOpen ||
-    titleFocused;
+    !!ctxMenu || shareOpen || deleteConfirmOpen || titleFocused;
   useEffect(() => {
     if (!anyTabUiOpen) return;
     dispatch(markTabInteraction({ instanceId }));
@@ -308,23 +295,11 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
               <Share2 />
             </button>
             <button
-              ref={folderBtnRef}
               className={actionBtnClass}
-              onClick={() => setShowFolderDrop((v) => !v)}
-              title="Move to folder"
+              onClick={() => openNoteInfo({ noteId, title: label })}
+              title="Note info, context & folder"
             >
-              <FolderInput />
-            </button>
-            <button
-              ref={contextBtnRef}
-              className={cn(
-                actionBtnClass,
-                contextOpen && "text-primary bg-accent",
-              )}
-              onClick={() => setContextOpen((v) => !v)}
-              title="Set context"
-            >
-              <Network />
+              <Info />
             </button>
             <button
               className={cn(actionBtnClass, "hover:text-destructive")}
@@ -351,42 +326,6 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           <X className="w-2.5 h-2.5" />
         </span>
       </div>
-
-      {/* Folder dropdown */}
-      {showFolderDrop && isActive && (
-        <div className="absolute z-50 mt-1 min-w-[120px] max-h-[200px] overflow-auto py-1 bg-card/95 backdrop-blur-2xl border border-border rounded-lg shadow-lg">
-          {allFolders.map((f) => (
-            <button
-              key={f}
-              className={cn(
-                "w-full text-left px-3 py-1.5 text-[0.625rem] cursor-pointer transition-colors",
-                f === currentFolder
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-foreground hover:bg-accent",
-              )}
-              onClick={() => {
-                dispatch(updateNoteFolder({ id: noteId, folder: f }));
-                setShowFolderDrop(false);
-              }}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Context picker dropdown */}
-      {contextOpen && isActive && (
-        <>
-          <div
-            className="fixed inset-0 z-[100]"
-            onClick={() => setContextOpen(false)}
-          />
-          <div className="absolute right-0 z-[110] mt-1 w-[260px] py-1 bg-card/95 backdrop-blur-2xl border border-border rounded-lg shadow-lg">
-            <NoteContextPicker noteId={noteId} />
-          </div>
-        </>
-      )}
 
       {/* Right-click context menu */}
       {ctxMenu && (

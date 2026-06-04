@@ -60,6 +60,11 @@ import {
   AlertTriangle,
   DollarSign,
   Zap,
+  List,
+  Network,
+  CalendarClock,
+  Boxes,
+  LayoutDashboard,
 } from "lucide-react";
 
 export const adminCategories = [
@@ -155,6 +160,62 @@ export const adminCategories = [
     ],
   },
   {
+    name: "Scheduling",
+    icon: <CalendarClock className="w-6 h-6" />,
+    iconColor: "text-blue-600",
+    features: [
+      {
+        title: "Scheduling Overview",
+        description:
+          "Cross-user health for the sch_* spine: task counts, runs, failures, and orphan leases.",
+        icon: <CalendarClock />,
+        link: "/administration/scheduling",
+        isNew: true,
+      },
+      {
+        title: "Scheduled Tasks",
+        description:
+          "Every scheduled task across the platform — filter, inspect, and disable.",
+        icon: <IconCalendar />,
+        link: "/administration/scheduling/tasks",
+      },
+      {
+        title: "Run History",
+        description: "Run history with status, surface, and date filters.",
+        icon: <IconChartLine />,
+        link: "/administration/scheduling/runs",
+      },
+      {
+        title: "Orphan Leases",
+        description:
+          "Claims that lapsed mid-execution — watch for spikes that indicate scanner issues.",
+        icon: <IconAlertOctagon />,
+        link: "/administration/scheduling/orphan-leases",
+      },
+      {
+        title: "Cron Tester",
+        description:
+          "Validate any cron expression and timezone; preview the next N fire times.",
+        icon: <IconCalendar />,
+        link: "/administration/scheduling/cron-tester",
+      },
+      {
+        title: "Scanner Health",
+        description:
+          "aidream-backed scheduler status: last tick, queue depth, and in-flight claims.",
+        icon: <IconServer />,
+        link: "/administration/scheduling/scanner-health",
+      },
+      {
+        title: "Schedule Templates",
+        description:
+          "Curated starter schedules users can clone when creating tasks.",
+        icon: <IconClipboard />,
+        link: "/administration/scheduling/templates",
+      },
+    ],
+  },
+  {
     name: "Research System",
     icon: <Search className="w-6 h-6" />,
     iconColor: "text-emerald-600",
@@ -165,6 +226,29 @@ export const adminCategories = [
           "Manage research templates, agent wiring, system constants, and monitor active research projects",
         icon: <Search />,
         link: "/administration/research-system",
+        isNew: true,
+      },
+    ],
+  },
+  {
+    name: "Knowledge Graph",
+    icon: <Network className="w-6 h-6" />,
+    iconColor: "text-teal-600",
+    features: [
+      {
+        title: "KG Cost Dashboard",
+        description:
+          "Auto-ingest spend per org, in-flight provider batches, and cap KPIs (spend today, 7d, orgs near cap, pending batches).",
+        icon: <DollarSign />,
+        link: "/administration/kg-cost",
+        isNew: true,
+      },
+      {
+        title: "KG Inspector",
+        description:
+          "Read-only viewer for knowledge-graph entities, mentions, and edges (NER data-quality inspection).",
+        icon: <Network />,
+        link: "/administration/kg-inspector",
         isNew: true,
       },
     ],
@@ -257,6 +341,64 @@ export const adminCategories = [
         link: "/administration/system-agents/apps",
         isNew: true,
       },
+      {
+        title: "Agent lineage",
+        description:
+          "See what each system agent gives rise to — derived agents, shortcuts, and apps.",
+        icon: <IconGitBranch />,
+        link: "/administration/system-agents/lineage",
+        isNew: true,
+      },
+    ],
+  },
+  {
+    name: "Agent Apps",
+    icon: <Boxes className="w-6 h-6" />,
+    iconColor: "text-indigo-600",
+    features: [
+      {
+        title: "Agent Apps Dashboard",
+        description:
+          "Hub for moderating user-published agent apps: featured picks, verification, and quick stats.",
+        icon: <LayoutDashboard />,
+        link: "/administration/agent-apps",
+        isNew: true,
+      },
+      {
+        title: "All Agent Apps",
+        description:
+          "Every agent app across the platform — filter, feature, verify, and moderate.",
+        icon: <Boxes />,
+        link: "/administration/agent-apps/apps",
+      },
+      {
+        title: "Agent App Categories",
+        description:
+          "Manage the static category list shown in public agent-app browsing.",
+        icon: <IconFolder />,
+        link: "/administration/agent-apps/categories",
+      },
+      {
+        title: "Agent App Executions",
+        description:
+          "Recent runs and errors across every agent app. Resolve incidents and inspect usage.",
+        icon: <IconChartLine />,
+        link: "/administration/agent-apps/executions",
+      },
+      {
+        title: "Agent App Analytics",
+        description:
+          "Usage and performance analytics across published agent apps.",
+        icon: <BarChart3 />,
+        link: "/administration/agent-apps/analytics",
+      },
+      {
+        title: "Agent App Rate Limits",
+        description:
+          "Configure and audit rate limits for agent app invocations.",
+        icon: <IconShield />,
+        link: "/administration/agent-apps/rate-limits",
+      },
     ],
   },
   {
@@ -296,11 +438,25 @@ export const adminCategories = [
     iconColor: "text-indigo-600",
     features: [
       {
-        title: "Prompt Shortcuts",
+        title: "Categories & Shortcuts",
         description:
           "Manage AI prompt shortcuts with keyboard bindings, scope mappings, and prompt connections for context menus, buttons, and cards.",
         icon: <IconRobot />,
         link: "/administration/prompt-builtins",
+      },
+      {
+        title: "Shortcuts Table",
+        description:
+          "Tabular view of all prompt shortcuts for bulk inspection and editing.",
+        icon: <Zap />,
+        link: "/administration/prompt-builtins/shortcuts",
+      },
+      {
+        title: "Prompt Builtins",
+        description:
+          "Builtin prompt definitions wired into shortcuts and context menus.",
+        icon: <IconFile />,
+        link: "/administration/prompt-builtins/builtins",
       },
       {
         title: "Shortcut Categories",
@@ -420,6 +576,13 @@ export const adminCategories = [
         link: "/administration/lookups",
         isNew: true,
       },
+      {
+        title: "New Tool Definition",
+        description:
+          "Create a new row in the tool_def catalog (identity, parameters, executors, surfaces).",
+        icon: <IconPencil />,
+        link: "/administration/mcp-tools/new",
+      },
     ],
   },
   {
@@ -520,16 +683,38 @@ export const adminCategories = [
         link: "/administration/database-admin",
       },
       {
-        title: "SQL Query Executor",
-        description: "Execute SQL queries directly against the database",
+        title: "Database Tools Hub",
+        description:
+          "Landing page for SQL editor, workbench, functions, and enum management.",
         icon: <DatabaseZap />,
         link: "/administration/database",
+      },
+      {
+        title: "SQL Editor",
+        description: "Execute SQL queries directly against the database",
+        icon: <IconCode />,
+        link: "/administration/database/sql-queries",
+      },
+      {
+        title: "SQL Workbench",
+        description:
+          "Multi-query notebook with shared variables and merged result sets.",
+        icon: <DatabaseZap />,
+        link: "/administration/database/workbench",
+        isNew: true,
       },
       {
         title: "SQL Functions",
         description: "Browse, search, and manage SQL functions",
         icon: <IconCode />,
         link: "/administration/database/sql-functions",
+      },
+      {
+        title: "Database Enums",
+        description: "Manage database enum types and their values",
+        icon: <IconSquareToggle />,
+        link: "/administration/database/enums",
+        isNew: true,
       },
     ],
   },
@@ -574,11 +759,12 @@ export const adminCategories = [
     iconColor: "text-slate-600",
     features: [
       {
-        title: "Official Components",
+        title: "All Administration Routes",
         description:
-          "Browse and test all official UI components with live demos, code examples, and documentation.",
-        icon: <Layout />,
-        link: "/administration/official-components",
+          "Auto-generated filesystem index of every page under /administration — catches routes missing from this hub.",
+        icon: <List />,
+        link: "/administration/all-routes",
+        isNew: true,
       },
       {
         title: "Schema Manager",
@@ -595,6 +781,13 @@ export const adminCategories = [
         link: "/administration/ai-tasks",
       },
       {
+        title: "Utilities",
+        description:
+          "Developer utilities hub — text cleaning and other admin transformation tools.",
+        icon: <IconAdjustmentsBolt />,
+        link: "/administration/utils",
+      },
+      {
         title: "Text Cleaner",
         description:
           "Clean, transform, and process text with configurable pattern-based utilities.",
@@ -602,11 +795,11 @@ export const adminCategories = [
         link: "/administration/utils/text-cleaner",
       },
       {
-        title: "Window Panels Smoke Test",
+        title: "Window Persistence Tester",
         description:
-          "Probe every registered overlay (109 entries) — lazy-import + initial mount with defaultData. Surfaces components that crash on mount, fail to chunk-load, or render nothing because of prop/data mismatch. Run before every release.",
+          "Diagnostic loop for window_sessions: DB rows, Redux overlays, window manager geometry, and persistence context side-by-side.",
         icon: <Layout />,
-        link: "/administration/window-panels-smoketest",
+        link: "/administration/persistence-test",
         isNew: true,
       },
     ],

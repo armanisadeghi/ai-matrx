@@ -385,6 +385,10 @@ const FilePreviewWindow = dynamic(
     import("@/features/window-panels/windows/cloud-files/FilePreviewWindow"),
   { ssr: false },
 );
+const NoteInfoWindow = dynamic(
+  () => import("@/features/window-panels/windows/notes/NoteInfoWindow"),
+  { ssr: false },
+);
 const FullScreenMarkdownEditorBridge = dynamic(
   () =>
     import("@/components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge").then(
@@ -542,9 +546,9 @@ const QuickNotesSheet = dynamic(
 );
 const GlobalSuggestionsDrawer = dynamic(
   () =>
-    import(
-      "@/features/kg-suggestions/components/GlobalSuggestionsDrawer"
-    ).then((m) => ({ default: m.GlobalSuggestionsDrawer })),
+    import("@/features/kg-suggestions/components/GlobalSuggestionsDrawer").then(
+      (m) => ({ default: m.GlobalSuggestionsDrawer }),
+    ),
   { ssr: false },
 );
 const QuickTasksSheet = dynamic(
@@ -814,6 +818,9 @@ export default function OverlayController() {
     filePreviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "filePreviewWindow"),
     ),
+    noteInfoWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "noteInfoWindow"),
+    ),
     galleryWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "galleryWindow"),
     ),
@@ -1035,6 +1042,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     filePreviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "filePreviewWindow"),
+    ) as Record<string, unknown> | null,
+    noteInfoWindow: useAppSelector((s) =>
+      selectOverlayData(s, "noteInfoWindow"),
     ) as Record<string, unknown> | null,
     galleryWindow: useAppSelector((s) =>
       selectOverlayData(s, "galleryWindow"),
@@ -2649,6 +2659,26 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "filePreviewWindow" }))
             }
             fileId={typeof data?.fileId === "string" ? data.fileId : null}
+          />
+        );
+      })()}
+
+      {/* noteInfoWindow */}
+      {(() => {
+        const isOpen = isOpenById.noteInfoWindow;
+        const data = dataById.noteInfoWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <NoteInfoWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "noteInfoWindow" }))
+            }
+            noteId={typeof data?.noteId === "string" ? data.noteId : null}
+            title={typeof data?.title === "string" ? data.title : null}
           />
         );
       })()}

@@ -5,17 +5,18 @@
  *
  * Read-only KG data inspector (Phase C.5). Three tabs over the existing
  * rag.kg_* graph tables:
- *   - Entities  — paginated table with kind / org / search filters.
+ *   - Entities  — sortable/filterable column headers (kind, name, org, counts,
+ *                 confidence, created); server filters + client sort within 200 rows.
  *   - Mentions  — per-entity drill-down (selected from the Entities tab),
  *                 each mention deep-links to its source via citationHrefFor().
- *   - Top edges — weight-ordered edge list with kind filter.
+ *   - Top edges — sortable/filterable column headers (source, edge kind, target, weight).
  *
  * This is an admin forensic surface (the (admin) layout already super-admin
  * gates it) so the product owner can eyeball NER quality + entity volume as
  * the graph fills, before committing to the full cytoscape view (Phase G).
  * Pure reads through the typed kgInspectorService → Python backend.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Database,
@@ -40,14 +41,19 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { KgInspectorColumnHeader } from "./KgInspectorColumnHeader";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
+  applyColumnFilters,
+  sortRows,
+  toggleSort,
+  type ColumnDef,
+  type ColumnFilter,
+  type SortDirection,
+} from "../utils/tableFilters";
+import {
+  fetchOrganizationNamesByIds,
+  organizationDisplayName,
+} from "../utils/organizationNames";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 import {
   listKgEntities,
@@ -59,7 +65,67 @@ import {
 } from "../service/kgInspectorService";
 
 const PAGE_SIZE = 50;
+const FETCH_MAX = 200;
 const ANY = "__any__";
+
+type EntitySortKey =
+  | "kind"
+  | "canonical_name"
+  | "organization_name"
+  | "mention_count"
+  | "source_count"
+  | "confidence_avg"
+  | "created_at";
+
+type EdgeSortKey = "source" | "kind" | "target" | "weight";
+
+const ENTITY_CLIENT_COLUMNS: ColumnDef<KgEntityRow>[] = [
+  {
+    key: "mention_count",
+    type: "number",
+    getValue: (row) => row.mention_count,
+  },
+  {
+    key: "source_count",
+    type: "number",
+    getValue: (row) => row.source_count,
+  },
+  {
+    key: "confidence_avg",
+    type: "number",
+    getValue: (row) => row.confidence_avg,
+  },
+  {
+    key: "created_at",
+    type: "date",
+    getValue: (row) => row.created_at,
+  },
+];
+
+const ENTITY_SORT_COLUMNS: ColumnDef<KgEntityRow>[] = [
+  { key: "kind", type: "enum", getValue: (row) => row.kind },
+  {
+    key: "canonical_name",
+    type: "text",
+    getValue: (row) => row.canonical_name,
+  },
+  ...ENTITY_CLIENT_COLUMNS,
+];
+
+const EDGE_COLUMNS: ColumnDef<KgEdgeRow>[] = [
+  {
+    key: "source",
+    type: "text",
+    getValue: (row) => `${row.src_kind} ${row.src_name}`,
+  },
+  { key: "kind", type: "enum", getValue: (row) => row.kind },
+  {
+    key: "target",
+    type: "text",
+    getValue: (row) => `${row.dst_kind} ${row.dst_name}`,
+  },
+  { key: "weight", type: "number", getValue: (row) => row.weight },
+];
 
 // Code-graph kinds are present today; NER widens this set as Phase C fills.
 const ENTITY_KINDS = [
@@ -76,7 +142,12 @@ const ENTITY_KINDS = [
   "unresolved_symbol",
 ] as const;
 
-const EDGE_KINDS = ["co_occurs_with", "imports", "calls", "references"] as const;
+const EDGE_KINDS = [
+  "co_occurs_with",
+  "imports",
+  "calls",
+  "references",
+] as const;
 
 function KindChip({ kind }: { kind: string }) {
   return (
@@ -94,9 +165,14 @@ function ConfidenceBar({ value }: { value: number | null }) {
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
-        <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+        <div
+          className="h-full rounded-full bg-primary"
+          style={{ width: `${pct}%` }}
+        />
       </div>
-      <span className="tabular-nums text-xs text-muted-foreground">{value.toFixed(2)}</span>
+      <span className="tabular-nums text-xs text-muted-foreground">
+        {value.toFixed(2)}
+      </span>
     </div>
   );
 }
@@ -151,26 +227,41 @@ function EntitiesTab({
 }: {
   onSelectEntity: (e: SelectedEntity) => void;
 }) {
-  const [rows, setRows] = useState<KgEntityRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [offset, setOffset] = useState(0);
+  const [rawRows, setRawRows] = useState<KgEntityRow[]>([]);
+  const [serverTotal, setServerTotal] = useState(0);
+  const [orgNames, setOrgNames] = useState<Record<string, string>>({});
+  const [orgNamesLoading, setOrgNamesLoading] = useState(false);
   const [kind, setKind] = useState<string>(ANY);
-  const [orgId, setOrgId] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [q, setQ] = useState("");
+  const [page, setPage] = useState(0);
+  const [sortKey, setSortKey] = useState<EntitySortKey>("mention_count");
+  const [sortDir, setSortDir] = useState<SortDirection>("desc");
+  const [columnFilters, setColumnFilters] = useState<
+    Record<string, ColumnFilter>
+  >({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Debounce the search box into the applied `q`.
+  const organizationIds = useMemo(
+    () => [
+      ...new Set(
+        rawRows
+          .map((row) => row.organization_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ],
+    [rawRows],
+  );
+
   useEffect(() => {
     const t = setTimeout(() => setQ(searchInput.trim()), 350);
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // Reset to first page whenever a filter changes.
   useEffect(() => {
-    setOffset(0);
-  }, [kind, orgId, q]);
+    setPage(0);
+  }, [kind, q, columnFilters, sortKey, sortDir]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -179,16 +270,15 @@ function EntitiesTab({
     listKgEntities(
       {
         kind: kind === ANY ? null : kind,
-        organizationId: orgId.trim() || null,
         q: q || null,
-        limit: PAGE_SIZE,
-        offset,
+        limit: FETCH_MAX,
+        offset: 0,
       },
       { signal: controller.signal },
     )
-      .then((page) => {
-        setRows(page.items);
-        setTotal(page.total);
+      .then((pageResult) => {
+        setRawRows(pageResult.items);
+        setServerTotal(pageResult.total);
       })
       .catch((e: unknown) => {
         if (controller.signal.aborted) return;
@@ -198,43 +288,95 @@ function EntitiesTab({
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [kind, orgId, q, offset]);
+  }, [kind, q]);
 
-  const pageStart = total === 0 ? 0 : offset + 1;
-  const pageEnd = Math.min(offset + PAGE_SIZE, total);
+  useEffect(() => {
+    if (organizationIds.length === 0) {
+      setOrgNames({});
+      setOrgNamesLoading(false);
+      return;
+    }
+
+    let active = true;
+    setOrgNamesLoading(true);
+    fetchOrganizationNamesByIds(organizationIds)
+      .then((names) => {
+        if (active) setOrgNames(names);
+      })
+      .catch(() => {
+        if (active) setOrgNames({});
+      })
+      .finally(() => {
+        if (active) setOrgNamesLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [organizationIds]);
+
+  const entityColumnDefs = useMemo(() => {
+    const organizationColumn: ColumnDef<KgEntityRow> = {
+      key: "organization_name",
+      type: "text",
+      getValue: (row) =>
+        organizationDisplayName(row.organization_id, orgNames) ?? "",
+    };
+    return {
+      filterColumns: [organizationColumn, ...ENTITY_CLIENT_COLUMNS],
+      sortColumns: [
+        ...ENTITY_SORT_COLUMNS.slice(0, 2),
+        organizationColumn,
+        ...ENTITY_CLIENT_COLUMNS,
+      ],
+    };
+  }, [orgNames]);
+
+  const processedRows = useMemo(() => {
+    const filtered = applyColumnFilters(
+      rawRows,
+      entityColumnDefs.filterColumns,
+      columnFilters,
+    );
+    return sortRows(filtered, entityColumnDefs.sortColumns, sortKey, sortDir);
+  }, [rawRows, columnFilters, sortKey, sortDir, entityColumnDefs]);
+
+  const pageStart = processedRows.length === 0 ? 0 : page * PAGE_SIZE + 1;
+  const pageEnd = Math.min((page + 1) * PAGE_SIZE, processedRows.length);
+  const displayRows = processedRows.slice(
+    page * PAGE_SIZE,
+    page * PAGE_SIZE + PAGE_SIZE,
+  );
+
+  const handleSort = (key: string) => {
+    const next = toggleSort(sortKey, sortDir, key);
+    setSortKey(next.sortKey as EntitySortKey);
+    setSortDir(next.sortDir);
+  };
+
+  const setColumnFilter = (key: string, value: ColumnFilter | undefined) => {
+    setColumnFilters((prev) => {
+      const next = { ...prev };
+      if (!value || Object.keys(value).length === 0) delete next[key];
+      else next[key] = value;
+      return next;
+    });
+  };
+
+  const kindSelectOptions = [
+    { value: ANY, label: "All kinds" },
+    ...ENTITY_KINDS.map((k) => ({ value: k, label: k })),
+  ];
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search canonical name…"
-            className="h-8 w-64 pl-8 text-sm"
-          />
+      {serverTotal > FETCH_MAX ? (
+        <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          Showing up to {FETCH_MAX} of {serverTotal} matching entities. Narrow
+          Kind or Name filters to refine server results; column sort and other
+          filters apply within this window.
         </div>
-        <Select value={kind} onValueChange={setKind}>
-          <SelectTrigger className="h-8 w-44 text-sm">
-            <SelectValue placeholder="All kinds" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ANY}>All kinds</SelectItem>
-            {ENTITY_KINDS.map((k) => (
-              <SelectItem key={k} value={k}>
-                {k}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Input
-          value={orgId}
-          onChange={(e) => setOrgId(e.target.value)}
-          placeholder="Organization ID (optional)"
-          className="h-8 w-64 text-sm"
-        />
-      </div>
+      ) : null}
 
       {error ? (
         <div className="rounded-md border border-border bg-card p-4 text-sm text-destructive">
@@ -244,34 +386,146 @@ function EntitiesTab({
 
       <div className="overflow-x-auto rounded-md border border-border">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-card">
             <TableRow>
-              <TableHead className="w-40">Kind</TableHead>
-              <TableHead>Canonical name</TableHead>
-              <TableHead className="text-right">Mentions</TableHead>
-              <TableHead className="text-right">Sources</TableHead>
-              <TableHead>Confidence</TableHead>
-              <TableHead className="whitespace-nowrap">Created</TableHead>
-              <TableHead className="w-12 text-right">Graph</TableHead>
+              <TableHead className="min-w-[140px]">
+                <KgInspectorColumnHeader
+                  label="Kind"
+                  sortKey="kind"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  filterType="enum"
+                  selectValue={kind}
+                  selectOptions={kindSelectOptions}
+                  onSelectChange={setKind}
+                />
+              </TableHead>
+              <TableHead className="min-w-[180px]">
+                <KgInspectorColumnHeader
+                  label="Canonical name"
+                  sortKey="canonical_name"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  filterType="text"
+                  textValue={searchInput}
+                  onTextChange={setSearchInput}
+                />
+              </TableHead>
+              <TableHead className="min-w-[160px]">
+                <KgInspectorColumnHeader
+                  label="Organization"
+                  sortKey="organization_name"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  filterType="text"
+                  textValue={columnFilters.organization_name?.text ?? ""}
+                  onTextChange={(text) =>
+                    setColumnFilter(
+                      "organization_name",
+                      text ? { text } : undefined,
+                    )
+                  }
+                />
+              </TableHead>
+              <TableHead className="min-w-[120px] text-right">
+                <KgInspectorColumnHeader
+                  label="Mentions"
+                  sortKey="mention_count"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  align="right"
+                  filterType="number"
+                  columnFilter={columnFilters.mention_count}
+                  onColumnFilterChange={(value) =>
+                    setColumnFilter("mention_count", value)
+                  }
+                />
+              </TableHead>
+              <TableHead className="min-w-[120px] text-right">
+                <KgInspectorColumnHeader
+                  label="Sources"
+                  sortKey="source_count"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  align="right"
+                  filterType="number"
+                  columnFilter={columnFilters.source_count}
+                  onColumnFilterChange={(value) =>
+                    setColumnFilter("source_count", value)
+                  }
+                />
+              </TableHead>
+              <TableHead className="min-w-[140px]">
+                <KgInspectorColumnHeader
+                  label="Confidence"
+                  sortKey="confidence_avg"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  filterType="number"
+                  columnFilter={columnFilters.confidence_avg}
+                  onColumnFilterChange={(value) =>
+                    setColumnFilter("confidence_avg", value)
+                  }
+                />
+              </TableHead>
+              <TableHead className="min-w-[150px]">
+                <KgInspectorColumnHeader
+                  label="Created"
+                  sortKey="created_at"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  filterType="date"
+                  columnFilter={columnFilters.created_at}
+                  onColumnFilterChange={(value) =>
+                    setColumnFilter("created_at", value)
+                  }
+                />
+              </TableHead>
+              <TableHead className="w-12 text-right">
+                <KgInspectorColumnHeader
+                  label="Graph"
+                  sortKey="graph"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  align="right"
+                  sortable={false}
+                  filterable={false}
+                />
+              </TableHead>
             </TableRow>
           </TableHeader>
           {loading ? (
-            <TableSkeleton rows={8} cols={7} />
+            <TableSkeleton rows={8} cols={8} />
           ) : (
             <TableBody>
-              {rows.length === 0 ? (
+              {displayRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={8}
+                    className="py-8 text-center text-muted-foreground"
+                  >
                     No entities match the current filters.
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((row) => (
+                displayRows.map((row) => (
                   <TableRow
                     key={row.id}
                     className="cursor-pointer"
                     onClick={() =>
-                      onSelectEntity({ id: row.id, name: row.canonical_name, kind: row.kind })
+                      onSelectEntity({
+                        id: row.id,
+                        name: row.canonical_name,
+                        kind: row.kind,
+                      })
                     }
                   >
                     <TableCell>
@@ -280,8 +534,25 @@ function EntitiesTab({
                     <TableCell className="font-medium text-foreground">
                       {row.canonical_name}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{row.mention_count}</TableCell>
-                    <TableCell className="text-right tabular-nums">{row.source_count}</TableCell>
+                    <TableCell className="text-sm text-foreground">
+                      {!row.organization_id ? (
+                        "—"
+                      ) : orgNamesLoading &&
+                        !(row.organization_id in orgNames) ? (
+                        <Skeleton className="h-4 w-28" />
+                      ) : (
+                        <span title={row.organization_id}>
+                          {orgNames[row.organization_id] ??
+                            "Unknown organization"}
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {row.mention_count}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {row.source_count}
+                    </TableCell>
                     <TableCell>
                       <ConfidenceBar value={row.confidence_avg} />
                     </TableCell>
@@ -289,10 +560,6 @@ function EntitiesTab({
                       {new Date(row.created_at).toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      {/* Deep-link to the org-wide knowledge-graph canvas. The
-                          canvas does not yet support a `?entity=<id>` preselect
-                          param, so we link without one — still useful as a
-                          jump-out from the forensic table to the visual graph. */}
                       <Link
                         href="/knowledge-graph"
                         onClick={(e) => e.stopPropagation()}
@@ -313,14 +580,17 @@ function EntitiesTab({
 
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span className="tabular-nums">
-          {pageStart}–{pageEnd} of {total}
+          {pageStart}–{pageEnd} of {processedRows.length}
+          {serverTotal > processedRows.length
+            ? ` (${serverTotal} server matches)`
+            : ""}
         </span>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            disabled={offset === 0 || loading}
-            onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+            disabled={page === 0 || loading}
+            onClick={() => setPage(Math.max(0, page - 1))}
           >
             <ChevronLeft className="h-4 w-4" />
             Prev
@@ -328,8 +598,8 @@ function EntitiesTab({
           <Button
             variant="outline"
             size="sm"
-            disabled={pageEnd >= total || loading}
-            onClick={() => setOffset(offset + PAGE_SIZE)}
+            disabled={pageEnd >= processedRows.length || loading}
+            onClick={() => setPage(page + 1)}
           >
             Next
             <ChevronRight className="h-4 w-4" />
@@ -396,7 +666,9 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
       <div className="flex items-center gap-2">
         <KindChip kind={entity.kind} />
         <span className="font-medium text-foreground">{entity.name}</span>
-        <span className="text-sm text-muted-foreground tabular-nums">({total} mentions)</span>
+        <span className="text-sm text-muted-foreground tabular-nums">
+          ({total} mentions)
+        </span>
       </div>
 
       {error ? (
@@ -484,11 +756,22 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
 // ---------------------------------------------------------------------------
 
 function EdgesTab() {
-  const [rows, setRows] = useState<KgEdgeRow[]>([]);
-  const [kind, setKind] = useState<string>(ANY);
+  const [rawRows, setRawRows] = useState<KgEdgeRow[]>([]);
+  const [orgInput, setOrgInput] = useState("");
   const [orgId, setOrgId] = useState("");
+  const [edgeKind, setEdgeKind] = useState<string>(ANY);
+  const [sortKey, setSortKey] = useState<EdgeSortKey>("weight");
+  const [sortDir, setSortDir] = useState<SortDirection>("desc");
+  const [columnFilters, setColumnFilters] = useState<
+    Record<string, ColumnFilter>
+  >({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setOrgId(orgInput.trim()), 350);
+    return () => clearTimeout(t);
+  }, [orgInput]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -496,13 +779,13 @@ function EdgesTab() {
     setError(null);
     listKgTopEdges(
       {
-        kind: kind === ANY ? null : kind,
-        organizationId: orgId.trim() || null,
-        limit: PAGE_SIZE,
+        kind: edgeKind === ANY ? null : edgeKind,
+        organizationId: orgId || null,
+        limit: FETCH_MAX,
       },
       { signal: controller.signal },
     )
-      .then((res) => setRows(res.items))
+      .then((res) => setRawRows(res.items))
       .catch((e: unknown) => {
         if (controller.signal.aborted) return;
         setError(e instanceof Error ? e.message : "Failed to load edges");
@@ -511,29 +794,41 @@ function EdgesTab() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [kind, orgId]);
+  }, [edgeKind, orgId]);
+
+  const displayRows = useMemo(() => {
+    const filtered = applyColumnFilters(rawRows, EDGE_COLUMNS, columnFilters);
+    return sortRows(filtered, EDGE_COLUMNS, sortKey, sortDir);
+  }, [rawRows, columnFilters, sortKey, sortDir]);
+
+  const handleSort = (key: string) => {
+    const next = toggleSort(sortKey, sortDir, key);
+    setSortKey(next.sortKey as EdgeSortKey);
+    setSortDir(next.sortDir);
+  };
+
+  const setColumnFilter = (key: string, value: ColumnFilter | undefined) => {
+    setColumnFilters((prev) => {
+      const next = { ...prev };
+      if (!value || Object.keys(value).length === 0) delete next[key];
+      else next[key] = value;
+      return next;
+    });
+  };
+
+  const edgeKindOptions = [
+    { value: ANY, label: "All edge kinds" },
+    ...EDGE_KINDS.map((k) => ({ value: k, label: k })),
+  ];
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Select value={kind} onValueChange={setKind}>
-          <SelectTrigger className="h-8 w-44 text-sm">
-            <SelectValue placeholder="All edge kinds" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ANY}>All edge kinds</SelectItem>
-            {EDGE_KINDS.map((k) => (
-              <SelectItem key={k} value={k}>
-                {k}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Input
-          value={orgId}
-          onChange={(e) => setOrgId(e.target.value)}
+          value={orgInput}
+          onChange={(e) => setOrgInput(e.target.value)}
           placeholder="Organization ID (optional)"
-          className="h-8 w-64 text-sm"
+          className="h-8 w-64 text-base"
         />
       </div>
 
@@ -545,31 +840,88 @@ function EdgesTab() {
 
       <div className="overflow-x-auto rounded-md border border-border">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-card">
             <TableRow>
-              <TableHead>Source</TableHead>
-              <TableHead className="w-40">Edge</TableHead>
-              <TableHead>Target</TableHead>
-              <TableHead className="text-right w-24">Weight</TableHead>
+              <TableHead className="min-w-[220px]">
+                <KgInspectorColumnHeader
+                  label="Source"
+                  sortKey="source"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  filterType="text"
+                  textValue={columnFilters.source?.text ?? ""}
+                  onTextChange={(text) =>
+                    setColumnFilter("source", text ? { text } : undefined)
+                  }
+                />
+              </TableHead>
+              <TableHead className="min-w-[140px]">
+                <KgInspectorColumnHeader
+                  label="Edge"
+                  sortKey="kind"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  filterType="enum"
+                  selectValue={edgeKind}
+                  selectOptions={edgeKindOptions}
+                  onSelectChange={setEdgeKind}
+                />
+              </TableHead>
+              <TableHead className="min-w-[220px]">
+                <KgInspectorColumnHeader
+                  label="Target"
+                  sortKey="target"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  filterType="text"
+                  textValue={columnFilters.target?.text ?? ""}
+                  onTextChange={(text) =>
+                    setColumnFilter("target", text ? { text } : undefined)
+                  }
+                />
+              </TableHead>
+              <TableHead className="min-w-[120px] text-right">
+                <KgInspectorColumnHeader
+                  label="Weight"
+                  sortKey="weight"
+                  activeSortKey={sortKey}
+                  sortDir={sortDir}
+                  onSort={handleSort}
+                  align="right"
+                  filterType="number"
+                  columnFilter={columnFilters.weight}
+                  onColumnFilterChange={(value) =>
+                    setColumnFilter("weight", value)
+                  }
+                />
+              </TableHead>
             </TableRow>
           </TableHeader>
           {loading ? (
             <TableSkeleton rows={8} cols={4} />
           ) : (
             <TableBody>
-              {rows.length === 0 ? (
+              {displayRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={4}
+                    className="py-8 text-center text-muted-foreground"
+                  >
                     No edges match the current filters.
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((e) => (
+                displayRows.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <KindChip kind={e.src_kind} />
-                        <span className="font-medium text-foreground">{e.src_name}</span>
+                        <span className="font-medium text-foreground">
+                          {e.src_name}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -580,7 +932,9 @@ function EdgesTab() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <KindChip kind={e.dst_kind} />
-                        <span className="font-medium text-foreground">{e.dst_name}</span>
+                        <span className="font-medium text-foreground">
+                          {e.dst_name}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
@@ -592,6 +946,11 @@ function EdgesTab() {
             </TableBody>
           )}
         </Table>
+      </div>
+
+      <div className="text-sm text-muted-foreground tabular-nums">
+        {displayRows.length} edge{displayRows.length === 1 ? "" : "s"}
+        {rawRows.length >= FETCH_MAX ? ` (top ${FETCH_MAX} from server)` : ""}
       </div>
     </div>
   );
@@ -612,13 +971,19 @@ export function KgInspector() {
     <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
       <div className="flex items-center gap-2 border-b border-border px-4 py-2">
         <Database className="h-4 w-4 text-muted-foreground" />
-        <h1 className="text-sm font-semibold text-foreground">Knowledge Graph Inspector</h1>
+        <h1 className="text-sm font-semibold text-foreground">
+          Knowledge Graph Inspector
+        </h1>
         <Badge variant="outline" className="ml-1">
           read-only
         </Badge>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
+      <Tabs
+        value={tab}
+        onValueChange={setTab}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <div className="px-4 pt-3">
           <TabsList>
             <TabsTrigger value="entities">

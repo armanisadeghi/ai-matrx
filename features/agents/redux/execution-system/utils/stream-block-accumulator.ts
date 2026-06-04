@@ -237,6 +237,14 @@ export class StreamBlockAccumulator {
   private currentBlockType = "text";
   private currentBlockContent = "";
   private pendingLineFragment = "";
+  /**
+   * True once the block at the current index has been dispatched to Redux —
+   * including speculative streaming projections of `pendingLineFragment`
+   * (see `emitCurrentBlock`). Reset whenever a new block is opened. Used by
+   * `closeCurrentBlock` to retract a speculative block whose line turned out
+   * to be a different typed block (see the bare-JSON duplication note there).
+   */
+  private currentBlockEmitted = false;
   private subState: BlockSubState = { kind: "none" };
   private ingestCount = 0;
   private emitCount = 0;
@@ -607,16 +615,50 @@ export class StreamBlockAccumulator {
 
   private closeCurrentBlock(dispatch: DispatchFn): void {
     if (!this.currentBlockContent.trim()) {
+      // No committed content. But the block may already exist in Redux as a
+      // speculative streaming projection of `pendingLineFragment` — e.g. a
+      // single-line bare JSON `{"entities": []}` (structured output) that
+      // arrived with no trailing newline. That fragment streamed in here as a
+      // plain `text` block, and is now being reclassified into its own typed
+      // block (bare_json / code_fence / xml / table / divider) at the NEXT
+      // index. Without retracting it, the stale text block lingers and renders
+      // *alongside* the typed block — the JSON-duplication bug (raw copy +
+      // fenced copy). Emit a content-less "complete" upsert so the renderer
+      // (which filters on `content?.trim()`) drops it.
+      if (this.currentBlockEmitted) {
+        this.retractCurrentBlock(dispatch);
+        this.currentBlockEmitted = false;
+      }
       return;
     }
     this.emitCurrentBlock(dispatch, "complete");
     this.currentBlockContent = "";
   }
 
+  /**
+   * Overwrites the block at the current index with an empty, completed payload
+   * so a previously-projected speculative streaming block is removed from the
+   * rendered output. Keyed by `currentBlockId`, so it replaces the exact
+   * Redux entry the speculative projection created.
+   */
+  private retractCurrentBlock(dispatch: DispatchFn): void {
+    const block: RenderBlockPayload = {
+      blockId: this.currentBlockId,
+      blockIndex: this.currentBlockIndex,
+      type: this.currentBlockType,
+      status: "complete",
+      content: null,
+      data: null,
+      metadata: undefined,
+    };
+    dispatch(this.upsertAction({ requestId: this.requestId, block }));
+  }
+
   private openBlock(type: string, _dispatch: DispatchFn): void {
     this.currentBlockIndex++;
     this.currentBlockType = type;
     this.currentBlockContent = "";
+    this.currentBlockEmitted = false;
   }
 
   private emitCurrentBlock(
@@ -654,6 +696,11 @@ export class StreamBlockAccumulator {
     };
 
     dispatch(this.upsertAction({ requestId: this.requestId, block }));
+    // Record that this block index now exists in Redux — even when the only
+    // thing emitted was a speculative `pendingLineFragment` projection with no
+    // committed content. `closeCurrentBlock` consults this to retract such a
+    // block if its line is reclassified into a different typed block.
+    this.currentBlockEmitted = true;
   }
 
   /**
