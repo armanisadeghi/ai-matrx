@@ -62,6 +62,8 @@ export interface KgChromeTheme {
   nodeBorder: string;
   /** Selection ring color. */
   selectedRing: string;
+  /** Accent ring for nodes matching the active search query. */
+  searchHit: string;
   /** Resting edge color. */
   edge: string;
   /** Edge color when incident to the selection. */
@@ -77,6 +79,7 @@ export const KG_CHROME: Record<ThemeMode, KgChromeTheme> = {
     labelSelected: "#ffffff",
     nodeBorder: "#0b0f17",
     selectedRing: "#f8fafc", // slate-50
+    searchHit: "#fbbf24", // amber-400 — pops on the dark canvas
     edge: "#475569", // slate-600
     edgeSelected: "#cbd5e1", // slate-300
     fadedOpacity: 0.12,
@@ -87,6 +90,7 @@ export const KG_CHROME: Record<ThemeMode, KgChromeTheme> = {
     labelSelected: "#0f172a", // slate-900
     nodeBorder: "#ffffff",
     selectedRing: "#0f172a",
+    searchHit: "#d97706", // amber-600 — pops on the light canvas
     edge: "#94a3b8", // slate-400 — softer than slate-600 on white
     edgeSelected: "#475569", // slate-600
     fadedOpacity: 0.1,

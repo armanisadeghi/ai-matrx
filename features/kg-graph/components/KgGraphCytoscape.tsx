@@ -1,238 +1,188 @@
 // features/kg-graph/components/KgGraphCytoscape.tsx
 //
-// The actual cytoscape render surface. Imports `cytoscape` / `react-cytoscapejs`
-// / `cytoscape-fcose` at module top, all of which touch `window`/DOM — so this
-// module is ONLY ever loaded through `next/dynamic({ ssr: false })` from
-// KgGraphCanvas. Never import it directly in a Server Component or page.
+// The cytoscape render surface — PRESENTATIONAL. It renders the graph container,
+// the minimap, and the on-canvas zoom controls, then wires the app's reactive
+// inputs (data / theme / colour + size encoding / layout / selection / search /
+// fit) to imperative `ops` through thin effects. All cytoscape lifecycle lives in
+// `useKgCytoscape`; all algorithms in `cytoscape/*`.
 //
-// Pure presentation: it receives already-fetched nodes/edges + a kind→visible
-// set + an onNodeClick callback. Layout = FCOSE (organic force-directed, stable
-// for KG sprawl). React Compiler is on, so no manual memo of handlers.
+// CLIENT-ONLY: imports cytoscape + extensions (which touch `window` at load), so
+// it is ONLY ever reached through `next/dynamic({ ssr:false })` in KgGraphCanvas.
+// Never import it directly from a Server Component or page.
 
 "use client";
 
-import { useEffect, useRef } from "react";
-import cytoscape from "cytoscape";
-import fcose, { type FcoseLayoutOptions } from "cytoscape-fcose";
-import CytoscapeComponent from "react-cytoscapejs";
+import { useEffect, useId, useRef } from "react";
+import { Maximize2, ZoomIn, ZoomOut } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 
 import type { GraphEdge, GraphNode } from "../types";
+import { kgChrome } from "../constants";
+import { buildStylesheet } from "../cytoscape/style";
+import { useKgCytoscape } from "../cytoscape/useKgCytoscape";
 import {
-  KG_NODE_MAX_SIZE,
-  KG_NODE_MIN_SIZE,
-  colorForKind,
-  kgChrome,
-  type KgChromeTheme,
-} from "../constants";
-
-// Register the FCOSE layout extension exactly once per module load.
-let _fcoseRegistered = false;
-function ensureFcose(): void {
-  if (_fcoseRegistered) return;
-  cytoscape.use(fcose);
-  _fcoseRegistered = true;
-}
+  applyTheme,
+  fitAll,
+  loadGraph,
+  runLayout,
+  selectNode,
+  applySearch,
+  zoomByFactor,
+} from "../cytoscape/ops";
+import { applyEncoding, type KgColorBy, type KgSizeBy } from "../cytoscape/analysis";
+import type { KgLayoutId } from "../cytoscape/layouts";
 
 export interface KgGraphCytoscapeProps {
   nodes: GraphNode[];
   edges: GraphEdge[];
-  /** Selected node id (highlighted), or null. */
+  /** Selected node id (mirrored onto cytoscape selection), or null. */
   selectedId: string | null;
   onNodeClick: (node: GraphNode) => void;
-  /** Bumping this triggers a fit-to-viewport (wired to the toolbar "Fit" btn). */
-  fitSignal: number;
+  /** Tapping the empty canvas clears the side-panel selection. */
+  onBackgroundClick: () => void;
+  layoutId: KgLayoutId;
+  colorBy: KgColorBy;
+  sizeBy: KgSizeBy;
+  /** Live search query — matches are accented, the rest fade. */
+  searchQuery: string;
+  /** Reports analysis results (e.g. detected community count) after each load. */
+  onAnalysis?: (result: { communityCount: number }) => void;
 }
 
-// Map a node's connectivity/mentions to a render size. Degree dominates today
-// (mentions are 0 until NER backfill), but mentions take over once populated.
-function nodeSize(n: GraphNode, degree: number): number {
-  const signal = Math.max(degree, n.mention_count);
-  // log scale so a degree-97 hub doesn't dwarf everything.
-  const scaled = Math.log2(signal + 1) / Math.log2(100);
-  const size = KG_NODE_MIN_SIZE + scaled * (KG_NODE_MAX_SIZE - KG_NODE_MIN_SIZE);
-  return Math.round(Math.min(Math.max(size, KG_NODE_MIN_SIZE), KG_NODE_MAX_SIZE));
-}
-
-// Build the full stylesheet for a given theme. Hoisted to module scope so the
-// exact same builder is used both for the initial mount AND for a live re-apply
-// on theme toggle (`cy.style().fromJson(...).update()`), which re-skins the graph
-// without re-running layout — node positions are preserved.
-//
-// @types/cytoscape models style values as `Type | MapperFunction` but NOT the
-// string-mapper syntax (`"data(...)"`), so per-element values are fed via typed
-// MapperFunctions — which ARE in the type — keeping each block assignable to
-// Css.Node / Css.Edge without coercion.
-function buildStylesheet(
-  chrome: KgChromeTheme,
-): cytoscape.StylesheetJsonBlock[] {
-  const nodeStyle: cytoscape.Css.Node = {
-    "background-color": (n: cytoscape.NodeSingular) => String(n.data("color")),
-    width: (n: cytoscape.NodeSingular) => Number(n.data("size")),
-    height: (n: cytoscape.NodeSingular) => Number(n.data("size")),
-    label: (n: cytoscape.NodeSingular) => String(n.data("label")),
-    "font-size": 9,
-    "font-weight": 500,
-    color: chrome.label,
-    // The halo: a contrasting outline traced around the glyphs so the label
-    // stays legible over a node, a dense edge mat, or the bare canvas — in
-    // either theme. This is the single biggest legibility win.
-    "text-outline-width": 2,
-    "text-outline-color": chrome.labelHalo,
-    "text-outline-opacity": 1,
-    "text-valign": "bottom",
-    "text-halign": "center",
-    "text-margin-y": 4,
-    "text-max-width": "120px",
-    "text-wrap": "ellipsis",
-    "min-zoomed-font-size": 8,
-    // A hair of border lifts the node off the canvas without a heavy ring.
-    "border-width": 1.5,
-    "border-color": chrome.nodeBorder,
-    "border-opacity": 0.55,
-  };
-  const nodeSelectedStyle: cytoscape.Css.Node = {
-    "border-width": 3,
-    "border-color": chrome.selectedRing,
-    "border-opacity": 1,
-    color: chrome.labelSelected,
-    "font-weight": "bold",
-    "z-index": 10,
-  };
-  const edgeStyle: cytoscape.Css.Edge = {
-    width: (e: cytoscape.EdgeSingular) => {
-      const w = Number(e.data("weight")) || 1;
-      return Math.min(Math.max(0.5 + (w / 10) * 2.5, 0.5), 3);
-    },
-    "line-color": chrome.edge,
-    "curve-style": "haystack",
-    "haystack-radius": 0,
-    opacity: 0.5,
-  };
-  const edgeSelectedStyle: cytoscape.Css.Edge = {
-    "line-color": chrome.edgeSelected,
-    opacity: 0.9,
-    "z-index": 9,
-  };
-  return [
-    { selector: "node", style: nodeStyle },
-    { selector: "node:selected", style: nodeSelectedStyle },
-    { selector: "edge", style: edgeStyle },
-    { selector: "edge:selected", style: edgeSelectedStyle },
-  ];
-}
+const CONTROL_BTN =
+  "flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card/80 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-accent hover:text-foreground";
 
 export default function KgGraphCytoscape({
   nodes,
   edges,
   selectedId,
   onNodeClick,
-  fitSignal,
+  onBackgroundClick,
+  layoutId,
+  colorBy,
+  sizeBy,
+  searchQuery,
+  onAnalysis,
 }: KgGraphCytoscapeProps) {
-  ensureFcose();
-  const cyRef = useRef<cytoscape.Core | null>(null);
-
-  // Cytoscape's stylesheet lives outside the Tailwind/React tree, so it can't
-  // read CSS vars — resolve the active theme here and feed raw values in. The
-  // selector returns "light" | "dark"; the same source ThemeSwitcher writes.
   const mode = useAppSelector((s) => s.theme.mode);
   const chrome = kgChrome(mode);
 
-  // Precompute degree per node id for sizing.
-  const degree: Record<string, number> = {};
-  for (const e of edges) {
-    degree[e.source] = (degree[e.source] ?? 0) + 1;
-    degree[e.target] = (degree[e.target] ?? 0) + 1;
-  }
+  // navigator wants a string selector; useId is unique but its colons aren't
+  // valid in a `#id` selector, so strip them.
+  const minimapId = `kg-mm-${useId().replace(/:/g, "")}`;
 
-  const elements = [
-    ...nodes.map((n) => ({
-      data: {
-        id: n.id,
-        label: n.name,
-        kind: n.kind,
-        color: colorForKind(n.kind),
-        size: nodeSize(n, degree[n.id] ?? 0),
-      },
-    })),
-    ...edges.map((e) => ({
-      data: {
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        weight: e.weight ?? 1,
-      },
-    })),
-  ];
+  // Latest encoding/layout for loadGraph (which runs from the data effect).
+  // Written in an effect (not during render) per the React-Compiler hooks rules.
+  const cfg = useRef({ colorBy, sizeBy, layoutId });
+  useEffect(() => {
+    cfg.current = { colorBy, sizeBy, layoutId };
+  });
 
-  const stylesheet = buildStylesheet(chrome);
-
-  // Wire the cy instance once it exists: node tap → callback, layout run.
-  const handleCy = (cy: cytoscape.Core) => {
-    if (cyRef.current === cy) return;
-    cyRef.current = cy;
-    cy.removeAllListeners();
-    cy.on("tap", "node", (evt) => {
-      const id = evt.target.id() as string;
+  const { containerRef, getCy } = useKgCytoscape({
+    minimapSelector: `#${minimapId}`,
+    initialStyle: buildStylesheet(chrome),
+    onNodeTap: (id) => {
       const found = nodes.find((n) => n.id === id);
       if (found) onNodeClick(found);
+    },
+    onBackgroundTap: onBackgroundClick,
+  });
+
+  // DATA → rebuild graph + recompute analysis + run current layout. Snap into
+  // place on the first load, animate subsequent reloads.
+  const firstData = useRef(true);
+  useEffect(() => {
+    const cy = getCy();
+    if (!cy) return;
+    const analysis = loadGraph(cy, nodes, edges, {
+      ...cfg.current,
+      animate: !firstData.current,
     });
-  };
+    firstData.current = false;
+    onAnalysis?.(analysis);  }, [nodes, edges]);
 
-  // Re-run layout whenever the element set changes.
+  // THEME → swap stylesheet in place (no re-layout).
   useEffect(() => {
-    const cy = cyRef.current;
+    const cy = getCy();
+    if (cy) applyTheme(cy, chrome);  }, [mode]);
+
+  // ENCODING → repoint colour/size (cheap; no layout). Idempotent on mount.
+  useEffect(() => {
+    const cy = getCy();
+    if (cy) applyEncoding(cy, colorBy, sizeBy);  }, [colorBy, sizeBy]);
+
+  // LAYOUT → re-run on switch (skip the mount run; the data effect already laid out).
+  const layoutMounted = useRef(false);
+  useEffect(() => {
+    const cy = getCy();
     if (!cy) return;
-    const fcoseOptions: FcoseLayoutOptions = {
-      name: "fcose",
-      animate: false,
-      fit: true,
-      padding: 30,
-      nodeRepulsion: 8000,
-      idealEdgeLength: 80,
-      quality: "default",
-      randomize: true,
-      // Reserve space for each node's label so labels don't pile on top of
-      // neighbouring nodes — the crowding the bare layout produced.
-      nodeDimensionsIncludeLabels: true,
-    };
-    const layout = cy.layout(fcoseOptions);
-    layout.run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes.length, edges.length]);
-
-  // Re-skin live when the theme flips. `fromJson(...).update()` swaps the
-  // stylesheet in place — no re-layout, so node positions are preserved.
-  useEffect(() => {
-    cyRef.current?.style().fromJson(buildStylesheet(kgChrome(mode))).update();
-  }, [mode]);
-
-  // Keep cytoscape's selection in sync with the side-panel selection.
-  useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy) return;
-    cy.elements().unselect();
-    if (selectedId) {
-      const el = cy.getElementById(selectedId);
-      if (el && el.length) el.select();
+    if (!layoutMounted.current) {
+      layoutMounted.current = true;
+      return;
     }
-  }, [selectedId]);
+    runLayout(cy, layoutId, true);  }, [layoutId]);
 
-  // Toolbar "Fit" button bumps fitSignal.
+  // SELECTION → mirror the side-panel selection onto cytoscape.
   useEffect(() => {
-    cyRef.current?.fit(undefined, 40);
-  }, [fitSignal]);
+    const cy = getCy();
+    if (cy) selectNode(cy, selectedId);  }, [selectedId]);
+
+  // SEARCH → accent matches, fade the rest.
+  useEffect(() => {
+    const cy = getCy();
+    if (cy) applySearch(cy, searchQuery);  }, [searchQuery]);
 
   return (
-    <CytoscapeComponent
-      elements={elements}
-      stylesheet={stylesheet}
-      cy={handleCy}
-      style={{ width: "100%", height: "100%" }}
-      minZoom={0.05}
-      maxZoom={3}
-      wheelSensitivity={0.2}
-    />
+    <div className="relative h-full w-full">
+      <div ref={containerRef} className="h-full w-full" />
+
+      {/* On-canvas zoom controls (bottom-left). Pan/zoom is native; these are chrome. */}
+      <div className="absolute bottom-3 left-3 flex flex-col gap-1">
+        <button
+          type="button"
+          className={CONTROL_BTN}
+          title="Zoom in"
+          aria-label="Zoom in"
+          onClick={() => {
+            const cy = getCy();
+            if (cy) zoomByFactor(cy, 1.3);
+          }}
+        >
+          <ZoomIn className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          className={CONTROL_BTN}
+          title="Zoom out"
+          aria-label="Zoom out"
+          onClick={() => {
+            const cy = getCy();
+            if (cy) zoomByFactor(cy, 0.7);
+          }}
+        >
+          <ZoomOut className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          className={CONTROL_BTN}
+          title="Fit to view"
+          aria-label="Fit to view"
+          onClick={() => {
+            const cy = getCy();
+            if (cy) fitAll(cy);
+          }}
+        >
+          <Maximize2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {/* Minimap container — navigator renders into this (styled in minimap.css).
+          We set the plugin's own class in JSX too: the plugin assigns
+          `className = "cytoscape-navigator"` imperatively, and without it in the
+          JSX React would reset className to "" on the next re-render and wipe the
+          minimap chrome. Matching values means React and the plugin never fight. */}
+      <div id={minimapId} className="cytoscape-navigator" />
+    </div>
   );
 }

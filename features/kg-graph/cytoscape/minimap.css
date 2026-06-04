@@ -1,0 +1,31 @@
+/* features/kg-graph/cytoscape/minimap.css
+ *
+ * cytoscape-navigator hard-codes its panel to a fixed 400x400 white box and
+ * OVERWRITES the container's className to `.cytoscape-navigator`, so every bit of
+ * minimap chrome must be expressed here. The `body` prefix lifts specificity above
+ * the plugin's own `.cytoscape-navigator` rule regardless of CSS import order.
+ * Colors use the app's HSL design tokens, which flip with `.dark` for free.
+ *
+ * Imported AFTER the plugin's stylesheet in register.ts. */
+
+body .cytoscape-navigator {
+  position: absolute;
+  width: 11rem;
+  height: 7rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  background: hsl(var(--card));
+  overflow: hidden;
+  z-index: 20;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+}
+
+/* The draggable viewport rectangle. */
+body .cytoscape-navigatorView {
+  background: hsl(var(--primary));
+  opacity: 0.22;
+  border: 1px solid hsl(var(--primary));
+  border-radius: 2px;
+}

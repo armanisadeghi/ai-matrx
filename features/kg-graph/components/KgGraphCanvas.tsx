@@ -1,14 +1,15 @@
 // features/kg-graph/components/KgGraphCanvas.tsx
 //
 // The single KG canvas surface — serves BOTH `/knowledge-graph` (mode="org")
-// and `/scopes/[scopeId]/graph` (mode="scope"). It owns the data fetch, the
-// toolbar (fit / kind filter / node count + truncated indicator) and the side
-// panel; the actual cytoscape render surface is loaded via
-// next/dynamic({ ssr: false }) because cytoscape touches `window`/DOM at import.
+// and `/scopes/[scopeId]/graph` (mode="scope"). It owns the data fetch and the
+// chrome around the graph: toolbar (search, layout, colour/size encoding, kind
+// filter, reload), legend, empty/error/loading states, and the side panel. The
+// actual cytoscape render surface is loaded via next/dynamic({ ssr:false })
+// because cytoscape + its extensions touch `window`/DOM at import.
 //
-// Local component state only (read-mostly: one fetch per view, no cross-surface
-// shared state) — matching the "no parallel slices for a single-fetch view"
-// guidance. Lucide for chrome icons; semantic color classes for chrome.
+// Local component state only (read-mostly: one fetch per view) — matching the
+// "no parallel slices for a single-fetch view" guidance. Lucide for chrome icons;
+// semantic colour classes throughout.
 
 "use client";
 
@@ -16,9 +17,12 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   AlertTriangle,
-  Maximize2,
+  Circle,
   Network,
+  Palette,
   RefreshCw,
+  Search,
+  Spline,
 } from "lucide-react";
 
 import {
@@ -35,9 +39,12 @@ import { cn } from "@/utils/cn";
 import { fetchKgGraph } from "../service/kgGraphService";
 import { KG_DEFAULT_DEPTH, KG_DEFAULT_LIMIT } from "../constants";
 import type { GraphNode, GraphPayload, KgGraphMode } from "../types";
+import type { KgColorBy, KgSizeBy } from "../cytoscape/analysis";
+import { KG_LAYOUTS, type KgLayoutId } from "../cytoscape/layouts";
 import { KgGraphSidePanel } from "./KgGraphSidePanel";
+import { KgGraphLegend } from "./KgGraphLegend";
 
-// cytoscape + react-cytoscapejs touch window at import → must be client-only.
+// cytoscape + extensions touch window at import → must be client-only.
 const KgGraphCytoscape = dynamic(() => import("./KgGraphCytoscape"), {
   ssr: false,
   loading: () => (
@@ -55,6 +62,8 @@ export interface KgGraphCanvasProps {
 
 const ALL_KINDS = "__all__";
 
+const SELECT_TRIGGER = "h-8 w-[150px] text-xs";
+
 export function KgGraphCanvas({
   mode,
   scopeId,
@@ -68,8 +77,14 @@ export function KgGraphCanvas({
   const [error, setError] = useState<string | null>(null);
   const [kindFilter, setKindFilter] = useState<string>(ALL_KINDS);
   const [selected, setSelected] = useState<GraphNode | null>(null);
-  const [fitSignal, setFitSignal] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
+
+  // Visualization controls.
+  const [layoutId, setLayoutId] = useState<KgLayoutId>("fcose");
+  const [colorBy, setColorBy] = useState<KgColorBy>("kind");
+  const [sizeBy, setSizeBy] = useState<KgSizeBy>("connections");
+  const [search, setSearch] = useState("");
+  const [communityCount, setCommunityCount] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -118,8 +133,15 @@ export function KgGraphCanvas({
     return { nodes, edges };
   }, [payload, kindFilter]);
 
+  // Kinds actually present in the current view (for the legend key).
+  const legendKinds = useMemo(
+    () => Array.from(new Set(filtered.nodes.map((n) => n.kind))).sort(),
+    [filtered.nodes],
+  );
+
   const nodeCount = filtered.nodes.length;
   const edgeCount = filtered.edges.length;
+  const showGraph = status === "ready" && nodeCount > 0;
 
   return (
     <div className="flex h-full w-full flex-col">
@@ -130,28 +152,109 @@ export function KgGraphCanvas({
           {mode === "org" ? "Knowledge graph" : "Scope neighborhood"}
         </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          {status === "ready" ? (
-            <span className="text-xs text-muted-foreground">
-              {nodeCount} node{nodeCount === 1 ? "" : "s"} · {edgeCount} edge
-              {edgeCount === 1 ? "" : "s"}
-              {payload?.truncated ? (
-                <span className="ml-1 inline-flex items-center gap-1 text-amber-500">
-                  <AlertTriangle className="h-3 w-3" /> capped
-                </span>
-              ) : null}
-            </span>
-          ) : null}
+        {status === "ready" ? (
+          <span className="text-xs text-muted-foreground">
+            {nodeCount} node{nodeCount === 1 ? "" : "s"} · {edgeCount} edge
+            {edgeCount === 1 ? "" : "s"}
+            {payload?.truncated ? (
+              <span className="ml-1 inline-flex items-center gap-1 text-amber-500">
+                <AlertTriangle className="h-3 w-3" /> capped
+              </span>
+            ) : null}
+          </span>
+        ) : null}
 
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {/* Search */}
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search nodes…"
+              disabled={!showGraph}
+              className="h-8 w-44 rounded-md border border-border bg-background pl-7 pr-2 text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            />
+          </div>
+
+          {/* Layout switcher */}
+          <Select
+            value={layoutId}
+            onValueChange={(v) => setLayoutId(v as KgLayoutId)}
+            disabled={!showGraph}
+          >
+            <SelectTrigger className={cn(SELECT_TRIGGER, "w-[160px]")}>
+              <span className="flex items-center gap-1.5">
+                <Spline className="h-3.5 w-3.5 text-muted-foreground" />
+                <SelectValue />
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              {KG_LAYOUTS.map((l) => (
+                <SelectItem key={l.id} value={l.id} className="text-xs">
+                  {l.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Colour encoding */}
+          <Select
+            value={colorBy}
+            onValueChange={(v) => setColorBy(v as KgColorBy)}
+            disabled={!showGraph}
+          >
+            <SelectTrigger className={cn(SELECT_TRIGGER, "w-[140px]")}>
+              <span className="flex items-center gap-1.5">
+                <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+                <SelectValue />
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="kind" className="text-xs">
+                Colour: kind
+              </SelectItem>
+              <SelectItem value="community" className="text-xs">
+                Colour: community
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Size encoding */}
+          <Select
+            value={sizeBy}
+            onValueChange={(v) => setSizeBy(v as KgSizeBy)}
+            disabled={!showGraph}
+          >
+            <SelectTrigger className={cn(SELECT_TRIGGER, "w-[150px]")}>
+              <span className="flex items-center gap-1.5">
+                <Circle className="h-3.5 w-3.5 text-muted-foreground" />
+                <SelectValue />
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="connections" className="text-xs">
+                Size: connections
+              </SelectItem>
+              <SelectItem value="importance" className="text-xs">
+                Size: importance
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Kind filter */}
           {kinds.length > 1 ? (
             <Select value={kindFilter} onValueChange={setKindFilter}>
-              <SelectTrigger className="h-8 w-[160px] text-xs">
+              <SelectTrigger className={SELECT_TRIGGER}>
                 <SelectValue placeholder="All kinds" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_KINDS}>All kinds</SelectItem>
+                <SelectItem value={ALL_KINDS} className="text-xs">
+                  All kinds
+                </SelectItem>
                 {kinds.map((k) => (
-                  <SelectItem key={k} value={k}>
+                  <SelectItem key={k} value={k} className="text-xs">
                     {k}
                   </SelectItem>
                 ))}
@@ -159,13 +262,6 @@ export function KgGraphCanvas({
             </Select>
           ) : null}
 
-          <button
-            onClick={() => setFitSignal((n) => n + 1)}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-            title="Fit graph to view"
-          >
-            <Maximize2 className="h-3.5 w-3.5" /> Fit
-          </button>
           <button
             onClick={() => setReloadKey((n) => n + 1)}
             className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -217,13 +313,25 @@ export function KgGraphCanvas({
               </div>
             </div>
           ) : (
-            <KgGraphCytoscape
-              nodes={filtered.nodes}
-              edges={filtered.edges}
-              selectedId={selected?.id ?? null}
-              onNodeClick={setSelected}
-              fitSignal={fitSignal}
-            />
+            <>
+              <KgGraphCytoscape
+                nodes={filtered.nodes}
+                edges={filtered.edges}
+                selectedId={selected?.id ?? null}
+                onNodeClick={setSelected}
+                onBackgroundClick={() => setSelected(null)}
+                layoutId={layoutId}
+                colorBy={colorBy}
+                sizeBy={sizeBy}
+                searchQuery={search}
+                onAnalysis={(a) => setCommunityCount(a.communityCount)}
+              />
+              <KgGraphLegend
+                colorBy={colorBy}
+                kinds={legendKinds}
+                communityCount={communityCount}
+              />
+            </>
           )}
         </div>
 

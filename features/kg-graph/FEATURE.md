@@ -31,16 +31,41 @@ NER entities once backfill runs).
 
 **Components**
 - `KgGraphCanvas` (`components/KgGraphCanvas.tsx`) — the single surface for both
-  modes. Owns the fetch, toolbar (fit / kind-filter / node-count + truncated
-  indicator), empty/error/loading states, and the side panel. Loads the
-  cytoscape render surface via `next/dynamic({ ssr: false })`.
-- `KgGraphCytoscape` (`components/KgGraphCytoscape.tsx`) — the actual
-  `<CytoscapeComponent>` render surface. CLIENT-ONLY (imports `cytoscape` /
-  `react-cytoscapejs` / `cytoscape-fcose`, which touch `window` at import). Never
-  import directly — only `KgGraphCanvas` loads it dynamically.
+  modes. Owns the fetch and the chrome: toolbar (search / layout switcher /
+  colour + size encoding / kind-filter / node-count + truncated indicator),
+  legend, empty/error/loading states, and the side panel. Loads the cytoscape
+  render surface via `next/dynamic({ ssr: false })`.
+- `KgGraphCytoscape` (`components/KgGraphCytoscape.tsx`) — PRESENTATIONAL render
+  surface: renders the graph container + minimap + on-canvas zoom controls, then
+  wires reactive inputs (data / theme / encoding / layout / selection / search) to
+  imperative `cytoscape/ops` through thin effects. CLIENT-ONLY (imports cytoscape
+  + extensions, which touch `window` at import). Never import directly — only
+  `KgGraphCanvas` loads it dynamically.
+- `KgGraphLegend` (`components/KgGraphLegend.tsx`) — overlay key for the active
+  colour encoding (kind swatches, or detected-community count).
 - `KgGraphSidePanel` (`components/KgGraphSidePanel.tsx`) — clicked-entity drill
   down: stats + source mentions. Reuses `citationHrefFor()` from
   `features/rag/api/search.ts` (not redeclared) to deep-link each mention.
+
+**Cytoscape engine** (`cytoscape/` — direct integration, no React wrapper)
+- `useKgCytoscape.ts` — instance LIFECYCLE only: create once, register extensions,
+  init layout-utilities + minimap, bind events once (latest-callback refs), observe
+  resize, `cy.destroy()` on unmount (StrictMode/HMR-safe). Returns `{ containerRef,
+  getCy }`.
+- `ops.ts` — imperative operations: `loadGraph` (swap elements → analyse → encode →
+  layout), `applyTheme` (live stylesheet swap, no re-layout), `runLayout`,
+  `focusNeighborhood`/`clearFocus`, `applySearch`, `selectNode`, animated
+  `fitAll`/`fitTo`/`zoomByFactor`.
+- `analysis.ts` — `buildElements`; `annotateGraph` (PageRank importance + Markov
+  communities, cached into element data); `applyEncoding` (point colour/size at the
+  chosen dimension). All algorithms ship in cytoscape core 3.x.
+- `style.ts` — theme-aware stylesheet (`buildStylesheet`) + interaction-class names.
+- `layouts.ts` — layout presets (`fcose` default, `cola` live, `concentric` by
+  importance, `grid`) + `KG_LAYOUTS` switcher metadata.
+- `register.ts` — the one place `cytoscape.use(...)` runs (globalThis-guarded);
+  imports the navigator CSS + `minimap.css` override.
+- `extensions.d.ts` / `minimap.css` — ambient types for the untyped extensions
+  (cola, layout-utilities) and the docked/themed minimap chrome.
 
 **Services**
 - `service/kgGraphService.ts` — typed client over the aidream `/kg` router via
@@ -97,12 +122,27 @@ NER entities once backfill runs).
 - `KgGraphCytoscape` is **client-only** — it MUST stay behind
   `next/dynamic({ ssr: false })`. cytoscape touches `window`/DOM at import; a
   static import in a server-rendered page breaks the build.
+- **Direct integration, no React wrapper.** `react-cytoscapejs` was dropped (it's
+  unmaintained, uses React-15-era `findDOMNode` removed in React 19, and offers no
+  extension API). The instance is owned by `useKgCytoscape` via `useRef` +
+  `useEffect`; every later change is imperative through `ops` against `getCy()`.
+- **`packComponents` needs `cytoscape-layout-utilities`.** fcose silently skips
+  component packing unless the extension is registered AND `cy.layoutUtilities(...)`
+  was called on the instance. Without it, disconnected clusters scatter across empty
+  canvas — the original "flung-apart" bug. The hook does that init.
+- **Extensions register exactly once** via `register.ts` (globalThis-guarded so
+  Turbopack HMR / StrictMode don't double-register and throw).
 - **Per-user visibility is enforced server-side**, two layers: entity nodes are
   scoped to NULL-org + member orgs; mention snippets are scoped to chunks the
   caller owns. The FE never assumes it can see everything — it renders whatever
   the backend returns and shows the "capped" indicator.
-- Color/size styling lives in `constants.ts` as raw hex (cytoscape can't read
-  Tailwind classes). Chrome around the canvas uses semantic classes + Lucide.
+- Per-kind hues are raw hex in `constants.ts` (read fine on either theme); the
+  theme-dependent chrome (label/halo/edge/selection) is per-`ThemeMode` in
+  `KG_CHROME` and swapped live with `cy.style().fromJson(...).update()` (no
+  re-layout). cytoscape can't read Tailwind classes, so all values are literals.
+- `cytoscape-navigator` overwrites the minimap container's className → its chrome
+  is styled via `cytoscape/minimap.css` (a `body .cytoscape-navigator` override
+  using HSL design tokens, so it themes for free).
 - No emojis. Lucide icons only for chrome.
 
 ---
@@ -123,6 +163,16 @@ NER entities once backfill runs).
 
 ## Change log
 
+- 2026-06-03 — Pro rebuild of the render surface. Dropped `react-cytoscapejs`
+  (unmaintained / React-19-incompatible) for a direct `useRef`+`useEffect`
+  integration (`cytoscape/` engine: `useKgCytoscape`, `ops`, `analysis`, `style`,
+  `layouts`, `register`). Added: `cytoscape-layout-utilities` (fixes flung-apart
+  disconnected clusters via fcose `packComponents`), `cytoscape-navigator` minimap,
+  `cytoscape-cola` live layout. New features — layout switcher (force / live /
+  by-importance / grid), colour-by kind **or** detected community (Markov
+  clustering), size-by connections **or** importance (PageRank), hover neighbour
+  highlight, box-select + native group-drag, node search, animated zoom/fit
+  controls, legend. Rich theme-aware stylesheet with focus/faded/selected states.
 - 2026-06-03 — Theme-aware canvas chrome. Per-`ThemeMode` label/halo/edge/
   selection palette (`KG_CHROME` + `kgChrome()` in `constants.ts`); `text-outline`
   label halo so labels stay legible over nodes, edge mats, or the bare canvas in
