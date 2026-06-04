@@ -90,9 +90,10 @@ Buildable against today's data (degrades gracefully where server work is pending
 - **A2. Evidence index view.** A ranked, kind-grouped, searchable list of
   entities with inline drill-down — an alternative primary tab to the graph.
 - **A3. De-noise the default.** Edges **faded until a node is focused** (already
-  built — invert the default); hide low-value kinds (phone/address/fax/url) by
-  default behind a "show noise" toggle; rank by `mentions × confidence`,
-  de-duplicated, **not** raw count.
+  built — invert the default); hide low-value kinds (phone/email/url/address) by
+  default behind a "show noise" toggle; de-duplicate occurrences. (Note: ranking
+  must **not** use confidence — it's an undecided trust placeholder; see
+  `docs/knowledge/04_CURRENT_STATE_AND_PATH.md §6`.)
 - **A4. Curation controls.** Per-node actions: hide, pin/star (importance),
   merge-into, edit label/kind, add entity, disassociate mention. Optimistic UI
   over the curation API (B3). Needs data model D + API B3.

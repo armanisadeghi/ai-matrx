@@ -163,6 +163,18 @@ NER entities once backfill runs).
 
 ## Change log
 
+- 2026-06-04 — Phase 1: de-noise + evidence drill-down (see
+  `docs/PRODUCT_DIRECTION.md` + `docs/knowledge/04_CURRENT_STATE_AND_PATH.md`).
+  Co-occurrence edges recede to a faint baseline (they're noise until typed); the
+  low-value scaffolding kinds (phone/email/url/address) are hidden by default with
+  a "Noise hidden (N)" toggle. The side panel is rebuilt as an **Evidence panel**:
+  dedupes inflated mentions by `(chunk_id, span_start)`, groups passages by source,
+  highlights the entity in each passage, supports copy, forward-wires a `?find=`
+  note anchor. **Fixed a real bug surfaced by verification:** the drill-down panel
+  rendered off-screen (canvas flex item lacked `min-w-0`, so a fixed-width
+  cytoscape `<canvas>` blocked it from shrinking) — the panel was never visible.
+  Ranking deliberately does NOT use confidence (undecided trust placeholder).
+  Verified live against the legal corpus.
 - 2026-06-03 — Performance: fast first paint, never load the whole graph.
   Toolbar **Detail** budget (Overview 75 / Standard 150 / Detailed 350 / Maximum
   1000) — fetch only the top-N most-connected nodes; "top N — raise Detail" when

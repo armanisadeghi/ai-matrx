@@ -44,6 +44,22 @@ export function colorForKind(kind: string): string {
   return KG_NODE_COLORS[kind] ?? KG_NODE_FALLBACK_COLOR;
 }
 
+// Entity kinds that are almost always document scaffolding — contact details and
+// letterhead, not substance. Hidden by DEFAULT in the canvas (the legal-doc test
+// drowned the signal in phones/addresses/emails); toggled back via "Show noise".
+// Purely a display filter — never deletes data. (Real importance/noise scoring is
+// a server/NER job — see docs/PRODUCT_DIRECTION.md §C4.)
+export const KG_NOISE_KINDS = new Set<string>([
+  "phone",
+  "email",
+  "url",
+  "address",
+]);
+
+export function isNoiseKind(kind: string): boolean {
+  return KG_NOISE_KINDS.has(kind);
+}
+
 // ── Theme-aware chrome ──────────────────────────────────────────────────────
 // The per-kind node hues above read fine on either background, but the *chrome*
 // (label text, the halo behind it, edges, selection rings) must flip with the

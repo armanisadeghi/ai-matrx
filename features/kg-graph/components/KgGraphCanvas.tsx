@@ -18,6 +18,7 @@ import dynamic from "next/dynamic";
 import {
   AlertTriangle,
   Circle,
+  EyeOff,
   Gauge,
   Network,
   Palette,
@@ -42,10 +43,11 @@ import {
   KG_DEFAULT_DEPTH,
   KG_DEFAULT_DETAIL,
   KG_DETAIL_LEVELS,
+  isNoiseKind,
   kgDetailLimit,
   type KgDetailId,
 } from "../constants";
-import type { GraphNode, GraphPayload, KgGraphMode } from "../types";
+import type { GraphEdge, GraphNode, GraphPayload, KgGraphMode } from "../types";
 import type { KgColorBy, KgSizeBy } from "../cytoscape/analysis";
 import { KG_LAYOUTS, type KgLayoutId } from "../cytoscape/layouts";
 import { KgGraphSidePanel } from "./KgGraphSidePanel";
@@ -105,6 +107,9 @@ export function KgGraphCanvas({
   const [sizeBy, setSizeBy] = useState<KgSizeBy>("connections");
   const [search, setSearch] = useState("");
   const [communityCount, setCommunityCount] = useState(0);
+  // Hide low-value scaffolding kinds (phone/email/url/address) by default so the
+  // signal isn't drowned in document noise — toggleable.
+  const [hideNoise, setHideNoise] = useState(true);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -140,20 +145,31 @@ export function KgGraphCanvas({
     return Array.from(new Set(payload.nodes.map((n) => n.kind))).sort();
   }, [payload]);
 
-  // Client-side kind filtering (the dropdown). When a kind is selected, keep
-  // only its nodes and the edges whose endpoints both survive.
+  // How many nodes the noise filter is currently suppressing (for the toggle label).
+  const noiseCount = useMemo(
+    () => (payload ? payload.nodes.filter((n) => isNoiseKind(n.kind)).length : 0),
+    [payload],
+  );
+
+  // Client-side narrowing: an explicit kind filter wins; otherwise drop noise
+  // kinds when hideNoise is on. Edges survive only if both endpoints survive.
   const filtered = useMemo(() => {
-    if (!payload) return { nodes: [] as GraphNode[], edges: payload?.edges ?? [] };
-    if (kindFilter === ALL_KINDS) {
+    if (!payload) return { nodes: [] as GraphNode[], edges: [] as GraphEdge[] };
+    let nodes = payload.nodes;
+    if (kindFilter !== ALL_KINDS) {
+      nodes = nodes.filter((n) => n.kind === kindFilter);
+    } else if (hideNoise) {
+      nodes = nodes.filter((n) => !isNoiseKind(n.kind));
+    }
+    if (nodes === payload.nodes) {
       return { nodes: payload.nodes, edges: payload.edges };
     }
-    const nodes = payload.nodes.filter((n) => n.kind === kindFilter);
     const keep = new Set(nodes.map((n) => n.id));
     const edges = payload.edges.filter(
       (e) => keep.has(e.source) && keep.has(e.target),
     );
     return { nodes, edges };
-  }, [payload, kindFilter]);
+  }, [payload, kindFilter, hideNoise]);
 
   // Kinds actually present in the current view (for the legend key).
   const legendKinds = useMemo(
@@ -286,6 +302,30 @@ export function KgGraphCanvas({
             </SelectContent>
           </Select>
 
+          {/* Noise filter — hide phone/email/url/address scaffolding (default on) */}
+          {noiseCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => setHideNoise((v) => !v)}
+              disabled={!showGraph}
+              aria-pressed={hideNoise}
+              title={
+                hideNoise
+                  ? `Hiding ${noiseCount} low-value node${noiseCount === 1 ? "" : "s"} (phone/email/url/address). Click to show them.`
+                  : "Hide low-value scaffolding kinds (phone/email/url/address)."
+              }
+              className={cn(
+                "inline-flex h-8 shrink-0 items-center gap-1 rounded-md border px-2 text-xs disabled:opacity-50",
+                hideNoise
+                  ? "border-border bg-accent text-foreground"
+                  : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+            >
+              <EyeOff className="h-3.5 w-3.5" />
+              {hideNoise ? `Noise hidden (${noiseCount})` : "Hide noise"}
+            </button>
+          ) : null}
+
           {/* Kind filter */}
           {kinds.length > 1 ? (
             <Select value={kindFilter} onValueChange={setKindFilter}>
@@ -315,9 +355,11 @@ export function KgGraphCanvas({
         </div>
       </div>
 
-      {/* Body: canvas + side panel */}
-      <div className="relative flex min-h-0 flex-1">
-        <div className="relative min-h-0 flex-1 bg-textured">
+      {/* Body: canvas + side panel. The canvas needs `min-w-0` or its fixed-width
+          cytoscape <canvas> keeps the flex item from shrinking, pushing the
+          side panel off-screen to the right (it renders but is never visible). */}
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
+        <div className="relative min-h-0 min-w-0 flex-1 bg-textured">
           {status === "loading" ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -347,12 +389,41 @@ export function KgGraphCanvas({
             <div className="absolute inset-0 flex items-center justify-center p-6">
               <div className="max-w-sm text-center">
                 <Network className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-                <div className="text-sm font-medium">No graph data yet</div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {mode === "scope"
-                    ? "This scope has no associated entities yet. Tag sources and run ingestion to populate its neighborhood."
-                    : "No entities found for your organization yet. Run ingestion on your content to build the knowledge graph."}
-                </p>
+                {payload && payload.nodes.length > 0 ? (
+                  // Data loaded, but the active filters hid all of it.
+                  <>
+                    <div className="text-sm font-medium">
+                      Everything is filtered out
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      All {payload.nodes.length} loaded node
+                      {payload.nodes.length === 1 ? "" : "s"} are hidden by your
+                      current filters
+                      {hideNoise && noiseCount > 0
+                        ? " (low-value noise kinds are hidden)"
+                        : ""}
+                      .
+                    </p>
+                    <button
+                      onClick={() => {
+                        setHideNoise(false);
+                        setKindFilter(ALL_KINDS);
+                      }}
+                      className="mt-2 text-xs text-primary hover:underline"
+                    >
+                      Show all
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-sm font-medium">No graph data yet</div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {mode === "scope"
+                        ? "This scope has no associated entities yet. Tag sources and run ingestion to populate its neighborhood."
+                        : "No entities found for your organization yet. Run ingestion on your content to build the knowledge graph."}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           ) : (

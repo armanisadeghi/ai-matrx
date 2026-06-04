@@ -107,6 +107,11 @@ export function buildStylesheet(
     "text-opacity": 0,
   };
 
+  // Edges recede by DEFAULT. Today every edge is co-occurrence ("appeared near
+  // each other") — noise, not a real relationship — and dense corpora turn into
+  // an unreadable hairball. So edges sit at a faint baseline and the SIGNAL is the
+  // nodes; a node's actual connections only light up when it's focused/hovered
+  // (the `highlight` class below). Raise this only once edges are typed/meaningful.
   const edge: cytoscape.Css.Edge = {
     width: (e: cytoscape.EdgeSingular) => {
       const w = Number(e.data("weight")) || 1;
@@ -115,7 +120,7 @@ export function buildStylesheet(
     "line-color": chrome.edge,
     "curve-style": "haystack",
     "haystack-radius": 0,
-    opacity: 0.5,
+    opacity: 0.12,
     "transition-property": "opacity line-color",
     "transition-duration": 0.15,
   };
