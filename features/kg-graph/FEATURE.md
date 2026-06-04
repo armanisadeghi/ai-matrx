@@ -123,6 +123,12 @@ NER entities once backfill runs).
 
 ## Change log
 
+- 2026-06-03 — Theme-aware canvas chrome. Per-`ThemeMode` label/halo/edge/
+  selection palette (`KG_CHROME` + `kgChrome()` in `constants.ts`); `text-outline`
+  label halo so labels stay legible over nodes, edge mats, or the bare canvas in
+  either theme; live re-skin on theme toggle via `cy.style().fromJson(...).update()`
+  (no re-layout, positions preserved); `nodeDimensionsIncludeLabels` to cut label
+  overlap. Fixes washed-out/illegible labels in light mode.
 - 2026-06-02 — Phase G: initial cytoscape KG canvas (org-wide + per-scope),
   side-panel drill-down, `/kg` backend router, nav links from ScopesHub +
   ScopeDetailView.

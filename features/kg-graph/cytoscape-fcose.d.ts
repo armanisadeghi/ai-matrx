@@ -10,14 +10,37 @@ declare module "cytoscape-fcose" {
   const fcose: cytoscape.Ext;
   export default fcose;
 
+  // Option shape verified against the cytoscape-fcose README (v2.2.0). Force
+  // params (`nodeRepulsion` / `idealEdgeLength` / `edgeElasticity`) accept either
+  // a constant or a per-element function — fcose coerces a bare number, which is
+  // how this codebase feeds them.
   export interface FcoseLayoutOptions extends cytoscape.BaseLayoutOptions {
     name: "fcose";
     quality?: "draft" | "default" | "proof";
     randomize?: boolean;
     animate?: boolean;
+    animationDuration?: number;
     fit?: boolean;
     padding?: number;
-    nodeRepulsion?: number;
-    idealEdgeLength?: number;
+    /** Reserve label-sized boxes so labels don't overlap neighbours (honored at quality:"proof"). */
+    nodeDimensionsIncludeLabels?: boolean;
+    uniformNodeDimensions?: boolean;
+    /** Pack disconnected components tightly. No-op unless cytoscape-layout-utilities is registered + initialized. */
+    packComponents?: boolean;
+    nodeSeparation?: number;
+    nodeRepulsion?: number | ((node: cytoscape.NodeSingular) => number);
+    idealEdgeLength?: number | ((edge: cytoscape.EdgeSingular) => number);
+    edgeElasticity?: number | ((edge: cytoscape.EdgeSingular) => number);
+    nestingFactor?: number;
+    numIter?: number;
+    tile?: boolean;
+    tilingPaddingVertical?: number;
+    tilingPaddingHorizontal?: number;
+    gravity?: number;
+    gravityRange?: number;
+    gravityCompound?: number;
+    gravityRangeCompound?: number;
+    /** Cooling factor when refining existing positions (randomize:false). Lower = gentler nudge. */
+    initialEnergyOnIncremental?: number;
   }
 }
