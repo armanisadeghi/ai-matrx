@@ -1,5 +1,7 @@
 # Scopes — What They Are
 
+> Full detail for the scope model. Summarized in [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md) §4 and [`03_KNOWLEDGE_MODULE.md`](03_KNOWLEDGE_MODULE.md) §5. Companion: the entity catalogue → [`scopeable_entities.md`](scopeable_entities.md).
+
 **The problem:** We can't hardcode dimensions like Salesforce does ("Client", "Order", "Product"). Not every org has those. A law firm has clients, cases, and practice areas; a marketing team has clients and departments; a parent has kids. So the user defines their own dimensions.
 
 **The model:** A user defines a **scope type** (a dimension), creates **scopes** (instances of it), defines **items** (fields) on the type, and fills in **values** per scope.
