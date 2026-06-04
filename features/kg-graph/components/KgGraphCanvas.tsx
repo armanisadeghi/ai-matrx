@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   AlertTriangle,
@@ -63,6 +63,18 @@ export interface KgGraphCanvasProps {
 const ALL_KINDS = "__all__";
 
 const SELECT_TRIGGER = "h-8 w-[150px] text-xs";
+
+// The shadcn SelectTrigger applies `[&>span]:line-clamp-1`, which forces
+// `display:-webkit-box; -webkit-box-orient:vertical` onto the trigger's direct
+// child span — stacking a leading icon vertically on top of the label. That
+// `[&>span]` selector outranks a utility class, so we override the display with
+// an inline style (inline always wins) to keep icon + label on one centered row.
+const KG_TRIGGER_INNER: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "0.375rem",
+  minWidth: 0,
+};
 
 export function KgGraphCanvas({
   mode,
@@ -185,8 +197,8 @@ export function KgGraphCanvas({
             disabled={!showGraph}
           >
             <SelectTrigger className={cn(SELECT_TRIGGER, "w-[160px]")}>
-              <span className="flex items-center gap-1.5">
-                <Spline className="h-3.5 w-3.5 text-muted-foreground" />
+              <span style={KG_TRIGGER_INNER}>
+                <Spline className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <SelectValue />
               </span>
             </SelectTrigger>
@@ -205,9 +217,9 @@ export function KgGraphCanvas({
             onValueChange={(v) => setColorBy(v as KgColorBy)}
             disabled={!showGraph}
           >
-            <SelectTrigger className={cn(SELECT_TRIGGER, "w-[140px]")}>
-              <span className="flex items-center gap-1.5">
-                <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+            <SelectTrigger className={cn(SELECT_TRIGGER, "w-[165px]")}>
+              <span style={KG_TRIGGER_INNER}>
+                <Palette className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <SelectValue />
               </span>
             </SelectTrigger>
@@ -227,9 +239,9 @@ export function KgGraphCanvas({
             onValueChange={(v) => setSizeBy(v as KgSizeBy)}
             disabled={!showGraph}
           >
-            <SelectTrigger className={cn(SELECT_TRIGGER, "w-[150px]")}>
-              <span className="flex items-center gap-1.5">
-                <Circle className="h-3.5 w-3.5 text-muted-foreground" />
+            <SelectTrigger className={cn(SELECT_TRIGGER, "w-[165px]")}>
+              <span style={KG_TRIGGER_INNER}>
+                <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <SelectValue />
               </span>
             </SelectTrigger>

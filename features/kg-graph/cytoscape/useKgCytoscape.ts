@@ -22,7 +22,10 @@ export interface UseKgCytoscapeArgs {
   minimapSelector: string;
   /** Stylesheet to create the instance with (read once, at mount). */
   initialStyle: cytoscape.StylesheetJson;
-  /** Tap a node → open its side panel. */
+  /** Currently pinned node id (the side-panel selection), or null. Hover preview
+   *  is suppressed while something is pinned so the pin doesn't flicker. */
+  selectedId: string | null;
+  /** Tap a node → open its side panel (which pins the focus). */
   onNodeTap: (id: string) => void;
   /** Tap the empty canvas → clear selection. */
   onBackgroundTap: () => void;
@@ -65,7 +68,8 @@ export function useKgCytoscape(args: UseKgCytoscapeArgs): KgController {
       maxZoom: 3,
       wheelSensitivity: 0.3,
       boxSelectionEnabled: true, // shift-drag rubber-band selects a region…
-      selectionType: "single", // …while a tap selects one node (clean panel sync).
+      selectionType: "additive", // …and Ctrl/Cmd-click adds individual nodes.
+      // A plain tap is normalized back to single-select in the tap handler.
       // Either way, dragging any selected node moves the whole selected set
       // (native group-drag) — the "move a section all at once" behaviour.
       pixelRatio: "auto",
@@ -92,7 +96,13 @@ export function useKgCytoscape(args: UseKgCytoscapeArgs): KgController {
     }
 
     // Events bound once; handlers read cb.current for the latest props.
-    cy.on("tap", "node", (evt) => cb.current.onNodeTap(evt.target.id()));
+    // Ctrl/Cmd-click leaves the additive selection alone (multi-select for
+    // group-drag); a plain tap opens the side panel, which pins the focus.
+    cy.on("tap", "node", (evt) => {
+      const oe = evt.originalEvent as MouseEvent | undefined;
+      if (oe && (oe.ctrlKey || oe.metaKey)) return;
+      cb.current.onNodeTap(evt.target.id());
+    });
     cy.on("tap", (evt) => {
       if (evt.target === cy) cb.current.onBackgroundTap();
     });
@@ -100,10 +110,20 @@ export function useKgCytoscape(args: UseKgCytoscapeArgs): KgController {
       fitTo(cy, evt.target.closedNeighborhood()),
     );
     cy.on("dbltap", (evt) => {
-      if (evt.target === cy) cy.animate({ fit: { eles: cy.elements(), padding: 40 } }, { duration: 400 });
+      if (evt.target === cy)
+        cy.animate({ fit: { eles: cy.elements(), padding: 40 } }, { duration: 400 });
     });
-    cy.on("mouseover", "node", (evt) => focusNeighborhood(cy, evt.target.id()));
-    cy.on("mouseout", "node", () => clearFocus(cy));
+    // Hover previews a node's neighbourhood — but NOT while a node is pinned
+    // (tracked by selectedId), so a click holds its focus instead of the hover
+    // taking over.
+    cy.on("mouseover", "node", (evt) => {
+      if (cb.current.selectedId) return;
+      focusNeighborhood(cy, evt.target.id());
+    });
+    cy.on("mouseout", "node", () => {
+      if (cb.current.selectedId) return;
+      clearFocus(cy);
+    });
 
     // Keep the graph sized to its container (panels opening, window resize).
     const ro = new ResizeObserver(() => cy.resize());

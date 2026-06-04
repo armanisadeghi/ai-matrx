@@ -23,10 +23,11 @@ import { buildStylesheet } from "../cytoscape/style";
 import { useKgCytoscape } from "../cytoscape/useKgCytoscape";
 import {
   applyTheme,
+  clearFocus,
   fitAll,
+  focusNeighborhood,
   loadGraph,
   runLayout,
-  selectNode,
   applySearch,
   zoomByFactor,
 } from "../cytoscape/ops";
@@ -82,6 +83,7 @@ export default function KgGraphCytoscape({
   const { containerRef, getCy } = useKgCytoscape({
     minimapSelector: `#${minimapId}`,
     initialStyle: buildStylesheet(chrome),
+    selectedId,
     onNodeTap: (id) => {
       const found = nodes.find((n) => n.id === id);
       if (found) onNodeClick(found);
@@ -100,17 +102,20 @@ export default function KgGraphCytoscape({
       animate: !firstData.current,
     });
     firstData.current = false;
-    onAnalysis?.(analysis);  }, [nodes, edges]);
+    onAnalysis?.(analysis);
+  }, [nodes, edges]);
 
   // THEME → swap stylesheet in place (no re-layout).
   useEffect(() => {
     const cy = getCy();
-    if (cy) applyTheme(cy, chrome);  }, [mode]);
+    if (cy) applyTheme(cy, chrome);
+  }, [mode]);
 
   // ENCODING → repoint colour/size (cheap; no layout). Idempotent on mount.
   useEffect(() => {
     const cy = getCy();
-    if (cy) applyEncoding(cy, colorBy, sizeBy);  }, [colorBy, sizeBy]);
+    if (cy) applyEncoding(cy, colorBy, sizeBy);
+  }, [colorBy, sizeBy]);
 
   // LAYOUT → re-run on switch (skip the mount run; the data effect already laid out).
   const layoutMounted = useRef(false);
@@ -121,17 +126,34 @@ export default function KgGraphCytoscape({
       layoutMounted.current = true;
       return;
     }
-    runLayout(cy, layoutId, true);  }, [layoutId]);
+    runLayout(cy, layoutId, true);
+  }, [layoutId]);
 
-  // SELECTION → mirror the side-panel selection onto cytoscape.
+  // SELECTION → pin the focus on the selected node: persist its neighbourhood
+  // highlight and single-select it (so a click "holds" instead of relying on
+  // hover). Clearing selection releases the pin. Ctrl/Cmd-click additions don't
+  // change selectedId, so those multi-selections survive this effect.
   useEffect(() => {
     const cy = getCy();
-    if (cy) selectNode(cy, selectedId);  }, [selectedId]);
+    if (!cy) return;
+    if (selectedId) {
+      focusNeighborhood(cy, selectedId);
+      cy.batch(() => {
+        cy.elements().unselect();
+        const el = cy.getElementById(selectedId);
+        if (!el.empty()) el.select();
+      });
+    } else {
+      clearFocus(cy);
+      cy.elements().unselect();
+    }
+  }, [selectedId]);
 
   // SEARCH → accent matches, fade the rest.
   useEffect(() => {
     const cy = getCy();
-    if (cy) applySearch(cy, searchQuery);  }, [searchQuery]);
+    if (cy) applySearch(cy, searchQuery);
+  }, [searchQuery]);
 
   return (
     <div className="relative h-full w-full">

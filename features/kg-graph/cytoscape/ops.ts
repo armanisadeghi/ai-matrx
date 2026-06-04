@@ -101,17 +101,6 @@ export function applySearch(cy: cytoscape.Core, query: string): void {
   });
 }
 
-/** Mirror the side-panel selection onto cytoscape (single node or clear). */
-export function selectNode(cy: cytoscape.Core, id: string | null): void {
-  cy.batch(() => {
-    cy.elements().unselect();
-    if (id) {
-      const el = cy.getElementById(id);
-      if (!el.empty()) el.select();
-    }
-  });
-}
-
 const EASE = "ease-in-out-cubic";
 
 /** Animated fit to the whole graph. */
