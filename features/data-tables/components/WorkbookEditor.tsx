@@ -22,8 +22,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 
-import { LocaleType, merge } from "@univerjs/presets";
-import { createUniver } from "@univerjs/presets";
+import {
+  createUniver,
+  LocaleType,
+  merge,
+  type FUniver,
+} from "@univerjs/presets";
+import type { IWorkbookData, Univer } from "@univerjs/core";
 import { UniverSheetsCorePreset } from "@univerjs/preset-sheets-core";
 import sheetsCoreEnUS from "@univerjs/preset-sheets-core/locales/en-US";
 import "@univerjs/preset-sheets-core/lib/index.css";
@@ -46,22 +51,10 @@ type Props = {
   editable?: boolean;
 };
 
-// Univer's facade types are loose at the edges; we hold the API object as
-// `unknown` and narrow at use sites to avoid a heavy type import.
-type UniverAPILike = {
-  createWorkbook: (data: unknown) => { getSnapshot: () => unknown };
-  getActiveWorkbook: () => { getSnapshot: () => unknown } | undefined;
-  onCommandExecuted: (callback: (cmd: unknown) => void) => {
-    dispose: () => void;
-  };
-};
-
-type UniverLike = { dispose: () => void };
-
 export default function WorkbookEditor({ workbookId, editable = true }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const apiRef = useRef<UniverAPILike | null>(null);
-  const univerRef = useRef<UniverLike | null>(null);
+  const apiRef = useRef<FUniver | null>(null);
+  const univerRef = useRef<Univer | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaveByUserRef = useRef<string | null>(null);
 
@@ -106,8 +99,9 @@ export default function WorkbookEditor({ workbookId, editable = true }: Props) {
     }
     const snapshot = res.data?.snapshot;
     if (snapshot) {
-      // Re-instantiate the workbook from the new snapshot.
-      apiRef.current.createWorkbook(snapshot);
+      // Boundary cast: snapshot was written by Univer itself (or our default
+      // shape from defaultEmptyWorkbook); it's stored as opaque JSONB.
+      apiRef.current.createWorkbook(snapshot as Partial<IWorkbookData>);
     }
   }, [workbookId]);
 
@@ -131,8 +125,8 @@ export default function WorkbookEditor({ workbookId, editable = true }: Props) {
           univer.dispose();
           return;
         }
-        univerRef.current = univer as unknown as UniverLike;
-        apiRef.current = univerAPI as unknown as UniverAPILike;
+        univerRef.current = univer;
+        apiRef.current = univerAPI;
 
         // Hydrate from the latest persisted snapshot, or create empty.
         const res = await getLatestSnapshot(workbookId);
@@ -142,7 +136,9 @@ export default function WorkbookEditor({ workbookId, editable = true }: Props) {
           setBootState("load_error");
           return;
         }
-        const initial = res.data?.snapshot ?? defaultEmptyWorkbook();
+        const initial: Partial<IWorkbookData> =
+          (res.data?.snapshot as Partial<IWorkbookData>) ??
+          defaultEmptyWorkbook();
         apiRef.current.createWorkbook(initial);
         setBootState("ready");
 
@@ -231,7 +227,7 @@ export default function WorkbookEditor({ workbookId, editable = true }: Props) {
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-function defaultEmptyWorkbook() {
+function defaultEmptyWorkbook(): Partial<IWorkbookData> {
   // Univer's IWorkbookData with one default sheet. The shape is intentionally
   // minimal — Univer fills in defaults when fields are absent.
   return {
@@ -239,7 +235,7 @@ function defaultEmptyWorkbook() {
     sheetOrder: ["sheet-1"],
     name: "Untitled workbook",
     appVersion: "1",
-    locale: "enUS",
+    locale: LocaleType.EN_US,
     styles: {},
     sheets: {
       "sheet-1": {
