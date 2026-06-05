@@ -26,6 +26,7 @@
 
 **Frontend wired through new primitives:**
 - ✅ Wave D — `ImportTableModal`: serial loop → one atomic `bulkWrite`
+- ✅ Wave E — `TableConfigModal`: changing a field's `data_type` now prompts a destructive-confirm with the old→new summary, then runs `udt_change_field_type({strategy:'cast_or_null'})` per changed column; result toast shows total rows rewritten.
 - ✅ Wave F — `UserTableViewer`: row-action `History` icon → Sheet with `VersionHistoryViewer`
 - ✅ Wave B (4 of 4) — `EditRowModal` → `upsertRow`; `UserTableViewer` HTML cleanup + expanded-text save → `upsertCell`; bulk HTML-cleanup loop → `bulkWrite({op:'merge'})`
 - ✅ Wave G — `TableSettingsModal`: strict-mode toggle persisting `validation_mode`
@@ -42,6 +43,7 @@
 - ✅ Routes — `/workbooks` (list + create + delete + **import XLSX/CSV**), `/workbooks/[id]` (open + rename + edit). Editor is dynamically imported with `ssr:false` so Univer never runs server-side.
 - ✅ **XLSX/CSV import** — `xlsxToUniverWorkbook` (SheetJS-based) converts uploaded files to a minimal `IWorkbookData`: values + types + formula source for all sheets, ISO dates for date cells. Pre-flight parse so a malformed file does not leave an empty workbook husk. The original file id will plug into `udt_workbooks.original_file_id` once the universal file handler linkage is wired.
 - ✅ **Snapshot history viewer + restore** — `WorkbookHistoryViewer` lists snapshots newest-first with origin badges (autosave / manual / imported / restored); Restore writes a NEW snapshot from the chosen one so the realtime hook hot-swaps automatically. Snapshots are append-only; restoring does not delete history.
+- ✅ **Export workbook → XLSX** — `univerSnapshotToXlsxBuffer` + `downloadUniverAsXlsx` (SheetJS). Symmetric to the import path; same scope (values + types + formula source per sheet). Wired as a toolbar button in `WorkbookEditor`; filename = workbook name.
 - ⏳ **V2 work — full CRDT collab** (per-cell deltas, presence cursors, formal conflict resolution). V1 is last-write-wins on the snapshot row, which is the standard MVP pattern. CRDT layer can build on the snapshot store without changing it.
 
 **Pending — user decision blockers (🛑):**
@@ -50,13 +52,11 @@
 - 🛑 **CRDT-collab commitment.** P4 v1 ships last-write-wins. The honest "full collab from day one" answer requires picking a CRDT (Yjs is the obvious choice via Univer's `@univerjs/sheets-collaboration` preset). Confirm intent before I integrate.
 
 **Pending — needs UX design (⏳):**
-- ⏳ **Wave E — column type-change UI.** Need confirmation dialog, strategy picker (`cast_or_null` vs `cast_or_skip`), progress feedback for long row-rewrites. RPC already live and tested.
-- ⏳ **Wave P3 — smart importer (XLSX → typed dataset vs workbook).** Detects "rational" (header-row + uniform-type columns) vs "look-sensitive" (merged cells, formulas, multi-region) and routes the upload to `udt_datasets` or `udt_workbooks` accordingly. P4 v1 makes this fully unblocked.
+- ⏳ **Wave P3 — smart importer (XLSX → typed dataset vs workbook).** Detects "rational" (header-row + uniform-type columns) vs "look-sensitive" (merged cells, formulas, multi-region) and routes the upload to `udt_datasets` or `udt_workbooks` accordingly. P4 v1 makes this fully unblocked. Today the user picks the destination by entering via `/data` (typed) or `/workbooks` (lossless).
 
 **Pending — small + clear (🚧 ready when you say go):**
 - 🚧 **Bulk paste from Excel / Sheets clipboard** into the typed-dataset grid.
 - 🚧 **`udt_workbooks.original_file_id` linkage** to the universal file handler — store the uploaded XLSX/CSV blob so the lossless original can be downloaded / re-imported / passed to a "diff against original" view.
-- 🚧 **Export workbook → XLSX** (the symmetric path of import).
 
 ---
 
@@ -367,6 +367,14 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-06-05` — claude: **Export XLSX + Wave E (column type-change UI)**.
+  `features/data-tables/univer-to-xlsx.ts` symmetrises the import path — SheetJS-based
+  conversion of a Univer `IWorkbookData` snapshot back to `.xlsx` (values + types + formula
+  source per sheet). Wired as a toolbar "Export" button in `WorkbookEditor`; filename = workbook
+  name. Wave E lands in `TableConfigModal`: when a field's `data_type` is changed, save now
+  shows a destructive-confirm with the old→new summary; on confirm, each changed column runs
+  `udt_change_field_type({strategy:'cast_or_null'})` after the metadata RPC; result toast shows
+  total rows rewritten. Per-column failures are surfaced individually.
 - `2026-06-05` — claude: **P4 v1 polish — XLSX/CSV import + snapshot history + Save-now**. Three
   follow-ups landed on top of the workbook surface:
   - `features/data-tables/xlsx-to-univer.ts` — SheetJS-based converter that turns an uploaded

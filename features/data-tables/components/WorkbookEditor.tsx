@@ -20,7 +20,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { History, Loader2, Save } from "lucide-react";
+import { Download, History, Loader2, Save } from "lucide-react";
 
 import {
   createUniver,
@@ -50,6 +50,7 @@ import {
   saveSnapshot,
 } from "../workbook-service";
 import { isServiceFailure } from "../types";
+import { downloadUniverAsXlsx } from "../univer-to-xlsx";
 import { WorkbookHistoryViewer } from "./WorkbookHistoryViewer";
 
 type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
@@ -58,9 +59,15 @@ type Props = {
   workbookId: string;
   /** Pass false to mount in viewer-only mode (no autosave). */
   editable?: boolean;
+  /** Used as the XLSX filename on export. Falls back to workbookId. */
+  workbookName?: string;
 };
 
-export default function WorkbookEditor({ workbookId, editable = true }: Props) {
+export default function WorkbookEditor({
+  workbookId,
+  editable = true,
+  workbookName,
+}: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const apiRef = useRef<FUniver | null>(null);
   const univerRef = useRef<Univer | null>(null);
@@ -221,6 +228,24 @@ export default function WorkbookEditor({ workbookId, editable = true }: Props) {
     void performSave("manual");
   }, [performSave]);
 
+  const handleExportXlsx = useCallback(() => {
+    if (!apiRef.current) return;
+    const workbook = apiRef.current.getActiveWorkbook();
+    if (!workbook) return;
+    try {
+      const snapshot = workbook.getSnapshot();
+      downloadUniverAsXlsx(snapshot, {
+        filename: workbookName ?? workbookId,
+      });
+    } catch (err) {
+      toast({
+        title: "Could not export workbook",
+        description: err instanceof Error ? err.message : String(err),
+        variant: "destructive",
+      });
+    }
+  }, [workbookId, workbookName]);
+
   // Save-status pill text/style.
   const statusPill = useMemo(() => statusPillFor(saveStatus), [saveStatus]);
 
@@ -257,6 +282,18 @@ export default function WorkbookEditor({ workbookId, editable = true }: Props) {
             >
               <Save className="size-3" />
               Save now
+            </Button>
+          )}
+          {bootState === "ready" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 px-2 text-xs"
+              onClick={handleExportXlsx}
+              title="Download as .xlsx"
+            >
+              <Download className="size-3" />
+              Export
             </Button>
           )}
           <Button

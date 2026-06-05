@@ -104,7 +104,10 @@ export default function WorkbookPage({
         )}
       </div>
       <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
-        <WorkbookEditor workbookId={id} />
+        <WorkbookEditor
+          workbookId={id}
+          workbookName={workbook?.workbook_name ?? undefined}
+        />
       </div>
     </div>
   );

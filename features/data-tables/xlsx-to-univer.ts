@@ -23,32 +23,17 @@
  */
 
 import * as XLSX from "xlsx";
-import type { IWorkbookData } from "@univerjs/core";
+import { CellValueType } from "@univerjs/core";
+import type { ICellData, IWorkbookData, IWorksheetData } from "@univerjs/core";
 import { LocaleType } from "@univerjs/presets";
 
-// Univer's cell `t` enum (kept as a TS-side literal so we don't import a
-// runtime symbol we don't otherwise need):
-//   1 = STRING, 2 = NUMBER, 3 = BOOLEAN, 4 = FORMULA, 0 = DEFAULT
-const CELL_TYPE_STRING = 1;
-const CELL_TYPE_NUMBER = 2;
-const CELL_TYPE_BOOLEAN = 3;
+// Use Univer's own cell type so the converter output flows straight into
+// IWorksheetData.cellData without coercion.
+type UniverCell = ICellData;
 
-type UniverCellValue = number | string | boolean;
-
-interface UniverCell {
-  v?: UniverCellValue;
-  t?: number;
-  /** Formula source (e.g. "=A1+B1"). Univer keeps `v` as the cached value. */
-  f?: string;
-}
-
-interface UniverSheet {
-  id: string;
-  name: string;
-  cellData: Record<number, Record<number, UniverCell>>;
-  rowCount: number;
-  columnCount: number;
-}
+// Use Univer's own worksheet type so the converter output flows into
+// IWorkbookData['sheets'] without coercion.
+type UniverSheet = Partial<IWorksheetData>;
 
 export async function xlsxToUniverWorkbook(
   file: File,
@@ -77,7 +62,7 @@ export async function xlsxToUniverWorkbook(
     appVersion: "1",
     locale: LocaleType.EN_US,
     styles: {},
-    sheets: sheets as unknown as IWorkbookData["sheets"],
+    sheets,
   };
 }
 
@@ -88,7 +73,10 @@ function convertSheet(
 ): UniverSheet {
   const refRange = ws["!ref"] ?? "A1:A1";
   const range = XLSX.utils.decode_range(refRange);
-  const cellData: Record<number, Record<number, UniverCell>> = {};
+  // Univer's cellData is keyed by row index → column index → cell. We build
+  // it as plain records; the type below mirrors what IWorksheetData.cellData
+  // expects (the wider type accommodates style/merge metadata we don't set).
+  const cellData: NonNullable<UniverSheet["cellData"]> = {};
 
   for (let r = range.s.r; r <= range.e.r; r++) {
     const rowOut: Record<number, UniverCell> = {};
@@ -130,11 +118,11 @@ function toUniverCell(cell: XLSX.CellObject): UniverCell {
   switch (cell.t) {
     case "n":
       out.v = typeof cell.v === "number" ? cell.v : Number(cell.v ?? 0);
-      out.t = CELL_TYPE_NUMBER;
+      out.t = CellValueType.NUMBER;
       break;
     case "b":
       out.v = Boolean(cell.v);
-      out.t = CELL_TYPE_BOOLEAN;
+      out.t = CellValueType.BOOLEAN;
       break;
     case "d":
       // SheetJS gives us a JS Date when `cellDates: true`.
@@ -142,12 +130,12 @@ function toUniverCell(cell: XLSX.CellObject): UniverCell {
         cell.v instanceof Date
           ? cell.v.toISOString().slice(0, 10)
           : String(cell.v ?? "");
-      out.t = CELL_TYPE_STRING;
+      out.t = CellValueType.STRING;
       break;
     case "e":
       // Error cell — surface as the error string SheetJS produced.
       out.v = typeof cell.w === "string" ? cell.w : "#ERROR";
-      out.t = CELL_TYPE_STRING;
+      out.t = CellValueType.STRING;
       break;
     case "s":
     default:
@@ -157,7 +145,7 @@ function toUniverCell(cell: XLSX.CellObject): UniverCell {
           : cell.v === undefined || cell.v === null
             ? ""
             : String(cell.v);
-      out.t = CELL_TYPE_STRING;
+      out.t = CellValueType.STRING;
       break;
   }
 
