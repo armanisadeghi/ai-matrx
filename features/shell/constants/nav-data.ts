@@ -242,6 +242,16 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "cyan",
   },
   {
+    label: "Workbooks",
+    href: "/workbooks",
+    iconName: "FileSpreadsheet",
+    section: "primary",
+    profileMenu: true,
+    dashboard: true,
+    description: "Lossless spreadsheets — multi-sheet, formulas, formatting",
+    color: "emerald",
+  },
+  {
     label: "Webscraper",
     href: "/scraper",
     iconName: "Globe",
