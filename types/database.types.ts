@@ -19734,6 +19734,44 @@ export type Database = {
         }
         Relationships: []
       }
+      udt_workbook_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string | null
+          origin: string
+          snapshot: Json
+          workbook_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          origin?: string
+          snapshot: Json
+          workbook_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          origin?: string
+          snapshot?: Json
+          workbook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_workbook_snapshots_workbook_id_fkey"
+            columns: ["workbook_id"]
+            isOneToOne: false
+            referencedRelation: "udt_workbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       udt_workbooks: {
         Row: {
           created_at: string

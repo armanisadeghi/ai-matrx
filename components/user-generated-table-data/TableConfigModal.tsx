@@ -3,6 +3,13 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/utils/supabase/client";
 import { unwrapUserTableMutation } from "@/utils/user-tables-rpc";
+import { changeFieldType } from "@/features/data-tables/service";
+import {
+  isServiceFailure,
+  type FieldDataType,
+} from "@/features/data-tables/types";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/components/ui/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -223,7 +230,18 @@ export default function TableConfigModal({
         ),
       );
 
-      // Prepare field updates
+      // Prepare field updates AND collect type-change candidates.
+      // Type changes are split off because they need to walk every row in the
+      // table and rewrite the JSONB cell value via udt_change_field_type —
+      // the legacy update_user_table_config RPC only flips the declared type
+      // on udt_dataset_fields and leaves rows mis-shapen.
+      const typeChanges: Array<{
+        fieldId: string;
+        displayName: string;
+        from: string;
+        to: FieldDataType;
+      }> = [];
+
       const fieldUpdates = fields
         .map((field) => {
           const originalField = initialFields.find((f) => f.id === field.id);
@@ -254,8 +272,15 @@ export default function TableConfigModal({
 
           if (field.display_name !== originalField.display_name)
             updates.display_name = field.display_name;
-          if (field.data_type !== originalField.data_type)
+          if (field.data_type !== originalField.data_type) {
             updates.data_type = field.data_type;
+            typeChanges.push({
+              fieldId: field.id,
+              displayName: field.display_name,
+              from: originalField.data_type,
+              to: field.data_type as FieldDataType,
+            });
+          }
           if (field.field_order !== originalField.field_order)
             updates.field_order = field.field_order;
           if (field.is_required !== originalField.is_required)
@@ -267,6 +292,24 @@ export default function TableConfigModal({
           return Object.keys(updates).length > 1 ? updates : null;
         })
         .filter(Boolean);
+
+      // Confirm row-rewrite before doing it. The legacy code silently flipped
+      // declared types only; this confirms the destructive part is intentional.
+      if (typeChanges.length > 0) {
+        const summary = typeChanges
+          .map((t) => `• ${t.displayName}: ${t.from} → ${t.to}`)
+          .join("\n");
+        const ok = await confirm({
+          title: `Convert ${typeChanges.length === 1 ? "1 column" : `${typeChanges.length} columns`}?`,
+          description: `${summary}\n\nExisting cell values will be coerced to the new type. Values that cannot be converted will become null.`,
+          confirmLabel: "Convert",
+          variant: "destructive",
+        });
+        if (!ok) {
+          setLoading(false);
+          return;
+        }
+      }
 
       // Call the RPC function
       const rpcParams: any = { p_table_id: tableId };
@@ -284,6 +327,42 @@ export default function TableConfigModal({
 
       if (rpcError) throw rpcError;
       unwrapUserTableMutation(data ?? null);
+
+      // After the metadata flip lands, walk rows for each type-changed field
+      // and coerce their JSONB cell values to the new type via the dedicated
+      // SECURITY DEFINER RPC. cast_or_null is the safer default — un-castable
+      // values become null rather than silently keeping the old shape.
+      let totalRewritten = 0;
+      const typeFailures: string[] = [];
+      for (const change of typeChanges) {
+        const res = await changeFieldType({
+          tableId,
+          fieldId: change.fieldId,
+          newType: change.to,
+          strategy: "cast_or_null",
+        });
+        if (isServiceFailure(res)) {
+          typeFailures.push(`${change.displayName}: ${res.error}`);
+        } else {
+          totalRewritten += res.data.rows_rewritten;
+        }
+      }
+
+      if (typeChanges.length > 0) {
+        if (typeFailures.length > 0) {
+          toast({
+            title: "Some columns could not be converted",
+            description: typeFailures.join("\n"),
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: `Converted ${typeChanges.length === 1 ? "1 column" : `${typeChanges.length} columns`}`,
+            description: `${totalRewritten} row${totalRewritten === 1 ? "" : "s"} rewritten`,
+            variant: "success",
+          });
+        }
+      }
 
       onSuccess();
       onClose();

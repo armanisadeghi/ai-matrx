@@ -16,6 +16,16 @@ export type Workbook = T["udt_workbooks"]["Row"];
 export type WorkbookInsert = T["udt_workbooks"]["Insert"];
 export type WorkbookUpdate = T["udt_workbooks"]["Update"];
 
+export type WorkbookSnapshot = T["udt_workbook_snapshots"]["Row"];
+export type WorkbookSnapshotInsert = T["udt_workbook_snapshots"]["Insert"];
+
+/** Origin of a snapshot. Free text in the DB; this enum is advisory. */
+export type WorkbookSnapshotOrigin =
+  | "autosave"
+  | "manual"
+  | "imported"
+  | "restored";
+
 export type Dataset = T["udt_datasets"]["Row"];
 export type DatasetInsert = T["udt_datasets"]["Insert"];
 export type DatasetUpdate = T["udt_datasets"]["Update"];
@@ -58,6 +68,18 @@ export type BulkInsertOp = {
 export type BulkUpdateOp = {
   op: "update";
   row_id: string;
+  /** REPLACES the row's data wholesale. Keys not in `data` are dropped. */
+  data: Record<string, unknown>;
+};
+
+export type BulkMergeOp = {
+  op: "merge";
+  row_id: string;
+  /**
+   * Partial update — `data = existing_data || patch`. Keys in `data` overwrite
+   * the row's matching keys; keys absent from `data` are preserved. Use this
+   * when sending only changed fields.
+   */
   data: Record<string, unknown>;
 };
 
@@ -73,7 +95,12 @@ export type BulkDeleteOp = {
   row_id: string;
 };
 
-export type BulkOp = BulkInsertOp | BulkUpdateOp | BulkCellOp | BulkDeleteOp;
+export type BulkOp =
+  | BulkInsertOp
+  | BulkUpdateOp
+  | BulkMergeOp
+  | BulkCellOp
+  | BulkDeleteOp;
 
 /**
  * Per-op result envelope returned inside `udt_bulk_write.results[]`.

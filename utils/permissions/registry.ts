@@ -165,6 +165,16 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/lists/{id}",
     rlsUsesHasPermission: true,
   },
+  udt_workbooks: {
+    resourceType: "udt_workbooks",
+    tableName: "udt_workbooks",
+    idColumn: "id",
+    ownerColumn: "user_id",
+    isPublicColumn: "is_public",
+    displayLabel: "Workbook",
+    urlPathTemplate: "/workbooks/{id}",
+    rlsUsesHasPermission: true,
+  },
   transcripts: {
     resourceType: "transcripts",
     tableName: "transcripts",

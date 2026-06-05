@@ -46,8 +46,14 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
-import { upsertCell } from "@/features/data-tables/service";
-import { isServiceFailure } from "@/features/data-tables/types";
+import { EditableCell } from "@/features/data-tables/components/EditableCell";
+import { useTableRealtime } from "@/features/data-tables/hooks/useTableRealtime";
+import { bulkWrite, upsertCell } from "@/features/data-tables/service";
+import {
+  isServiceFailure,
+  type BulkMergeOp,
+  type FieldDataType,
+} from "@/features/data-tables/types";
 import { TableLoadingComponent } from "@/components/matrx/LoadingComponents";
 import { useRouter } from "next/navigation";
 import {
@@ -466,6 +472,25 @@ const UserTableViewer = ({
       }
     }
   }, [tableId, showTableSelector]);
+
+  // Live updates from other clients (or our own writes that bypass the
+  // local refetch). Debounced so a 1k-row bulk import doesn't trigger 1k
+  // refetches; a single refetch ~400ms after the burst stops is enough.
+  const realtimeRefetchTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  useTableRealtime(tableId, () => {
+    if (realtimeRefetchTimer.current) {
+      clearTimeout(realtimeRefetchTimer.current);
+    }
+    realtimeRefetchTimer.current = setTimeout(() => {
+      void loadTableData(currentPage, limit, sortField, sortDirection, searchTerm);
+    }, 400);
+  });
+  useEffect(
+    () => () => {
+      if (realtimeRefetchTimer.current) clearTimeout(realtimeRefetchTimer.current);
+    },
+    [],
+  );
 
   // Check row ordering status when table info changes
   useEffect(() => {
@@ -1023,38 +1048,19 @@ const UserTableViewer = ({
         return;
       }
 
-      // Process updates in batches to avoid overwhelming the database.
-      // NOTE: this site still uses the legacy update_data_row_in_user_table
-      // RPC because each `update.data` contains MULTIPLE changed fields per
-      // row, and `udt_upsert_row` would replace the whole row payload (losing
-      // unchanged fields). A future enhancement to add `op:'merge'` to
-      // udt_bulk_write — doing `data = data || v_op->'data'` — would let this
-      // become a single bulkWrite call. Tracked in FEATURE.md tech debt.
-      const batchSize = 10;
-      let processedCount = 0;
-
-      for (let i = 0; i < updates.length; i += batchSize) {
-        const batch = updates.slice(i, i + batchSize);
-
-        await Promise.all(
-          batch.map(async (update) => {
-            const { data: result, error } = await supabase.rpc(
-              "update_data_row_in_user_table",
-              {
-                p_row_id: update.rowId,
-                p_data: update.data,
-              },
-            );
-
-            if (error) throw error;
-            assertRpcSuccessEnvelope(result);
-            if (!result.success)
-              throw new Error(result.error || "Failed to update row");
-
-            processedCount++;
-          }),
-        );
+      // One atomic bulkWrite with op:'merge' — sends only the changed fields
+      // per row (jsonb_concat preserves unchanged keys). Replaces the prior
+      // chunked Promise.all(N round-trips) loop.
+      const operations: BulkMergeOp[] = updates.map((u) => ({
+        op: "merge",
+        row_id: u.rowId,
+        data: u.data,
+      }));
+      const bulkResult = await bulkWrite({ tableId, operations });
+      if (isServiceFailure(bulkResult)) {
+        throw new Error(bulkResult.error);
       }
+      const processedCount = updates.length;
 
       // Clear sorted data cache when data is modified
       setAllSortedData(null);
@@ -1395,13 +1401,16 @@ const UserTableViewer = ({
                     className="cursor-pointer font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 text-center py-3 min-w-[150px]"
                     onClick={() => handleSort(field.field_name)}
                   >
-                    <div className="truncate">
-                      {field.display_name}
-                      {sortField === field.field_name && (
-                        <span className="ml-1">
-                          {sortDirection === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
+                    <div className="flex flex-col items-center gap-0.5 truncate">
+                      <div className="flex items-center gap-1">
+                        <span className="truncate">{field.display_name}</span>
+                        {sortField === field.field_name && (
+                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-normal uppercase tracking-wider text-muted-foreground">
+                        {field.data_type}
+                      </span>
                     </div>
                   </TableHead>
                 ))}
@@ -1448,81 +1457,108 @@ const UserTableViewer = ({
                       handleEditRow(row.id, row.data);
                     }}
                   >
-                    {fields.map((field) => (
-                      <TableCell
-                        key={`${row.id}-${field.id}`}
-                        className="py-3 max-w-0"
-                      >
-                        {row.data[field.field_name] !== null
-                          ? (() => {
-                              const cellData = formatCellValue(
-                                row.data[field.field_name],
-                                field.data_type,
-                              );
-                              return (
-                                <div className="flex items-center justify-between group min-w-0">
-                                  <div className="flex-1 min-w-0">
-                                    <div
-                                      className="truncate text-left"
-                                      title={
-                                        cellData.isTruncated
-                                          ? cellData.fullText
-                                          : undefined
-                                      }
-                                    >
-                                      {String(cellData.display)}
-                                    </div>
-                                    {cellData.multilineIndicator && (
-                                      <div className="text-xs text-muted-foreground mt-0.5">
-                                        {cellData.multilineIndicator}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
-                                    {cellData.hasCleanableHtml && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                                        onClick={(e) =>
-                                          handleCleanupText(
-                                            field.field_name,
-                                            cellData.fullText,
-                                            row.id,
-                                            e,
-                                          )
-                                        }
-                                        title={`Clean up HTML formatting in ${field.display_name}`}
-                                      >
-                                        <Zap className="h-3 w-3 text-purple-500 dark:text-purple-400" />
-                                      </Button>
-                                    )}
-                                    {cellData.isTruncated && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                                        onClick={(e) =>
-                                          handleExpandText(
-                                            cellData.fullText,
-                                            field.display_name,
-                                            row.id,
-                                            field.field_name,
-                                            e,
-                                          )
-                                        }
-                                        title={`Expand ${field.display_name}`}
-                                      >
-                                        <Expand className="h-3 w-3" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })()
-                          : "—"}
-                      </TableCell>
-                    ))}
+                    {fields.map((field) => {
+                      const rawValue = row.data[field.field_name];
+                      const cellData =
+                        rawValue !== null
+                          ? formatCellValue(rawValue, field.data_type)
+                          : null;
+                      const display = cellData ? (
+                        <div className="flex items-center justify-between group min-w-0">
+                          <div className="flex-1 min-w-0">
+                            <div
+                              className="truncate text-left"
+                              title={
+                                cellData.isTruncated
+                                  ? cellData.fullText
+                                  : undefined
+                              }
+                            >
+                              {String(cellData.display)}
+                            </div>
+                            {cellData.multilineIndicator && (
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                {cellData.multilineIndicator}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      );
+                      return (
+                        <TableCell
+                          key={`${row.id}-${field.id}`}
+                          className="py-3 max-w-0 group"
+                        >
+                          <div className="flex items-center justify-between gap-2 min-w-0">
+                            <div className="flex-1 min-w-0">
+                              <EditableCell
+                                tableId={tableId}
+                                rowId={row.id}
+                                fieldName={field.field_name}
+                                fieldDisplayName={field.display_name}
+                                dataType={field.data_type as FieldDataType}
+                                value={rawValue}
+                                display={display}
+                                editable={!isReadOnly}
+                                onSaved={() => {
+                                  setAllSortedData(null);
+                                  void loadTableData(
+                                    currentPage,
+                                    limit,
+                                    sortField,
+                                    sortDirection,
+                                    searchTerm,
+                                  );
+                                }}
+                              />
+                            </div>
+                            {cellData && (
+                              <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
+                                {cellData.hasCleanableHtml && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                                    onClick={(e) =>
+                                      handleCleanupText(
+                                        field.field_name,
+                                        cellData.fullText,
+                                        row.id,
+                                        e,
+                                      )
+                                    }
+                                    title={`Clean up HTML formatting in ${field.display_name}`}
+                                  >
+                                    <Zap className="h-3 w-3 text-purple-500 dark:text-purple-400" />
+                                  </Button>
+                                )}
+                                {cellData.isTruncated && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                                    onClick={(e) =>
+                                      handleExpandText(
+                                        cellData.fullText,
+                                        field.display_name,
+                                        row.id,
+                                        field.field_name,
+                                        e,
+                                      )
+                                    }
+                                    title={`Expand ${field.display_name}`}
+                                  >
+                                    <Expand className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                      );
+                    })}
                     <TableCell className="text-center">
                       <div className="flex justify-center space-x-1">
                         <Button
