@@ -10,24 +10,28 @@ import { MENU_ITEM_CLASS } from "./menuItemClass";
 interface GuestOverlayMenuItemProps {
   icon: MenuIconKey;
   label: string;
+  /** Forwarded to `AuthGateDialog` as `featureDescription`. */
+  description?: string;
   className?: string;
 }
 
 /**
  * Visual twin of `OverlayMenuItem` for unauthenticated visitors: instead of
  * dispatching the overlay, click opens `AuthGateDialog` carrying the item's
- * label as `featureName`. A small lock affordance appears on hover.
+ * label as `featureName` and (optionally) a one-line pitch as
+ * `featureDescription`. A small lock affordance appears on hover.
  */
 export function GuestOverlayMenuItem({
   icon,
   label,
+  description,
   className,
 }: GuestOverlayMenuItemProps) {
   const openAuthGate = useOpenAuthGateDialog();
 
   const handleClick = useCallback(() => {
-    openAuthGate({ featureName: label });
-  }, [openAuthGate, label]);
+    openAuthGate({ featureName: label, featureDescription: description });
+  }, [openAuthGate, label, description]);
 
   return (
     <label htmlFor="shell-user-menu" className="block">

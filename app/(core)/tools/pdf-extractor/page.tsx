@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import PdfStudioRouteClient from "./PdfStudioRouteClient";
+import PdfExtractorLanding from "@/features/auth/components/module-landing/landings/PdfExtractorLanding";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
 /**
  * /tools/pdf-extractor
@@ -12,7 +14,9 @@ import PdfStudioRouteClient from "./PdfStudioRouteClient";
  */
 export const dynamic = "force-dynamic";
 
-export default function PdfExtractorStudioPage() {
+export default async function PdfExtractorStudioPage() {
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) return <PdfExtractorLanding />;
   return (
     <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-background">
       <Suspense fallback={null}>

@@ -1,6 +1,8 @@
 import ContextLayoutClient from "./ContextLayoutClient";
 import { createCustomFaviconMetadata } from "@/utils/favicon-utils";
 import { siteConfig } from "@/config/extras/site";
+import ContextLanding from "@/features/auth/components/module-landing/landings/ContextLanding";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
 const title = "SSR | Context";
 const description = "SSR agent context and hierarchy selection playground.";
@@ -34,10 +36,17 @@ export const metadata = createCustomFaviconMetadata(
   },
 );
 
-export default function ContextLayout({
+/**
+ * Server-side auth branch keeps the `"use client"` Context shell (and
+ * its scope-resolution Redux bundle) from shipping to guests. Guests
+ * see the marketing landing; authed users get the live client shell.
+ */
+export default async function ContextLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) return <ContextLanding />;
   return <ContextLayoutClient>{children}</ContextLayoutClient>;
 }

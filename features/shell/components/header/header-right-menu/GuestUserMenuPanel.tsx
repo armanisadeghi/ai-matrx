@@ -38,6 +38,7 @@ export default function GuestUserMenuPanel() {
               key={item.overlayId}
               icon={item.icon}
               label={item.label}
+              description={item.guestDescription}
               className={item.className}
             />
           ) : (
@@ -54,6 +55,7 @@ export default function GuestUserMenuPanel() {
             key={item.overlayId}
             icon={item.icon}
             label={item.label}
+            description={item.guestDescription}
             className={item.className}
           />
         ) : (
@@ -70,6 +72,7 @@ export default function GuestUserMenuPanel() {
             key={item.overlayId}
             icon={item.icon}
             label={item.label}
+            description={item.guestDescription}
             className={item.className}
           />
         ) : (

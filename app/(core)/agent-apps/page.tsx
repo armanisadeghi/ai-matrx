@@ -3,8 +3,12 @@ import { AppWindow, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentAppsGrid } from "@/features/agent-apps/components/agent-app-listings/AgentAppsGrid";
+import AgentAppsLanding from "@/features/auth/components/module-landing/landings/AgentAppsLanding";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
-export default function AgentAppsListPage() {
+export default async function AgentAppsListPage() {
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) return <AgentAppsLanding />;
   return (
     <>
       <PageHeader>

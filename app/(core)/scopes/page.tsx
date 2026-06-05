@@ -1,4 +1,6 @@
 import { ScopesHub } from "@/features/scopes/components/management/ScopesHub";
+import ScopesLanding from "@/features/auth/components/module-landing/landings/ScopesLanding";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
 export const metadata = {
   title: "Scopes",
@@ -6,7 +8,9 @@ export const metadata = {
     "Define the dimensions your team works in — clients, products, teams, repos, anything. Scopes carry context into every agent run.",
 };
 
-export default function ScopesIndexPage() {
+export default async function ScopesIndexPage() {
+  const { isAuthenticated } = await getServerAuth();
+  if (!isAuthenticated) return <ScopesLanding />;
   return (
     <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
       <div className="max-w-6xl mx-auto p-6 md:p-8">

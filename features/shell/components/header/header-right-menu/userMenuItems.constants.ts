@@ -14,16 +14,71 @@ export interface OverlayMenuItemConfig {
    * announcements, feedback).
    */
   requiresAuth: boolean;
+  /**
+   * Rendered inside `AuthGateDialog` underneath the headline when a guest
+   * clicks the item. One sentence — concretely what unlocks once they sign
+   * up. Required when `requiresAuth` is true; ignored otherwise.
+   */
+  guestDescription?: string;
 }
 
 export const QUICK_ACCESS_ITEMS: OverlayMenuItemConfig[] = [
-  { overlayId: "quickNotes", icon: "StickyNote", label: "Quick Note", requiresAuth: true },
-  { overlayId: "quickTasks", icon: "CheckSquare", label: "Quick Task", requiresAuth: true },
-  { overlayId: "quickChat", icon: "MessageSquare", label: "Quick Chat", requiresAuth: true },
-  { overlayId: "quickData", icon: "Database", label: "Quick Data", requiresAuth: true },
-  { overlayId: "cloudFilesWindow", icon: "FolderOpen", label: "Quick Files", requiresAuth: true },
-  { overlayId: "quickChatHistory", icon: "Gem", label: "Chat History", requiresAuth: true },
-  { overlayId: "quickUtilities", icon: "LayoutGrid", label: "Utilities Hub", requiresAuth: true },
+  {
+    overlayId: "quickNotes",
+    icon: "StickyNote",
+    label: "Quick Note",
+    requiresAuth: true,
+    guestDescription:
+      "Capture a thought from anywhere, search every note instantly, pull into chat or agents on demand.",
+  },
+  {
+    overlayId: "quickTasks",
+    icon: "CheckSquare",
+    label: "Quick Task",
+    requiresAuth: true,
+    guestDescription:
+      "Capture work, assign it to yourself or an agent, watch it run. Tasks become workflows your team owns.",
+  },
+  {
+    overlayId: "quickChat",
+    icon: "MessageSquare",
+    label: "Quick Chat",
+    requiresAuth: true,
+    guestDescription:
+      "Pop-over chat from any page. Inherits the context you're working in, saves to your history.",
+  },
+  {
+    overlayId: "quickData",
+    icon: "Database",
+    label: "Quick Data",
+    requiresAuth: true,
+    guestDescription:
+      "Spin up tables on the fly, build datasets from chat, push results into reports and agents.",
+  },
+  {
+    overlayId: "cloudFilesWindow",
+    icon: "FolderOpen",
+    label: "Quick Files",
+    requiresAuth: true,
+    guestDescription:
+      "Upload, organize, share, and drop into chat — all from a draggable window over whatever you're doing.",
+  },
+  {
+    overlayId: "quickChatHistory",
+    icon: "Gem",
+    label: "Chat History",
+    requiresAuth: true,
+    guestDescription:
+      "Every conversation searchable, branchable, replayable. Pick up where you left off across devices.",
+  },
+  {
+    overlayId: "quickUtilities",
+    icon: "LayoutGrid",
+    label: "Utilities Hub",
+    requiresAuth: true,
+    guestDescription:
+      "A grid of every tool — converters, generators, scrapers, PDF tools — at your fingertips.",
+  },
 ];
 
 export const COMMUNICATION_ITEMS: OverlayMenuItemConfig[] = [
