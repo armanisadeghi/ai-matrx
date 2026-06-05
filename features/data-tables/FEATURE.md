@@ -27,26 +27,35 @@
 **Frontend wired through new primitives:**
 - ✅ Wave D — `ImportTableModal`: serial loop → one atomic `bulkWrite`
 - ✅ Wave F — `UserTableViewer`: row-action `History` icon → Sheet with `VersionHistoryViewer`
-- ✅ Wave B (3 of 4) — `EditRowModal` → `upsertRow`; `UserTableViewer` HTML cleanup + expanded-text save → `upsertCell`
+- ✅ Wave B (4 of 4) — `EditRowModal` → `upsertRow`; `UserTableViewer` HTML cleanup + expanded-text save → `upsertCell`; bulk HTML-cleanup loop → `bulkWrite({op:'merge'})`
 - ✅ Wave G — `TableSettingsModal`: strict-mode toggle persisting `validation_mode`
 - ✅ **Inline cell editing** — every `UserTableViewer` cell now wraps in `EditableCell` (double-click → type-aware input → `upsertCell` → success or toast)
 - ✅ **Realtime sync** — `UserTableViewer` subscribes to `udt_dataset_rows` changes for its tableId; debounced 400ms refetch
 - ✅ **Column-type badges** — every header now shows the `data_type` under the display name
+- ✅ **`op:'merge'` in `udt_bulk_write`** — applied live + verified; partial-row patch via `jsonb_concat`
+
+**P4 workbook surface (lossless spreadsheet, v1):**
+- ✅ `udt_workbook_snapshots` table — append-only content store keyed by `workbook_id`; RLS mirrors `udt_workbooks`; viewers see all snapshots they can view the parent of; editors can append; in `supabase_realtime` publication.
+- ✅ `workbook-service.ts` — `createWorkbook` / `listAccessibleWorkbooks` / `getWorkbook` / `renameWorkbook` / `deleteWorkbook` / `getLatestSnapshot` / `saveSnapshot` / `listSnapshots`.
+- ✅ `useWorkbookRealtime` hook — Postgres-Changes subscription for `udt_workbook_snapshots` filtered by `workbook_id`.
+- ✅ `WorkbookEditor` component — mounts Univer (`@univerjs/presets` + `@univerjs/preset-sheets-core`), hydrates from latest snapshot, debounces autosave (2.5s after last edit), hot-swaps on remote snapshots from other users; ignores echo of own writes. Status pill shows idle / dirty / saving / saved / error.
+- ✅ Routes — `/workbooks` (list + create + delete), `/workbooks/[id]` (open + rename + edit). Editor is dynamically imported with `ssr:false` so Univer never runs server-side.
+- ⏳ **V2 work — full CRDT collab** (per-cell deltas, presence cursors, formal conflict resolution). V1 is last-write-wins on the snapshot row, which is the standard MVP pattern. CRDT layer can build on the snapshot store without changing it.
 
 **Pending — user decision blockers (🛑):**
 - 🛑 **Wave H — version-history retention policy.** 3 options listed below; pick one before agent-heavy workloads land.
 - 🛑 **aidream backend audit attribution.** aidream's pool writes record `changed_by = NULL` (no JWT). Decide: keep honest NULL, or attribute the originating user via `set_config('request.jwt.claims', ...)` before each write.
+- 🛑 **CRDT-collab commitment.** P4 v1 ships last-write-wins. The honest "full collab from day one" answer requires picking a CRDT (Yjs is the obvious choice via Univer's `@univerjs/sheets-collaboration` preset). Confirm intent before I integrate.
 
 **Pending — needs UX design (⏳):**
 - ⏳ **Wave E — column type-change UI.** Need confirmation dialog, strategy picker (`cast_or_null` vs `cast_or_skip`), progress feedback for long row-rewrites. RPC already live and tested.
-- ⏳ **Wave P4 — full workbook surface (lossless XLSX, full collab).** Univer-class integration; multi-day work; `udt_workbooks` table and FK hook already live so this is unblocked architecturally.
-- ⏳ **Wave P3 — smart importer.** "Rational vs look-sensitive" detection that routes uploads to typed datasets vs workbook surface. Depends on P4 existing.
+- ⏳ **Wave P3 — smart importer (XLSX → typed dataset vs workbook).** Detects "rational" (header-row + uniform-type columns) vs "look-sensitive" (merged cells, formulas, multi-region) and routes the upload to `udt_datasets` or `udt_workbooks` accordingly. P4 v1 makes this fully unblocked.
 
 **Pending — small + clear (🚧 ready when you say go):**
-- 🚧 **`op:'merge'` for `udt_bulk_write`.** Tiny SQL migration (`data = data || v_op->'data'`). Unblocks the deferred Wave B 4th site (bulk HTML-cleanup loop).
-- 🚧 **Wave B last site.** Migrate `UserTableViewer` bulk HTML-cleanup loop once `op:'merge'` lands.
-- 🚧 **Bulk paste from Excel / Sheets clipboard** into the grid.
-- 🚧 **Add row inline at bottom** of the grid.
+- 🚧 **Bulk paste from Excel / Sheets clipboard** into the typed-dataset grid.
+- 🚧 **"Save now" + named-snapshot UI** in the workbook editor toolbar (currently autosave-only; the underlying `saveSnapshot` already accepts `label` + `origin:'manual'`).
+- 🚧 **Snapshot-history viewer** for workbooks (mirror of `VersionHistoryViewer` for rows; uses `listSnapshots`).
+- 🚧 **Import XLSX → workbook** path (`ImportTableModal` route fork).
 
 ---
 
@@ -357,6 +366,16 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-06-03` — claude: **P4 v1 — lossless workbook surface shipped**. New `udt_workbook_snapshots`
+  table (append-only content store keyed by `udt_workbooks.id`, RLS-mirrored, in
+  `supabase_realtime`). Migration `udt_v2_workbook_snapshots` applied live. New
+  `features/data-tables/workbook-service.ts` (8 typed wrappers — CRUD on workbooks + snapshots),
+  `useWorkbookRealtime` hook (Postgres-Changes subscription), `WorkbookEditor` component
+  (Univer-mounted, 2.5s-debounced autosave, hot-swap on remote snapshots from other users with
+  self-echo suppression), and routes `/workbooks` (list/create/delete) + `/workbooks/[id]`
+  (open/rename/edit). `@univerjs/presets` + `@univerjs/preset-sheets-core` added (dynamic
+  import in the route so Univer never runs server-side). V1 is last-write-wins on the snapshot
+  row — real CRDT collab is the v2 layer, can build on this store unchanged.
 - `2026-06-03` — claude: spreadsheet UX milestone. Three user-visible features landed:
   (a) **Inline cell editing** — new `EditableCell` component wraps every cell display in
   `UserTableViewer`; double-click enters edit mode, input shape adapts to `data_type`

@@ -16,6 +16,16 @@ export type Workbook = T["udt_workbooks"]["Row"];
 export type WorkbookInsert = T["udt_workbooks"]["Insert"];
 export type WorkbookUpdate = T["udt_workbooks"]["Update"];
 
+export type WorkbookSnapshot = T["udt_workbook_snapshots"]["Row"];
+export type WorkbookSnapshotInsert = T["udt_workbook_snapshots"]["Insert"];
+
+/** Origin of a snapshot. Free text in the DB; this enum is advisory. */
+export type WorkbookSnapshotOrigin =
+  | "autosave"
+  | "manual"
+  | "imported"
+  | "restored";
+
 export type Dataset = T["udt_datasets"]["Row"];
 export type DatasetInsert = T["udt_datasets"]["Insert"];
 export type DatasetUpdate = T["udt_datasets"]["Update"];
