@@ -20,7 +20,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { History, Loader2, Save } from "lucide-react";
 
 import {
   createUniver,
@@ -34,6 +34,14 @@ import sheetsCoreEnUS from "@univerjs/preset-sheets-core/locales/en-US";
 import "@univerjs/preset-sheets-core/lib/index.css";
 
 import { supabase } from "@/utils/supabase/client";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { toast } from "@/components/ui/use-toast";
 
 import { useWorkbookRealtime } from "../hooks/useWorkbookRealtime";
@@ -42,6 +50,7 @@ import {
   saveSnapshot,
 } from "../workbook-service";
 import { isServiceFailure } from "../types";
+import { WorkbookHistoryViewer } from "./WorkbookHistoryViewer";
 
 type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
@@ -63,6 +72,7 @@ export default function WorkbookEditor({ workbookId, editable = true }: Props) {
   >("booting");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // Stable identity for the realtime callback so the hook doesn't resubscribe
   // every render.
@@ -169,31 +179,47 @@ export default function WorkbookEditor({ workbookId, editable = true }: Props) {
     // Re-mount when the workbookId changes (route navigation).
   }, [workbookId, editable]);
 
-  // Stable save fn — pulled out so the timer callback can reach it.
-  const performSave = useCallback(async () => {
-    if (!apiRef.current) return;
-    const workbook = apiRef.current.getActiveWorkbook();
-    if (!workbook) return;
-    const snapshot = workbook.getSnapshot();
-    setSaveStatus("saving");
+  // Stable save fn — pulled out so the timer callback and the manual-save
+  // button can both reach it.
+  const performSave = useCallback(
+    async (origin: "autosave" | "manual" = "autosave") => {
+      if (!apiRef.current) return;
+      const workbook = apiRef.current.getActiveWorkbook();
+      if (!workbook) return;
+      const snapshot = workbook.getSnapshot();
+      setSaveStatus("saving");
 
-    const { data: userData } = await supabase.auth.getUser();
-    lastSaveByUserRef.current = userData?.user?.id ?? null;
+      const { data: userData } = await supabase.auth.getUser();
+      lastSaveByUserRef.current = userData?.user?.id ?? null;
 
-    const res = await saveSnapshot({ workbookId, snapshot });
-    if (isServiceFailure(res)) {
-      setSaveStatus("error");
-      toast({
-        title: "Could not save workbook",
-        description: res.error,
-        variant: "destructive",
-      });
-      return;
+      const res = await saveSnapshot({ workbookId, snapshot, origin });
+      if (isServiceFailure(res)) {
+        setSaveStatus("error");
+        toast({
+          title: "Could not save workbook",
+          description: res.error,
+          variant: "destructive",
+        });
+        return;
+      }
+      setSaveStatus("saved");
+      if (origin === "manual") {
+        toast({ title: "Snapshot saved", variant: "success" });
+      }
+      // Drop the "saved" indicator after a moment to reduce visual noise.
+      setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 1500);
+    },
+    [workbookId],
+  );
+
+  const handleSaveNow = useCallback(() => {
+    // Cancel any pending autosave so we don't race ourselves.
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
     }
-    setSaveStatus("saved");
-    // Drop the "saved" indicator after a moment to reduce visual noise.
-    setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 1500);
-  }, [workbookId]);
+    void performSave("manual");
+  }, [performSave]);
 
   // Save-status pill text/style.
   const statusPill = useMemo(() => statusPillFor(saveStatus), [saveStatus]);
@@ -215,12 +241,59 @@ export default function WorkbookEditor({ workbookId, editable = true }: Props) {
           )}
           {bootState === "ready" && <span>{editable ? "Editing" : "Viewing"}</span>}
         </div>
-        <div className={`flex items-center gap-1 ${statusPill.className}`}>
-          {statusPill.icon}
-          <span>{statusPill.text}</span>
+        <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-1 ${statusPill.className}`}>
+            {statusPill.icon}
+            <span>{statusPill.text}</span>
+          </div>
+          {editable && bootState === "ready" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 px-2 text-xs"
+              onClick={handleSaveNow}
+              disabled={saveStatus === "saving"}
+              title="Save a labeled snapshot now (bypass autosave debounce)"
+            >
+              <Save className="size-3" />
+              Save now
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 px-2 text-xs"
+            onClick={() => setHistoryOpen(true)}
+            title="View snapshot history"
+          >
+            <History className="size-3" />
+            History
+          </Button>
         </div>
       </div>
       <div ref={containerRef} className="min-h-0 flex-1" />
+
+      <Sheet
+        open={historyOpen}
+        onOpenChange={(open) => setHistoryOpen(open)}
+      >
+        <SheetContent className="overflow-y-auto sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Workbook history</SheetTitle>
+            <SheetDescription>
+              Every saved snapshot, newest first. Restore brings an older
+              snapshot back as the new current state (the previous one stays
+              in history).
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4">
+            <WorkbookHistoryViewer
+              workbookId={workbookId}
+              editable={editable}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

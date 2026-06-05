@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FileSpreadsheet,
   Loader2,
   Plus,
   Trash,
+  Upload,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -18,8 +19,10 @@ import {
   createWorkbook,
   deleteWorkbook,
   listAccessibleWorkbooks,
+  saveSnapshot,
 } from "@/features/data-tables/workbook-service";
 import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
+import { xlsxToUniverWorkbook } from "@/features/data-tables/xlsx-to-univer";
 
 export default function WorkbooksLandingPage() {
   const router = useRouter();
@@ -27,6 +30,8 @@ export default function WorkbooksLandingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -59,6 +64,58 @@ export default function WorkbooksLandingPage() {
     }
     router.push(`/workbooks/${res.data.id}`);
   }, [router]);
+
+  const handleImportXlsx = useCallback(
+    async (file: File) => {
+      setImporting(true);
+      try {
+        // Parse first — if the file is malformed, we surface the error
+        // BEFORE creating an empty workbook the user would have to delete.
+        const snapshot = await xlsxToUniverWorkbook(file);
+
+        const cleanName = file.name.replace(/\.[^.]+$/, "") || "Imported workbook";
+        const created = await createWorkbook({
+          name: cleanName,
+          description: `Imported from ${file.name}`,
+          source: file.name.toLowerCase().endsWith(".csv")
+            ? "imported_csv"
+            : "imported_xlsx",
+        });
+        if (isServiceFailure(created)) throw new Error(created.error);
+
+        const saved = await saveSnapshot({
+          workbookId: created.data.id,
+          snapshot,
+          origin: "imported",
+          label: file.name,
+        });
+        if (isServiceFailure(saved)) {
+          // Roll back the workbook so we don't leave an empty husk on import
+          // failure. Best-effort.
+          await deleteWorkbook(created.data.id);
+          throw new Error(saved.error);
+        }
+
+        toast({
+          title: "Workbook imported",
+          description: cleanName,
+          variant: "success",
+        });
+        router.push(`/workbooks/${created.data.id}`);
+      } catch (err) {
+        toast({
+          title: "Could not import workbook",
+          description: err instanceof Error ? err.message : String(err),
+          variant: "destructive",
+        });
+      } finally {
+        setImporting(false);
+        // Reset the file input so the same file can be selected again later.
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    },
+    [router],
+  );
 
   const handleDelete = useCallback(
     async (wb: Workbook) => {
@@ -94,14 +151,38 @@ export default function WorkbooksLandingPage() {
             workbook autosaves and syncs in realtime to anyone with access.
           </p>
         </div>
-        <Button onClick={handleCreate} disabled={creating}>
-          {creating ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Plus className="h-4 w-4 mr-2" />
-          )}
-          New workbook
-        </Button>
+        <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handleImportXlsx(f);
+            }}
+          />
+          <Button
+            variant="outline"
+            disabled={importing || creating}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {importing ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 mr-2" />
+            )}
+            Import XLSX / CSV
+          </Button>
+          <Button onClick={handleCreate} disabled={creating || importing}>
+            {creating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4 mr-2" />
+            )}
+            New workbook
+          </Button>
+        </div>
       </div>
 
       {loading && (

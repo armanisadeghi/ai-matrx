@@ -38,8 +38,10 @@
 - ✅ `udt_workbook_snapshots` table — append-only content store keyed by `workbook_id`; RLS mirrors `udt_workbooks`; viewers see all snapshots they can view the parent of; editors can append; in `supabase_realtime` publication.
 - ✅ `workbook-service.ts` — `createWorkbook` / `listAccessibleWorkbooks` / `getWorkbook` / `renameWorkbook` / `deleteWorkbook` / `getLatestSnapshot` / `saveSnapshot` / `listSnapshots`.
 - ✅ `useWorkbookRealtime` hook — Postgres-Changes subscription for `udt_workbook_snapshots` filtered by `workbook_id`.
-- ✅ `WorkbookEditor` component — mounts Univer (`@univerjs/presets` + `@univerjs/preset-sheets-core`), hydrates from latest snapshot, debounces autosave (2.5s after last edit), hot-swaps on remote snapshots from other users; ignores echo of own writes. Status pill shows idle / dirty / saving / saved / error.
-- ✅ Routes — `/workbooks` (list + create + delete), `/workbooks/[id]` (open + rename + edit). Editor is dynamically imported with `ssr:false` so Univer never runs server-side.
+- ✅ `WorkbookEditor` component — mounts Univer (`@univerjs/presets` + `@univerjs/preset-sheets-core`), hydrates from latest snapshot, debounces autosave (2.5s after last edit), hot-swaps on remote snapshots from other users; ignores echo of own writes. Status pill shows idle / dirty / saving / saved / error. Toolbar buttons: "Save now" (labeled snapshot, bypasses autosave) and "History" (opens snapshot timeline).
+- ✅ Routes — `/workbooks` (list + create + delete + **import XLSX/CSV**), `/workbooks/[id]` (open + rename + edit). Editor is dynamically imported with `ssr:false` so Univer never runs server-side.
+- ✅ **XLSX/CSV import** — `xlsxToUniverWorkbook` (SheetJS-based) converts uploaded files to a minimal `IWorkbookData`: values + types + formula source for all sheets, ISO dates for date cells. Pre-flight parse so a malformed file does not leave an empty workbook husk. The original file id will plug into `udt_workbooks.original_file_id` once the universal file handler linkage is wired.
+- ✅ **Snapshot history viewer + restore** — `WorkbookHistoryViewer` lists snapshots newest-first with origin badges (autosave / manual / imported / restored); Restore writes a NEW snapshot from the chosen one so the realtime hook hot-swaps automatically. Snapshots are append-only; restoring does not delete history.
 - ⏳ **V2 work — full CRDT collab** (per-cell deltas, presence cursors, formal conflict resolution). V1 is last-write-wins on the snapshot row, which is the standard MVP pattern. CRDT layer can build on the snapshot store without changing it.
 
 **Pending — user decision blockers (🛑):**
@@ -53,9 +55,8 @@
 
 **Pending — small + clear (🚧 ready when you say go):**
 - 🚧 **Bulk paste from Excel / Sheets clipboard** into the typed-dataset grid.
-- 🚧 **"Save now" + named-snapshot UI** in the workbook editor toolbar (currently autosave-only; the underlying `saveSnapshot` already accepts `label` + `origin:'manual'`).
-- 🚧 **Snapshot-history viewer** for workbooks (mirror of `VersionHistoryViewer` for rows; uses `listSnapshots`).
-- 🚧 **Import XLSX → workbook** path (`ImportTableModal` route fork).
+- 🚧 **`udt_workbooks.original_file_id` linkage** to the universal file handler — store the uploaded XLSX/CSV blob so the lossless original can be downloaded / re-imported / passed to a "diff against original" view.
+- 🚧 **Export workbook → XLSX** (the symmetric path of import).
 
 ---
 
@@ -366,6 +367,25 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-06-05` — claude: **P4 v1 polish — XLSX/CSV import + snapshot history + Save-now**. Three
+  follow-ups landed on top of the workbook surface:
+  - `features/data-tables/xlsx-to-univer.ts` — SheetJS-based converter that turns an uploaded
+    `.xlsx` / `.xls` / `.csv` into a minimal Univer `IWorkbookData` (values + types + formula
+    source per sheet; ISO dates for date cells). Multi-sheet workbooks become multi-sheet
+    Univer docs. Pre-flight parse before creating the workbook row so failure does not leave a
+    husk.
+  - `/workbooks` page — new "Import XLSX / CSV" button that runs the converter, calls
+    `createWorkbook({source: 'imported_xlsx' | 'imported_csv'})`, saves the parsed shape as an
+    `origin: 'imported'` snapshot, then routes to `/workbooks/[id]`. On `saveSnapshot` failure
+    the husk workbook is deleted as best-effort rollback.
+  - `WorkbookHistoryViewer` component — lists snapshots newest-first with origin badges
+    (autosave / manual / imported / restored), highlights the current one, and offers per-row
+    "Restore" that writes a NEW `origin: 'restored'` snapshot containing the chosen JSON.
+    Realtime hook in `WorkbookEditor` hot-swaps to it automatically. Snapshots are append-only
+    — Restore is non-destructive.
+  - `WorkbookEditor` toolbar — adds "Save now" (manual labeled save, cancels pending autosave)
+    and "History" (opens a Sheet containing `WorkbookHistoryViewer`). Editor stays
+    self-contained; the page just renders `<WorkbookEditor workbookId={id} />`.
 - `2026-06-03` — claude: **P4 v1 — lossless workbook surface shipped**. New `udt_workbook_snapshots`
   table (append-only content store keyed by `udt_workbooks.id`, RLS-mirrored, in
   `supabase_realtime`). Migration `udt_v2_workbook_snapshots` applied live. New
