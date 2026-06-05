@@ -70,8 +70,15 @@ export interface ShellNavItem {
 // Primary navigation items — canonical app URLs shared by (a), (ssr), and (authenticated).
 export const primaryNavItems: ShellNavItem[] = [
   {
+    // Authed users get their personalized hub; guests get the public
+    // "browse the platform" surface (`/features`) since the dashboard
+    // is meaningless without a signed-in user — and the middleware
+    // hard-redirects guests off `/dashboard` to `/login` anyway, so
+    // pointing the sidebar there would bounce guests through an
+    // unnecessary login hop.
     label: "Dashboard",
     href: "/dashboard",
+    guestHref: "/features",
     iconName: "LayoutDashboard",
     section: "primary",
     dockOrder: 1,

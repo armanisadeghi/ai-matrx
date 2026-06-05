@@ -99,7 +99,9 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const requiresAuth =
     pathname.startsWith("/administration") || // Admin-only tools
-    pathname.startsWith("/api/admin"); // Admin API routes
+    pathname.startsWith("/api/admin") || // Admin API routes
+    pathname === "/dashboard" || // Personalized hub; crashes on guest stub user
+    pathname.startsWith("/dashboard/");
 
   if (!user && requiresAuth) {
     const url = request.nextUrl.clone();
