@@ -15,6 +15,8 @@ import {
   Table,
   Mic,
   BookOpen,
+  FlaskConical,
+  Aperture,
 } from "lucide-react";
 
 /**
@@ -125,6 +127,16 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
       "Speaker-attributed, multilingual transcripts with action items and summaries.",
     group: "Knowledge & Data",
   },
+  {
+    // Routes to the feature's own legacy landing (features/research/...);
+    // pre-dates the `<ModuleLanding>` shell but still guest-safe.
+    label: "Research",
+    href: "/research",
+    icon: FlaskConical,
+    teaser:
+      "Deep, cited research runs across the web, your docs, and your knowledge bases.",
+    group: "Knowledge & Data",
+  },
 
   // Build & Run
   {
@@ -149,6 +161,17 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     icon: Container,
     teaser:
       "Linux containers your team and agents share. Spin up in seconds, persist for as long as needed.",
+    group: "Build & Run",
+  },
+  {
+    // Routes to the feature's own legacy landing (`app/(core)/images/
+    // _components/ImagesLandingHero`); pre-dates the `<ModuleLanding>`
+    // shell but still guest-safe.
+    label: "Images",
+    href: "/images",
+    icon: Aperture,
+    teaser:
+      "Browse, generate, edit, annotate, convert — every image tool in one place.",
     group: "Build & Run",
   },
 
