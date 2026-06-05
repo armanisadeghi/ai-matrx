@@ -44,6 +44,7 @@
 - ✅ **XLSX/CSV import** — `xlsxToUniverWorkbook` (SheetJS-based) converts uploaded files to a minimal `IWorkbookData`: values + types + formula source for all sheets, ISO dates for date cells. Pre-flight parse so a malformed file does not leave an empty workbook husk. The original file id will plug into `udt_workbooks.original_file_id` once the universal file handler linkage is wired.
 - ✅ **Snapshot history viewer + restore** — `WorkbookHistoryViewer` lists snapshots newest-first with origin badges (autosave / manual / imported / restored); Restore writes a NEW snapshot from the chosen one so the realtime hook hot-swaps automatically. Snapshots are append-only; restoring does not delete history.
 - ✅ **Export workbook → XLSX** — `univerSnapshotToXlsxBuffer` + `downloadUniverAsXlsx` (SheetJS). Symmetric to the import path; same scope (values + types + formula source per sheet). Wired as a toolbar button in `WorkbookEditor`; filename = workbook name.
+- ✅ **Share + permission gating** — `udt_workbooks` added to client-side `SHAREABLE_RESOURCE_REGISTRY` (DB registry had it from P1). `/workbooks/[id]` header gets the standard `<ShareButton>`. Page calls `has_permission(udt_workbooks, id, 'editor')` at mount to decide whether the editor mounts in editable or viewer-only mode (owner always edits; shared editors detected via the RPC; everyone else sees viewer mode).
 - ⏳ **V2 work — full CRDT collab** (per-cell deltas, presence cursors, formal conflict resolution). V1 is last-write-wins on the snapshot row, which is the standard MVP pattern. CRDT layer can build on the snapshot store without changing it.
 
 **Pending — user decision blockers (🛑):**
@@ -367,6 +368,14 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-06-05` — claude: **Workbook share + permission gating**. Added `udt_workbooks` to
+  `utils/permissions/registry.ts` so `<ShareButton resourceType="udt_workbooks" />` works
+  (DB-side registry entry was already added in P1; the TS mirror was stale). `/workbooks/[id]`
+  header gets the share button on the right. The page calls `has_permission(udt_workbooks, id,
+  'editor')` at mount and passes `editable` down — owners always edit; users shared with editor
+  permission edit; everyone else sees viewer mode (no autosave, no Save now, name input
+  disabled). Matches what the RLS-protected RPCs would accept, so the UI does not lie about
+  what's possible.
 - `2026-06-05` — claude: **Export XLSX + Wave E (column type-change UI)**.
   `features/data-tables/univer-to-xlsx.ts` symmetrises the import path — SheetJS-based
   conversion of a Univer `IWorkbookData` snapshot back to `.xlsx` (values + types + formula
