@@ -17,6 +17,7 @@ import {
   BookOpen,
   FlaskConical,
   Aperture,
+  FileSpreadsheet,
 } from "lucide-react";
 
 /**
@@ -109,6 +110,14 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     icon: Table,
     teaser:
       "Spreadsheets you build from chat, edit by hand, and hand to agents as structured memory.",
+    group: "Knowledge & Data",
+  },
+  {
+    label: "Workbooks",
+    href: "/workbooks",
+    icon: FileSpreadsheet,
+    teaser:
+      "Lossless XLSX in the browser — multi-sheet, formulas, realtime, autosave + snapshots.",
     group: "Knowledge & Data",
   },
   {
