@@ -48,6 +48,7 @@ import {
   orgScopesHref,
   scopeTypeHref,
   scopeItemHref,
+  scopeContextItemsHref,
 } from "@/features/scope-system/utils/scopeRoutes";
 
 interface ScopeDetailEditorProps {
@@ -408,6 +409,21 @@ export function ScopeDetailEditor({
       />
 
       <Card className="p-6 space-y-5">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-base font-semibold text-foreground">
+            Context items
+            {total > 0 && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                {filled}/{total} filled
+              </span>
+            )}
+          </h2>
+          <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+            <Link href={scopeContextItemsHref(orgSlugOrId, scopeType, scope)}>
+              Open full page
+            </Link>
+          </Button>
+        </div>
         {loading && !rows && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
