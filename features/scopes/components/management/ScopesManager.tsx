@@ -40,6 +40,8 @@ import { OrgHomeScopeSection } from "@/features/scope-system/components/OrgHomeS
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
 import { TemplateGalleryDrawer } from "@/features/scope-system/components/TemplateGalleryDrawer";
 import { ReorderDialog } from "@/features/scope-system/components/ReorderDialog";
+import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
+import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 import type { Organization } from "@/features/organizations/types";
 
 interface ScopesManagerProps {
@@ -61,6 +63,8 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
   const [addScopeOpen, setAddScopeOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [reorderTypesOpen, setReorderTypesOpen] = useState(false);
+  const suggestions = useScopeSuggestions();
+  const orgSuggestions = orgScopes.flatMap((sc) => suggestions.forScope(sc.id));
 
   useEffect(() => {
     dispatch(fetchScopeTypes(organization.id));
@@ -160,6 +164,18 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
           </div>
         </div>
       </Card>
+
+      {orgSuggestions.length > 0 && (
+        <KgSuggestionHint
+          variant="banner"
+          rows={orgSuggestions}
+          accept={suggestions.accept}
+          reject={suggestions.reject}
+          defer={suggestions.defer}
+          label={organization.name}
+          align="start"
+        />
+      )}
 
       {scopeTypes.length === 0 ? (
         <Card className="p-6 md:p-8 space-y-4">

@@ -74,6 +74,13 @@ import {
   contextItemsHref,
   contextItemHref,
 } from "@/features/scope-system/utils/scopeRoutes";
+import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
+import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
+import type {
+  KgAcceptResult,
+  KgDecisionResponse,
+  KgSuggestionRow,
+} from "@/features/kg-suggestions/types";
 
 interface ScopesListProps {
   orgId: string;
@@ -114,6 +121,7 @@ export function ScopesList({
   const itemsLoaded = useAppSelector((s) =>
     selectItemsLoadedForType(s, resolvedTypeId ?? ""),
   );
+  const suggestions = useScopeSuggestions();
 
   const [adding, setAdding] = useState(false);
   const [editingType, setEditingType] = useState(false);
@@ -203,6 +211,7 @@ export function ScopesList({
 
   const color = resolveColor(scopeType);
   const scopeCount = sorted.length;
+  const typeSuggestions = sorted.flatMap((s) => suggestions.forScope(s.id));
 
   return (
     <div className="space-y-6 pr-14">
@@ -274,7 +283,9 @@ export function ScopesList({
           </span>
           <span className="inline-flex items-center gap-1.5">
             <ListChecks className="h-4 w-4 text-muted-foreground" />
-            <span className="font-semibold text-foreground">{items.length}</span>
+            <span className="font-semibold text-foreground">
+              {items.length}
+            </span>
             <span className="text-muted-foreground">
               {items.length === 1 ? "context item" : "context items"}
             </span>
@@ -318,6 +329,18 @@ export function ScopesList({
             </Button>
           </div>
         </div>
+
+        {typeSuggestions.length > 0 && (
+          <KgSuggestionHint
+            variant="banner"
+            rows={typeSuggestions}
+            accept={suggestions.accept}
+            reject={suggestions.reject}
+            defer={suggestions.defer}
+            label={scopeType.label_plural.toLowerCase()}
+            align="start"
+          />
+        )}
 
         {adding && (
           <NewScopeInline
@@ -384,6 +407,11 @@ export function ScopesList({
                       scopeId={scope.id}
                       scopeName={scope.name}
                       columns={items}
+                      suggestionRows={suggestions.forScope(scope.id)}
+                      suggestionByItem={suggestions.byScopeItem}
+                      accept={suggestions.accept}
+                      reject={suggestions.reject}
+                      defer={suggestions.defer}
                       onClick={() =>
                         router.push(scopeHref(orgSlugOrId, scopeType, scope))
                       }
@@ -651,6 +679,11 @@ interface ScopeTableRowProps {
   scopeId: string;
   scopeName: string;
   columns: { id: string; display_name: string }[];
+  suggestionRows: KgSuggestionRow[];
+  suggestionByItem: Map<string, KgSuggestionRow[]>;
+  accept: (id: string) => Promise<KgAcceptResult>;
+  reject: (id: string) => Promise<KgDecisionResponse>;
+  defer: (id: string) => Promise<KgDecisionResponse>;
   onClick: () => void;
 }
 
@@ -658,6 +691,11 @@ function ScopeTableRow({
   scopeId,
   scopeName,
   columns,
+  suggestionRows,
+  suggestionByItem,
+  accept,
+  reject,
+  defer,
   onClick,
 }: ScopeTableRowProps) {
   const rows = useAppSelector((s) => selectValuesByScope(s, scopeId));
@@ -669,6 +707,19 @@ function ScopeTableRow({
       <TableCell className="sticky left-0 z-10 bg-card group-hover:bg-accent/40 px-3 font-medium w-[200px] min-w-[200px] border-b border-border">
         <span className="flex items-center gap-1.5 w-full min-w-0">
           <span className="truncate">{scopeName}</span>
+          {suggestionRows.length > 0 && (
+            <span onClick={(e) => e.stopPropagation()} className="shrink-0">
+              <KgSuggestionHint
+                variant="badge"
+                rows={suggestionRows}
+                accept={accept}
+                reject={reject}
+                defer={defer}
+                label={scopeName}
+                align="start"
+              />
+            </span>
+          )}
           <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
         </span>
       </TableCell>
@@ -676,6 +727,8 @@ function ScopeTableRow({
         const row = valueMap.get(col.id);
         const display = row ? renderValue(row) : "";
         const isEmpty = !display;
+        const cellSuggestions =
+          suggestionByItem.get(`${scopeId}:${col.id}`) ?? [];
 
         if (!rows) {
           return (
@@ -693,24 +746,38 @@ function ScopeTableRow({
             key={col.id}
             className={`px-3 w-[200px] min-w-[200px] max-w-[200px] border-b border-border group-hover:bg-accent/40 ${isEmpty ? "text-muted-foreground" : ""}`}
           >
-            {isEmpty ? (
-              <span className="truncate block text-xs">—</span>
-            ) : (
-              <TooltipProvider delayDuration={400}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="truncate block cursor-help text-sm">
-                      {display}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-sm">
-                    <p className="text-xs whitespace-pre-wrap break-words">
-                      {display}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+            <span className="flex items-center gap-1.5 min-w-0">
+              {isEmpty ? (
+                <span className="truncate block text-xs">—</span>
+              ) : (
+                <TooltipProvider delayDuration={400}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="truncate block cursor-help text-sm min-w-0">
+                        {display}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-sm">
+                      <p className="text-xs whitespace-pre-wrap break-words">
+                        {display}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {cellSuggestions.length > 0 && (
+                <span onClick={(e) => e.stopPropagation()} className="shrink-0">
+                  <KgSuggestionHint
+                    variant="dot"
+                    rows={cellSuggestions}
+                    accept={accept}
+                    reject={reject}
+                    defer={defer}
+                    align="start"
+                  />
+                </span>
+              )}
+            </span>
           </TableCell>
         );
       })}

@@ -30,6 +30,8 @@ import {
 import { listScopeTypeItems } from "@/features/scope-system/redux/contextItemsSlice";
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
+import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
+import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
@@ -79,13 +81,17 @@ export function ScopeContextItemsHub({
     selectScopeBySlugOrId(s, resolvedTypeId, scopeParam),
   );
   const scopesLoaded = useAppSelector((s) =>
-    resolvedTypeId ? selectScopesLoadedForType(s, orgId, resolvedTypeId) : false,
+    resolvedTypeId
+      ? selectScopesLoadedForType(s, orgId, resolvedTypeId)
+      : false,
   );
   const scopeId = scope?.id;
   const rows = useAppSelector((s) => selectValuesByScope(s, scopeId ?? ""));
   const loading = useAppSelector((s) =>
     selectScopeValuesLoading(s, scopeId ?? ""),
   );
+  const suggestions = useScopeSuggestions();
+  const scopeSuggestions = suggestions.forScope(scopeId);
 
   useEffect(() => {
     if (!resolvedTypeId) return;
@@ -94,7 +100,8 @@ export function ScopeContextItemsHub({
   }, [dispatch, orgId, resolvedTypeId]);
 
   useEffect(() => {
-    if (scopeId) dispatch(getScopeContext({ scope_id: scopeId, include_empty: true }));
+    if (scopeId)
+      dispatch(getScopeContext({ scope_id: scopeId, include_empty: true }));
   }, [dispatch, scopeId]);
 
   if (!scopeType) {
@@ -201,6 +208,19 @@ export function ScopeContextItemsHub({
         </div>
       </Card>
 
+      {/* Knowledge-graph suggestions for this scope */}
+      {scopeSuggestions.length > 0 && (
+        <KgSuggestionHint
+          variant="banner"
+          rows={scopeSuggestions}
+          accept={suggestions.accept}
+          reject={suggestions.reject}
+          defer={suggestions.defer}
+          label={scope.name}
+          align="start"
+        />
+      )}
+
       {/* Items + values for this scope */}
       <Card className="p-6 space-y-5">
         {loading && !rows && (
@@ -226,6 +246,16 @@ export function ScopeContextItemsHub({
                   id: row.item_id,
                   slug: row.slug,
                 })}
+                headerSlot={
+                  <KgSuggestionHint
+                    variant="dot"
+                    rows={suggestions.forScopeItem(scope.id, row.item_id)}
+                    accept={suggestions.accept}
+                    reject={suggestions.reject}
+                    defer={suggestions.defer}
+                    label={row.display_name}
+                  />
+                }
               />
             ))}
           </div>

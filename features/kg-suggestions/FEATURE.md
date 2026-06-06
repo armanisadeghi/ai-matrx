@@ -260,6 +260,20 @@ compile-verified against the typed contract.
 
 ## Change log
 
+- `2026-06-06` — **Cross-surface hint rollout.** The rich decision card only
+  lived on the item-value detail page (low traffic). Added two reusable
+  primitives so suggestions surface wherever a user already is:
+  `useScopeSuggestions` (reads the ONE shared global-pending list and indexes
+  it `byScope` / `byScopeItem`, so a page-level container fetches once and
+  hands pre-filtered rows to many hints — no per-hint fetch) and
+  `KgSuggestionHint` (one component, three shapes — `dot` next to a field,
+  `badge` on a table row, `banner` atop a section — all opening the same
+  popover of full `KgSuggestionRowItem` decision cards). `ScopeFieldInput`
+  gained a `headerSlot` prop to host the per-field dot. Wired into: scope
+  context-items page + scope detail (per-field dots + scope banner), the
+  scopes table (per-row badge, per-cell dots, type-wide banner), the org
+  scopes hub + org overview (org-wide banner), and the global orgs list
+  (per-card badge). All respect `defer`; all hidden at zero count.
 - `2026-06-06` — **Decision-UX overhaul.** The shared row was a cramped
   "entity → slot · set value" line that hid everything a user needs (raw ids,
   no source, no current value, no overwrite signal), forcing DB spelunking.
@@ -272,7 +286,10 @@ compile-verified against the typed contract.
   current → suggested with an explicit OVERWRITE warning + destructive
   `ConfirmDialog` (so accepting over a manual value is no longer a silent
   data loss), and a collapsible "all fields on this scope" list with the
-  target highlighted. Widened `GlobalSuggestionsDrawer` to `sm:max-w-xl` and
+  target highlighted. The source "Open" uses the new `useOpenNoteInWindow`
+  primitive (`features/notes/actions/`) → canonical `notesBetaWindow`, not
+  the deprecated `notesWindow`. Widened `GlobalSuggestionsDrawer` to
+  `sm:max-w-xl` and
   added a framing hint. Made `ScopeItemSuggestionsPanel` scope-aware
   (`scopeId` prop filters out fills meant for other scopes of the same type)
   and wired it onto the scope-item detail page under the value editor.

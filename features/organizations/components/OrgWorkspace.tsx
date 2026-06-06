@@ -71,6 +71,8 @@ import { useOrgResourceInventory } from "@/features/organizations/hooks/useOrgRe
 import { OrgResourceRoleSection } from "@/features/organizations/components/OrgResourceRoleSection";
 import { ContributeResourceSheet } from "@/features/organizations/components/ContributeResourceSheet";
 import { OrgShareReviewCard } from "@/features/organizations/components/OrgShareReviewCard";
+import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
+import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 
 export function OrgWorkspace() {
   const params = useParams();
@@ -142,6 +144,9 @@ export function OrgWorkspace() {
   const { counts, loading: countsLoading } = useOrgResourceInventory(
     organization?.id ?? null,
   );
+
+  const suggestions = useScopeSuggestions();
+  const orgSuggestions = orgScopes.flatMap((sc) => suggestions.forScope(sc.id));
 
   const isAdmin = userRole === "owner" || userRole === "admin";
 
@@ -347,6 +352,19 @@ export function OrgWorkspace() {
             </div>
           )}
         </Card>
+
+        {/* ─── Knowledge-graph suggestions ──────────────────────────── */}
+        {orgSuggestions.length > 0 && (
+          <KgSuggestionHint
+            variant="banner"
+            rows={orgSuggestions}
+            accept={suggestions.accept}
+            reject={suggestions.reject}
+            defer={suggestions.defer}
+            label={organization.name}
+            align="start"
+          />
+        )}
 
         {/* ─── Knowledge graph CTA ──────────────────────────────────── */}
         <button

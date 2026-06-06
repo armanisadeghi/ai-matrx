@@ -44,6 +44,8 @@ import { ScopeGlyph } from "./ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import { KgGraphCard } from "@/features/kg-graph/components/KgGraphCard";
+import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
+import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 import {
   orgScopesHref,
   scopeTypeHref,
@@ -87,13 +89,16 @@ export function ScopeDetailEditor({
     selectScopeBySlugOrId(s, resolvedTypeId, scopeParam),
   );
   const scopesLoaded = useAppSelector((s) =>
-    resolvedTypeId ? selectScopesLoadedForType(s, orgId, resolvedTypeId) : false,
+    resolvedTypeId
+      ? selectScopesLoadedForType(s, orgId, resolvedTypeId)
+      : false,
   );
   const scopeId = scope?.id;
   const rows = useAppSelector((s) => selectValuesByScope(s, scopeId ?? ""));
   const loading = useAppSelector((s) =>
     selectScopeValuesLoading(s, scopeId ?? ""),
   );
+  const suggestions = useScopeSuggestions();
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
@@ -400,6 +405,19 @@ export function ScopeDetailEditor({
         </div>
       </Card>
 
+      {/* Knowledge-graph suggestions targeting this scope's fields. */}
+      {suggestions.forScope(scope.id).length > 0 && (
+        <KgSuggestionHint
+          variant="banner"
+          rows={suggestions.forScope(scope.id)}
+          accept={suggestions.accept}
+          reject={suggestions.reject}
+          defer={suggestions.defer}
+          label={scope.name}
+          align="start"
+        />
+      )}
+
       {/* Live preview of this scope's slice of the knowledge graph (lazy, cached). */}
       <KgGraphCard
         variant="scope"
@@ -418,7 +436,12 @@ export function ScopeDetailEditor({
               </span>
             )}
           </h2>
-          <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+          >
             <Link href={scopeContextItemsHref(orgSlugOrId, scopeType, scope)}>
               Open full page
             </Link>
@@ -447,6 +470,16 @@ export function ScopeDetailEditor({
                   id: row.item_id,
                   slug: row.slug,
                 })}
+                headerSlot={
+                  <KgSuggestionHint
+                    variant="dot"
+                    rows={suggestions.forScopeItem(scope.id, row.item_id)}
+                    accept={suggestions.accept}
+                    reject={suggestions.reject}
+                    defer={suggestions.defer}
+                    label={row.display_name}
+                  />
+                }
               />
             ))}
           </div>

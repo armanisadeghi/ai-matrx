@@ -38,12 +38,18 @@ import { Input } from "@/components/ui/input";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { CreateOrgModal } from "@/features/organizations/components/CreateOrgModal";
 import { OrgScopeTree } from "@/features/organizations/components/OrgScopeTree";
-import type { OrganizationWithRole, OrgRole } from "@/features/organizations/types";
+import type {
+  OrganizationWithRole,
+  OrgRole,
+} from "@/features/organizations/types";
 import { InlineMediaRef } from "@/features/files";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectScopeTypesByOrg } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { selectScopesByOrg } from "@/features/agent-context/redux/scope/scopesSlice";
+import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
+import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
+import type { UseScopeSuggestionsResult } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 
 interface RoleMeta {
   label: string;
@@ -85,7 +91,13 @@ const PERSONAL_META: RoleMeta = {
   bg: "bg-violet-500/10",
 };
 
-function OrgCard({ org }: { org: OrganizationWithRole }) {
+function OrgCard({
+  org,
+  suggestions,
+}: {
+  org: OrganizationWithRole;
+  suggestions: UseScopeSuggestionsResult;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = React.useTransition();
   const meta = org.isPersonal ? PERSONAL_META : ROLE_META[org.role];
@@ -96,6 +108,7 @@ function OrgCard({ org }: { org: OrganizationWithRole }) {
   // the fetch; these selectors read the same store.
   const scopeTypes = useAppSelector((s) => selectScopeTypesByOrg(s, org.id));
   const scopes = useAppSelector((s) => selectScopesByOrg(s, org.id));
+  const orgSuggestions = scopes.flatMap((sc) => suggestions.forScope(sc.id));
 
   function open() {
     startTransition(() => router.push(href));
@@ -124,7 +137,9 @@ function OrgCard({ org }: { org: OrganizationWithRole }) {
               fit="cover"
               rounded="none"
               fallbackIcon={
-                <span className={`w-full h-full flex items-center justify-center ${meta.bg}`}>
+                <span
+                  className={`w-full h-full flex items-center justify-center ${meta.bg}`}
+                >
                   <Building2 className={`h-6 w-6 ${meta.text}`} />
                 </span>
               }
@@ -132,17 +147,38 @@ function OrgCard({ org }: { org: OrganizationWithRole }) {
             />
           </button>
           <div className="min-w-0 flex-1">
-            <button onClick={open} className="text-left group/title block max-w-full">
+            <button
+              onClick={open}
+              className="text-left group/title block max-w-full"
+            >
               <h3 className="font-semibold text-lg truncate group-hover/title:text-primary transition-colors">
                 {org.name}
               </h3>
             </button>
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
-              <Badge variant="outline" className={`text-[10px] gap-1 ${meta.text}`}>
+              <Badge
+                variant="outline"
+                className={`text-[10px] gap-1 ${meta.text}`}
+              >
                 <RoleIcon className="h-3 w-3" />
                 {meta.label}
               </Badge>
-              <span className="text-xs text-muted-foreground truncate">/{org.slug}</span>
+              <span className="text-xs text-muted-foreground truncate">
+                /{org.slug}
+              </span>
+              {orgSuggestions.length > 0 && (
+                <span onClick={(e) => e.stopPropagation()}>
+                  <KgSuggestionHint
+                    variant="badge"
+                    rows={orgSuggestions}
+                    accept={suggestions.accept}
+                    reject={suggestions.reject}
+                    defer={suggestions.defer}
+                    label={org.name}
+                    align="start"
+                  />
+                </span>
+              )}
               {org.website && (
                 <a
                   href={org.website}
@@ -167,9 +203,21 @@ function OrgCard({ org }: { org: OrganizationWithRole }) {
 
         {/* Stats */}
         <div className="flex items-center gap-4 flex-wrap text-xs">
-          <StatChip icon={<Users className="h-3.5 w-3.5" />} value={org.memberCount ?? 1} label={org.memberCount === 1 ? "member" : "members"} />
-          <StatChip icon={<FolderTree className="h-3.5 w-3.5" />} value={scopeTypes.length} label={scopeTypes.length === 1 ? "dimension" : "dimensions"} />
-          <StatChip icon={<Network className="h-3.5 w-3.5" />} value={scopes.length} label={scopes.length === 1 ? "scope" : "scopes"} />
+          <StatChip
+            icon={<Users className="h-3.5 w-3.5" />}
+            value={org.memberCount ?? 1}
+            label={org.memberCount === 1 ? "member" : "members"}
+          />
+          <StatChip
+            icon={<FolderTree className="h-3.5 w-3.5" />}
+            value={scopeTypes.length}
+            label={scopeTypes.length === 1 ? "dimension" : "dimensions"}
+          />
+          <StatChip
+            icon={<Network className="h-3.5 w-3.5" />}
+            value={scopes.length}
+            label={scopes.length === 1 ? "scope" : "scopes"}
+          />
           {org.createdAt && (
             <span className="flex items-center gap-1 text-muted-foreground">
               <Calendar className="h-3.5 w-3.5" />
@@ -209,11 +257,21 @@ function OrgCard({ org }: { org: OrganizationWithRole }) {
   );
 }
 
-function StatChip({ icon, value, label }: { icon: React.ReactNode; value: React.ReactNode; label: string }) {
+function StatChip({
+  icon,
+  value,
+  label,
+}: {
+  icon: React.ReactNode;
+  value: React.ReactNode;
+  label: string;
+}) {
   return (
     <span className="flex items-center gap-1.5 text-muted-foreground">
       {icon}
-      <span className="font-semibold text-foreground tabular-nums">{value}</span>
+      <span className="font-semibold text-foreground tabular-nums">
+        {value}
+      </span>
       {label}
     </span>
   );
@@ -221,6 +279,7 @@ function StatChip({ icon, value, label }: { icon: React.ReactNode; value: React.
 
 export default function OrganizationsPage() {
   const { organizations, loading, refresh } = useUserOrganizations();
+  const suggestions = useScopeSuggestions();
   const [createOpen, setCreateOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
 
@@ -248,9 +307,12 @@ export default function OrganizationsPage() {
                 <Building2 className="h-6 w-6" />
               </span>
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-foreground">Organizations</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+                  Organizations
+                </h1>
                 <p className="text-sm text-muted-foreground">
-                  Your teams and shared workspaces — agents, scopes, knowledge, all in one place.
+                  Your teams and shared workspaces — agents, scopes, knowledge,
+                  all in one place.
                 </p>
               </div>
             </div>
@@ -261,8 +323,14 @@ export default function OrganizationsPage() {
           </div>
 
           <div className="flex items-center gap-5 flex-wrap mt-4">
-            <Stat value={organizations.length} label={organizations.length === 1 ? "workspace" : "workspaces"} />
-            <Stat value={teamCount} label={teamCount === 1 ? "team" : "teams"} />
+            <Stat
+              value={organizations.length}
+              label={organizations.length === 1 ? "workspace" : "workspaces"}
+            />
+            <Stat
+              value={teamCount}
+              label={teamCount === 1 ? "team" : "teams"}
+            />
           </div>
 
           {organizations.length > 4 && (
@@ -282,7 +350,9 @@ export default function OrganizationsPage() {
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
               <Loader2 className="h-7 w-7 animate-spin text-primary mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">Loading organizations…</p>
+              <p className="text-sm text-muted-foreground">
+                Loading organizations…
+              </p>
             </div>
           </div>
         ) : organizations.length === 0 ? (
@@ -293,7 +363,8 @@ export default function OrganizationsPage() {
               </div>
               <h3 className="font-semibold mb-1">No organizations yet</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Create a team to collaborate, share agents, and build shared knowledge.
+                Create a team to collaborate, share agents, and build shared
+                knowledge.
               </p>
               <Button size="sm" onClick={() => setCreateOpen(true)}>
                 <Plus className="h-4 w-4 mr-1.5" />
@@ -314,7 +385,7 @@ export default function OrganizationsPage() {
                 </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {personal.map((org) => (
-                    <OrgCard key={org.id} org={org} />
+                    <OrgCard key={org.id} org={org} suggestions={suggestions} />
                   ))}
                 </div>
               </section>
@@ -327,7 +398,7 @@ export default function OrganizationsPage() {
                 </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {teams.map((org) => (
-                    <OrgCard key={org.id} org={org} />
+                    <OrgCard key={org.id} org={org} suggestions={suggestions} />
                   ))}
                 </div>
               </section>
@@ -348,7 +419,9 @@ export default function OrganizationsPage() {
 function Stat({ value, label }: { value: React.ReactNode; label: string }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-lg font-bold text-foreground tabular-nums">{value}</span>
+      <span className="text-lg font-bold text-foreground tabular-nums">
+        {value}
+      </span>
       <span className="text-xs text-muted-foreground">{label}</span>
     </div>
   );

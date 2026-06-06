@@ -32,6 +32,9 @@ interface ScopeFieldInputProps {
   /** When set, the title becomes a link here (e.g. to the scope hub) instead of
    * the edit-item drawer trigger. */
   nameHref?: string;
+  /** Optional node rendered in the field header's right cluster (e.g. a
+   * knowledge-graph suggestion hint for this item). */
+  headerSlot?: React.ReactNode;
 }
 
 function rowToString(row: ScopeContextRow): string {
@@ -56,6 +59,7 @@ export function ScopeFieldInput({
   itemHref,
   nameLabel,
   nameHref,
+  headerSlot,
 }: ScopeFieldInputProps) {
   const initial = rowToString(row);
   const [value, setValue] = useState(initial);
@@ -120,6 +124,7 @@ export function ScopeFieldInput({
             )}
           </div>
           <div className="flex items-center gap-1">
+            {headerSlot}
             <FieldStatus
               status={status}
               hasValue={row.has_value || value.trim().length > 0}

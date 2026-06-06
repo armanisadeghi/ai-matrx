@@ -47,7 +47,7 @@ import {
   scopeHref,
   scopeItemHref,
 } from "@/features/scope-system/utils/scopeRoutes";
-import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
+import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindow";
 import { useKgSuggestionEnrichment } from "@/features/kg-suggestions/hooks/useKgSuggestionEnrichment";
 import type {
   ResolvedSuggestionItem,
@@ -114,7 +114,7 @@ export function KgSuggestionRowItem({
   const target = enrichment?.target ?? null;
   const source = enrichment?.source ?? null;
 
-  const openNotesWindow = useOpenNotesWindow();
+  const openNoteInWindow = useOpenNoteInWindow();
 
   const confidencePct = Math.round(
     Math.max(0, Math.min(1, row.confidence)) * 100,
@@ -250,8 +250,8 @@ export function KgSuggestionRowItem({
 
   const openSource = () => {
     if (source?.openableAs === "note") {
-      openNotesWindow({
-        singleNoteId: source.id,
+      openNoteInWindow({
+        noteId: source.id,
         title: source.title ?? "Note",
       });
     }
