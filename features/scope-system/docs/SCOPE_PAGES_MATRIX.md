@@ -52,14 +52,14 @@ The **Organization** level is the gold standard — copy it everywhere.
 | Collection Hub (all types) | `/organizations/[org]/scopes` | ✅ | ScopesManager |
 | Collection Manage (manage all types) | `/organizations/[org]/scopes/manage` | 🟡 | reorder dialog only |
 | Type Hub (view "Clients") | `/organizations/[org]/scopes/[type]` | ✅ | ScopesList (surfaces both nested systems) |
-| Type Manage (edit "Clients") | `/organizations/[org]/scopes/[type]/edit` | 🟡 | drawer EditScopeTypeSheet — **no route** |
+| Type Manage (edit "Clients") | `/organizations/[org]/scopes/[type]/edit` | ✅ | `ScopeTypeEditView` + `ScopeTypeSettingsForm` (Wave B) |
 
 ### Level 3a — Scope ("Cosmetics Injectables Medspa")  (parent: scope type · children: values)
 | Surface | Route | Status | Now |
 |---|---|---|---|
 | Collection Hub (all clients) | `/organizations/[org]/scopes/[type]/scopes` *(or the Type Hub's table)* | 🟡 | table inside Type Hub — **no dedicated route** |
 | Scope Hub (view "Medspa") | `/organizations/[org]/scopes/[type]/[scope]` | ✅ | ScopeDetailEditor (view+edit combined) |
-| Scope Manage (edit "Medspa") | `/organizations/[org]/scopes/[type]/[scope]/edit` | 🟡 | inline + ScopeAdvancedSection — **no route** |
+| Scope Manage (edit "Medspa") | `/organizations/[org]/scopes/[type]/[scope]/edit` | ✅ | `ScopeEditView` (Wave B) — basics + ScopeAdvancedSection + delete |
 
 ### Level 3b — Context Item ("Brand Personality")  (parent: scope type · children: values across scopes)
 | Surface | Route | Status | Now |
@@ -67,7 +67,7 @@ The **Organization** level is the gold standard — copy it everywhere.
 | Collection Hub (all items for type) | `/organizations/[org]/scopes/[type]/context-items` | ✅ | `ContextItemsHub` (Wave A) |
 | Collection Manage (manage all items) | `/organizations/[org]/scopes/[type]/context-items/manage` | 🟡 | reorder dialog (in collection hub) |
 | Item Hub (view "Brand Personality") | `/organizations/[org]/scopes/[type]/context-items/[item]` | ✅ | `ContextItemHub` (Wave A) — settings + value per scope |
-| Item Manage (edit "Brand Personality") | `/organizations/[org]/scopes/[type]/context-items/[item]/edit` | 🟡 | drawer EditContextItemSheet — route is Wave B |
+| Item Manage (edit "Brand Personality") | `/organizations/[org]/scopes/[type]/context-items/[item]/edit` | ✅ | `ContextItemEditView` + shared `ContextItemSettingsForm` (Wave B) |
 
 ### Level 4 — Value  (item × scope — a cell, not a thing)
 | Surface | Route | Status |
