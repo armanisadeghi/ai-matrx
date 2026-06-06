@@ -55,7 +55,7 @@ One RLS-backed permissions system that makes any resource type shareable with us
 
 | Table / object | Role |
 |---|---|
-| `permissions` | The single grants table. Row per (resource_type, resource_id, target). Target is exactly one of: `granted_to_user_id`, `granted_to_organization_id`, or `is_public` sentinel. Columns: `permission_level` (`viewer` / `editor` / `admin`), `created_at`, `created_by`. |
+| `permissions` | The single grants table. Row per (resource_type, resource_id, target). Target is exactly one of: `granted_to_user_id`, `granted_to_organization_id`, or `is_public` sentinel. Columns: `permission_level` (`viewer` / `editor` / `admin`), `created_at`, `created_by`. **Org-share moderation (2026-06-06):** `status` (`active` default / `pending` / `rejected`), `reviewed_by`, `reviewed_at`, `review_note`. A `rejected` grant no longer confers access — `has_permission` and `check_resource_access` both filter `COALESCE(status,'active') <> 'rejected'`. Additive + default-safe: every prior grant is `active`. |
 | `<resource>.is_public` | Public visibility lives on the **resource row**, not the permissions table. Owner-controlled, toggled via `make_resource_public` / `make_resource_private`. |
 | `<resource>.user_id` | Ownership is always the resource row's `user_id`. No explicit "owner" permission row exists. |
 
@@ -68,6 +68,7 @@ Writes:
 - `revoke_resource_access(...)` — user grant
 - `revoke_resource_org_access(...)` — org grant
 - `make_resource_public(...)` / `make_resource_private(...)` — flip `is_public` on the resource row
+- `review_org_share(p_permission_id, p_status, p_note)` — org-share moderation. Sets the `status` of one org grant; gated on the caller being an `owner`/`admin` of the org the grant targets. `rejected` revokes team access via the `has_permission` / `check_resource_access` status filter. Consumed by `utils/permissions/orgModeration.ts` (`reviewOrgShare`); the org workspace v2 review queue uses it. See `features/organizations/FEATURE.md`.
 
 Reads:
 - `get_resource_permissions(p_resource_type, p_resource_id)` — owner-only; returns rows with resolved user/org display data
@@ -202,6 +203,7 @@ Stable. Active areas:
 
 ## Change log
 
+- `2026-06-06` — Org-share moderation. Added `status` (`active`/`pending`/`rejected`) + `reviewed_by` / `reviewed_at` / `review_note` to `permissions`, a `permissions_org_status_idx`, and the `review_org_share(permission_id, status, note)` SECURITY DEFINER RPC (org owner/admin gated). `has_permission` and `check_resource_access` now exclude `status = 'rejected'` org/user grants (single additive `COALESCE(status,'active') <> 'rejected'` clause each — default-safe, no behavior change for existing grants). FE helpers in `utils/permissions/orgModeration.ts`. Lets org admins reject resources members contribute to the org from the org workspace v2 review queue. Migration: `migrations/perm_org_share_moderation.sql`.
 - `2026-04-29` — codex: registry-driven sharing. Created `shareable_resource_registry` (DB) + TS mirror + parity test. Refactored all 9 sharing RPCs to consume `resolve_shareable_resource()`. Added validation trigger on `permissions.resource_type`. Removed legacy `getTableName()` and inline `resourcePaths` map. Documented `rls_uses_has_permission` gaps for follow-up.
 - `2026-04-22` — claude: initial FEATURE.md extracted from README.md.
 
