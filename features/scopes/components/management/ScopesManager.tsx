@@ -14,11 +14,13 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowUpDown,
   FolderTree,
   LayoutTemplate,
   Plus,
   Settings as SettingsIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +29,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchScopeTypes,
   selectScopeTypesByOrg,
+  updateScopeType,
 } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import {
   fetchScopes,
@@ -35,6 +38,7 @@ import {
 import { OrgHomeScopeSection } from "@/features/scope-system/components/OrgHomeScopeSection";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
 import { TemplateGalleryDrawer } from "@/features/scope-system/components/TemplateGalleryDrawer";
+import { ReorderDialog } from "@/features/scope-system/components/ReorderDialog";
 import type { Organization } from "@/features/organizations/types";
 
 interface ScopesManagerProps {
@@ -55,6 +59,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
   );
   const [addScopeOpen, setAddScopeOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [reorderTypesOpen, setReorderTypesOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchScopeTypes(organization.id));
@@ -63,6 +68,16 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
 
   const slug = organization.slug ?? organization.id;
   const totalScopes = orgScopes.length;
+  const canManage = role === "owner" || role === "admin";
+
+  async function saveTypeOrder(orderedIds: string[]) {
+    await Promise.all(
+      orderedIds.map((id, i) =>
+        dispatch(updateScopeType({ type_id: id, sort_order: i + 1 })).unwrap(),
+      ),
+    );
+    toast.success("Order saved");
+  }
 
   return (
     <div className="space-y-6">
@@ -199,6 +214,20 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
               <LayoutTemplate className="h-4 w-4 mr-1.5" />
               Add from template
             </Button>
+            {canManage && scopeTypes.length > 1 && (
+              <>
+                <span className="text-muted-foreground/50">·</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setReorderTypesOpen(true)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowUpDown className="h-4 w-4 mr-1.5" />
+                  Reorder types
+                </Button>
+              </>
+            )}
           </div>
         </>
       )}
@@ -213,6 +242,18 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
         onOpenChange={setGalleryOpen}
         orgId={organization.id}
         personalOnly={organization.isPersonal ? true : undefined}
+      />
+      <ReorderDialog
+        open={reorderTypesOpen}
+        onOpenChange={setReorderTypesOpen}
+        title="Reorder scope types"
+        description="Drag the handle or use the arrows, then save."
+        items={scopeTypes.map((t) => ({
+          id: t.id,
+          label: t.label_plural,
+          sublabel: t.label_singular,
+        }))}
+        onSave={saveTypeOrder}
       />
     </div>
   );

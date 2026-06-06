@@ -12,7 +12,9 @@ import type { Scope } from "./types";
 import { isUuid } from "@/features/scope-system/utils/slugify";
 
 const scopesAdapter = createEntityAdapter<Scope>({
-  sortComparer: (a, b) => a.name.localeCompare(b.name),
+  // User-controlled sort_order first, then name as a stable tiebreaker.
+  sortComparer: (a, b) =>
+    (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name),
 });
 
 interface ScopesExtraState {
@@ -72,6 +74,7 @@ export const createScope = createAsyncThunk(
     description?: string;
     settings?: Record<string, unknown>;
     slug?: string;
+    sort_order?: number;
   }) => {
     const { data, error } = await supabase.rpc("create_scope", {
       p_org_id: params.org_id,
@@ -81,6 +84,7 @@ export const createScope = createAsyncThunk(
       p_description: params.description ?? "",
       p_settings: params.settings ?? {},
       p_slug: params.slug ?? undefined,
+      p_sort_order: params.sort_order ?? undefined,
     });
     if (error) throw error;
     return data as Scope;
@@ -95,6 +99,7 @@ export const updateScope = createAsyncThunk(
     description?: string;
     settings?: Record<string, unknown>;
     slug?: string;
+    sort_order?: number;
   }) => {
     const { data, error } = await supabase.rpc("update_scope", {
       p_scope_id: params.scope_id,
@@ -102,6 +107,7 @@ export const updateScope = createAsyncThunk(
       p_description: params.description,
       p_settings: params.settings,
       p_slug: params.slug,
+      p_sort_order: params.sort_order,
     });
     if (error) throw error;
     return data as Scope;

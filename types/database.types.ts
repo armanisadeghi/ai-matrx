@@ -5784,6 +5784,7 @@ export type Database = {
           scope_type_id: string
           settings: Json
           slug: string | null
+          sort_order: number
           updated_at: string
         }
         Insert: {
@@ -5797,6 +5798,7 @@ export type Database = {
           scope_type_id: string
           settings?: Json
           slug?: string | null
+          sort_order?: number
           updated_at?: string
         }
         Update: {
@@ -5810,6 +5812,7 @@ export type Database = {
           scope_type_id?: string
           settings?: Json
           slug?: string | null
+          sort_order?: number
           updated_at?: string
         }
         Relationships: [
@@ -24838,6 +24841,7 @@ export type Database = {
           p_parent_scope_id?: string
           p_settings?: Json
           p_slug?: string
+          p_sort_order?: number
           p_type_id: string
         }
         Returns: Json
@@ -28252,6 +28256,7 @@ export type Database = {
           p_scope_id: string
           p_settings?: Json
           p_slug?: string
+          p_sort_order?: number
         }
         Returns: Json
       }

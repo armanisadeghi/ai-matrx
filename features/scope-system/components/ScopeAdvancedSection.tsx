@@ -34,6 +34,9 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
   const [busy, setBusy] = useState(false);
 
   const [slug, setSlug] = useState(scope.slug ?? "");
+  const [sortOrder, setSortOrder] = useState(
+    scope.sort_order != null ? String(scope.sort_order) : "",
+  );
   const [settingsText, setSettingsText] = useState(() =>
     JSON.stringify(scope.settings ?? {}, null, 2),
   );
@@ -68,6 +71,7 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
           scope_id: scope.id,
           slug: trimmedSlug || undefined,
           settings: parsedSettings,
+          sort_order: sortOrder.trim() ? Number(sortOrder) : undefined,
         }),
       ).unwrap();
       toast.success("Advanced settings saved");
@@ -120,6 +124,23 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
             <p className="text-[10px] text-muted-foreground">
               Human-readable segment in this scope&apos;s URL. Must be unique
               within its scope type.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Display order</Label>
+            <Input
+              type="number"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              placeholder="0"
+              style={{ fontSize: "16px" }}
+              disabled={busy}
+              className="max-w-[140px]"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Lower shows first. Use &ldquo;Edit order&rdquo; on the list for
+              drag-and-drop.
             </p>
           </div>
 

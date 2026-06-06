@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowUpDown,
   Building2,
   ChevronDown,
   ChevronRight,
@@ -42,10 +43,12 @@ import { NewScopeInline } from "./NewScopeInline";
 import { ContextItemAddForm } from "./ContextItemAddForm";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
+import { ReorderDialog } from "./ReorderDialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchScopes,
   selectScopesByType,
+  updateScope,
 } from "@/features/agent-context/redux/scope/scopesSlice";
 import {
   selectScopeTypeBySlugOrId,
@@ -114,6 +117,8 @@ export function ScopesList({
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [addingItem, setAddingItem] = useState(false);
   const [movingId, setMovingId] = useState<string | null>(null);
+  const [reorderScopesOpen, setReorderScopesOpen] = useState(false);
+  const [reorderItemsOpen, setReorderItemsOpen] = useState(false);
 
   useEffect(() => {
     if (!resolvedTypeId) return;
@@ -131,8 +136,8 @@ export function ScopesList({
     () =>
       [...scopes].sort(
         (a, b) =>
-          new Date(b.updated_at ?? 0).getTime() -
-          new Date(a.updated_at ?? 0).getTime(),
+          (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
+          a.name.localeCompare(b.name),
       ),
     [scopes],
   );
@@ -158,6 +163,24 @@ export function ScopesList({
     } finally {
       setMovingId(null);
     }
+  }
+
+  async function saveScopeOrder(orderedIds: string[]) {
+    await Promise.all(
+      orderedIds.map((id, i) =>
+        dispatch(updateScope({ scope_id: id, sort_order: i + 1 })).unwrap(),
+      ),
+    );
+    toast.success("Order saved");
+  }
+
+  async function saveItemOrder(orderedIds: string[]) {
+    await Promise.all(
+      orderedIds.map((id, i) =>
+        dispatch(updateContextItem({ id, sort_order: i + 1 })).unwrap(),
+      ),
+    );
+    toast.success("Order saved");
   }
 
   if (!scopeType) {
@@ -275,10 +298,22 @@ export function ScopesList({
               </span>
             )}
           </h2>
-          <Button size="sm" onClick={() => setAdding(true)} disabled={adding}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" />
-            New {scopeType.label_singular}
-          </Button>
+          <div className="flex items-center gap-2">
+            {canManage && scopeCount > 1 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReorderScopesOpen(true)}
+              >
+                <ArrowUpDown className="h-3.5 w-3.5 mr-1.5" />
+                Edit order
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setAdding(true)} disabled={adding}>
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              New {scopeType.label_singular}
+            </Button>
+          </div>
         </div>
 
         {adding && (
@@ -382,16 +417,28 @@ export function ScopesList({
               </span>
             )}
           </h2>
-          {canManage && !addingItem && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAddingItem(true)}
-            >
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Add context item
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {canManage && items.length > 1 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReorderItemsOpen(true)}
+              >
+                <ArrowUpDown className="h-3.5 w-3.5 mr-1.5" />
+                Edit order
+              </Button>
+            )}
+            {canManage && !addingItem && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAddingItem(true)}
+              >
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Add context item
+              </Button>
+            )}
+          </div>
         </div>
 
         {!itemsLoaded ? (
@@ -445,6 +492,27 @@ export function ScopesList({
           if (!o) setEditingItemId(null);
         }}
         itemId={editingItemId}
+      />
+
+      <ReorderDialog
+        open={reorderScopesOpen}
+        onOpenChange={setReorderScopesOpen}
+        title={`Reorder ${scopeType.label_plural}`}
+        description="Drag the handle or use the arrows, then save."
+        items={sorted.map((s) => ({ id: s.id, label: s.name }))}
+        onSave={saveScopeOrder}
+      />
+      <ReorderDialog
+        open={reorderItemsOpen}
+        onOpenChange={setReorderItemsOpen}
+        title="Reorder context items"
+        description="Drag the handle or use the arrows, then save."
+        items={items.map((i) => ({
+          id: i.id,
+          label: i.display_name,
+          sublabel: i.category ?? undefined,
+        }))}
+        onSave={saveItemOrder}
       />
     </div>
   );
