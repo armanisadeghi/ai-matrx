@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
-import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
+import { ScopeColorPicker } from "./ScopeColorPicker";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -355,10 +355,10 @@ export function EditScopeTypeSheet({
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Color</Label>
-                <TailwindColorPicker
-                  selectedColor={color}
-                  onColorChange={setColor}
-                  size="md"
+                <ScopeColorPicker
+                  value={color}
+                  onChange={setColor}
+                  disabled={busy}
                 />
               </div>
             </div>

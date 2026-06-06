@@ -2,26 +2,23 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
+  Building2,
   ChevronRight,
-  Info,
+  Home,
+  Layers,
+  ListChecks,
   Loader2,
   Pencil,
   Plus,
   Settings2,
+  Tag as TagIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -36,10 +33,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { toast } from "sonner";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { EditScopeTypeSheet } from "./EditScopeTypeSheet";
 import { NewScopeInline } from "./NewScopeInline";
+import { ContextItemAddForm } from "./ContextItemAddForm";
+import { ScopeGlyph } from "./ScopeGlyph";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchScopes,
@@ -47,21 +45,16 @@ import {
 } from "@/features/agent-context/redux/scope/scopesSlice";
 import { selectScopeTypeById } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import {
-  createContextItem,
   listScopeTypeItems,
   selectItemsByType,
   selectItemsLoadedForType,
-  type ContextValueType,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import {
   getScopeContext,
   selectValuesByScope,
   type ScopeContextRow,
 } from "@/features/scope-system/redux/scopeValuesSlice";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
-import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
-import { slugifyKey } from "@/features/scope-system/utils/slugify";
 
 const MAX_COLUMNS = 6;
 
@@ -69,9 +62,19 @@ interface ScopesListProps {
   orgId: string;
   orgSlugOrId: string;
   typeId: string;
+  orgName: string;
+  orgSlug: string;
+  orgIsPersonal: boolean;
 }
 
-export function ScopesList({ orgId, orgSlugOrId, typeId }: ScopesListProps) {
+export function ScopesList({
+  orgId,
+  orgSlugOrId,
+  typeId,
+  orgName,
+  orgSlug,
+  orgIsPersonal,
+}: ScopesListProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const scopeType = useAppSelector((s) => selectScopeTypeById(s, typeId));
@@ -85,9 +88,6 @@ export function ScopesList({ orgId, orgSlugOrId, typeId }: ScopesListProps) {
   const [editingType, setEditingType] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [addingItem, setAddingItem] = useState(false);
-  const [newItemName, setNewItemName] = useState("");
-  const [newItemType, setNewItemType] = useState<ContextValueType>("string");
-  const [addingItemBusy, setAddingItemBusy] = useState(false);
 
   useEffect(() => {
     dispatch(fetchScopes({ org_id: orgId, type_id: typeId }));
@@ -121,52 +121,50 @@ export function ScopesList({ orgId, orgSlugOrId, typeId }: ScopesListProps) {
     );
   }
 
-  const Icon = resolveIcon(scopeType.icon);
   const color = resolveColor(scopeType);
-
-  async function handleAddItem() {
-    const trimmed = newItemName.trim();
-    if (!trimmed) return;
-    setAddingItemBusy(true);
-    try {
-      await dispatch(
-        createContextItem({
-          scope_type_id: typeId,
-          key: slugifyKey(trimmed) || trimmed.toLowerCase(),
-          display_name: trimmed,
-          value_type: newItemType,
-        }),
-      ).unwrap();
-      toast.success(`Added context item "${trimmed}"`);
-      setNewItemName("");
-      setNewItemType("string");
-      setAddingItem(false);
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to add context item",
-      );
-    } finally {
-      setAddingItemBusy(false);
-    }
-  }
+  const scopeCount = sorted.length;
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" size="sm" onClick={() => router.back()}>
-        <ArrowLeft className="h-4 w-4 mr-1" />
-        Back
-      </Button>
+      {/* ── Breadcrumb: Back · Org · Scope type ───────────────────── */}
+      <div className="flex items-center gap-1.5 text-sm flex-wrap">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.back()}
+          className="h-7 px-2 -ml-2"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back
+        </Button>
+        <span className="text-muted-foreground/50">·</span>
+        <Link
+          href={`/organizations/${orgSlug}/scopes`}
+          className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {orgIsPersonal ? (
+            <Home className="h-3.5 w-3.5" />
+          ) : (
+            <Building2 className="h-3.5 w-3.5" />
+          )}
+          {orgIsPersonal ? "Personal workspace" : orgName}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+        <span className="font-medium text-foreground">
+          {scopeType.label_plural}
+        </span>
+      </div>
 
       {/* ── Scope Type header ────────────────────────────────────── */}
       <Card className="p-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-4 min-w-0">
             <div
-              className={`w-14 h-14 rounded-xl ${color.fg} flex items-center justify-center shrink-0`}
+              className={`w-14 h-14 rounded-xl ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
             >
-              <Icon className="h-8 w-8" />
+              <ScopeGlyph icon={scopeType.icon} className="h-7 w-7" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl font-bold text-foreground">
                   {scopeType.label_plural}
@@ -175,29 +173,43 @@ export function ScopesList({ orgId, orgSlugOrId, typeId }: ScopesListProps) {
                   Scope Type
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                {sorted.length}{" "}
-                {sorted.length === 1
-                  ? scopeType.label_singular.toLowerCase()
-                  : scopeType.label_plural.toLowerCase()}
-                {" · "}
-                {items.length}{" "}
-                {items.length === 1 ? "context item" : "context items"}
-              </p>
               {scopeType.description && (
-                <p className="text-sm text-muted-foreground mt-2 max-w-xl">
+                <p className="text-sm text-muted-foreground mt-1.5 max-w-2xl">
                   {scopeType.description}
                 </p>
               )}
+              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+                <span className="inline-flex items-center gap-1.5">
+                  <Layers className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-semibold text-foreground">
+                    {scopeCount}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {scopeCount === 1
+                      ? scopeType.label_singular.toLowerCase()
+                      : scopeType.label_plural.toLowerCase()}
+                  </span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <ListChecks className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-semibold text-foreground">
+                    {items.length}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {items.length === 1 ? "context item" : "context items"}
+                  </span>
+                </span>
+              </div>
             </div>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setEditingType(true)}
+            className="shrink-0"
           >
             <Settings2 className="h-3.5 w-3.5 mr-1.5" />
-            Edit scope type
+            Edit {scopeType.label_singular} Settings
           </Button>
         </div>
       </Card>
@@ -215,9 +227,9 @@ export function ScopesList({ orgId, orgSlugOrId, typeId }: ScopesListProps) {
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-foreground">
             {scopeType.label_plural}
-            {sorted.length > 0 && (
+            {scopeCount > 0 && (
               <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({sorted.length})
+                ({scopeCount})
               </span>
             )}
           </h2>
@@ -243,12 +255,12 @@ export function ScopesList({ orgId, orgSlugOrId, typeId }: ScopesListProps) {
           />
         )}
 
-        {sorted.length === 0 && !adding ? (
+        {scopeCount === 0 && !adding ? (
           <Card className="p-10 text-center">
             <div
-              className={`w-14 h-14 rounded-full ${color.fg} flex items-center justify-center mx-auto mb-3`}
+              className={`w-14 h-14 rounded-full ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center mx-auto mb-3`}
             >
-              <Icon className="h-8 w-8" />
+              <ScopeGlyph icon={scopeType.icon} className="h-7 w-7" />
             </div>
             <h3 className="font-semibold text-foreground mb-1">
               No {scopeType.label_plural.toLowerCase()} yet
@@ -262,7 +274,7 @@ export function ScopesList({ orgId, orgSlugOrId, typeId }: ScopesListProps) {
               Add {scopeType.label_singular}
             </Button>
           </Card>
-        ) : sorted.length > 0 ? (
+        ) : scopeCount > 0 ? (
           <Card className="overflow-hidden">
             <div className="overflow-x-auto">
               <Table className="table-fixed w-full">
@@ -370,14 +382,25 @@ export function ScopesList({ orgId, orgSlugOrId, typeId }: ScopesListProps) {
                       <span className="text-sm font-medium text-foreground">
                         {item.display_name}
                       </span>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {VALUE_TYPE_CONFIG[item.value_type]?.label ??
-                          item.value_type}
-                      </Badge>
                       {item.category && (
                         <Badge variant="outline" className="text-[10px]">
                           {item.category}
                         </Badge>
+                      )}
+                      {(item.tags ?? []).slice(0, 3).map((t) => (
+                        <Badge
+                          key={t}
+                          variant="secondary"
+                          className="text-[10px] gap-1 font-normal"
+                        >
+                          <TagIcon className="h-2.5 w-2.5" />
+                          {t}
+                        </Badge>
+                      ))}
+                      {(item.tags?.length ?? 0) > 3 && (
+                        <span className="text-[10px] text-muted-foreground">
+                          +{(item.tags?.length ?? 0) - 3}
+                        </span>
                       )}
                       {item.sensitivity && item.sensitivity !== "internal" && (
                         <Badge
@@ -388,9 +411,6 @@ export function ScopesList({ orgId, orgSlugOrId, typeId }: ScopesListProps) {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-[10px] font-mono text-muted-foreground mt-0.5">
-                      {item.key}
-                    </p>
                     {item.description && (
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                         {item.description}
@@ -417,74 +437,12 @@ export function ScopesList({ orgId, orgSlugOrId, typeId }: ScopesListProps) {
               )}
 
               {addingItem && (
-                <div className="p-4 bg-muted/30 space-y-3">
-                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Info className="h-3.5 w-3.5 shrink-0" />
-                    Adds a new field to all{" "}
-                    {scopeType.label_plural.toLowerCase()}.
-                  </p>
-                  <div className="flex gap-2">
-                    <Input
-                      autoFocus
-                      placeholder="e.g. Website URL"
-                      value={newItemName}
-                      onChange={(e) => setNewItemName(e.target.value)}
-                      style={{ fontSize: "16px" }}
-                      disabled={addingItemBusy}
-                      className="flex-1"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleAddItem();
-                        if (e.key === "Escape") {
-                          setAddingItem(false);
-                          setNewItemName("");
-                        }
-                      }}
-                    />
-                    <Select
-                      value={newItemType}
-                      onValueChange={(v) =>
-                        setNewItemType(v as ContextValueType)
-                      }
-                      disabled={addingItemBusy}
-                    >
-                      <SelectTrigger className="w-[120px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(
-                          Object.keys(VALUE_TYPE_CONFIG) as ContextValueType[]
-                        ).map((k) => (
-                          <SelectItem key={k} value={k}>
-                            {VALUE_TYPE_CONFIG[k].label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setAddingItem(false);
-                        setNewItemName("");
-                        setNewItemType("string");
-                      }}
-                      disabled={addingItemBusy}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleAddItem}
-                      disabled={addingItemBusy || !newItemName.trim()}
-                    >
-                      {addingItemBusy && (
-                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                      )}
-                      Add
-                    </Button>
-                  </div>
+                <div className="p-4 bg-muted/20">
+                  <ContextItemAddForm
+                    scopeTypeId={typeId}
+                    labelPlural={scopeType.label_plural}
+                    onClose={() => setAddingItem(false)}
+                  />
                 </div>
               )}
             </div>

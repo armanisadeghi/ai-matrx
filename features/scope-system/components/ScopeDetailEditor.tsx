@@ -32,7 +32,7 @@ import {
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
 import { EditScopeTypeSheet } from "./EditScopeTypeSheet";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { ScopeGlyph } from "./ScopeGlyph";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 
 interface ScopeDetailEditorProps {
@@ -83,7 +83,6 @@ export function ScopeDetailEditor({
     );
   }
 
-  const Icon = resolveIcon(scopeType.icon);
   const color = resolveColor(scopeType);
 
   async function saveName() {
@@ -166,7 +165,7 @@ export function ScopeDetailEditor({
             onClick={() => setEditingType(true)}
           >
             <Settings className="h-3.5 w-3.5 mr-1.5" />
-            Edit scope type
+            Edit {scopeType.label_singular} Settings
           </Button>
           <Button
             variant="outline"
@@ -188,9 +187,9 @@ export function ScopeDetailEditor({
       <Card className="p-6">
         <div className="flex items-start gap-4">
           <div
-            className={`w-12 h-12 rounded-lg ${color.fg} flex items-center justify-center shrink-0`}
+            className={`w-12 h-12 rounded-lg ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
           >
-            <Icon className="h-7 w-7" />
+            <ScopeGlyph icon={scopeType.icon} className="h-7 w-7" />
           </div>
           <div className="flex-1 min-w-0">
             {editingName ? (

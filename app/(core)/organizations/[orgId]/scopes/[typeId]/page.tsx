@@ -8,6 +8,7 @@ import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { ScopesList } from "@/features/scope-system/components/ScopesList";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { fetchScopeTypes } from "@/features/agent-context/redux/scope/scopeTypesSlice";
+import type { Organization } from "@/features/organizations/types";
 
 export default function ScopeTypePage() {
   const params = useParams();
@@ -15,20 +16,20 @@ export default function ScopeTypePage() {
   const typeId = params.typeId as string;
   const dispatch = useAppDispatch();
 
-  const [orgId, setOrgId] = React.useState<string | null>(null);
+  const [org, setOrg] = React.useState<Organization | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     async function resolve() {
       try {
-        const org = await getOrganizationBySlugOrId(orgSlugOrId);
-        if (!org) {
+        const resolved = await getOrganizationBySlugOrId(orgSlugOrId);
+        if (!resolved) {
           setError("Organization not found");
           return;
         }
-        setOrgId(org.id);
-        dispatch(fetchScopeTypes(org.id));
+        setOrg(resolved);
+        dispatch(fetchScopeTypes(resolved.id));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load");
       } finally {
@@ -38,7 +39,7 @@ export default function ScopeTypePage() {
     resolve();
   }, [orgSlugOrId, dispatch]);
 
-  if (loading || !orgId) {
+  if (loading || !org) {
     return (
       <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center bg-textured">
         {error ? (
@@ -56,9 +57,12 @@ export default function ScopeTypePage() {
     <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
       <div className="max-w-6xl mx-auto p-6 md:p-8">
         <ScopesList
-          orgId={orgId}
+          orgId={org.id}
           orgSlugOrId={orgSlugOrId}
           typeId={typeId}
+          orgName={org.name}
+          orgSlug={org.slug}
+          orgIsPersonal={org.isPersonal}
         />
       </div>
     </div>
