@@ -115,6 +115,7 @@ export default function WorkbooksLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Excel without the email attachments"
       finalCtaDescription="A real spreadsheet that lives where your team and agents already work. Free to start, no credit card."
+      relatedModules={["/data", "/code", "/files"]}
     />
   );
 }

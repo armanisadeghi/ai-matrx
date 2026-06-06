@@ -117,6 +117,7 @@ export default function KnowledgeLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Stop pasting docs into prompts"
       finalCtaDescription="Group your knowledge once, query it forever, cite every answer. Free to start, no credit card."
+      relatedModules={["/files", "/tools/pdf-extractor", "/chat"]}
     />
   );
 }

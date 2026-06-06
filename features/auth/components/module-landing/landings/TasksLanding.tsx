@@ -170,6 +170,7 @@ export default function TasksLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Put your task list to work"
       finalCtaDescription="Tasks that run themselves, with the audit trail to prove it. Free to start, no credit card required."
+      relatedModules={["/agents", "/notes", "/agent-apps"]}
     />
   );
 }

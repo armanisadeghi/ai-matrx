@@ -114,6 +114,7 @@ export default function TranscriptsLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Stop re-listening to your own meetings"
       finalCtaDescription="Transcribe once, search forever, push to action. Free to start, no credit card."
+      relatedModules={["/notes", "/tasks", "/chat"]}
     />
   );
 }
