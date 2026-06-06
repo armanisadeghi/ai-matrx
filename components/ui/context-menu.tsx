@@ -5,21 +5,18 @@ import * as ContextMenuPrimitive from "@radix-ui/react-context-menu";
 import { CheckIcon, ChevronRightIcon, DotFilledIcon } from "@radix-ui/react-icons";
 
 import { cn } from "@/styles/themes/utils";
-import { useIsMounted } from "@/hooks/use-is-mounted";
 
 /**
- * Right-click context menu (radix). Mirrors the dropdown-menu wrapper's
- * hydration-safe Root so SSR/client aria ids don't mismatch.
+ * Right-click context menu (radix).
+ *
+ * NOTE: unlike the dropdown-menu wrapper, the Root is rendered unconditionally
+ * (no mount-gating). The context-menu Trigger wraps always-visible content
+ * (the row itself), so deferring the Root would orphan the Trigger and throw
+ * "ContextMenuTrigger must be used within ContextMenu". A closed context menu
+ * generates no aria-controls ids, so there's no SSR/client hydration mismatch
+ * to defend against.
  */
-const ContextMenu = ({
-  children,
-  ...props
-}: React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Root>) => {
-  const isMounted = useIsMounted();
-  if (!isMounted) return <>{children}</>;
-  return <ContextMenuPrimitive.Root {...props}>{children}</ContextMenuPrimitive.Root>;
-};
-ContextMenu.displayName = "ContextMenu";
+const ContextMenu = ContextMenuPrimitive.Root;
 
 const ContextMenuTrigger = ContextMenuPrimitive.Trigger;
 const ContextMenuGroup = ContextMenuPrimitive.Group;

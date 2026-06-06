@@ -26,6 +26,9 @@ import {
   Search,
   Calendar,
   Sparkles,
+  ExternalLink,
+  FolderTree,
+  Network,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -34,9 +37,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { CreateOrgModal } from "@/features/organizations/components/CreateOrgModal";
+import { OrgScopeTree } from "@/features/organizations/components/OrgScopeTree";
 import type { OrganizationWithRole, OrgRole } from "@/features/organizations/types";
 import { InlineMediaRef } from "@/features/files";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectScopeTypesByOrg } from "@/features/agent-context/redux/scope/scopeTypesSlice";
+import { selectScopesByOrg } from "@/features/agent-context/redux/scope/scopesSlice";
 
 interface RoleMeta {
   label: string;
@@ -85,85 +92,130 @@ function OrgCard({ org }: { org: OrganizationWithRole }) {
   const RoleIcon = meta.icon;
   const href = `/organizations/${org.slug}`;
 
-  function handleClick(e: React.MouseEvent) {
-    if (e.metaKey || e.ctrlKey) return;
-    e.preventDefault();
+  // Scope data for the embedded Context tree + stats. OrgScopeTree dispatches
+  // the fetch; these selectors read the same store.
+  const scopeTypes = useAppSelector((s) => selectScopeTypesByOrg(s, org.id));
+  const scopes = useAppSelector((s) => selectScopesByOrg(s, org.id));
+
+  function open() {
     startTransition(() => router.push(href));
   }
 
   return (
-    <Link href={href} onClick={handleClick} className="block group focus:outline-none">
-      <Card className="relative h-full overflow-hidden hover:border-primary/40 hover:shadow-sm transition-all">
-        <span className={`absolute inset-x-0 top-0 h-1 ${meta.bar} opacity-70`} />
-        {isPending && (
-          <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          </div>
-        )}
-        <div className="p-4 flex flex-col gap-3 h-full">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-11 h-11 rounded-lg overflow-hidden bg-muted flex items-center justify-center border border-border">
-              <InlineMediaRef
-                ref={org.logoUrl ?? null}
-                size="fill"
-                fit="cover"
-                rounded="none"
-                fallbackIcon={
-                  <span className={`w-full h-full flex items-center justify-center ${meta.bg}`}>
-                    <Building2 className={`h-5 w-5 ${meta.text}`} />
-                  </span>
-                }
-                alt={org.name}
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
-                {org.name}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">/{org.slug}</p>
-            </div>
-            <Badge variant="outline" className={`text-[10px] gap-1 shrink-0 ${meta.text}`}>
-              <RoleIcon className="h-3 w-3" />
-              {meta.label}
-            </Badge>
-          </div>
+    <Card className="relative overflow-hidden flex flex-col hover:border-primary/40 hover:shadow-sm transition-all">
+      <span className={`absolute inset-x-0 top-0 h-1 ${meta.bar} opacity-80`} />
+      {isPending && (
+        <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      )}
 
-          {org.description ? (
-            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-              {org.description}
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground/60 italic">No description</p>
-          )}
-
-          <div className="flex items-center justify-between gap-2 pt-2 mt-auto border-t border-border/60">
-            <div className="flex items-center gap-3 text-xs text-muted-foreground min-w-0">
-              <span className="flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                {org.memberCount ?? 1}
-              </span>
-              {org.createdAt && (
-                <span className="flex items-center gap-1 truncate">
-                  <Calendar className="h-3 w-3" />
-                  {format(new Date(org.createdAt), "MMM yyyy")}
+      <div className="p-5 flex flex-col gap-4 flex-1">
+        {/* Header */}
+        <div className="flex items-start gap-3.5">
+          <button
+            onClick={open}
+            className="flex-shrink-0 w-14 h-14 rounded-xl overflow-hidden bg-muted flex items-center justify-center border border-border"
+            title={`Open ${org.name}`}
+          >
+            <InlineMediaRef
+              ref={org.logoUrl ?? null}
+              size="fill"
+              fit="cover"
+              rounded="none"
+              fallbackIcon={
+                <span className={`w-full h-full flex items-center justify-center ${meta.bg}`}>
+                  <Building2 className={`h-6 w-6 ${meta.text}`} />
                 </span>
+              }
+              alt={org.name}
+            />
+          </button>
+          <div className="min-w-0 flex-1">
+            <button onClick={open} className="text-left group/title block max-w-full">
+              <h3 className="font-semibold text-lg truncate group-hover/title:text-primary transition-colors">
+                {org.name}
+              </h3>
+            </button>
+            <div className="flex items-center gap-2 flex-wrap mt-0.5">
+              <Badge variant="outline" className={`text-[10px] gap-1 ${meta.text}`}>
+                <RoleIcon className="h-3 w-3" />
+                {meta.label}
+              </Badge>
+              <span className="text-xs text-muted-foreground truncate">/{org.slug}</span>
+              {org.website && (
+                <a
+                  href={org.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-0.5 text-xs text-primary hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Website
+                </a>
               )}
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Link
-                href={`/organizations/${org.slug}/settings`}
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                title="Manage"
-              >
-                <Settings className="h-3.5 w-3.5" />
-              </Link>
-              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
             </div>
           </div>
         </div>
-      </Card>
-    </Link>
+
+        {org.description && (
+          <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+            {org.description}
+          </p>
+        )}
+
+        {/* Stats */}
+        <div className="flex items-center gap-4 flex-wrap text-xs">
+          <StatChip icon={<Users className="h-3.5 w-3.5" />} value={org.memberCount ?? 1} label={org.memberCount === 1 ? "member" : "members"} />
+          <StatChip icon={<FolderTree className="h-3.5 w-3.5" />} value={scopeTypes.length} label={scopeTypes.length === 1 ? "dimension" : "dimensions"} />
+          <StatChip icon={<Network className="h-3.5 w-3.5" />} value={scopes.length} label={scopes.length === 1 ? "scope" : "scopes"} />
+          {org.createdAt && (
+            <span className="flex items-center gap-1 text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5" />
+              {format(new Date(org.createdAt), "MMM yyyy")}
+            </span>
+          )}
+        </div>
+
+        {/* Context scope tree */}
+        <div className="rounded-lg border border-border bg-muted/20 p-3 flex-1">
+          <div className="flex items-center gap-1.5 mb-2">
+            <FolderTree className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Context
+            </span>
+          </div>
+          <div className="max-h-56 overflow-y-auto">
+            <OrgScopeTree orgId={org.id} slug={org.slug} />
+          </div>
+        </div>
+      </div>
+
+      {/* Footer actions */}
+      <div className="flex items-center gap-2 px-5 py-3 border-t border-border bg-card">
+        <Button size="sm" onClick={open} className="flex-1">
+          Open workspace
+          <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+        </Button>
+        <Button asChild size="sm" variant="outline">
+          <Link href={`/organizations/${org.slug}/settings`}>
+            <Settings className="h-3.5 w-3.5 mr-1.5" />
+            Manage
+          </Link>
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+function StatChip({ icon, value, label }: { icon: React.ReactNode; value: React.ReactNode; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5 text-muted-foreground">
+      {icon}
+      <span className="font-semibold text-foreground tabular-nums">{value}</span>
+      {label}
+    </span>
   );
 }
 
@@ -260,7 +312,7 @@ export default function OrganizationsPage() {
                 <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                   Personal
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {personal.map((org) => (
                     <OrgCard key={org.id} org={org} />
                   ))}
@@ -273,7 +325,7 @@ export default function OrganizationsPage() {
                 <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                   Teams
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {teams.map((org) => (
                     <OrgCard key={org.id} org={org} />
                   ))}
