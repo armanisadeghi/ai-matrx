@@ -213,15 +213,17 @@ export function KgGraphCanvas({
 
   return (
     <div className="flex h-full w-full flex-col">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-3 py-2">
+      {/* Toolbar — no flex-wrap + fixed-width controls so changing a value never
+          reflows the row; the variable node/edge count truncates instead of
+          pushing the controls. Overflows to a horizontal scroll on narrow widths. */}
+      <div className="flex items-center gap-2 overflow-x-auto border-b border-border bg-card px-3 py-2">
         <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
           <Network className="h-4 w-4 text-primary" />
           {mode === "org" ? "Knowledge graph" : "Scope neighborhood"}
         </div>
 
         {status === "ready" ? (
-          <span className="text-xs text-muted-foreground">
+          <span className="min-w-0 shrink truncate whitespace-nowrap text-xs text-muted-foreground">
             {nodeCount} node{nodeCount === 1 ? "" : "s"} · {edgeCount} edge
             {edgeCount === 1 ? "" : "s"}
             {payload?.truncated ? (
@@ -236,7 +238,7 @@ export function KgGraphCanvas({
           </span>
         ) : null}
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="ml-auto flex flex-none items-center gap-2">
           {/* Org + scope filters (org graph only): always visible + changeable so
               the user is never stuck on a route-provided org/scope. Switching org
               resets the scope (scopes belong to an org). */}

@@ -32,20 +32,30 @@ interface KgOrgFilterProps {
   className?: string;
 }
 
+const ALL_ORGS = "__all_orgs__";
+
 export function KgOrgFilter({ value, onChange, className }: KgOrgFilterProps) {
   const { organizations } = useScopeTree();
-  // Only worth showing once the user has more than one org to choose between.
-  if (organizations.length < 2) return null;
+  if (organizations.length === 0) return null;
 
+  // "All organizations" (null org) is ALWAYS available so the user is never
+  // trapped on a deep-linked org — the backend returns the union of the user's
+  // visible orgs + the global corpus when no org_id is sent.
   return (
-    <Select value={value ?? ""} onValueChange={(v) => onChange(v || null)}>
+    <Select
+      value={value ?? ALL_ORGS}
+      onValueChange={(v) => onChange(v === ALL_ORGS ? null : v)}
+    >
       <SelectTrigger className={className}>
         <span style={TRIGGER_INNER}>
           <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <SelectValue placeholder="Organization" />
+          <SelectValue placeholder="All organizations" />
         </span>
       </SelectTrigger>
       <SelectContent>
+        <SelectItem value={ALL_ORGS} className="text-xs">
+          All organizations
+        </SelectItem>
         {organizations.map((o) => (
           <SelectItem key={o.id} value={o.id} className="text-xs">
             {o.name}
