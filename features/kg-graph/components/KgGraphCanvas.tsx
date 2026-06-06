@@ -52,6 +52,7 @@ import type { KgColorBy, KgSizeBy } from "../cytoscape/analysis";
 import { KG_LAYOUTS, type KgLayoutId } from "../cytoscape/layouts";
 import { KgGraphSidePanel } from "./KgGraphSidePanel";
 import { KgGraphLegend } from "./KgGraphLegend";
+import { KgScopeFilter } from "./KgScopeFilter";
 
 // cytoscape + extensions touch window at import → must be client-only.
 const KgGraphCytoscape = dynamic(() => import("./KgGraphCytoscape"), {
@@ -67,6 +68,10 @@ export interface KgGraphCanvasProps {
   mode: KgGraphMode;
   scopeId?: string;
   organizationId?: string | null;
+  /** Org mode only: seed the scope filter from the route (`?scope=`). */
+  initialScopeId?: string | null;
+  /** Org mode only: restrict the scope picker to one type (`?scopeType=`). */
+  initialScopeTypeId?: string | null;
 }
 
 const ALL_KINDS = "__all__";
@@ -89,6 +94,8 @@ export function KgGraphCanvas({
   mode,
   scopeId,
   organizationId,
+  initialScopeId = null,
+  initialScopeTypeId = null,
 }: KgGraphCanvasProps) {
   const isMobile = useIsMobile();
   const [payload, setPayload] = useState<GraphPayload | null>(null);
@@ -113,6 +120,13 @@ export function KgGraphCanvas({
   // Hide low-value scaffolding kinds (phone/email/url/address) by default so the
   // signal isn't drowned in document noise — toggleable.
   const [hideNoise, setHideNoise] = useState(true);
+  // Org mode: narrow the graph to one scope's tagged sources (manual picker or
+  // the `?scope=` route param). In scope mode the route's scope is fixed.
+  const [scopeFilter, setScopeFilter] = useState<string | null>(initialScopeId);
+
+  // The scope actually driving the fetch: the route's fixed scope in scope mode,
+  // else the user/route-selected filter (null = org-wide).
+  const effectiveScopeId = mode === "scope" ? (scopeId ?? null) : scopeFilter;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -121,8 +135,10 @@ export function KgGraphCanvas({
     setSelected(null);
     fetchKgGraph(
       {
-        organizationId: mode === "org" ? organizationId : undefined,
-        scopeId: mode === "scope" ? scopeId : undefined,
+        // scope_id wins when set (backend resolves scope → tagged sources →
+        // entities); otherwise the org-wide corpus.
+        organizationId: effectiveScopeId ? undefined : organizationId,
+        scopeId: effectiveScopeId ?? undefined,
         depth: KG_DEFAULT_DEPTH,
         // Only the top-N most-connected nodes — a smaller budget = a far faster
         // first paint. The user dials in more via the "Detail" control.
@@ -140,7 +156,7 @@ export function KgGraphCanvas({
         setStatus("error");
       });
     return () => controller.abort();
-  }, [mode, scopeId, organizationId, reloadKey, detail]);
+  }, [mode, organizationId, effectiveScopeId, reloadKey, detail]);
 
   // Available kinds for the filter dropdown.
   const kinds = useMemo(() => {
@@ -210,6 +226,17 @@ export function KgGraphCanvas({
         ) : null}
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          {/* Scope filter (org graph only): narrow to one Client / Case / Kid. */}
+          {mode === "org" ? (
+            <KgScopeFilter
+              organizationId={organizationId ?? null}
+              value={scopeFilter}
+              onChange={setScopeFilter}
+              scopeTypeId={initialScopeTypeId}
+              className={cn(SELECT_TRIGGER, "w-[180px]")}
+            />
+          ) : null}
+
           {/* Search */}
           <div className="relative">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />

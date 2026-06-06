@@ -9,9 +9,9 @@ export const metadata = {
 export default async function KnowledgeGraphPage({
   searchParams,
 }: {
-  searchParams: Promise<{ org?: string }>;
+  searchParams: Promise<{ org?: string; scope?: string; scopeType?: string }>;
 }) {
-  const { org } = await searchParams;
+  const { org, scope, scopeType } = await searchParams;
 
   return (
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-textured">
@@ -25,7 +25,11 @@ export default async function KnowledgeGraphPage({
         </p>
       </div>
       <div className="min-h-0 flex-1">
-        <KnowledgeGraphClient orgParam={org ?? null} />
+        <KnowledgeGraphClient
+          orgParam={org ?? null}
+          scopeParam={scope ?? null}
+          scopeTypeParam={scopeType ?? null}
+        />
       </div>
     </div>
   );

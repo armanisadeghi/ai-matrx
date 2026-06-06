@@ -23,8 +23,12 @@ const UUID_RE =
 
 export function KnowledgeGraphClient({
   orgParam,
+  scopeParam = null,
+  scopeTypeParam = null,
 }: {
   orgParam?: string | null;
+  scopeParam?: string | null;
+  scopeTypeParam?: string | null;
 }) {
   const active = useActiveContext();
   const [resolvedOrgId, setResolvedOrgId] = useState<string | null>(null);
@@ -67,5 +71,12 @@ export function KnowledgeGraphClient({
     ? resolvedOrgId
     : (active.organizationId ?? null);
 
-  return <KgGraphCanvas mode="org" organizationId={organizationId} />;
+  return (
+    <KgGraphCanvas
+      mode="org"
+      organizationId={organizationId}
+      initialScopeId={scopeParam}
+      initialScopeTypeId={scopeTypeParam}
+    />
+  );
 }

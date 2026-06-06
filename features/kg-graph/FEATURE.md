@@ -163,6 +163,16 @@ NER entities once backfill runs).
 
 ## Change log
 
+- 2026-06-04 — Option A: scope filtering + mini graph card. **Filter** the org
+  graph to one scope (Client/Case/Kid) via a toolbar picker (`KgScopeFilter`,
+  reuses `useScopeTree`) **or** the route — `/knowledge-graph?org=&scope=&scopeType=`
+  (so org/scope pages deep-link a pre-filtered graph; backend resolves `scope_id`
+  → tagged sources → entities). **`KgGraphCard`** — a lazy, cached, click-through
+  mini preview (lightweight SVG, phyllotaxis layout, real top-N + decorative
+  filler, fake-graph-while-loading) embedded on the scope page; cached/deduped via
+  `service/graphPreview.ts`. (Org/scope-type page embeds: drop-in snippets provided
+  — OrgWorkspace left untouched as it was mid-edit; scope-type card needs a backend
+  `scope_type_id` filter, see 05.)
 - 2026-06-04 — Encoding + evidence tweaks. New **hierarchy ("tier") colour** mode
   (`analysis.ensureTier`: BFS depth from each cluster's local importance peaks;
   `KG_TIER_PALETTE`) — now the **default colour** (entity-kind colouring demoted to

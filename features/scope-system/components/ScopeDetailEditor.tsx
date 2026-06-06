@@ -43,6 +43,7 @@ import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { KgGraphCard } from "@/features/kg-graph/components/KgGraphCard";
 import {
   orgScopesHref,
   scopeTypeHref,
@@ -397,6 +398,14 @@ export function ScopeDetailEditor({
           </div>
         </div>
       </Card>
+
+      {/* Live preview of this scope's slice of the knowledge graph (lazy, cached). */}
+      <KgGraphCard
+        variant="scope"
+        id={scope.id}
+        orgSlugOrId={orgSlugOrId}
+        title={`${scope.name} · knowledge graph`}
+      />
 
       <Card className="p-6 space-y-5">
         {loading && !rows && (
