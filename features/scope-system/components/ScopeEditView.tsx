@@ -35,7 +35,10 @@ import {
 import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import {
+  resolveColor,
+  SCOPE_ICON_SURFACE,
+} from "@/features/scope-system/constants/scope-colors";
 import {
   orgScopesHref,
   scopeHref,
@@ -82,7 +85,9 @@ export function ScopeEditView({
     selectScopeBySlugOrId(s, resolvedTypeId, scopeParam),
   );
   const scopesLoaded = useAppSelector((s) =>
-    resolvedTypeId ? selectScopesLoadedForType(s, orgId, resolvedTypeId) : false,
+    resolvedTypeId
+      ? selectScopesLoadedForType(s, orgId, resolvedTypeId)
+      : false,
   );
 
   const [name, setName] = useState("");
@@ -91,7 +96,8 @@ export function ScopeEditView({
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    if (resolvedTypeId) dispatch(fetchScopes({ org_id: orgId, type_id: resolvedTypeId }));
+    if (resolvedTypeId)
+      dispatch(fetchScopes({ org_id: orgId, type_id: resolvedTypeId }));
   }, [dispatch, orgId, resolvedTypeId]);
 
   useEffect(() => {
@@ -221,7 +227,7 @@ export function ScopeEditView({
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
             <div
-              className={`w-11 h-11 rounded-lg ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
+              className={`w-11 h-11 rounded-lg ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
             >
               <ScopeGlyph icon={scopeType.icon} className="h-6 w-6" />
             </div>
@@ -233,7 +239,8 @@ export function ScopeEditView({
                 Edit {scope.name}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                This {scopeType.label_singular.toLowerCase()}&apos;s own settings.
+                This {scopeType.label_singular.toLowerCase()}&apos;s own
+                settings.
               </p>
             </div>
           </div>
@@ -283,8 +290,14 @@ export function ScopeEditView({
               />
             </div>
             <div className="flex justify-end">
-              <Button onClick={saveBasics} disabled={savingBasics || !name.trim()} size="sm">
-                {savingBasics && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Button
+                onClick={saveBasics}
+                disabled={savingBasics || !name.trim()}
+                size="sm"
+              >
+                {savingBasics && (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                )}
                 Save
               </Button>
             </div>

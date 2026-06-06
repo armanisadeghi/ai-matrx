@@ -24,6 +24,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/prompt-apps", favicon: { color: "#059669", letter: "Pa" } },
   { href: "/research", favicon: { color: "#7c3aed", letter: "Rs" } },
   { href: "/chat", favicon: { color: "#2563eb", letter: "Ch" } },
+  { href: "/organizations", favicon: { color: "#0ea5e9", letter: "Or" } },
   { href: "/notes", favicon: { color: "#d97706", letter: "No" } },
   { href: "/tasks", favicon: { color: "#16a34a", letter: "Tk" } },
   { href: "/projects", favicon: { color: "#4f46e5", letter: "Pj" } },

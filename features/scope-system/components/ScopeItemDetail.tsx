@@ -41,7 +41,10 @@ import { ScopeItemSuggestionsPanel } from "@/features/kg-suggestions/components/
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import {
+  resolveColor,
+  SCOPE_ICON_SURFACE,
+} from "@/features/scope-system/constants/scope-colors";
 import {
   orgScopesHref,
   scopeHref,
@@ -209,7 +212,7 @@ export function ScopeItemDetail({
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
             <div
-              className={`w-11 h-11 rounded-lg ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
+              className={`w-11 h-11 rounded-lg ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
             >
               <ScopeGlyph icon={scopeType.icon} className="h-6 w-6" />
             </div>

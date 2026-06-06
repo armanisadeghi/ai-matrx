@@ -67,7 +67,10 @@ import {
   selectValuesByScope,
   type ScopeContextRow,
 } from "@/features/scope-system/redux/scopeValuesSlice";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import {
+  resolveColor,
+  SCOPE_ICON_SURFACE,
+} from "@/features/scope-system/constants/scope-colors";
 import {
   orgScopesHref,
   scopeHref,
@@ -232,7 +235,7 @@ export function ScopesList({
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-4 min-w-0">
             <div
-              className={`w-16 h-16 rounded-2xl ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
+              className={`w-16 h-16 rounded-2xl ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
             >
               <ScopeGlyph icon={scopeType.icon} className="h-9 w-9" />
             </div>
@@ -367,7 +370,7 @@ export function ScopesList({
         {scopeCount === 0 && !adding ? (
           <Card className="p-10 text-center">
             <div
-              className={`w-14 h-14 rounded-full ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center mx-auto mb-3`}
+              className={`w-14 h-14 rounded-full ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center mx-auto mb-3`}
             >
               <ScopeGlyph icon={scopeType.icon} className="h-7 w-7" />
             </div>

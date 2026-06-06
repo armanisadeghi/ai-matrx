@@ -33,7 +33,10 @@ import {
   selectFullContextStatus,
   type NavOrganization,
 } from "@/features/agent-context/redux/hierarchySlice";
-import { canManageSettings, type OrgRole } from "@/features/organizations/types";
+import {
+  canManageSettings,
+  type OrgRole,
+} from "@/features/organizations/types";
 import {
   listScopeTypeItems,
   updateContextItem,
@@ -46,7 +49,10 @@ import { EditContextItemSheet } from "./EditContextItemSheet";
 import { ReorderDialog } from "./ReorderDialog";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import {
+  resolveColor,
+  SCOPE_ICON_SURFACE,
+} from "@/features/scope-system/constants/scope-colors";
 import {
   contextItemHref,
   contextItemsHref,
@@ -126,8 +132,8 @@ export function AllContextItemsHub() {
               All context items
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Every field across all your organizations, grouped by org and scope
-              type.
+              Every field across all your organizations, grouped by org and
+              scope type.
             </p>
           </div>
         </div>
@@ -262,7 +268,10 @@ function ContextItemsTypeView({
         orgName={orgName}
         orgIsPersonal={orgIsPersonal}
         trail={[
-          { label: scopeType.label_plural, href: scopeTypeHref(orgSlugOrId, scopeType) },
+          {
+            label: scopeType.label_plural,
+            href: scopeTypeHref(orgSlugOrId, scopeType),
+          },
           { label: "Context items" },
         ]}
       />
@@ -271,7 +280,7 @@ function ContextItemsTypeView({
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
             <div
-              className={`w-11 h-11 rounded-lg ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
+              className={`w-11 h-11 rounded-lg ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
             >
               <ListChecks className="h-6 w-6" />
             </div>
@@ -328,7 +337,8 @@ function ContextItemsTypeView({
 
             {items.length === 0 && !addingItem && (
               <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                No context items yet{canManage ? " — add one to get started." : "."}
+                No context items yet
+                {canManage ? " — add one to get started." : "."}
               </div>
             )}
 
@@ -405,7 +415,8 @@ function ContextItemsOrgView({
               All context items
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Every field across all scope types in this organization, grouped by type.
+              Every field across all scope types in this organization, grouped
+              by type.
             </p>
           </div>
         </div>
@@ -468,7 +479,7 @@ function ScopeTypeItemsSection({
           className="group inline-flex items-center gap-2 text-base font-semibold text-foreground hover:text-primary"
         >
           <span
-            className={`w-6 h-6 rounded ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center`}
+            className={`w-6 h-6 rounded ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center`}
           >
             <ScopeGlyph icon={type.icon} className="h-3.5 w-3.5" />
           </span>

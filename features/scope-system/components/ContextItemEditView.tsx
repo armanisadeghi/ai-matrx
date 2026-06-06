@@ -26,7 +26,10 @@ import {
 import { ContextItemSettingsForm } from "./forms/ContextItemSettingsForm";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import {
+  resolveColor,
+  SCOPE_ICON_SURFACE,
+} from "@/features/scope-system/constants/scope-colors";
 import {
   contextItemHref,
   contextItemsHref,
@@ -155,7 +158,7 @@ export function ContextItemEditView({
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
             <div
-              className={`w-11 h-11 rounded-lg ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
+              className={`w-11 h-11 rounded-lg ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
             >
               <ScopeGlyph icon={scopeType.icon} className="h-6 w-6" />
             </div>
@@ -167,7 +170,8 @@ export function ContextItemEditView({
                 Edit {item.display_name}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                These settings apply to <strong>every {scopeType.label_singular.toLowerCase()}</strong>.
+                These settings apply to{" "}
+                <strong>every {scopeType.label_singular.toLowerCase()}</strong>.
               </p>
             </div>
           </div>
@@ -187,7 +191,9 @@ export function ContextItemEditView({
             itemId={item.id}
             onSaved={() => router.push(hubHref)}
             onCancelled={() => router.push(hubHref)}
-            onDeleted={() => router.push(contextItemsHref(orgSlugOrId, scopeType))}
+            onDeleted={() =>
+              router.push(contextItemsHref(orgSlugOrId, scopeType))
+            }
           />
         </Card>
       ) : (

@@ -42,7 +42,10 @@ import { AddContextItemInline } from "./AddContextItemInline";
 import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import {
+  resolveColor,
+  SCOPE_ICON_SURFACE,
+} from "@/features/scope-system/constants/scope-colors";
 import { KgGraphCard } from "@/features/kg-graph/components/KgGraphCard";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
@@ -289,7 +292,7 @@ export function ScopeDetailEditor({
       <Card className="p-6">
         <div className="flex items-start gap-4">
           <div
-            className={`w-12 h-12 rounded-lg ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
+            className={`w-12 h-12 rounded-lg ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
           >
             <ScopeGlyph icon={scopeType.icon} className="h-7 w-7" />
           </div>

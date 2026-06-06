@@ -161,6 +161,16 @@ export const SCOPE_COLORS: ScopeColor[] = [
   },
 ];
 
+/**
+ * Universal surface for scope-type / context-item icon pills.
+ *
+ * We deliberately do NOT tint the icon container with the scope color — the
+ * color lives on the icon glyph (`fg`) and the ring (`ring`). The background
+ * stays neutral and predictable everywhere this concept appears, so a colored
+ * icon reads clearly instead of fighting a same-hue background tint.
+ */
+export const SCOPE_ICON_SURFACE = "bg-muted";
+
 export function pickColorForId(id: string): ScopeColor {
   let hash = 0;
   for (let i = 0; i < id.length; i++) {

@@ -34,7 +34,10 @@ import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSug
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import {
+  resolveColor,
+  SCOPE_ICON_SURFACE,
+} from "@/features/scope-system/constants/scope-colors";
 import {
   contextItemsHref,
   orgScopesHref,
@@ -180,7 +183,7 @@ export function ScopeContextItemsHub({
       <Card className="p-6">
         <div className="flex items-start gap-3">
           <div
-            className={`w-11 h-11 rounded-lg ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
+            className={`w-11 h-11 rounded-lg ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
           >
             <ScopeGlyph icon={scopeType.icon} className="h-6 w-6" />
           </div>

@@ -260,6 +260,22 @@ compile-verified against the typed contract.
 
 ## Change log
 
+- `2026-06-06` — **Global new-suggestion notifier.** Added an app-wide,
+  route-agnostic nudge so a user learns about suggestions produced by a
+  background/overnight RAG-NER batch even when they're elsewhere in the app.
+  `KgNewSuggestionNotifier` (mounted in `app/DeferredSingletons.tsx` via
+  `next/dynamic`, fires after idle) compares the global pending list against a
+  durable per-user ack set and, if anything is genuinely new, shows ONE delayed
+  sonner toast (`Review` → opens the drawer · `Don't show again` · close). Two
+  dismissal tiers: close is transient (may resurface on reload, nothing
+  persisted); "Don't show again" writes an ack row per current suggestion id so
+  those never re-trigger — but a brand-new id still pops. New table
+  `public.kg_suggestion_ack` (user_id, suggestion_id, PK both; RLS scoped to
+  `auth.uid()`, own select/insert/delete) + `kgSuggestionAckService`
+  (`fetchAckedSuggestionIds` / `ackSuggestions`, read/write straight to
+  Supabase). Added the table to `types/database.types.ts`. This is the only
+  durable acknowledgement in the system — deliberately distinct from the inline
+  hints, which silence for one load only.
 - `2026-06-06` — **Cross-surface hint rollout.** The rich decision card only
   lived on the item-value detail page (low traffic). Added two reusable
   primitives so suggestions surface wherever a user already is:

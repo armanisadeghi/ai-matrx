@@ -52,6 +52,14 @@ const LazyMessagingIsland = dynamic(
   { ssr: false, loading: () => null },
 );
 
+// Global "you have a new knowledge-graph suggestion" nudge. Returns null until
+// it has something genuinely new (unacknowledged) to say, then fires a single
+// delayed sonner toast. Kept out of this file's static graph via next/dynamic.
+const LazyKgNewSuggestionNotifier = dynamic(
+  () => import("@/features/kg-suggestions/components/KgNewSuggestionNotifier"),
+  { ssr: false, loading: () => null },
+);
+
 // Selector that returns true if ANY overlay instance is currently open.
 // Used by OverlayControllerGate below to defer mounting OverlayController
 // (and its Impl chunk's 111-window lazy graph) until the user actually
@@ -225,6 +233,7 @@ export default function DeferredSingletons() {
       <LegacyPromptOverlaysController />
       <LazyMessagingIsland />
       <AudioRecoveryToast />
+      <LazyKgNewSuggestionNotifier />
       <AuthSessionWatcher />
       <AnnouncementProvider />
       <AdminFeatureProvider />

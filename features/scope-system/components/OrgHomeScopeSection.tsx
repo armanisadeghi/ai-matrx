@@ -74,7 +74,12 @@ export function OrgHomeScopeSection({
   const overflowCount = Math.max(0, items.length - MAX_COLUMNS);
 
   return (
-    <Card className="p-6">
+    <Card className="relative overflow-hidden p-6">
+      {/* Color anchor: a left accent rail tying the card to this scope type. */}
+      <span
+        className={`absolute left-0 inset-y-0 w-1 ${color.swatch} opacity-70`}
+        aria-hidden
+      />
       <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
         <div className="flex items-center gap-3">
           <div
@@ -191,6 +196,7 @@ export function OrgHomeScopeSection({
                     key={scope.id}
                     scopeId={scope.id}
                     scopeName={scope.name}
+                    nameColorClass={color.fg}
                     columns={columns}
                     overflowCount={overflowCount}
                     onClick={() =>
@@ -225,6 +231,7 @@ export function OrgHomeScopeSection({
 interface ScopeRowProps {
   scopeId: string;
   scopeName: string;
+  nameColorClass: string;
   columns: { id: string; display_name: string }[];
   overflowCount: number;
   onClick: () => void;
@@ -233,6 +240,7 @@ interface ScopeRowProps {
 function ScopeRow({
   scopeId,
   scopeName,
+  nameColorClass,
   columns,
   overflowCount,
   onClick,
@@ -251,7 +259,9 @@ function ScopeRow({
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="flex items-center gap-1.5 w-full min-w-0">
-                <span className="truncate">{scopeName}</span>
+                <span className={`truncate font-semibold ${nameColorClass}`}>
+                  {scopeName}
+                </span>
                 <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </span>
             </TooltipTrigger>

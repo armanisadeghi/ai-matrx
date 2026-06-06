@@ -41,6 +41,8 @@ import type {
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn";
+import { getEntry, moduleKey } from "@/features/organizations/resource-catalogue";
+import { getOrgModuleSetting } from "@/features/organizations/orgModuleSettings";
 
 type CommonProps = {
   className?: string;
@@ -123,12 +125,42 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
   const selected = isControlled ? props.value! : uncontrolledHook.scopeIds;
   const selectedSet = useMemo(() => new Set(selected), [selected]);
 
+  // ─── Per-org is_scopeable gate ─────────────────────────────────────────
+  // When an org admin turns OFF "Scopeable" for this kind (org_module_settings),
+  // block tagging it. Only applies to the uncontrolled (write) mode — controlled
+  // mode is a filter, never a write. Defaults to allowed (no settings row, or a
+  // kind not in the catalogue, e.g. agent_surface_binding).
+  const uncontrolledEntityType = isControlled
+    ? null
+    : ((props as UncontrolledProps).entityType ?? null);
+  const [scopeableAllowed, setScopeableAllowed] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    if (isControlled || !orgId || !uncontrolledEntityType) {
+      setScopeableAllowed(true);
+      return;
+    }
+    const entry = getEntry(uncontrolledEntityType);
+    if (!entry) {
+      setScopeableAllowed(true);
+      return;
+    }
+    (async () => {
+      const setting = await getOrgModuleSetting(orgId, moduleKey(entry));
+      if (!cancelled) setScopeableAllowed(setting.isScopeable);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isControlled, orgId, uncontrolledEntityType]);
+
   // ─── Toggle handler with the cardinality rule ──────────────────────────
   const applyNext = (next: string[]) => {
     if (isControlled) {
       (props as ControlledProps).onChange(next);
       return;
     }
+    if (!scopeableAllowed) return; // gated off for this kind in this org
     void uncontrolledHook.setScopes(next).then((res) => {
       const uProps = props as UncontrolledProps;
       if (res.ok && uProps.onAfterSave) uProps.onAfterSave(next);
@@ -182,6 +214,17 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
     return (
       <div className={cn("text-xs text-muted-foreground px-3 py-2", className)}>
         No scopes defined for this organization.
+      </div>
+    );
+  }
+
+  if (!isControlled && !scopeableAllowed) {
+    const label =
+      (uncontrolledEntityType && getEntry(uncontrolledEntityType)?.labelPlural) ??
+      "items of this kind";
+    return (
+      <div className={cn("text-xs text-muted-foreground px-3 py-2", className)}>
+        Scope tagging is turned off for {label.toLowerCase()} in this organization.
       </div>
     );
   }
