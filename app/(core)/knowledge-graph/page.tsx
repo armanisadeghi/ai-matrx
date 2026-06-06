@@ -6,7 +6,13 @@ export const metadata = {
     "Explore the entities and relationships extracted across your organization's content — spot clusters, gaps, and weaknesses in your data.",
 };
 
-export default function KnowledgeGraphPage() {
+export default async function KnowledgeGraphPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ org?: string }>;
+}) {
+  const { org } = await searchParams;
+
   return (
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col overflow-hidden bg-textured">
       <div className="shrink-0 border-b border-border px-4 py-2.5">
@@ -19,7 +25,7 @@ export default function KnowledgeGraphPage() {
         </p>
       </div>
       <div className="min-h-0 flex-1">
-        <KnowledgeGraphClient />
+        <KnowledgeGraphClient orgParam={org ?? null} />
       </div>
     </div>
   );
