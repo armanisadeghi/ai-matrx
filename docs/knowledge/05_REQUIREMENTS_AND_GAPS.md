@@ -171,4 +171,35 @@ Reuses item/value machinery; natural for scope↔entity links, awkward for arbit
 **My recommendation:** **A now** (visualize the scope structure you already have — it's the real, user-defined
 relationship graph), then **B** for entity-entity typing (the per-org vocabulary + suggestion-confirm loop). Tell
 me which resonates and I'll spec it in detail.
-</content>
+
+---
+
+## 7. Progress & immediate next (2026-06-04)
+
+**Shipped** (commits `e36003d0c`, `6fee3f428`): scope filtering on the org graph — manual (toolbar **org + scope
+pickers**, reuse `useScopeTree`) AND via route (`/knowledge-graph?org=&scope=&scopeType=`); org picker always
+visible/changeable (never stuck). **Mini graph card** (`KgGraphCard`) — lazy/in-view, cached+deduped fetch
+(`graphPreview`), fake-graph-while-loading, top-N + decorative fillers, click → filtered graph; embedded on the org
+workspace + scope detail page.
+
+**Immediate next (prioritized):**
+1. **`[aidream]`** Mentions API → return `chunk_index` + char offsets + page + `document_id`, which unblocks
+   **`[FE]`** the notes `?find=` passage-jump (scroll + highlight) — the last mile of "click entity → exact spot". (B5 + A1.)
+2. **`[FE]`** Node click-through on the card/graph → open the graph focused on that node (the "click an item to go
+   straight to it" idea); needs a `?focus=` param.
+3. **`[aidream]`** `scope_type_id` filter on `/kg/graph` (union a type's scopes) → unblocks **`[FE]`** the
+   scope-TYPE page card + "Clients"-level filtering (today only single-scope + org are API-backed).
+4. **`[NER]`+`[DB]`** Typed relationships (replace `co_occurs_with`) + user-defined `ctx_relationship_types`
+   vocabulary → edges finally carry meaning. (§6 Option B.)
+5. **`[FE]`** Scope-structure graph (Option A v2): Org → Scope Type → Scope → tagged sources → key entities as a
+   real tree (uses `ctx_scopes.children`).
+6. **`[NER]`** Canonicalization / dedup + importance scoring (gated on the undecided trust model, `04 §6`).
+7. **`[FE]`+`[DB]`** Curation UI (hide / pin / merge / add / edit / disassociate) + the curation overlay tables.
+8. **`[FE]`** Reflect the active filters in the URL (shareable filtered views; today filters are in-page state).
+9. **`[perf]`** If the card's live fetch is too slow at scale → precomputed `kg_graph_summary` RPC/table (the
+   "server layer"); also accelerates the main graph's initial load.
+10. **`[DB]`** Lock down `rag.kg_clusters` + `rag.embedding_cache` (RLS currently disabled).
+11. **`[FE]`** Evidence Index view (ranked entity list as an alternative lead surface to the node-link graph).
+
+**Owner decisions still open:** relationship model (A vs B); the trust/confidence model (do **not** hardcode);
+lead surface (graph vs evidence index).
