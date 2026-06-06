@@ -79,3 +79,12 @@ export function contextItemEditHref(
 ): string {
   return `${contextItemHref(orgSlugOrId, type, item)}/edit`;
 }
+
+/** One scope's items + values, as a dedicated page. */
+export function scopeContextItemsHref(
+  orgSlugOrId: string,
+  type: Slugged,
+  scope: Slugged,
+): string {
+  return `${scopeHref(orgSlugOrId, type, scope)}/context-items`;
+}

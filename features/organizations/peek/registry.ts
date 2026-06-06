@@ -20,6 +20,16 @@ export const PEEK_REGISTRY: Record<
   agent: lazy(() => import("./kinds/AgentPeek")),
   file: lazy(() => import("./kinds/FilePeek")),
   note: lazy(() => import("./kinds/NotePeek")),
+  agent_app: lazy(() => import("./kinds/AgentAppPeek")),
+  skill: lazy(() => import("./kinds/SkillPeek")),
+  workflow: lazy(() => import("./kinds/WorkflowPeek")),
+  content_template: lazy(() => import("./kinds/ContentTemplatePeek")),
+  conversation: lazy(() => import("./kinds/ConversationPeek")),
+  flashcard: lazy(() => import("./kinds/FlashcardPeek")),
+  canvas: lazy(() => import("./kinds/CanvasPeek")),
+  task: lazy(() => import("./kinds/TaskPeek")),
+  dataset: lazy(() => import("./kinds/DatasetPeek")),
+  transcript: lazy(() => import("./kinds/TranscriptPeek")),
   // Add new kinds here as their peek components land.
 };
 
