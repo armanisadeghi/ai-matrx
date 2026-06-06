@@ -73,6 +73,7 @@ import {
   scopeHref,
   contextItemsHref,
   contextItemHref,
+  scopeTypeEditHref,
 } from "@/features/scope-system/utils/scopeRoutes";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
@@ -258,15 +259,22 @@ export function ScopesList({
             </div>
           </div>
           {canManage && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEditingType(true)}
-              className="shrink-0"
-            >
-              <Settings2 className="h-3.5 w-3.5 mr-1.5" />
-              Edit {scopeType.label_singular} Settings
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditingType(true)}
+                title="Quick edit"
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href={scopeTypeEditHref(orgSlugOrId, scopeType)}>
+                  <Settings2 className="h-3.5 w-3.5 mr-1.5" />
+                  Edit {scopeType.label_singular} Settings
+                </Link>
+              </Button>
+            </div>
           )}
         </div>
 
