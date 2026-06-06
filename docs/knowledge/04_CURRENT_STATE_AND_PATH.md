@@ -1,5 +1,11 @@
 # Current State → Vision: The Real Map and the Path
 
+> ⚠️ **Corrected by owner review — read `05_REQUIREMENTS_AND_GAPS.md` (rev. 2) for the authoritative model.**
+> Three framings in this doc are wrong: (1) scope association is **user-driven first** (`EntityScopeTagger` exists),
+> not NER-discovered; (2) **a note is not a flattened PDF** — they're separate source types, and there is no
+> "flatten" bug (the owner pasted PDF text into a note by choice); (3) typed relationships must be **user-defined**.
+> The provenance/DB facts below remain accurate; the *interpretation/priorities* are superseded by 05.
+
 **Status:** analysis + roadmap · **Date:** 2026-06-04
 **Method:** four parallel deep-dive analyses (pdf-extractor pipeline, knowledge-vision
 synthesis, entity→source provenance chain, source-viewer drill-down targets), every

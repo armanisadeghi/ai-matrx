@@ -1,153 +1,174 @@
 # 05 — Requirements & Gaps (working backlog)
 
-**Status:** working backlog / alignment doc · **Date:** 2026-06-04
-**Grounded in live DB + API checks (not guesses).** Companion to `04_CURRENT_STATE_AND_PATH.md`.
+**Status:** working backlog / alignment doc · **Date:** 2026-06-04 (rev. 2 — corrected after owner review)
+**Grounded in live DB + API + code checks.** Companion to `04_CURRENT_STATE_AND_PATH.md`.
 
 **Owner tags:** `[FE]` frontend (agent) · `[aidream]` Python backend · `[NER]` extraction pipeline ·
-`[DB]` schema/migration · `[DECIDE]` product decision needed before building.
+`[DB]` schema/migration · `[DECIDE]` product decision.
+
+> **rev. 2 corrects three wrong framings in rev. 1** (called out inline as ⚠️ CORRECTION): scope
+> association is **user-driven first**, not NER-discovered; relationships must be **user-defined**;
+> and **a note is not a flattened PDF** — they're unrelated source types.
 
 ---
 
-## 0. Live facts this doc is built on (verified 2026-06-04)
+## 0. The model, stated correctly (the part rev. 1 got backwards)
 
-- `rag.kg_entities` is **currently empty** (reset for re-ingest) — architecture, not row counts, drives this doc.
-- **Scope infra exists AND has data:** `ctx_scope_types` = 6, `ctx_scopes` = 20, `ctx_scope_assignments` = 11
-  (these 11 are user-authored entities — notes/tasks — tagged to scopes, NOT kg entities).
-- **`scope_association_suggestions` = 0 rows.** This table is *purpose-built* to bridge a kg entity to a scope
-  (`kg_entity_id`, `kg_chunk_entity_id`, `target_scope_id`, `target_scope_item_id`, `target_slot_name`,
-  `suggested_value`, `match_kind`, `confidence`, `status`, `context_snippet`, `decided_at/by`) — and it has
-  never been populated. **This is the single load-bearing gap.**
-- **`/kg/graph` API params today:** `organization_id`, `scope_id`, `kind`, `depth`, `limit`
-  (`features/kg-graph/service/kgGraphService.ts:36`). No source/document, confidence, or date filter.
-- **Mentions API** (`/kg/graph/entity/{id}/mentions`) returns `source_kind/source_id/snippet/span` only —
-  no `chunk_index`, char offsets, page numbers, or document id (though the joined chunk *has* them).
-- All edges are `co_occurs_with`; PDFs ingested as `note` (no page provenance); `rag.kg_clusters` +
-  `rag.embedding_cache` have **RLS disabled** (security flag).
+**Scope association is something the USER does, and the UI already exists.** When a user creates a note
+they pick its scopes via `NoteContextPicker` → `EntityScopeTagger` (`features/scopes/components/entity-context/`)
+— "this note is for **Ava** (a *Kid*) and her *Genetics Class*." That writes `ctx_scope_assignments`
+(`note` ↔ scope). This is **path 2** (assignment) and it is the primary, correct path. Asking an AI to *discover*
+"this is probably about one of your kids named Ava" is backwards and not the primary mechanism.
+
+What AI *can* usefully do (secondary, and partly built — `features/kg-suggestions/` + `KgSuggestionsChip`):
+once a scope is **known**, scan the content for **values of that scope-type's known items** (path 1) — e.g. the
+*Kids* type has an `exam_schedule` item, the study guide has an exam date → propose a value. Always a suggestion
+the user confirms (`scope_association_suggestions` → confirm → `ctx_context_item_values`). It does **not** invent
+scopes.
+
+**The chain that makes the KG structural is already complete in the data:**
+
+```
+entity → kg_chunk_entities → kg_chunks(source_id=note) → ctx_scope_assignments(note ↔ scope) → scope (Ava / Client X)
+```
+
+The user tags the source; every entity extracted from it is therefore "about Ava" via its source. **No NER
+scope-discovery required.** The backend already exploits this: `GET /kg/graph?scope_id=…` "seeds from entities
+mentioned in the scope's tagged sources" (kg-graph FEATURE.md). So the data + API for scope filtering exist; the
+**graph UI just doesn't expose the picker** (see A2).
+
+**Core directive from the owner:** *show the user what we have and let them pick.* Stop gating on AI magic. If
+scopes exist, show them; if not, let the user create/assign. Everything below honors that.
 
 ---
 
-## 1. Remaining FRONTEND work `[FE]` (you can assign these to me now)
+## 1. Remaining FRONTEND work `[FE]`
 
 ### A1. Notes passage-jump — the `?find=` thing, explained
-**What it is (the thing that was unclear):** When you click an entity and then click **"Open"** on a passage in
-the Evidence panel, the app navigates to the source. For a note that URL is
-`/notes/{noteId}?find=<the passage text, url-encoded>`. The Evidence panel **already appends `?find=`** — but the
-notes viewer **ignores it today** (confirmed: `NotesView` reads `tabs`/`active`, not `find`). So "Open" drops you
-at the **top** of a 400-page note; you still have to Ctrl-F.
-**The work:** teach the notes viewer, on load, to read `?find=`, **scroll to that text and highlight it.** Then
-"Open" jumps straight to the passage — the real "click entity → land on the exact spot" payoff for note sources.
-**Why it matters:** it's the last mile of drill-down; without it, note-sourced entities only half-connect to reality.
-**Effort:** small. **Owner:** `[FE]` (touches `features/notes/**` — I held off because you were editing notes live).
-**Note:** for *paginated* sources (files/processed_documents) the equivalent is `?chunk=`/`?page=`, which the
-file/rag viewers already partly honor; this A1 item is specifically the notes gap.
+When you click an entity → **"Open"** a passage, the URL built for a note is `/notes/{id}?find=<passage text>`.
+The Evidence panel **already appends `?find=`**; the notes viewer **ignores it** (it reads `tabs`/`active`, not
+`find`). So "Open" lands at the **top** of the note. **The work:** notes viewer reads `?find=` on load → scrolls
+to + highlights that text. Then "Open" jumps to the exact passage. *Small; last mile of drill-down. I held off
+because notes was being actively edited.*
 
-### A2. Filter UI — scope / organization / source pickers
-Add toolbar pickers that pass the params the API supports. Status per filter (see §3 for the full classification):
-- **Organization** — trivial: the graph already uses the active org; add an optional in-graph org selector. `[FE]`
-- **Scope** (Client/Case/…) — a picker that passes `scope_id`. **The UI is small, but it shows nothing until
-  `[NER]` populates scope links (B1).** Build the picker behind that dependency.
-- **Source / document** — needs `[aidream]` B6 first (no source param on `/kg/graph` yet), then a picker. `[FE]`
+### A2. Scope / org / source FILTER on the graph — `[FE]`, reuse existing primitives ⭐ highest near-term value
+The graph shows the whole org today. Add a **scope picker to the toolbar** so the user can say "show me only
+**Ava** / only **Client X**." **This reuses `EntityScopeTagger` in its controlled/filter mode** (already used by
+`TaskScopeFilter`) and the **backend `scope_id` param already works.** No new data, no new API, no DB change —
+it's wiring an existing component to an existing endpoint. Org filter = trivial (active-org + optional switcher).
+Source/document filter = needs the small `[aidream]` param (B5).
 
-### A3. Evidence index view `[FE, medium]`
-A ranked, kind-grouped, searchable **list** of entities with inline passage drill-down — frequently more useful than
-a node-link graph for document review. (PRODUCT_DIRECTION A2.) Candidate to become the *primary* tab (see D5).
+### A3. Show an entity's scope(s) in the Evidence panel — `[FE]` (+ maybe small `[aidream]`)
+When a node is selected, show which scope(s) its sources are tagged to (and let the user **tag/curate** from there
+via `EntityScopeTagger`). Makes the "what is this about / let me file it under Client X" loop direct. May need the
+mentions API to include the source's scope assignments, or the FE can join via the scopes slice.
 
-### A4. Curation controls `[FE]` (depends on `[DB]` D + `[aidream]` B)
-Per-entity: hide / pin-importance / merge-duplicate / add / edit / disassociate-mention. Optimistic UI over a
-curation overlay (PRODUCT_DIRECTION Pillar 2). Blocked on the curation tables + API.
+### A4. Evidence Index view — `[FE]` (this does NOT exist yet — see "Where is it?" below)
+A ranked, kind-grouped, searchable **list** of entities with inline passage drill-down — an alternative tab to the
+node-link graph, often better for document review. **Today there is no such screen**; the only KG UI is the graph
+at `/knowledge-graph`. This is a proposed build, not a place you can visit.
 
-### A5. Later-phase FE
-Importance/curation badges on nodes; document↔entity map; cross-document watchlist surface.
+### A5. Curation controls — `[FE]` (+ `[DB]` overlay) — hide / pin / merge / add / edit / disassociate.
 
 ---
 
 ## 2. SERVER / DATA requirements `[aidream]` `[NER]` `[DB]`
 
-### B1. Stage-4 scope linking — THE priority `[NER]` + `[FE]` review UI
-The `scope_association_suggestions` table is built and **empty**. The NER pass must **produce suggestions**
-(entity → `target_scope_id` = Client Ava / Case 123, optionally → `target_scope_item_id`/`suggested_value` for a
-field like `claim_number`). Then a `[FE]` review queue lets a human confirm a suggestion, which writes
-`ctx_scope_assignments` (and, for item/value targets, `ctx_context_item_values` via `set_context_value()` per the
-vision). **Until this runs, the entire "structural" half of the product — "show everything for Client Ava, Case
-123" — is impossible, and the scope filter (A2) has nothing to show.**
+### B1. ⚠️ CORRECTION — scope linking is NOT primarily a server job
+Rev. 1 called "NER must produce scope suggestions" the load-bearing gap. **Wrong.** The user assigns scopes
+(A2/A3, already built for notes/tasks). The server's role is the **secondary assist** only: given a known scope,
+propose **values for that scope-type's known items** (path 1) into `scope_association_suggestions` for the user to
+confirm. Useful, not foundational. Build the user-driven filter (A2) first; treat suggestions as enhancement.
 
-### B2. Typed relationships `[NER]`
-Replace/augment `co_occurs_with` with domain relations (`employer_of`, `treating_physician_of`,
-`claim_number_for`, `represents`, `date_of_injury_for`, `party_to`). Co-occurrence may remain a weak fallback but
-must not be the only edge — it's why the graph is a meaningless hairball.
+### B2. User-defined relationship types `[DECIDE]` + `[DB]` + `[aidream]` — see §6 (the design question you asked)
+Typed edges must be **user-defined within the context system**, not a hardcoded taxonomy. Design options in §6.
 
-### B3. Canonicalization / dedup `[NER]`
-Collapse surface variants ("Jane Q. Doe" / "Ms. Doe" / "claimant") into one canonical entity; stop counting the
-same mention many times (today one date showed 76 mentions, the same chunk repeated 8×).
+### B3. Canonicalization / dedup `[NER]` — collapse "Jane Q. Doe"/"Ms. Doe"/"claimant"; stop counting one mention 8×.
 
-### B4. Importance scoring `[NER]` + `[DECIDE]`
-Domain salience (boost claim #, client, employer, DOI, body part, provider; demote generic dates/addresses/fax),
-blended with user pins. **Gated on the undecided trust model** (`04 §6`): extraction-confidence ≠ trust; do not
-hardcode a single number.
+### B4. Importance scoring `[NER]` + `[DECIDE]` — domain salience, gated on the undecided trust model (`04 §6`).
 
-### B5. Mentions API enrichment `[aidream]`
-Return on each `MentionRow`: `chunk_index`, `document_char_start/end`, `page_numbers`, `document_id`,
-`section/heading`. The endpoint already joins the chunk — these are a wider SELECT. **Unblocks precise
-passage-jumps and real page numbers** (A1 for paginated sources). Low effort, high payoff.
+### B5. Mentions API enrichment `[aidream]` — return `chunk_index`, char offsets, page numbers, document id,
+section/heading per `MentionRow` (the chunk's already joined). Unblocks precise passage-jumps (A1) and a source
+filter (A2). Low effort, high payoff.
 
-### B6. Graph filter params `[aidream]`
-Add to `/kg/graph`: `source_id` / `document_id` (filter to one source — the data exists on `kg_chunks`),
-optionally `min_confidence` / `min_importance`, and multi-`kind`. Enables the source/document filter (A2) and
-"show only what's relevant."
+### B6. ⚠️ CORRECTION — "source-agnostic," stated correctly `[aidream]`/`[NER]`
+Rev. 1 implied "stop flattening PDFs into notes / re-ingest PDFs as documents." **There is no flatten bug.** A
+**note** is user-authored text (no pages — correctly). A **PDF/file** goes through the *separate* pdf-extractor
+pipeline (`MediaRef`/`cld_id` → extract text w/ per-page/block/word metadata → chunks w/ `PdfPageSpan`) and **does**
+carry page provenance. The note I inspected was content the owner pasted into a note — a legitimate user choice;
+we do not police where users get content. The real "source-agnostic" goal: **generalize the pdf-extractor's rich
+pipeline + viewer (extract → clean → pages → chunks → run agents) so notes / code / scrapes get the same treatment**,
+and have the KG consume every source type uniformly. The only "don't reprocess" concern is **duplicate-content
+detection**, nothing more.
 
-### B7. Page-accurate provenance + source-agnostic pipeline `[aidream]` `[NER]`
-Populate `page_numbers` / char offsets (note text even contains literal `<page number="N">` markers — page
-boundaries are recoverable from content); ingest large PDFs as `processed_document`s, not `note`s; extract the
-**`SourceConverter`** seam so notes/code/scrapes flow through the same pipeline + viewer (full plan in `04`).
+### B7. Graph filter params `[aidream]` — add `source_id`/`document_id` (data exists on chunks) for A2's source filter.
 
-### B8. Security `[DB]`
-`rag.kg_clusters` and `rag.embedding_cache` have RLS **disabled** — lock down (deny-by-default + scoped policies).
+### B8. Security `[DB]` — `rag.kg_clusters` + `rag.embedding_cache` have RLS **disabled**; lock down.
 
 ---
 
-## 3. Data-management & filtering gap analysis (the classification you asked for)
+## 3. Data-management & filtering gap analysis (corrected)
 
-For each filter the user wants, is it a missing UI element, a data problem, or a missing DB item?
-
-| Filter / capability | DB schema | Data populated | API (`/kg/graph`) | UI | **Verdict** |
+| Filter | DB schema | Data populated | API | UI | **Verdict** |
 |---|---|---|---|---|---|
-| **By kind** (person/org/date…) | ✅ | ✅ | ✅ + client-side | ✅ shipped | **Done** |
-| **By organization** | ✅ `organization_id` on entities | ✅ | ✅ `organization_id` | 🟡 uses active-org, no in-graph switcher | **Simple UI add.** Not a data/DB problem. |
-| **By scope** (Client/Case) | ✅ `scope_association_suggestions` (kg_entity_id→scope) + `ctx_scope_assignments` | 🔴 **0 rows — NER never links** | ✅ `scope_id` | 🟡 no picker on main graph | **Data problem, NOT a DB or API problem.** Schema + API ready; blocker is `[NER]` B1. Then a small `[FE]` picker. |
-| **By source / document** | ✅ `kg_chunks.source_id` / `processed_document_id` | ✅ | 🔴 no param | 🟡 no picker | **Backend API add (B6) + UI.** Data exists. |
-| **By confidence** | ✅ stored | ✅ | 🔴 no param | 🟡 none | **Backend + UI** (but see B4 — confidence isn't trust). |
-| **By importance** | 🟡 placeholder | 🔴 | 🔴 | 🟡 | **Blocked on B4 `[DECIDE]`.** |
-| **By date / recency** | depends on entity timestamps | 🟡 | 🔴 | 🟡 | **Backend + UI** (lower priority). |
-| **Full-text within graph** | ✅ (labels) | ✅ | n/a (client) | ✅ search shipped | **Done** (node search). |
+| **By kind** | ✅ | ✅ | ✅ | ✅ shipped | Done |
+| **By organization** | ✅ | ✅ | ✅ `organization_id` | 🟡 active-org only | **Trivial UI add** |
+| **By scope** (Client/Case/Kid) | ✅ `ctx_scope_assignments` | ✅ **user tags sources today** (11 assignments incl. notes) | ✅ `scope_id` (resolves scope→sources→entities) | 🟡 no picker on graph | **Small UI add — reuse `EntityScopeTagger` (A2).** NOT a data/DB/NER gap. |
+| **By source / document** | ✅ `kg_chunks.source_id` | ✅ | 🔴 no param | 🟡 no picker | **Small `[aidream]` param (B7) + UI** |
+| **By importance** | 🟡 placeholder | 🔴 | 🔴 | 🟡 | Blocked on B4 `[DECIDE]` |
 
-**Bottom line for your question:** none of the missing filters are a **DB schema** gap — the schema is already there
-(including the dedicated scope-suggestion bridge). **Organization** filtering is a few lines of UI. **Source/document**
-filtering needs one small backend param (B6). **Scope** filtering — the most valuable one, the "structural search"
-that is half the product vision — is blocked by a **data/pipeline** gap: the NER stage that links entities to scopes
-(`scope_association_suggestions`) has never run. That is where the leverage is.
+**Answer to "is filtering a UI / data / DB problem?"** — **None is a DB-schema gap.** Org = trivial UI.
+Scope (the valuable one) = **a small UI add reusing an existing component**, because the user already tags sources
+to scopes and the backend already resolves scope → entities. Source = one small backend param. The earlier claim
+that scope filtering was blocked on NER was wrong.
 
 ---
 
 ## 4. Decisions I need from you `[DECIDE]`
 
-1. **Scope linking (B1):** is implementing/running NER Stage-4 (entity → scope suggestions) on your near-term
-   roadmap? It unblocks the whole structural dimension + the scope filter. What confidence threshold auto-suggests,
-   and who confirms (auto above X, else human queue)?
-2. **Relationship taxonomy (B2):** which typed relations matter for workers-comp defense? (Biggest "make the graph
-   mean something" lever.)
-3. **Ingestion granularity (B7):** large PDFs as paginated `processed_document`s (enables page-jumps) or keep as notes?
-4. **Importance/trust (B4):** how much automatic vs user-pinned — and do we proceed on the undecided trust model, or
-   hold? (Reminder: `04 §6` says do not hardcode.)
-5. **Primary surface (A3):** lead with the evidence **index** and demote the graph to a secondary "relationships" tab?
-6. **Security (B8):** lock down `kg_clusters` / `embedding_cache` RLS now?
+1. **Relationship model (§6):** which of the user-defined-relationship options fits how you want users to work?
+   (The one real design call here.)
+2. **Importance/trust (B4):** proceed on the undecided trust model, or hold? (`04 §6` says don't hardcode.)
+3. **Primary surface:** is the Evidence Index (A4) worth building as the lead view, or keep the graph primary?
+4. **Security (B8):** lock down `kg_clusters` / `embedding_cache` now?
 
 ---
 
 ## 5. Suggested sequencing (highest leverage first)
 
-1. `[aidream]` **B5** (mentions enrichment) + `[FE]` **A1** (notes `?find=`) → real passage-jumps. *Small, high payoff.*
-2. `[NER]` **B1** (scope linking) + `[FE]` review queue + scope filter (A2) → the structural half lights up.
-3. `[NER]` **B2/B3** (typed edges + canonicalization) → the graph stops being a hairball.
-4. `[aidream]` **B6** + `[FE]` source filter; `[FE]` **A3** evidence index.
-5. `[DB]`/`[FE]`/`[aidream]` curation (A4) ; **B7** source-agnostic pipeline ; **B8** security.
+1. `[FE]` **A2** scope/org filter (reuse `EntityScopeTagger`) — *let the user slice to Ava / Client X today.* Small.
+2. `[aidream]` **B5** mentions enrichment + `[FE]` **A1** notes `?find=` → real passage-jumps.
+3. `[FE]` **A3** entity↔scope in the panel (tag/curate from the graph).
+4. `[DECIDE]`+build **§6** user-defined relationships → meaningful edges; **B3** canonicalization.
+5. `[FE]` **A4** Evidence Index; **A5** curation; **B6** source-agnostic pipeline; **B8** security.
+
+---
+
+## 6. Design question — user-defined relationships that fit the context system
+
+You asked: *"we have to offer the user a way to do this. What's the dynamic way that fits the context system?"*
+Three options, in increasing build cost. They are **not exclusive** — A is likely the first move regardless.
+
+**Insight first:** the context system *already* encodes the most valuable relationships, and they're user-defined:
+- **Scope hierarchy** — scope types carry `child_types`, scopes carry `children`. A *Client* type can have a child
+  *Case* type; a *Case* scope nests under its *Client*. That **is** a user-defined relationship graph (Client → Case
+  → tagged sources → entities) — far more meaningful than entity co-occurrence.
+
+**Option A — visualize the SCOPE graph (no new schema).** Make the KG's primary "relationship" view the
+**scope → sub-scope → tagged source → key entities** structure that already exists. Reuses `ctx_scopes.children`
++ `ctx_scope_assignments`. *Highest value for least cost; honors "the user already defined these."*
+
+**Option B — user-defined relationship TYPES, parallel to scope types** (`[DB]` `ctx_relationship_types` per org).
+Just as a user defines *Kid*/*Client* dimensions, they define edge vocabularies — "represents", "treating physician
+of", "claim # for" — with optional from/to entity-kind or scope-type constraints. Edges (`kg_edges` gains a
+`relationship_type_id`, or a new `ctx_relationships`) are then **user-applied or agent-proposed + user-confirmed**
+(same suggestion→confirm loop as scopes). This is the dynamic, per-tenant taxonomy you described.
+
+**Option C — relationships as "reference" context items.** Extend `ctx_context_items` with a `reference` item type
+whose value points to another scope/entity (e.g. the *Case* type gets a `treating_physician` item → a Person).
+Reuses item/value machinery; natural for scope↔entity links, awkward for arbitrary entity↔entity.
+
+**My recommendation:** **A now** (visualize the scope structure you already have — it's the real, user-defined
+relationship graph), then **B** for entity-entity typing (the per-org vocabulary + suggestion-confirm loop). Tell
+me which resonates and I'll spec it in detail.
 </content>
