@@ -93,6 +93,21 @@ export default function LandingPage() {
               description="Intuitive visual interface. Build complex AI workflows effortlessly."
             />
           </div>
+
+          {/* Browse-the-platform CTA — links to /features (the public
+              grid of every shipped module landing). */}
+          <div className="mt-16 flex flex-col items-center text-center">
+            <p className="text-sm text-muted-foreground mb-3">
+              Curious what's inside?
+            </p>
+            <Link
+              href="/features"
+              className="inline-flex items-center gap-2 text-base font-medium text-primary hover:underline"
+            >
+              Browse every module
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
         </div>
 
         {/* Bottom Gradient */}

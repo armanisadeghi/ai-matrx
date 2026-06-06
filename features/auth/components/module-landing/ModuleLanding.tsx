@@ -1,10 +1,11 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { ArrowRight, CheckCircle2, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle2, Zap, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AuthedWorkspaceCTA } from "./AuthedWorkspaceCTA";
 import { ModuleLandingConversionNudges } from "../conversion/ModuleLandingConversionNudges";
+import { MODULE_LANDING_DIRECTORY } from "./landings/directory";
 
 export interface ModuleCapability {
   icon: LucideIcon;
@@ -60,6 +61,13 @@ export interface ModuleLandingProps {
   /** Final CTA heading + subhead. */
   finalCtaHeading: string;
   finalCtaDescription: string;
+  /**
+   * Hrefs of other module landings (from `landings/directory.ts`) to
+   * surface in a discovery grid below the sub-areas. Each entry must
+   * match a directory `href` exactly — unknown entries silently skip.
+   * Two-to-four works best. Omit to suppress the section.
+   */
+  relatedModules?: string[];
 }
 
 /**
@@ -96,7 +104,11 @@ export function ModuleLanding({
   subAreas,
   finalCtaHeading,
   finalCtaDescription,
+  relatedModules,
 }: ModuleLandingProps) {
+  const relatedEntries = (relatedModules ?? [])
+    .map((href) => MODULE_LANDING_DIRECTORY.find((e) => e.href === href))
+    .filter((entry): entry is NonNullable<typeof entry> => entry != null);
   return (
     <div className="min-h-dvh">
       <AuthedWorkspaceCTA
@@ -291,6 +303,62 @@ export function ModuleLanding({
 
               return <div key={area.title}>{card}</div>;
             })}
+          </div>
+        </section>
+      )}
+
+      {/* Related modules — discovery grid that turns single-module landings
+          into entry points for the rest of the platform. Auto-pulled from
+          the directory so titles + teasers stay in sync with /features. */}
+      {relatedEntries.length > 0 && (
+        <section className="border-t border-border">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 sm:py-16">
+            <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 mb-8">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-3">
+                  <Compass className="h-3 w-3" />
+                  Explore the platform
+                </div>
+                <h2 className="text-[clamp(1.5rem,1.25rem+1.5vw,2.5rem)] font-bold tracking-tight">
+                  Pairs well with
+                </h2>
+              </div>
+              <Link
+                href="/features"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+              >
+                Browse every module
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {relatedEntries.map((entry) => {
+                const Icon = entry.icon;
+                return (
+                  <Link
+                    key={entry.href}
+                    href={entry.href}
+                    className={cn(
+                      "group block rounded-2xl border border-border bg-card p-5",
+                      "transition-all duration-300",
+                      "hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
+                    )}
+                  >
+                    <div className="flex items-start gap-3 mb-2">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:scale-110 transition-transform duration-300">
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <h3 className="text-base font-semibold leading-tight pt-1">
+                        {entry.label}
+                      </h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {entry.teaser}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </section>
       )}

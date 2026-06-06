@@ -91,7 +91,7 @@ export function NewChatLandingInput({
   const submit = useAuthGuardedAction(rawSubmit, {
     featureName: "Chat",
     featureDescription:
-      "Sign in to send your message. Your draft will be right here when you get back.",
+      "Send your message, get an agent on it, save the conversation. Free account, 30 seconds, no credit card — your draft is right here when you sign back in.",
   });
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

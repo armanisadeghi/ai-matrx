@@ -101,7 +101,9 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/administration") || // Admin-only tools
     pathname.startsWith("/api/admin") || // Admin API routes
     pathname === "/dashboard" || // Personalized hub; crashes on guest stub user
-    pathname.startsWith("/dashboard/");
+    pathname.startsWith("/dashboard/") ||
+    pathname === "/scraper" || // Lives in (transitional); no public landing yet
+    pathname.startsWith("/scraper/");
 
   if (!user && requiresAuth) {
     const url = request.nextUrl.clone();

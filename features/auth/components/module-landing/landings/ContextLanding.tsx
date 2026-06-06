@@ -117,6 +117,7 @@ export default function ContextLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Stop guessing what the agent saw"
       finalCtaDescription="Typed slots, scoped defaults, full resolution traces. Free to start, no credit card."
+      relatedModules={["/scopes", "/agents", "/rag/data-stores"]}
     />
   );
 }

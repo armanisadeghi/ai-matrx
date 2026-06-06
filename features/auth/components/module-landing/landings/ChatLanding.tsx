@@ -170,6 +170,7 @@ export default function ChatLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Put a digital workforce in your chat box"
       finalCtaDescription="Research, drafting, calculations, file review — all in one chat, all auditable. Free to start, no credit card required."
+      relatedModules={["/agents", "/notes", "/files"]}
     />
   );
 }
