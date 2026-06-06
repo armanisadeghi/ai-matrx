@@ -162,7 +162,9 @@ export function ContributeResourceSheet({
                         key={item.id}
                         className="flex items-center gap-3 p-2.5 rounded-lg border border-border bg-card"
                       >
-                        <selected.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        {!selected.hideRowIcon && (
+                          <selected.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        )}
                         <span className="flex-1 min-w-0 text-sm truncate" title={item.title}>
                           {item.title}
                         </span>

@@ -12,7 +12,6 @@
  */
 
 import React from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, ShieldCheck, ExternalLink, X, RotateCcw, Check } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -57,7 +56,6 @@ export function OrgShareReviewCard({
   refreshKey = 0,
   onChanged,
 }: OrgShareReviewCardProps) {
-  const router = useRouter();
   const [grants, setGrants] = React.useState<HydratedGrant[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [busyId, setBusyId] = React.useState<string | null>(null);
@@ -185,7 +183,7 @@ export function OrgShareReviewCard({
                     : "border-border bg-card"
                 }`}
               >
-                {Icon && (
+                {Icon && !grant.entry?.hideRowIcon && (
                   <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
                 <div className="flex-1 min-w-0">
@@ -195,9 +193,9 @@ export function OrgShareReviewCard({
                     </span>
                     {href && (
                       <button
-                        onClick={() => router.push(href)}
+                        onClick={() => window.open(href, "_blank", "noopener,noreferrer")}
                         className="text-muted-foreground hover:text-foreground shrink-0"
-                        title="Open"
+                        title="Open in new tab"
                       >
                         <ExternalLink className="h-3 w-3" />
                       </button>

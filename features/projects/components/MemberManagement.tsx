@@ -1,9 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import {
-  Users,
   Crown,
   Shield,
   User as UserIcon,
@@ -15,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { UserAvatarDisplay } from "@/components/user/UserIdentity";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -172,23 +171,11 @@ export function MemberManagement({
               className="flex items-center justify-between p-3 rounded-lg border border-border bg-card"
             >
               <div className="flex items-center gap-3">
-                <div className="relative w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                  {member.user?.avatarUrl ? (
-                    <Image
-                      src={member.user.avatarUrl}
-                      alt={
-                        member.user.displayName ?? member.user.email ?? "Member"
-                      }
-                      fill
-                      className="object-cover"
-                      sizes="36px"
-                      loading="eager"
-                      priority
-                    />
-                  ) : (
-                    <Users className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                  )}
-                </div>
+                <UserAvatarDisplay
+                  user={member.user}
+                  size="sm"
+                  className="flex-shrink-0"
+                />
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">

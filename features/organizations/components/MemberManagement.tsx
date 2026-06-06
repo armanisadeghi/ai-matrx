@@ -54,6 +54,7 @@ import {
 } from "@/features/messaging/redux/messagingSlice";
 import { useConversations } from "@/hooks/useSupabaseMessaging";
 import { EmailComposeSheet } from "@/components/admin/EmailComposeSheet";
+import { UserIdentity } from "@/components/user/UserIdentity";
 
 interface MemberManagementProps {
   organizationId: string;
@@ -255,24 +256,23 @@ export function MemberManagement({
               className="flex items-center justify-between p-4 rounded-lg border bg-card hover:shadow-sm transition-shadow"
             >
               {/* Member Info */}
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
-                  {member.user?.email?.[0]?.toUpperCase() || "?"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">
-                    {member.user?.email || "Unknown"}
-                    {isCurrentUser && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        (You)
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
+              <UserIdentity
+                user={member.user}
+                className="flex-1"
+                nameSuffix={
+                  isCurrentUser ? (
+                    <span className="text-xs text-muted-foreground">(You)</span>
+                  ) : undefined
+                }
+                subtitle={
+                  <>
+                    {member.user?.displayName && member.user?.email
+                      ? `${member.user.email} · `
+                      : ""}
                     Joined {new Date(member.joinedAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
+                  </>
+                }
+              />
 
               {/* Role Badge and Actions */}
               <div className="flex items-center gap-2">

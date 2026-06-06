@@ -20,6 +20,10 @@ export interface OrgSharedItem {
   title: string;
   source: "owned" | "shared";
   href: string | null;
+  /** auth.users id of the member who contributed it (shared items only). */
+  sharedBy?: string | null;
+  /** permissions row id (shared items only) — for unshare/moderation. */
+  permissionId?: string | null;
 }
 
 export interface OrgSharedItemsResult {
@@ -79,6 +83,7 @@ export function useOrgSharedItems(
           const grants = (await listOrgShareGrants(orgId)).filter(
             (g) => g.resourceTable === entry.shareKey && g.status !== "rejected",
           );
+          const grantById = new Map(grants.map((g) => [g.resourceId, g]));
           const sharedIds = grants
             .map((g) => g.resourceId)
             .filter((id) => !ownedById.has(id));
@@ -92,11 +97,14 @@ export function useOrgSharedItems(
               titleById.set(String(row.id), String(row[titleCol] ?? "").trim());
             }
             for (const id of sharedIds) {
+              const grant = grantById.get(id);
               sharedItems.push({
                 id,
                 title: titleById.get(id) || entry.label,
                 source: "shared",
                 href: hrefFor(id),
+                sharedBy: grant?.sharedBy ?? null,
+                permissionId: grant?.permissionId ?? null,
               });
             }
           }

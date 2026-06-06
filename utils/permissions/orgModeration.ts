@@ -101,6 +101,35 @@ export interface ReviewResult {
   error?: string;
 }
 
+/**
+ * Remove an org's access to a resource (the owner unsharing it). Keyed on the
+ * canonical table name; the `revoke_resource_org_access` RPC resolver accepts
+ * it and enforces that the caller owns the resource.
+ */
+export async function revokeOrgShare(
+  resourceTable: string,
+  resourceId: string,
+  orgId: string,
+): Promise<ReviewResult> {
+  try {
+    const { data, error } = await supabase.rpc("revoke_resource_org_access", {
+      p_resource_type: resourceTable,
+      p_resource_id: resourceId,
+      p_target_org_id: orgId,
+    });
+    if (error) throw error;
+    const parsed = (data ?? {}) as { success?: boolean; error?: string };
+    if (!parsed.success) {
+      return { success: false, error: parsed.error ?? "Failed to unshare" };
+    }
+    return { success: true };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to unshare";
+    console.error("[orgModeration] revokeOrgShare failed:", message);
+    return { success: false, error: message };
+  }
+}
+
 /** Set the moderation status of a single org grant. Owner/admin only (RPC-enforced). */
 export async function reviewOrgShare(
   permissionId: string,

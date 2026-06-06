@@ -18,7 +18,6 @@
  */
 
 import React from "react";
-import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -48,6 +47,7 @@ import {
 import type { OrganizationMemberWithUser } from "@/features/organizations/types";
 import { format } from "date-fns";
 import { InlineMediaRef } from "@/features/files";
+import { UserAvatarDisplay } from "@/components/user/UserIdentity";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchScopeTypes,
@@ -78,7 +78,9 @@ export function OrgWorkspace() {
 
   const [organization, setOrganization] = React.useState<any>(null);
   const [userRole, setUserRole] = React.useState<string | null>(null);
-  const [members, setMembers] = React.useState<OrganizationMemberWithUser[]>([]);
+  const [members, setMembers] = React.useState<OrganizationMemberWithUser[]>(
+    [],
+  );
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -109,7 +111,8 @@ export function OrgWorkspace() {
         setUserRole(role);
         setMembers(orgMembers);
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "Failed to load organization";
+        const msg =
+          err instanceof Error ? err.message : "Failed to load organization";
         console.error("Error loading organization:", err);
         if (!cancelled) setError(msg);
       } finally {
@@ -183,7 +186,11 @@ export function OrgWorkspace() {
           <p className="text-sm text-muted-foreground mb-6">
             {error || "This organization doesn't exist or has been removed."}
           </p>
-          <Button onClick={() => router.push("/organizations")} variant="outline" size="sm">
+          <Button
+            onClick={() => router.push("/organizations")}
+            variant="outline"
+            size="sm"
+          >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to organizations
           </Button>
@@ -237,7 +244,9 @@ export function OrgWorkspace() {
                     {organization.name}
                   </h1>
                   <div className="flex items-center gap-2 flex-wrap mt-1.5">
-                    {organization.isPersonal && <Badge variant="secondary">Personal</Badge>}
+                    {organization.isPersonal && (
+                      <Badge variant="secondary">Personal</Badge>
+                    )}
                     {userRole && (
                       <Badge variant="outline" className="text-xs capitalize">
                         You: {userRole}
@@ -254,7 +263,9 @@ export function OrgWorkspace() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => router.push(`/organizations/${slug}/settings`)}
+                      onClick={() =>
+                        router.push(`/organizations/${slug}/settings`)
+                      }
                     >
                       <Settings className="h-4 w-4 mr-1.5" />
                       Manage
@@ -271,9 +282,21 @@ export function OrgWorkspace() {
 
               {/* Stats + meta */}
               <div className="flex items-center gap-5 flex-wrap mt-4">
-                <Stat icon={<Users className="h-4 w-4" />} value={members.length} label={members.length === 1 ? "member" : "members"} />
-                <Stat icon={<Layers3 className="h-4 w-4" />} value={totalScopes} label="scopes" />
-                <Stat icon={<Boxes className="h-4 w-4" />} value={countsLoading ? "…" : totalResources} label="resources" />
+                <Stat
+                  icon={<Users className="h-4 w-4" />}
+                  value={members.length}
+                  label={members.length === 1 ? "member" : "members"}
+                />
+                <Stat
+                  icon={<Layers3 className="h-4 w-4" />}
+                  value={totalScopes}
+                  label="scopes"
+                />
+                <Stat
+                  icon={<Boxes className="h-4 w-4" />}
+                  value={countsLoading ? "…" : totalResources}
+                  label="resources"
+                />
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Calendar className="h-3.5 w-3.5" />
                   {organization.createdAt
@@ -312,7 +335,9 @@ export function OrgWorkspace() {
                 variant="ghost"
                 size="sm"
                 className="ml-auto text-muted-foreground h-7"
-                onClick={() => router.push(`/organizations/${slug}/settings?tab=members`)}
+                onClick={() =>
+                  router.push(`/organizations/${slug}/settings?tab=members`)
+                }
               >
                 Members
                 <ChevronRight className="h-3.5 w-3.5 ml-1" />
@@ -323,16 +348,21 @@ export function OrgWorkspace() {
 
         {/* ─── Knowledge graph CTA ──────────────────────────────────── */}
         <button
-          onClick={() => router.push(`/knowledge-graph?org=${encodeURIComponent(slug)}`)}
+          onClick={() =>
+            router.push(`/knowledge-graph?org=${encodeURIComponent(slug)}`)
+          }
           className="w-full text-left rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-accent/40 transition-all p-5 flex items-center gap-4 group"
         >
           <span className="h-12 w-12 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
             <Network className="h-6 w-6" />
           </span>
           <div className="flex-1 min-w-0">
-            <h2 className="text-base font-semibold text-foreground">Knowledge graph</h2>
+            <h2 className="text-base font-semibold text-foreground">
+              Knowledge graph
+            </h2>
             <p className="text-sm text-muted-foreground">
-              Explore the entities and relationships extracted across {organization.name}&apos;s content.
+              Explore the entities and relationships extracted across{" "}
+              {organization.name}&apos;s content.
             </p>
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-0.5 transition-transform shrink-0" />
@@ -347,11 +377,21 @@ export function OrgWorkspace() {
             </div>
             {scopeTypes.length > 0 && (
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" onClick={() => setAddScopeOpen(true)} className="text-muted-foreground">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAddScopeOpen(true)}
+                  className="text-muted-foreground"
+                >
                   <Plus className="h-4 w-4 mr-1.5" />
                   Add scope
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setGalleryOpen(true)} className="text-muted-foreground">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setGalleryOpen(true)}
+                  className="text-muted-foreground"
+                >
                   <LayoutTemplate className="h-4 w-4 mr-1.5" />
                   Templates
                 </Button>
@@ -366,11 +406,14 @@ export function OrgWorkspace() {
                   <FolderTree className="h-7 w-7" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-base font-semibold mb-1">Set up your scopes</h3>
+                  <h3 className="text-base font-semibold mb-1">
+                    Set up your scopes
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    Scopes are the dimensions your team works across — clients, departments,
-                    cases, products, anything. They are the most important part of the context
-                    your agents receive. Define a few and they show up here with all their details.
+                    Scopes are the dimensions your team works across — clients,
+                    departments, cases, products, anything. They are the most
+                    important part of the context your agents receive. Define a
+                    few and they show up here with all their details.
                   </p>
                 </div>
               </div>
@@ -379,7 +422,11 @@ export function OrgWorkspace() {
                   <Plus className="h-4 w-4 mr-1.5" />
                   Add a scope
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setGalleryOpen(true)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setGalleryOpen(true)}
+                >
                   <LayoutTemplate className="h-4 w-4 mr-1.5" />
                   Browse templates
                 </Button>
@@ -446,7 +493,11 @@ export function OrgWorkspace() {
             initialEntryKey={contributeKey}
             onContributed={() => setRefreshKey((k) => k + 1)}
           />
-          <AddScopeModal open={addScopeOpen} onOpenChange={setAddScopeOpen} orgId={organization.id} />
+          <AddScopeModal
+            open={addScopeOpen}
+            onOpenChange={setAddScopeOpen}
+            orgId={organization.id}
+          />
           <TemplateGalleryDrawer
             open={galleryOpen}
             onOpenChange={setGalleryOpen}
@@ -459,38 +510,32 @@ export function OrgWorkspace() {
   );
 }
 
-function Stat({ icon, value, label }: { icon: React.ReactNode; value: React.ReactNode; label: string }) {
+function Stat({
+  icon,
+  value,
+  label,
+}: {
+  icon: React.ReactNode;
+  value: React.ReactNode;
+  label: string;
+}) {
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-muted-foreground">{icon}</span>
-      <span className="text-sm font-semibold text-foreground tabular-nums">{value}</span>
+      <span className="text-sm font-semibold text-foreground tabular-nums">
+        {value}
+      </span>
       <span className="text-xs text-muted-foreground">{label}</span>
     </div>
   );
 }
 
 function MemberAvatar({ member }: { member: OrganizationMemberWithUser }) {
-  if (member.user?.avatarUrl) {
-    return (
-      <span className="relative block h-8 w-8 rounded-full border-2 border-card overflow-hidden">
-        <Image
-          src={member.user.avatarUrl}
-          alt={member.user.displayName || member.user.email || "Member"}
-          fill
-          className="object-cover"
-          sizes="32px"
-        />
-      </span>
-    );
-  }
   return (
-    <span
-      className="h-8 w-8 rounded-full border-2 border-card bg-gradient-to-br from-sky-500 to-violet-500 flex items-center justify-center text-white text-xs font-semibold"
-      title={member.user?.displayName || member.user?.email || "Member"}
-    >
-      {member.user?.displayName?.[0]?.toUpperCase() ||
-        member.user?.email?.[0]?.toUpperCase() ||
-        "?"}
-    </span>
+    <UserAvatarDisplay
+      user={member.user}
+      size="sm"
+      className="border-2 border-card"
+    />
   );
 }

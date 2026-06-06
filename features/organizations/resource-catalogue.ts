@@ -48,7 +48,12 @@ import {
  * it without truth of its own (utility), or organizes other entities
  * (container). This is the axis the org page groups by.
  */
-export type ContentRole = "utility" | "source" | "destination" | "container";
+export type ContentRole =
+  | "utility"
+  | "source"
+  | "destination"
+  | "hybrid"
+  | "container";
 
 export interface ContentRoleMeta {
   id: ContentRole;
@@ -87,6 +92,14 @@ export const CONTENT_ROLES: ContentRoleMeta[] = [
     accentText: "text-emerald-600 dark:text-emerald-400",
     accentBg: "bg-emerald-500/10",
     accentBar: "bg-emerald-500",
+  },
+  {
+    id: "hybrid",
+    title: "Sources & Outputs",
+    tagline: "Dual-role — the same item can feed knowledge in and capture it.",
+    accentText: "text-teal-600 dark:text-teal-400",
+    accentBg: "bg-teal-500/10",
+    accentBar: "bg-gradient-to-r from-sky-500 to-emerald-500",
   },
   {
     id: "container",
@@ -144,6 +157,13 @@ export interface OrgResourceEntry {
 
   /** Can be tagged to a scope (per the knowledge model). Informational. */
   scopeable: boolean;
+
+  /**
+   * When true, list rows for this kind suppress the per-row icon (e.g. agents,
+   * where every row would show the same generic bot glyph). The category tile
+   * still shows the icon. Defaults to false.
+   */
+  hideRowIcon?: boolean;
 }
 
 /**
@@ -166,6 +186,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     titleColumn: "name",
     orgRoute: "prompts",
     scopeable: true,
+    hideRowIcon: true,
   },
   {
     key: "agent_app",
@@ -271,7 +292,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     key: "dataset",
     label: "Dataset",
     labelPlural: "Datasets",
-    role: "source",
+    role: "hybrid",
     icon: Table,
     description: "Structured tables of org data.",
     table: "udt_datasets",
@@ -299,7 +320,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     key: "workbook",
     label: "Workbook",
     labelPlural: "Workbooks",
-    role: "source",
+    role: "hybrid",
     icon: Sheet,
     description: "Multi-sheet data workbooks.",
     table: "udt_workbooks",
@@ -343,7 +364,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     key: "note",
     label: "Note",
     labelPlural: "Notes",
-    role: "destination",
+    role: "hybrid",
     icon: NotebookText,
     description: "Written notes and docs the team produces.",
     table: "notes",

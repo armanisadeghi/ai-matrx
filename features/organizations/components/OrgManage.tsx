@@ -25,8 +25,10 @@ import {
   ShieldCheck,
   ChevronRight,
   ExternalLink,
+  ArrowLeft,
   Crown,
   Shield,
+  SlidersHorizontal,
   User as UserIcon,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -40,6 +42,8 @@ import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
 import { OrgEmailTab } from "./OrgEmailTab";
 import { OrgPrivacyTab } from "./OrgPrivacyTab";
+import { OrgScopeTree } from "./OrgScopeTree";
+import { OrgModuleSettings } from "./OrgModuleSettings";
 
 interface OrgManageProps {
   organization: Organization;
@@ -76,6 +80,7 @@ export function OrgManage({ organization, userRole, isOwner, isAdmin }: OrgManag
     { id: "members", label: "Members", icon: Users, show: canManageMembers },
     { id: "invitations", label: "Invitations", icon: Mail, show: canManageSettings },
     { id: "scopes", label: "Scopes", icon: FolderTree, show: canManageSettings },
+    { id: "modules", label: "Modules", icon: SlidersHorizontal, show: canManageSettings },
     { id: "privacy", label: "Privacy", icon: ShieldCheck, show: canManageSettings },
     { id: "email", label: "Email", icon: Send, show: canManageMembers },
     { id: "danger", label: "Danger zone", icon: AlertTriangle, show: canDelete, danger: true },
@@ -86,7 +91,15 @@ export function OrgManage({ organization, userRole, isOwner, isAdmin }: OrgManag
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-5">
+    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
+      <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6">
+      <Button asChild variant="ghost" size="sm" className="text-muted-foreground -ml-2">
+        <Link href={`/organizations/${slug}`}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {displayOrganization.name}
+        </Link>
+      </Button>
+
       {/* Identity header */}
       <Card className="p-5 relative overflow-hidden">
         <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-sky-500 to-emerald-500" />
@@ -190,30 +203,44 @@ export function OrgManage({ organization, userRole, isOwner, isAdmin }: OrgManag
         </SectionCard>
       )}
 
-      {/* Scopes — pointer to the dedicated workspace */}
+      {/* Scopes — inline tree + edit links */}
       {canManageSettings && (
         <section id="scopes" className="scroll-mt-16">
           <Card className="p-5">
-            <div className="flex items-start gap-4">
-              <span className="h-10 w-10 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
-                <FolderTree className="h-5 w-5" />
-              </span>
-              <div className="flex-1 min-w-0">
-                <h2 className="text-base font-semibold">Scopes</h2>
-                <p className="text-sm text-muted-foreground mt-0.5 mb-3">
-                  The dimensions your team works in — clients, products, repos, anything.
-                  They live in a dedicated workspace, not buried in settings.
-                </p>
-                <Button asChild size="sm">
-                  <Link href={`/organizations/${slug}/scopes`}>
-                    Open scopes
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Link>
-                </Button>
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2.5">
+                <span className="h-9 w-9 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+                  <FolderTree className="h-4 w-4" />
+                </span>
+                <div>
+                  <h2 className="text-base font-semibold leading-tight">Scopes</h2>
+                  <p className="text-xs text-muted-foreground">
+                    The dimensions your team works in — the most important part of context.
+                  </p>
+                </div>
               </div>
+              <Button asChild variant="outline" size="sm" className="shrink-0">
+                <Link href={`/organizations/${slug}/scopes`}>
+                  Edit scopes
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Link>
+              </Button>
             </div>
+            <OrgScopeTree orgId={displayOrganization.id} slug={slug} />
           </Card>
         </section>
+      )}
+
+      {/* Module settings — per-kind org rules (placeholder tasklist UI) */}
+      {canManageSettings && (
+        <SectionCard
+          id="modules"
+          icon={SlidersHorizontal}
+          title="Module settings"
+          description="Org rules for each kind of resource — agents, notes, files, and the rest."
+        >
+          <OrgModuleSettings />
+        </SectionCard>
       )}
 
       {/* Privacy — OrgPrivacyTab self-cards */}
@@ -251,6 +278,7 @@ export function OrgManage({ organization, userRole, isOwner, isAdmin }: OrgManag
           </Card>
         </section>
       )}
+      </div>
     </div>
   );
 }
