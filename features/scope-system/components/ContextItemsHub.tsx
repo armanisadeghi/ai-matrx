@@ -22,10 +22,18 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  fetchScopeTypes,
   selectScopeTypeBySlugOrId,
   selectScopeTypesByOrg,
   selectScopeTypesLoadedForOrg,
 } from "@/features/agent-context/redux/scope/scopeTypesSlice";
+import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
+import {
+  selectFullContextOrganizations,
+  selectFullContextStatus,
+  type NavOrganization,
+} from "@/features/agent-context/redux/hierarchySlice";
+import { canManageSettings, type OrgRole } from "@/features/organizations/types";
 import {
   listScopeTypeItems,
   updateContextItem,
@@ -71,6 +79,120 @@ export function ContextItemsHub(props: ContextItemsHubProps) {
     <ContextItemsTypeView {...props} typeParam={props.typeParam} />
   ) : (
     <ContextItemsOrgView {...props} />
+  );
+}
+
+const PERSONAL_PROJECTS_ORG_ID = "00000000-0000-0000-0000-000000000001";
+
+/**
+ * All context items across every organization the user belongs to, grouped
+ * org → scope type → items. Same `ScopeTypeItemsSection` building block as the
+ * org/type levels — the only difference is iterating the user's orgs.
+ */
+export function AllContextItemsHub() {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const orgs = useAppSelector(selectFullContextOrganizations);
+  const status = useAppSelector(selectFullContextStatus);
+
+  useEffect(() => {
+    dispatch(fetchFullContext());
+  }, [dispatch]);
+
+  const realOrgs = orgs.filter((o) => o.id !== PERSONAL_PROJECTS_ORG_ID);
+
+  return (
+    <div className="space-y-6 pr-14">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => router.back()}
+        className="h-7 px-2 -ml-2 text-muted-foreground"
+      >
+        <ArrowLeft className="h-4 w-4 mr-1" />
+        Back
+      </Button>
+
+      <Card className="p-6">
+        <div className="flex items-start gap-3">
+          <div className="w-11 h-11 rounded-lg bg-muted text-muted-foreground flex items-center justify-center shrink-0">
+            <ListChecks className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              All organizations
+            </p>
+            <h1 className="text-2xl font-bold text-foreground leading-tight">
+              All context items
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Every field across all your organizations, grouped by org and scope
+              type.
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {status === "loading" && realOrgs.length === 0 ? (
+        <CenteredSpinner />
+      ) : realOrgs.length === 0 ? (
+        <Card className="p-8 text-center text-sm text-muted-foreground">
+          No organizations.
+        </Card>
+      ) : (
+        realOrgs.map((org) => <OrgContextItemsBlock key={org.id} org={org} />)
+      )}
+    </div>
+  );
+}
+
+function OrgContextItemsBlock({ org }: { org: NavOrganization }) {
+  const dispatch = useAppDispatch();
+  const types = useAppSelector((s) => selectScopeTypesByOrg(s, org.id));
+  const canManage = canManageSettings(org.role as OrgRole);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+
+  useEffect(() => {
+    dispatch(fetchScopeTypes(org.id));
+  }, [dispatch, org.id]);
+
+  if (types.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <Link
+        href={`/organizations/${org.slug}/context-items`}
+        className="group inline-flex items-center gap-2 text-lg font-bold text-foreground hover:text-primary"
+      >
+        {org.is_personal ? (
+          <Home className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <Building2 className="h-4 w-4 text-muted-foreground" />
+        )}
+        {org.is_personal ? "Personal workspace" : org.name}
+        <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+      </Link>
+
+      <div className="space-y-4 pl-2 border-l-2 border-border">
+        {types.map((type) => (
+          <ScopeTypeItemsSection
+            key={type.id}
+            type={type}
+            orgSlugOrId={org.slug}
+            canManage={canManage}
+            onEditItem={setEditingItemId}
+          />
+        ))}
+      </div>
+
+      <EditContextItemSheet
+        open={editingItemId !== null}
+        onOpenChange={(o) => {
+          if (!o) setEditingItemId(null);
+        }}
+        itemId={editingItemId}
+      />
+    </div>
   );
 }
 

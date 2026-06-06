@@ -179,7 +179,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
           <div className="flex items-center gap-2 pt-2 border-t border-border">
             <Button size="sm" onClick={() => setAddScopeOpen(true)}>
               <Plus className="h-4 w-4 mr-1.5" />
-              Add a scope
+              Add a Scope Type
             </Button>
             <Button
               size="sm"
@@ -210,7 +210,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
               className="text-muted-foreground hover:text-foreground"
             >
               <Plus className="h-4 w-4 mr-1.5" />
-              Add scope
+              Add Scope Type
             </Button>
             <span className="text-muted-foreground/50">·</span>
             <Button

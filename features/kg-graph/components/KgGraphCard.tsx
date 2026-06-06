@@ -26,13 +26,16 @@ import { fetchGraphPreview, type PreviewFilter } from "../service/graphPreview";
 import type { GraphNode } from "../types";
 
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
-const VIEW_W = 100;
-const VIEW_H = 60;
+// Taller, fuller canvas: an elliptical spiral spreads to fill the card's width
+// AND height (a graph wants vertical room, not a wide letterbox).
+const VIEW_W = 160;
+const VIEW_H = 100;
 const CX = VIEW_W / 2;
 const CY = VIEW_H / 2;
-const REAL_MAX = 12; // how many real nodes to show
-const FILLER = 16; // decorative circles around them
-const MAX_R = 26; // spiral radius
+const REAL_MAX = 14; // how many real nodes to show
+const FILLER = 22; // decorative circles around them
+const MAX_RX = 70; // spiral radius (x)
+const MAX_RY = 44; // spiral radius (y)
 
 interface Pt {
   x: number;
@@ -40,12 +43,13 @@ interface Pt {
 }
 
 // Sunflower layout: point i at radius ∝ sqrt(i), angle = i·golden. i=0 → centre.
+// Elliptical (rx≠ry) so it fills the card instead of a centred circle.
 function phyllotaxis(count: number): Pt[] {
   const pts: Pt[] = [];
   for (let i = 0; i < count; i++) {
-    const r = Math.sqrt((i + 0.4) / count) * MAX_R;
+    const t = Math.sqrt((i + 0.4) / count);
     const a = i * GOLDEN;
-    pts.push({ x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) });
+    pts.push({ x: CX + t * MAX_RX * Math.cos(a), y: CY + t * MAX_RY * Math.sin(a) });
   }
   return pts;
 }
@@ -159,7 +163,7 @@ export function KgGraphCard({
         <svg
           viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
           className={cn(
-            "h-28 w-full transition-opacity duration-500",
+            "h-56 w-full transition-opacity duration-500",
             !isLoaded && "opacity-60",
             status === "loading" && "animate-pulse",
           )}

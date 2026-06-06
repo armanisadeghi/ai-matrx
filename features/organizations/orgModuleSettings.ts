@@ -9,8 +9,10 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import type { PermissionLevel } from "@/utils/permissions";
 
-export type PermissionLevel = "viewer" | "editor" | "admin";
+// Re-exported so consumers can import the level type alongside the settings type.
+export type { PermissionLevel };
 
 export interface OrgModuleSetting {
   membersCanAdd: boolean;

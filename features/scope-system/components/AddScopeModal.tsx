@@ -208,9 +208,9 @@ export function AddScopeModal({
     <Sheet open={open} onOpenChange={(o) => (!busy ? onOpenChange(o) : null)}>
       <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Add a scope</SheetTitle>
+          <SheetTitle>Add a scope type</SheetTitle>
           <SheetDescription>
-            A scope groups things you want to track — clients, products, teams,
+            A scope type is a dimension you track — Clients, Products, Teams,
             anything. Define the context items you want for each one.
           </SheetDescription>
         </SheetHeader>
@@ -474,7 +474,7 @@ export function AddScopeModal({
               disabled={!canSave || busy}
             >
               {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Create scope
+              Create scope type
             </Button>
           </div>
         </div>

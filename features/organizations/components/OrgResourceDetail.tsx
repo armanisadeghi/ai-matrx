@@ -18,7 +18,6 @@
 
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 import {
   ArrowLeft,
   Loader2,
@@ -53,19 +52,8 @@ import { getShareableResource } from "@/utils/permissions/registry";
 import { getEntry, getContentRole, type OrgResourceEntry } from "../resource-catalogue";
 import { useOrgContributableItems, type MyItem } from "../hooks/useOrgContributableItems";
 import { useOrgSharedItems, type OrgSharedItem } from "../hooks/useOrgSharedItems";
-
-// Agent peek is the only kind with a peek component today. Lazy-loaded so the
-// page stays light for every other kind.
-// TODO(org-resource-peek): build peek components for the other kinds (files,
-// notes, datasets, …) and wire them here the way agents use AgentSneakPeekModal
-// (features/agents/components/agent-listings/AgentSneakPeekModal.tsx).
-const AgentSneakPeekModal = dynamic(
-  () =>
-    import("@/features/agents/components/agent-listings/AgentSneakPeekModal").then(
-      (m) => m.AgentSneakPeekModal,
-    ),
-  { ssr: false },
-);
+import { ResourcePeekHost } from "../peek/ResourcePeekHost";
+import { hasPeek } from "../peek/registry";
 
 export function OrgResourceDetail() {
   const params = useParams();
@@ -78,7 +66,7 @@ export function OrgResourceDetail() {
   const [resolving, setResolving] = React.useState(true);
   const [query, setQuery] = React.useState("");
   const [userMap, setUserMap] = React.useState<Map<string, UserLike>>(new Map());
-  const [peekAgentId, setPeekAgentId] = React.useState<string | null>(null);
+  const [peekId, setPeekId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -119,7 +107,7 @@ export function OrgResourceDetail() {
     shared.reload();
   });
 
-  const canPeek = entry?.key === "agent";
+  const canPeek = entry ? hasPeek(entry.key) : false;
 
   function openItem(href: string | null, newTab: boolean) {
     if (!href) {
@@ -251,7 +239,7 @@ export function OrgResourceDetail() {
                     canPeek={canPeek}
                     onOpen={() => openItem(item.href, false)}
                     onOpenNewTab={() => openItem(item.href, true)}
-                    onPeek={() => setPeekAgentId(item.id)}
+                    onPeek={() => setPeekId(item.id)}
                     onUnshare={() => unshare(item)}
                   />
                 ))}
@@ -309,7 +297,7 @@ export function OrgResourceDetail() {
                           onUnshare={() => unshare(item)}
                           onOpen={() => openItem(itemHref(entry, item.id), false)}
                           onOpenNewTab={() => openItem(itemHref(entry, item.id), true)}
-                          onPeek={() => setPeekAgentId(item.id)}
+                          onPeek={() => setPeekId(item.id)}
                         />
                       );
                     })}
@@ -321,13 +309,11 @@ export function OrgResourceDetail() {
         </div>
       </div>
 
-      {peekAgentId && canPeek && (
-        <AgentSneakPeekModal
-          agentId={peekAgentId}
-          isOpen={!!peekAgentId}
-          onClose={() => setPeekAgentId(null)}
-        />
-      )}
+      <ResourcePeekHost
+        kind={entry.key}
+        id={peekId}
+        onClose={() => setPeekId(null)}
+      />
     </div>
   );
 }

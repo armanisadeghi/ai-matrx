@@ -29,6 +29,7 @@ import {
   FolderTree,
   Plus,
   LayoutTemplate,
+  ListChecks,
   Network,
   Share2,
   Layers3,
@@ -36,6 +37,7 @@ import {
   ChevronRight,
   Info,
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -376,7 +378,29 @@ export function OrgWorkspace() {
               <h2 className="text-lg font-semibold">Context &amp; Scopes</h2>
             </div>
             {scopeTypes.length > 0 && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-wrap justify-end">
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground"
+                >
+                  <Link href={`/organizations/${slug}/scopes`}>
+                    <FolderTree className="h-4 w-4 mr-1.5" />
+                    Scope Type Hub
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground"
+                >
+                  <Link href={`/organizations/${slug}/context-items`}>
+                    <ListChecks className="h-4 w-4 mr-1.5" />
+                    Context items
+                  </Link>
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -384,7 +408,7 @@ export function OrgWorkspace() {
                   className="text-muted-foreground"
                 >
                   <Plus className="h-4 w-4 mr-1.5" />
-                  Add scope
+                  Add Scope Type
                 </Button>
                 <Button
                   variant="ghost"
@@ -420,7 +444,7 @@ export function OrgWorkspace() {
               <div className="flex items-center gap-2 pt-2 border-t border-border">
                 <Button size="sm" onClick={() => setAddScopeOpen(true)}>
                   <Plus className="h-4 w-4 mr-1.5" />
-                  Add a scope
+                  Add a Scope Type
                 </Button>
                 <Button
                   size="sm"
