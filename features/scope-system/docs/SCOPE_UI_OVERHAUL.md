@@ -155,7 +155,13 @@ one at a time. Some surfaces are routes, some are drawers — get organized abou
   `ScopesManager` and global `ScopeDetailView` (both `features/scopes/`) still emit id hrefs (they resolve
   fine) — slug them when threading slug through the `features/scopes` node types. Scope-slug *editing* UI
   folds into Wave 4 (scope advanced edit alongside settings JSON). Task 1 core.
-- **Wave 4 — scope settings JSON + `/scopes`-less alias.** `update_scope` settings editor; Next.js rewrite. Task 1 tail.
+- **Wave 4 — scope settings JSON + scope-slug edit (done); `/scopes`-less alias (pending go-ahead).**
+  ✅ `ScopeAdvancedSection` on the scope detail page: a disclosure with an editable **URL slug** (Auto +
+  format-validated) and a **Settings (JSON)** editor (validated as a JSON object), both saved via
+  `update_scope` (`p_slug` / `p_settings`). ⏳ The `/organizations/:org/:typeSlug` (no `scopes`) alias is a
+  Next.js rewrite gated on a reserved-segment exclusion list (`agent-apps, files, notes, projects,
+  prompt-apps, prompts, scopes, settings, shortcuts, tables, tasks, templates, workflows`) — held for
+  explicit go-ahead since a bad rewrite can shadow every org route; the WITH-`scopes` form already works.
 - **Wave 5 — item detail route + inventory gaps.** Item detail (`…/:itemSlug`) + cross-scope value view; then
   page-by-page VIEW/EDIT/ADVANCED per the user's further guidance. Big Picture.
 

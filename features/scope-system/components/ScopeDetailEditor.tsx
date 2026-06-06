@@ -33,6 +33,7 @@ import {
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
 import { EditScopeTypeSheet } from "./EditScopeTypeSheet";
+import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import {
@@ -363,6 +364,8 @@ export function ScopeDetailEditor({
           />
         </div>
       </Card>
+
+      <ScopeAdvancedSection scope={scope} />
 
       <EditScopeTypeSheet
         open={editingType}
