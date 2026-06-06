@@ -101,6 +101,12 @@ Every Hub should expose: **up** (parent), **down** (each child system with add +
   item settings header + Details + every scope's value inline-editable, deep-linking to the value page).
   Type Hub now links "Context Items" + each item name → the new pages. Reserved slugs added
   (`context-items`/`scopes`/`edit`/`manage`/`new`/`settings`); not-found states on the new routes.
+- **Wave A.2 — DONE ✅ (one component, two scopes)** — `ContextItemsHub` generalized: with `typeParam` it
+  shows one type's items (full manage); without, it shows **every scope type in the org grouped into
+  sections** — the new route `/organizations/[org]/context-items`. Dropping the type filter forces the
+  scope-type headers (which also fixes "show me which dimension I'm in"). Linked from `ScopesManager`
+  ("All context items"). **Next:** the all-orgs `/context-items` (iterate `selectFullContextOrganizations`,
+  render an org section each — same component shape).
 - **Wave B — Manage routes (single thing):** `…/[type]/edit`, `…/context-items/[item]/edit`, `…/[scope]/edit`
   — host the existing drawer forms full-page (drawers stay as quick accelerators linking to "open full editor").
 - **Wave C — Collection Manage + Scopes Collection Hub:** `…/scopes/manage`, `…/[type]/scopes`,

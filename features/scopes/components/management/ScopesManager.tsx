@@ -17,6 +17,7 @@ import {
   ArrowUpDown,
   FolderTree,
   LayoutTemplate,
+  ListChecks,
   Plus,
   Settings as SettingsIcon,
 } from "lucide-react";
@@ -140,6 +141,13 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
               >
                 <SettingsIcon className="h-3 w-3" />
                 Org settings
+              </Link>
+              <Link
+                href={`/organizations/${slug}/context-items`}
+                className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+              >
+                <ListChecks className="h-3 w-3" />
+                All context items
               </Link>
               <Link
                 href="/scopes"
