@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
+  Building2,
+  Check,
+  ChevronRight,
+  Home,
   Loader2,
   Pencil,
-  Check,
-  X as XIcon,
   Trash2,
-  Settings,
+  X as XIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,10 +24,14 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchScopes,
   selectScopeBySlugOrId,
+  selectScopesLoadedForType,
   updateScope,
   deleteScope,
 } from "@/features/agent-context/redux/scope/scopesSlice";
-import { selectScopeTypeBySlugOrId } from "@/features/agent-context/redux/scope/scopeTypesSlice";
+import {
+  selectScopeTypeBySlugOrId,
+  selectScopeTypesLoadedForOrg,
+} from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import {
   getScopeContext,
   selectValuesByScope,
@@ -32,9 +39,9 @@ import {
 } from "@/features/scope-system/redux/scopeValuesSlice";
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
-import { EditScopeTypeSheet } from "./EditScopeTypeSheet";
 import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
 import { ScopeGlyph } from "./ScopeGlyph";
+import { ScopeNotFound } from "./ScopeNotFound";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import {
   orgScopesHref,
@@ -45,17 +52,24 @@ import {
 interface ScopeDetailEditorProps {
   orgId: string;
   orgSlugOrId: string;
+  orgName: string;
+  orgIsPersonal: boolean;
   /** Route segment for the scope type — UUID or kebab slug. */
   typeParam: string;
   /** Route segment for the scope — UUID or kebab slug. */
   scopeParam: string;
+  /** Owner/admin: may add type-level fields and delete this scope. */
+  canManage: boolean;
 }
 
 export function ScopeDetailEditor({
   orgId,
   orgSlugOrId,
+  orgName,
+  orgIsPersonal,
   typeParam,
   scopeParam,
+  canManage,
 }: ScopeDetailEditorProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -64,8 +78,14 @@ export function ScopeDetailEditor({
     selectScopeTypeBySlugOrId(s, orgId, typeParam),
   );
   const resolvedTypeId = scopeType?.id;
+  const typesLoaded = useAppSelector((s) =>
+    selectScopeTypesLoadedForOrg(s, orgId),
+  );
   const scope = useAppSelector((s) =>
     selectScopeBySlugOrId(s, resolvedTypeId, scopeParam),
+  );
+  const scopesLoaded = useAppSelector((s) =>
+    resolvedTypeId ? selectScopesLoadedForType(s, orgId, resolvedTypeId) : false,
   );
   const scopeId = scope?.id;
   const rows = useAppSelector((s) => selectValuesByScope(s, scopeId ?? ""));
@@ -81,7 +101,6 @@ export function ScopeDetailEditor({
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [savingDescription, setSavingDescription] = useState(false);
 
-  const [editingType, setEditingType] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -101,11 +120,29 @@ export function ScopeDetailEditor({
     }
   }, [scope]);
 
-  if (!scope || !scopeType) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
+  // Not found vs still loading.
+  if (!scopeType) {
+    return typesLoaded ? (
+      <ScopeNotFound
+        title="Scope type not found"
+        message={`No scope type matches "${typeParam}" in this organization.`}
+        backHref={orgScopesHref(orgSlugOrId)}
+        backLabel="Back to scopes"
+      />
+    ) : (
+      <CenteredSpinner />
+    );
+  }
+  if (!scope) {
+    return scopesLoaded ? (
+      <ScopeNotFound
+        title={`${scopeType.label_singular} not found`}
+        message={`No ${scopeType.label_singular.toLowerCase()} matches "${scopeParam}".`}
+        backHref={scopeTypeHref(orgSlugOrId, scopeType)}
+        backLabel={`Back to ${scopeType.label_plural}`}
+      />
+    ) : (
+      <CenteredSpinner />
     );
   }
 
@@ -178,27 +215,50 @@ export function ScopeDetailEditor({
   const total = rows?.length ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pr-14">
+      {/* Breadcrumb: Back · Org › Type › Scope */}
       <div className="flex items-center justify-between gap-2">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
-        </Button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 text-sm flex-wrap min-w-0">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={() => setEditingType(true)}
+            onClick={() => router.back()}
+            className="h-7 px-2 -ml-2"
           >
-            <Settings className="h-3.5 w-3.5 mr-1.5" />
-            Edit {scopeType.label_singular} Settings
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
           </Button>
+          <span className="text-muted-foreground/50">·</span>
+          <Link
+            href={orgScopesHref(orgSlugOrId)}
+            className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
+          >
+            {orgIsPersonal ? (
+              <Home className="h-3.5 w-3.5" />
+            ) : (
+              <Building2 className="h-3.5 w-3.5" />
+            )}
+            {orgIsPersonal ? "Personal workspace" : orgName}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+          <Link
+            href={scopeTypeHref(orgSlugOrId, scopeType)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            {scopeType.label_plural}
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+          <span className="font-medium text-foreground truncate">
+            {scope.name}
+          </span>
+        </div>
+        {canManage && (
           <Button
             variant="outline"
             size="sm"
             onClick={handleDelete}
             disabled={deleting}
-            className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+            className="shrink-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
           >
             {deleting ? (
               <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -207,7 +267,7 @@ export function ScopeDetailEditor({
             )}
             Delete
           </Button>
-        </div>
+        )}
       </div>
 
       <Card className="p-6">
@@ -347,7 +407,8 @@ export function ScopeDetailEditor({
         )}
         {rows && rows.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-6">
-            No context items yet. Add your first one below.
+            No context items defined for {scopeType.label_plural.toLowerCase()}{" "}
+            yet.
           </p>
         )}
         {rows && rows.length > 0 && (
@@ -365,24 +426,27 @@ export function ScopeDetailEditor({
             ))}
           </div>
         )}
-        <div className="pt-2 border-t">
-          <AddContextItemInline
-            scopeId={scope.id}
-            scopeTypeId={scopeType.id}
-            labelPlural={scopeType.label_plural}
-          />
-        </div>
+        {/* Adding a context item defines a field for ALL scopes of this type — admin only. */}
+        {canManage && (
+          <div className="pt-2 border-t">
+            <AddContextItemInline
+              scopeId={scope.id}
+              scopeTypeId={scopeType.id}
+              labelPlural={scopeType.label_plural}
+            />
+          </div>
+        )}
       </Card>
 
       <ScopeAdvancedSection scope={scope} />
+    </div>
+  );
+}
 
-      <EditScopeTypeSheet
-        open={editingType}
-        onOpenChange={setEditingType}
-        orgId={scopeType.organization_id}
-        typeId={scopeType.id}
-        onDeleted={() => router.push(orgScopesHref(orgSlugOrId))}
-      />
+function CenteredSpinner() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
     </div>
   );
 }

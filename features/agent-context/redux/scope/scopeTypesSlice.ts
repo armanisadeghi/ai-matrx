@@ -179,6 +179,12 @@ export const selectScopeTypeIds = adapterSelectors.selectIds;
 
 export const selectScopeTypesLoading = (state: StateWithScopeTypes) =>
   state.scopeTypes.loading;
+
+/** True once `fetchScopeTypes(orgId)` has completed — lets callers tell "loading" from "not found". */
+export const selectScopeTypesLoadedForOrg = (
+  state: StateWithScopeTypes,
+  orgId: string,
+) => state.scopeTypes.loadedOrgs.includes(orgId);
 export const selectScopeTypesError = (state: StateWithScopeTypes) =>
   state.scopeTypes.error;
 

@@ -205,6 +205,13 @@ export const selectScopeIds = adapterSelectors.selectIds;
 
 export const selectScopesLoading = (state: StateWithScopes) =>
   state.scopes.loading;
+
+/** True once `fetchScopes({org_id, type_id})` (root) has completed — distinguishes "loading" from "not found". */
+export const selectScopesLoadedForType = (
+  state: StateWithScopes,
+  orgId: string,
+  typeId: string,
+) => state.scopes.loadedFilters.includes(`${orgId}:${typeId}:root`);
 export const selectScopesError = (state: StateWithScopes) => state.scopes.error;
 
 export const selectScopesByOrg = createSelector(

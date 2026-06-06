@@ -20,12 +20,17 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchScopes,
   selectScopeBySlugOrId,
+  selectScopesLoadedForType,
 } from "@/features/agent-context/redux/scope/scopesSlice";
-import { selectScopeTypeBySlugOrId } from "@/features/agent-context/redux/scope/scopeTypesSlice";
+import {
+  selectScopeTypeBySlugOrId,
+  selectScopeTypesLoadedForOrg,
+} from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import {
   listScopeTypeItems,
   selectItemsByType,
   selectItemBySlugOrId,
+  selectItemsLoadedForType,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import {
   getScopeContext,
@@ -34,6 +39,7 @@ import {
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { ScopeGlyph } from "./ScopeGlyph";
+import { ScopeNotFound } from "./ScopeNotFound";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import {
   orgScopesHref,
@@ -52,6 +58,8 @@ interface ScopeItemDetailProps {
   typeParam: string;
   scopeParam: string;
   itemParam: string;
+  /** Owner/admin: may edit the item definition (org-wide for this scope type). */
+  canManage: boolean;
 }
 
 export function ScopeItemDetail({
@@ -62,6 +70,7 @@ export function ScopeItemDetail({
   typeParam,
   scopeParam,
   itemParam,
+  canManage,
 }: ScopeItemDetailProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -70,11 +79,20 @@ export function ScopeItemDetail({
     selectScopeTypeBySlugOrId(s, orgId, typeParam),
   );
   const resolvedTypeId = scopeType?.id;
+  const typesLoaded = useAppSelector((s) =>
+    selectScopeTypesLoadedForOrg(s, orgId),
+  );
   const scope = useAppSelector((s) =>
     selectScopeBySlugOrId(s, resolvedTypeId, scopeParam),
   );
+  const scopesLoaded = useAppSelector((s) =>
+    resolvedTypeId ? selectScopesLoadedForType(s, orgId, resolvedTypeId) : false,
+  );
   const item = useAppSelector((s) =>
     selectItemBySlugOrId(s, resolvedTypeId, itemParam),
+  );
+  const itemsLoaded = useAppSelector((s) =>
+    resolvedTypeId ? selectItemsLoadedForType(s, resolvedTypeId) : false,
   );
   const items = useAppSelector((s) =>
     selectItemsByType(s, resolvedTypeId ?? ""),
@@ -94,11 +112,40 @@ export function ScopeItemDetail({
     dispatch(getScopeContext({ scope_id: scope.id, include_empty: true }));
   }, [dispatch, scope?.id]);
 
-  if (!scopeType || !scope || !item) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
+  if (!scopeType) {
+    return typesLoaded ? (
+      <ScopeNotFound
+        title="Scope type not found"
+        message={`No scope type matches "${typeParam}" in this organization.`}
+        backHref={orgScopesHref(orgSlugOrId)}
+        backLabel="Back to scopes"
+      />
+    ) : (
+      <CenteredSpinner />
+    );
+  }
+  if (!scope) {
+    return scopesLoaded ? (
+      <ScopeNotFound
+        title={`${scopeType.label_singular} not found`}
+        message={`No ${scopeType.label_singular.toLowerCase()} matches "${scopeParam}".`}
+        backHref={scopeTypeHref(orgSlugOrId, scopeType)}
+        backLabel={`Back to ${scopeType.label_plural}`}
+      />
+    ) : (
+      <CenteredSpinner />
+    );
+  }
+  if (!item) {
+    return itemsLoaded ? (
+      <ScopeNotFound
+        title="Context item not found"
+        message={`No context item matches "${itemParam}" for ${scopeType.label_plural}.`}
+        backHref={scopeHref(orgSlugOrId, scopeType, scope)}
+        backLabel={`Back to ${scope.name}`}
+      />
+    ) : (
+      <CenteredSpinner />
     );
   }
 
@@ -195,15 +242,17 @@ export function ScopeItemDetail({
               )}
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditingItem(true)}
-            className="shrink-0"
-          >
-            <Pencil className="h-3.5 w-3.5 mr-1.5" />
-            Edit item
-          </Button>
+          {canManage && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditingItem(true)}
+              className="shrink-0"
+            >
+              <Pencil className="h-3.5 w-3.5 mr-1.5" />
+              Edit item
+            </Button>
+          )}
         </div>
 
         {/* The value for THIS scope × item */}
@@ -279,6 +328,14 @@ export function ScopeItemDetail({
         onOpenChange={setEditingItem}
         itemId={item.id}
       />
+    </div>
+  );
+}
+
+function CenteredSpinner() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
     </div>
   );
 }

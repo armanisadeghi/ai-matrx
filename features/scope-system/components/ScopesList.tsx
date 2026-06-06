@@ -41,12 +41,16 @@ import { EditScopeTypeSheet } from "./EditScopeTypeSheet";
 import { NewScopeInline } from "./NewScopeInline";
 import { ContextItemAddForm } from "./ContextItemAddForm";
 import { ScopeGlyph } from "./ScopeGlyph";
+import { ScopeNotFound } from "./ScopeNotFound";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchScopes,
   selectScopesByType,
 } from "@/features/agent-context/redux/scope/scopesSlice";
-import { selectScopeTypeBySlugOrId } from "@/features/agent-context/redux/scope/scopeTypesSlice";
+import {
+  selectScopeTypeBySlugOrId,
+  selectScopeTypesLoadedForOrg,
+} from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import {
   listScopeTypeItems,
   updateContextItem,
@@ -72,6 +76,8 @@ interface ScopesListProps {
   orgName: string;
   orgSlug: string;
   orgIsPersonal: boolean;
+  /** Owner/admin: may edit the scope type (org-wide structure) + its context-item fields. */
+  canManage: boolean;
 }
 
 export function ScopesList({
@@ -81,12 +87,16 @@ export function ScopesList({
   orgName,
   orgSlug,
   orgIsPersonal,
+  canManage,
 }: ScopesListProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   // `typeId` is the route segment — a UUID or a kebab slug. Resolve to the row.
   const scopeType = useAppSelector((s) =>
     selectScopeTypeBySlugOrId(s, orgId, typeId),
+  );
+  const typesLoaded = useAppSelector((s) =>
+    selectScopeTypesLoadedForOrg(s, orgId),
   );
   const resolvedTypeId = scopeType?.id;
   const scopes = useAppSelector((s) =>
@@ -151,7 +161,14 @@ export function ScopesList({
   }
 
   if (!scopeType) {
-    return (
+    return typesLoaded ? (
+      <ScopeNotFound
+        title="Scope type not found"
+        message={`No scope type matches "${typeId}" in this organization.`}
+        backHref={orgScopesHref(orgSlugOrId)}
+        backLabel="Back to scopes"
+      />
+    ) : (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
@@ -205,15 +222,17 @@ export function ScopesList({
               )}
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditingType(true)}
-            className="shrink-0"
-          >
-            <Settings2 className="h-3.5 w-3.5 mr-1.5" />
-            Edit {scopeType.label_singular} Settings
-          </Button>
+          {canManage && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditingType(true)}
+              className="shrink-0"
+            >
+              <Settings2 className="h-3.5 w-3.5 mr-1.5" />
+              Edit {scopeType.label_singular} Settings
+            </Button>
+          )}
         </div>
 
         {/* Counts — full width, left-aligned, below the logo/title */}
@@ -363,7 +382,7 @@ export function ScopesList({
               </span>
             )}
           </h2>
-          {!addingItem && (
+          {canManage && !addingItem && (
             <Button
               variant="outline"
               size="sm"
@@ -390,7 +409,7 @@ export function ScopesList({
                   isLast={index === items.length - 1}
                   moving={movingId === item.id}
                   disabled={movingId !== null}
-                  scopeTypeSingular={scopeType.label_singular}
+                  canManage={canManage}
                   onEdit={() => setEditingItemId(item.id)}
                   onMoveUp={() => moveItem(index, "up")}
                   onMoveDown={() => moveItem(index, "down")}
@@ -399,8 +418,10 @@ export function ScopesList({
 
               {items.length === 0 && !addingItem && (
                 <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  No context items yet. Add one to define what data to track for
-                  each {scopeType.label_singular.toLowerCase()}.
+                  No context items yet
+                  {canManage
+                    ? ` — add one to define what data to track for each ${scopeType.label_singular.toLowerCase()}.`
+                    : "."}
                 </div>
               )}
 
@@ -437,7 +458,7 @@ interface ContextItemRowProps {
   isLast: boolean;
   moving: boolean;
   disabled: boolean;
-  scopeTypeSingular: string;
+  canManage: boolean;
   onEdit: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -449,37 +470,40 @@ function ContextItemRow({
   isLast,
   moving,
   disabled,
+  canManage,
   onEdit,
   onMoveUp,
   onMoveDown,
 }: ContextItemRowProps) {
   return (
     <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/30 transition-colors group">
-      {/* Reorder controls */}
-      <div className="flex flex-col -my-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          type="button"
-          onClick={onMoveUp}
-          disabled={isFirst || disabled}
-          aria-label="Move up"
-          className="h-4 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          {moving ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <ChevronUp className="h-3.5 w-3.5" />
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={onMoveDown}
-          disabled={isLast || disabled}
-          aria-label="Move down"
-          className="h-4 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <ChevronDown className="h-3.5 w-3.5" />
-        </button>
-      </div>
+      {/* Reorder controls (admins only) */}
+      {canManage && (
+        <div className="flex flex-col -my-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            type="button"
+            onClick={onMoveUp}
+            disabled={isFirst || disabled}
+            aria-label="Move up"
+            className="h-4 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            {moving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ChevronUp className="h-3.5 w-3.5" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onMoveDown}
+            disabled={isLast || disabled}
+            aria-label="Move down"
+            className="h-4 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronDown className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -521,15 +545,17 @@ function ContextItemRow({
           </p>
         )}
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onEdit}
-        className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity h-7 px-2"
-        aria-label={`Edit ${item.display_name}`}
-      >
-        <Pencil className="h-3.5 w-3.5" />
-      </Button>
+      {canManage && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onEdit}
+          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity h-7 px-2"
+          aria-label={`Edit ${item.display_name}`}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+      )}
     </div>
   );
 }

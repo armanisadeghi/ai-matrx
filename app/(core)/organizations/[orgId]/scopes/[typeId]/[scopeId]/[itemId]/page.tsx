@@ -4,7 +4,11 @@ import React from "react";
 import { useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { getOrganizationBySlugOrId } from "@/features/organizations/service";
+import {
+  getOrganizationBySlugOrId,
+  getUserRole,
+} from "@/features/organizations/service";
+import { canManageSettings } from "@/features/organizations/types";
 import { ScopeItemDetail } from "@/features/scope-system/components/ScopeItemDetail";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { fetchScopeTypes } from "@/features/agent-context/redux/scope/scopeTypesSlice";
@@ -19,6 +23,7 @@ export default function ScopeItemPage() {
   const dispatch = useAppDispatch();
 
   const [org, setOrg] = React.useState<Organization | null>(null);
+  const [canManage, setCanManage] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
 
@@ -32,6 +37,8 @@ export default function ScopeItemPage() {
         }
         setOrg(resolved);
         dispatch(fetchScopeTypes(resolved.id));
+        const role = await getUserRole(resolved.id);
+        setCanManage(role ? canManageSettings(role) : false);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load");
       } finally {
@@ -67,6 +74,7 @@ export default function ScopeItemPage() {
           typeParam={typeId}
           scopeParam={scopeId}
           itemParam={itemId}
+          canManage={canManage}
         />
       </div>
     </div>
