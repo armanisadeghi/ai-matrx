@@ -499,3 +499,13 @@ export function getEntry(key: string): OrgResourceEntry | undefined {
 export function getEntryByShareKey(shareKey: string): OrgResourceEntry | undefined {
   return ORG_RESOURCE_CATALOGUE.find((e) => e.shareKey === shareKey);
 }
+
+/**
+ * Stable key used in `org_module_settings.module_key` (and matched by the
+ * `share_resource_with_org` RPC). For shareable kinds this is the canonical
+ * table name so the server can look it up directly; otherwise the public table
+ * or the catalogue key.
+ */
+export function moduleKey(entry: OrgResourceEntry): string {
+  return entry.table ?? entry.shareKey ?? entry.key;
+}

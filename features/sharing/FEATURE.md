@@ -58,6 +58,8 @@ One RLS-backed permissions system that makes any resource type shareable with us
 | `permissions` | The single grants table. Row per (resource_type, resource_id, target). Target is exactly one of: `granted_to_user_id`, `granted_to_organization_id`, or `is_public` sentinel. Columns: `permission_level` (`viewer` / `editor` / `admin`), `created_at`, `created_by`. **Org-share moderation (2026-06-06):** `status` (`active` default / `pending` / `rejected`), `reviewed_by`, `reviewed_at`, `review_note`. A `rejected` grant no longer confers access — `has_permission` and `check_resource_access` both filter `COALESCE(status,'active') <> 'rejected'`. Additive + default-safe: every prior grant is `active`. |
 | `<resource>.is_public` | Public visibility lives on the **resource row**, not the permissions table. Owner-controlled, toggled via `make_resource_public` / `make_resource_private`. |
 | `<resource>.user_id` | Ownership is always the resource row's `user_id`. No explicit "owner" permission row exists. |
+| `shareable_resource_registry.content_role` / `.is_scopeable` (2026-06-06) | The knowledge-model classification on the registry: `content_role` ∈ source/destination/utility/container/hybrid; `is_scopeable` bool. Backend (scope-association pipeline) + the FE org catalogue read these. |
+| `org_module_settings` (2026-06-06) | Per-org per-module rules. `(organization_id, module_key)` unique; `module_key` = canonical table name for shareable kinds (so the share RPC matches it). Columns: `members_can_add`, `requires_approval`, `default_permission`, `auto_ingest`, `is_scopeable`. RLS: org members SELECT; writes only via `set_org_module_setting` (owner/admin). `members_can_add` + `requires_approval` are enforced in `share_resource_with_org`. |
 
 ### Key RPCs (all `SECURITY DEFINER`)
 
@@ -68,6 +70,8 @@ Writes:
 - `revoke_resource_access(...)` — user grant
 - `revoke_resource_org_access(...)` — org grant
 - `make_resource_public(...)` / `make_resource_private(...)` — flip `is_public` on the resource row
+- `set_org_module_setting(p_org_id, p_module_key, p_members_can_add, p_requires_approval, p_default_permission, p_auto_ingest, p_is_scopeable)` — owner/admin-gated upsert of one module's org rules. FE: `features/organizations/orgModuleSettings.ts`.
+- `share_resource_with_org(...)` — **now enforces module rules**: blocks the share if `members_can_add = false` and the caller isn't owner/admin; sets the new grant's `status = 'pending'` when `requires_approval = true` (and caller isn't admin). Defaults (no settings row) preserve the prior always-active behavior.
 - `review_org_share(p_permission_id, p_status, p_note)` — org-share moderation. Sets the `status` of one org grant; gated on the caller being an `owner`/`admin` of the org the grant targets. `rejected` revokes team access via the `has_permission` / `check_resource_access` status filter. Consumed by `utils/permissions/orgModeration.ts` (`reviewOrgShare`); the org workspace v2 review queue uses it. See `features/organizations/FEATURE.md`.
 
 Reads:
@@ -203,6 +207,7 @@ Stable. Active areas:
 
 ## Change log
 
+- `2026-06-06` — Module rules + registry roles. Added `content_role` + `is_scopeable` to `shareable_resource_registry` (seeded). New `org_module_settings` table + RLS + `set_org_module_setting` RPC (owner/admin). `share_resource_with_org` now enforces `members_can_add` (block) + `requires_approval` (→ `pending`), defaults preserving prior behavior. FE: `features/organizations/orgModuleSettings.ts`, live `OrgModuleSettings` matrix. Migration: `migrations/org_module_settings_and_registry_roles.sql`.
 - `2026-06-06` — Org-share moderation. Added `status` (`active`/`pending`/`rejected`) + `reviewed_by` / `reviewed_at` / `review_note` to `permissions`, a `permissions_org_status_idx`, and the `review_org_share(permission_id, status, note)` SECURITY DEFINER RPC (org owner/admin gated). `has_permission` and `check_resource_access` now exclude `status = 'rejected'` org/user grants (single additive `COALESCE(status,'active') <> 'rejected'` clause each — default-safe, no behavior change for existing grants). FE helpers in `utils/permissions/orgModeration.ts`. Lets org admins reject resources members contribute to the org from the org workspace v2 review queue. Migration: `migrations/perm_org_share_moderation.sql`.
 - `2026-04-29` — codex: registry-driven sharing. Created `shareable_resource_registry` (DB) + TS mirror + parity test. Refactored all 9 sharing RPCs to consume `resolve_shareable_resource()`. Added validation trigger on `permissions.resource_type`. Removed legacy `getTableName()` and inline `resourcePaths` map. Documented `rls_uses_has_permission` gaps for follow-up.
 - `2026-04-22` — claude: initial FEATURE.md extracted from README.md.

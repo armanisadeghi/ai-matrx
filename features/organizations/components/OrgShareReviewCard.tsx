@@ -12,7 +12,7 @@
  */
 
 import React from "react";
-import { Loader2, ShieldCheck, ExternalLink, X, RotateCcw, Check } from "lucide-react";
+import { Loader2, ShieldCheck, ExternalLink, X, RotateCcw, Check, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
@@ -230,6 +230,43 @@ export function OrgShareReviewCard({
                           </>
                         )}
                       </Button>
+                    )}
+                  </>
+                ) : grant.status === "pending" ? (
+                  <>
+                    <Badge variant="outline" className="text-[10px] shrink-0 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 gap-1">
+                      <Clock className="h-3 w-3" />
+                      Pending
+                    </Badge>
+                    {isAdmin && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 shrink-0 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+                          disabled={busyId === grant.permissionId}
+                          onClick={() => act(grant, "active")}
+                        >
+                          {busyId === grant.permissionId ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <>
+                              <Check className="h-3.5 w-3.5 mr-1" />
+                              Approve
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 shrink-0 text-red-600 hover:text-red-700 dark:text-red-400"
+                          disabled={busyId === grant.permissionId}
+                          onClick={() => act(grant, "rejected")}
+                        >
+                          <X className="h-3.5 w-3.5 mr-1" />
+                          Reject
+                        </Button>
+                      </>
                     )}
                   </>
                 ) : (

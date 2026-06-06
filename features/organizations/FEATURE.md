@@ -59,7 +59,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `features/organizations/components/OrgResourceDetail.tsx` — the per-resource page body (team view + your-own).
 - `features/organizations/components/OrgManage.tsx` — the single-page Manage shell (replaced tabbed `OrgSettings`); identity header + sticky jump-nav + sections. Owns its single scroll container (the settings layout is now a passthrough provider — see `OrgSettingsLayoutClient`).
 - `features/organizations/components/OrgScopeTree.tsx` — read-only scope-type→scope tree (no items) for the Manage Scopes section, with edit links.
-- `features/organizations/components/OrgModuleSettings.tsx` — per-module org-rule controls (placeholder/"coming soon" = the build tasklist for `content_role` / `is_scopeable` / approval / default access / auto-ingest).
+- `features/organizations/components/OrgModuleSettings.tsx` — **live** per-module org-rule matrix (members-can-add, needs-approval, scopeable, auto-ingest, default access). Loads/saves via `features/organizations/orgModuleSettings.ts` → `org_module_settings` (admin-gated `set_org_module_setting` RPC). Members-can-add + needs-approval are enforced server-side in `share_resource_with_org`; the rest are saved for upcoming enforcement.
 - `components/ui/context-menu.tsx` — radix right-click menu primitive (added for resource rows; reusable app-wide).
 - `features/organizations/hooks/useOrgContributableItems.ts` — your-own items + one-call `share` (shared by the Contribute sheet and the resource page).
 - `features/organizations/hooks/useOrgSharedItems.ts` — team view (org-owned + member-contributed) for one kind.

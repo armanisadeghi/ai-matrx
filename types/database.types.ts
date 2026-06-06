@@ -10822,6 +10822,56 @@ export type Database = {
           },
         ]
       }
+      org_module_settings: {
+        Row: {
+          auto_ingest: boolean
+          created_at: string | null
+          default_permission: Database["public"]["Enums"]["permission_level"]
+          id: string
+          is_scopeable: boolean
+          members_can_add: boolean
+          module_key: string
+          organization_id: string
+          requires_approval: boolean
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          auto_ingest?: boolean
+          created_at?: string | null
+          default_permission?: Database["public"]["Enums"]["permission_level"]
+          id?: string
+          is_scopeable?: boolean
+          members_can_add?: boolean
+          module_key: string
+          organization_id: string
+          requires_approval?: boolean
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          auto_ingest?: boolean
+          created_at?: string | null
+          default_permission?: Database["public"]["Enums"]["permission_level"]
+          id?: string
+          is_scopeable?: boolean
+          members_can_add?: boolean
+          module_key?: string
+          organization_id?: string
+          requires_approval?: boolean
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_module_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_invitations: {
         Row: {
           email: string
@@ -16104,11 +16154,13 @@ export type Database = {
       }
       shareable_resource_registry: {
         Row: {
+          content_role: string | null
           created_at: string
           display_label: string
           id_column: string
           is_active: boolean
           is_public_column: string | null
+          is_scopeable: boolean
           notes: string | null
           owner_column: string
           resource_type: string
@@ -16118,11 +16170,13 @@ export type Database = {
           url_path_template: string
         }
         Insert: {
+          content_role?: string | null
           created_at?: string
           display_label: string
           id_column?: string
           is_active?: boolean
           is_public_column?: string | null
+          is_scopeable?: boolean
           notes?: string | null
           owner_column?: string
           resource_type: string
@@ -16132,11 +16186,13 @@ export type Database = {
           url_path_template: string
         }
         Update: {
+          content_role?: string | null
           created_at?: string
           display_label?: string
           id_column?: string
           is_active?: boolean
           is_public_column?: string | null
+          is_scopeable?: boolean
           notes?: string | null
           owner_column?: string
           resource_type?: string
@@ -27808,6 +27864,18 @@ export type Database = {
           p_entity_id: string
           p_entity_type: string
           p_scope_ids: string[]
+        }
+        Returns: Json
+      }
+      set_org_module_setting: {
+        Args: {
+          p_auto_ingest: boolean
+          p_default_permission: string
+          p_is_scopeable: boolean
+          p_members_can_add: boolean
+          p_module_key: string
+          p_org_id: string
+          p_requires_approval: boolean
         }
         Returns: Json
       }

@@ -239,7 +239,7 @@ export function OrgManage({ organization, userRole, isOwner, isAdmin }: OrgManag
           title="Module settings"
           description="Org rules for each kind of resource — agents, notes, files, and the rest."
         >
-          <OrgModuleSettings />
+          <OrgModuleSettings orgId={displayOrganization.id} canEdit={canManageSettings} />
         </SectionCard>
       )}
 
