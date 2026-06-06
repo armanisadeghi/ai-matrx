@@ -42,6 +42,7 @@ import { ScopeNotFound } from "./ScopeNotFound";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import {
   contextItemsHref,
+  contextItemEditHref,
   orgScopesHref,
   scopeHref,
   scopeItemHref,
@@ -223,15 +224,22 @@ export function ContextItemHub({
             </div>
           </div>
           {canManage && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEditing(true)}
-              className="shrink-0"
-            >
-              <Pencil className="h-3.5 w-3.5 mr-1.5" />
-              Edit item
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditing(true)}
+                title="Quick edit"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href={contextItemEditHref(orgSlugOrId, scopeType, item)}>
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                  Edit item
+                </Link>
+              </Button>
+            </div>
           )}
         </div>
 
