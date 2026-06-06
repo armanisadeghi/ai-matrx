@@ -53,6 +53,7 @@ export interface FullContextScope {
   parent_scope_id: string | null;
   description: string;
   settings: Record<string, unknown>;
+  sort_order?: number;
   created_by: string | null;
   created_at: string;
   updated_at: string;

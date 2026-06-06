@@ -74,6 +74,7 @@ function mapScope(orgId: string, s: FullContextScope): Scope {
     name: s.name,
     description: s.description ?? "",
     settings: s.settings ?? {},
+    sort_order: s.sort_order ?? 0,
     created_by: s.created_by,
     created_at: s.created_at,
     updated_at: s.updated_at,
