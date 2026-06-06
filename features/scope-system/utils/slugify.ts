@@ -31,6 +31,25 @@ export function isValidSlug(s: string): boolean {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s);
 }
 
+/**
+ * Route segments that are literal pages in the scope tree, so a scope / item / type
+ * slug may NOT equal one of these (it would be shadowed by the static route).
+ * Enforced in the add/edit forms via `isReservedSlug`.
+ */
+export const RESERVED_SCOPE_SLUGS: ReadonlySet<string> = new Set([
+  "context-items",
+  "scopes",
+  "edit",
+  "manage",
+  "new",
+  "settings",
+]);
+
+/** True when a slug collides with a reserved route segment. */
+export function isReservedSlug(s: string): boolean {
+  return RESERVED_SCOPE_SLUGS.has(s.toLowerCase());
+}
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

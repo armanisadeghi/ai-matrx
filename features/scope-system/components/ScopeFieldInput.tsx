@@ -21,8 +21,17 @@ import { EditScopeValueSheet } from "./EditScopeValueSheet";
 interface ScopeFieldInputProps {
   scopeId: string;
   row: ScopeContextRow;
-  /** When provided, shows a link to the item's dedicated page. */
+  /** When provided, shows a link to the item's dedicated page (the ↗). */
   itemHref?: string;
+  /**
+   * Override the field's title (defaults to the item's display_name). Used on the
+   * Context Item Hub, where each row is the SAME item across different scopes, so
+   * the row title should be the scope name instead.
+   */
+  nameLabel?: string;
+  /** When set, the title becomes a link here (e.g. to the scope hub) instead of
+   * the edit-item drawer trigger. */
+  nameHref?: string;
 }
 
 function rowToString(row: ScopeContextRow): string {
@@ -45,6 +54,8 @@ export function ScopeFieldInput({
   scopeId,
   row,
   itemHref,
+  nameLabel,
+  nameHref,
 }: ScopeFieldInputProps) {
   const initial = rowToString(row);
   const [value, setValue] = useState(initial);
@@ -80,19 +91,28 @@ export function ScopeFieldInput({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-2">
           <div className="inline-flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setEditingItem(true)}
-              className="group inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary"
-              title="Edit this context item"
-            >
-              {row.display_name}
-              <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
+            {nameHref ? (
+              <Link
+                href={nameHref}
+                className="text-sm font-medium text-foreground hover:text-primary"
+              >
+                {nameLabel ?? row.display_name}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditingItem(true)}
+                className="group inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary"
+                title="Edit this context item"
+              >
+                {nameLabel ?? row.display_name}
+                <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            )}
             {itemHref && (
               <Link
                 href={itemHref}
-                title="Open item page"
+                title="Open page"
                 className="text-muted-foreground hover:text-primary"
               >
                 <ArrowUpRight className="h-3.5 w-3.5" />

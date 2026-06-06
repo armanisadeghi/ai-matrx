@@ -64,10 +64,10 @@ The **Organization** level is the gold standard — copy it everywhere.
 ### Level 3b — Context Item ("Brand Personality")  (parent: scope type · children: values across scopes)
 | Surface | Route | Status | Now |
 |---|---|---|---|
-| Collection Hub (all items for type) | `/organizations/[org]/scopes/[type]/context-items` | 🟡 | list inside Type Hub — **no route** |
-| Collection Manage (manage all items) | `/organizations/[org]/scopes/[type]/context-items/manage` | 🟡 | reorder dialog only |
-| Item Hub (view "Brand Personality") | `/organizations/[org]/scopes/[type]/context-items/[item]` | ❌ | **KEY MISSING** — settings + value per scope |
-| Item Manage (edit "Brand Personality") | `/organizations/[org]/scopes/[type]/context-items/[item]/edit` | 🟡 | drawer EditContextItemSheet — **no route** |
+| Collection Hub (all items for type) | `/organizations/[org]/scopes/[type]/context-items` | ✅ | `ContextItemsHub` (Wave A) |
+| Collection Manage (manage all items) | `/organizations/[org]/scopes/[type]/context-items/manage` | 🟡 | reorder dialog (in collection hub) |
+| Item Hub (view "Brand Personality") | `/organizations/[org]/scopes/[type]/context-items/[item]` | ✅ | `ContextItemHub` (Wave A) — settings + value per scope |
+| Item Manage (edit "Brand Personality") | `/organizations/[org]/scopes/[type]/context-items/[item]/edit` | 🟡 | drawer EditContextItemSheet — route is Wave B |
 
 ### Level 4 — Value  (item × scope — a cell, not a thing)
 | Surface | Route | Status |
@@ -95,9 +95,12 @@ Every Hub should expose: **up** (parent), **down** (each child system with add +
 `/agent-context` (`ContextDashboard`+`ContextItemList`) ≈ `/context-items`; `/agent-context/items/[itemId]`
 (`ContextItemDetail`) ≈ item Hub; `+/edit`, `+/history`, `+/new`. Migrate into the scope structure + redirect.
 
-## 7. Build order (proposed)
-- **Wave A — Type Hub connectors + Context-Item Collection & Item Hub:** wire the missing buttons on the
-  Type Hub; build `…/context-items` (collection hub) + `…/context-items/[item]` (Item Hub w/ values per scope).
+## 7. Build order
+
+- **Wave A — DONE ✅** — `…/context-items` (`ContextItemsHub`) + `…/context-items/[item]` (`ContextItemHub`:
+  item settings header + Details + every scope's value inline-editable, deep-linking to the value page).
+  Type Hub now links "Context Items" + each item name → the new pages. Reserved slugs added
+  (`context-items`/`scopes`/`edit`/`manage`/`new`/`settings`); not-found states on the new routes.
 - **Wave B — Manage routes (single thing):** `…/[type]/edit`, `…/context-items/[item]/edit`, `…/[scope]/edit`
   — host the existing drawer forms full-page (drawers stay as quick accelerators linking to "open full editor").
 - **Wave C — Collection Manage + Scopes Collection Hub:** `…/scopes/manage`, `…/[type]/scopes`,

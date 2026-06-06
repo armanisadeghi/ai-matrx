@@ -31,6 +31,7 @@ export function scopeHref(
   return `/organizations/${orgSlugOrId}/scopes/${scopeSeg(type)}/${scopeSeg(scope)}`;
 }
 
+/** The VALUE page: a context item's value for one scope (item × scope cell). */
 export function scopeItemHref(
   orgSlugOrId: string,
   type: Slugged,
@@ -38,4 +39,43 @@ export function scopeItemHref(
   item: Slugged,
 ): string {
   return `/organizations/${orgSlugOrId}/scopes/${scopeSeg(type)}/${scopeSeg(scope)}/${scopeSeg(item)}`;
+}
+
+// ── Manage (full-page edit) routes ───────────────────────────────────────────
+
+export function scopeTypeEditHref(orgSlugOrId: string, type: Slugged): string {
+  return `${scopeTypeHref(orgSlugOrId, type)}/edit`;
+}
+
+export function scopeEditHref(
+  orgSlugOrId: string,
+  type: Slugged,
+  scope: Slugged,
+): string {
+  return `${scopeHref(orgSlugOrId, type, scope)}/edit`;
+}
+
+// ── Context-item (the THING, defined on a type) routes ───────────────────────
+
+/** Collection Hub: all context items defined on a scope type. */
+export function contextItemsHref(orgSlugOrId: string, type: Slugged): string {
+  return `/organizations/${orgSlugOrId}/scopes/${scopeSeg(type)}/context-items`;
+}
+
+/** Item Hub: a context item's own page (settings + its value across every scope). */
+export function contextItemHref(
+  orgSlugOrId: string,
+  type: Slugged,
+  item: Slugged,
+): string {
+  return `${contextItemsHref(orgSlugOrId, type)}/${scopeSeg(item)}`;
+}
+
+/** Item Manage: full-page edit of a context item's own settings. */
+export function contextItemEditHref(
+  orgSlugOrId: string,
+  type: Slugged,
+  item: Slugged,
+): string {
+  return `${contextItemHref(orgSlugOrId, type, item)}/edit`;
 }

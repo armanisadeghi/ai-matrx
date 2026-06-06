@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowUpDown,
+  ArrowUpRight,
   Building2,
   ChevronDown,
   ChevronRight,
@@ -70,6 +71,8 @@ import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import {
   orgScopesHref,
   scopeHref,
+  contextItemsHref,
+  contextItemHref,
 } from "@/features/scope-system/utils/scopeRoutes";
 
 interface ScopesListProps {
@@ -409,15 +412,24 @@ export function ScopesList({
       {/* ── Context Items (definitions) ──────────────────────────── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-foreground">
+          <Link
+            href={contextItemsHref(orgSlugOrId, scopeType)}
+            className="group inline-flex items-center gap-1.5 text-base font-semibold text-foreground hover:text-primary"
+          >
             Context Items
             {items.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
+              <span className="text-sm font-normal text-muted-foreground">
                 ({items.length})
               </span>
             )}
-          </h2>
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
+          </Link>
           <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm">
+              <Link href={contextItemsHref(orgSlugOrId, scopeType)}>
+                Open page
+              </Link>
+            </Button>
             {canManage && items.length > 1 && (
               <Button
                 variant="outline"
@@ -452,6 +464,7 @@ export function ScopesList({
                 <ContextItemRow
                   key={item.id}
                   item={item}
+                  href={contextItemHref(orgSlugOrId, scopeType, item)}
                   isFirst={index === 0}
                   isLast={index === items.length - 1}
                   moving={movingId === item.id}
@@ -522,6 +535,7 @@ export function ScopesList({
 
 interface ContextItemRowProps {
   item: ContextItem;
+  href: string;
   isFirst: boolean;
   isLast: boolean;
   moving: boolean;
@@ -534,6 +548,7 @@ interface ContextItemRowProps {
 
 function ContextItemRow({
   item,
+  href,
   isFirst,
   isLast,
   moving,
@@ -575,9 +590,13 @@ function ContextItemRow({
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-foreground">
+          <Link
+            href={href}
+            className="group/name inline-flex items-center gap-1 text-sm font-medium text-foreground hover:text-primary"
+          >
             {item.display_name}
-          </span>
+            <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover/name:opacity-100 transition-opacity" />
+          </Link>
           {item.category && (
             <Badge variant="outline" className="text-[10px]">
               {item.category}
