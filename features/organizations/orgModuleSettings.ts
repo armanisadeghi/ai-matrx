@@ -59,6 +59,21 @@ export async function getOrgModuleSettings(
   return map;
 }
 
+/**
+ * One module's effective setting for an org (merged with defaults). Convenience
+ * for consumers that only care about a single kind — e.g. the scopes tag picker
+ * checking `isScopeable` before allowing a kind to be tagged, or a share flow
+ * reading `defaultPermission`. `moduleKey` is `moduleKey(entry)` from the
+ * resource catalogue (canonical table name for shareable kinds).
+ */
+export async function getOrgModuleSetting(
+  orgId: string,
+  moduleKey: string,
+): Promise<OrgModuleSetting> {
+  const map = await getOrgModuleSettings(orgId);
+  return map.get(moduleKey) ?? DEFAULT_MODULE_SETTING;
+}
+
 export async function setOrgModuleSetting(
   orgId: string,
   moduleKey: string,

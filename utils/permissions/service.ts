@@ -212,7 +212,8 @@ export async function shareWithOrg(
       p_resource_type: resourceType,
       p_resource_id: resourceId,
       p_target_org_id: organizationId,
-      p_permission_level: permissionLevel,
+      // null → server applies the org module's default_permission.
+      p_permission_level: permissionLevel ?? null,
     });
 
     if (error) throw error;

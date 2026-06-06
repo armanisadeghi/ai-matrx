@@ -71,7 +71,7 @@ Writes:
 - `revoke_resource_org_access(...)` — org grant
 - `make_resource_public(...)` / `make_resource_private(...)` — flip `is_public` on the resource row
 - `set_org_module_setting(p_org_id, p_module_key, p_members_can_add, p_requires_approval, p_default_permission, p_auto_ingest, p_is_scopeable)` — owner/admin-gated upsert of one module's org rules. FE: `features/organizations/orgModuleSettings.ts`.
-- `share_resource_with_org(...)` — **now enforces module rules**: blocks the share if `members_can_add = false` and the caller isn't owner/admin; sets the new grant's `status = 'pending'` when `requires_approval = true` (and caller isn't admin). Defaults (no settings row) preserve the prior always-active behavior.
+- `share_resource_with_org(...)` — **now enforces module rules**: blocks the share if `members_can_add = false` and the caller isn't owner/admin; sets the new grant's `status = 'pending'` when `requires_approval = true` (and caller isn't admin); when `p_permission_level` is NULL it uses the module's `default_permission` (fallback `viewer`) — the contribute flow omits the level, pickers pass it explicitly. Defaults (no settings row) preserve the prior always-active viewer behavior.
 - `review_org_share(p_permission_id, p_status, p_note)` — org-share moderation. Sets the `status` of one org grant; gated on the caller being an `owner`/`admin` of the org the grant targets. `rejected` revokes team access via the `has_permission` / `check_resource_access` status filter. Consumed by `utils/permissions/orgModeration.ts` (`reviewOrgShare`); the org workspace v2 review queue uses it. See `features/organizations/FEATURE.md`.
 
 Reads:

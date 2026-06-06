@@ -208,10 +208,28 @@ RLS enforces these at the database layer. Service functions (`updateMemberRole`,
 
 Stable. No active migration. If org or project invitation flows evolve, keep `/api/organizations/invite` and `/api/projects/invite` in lockstep — they are deliberately parallel and diverging them will create surprising behavior.
 
+### Module-rule enforcement — status & remaining wiring
+
+Per-module rules live in `org_module_settings` (set in Manage → Modules). Enforcement status:
+
+| Rule | Status | Where enforced |
+|---|---|---|
+| `members_can_add` | **Live** | `share_resource_with_org` blocks non-admin members |
+| `requires_approval` | **Live** | `share_resource_with_org` → grant `status = 'pending'`; surfaced in `OrgShareReviewCard` (Approve/Reject) |
+| `default_permission` | **Live** | `share_resource_with_org` uses it when the caller omits the level (the Contribute flow does); pickers still pass explicit levels |
+| `is_scopeable` | **Stored, not enforced** | See below |
+| `auto_ingest` | **Stored, not enforced** | Backend (aidream) — see below |
+
+**To finish `is_scopeable` enforcement** (FE, scopes feature): the scope tag pickers (Surface B, `features/scopes/components/**` — the "tag this with…" UIs that write `ctx_scope_assignments`) should hide/disable a kind when its org module setting has `isScopeable = false`. Integration point already exists: call
+`getOrgModuleSetting(orgId, moduleKey)` from `features/organizations/orgModuleSettings.ts` and check `.isScopeable`. Map the picker's `entity_type` → `moduleKey` via the resource catalogue (`moduleKey(entry)` = canonical table name; e.g. `note → 'notes'`, `agent → 'agx_agent'`). One read per kind; cache per org.
+
+**To finish `auto_ingest` enforcement** (backend): the aidream knowledge-ingestion pipeline should read `org_module_settings.auto_ingest` (keyed by `module_key` = canonical table name) before auto-ingesting a newly-created/updated resource of that kind into the org knowledge graph. Default true historically; honoring the flag means: when false, skip auto-ingest for that kind in that org. The column is already populated; this is a read + branch in the ingest entrypoint.
+
 ---
 
 ## Change log
 
+- `2026-06-06` — **Round 5: peek fan-out complete + default_permission enforcement.** 19/21 catalogue kinds now have a live Peek (added shortcut/list/workbook/quiz/sandbox/project; research + website remain). `share_resource_with_org` now resolves the grant level from the org module's `default_permission` when the caller omits it (the Contribute flow omits it; ShareModal/ShareNoteDialog still pass explicit levels). Added `getOrgModuleSetting(orgId, moduleKey)` as the single-key integration point for the remaining `is_scopeable` enforcement (scopes pickers). Documented `is_scopeable` + `auto_ingest` remaining wiring above.
 - `2026-06-06` — **Round 4: bug fix + launcher cards + DB-backed module settings + Peek.** (1) Fixed the context-menu Root (orphaned Trigger) → resource pages work for all kinds. (2) Launcher cards rebuilt large, with org stats + embedded Context scope tree. (3) **Module settings are live** — DB-backed `org_module_settings` (members-can-add + needs-approval enforced in `share_resource_with_org`; pending shares surface in the moderation card with Approve/Reject); `shareable_resource_registry` gained `content_role` + `is_scopeable`. (4) Pluggable **Peek** system (`features/organizations/peek/`) with 13 live kinds (3 hand-built examples + 10 fanned out to subagents). All typecheck-clean; agent/file/note/conversation peeks verified live.
 - `2026-06-06` — **Round 3: launcher + sharing UX + Manage depth.** (1) Rebuilt `/organizations` as a polished launcher (rich role-accented cards, search, stats) — the parent to the workspace. (2) Resource catalogue: added the **dual-role** "Sources & Outputs" bucket (Notes, Datasets, Workbooks) and `hideRowIcon` (drops the repetitive agent glyph in list rows). (3) Manage: fixed the dual-scroll (settings layout → passthrough; `OrgManage` owns one scroller), deleted the redundant org-switcher sidebar (`OrgSidebar`), added an inline **scope tree** (`OrgScopeTree`) and a per-module **settings matrix** (`OrgModuleSettings`, placeholder/tasklist). (4) Resource detail sharing UX: who-shared avatars, open-in-new-tab, right-click **context menu** (Open / New tab / Peek / Share|Unshare) via new `components/ui/context-menu.tsx`, agent **Peek** (`AgentSneakPeekModal`) + "coming soon" for other kinds; `useOrgSharedItems` carries `sharedBy`/`permissionId`; `orgModeration` adds `revokeOrgShare` + `listOrgSharedIdsForTable`. *Note: verified via typecheck + design render; full data-populated verification pending a dev-server restart (a local env issue left client-side supabase fetches stalled app-wide during the session).*
 - `2026-06-06` — **Promoted the workspace to the primary org page**, added per-resource pages, and redesigned Manage. (1) `/organizations/[orgId]` now renders `OrgWorkspace` (extracted shared component); `/org-2` kept as a thin alias. (2) New catalogue-driven `/organizations/[orgId]/resources/[kind]` page (`OrgResourceDetail`) with a "Shared with org" team view + a "Yours to share" one-click panel — every scopeable kind now has a consistent org page; workspace tiles route here. Extracted `useOrgContributableItems` + `useOrgSharedItems`; `ContributeResourceSheet` reuses the shared hook. (3) Replaced the tabbed `OrgSettings` with `OrgManage` — a single scrollable, sectioned Manage page (identity header + sticky jump-nav, no tabs) reusing all existing settings sub-components; deleted `OrgSettings.tsx`.

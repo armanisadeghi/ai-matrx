@@ -119,7 +119,8 @@ export function useOrgContributableItems(
         resourceType: entry.shareKey! as ResourceType,
         resourceId: item.id,
         organizationId: orgId,
-        permissionLevel: "viewer",
+        // Level omitted on purpose → the server applies the org module's
+        // configured default_permission for this kind.
       });
       if (result.success) {
         setJustShared((prev) => new Set(prev).add(item.id));
