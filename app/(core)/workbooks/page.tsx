@@ -6,6 +6,7 @@ import {
   FileSpreadsheet,
   Loader2,
   Plus,
+  Sparkles,
   Trash,
   Upload,
 } from "lucide-react";
@@ -23,6 +24,14 @@ import {
 } from "@/features/data-tables/workbook-service";
 import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
 import { xlsxToUniverWorkbook } from "@/features/data-tables/xlsx-to-univer";
+import { fileHandler } from "@/features/files/handler/handler";
+import {
+  detectImportRoute,
+  type ImportRouteDetection,
+  type ImportRouting,
+} from "@/features/data-tables/smart-importer";
+import { ImportRouteDialog } from "@/features/data-tables/components/ImportRouteDialog";
+import { smartImportPickupSlot } from "@/features/data-tables/smart-import-pickup";
 
 export default function WorkbooksLandingPage() {
   const router = useRouter();
@@ -32,6 +41,15 @@ export default function WorkbooksLandingPage() {
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Smart-import state: separate file picker pointed at the same accept set
+  // but funnels through detectImportRoute() before committing.
+  const smartFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [smartDetection, setSmartDetection] =
+    useState<ImportRouteDetection | null>(null);
+  const [smartFile, setSmartFile] = useState<File | null>(null);
+  const [smartDialogOpen, setSmartDialogOpen] = useState(false);
+  const [smartCommitting, setSmartCommitting] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -73,6 +91,25 @@ export default function WorkbooksLandingPage() {
         // BEFORE creating an empty workbook the user would have to delete.
         const snapshot = await xlsxToUniverWorkbook(file);
 
+        // Stash the lossless original in cld_files so users can download or
+        // re-import the source later. Failure here is non-fatal — the workbook
+        // import path is the primary deliverable, the original-file link is
+        // a recoverability nicety (FK is ON DELETE SET NULL, so we'd nil out
+        // the link if the file went away anyway). Log + continue on failure.
+        let originalFileId: string | undefined;
+        try {
+          const uploaded = await fileHandler.upload(
+            { kind: "file", file },
+            { folderPath: "Workbooks/Imports" },
+          );
+          originalFileId = uploaded.fileId;
+        } catch (uploadErr) {
+          console.warn(
+            "Workbook import: stashing original failed; continuing without link.",
+            uploadErr,
+          );
+        }
+
         const cleanName = file.name.replace(/\.[^.]+$/, "") || "Imported workbook";
         const created = await createWorkbook({
           name: cleanName,
@@ -80,6 +117,7 @@ export default function WorkbooksLandingPage() {
           source: file.name.toLowerCase().endsWith(".csv")
             ? "imported_csv"
             : "imported_xlsx",
+          originalFileId,
         });
         if (isServiceFailure(created)) throw new Error(created.error);
 
@@ -115,6 +153,58 @@ export default function WorkbooksLandingPage() {
       }
     },
     [router],
+  );
+
+  const handleSmartImport = useCallback(async (file: File) => {
+    // Reset the input so picking the same file again still fires onChange.
+    if (smartFileInputRef.current) smartFileInputRef.current.value = "";
+    setSmartCommitting(false);
+
+    try {
+      const detection = await detectImportRoute(file);
+      setSmartFile(file);
+      setSmartDetection(detection);
+      setSmartDialogOpen(true);
+    } catch (err) {
+      toast({
+        title: "Could not analyze file",
+        description: err instanceof Error ? err.message : String(err),
+        variant: "destructive",
+      });
+    }
+  }, []);
+
+  const handleSmartCommit = useCallback(
+    async (routing: ImportRouting) => {
+      if (!smartFile) return;
+      setSmartCommitting(true);
+      try {
+        if (routing === "workbook") {
+          setSmartDialogOpen(false);
+          await handleImportXlsx(smartFile);
+        } else {
+          // Typed-dataset routing — the rich import/preview/column-config
+          // flow lives at /data. Stash the file briefly on the window so
+          // /data can pick it up (sessionStorage holds the filename and a
+          // pickup token; the actual File is non-serializable so it rides
+          // on a global module-level slot).
+          smartImportPickupSlot.file = smartFile;
+          smartImportPickupSlot.takenAt = Date.now();
+          setSmartDialogOpen(false);
+          toast({
+            title: "Opening in typed-data import",
+            description: smartFile.name,
+            variant: "default",
+          });
+          router.push("/data?smartImport=1");
+        }
+      } finally {
+        setSmartCommitting(false);
+        setSmartFile(null);
+        setSmartDetection(null);
+      }
+    },
+    [smartFile, router],
   );
 
   const handleDelete = useCallback(
@@ -162,9 +252,28 @@ export default function WorkbooksLandingPage() {
               if (f) void handleImportXlsx(f);
             }}
           />
+          <input
+            ref={smartFileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handleSmartImport(f);
+            }}
+          />
           <Button
             variant="outline"
-            disabled={importing || creating}
+            disabled={importing || creating || smartCommitting}
+            onClick={() => smartFileInputRef.current?.click()}
+            title="Auto-detect whether your file is a typed dataset or a workbook"
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            Smart import
+          </Button>
+          <Button
+            variant="outline"
+            disabled={importing || creating || smartCommitting}
             onClick={() => fileInputRef.current?.click()}
           >
             {importing ? (
@@ -174,7 +283,10 @@ export default function WorkbooksLandingPage() {
             )}
             Import XLSX / CSV
           </Button>
-          <Button onClick={handleCreate} disabled={creating || importing}>
+          <Button
+            onClick={handleCreate}
+            disabled={creating || importing || smartCommitting}
+          >
             {creating ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
@@ -254,6 +366,21 @@ export default function WorkbooksLandingPage() {
           ))}
         </div>
       )}
+
+      <ImportRouteDialog
+        isOpen={smartDialogOpen}
+        onClose={() => {
+          if (!smartCommitting) {
+            setSmartDialogOpen(false);
+            setSmartFile(null);
+            setSmartDetection(null);
+          }
+        }}
+        detection={smartDetection}
+        fileName={smartFile?.name ?? ""}
+        onCommit={handleSmartCommit}
+        isCommitting={smartCommitting}
+      />
     </div>
   );
 }
