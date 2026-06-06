@@ -51,6 +51,7 @@ import {
   scopeTypeHref,
   scopeItemHref,
   scopeContextItemsHref,
+  scopeEditHref,
 } from "@/features/scope-system/utils/scopeRoutes";
 
 interface ScopeDetailEditorProps {
@@ -259,22 +260,30 @@ export function ScopeDetailEditor({
             {scope.name}
           </span>
         </div>
-        {canManage && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="shrink-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-          >
-            {deleting ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-            )}
-            Delete
+        <div className="flex items-center gap-2 shrink-0">
+          <Button asChild variant="outline" size="sm">
+            <Link href={scopeEditHref(orgSlugOrId, scopeType, scope)}>
+              <Pencil className="h-3.5 w-3.5 mr-1.5" />
+              Edit settings
+            </Link>
           </Button>
-        )}
+          {canManage && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+            >
+              {deleting ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              Delete
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card className="p-6">
