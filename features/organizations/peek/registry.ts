@@ -30,6 +30,12 @@ export const PEEK_REGISTRY: Record<
   task: lazy(() => import("./kinds/TaskPeek")),
   dataset: lazy(() => import("./kinds/DatasetPeek")),
   transcript: lazy(() => import("./kinds/TranscriptPeek")),
+  agent_shortcut: lazy(() => import("./kinds/ShortcutPeek")),
+  picklist: lazy(() => import("./kinds/ListPeek")),
+  workbook: lazy(() => import("./kinds/WorkbookPeek")),
+  quiz: lazy(() => import("./kinds/QuizPeek")),
+  sandbox: lazy(() => import("./kinds/SandboxPeek")),
+  project: lazy(() => import("./kinds/ProjectPeek")),
   // Add new kinds here as their peek components land.
 };
 
