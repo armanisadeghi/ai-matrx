@@ -5369,6 +5369,7 @@ export type Database = {
           review_interval_days: number | null
           scope_type_id: string
           sensitivity: Database["public"]["Enums"]["context_sensitivity"]
+          slug: string | null
           source_type: Database["public"]["Enums"]["context_source_type"]
           status: Database["public"]["Enums"]["context_item_status"]
           status_note: string | null
@@ -5395,6 +5396,7 @@ export type Database = {
           review_interval_days?: number | null
           scope_type_id: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          slug?: string | null
           source_type?: Database["public"]["Enums"]["context_source_type"]
           status?: Database["public"]["Enums"]["context_item_status"]
           status_note?: string | null
@@ -5421,6 +5423,7 @@ export type Database = {
           review_interval_days?: number | null
           scope_type_id?: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          slug?: string | null
           source_type?: Database["public"]["Enums"]["context_source_type"]
           status?: Database["public"]["Enums"]["context_item_status"]
           status_note?: string | null
@@ -5713,6 +5716,7 @@ export type Database = {
           max_assignments_per_entity: number | null
           organization_id: string
           parent_type_id: string | null
+          slug: string | null
           sort_order: number
           updated_at: string
         }
@@ -5728,6 +5732,7 @@ export type Database = {
           max_assignments_per_entity?: number | null
           organization_id: string
           parent_type_id?: string | null
+          slug?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -5743,6 +5748,7 @@ export type Database = {
           max_assignments_per_entity?: number | null
           organization_id?: string
           parent_type_id?: string | null
+          slug?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -5774,6 +5780,7 @@ export type Database = {
           parent_scope_id: string | null
           scope_type_id: string
           settings: Json
+          slug: string | null
           updated_at: string
         }
         Insert: {
@@ -5786,6 +5793,7 @@ export type Database = {
           parent_scope_id?: string | null
           scope_type_id: string
           settings?: Json
+          slug?: string | null
           updated_at?: string
         }
         Update: {
@@ -5798,6 +5806,7 @@ export type Database = {
           parent_scope_id?: string | null
           scope_type_id?: string
           settings?: Json
+          slug?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -24779,6 +24788,7 @@ export type Database = {
           p_key: string
           p_scope_type_id: string
           p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          p_slug?: string
           p_tags?: string[]
           p_value_type: Database["public"]["Enums"]["context_value_type"]
         }
@@ -24823,12 +24833,14 @@ export type Database = {
           p_org_id: string
           p_parent_scope_id?: string
           p_settings?: Json
+          p_slug?: string
           p_type_id: string
         }
         Returns: Json
       }
       create_scope_type: {
         Args: {
+          p_color?: string
           p_default_variable_keys?: string[]
           p_description?: string
           p_icon?: string
@@ -24837,6 +24849,7 @@ export type Database = {
           p_max_assignments?: number
           p_org_id: string
           p_parent_type_id?: string
+          p_slug?: string
           p_sort_order?: number
         }
         Returns: Json
@@ -28234,16 +28247,19 @@ export type Database = {
           p_name?: string
           p_scope_id: string
           p_settings?: Json
+          p_slug?: string
         }
         Returns: Json
       }
       update_scope_type: {
         Args: {
+          p_color?: string
           p_description?: string
           p_icon?: string
           p_label_plural?: string
           p_label_singular?: string
           p_max_assignments?: number
+          p_slug?: string
           p_sort_order?: number
           p_type_id: string
         }

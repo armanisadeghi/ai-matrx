@@ -8,7 +8,6 @@ import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { ScopeDetailEditor } from "@/features/scope-system/components/ScopeDetailEditor";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { fetchScopeTypes } from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import { fetchScopes } from "@/features/agent-context/redux/scope/scopesSlice";
 
 export default function ScopeDetailPage() {
   const params = useParams();
@@ -31,7 +30,6 @@ export default function ScopeDetailPage() {
         }
         setOrgId(org.id);
         dispatch(fetchScopeTypes(org.id));
-        dispatch(fetchScopes({ org_id: org.id, type_id: typeId }));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load");
       } finally {
@@ -58,7 +56,12 @@ export default function ScopeDetailPage() {
   return (
     <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
       <div className="max-w-4xl mx-auto p-6 md:p-8">
-        <ScopeDetailEditor orgSlugOrId={orgSlugOrId} scopeId={scopeId} />
+        <ScopeDetailEditor
+          orgId={orgId}
+          orgSlugOrId={orgSlugOrId}
+          typeParam={typeId}
+          scopeParam={scopeId}
+        />
       </div>
     </div>
   );

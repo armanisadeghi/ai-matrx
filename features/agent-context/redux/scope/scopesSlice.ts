@@ -9,6 +9,7 @@ import {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { Scope } from "./types";
+import { isUuid } from "@/features/scope-system/utils/slugify";
 
 const scopesAdapter = createEntityAdapter<Scope>({
   sortComparer: (a, b) => a.name.localeCompare(b.name),
@@ -70,6 +71,7 @@ export const createScope = createAsyncThunk(
     parent_scope_id?: string;
     description?: string;
     settings?: Record<string, unknown>;
+    slug?: string;
   }) => {
     const { data, error } = await supabase.rpc("create_scope", {
       p_org_id: params.org_id,
@@ -78,6 +80,7 @@ export const createScope = createAsyncThunk(
       p_parent_scope_id: params.parent_scope_id ?? undefined,
       p_description: params.description ?? "",
       p_settings: params.settings ?? {},
+      p_slug: params.slug ?? undefined,
     });
     if (error) throw error;
     return data as Scope;
@@ -91,12 +94,14 @@ export const updateScope = createAsyncThunk(
     name?: string;
     description?: string;
     settings?: Record<string, unknown>;
+    slug?: string;
   }) => {
     const { data, error } = await supabase.rpc("update_scope", {
       p_scope_id: params.scope_id,
       p_name: params.name,
       p_description: params.description,
       p_settings: params.settings,
+      p_slug: params.slug,
     });
     if (error) throw error;
     return data as Scope;
@@ -210,6 +215,25 @@ export const selectScopesByOrg = createSelector(
 export const selectScopesByType = createSelector(
   [selectAllScopes, (_state: StateWithScopes, typeId: string) => typeId],
   (scopes, typeId) => scopes.filter((s) => s.scope_type_id === typeId),
+);
+
+/**
+ * Resolve a route segment (UUID or kebab slug) to a scope within a scope type.
+ * Slugs are unique per scope type; ids are globally unique.
+ */
+export const selectScopeBySlugOrId = createSelector(
+  [
+    selectAllScopes,
+    (_s: StateWithScopes, typeId: string | undefined) => typeId,
+    (_s: StateWithScopes, _typeId: string | undefined, slugOrId: string) =>
+      slugOrId,
+  ],
+  (scopes, typeId, slugOrId) =>
+    isUuid(slugOrId)
+      ? scopes.find((s) => s.id === slugOrId)
+      : scopes.find(
+          (s) => s.scope_type_id === typeId && s.slug === slugOrId,
+        ),
 );
 
 export const selectChildScopes = createSelector(

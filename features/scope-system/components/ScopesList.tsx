@@ -43,7 +43,7 @@ import {
   fetchScopes,
   selectScopesByType,
 } from "@/features/agent-context/redux/scope/scopesSlice";
-import { selectScopeTypeById } from "@/features/agent-context/redux/scope/scopeTypesSlice";
+import { selectScopeTypeBySlugOrId } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import {
   listScopeTypeItems,
   selectItemsByType,
@@ -55,6 +55,10 @@ import {
   type ScopeContextRow,
 } from "@/features/scope-system/redux/scopeValuesSlice";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import {
+  orgScopesHref,
+  scopeHref,
+} from "@/features/scope-system/utils/scopeRoutes";
 
 const MAX_COLUMNS = 6;
 
@@ -77,11 +81,19 @@ export function ScopesList({
 }: ScopesListProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const scopeType = useAppSelector((s) => selectScopeTypeById(s, typeId));
-  const scopes = useAppSelector((s) => selectScopesByType(s, typeId));
-  const items = useAppSelector((s) => selectItemsByType(s, typeId));
+  // `typeId` is the route segment — a UUID or a kebab slug. Resolve to the row.
+  const scopeType = useAppSelector((s) =>
+    selectScopeTypeBySlugOrId(s, orgId, typeId),
+  );
+  const resolvedTypeId = scopeType?.id;
+  const scopes = useAppSelector((s) =>
+    selectScopesByType(s, resolvedTypeId ?? ""),
+  );
+  const items = useAppSelector((s) =>
+    selectItemsByType(s, resolvedTypeId ?? ""),
+  );
   const itemsLoaded = useAppSelector((s) =>
-    selectItemsLoadedForType(s, typeId),
+    selectItemsLoadedForType(s, resolvedTypeId ?? ""),
   );
 
   const [adding, setAdding] = useState(false);
@@ -90,9 +102,10 @@ export function ScopesList({
   const [addingItem, setAddingItem] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchScopes({ org_id: orgId, type_id: typeId }));
-    dispatch(listScopeTypeItems(typeId));
-  }, [dispatch, orgId, typeId]);
+    if (!resolvedTypeId) return;
+    dispatch(fetchScopes({ org_id: orgId, type_id: resolvedTypeId }));
+    dispatch(listScopeTypeItems(resolvedTypeId));
+  }, [dispatch, orgId, resolvedTypeId]);
 
   useEffect(() => {
     for (const scope of scopes) {
@@ -139,7 +152,7 @@ export function ScopesList({
         </Button>
         <span className="text-muted-foreground/50">·</span>
         <Link
-          href={`/organizations/${orgSlug}/scopes`}
+          href={orgScopesHref(orgSlug)}
           className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
         >
           {orgIsPersonal ? (
@@ -218,8 +231,8 @@ export function ScopesList({
         open={editingType}
         onOpenChange={setEditingType}
         orgId={orgId}
-        typeId={typeId}
-        onDeleted={() => router.push(`/organizations/${orgSlugOrId}/scopes`)}
+        typeId={scopeType.id}
+        onDeleted={() => router.push(orgScopesHref(orgSlugOrId))}
       />
 
       {/* ── Individual scopes (tabular) ──────────────────────────── */}
@@ -242,15 +255,13 @@ export function ScopesList({
         {adding && (
           <NewScopeInline
             orgId={orgId}
-            typeId={typeId}
+            typeId={scopeType.id}
             labelSingular={scopeType.label_singular}
             labelPlural={scopeType.label_plural}
             onCancel={() => setAdding(false)}
             onCreated={(scopeId) => {
               setAdding(false);
-              router.push(
-                `/organizations/${orgSlugOrId}/scopes/${typeId}/${scopeId}`,
-              );
+              router.push(scopeHref(orgSlugOrId, scopeType, { id: scopeId }));
             }}
           />
         )}
@@ -316,9 +327,7 @@ export function ScopesList({
                       columns={columns}
                       overflowCount={overflowCount}
                       onClick={() =>
-                        router.push(
-                          `/organizations/${orgSlugOrId}/scopes/${typeId}/${scope.id}`,
-                        )
+                        router.push(scopeHref(orgSlugOrId, scopeType, scope))
                       }
                     />
                   ))}
@@ -439,7 +448,7 @@ export function ScopesList({
               {addingItem && (
                 <div className="p-4 bg-muted/20">
                   <ContextItemAddForm
-                    scopeTypeId={typeId}
+                    scopeTypeId={scopeType.id}
                     labelPlural={scopeType.label_plural}
                     onClose={() => setAddingItem(false)}
                   />

@@ -7,6 +7,7 @@ import {
   createSelector,
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
+import { isUuid } from "@/features/scope-system/utils/slugify";
 import type {
   ContextValueType,
   ContextFetchHint,
@@ -25,6 +26,7 @@ export interface ContextItem {
   id: string;
   scope_type_id: string;
   key: string;
+  slug?: string | null;
   display_name: string;
   description: string;
   category: string | null;
@@ -73,6 +75,7 @@ export const updateContextItem = createAsyncThunk(
   async (params: {
     id: string;
     display_name?: string;
+    slug?: string | null;
     description?: string;
     category?: string | null;
     value_type?: ContextValueType;
@@ -86,6 +89,7 @@ export const updateContextItem = createAsyncThunk(
     const patch: Record<string, unknown> = {};
     if (params.display_name !== undefined)
       patch.display_name = params.display_name;
+    if (params.slug !== undefined) patch.slug = params.slug;
     if (params.description !== undefined) patch.description = params.description;
     if (params.category !== undefined) patch.category = params.category;
     if (params.value_type !== undefined) patch.value_type = params.value_type;
@@ -133,6 +137,7 @@ export const createContextItem = createAsyncThunk(
     fetch_hint?: ContextFetchHint;
     sensitivity?: ContextSensitivity;
     tags?: string[];
+    slug?: string;
   }) => {
     const { data, error } = await supabase.rpc("create_context_item", {
       p_scope_type_id: params.scope_type_id,
@@ -144,6 +149,7 @@ export const createContextItem = createAsyncThunk(
       p_fetch_hint: params.fetch_hint ?? "on_demand",
       p_sensitivity: params.sensitivity ?? "internal",
       p_tags: params.tags ?? [],
+      p_slug: params.slug ?? undefined,
     });
     if (error) throw error;
     return data as ContextItem;
@@ -205,6 +211,23 @@ export const selectItemsByType = createSelector(
     (_state: StateWithContextItems, typeId: string) => typeId,
   ],
   (items, typeId) => items.filter((i) => i.scope_type_id === typeId),
+);
+
+/**
+ * Resolve a route segment (UUID or kebab slug) to a context item within a scope
+ * type. Slugs are unique per scope type; ids are globally unique.
+ */
+export const selectItemBySlugOrId = createSelector(
+  [
+    selectAllContextItems,
+    (_s: StateWithContextItems, typeId: string | undefined) => typeId,
+    (_s: StateWithContextItems, _typeId: string | undefined, slugOrId: string) =>
+      slugOrId,
+  ],
+  (items, typeId, slugOrId) =>
+    isUuid(slugOrId)
+      ? items.find((i) => i.id === slugOrId)
+      : items.find((i) => i.scope_type_id === typeId && i.slug === slugOrId),
 );
 
 export const selectItemsLoadedForType = (

@@ -19,11 +19,12 @@ import { toast } from "sonner";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectScopeById,
+  fetchScopes,
+  selectScopeBySlugOrId,
   updateScope,
   deleteScope,
 } from "@/features/agent-context/redux/scope/scopesSlice";
-import { selectScopeTypeById } from "@/features/agent-context/redux/scope/scopeTypesSlice";
+import { selectScopeTypeBySlugOrId } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import {
   getScopeContext,
   selectValuesByScope,
@@ -34,24 +35,41 @@ import { AddContextItemInline } from "./AddContextItemInline";
 import { EditScopeTypeSheet } from "./EditScopeTypeSheet";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import {
+  orgScopesHref,
+  scopeTypeHref,
+} from "@/features/scope-system/utils/scopeRoutes";
 
 interface ScopeDetailEditorProps {
+  orgId: string;
   orgSlugOrId: string;
-  scopeId: string;
+  /** Route segment for the scope type — UUID or kebab slug. */
+  typeParam: string;
+  /** Route segment for the scope — UUID or kebab slug. */
+  scopeParam: string;
 }
 
 export function ScopeDetailEditor({
+  orgId,
   orgSlugOrId,
-  scopeId,
+  typeParam,
+  scopeParam,
 }: ScopeDetailEditorProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const scope = useAppSelector((s) => selectScopeById(s, scopeId));
+  // Both route segments resolve by UUID or kebab slug.
   const scopeType = useAppSelector((s) =>
-    scope ? selectScopeTypeById(s, scope.scope_type_id) : undefined,
+    selectScopeTypeBySlugOrId(s, orgId, typeParam),
   );
-  const rows = useAppSelector((s) => selectValuesByScope(s, scopeId));
-  const loading = useAppSelector((s) => selectScopeValuesLoading(s, scopeId));
+  const resolvedTypeId = scopeType?.id;
+  const scope = useAppSelector((s) =>
+    selectScopeBySlugOrId(s, resolvedTypeId, scopeParam),
+  );
+  const scopeId = scope?.id;
+  const rows = useAppSelector((s) => selectValuesByScope(s, scopeId ?? ""));
+  const loading = useAppSelector((s) =>
+    selectScopeValuesLoading(s, scopeId ?? ""),
+  );
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
@@ -65,6 +83,12 @@ export function ScopeDetailEditor({
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
+    if (!resolvedTypeId) return;
+    dispatch(fetchScopes({ org_id: orgId, type_id: resolvedTypeId }));
+  }, [dispatch, orgId, resolvedTypeId]);
+
+  useEffect(() => {
+    if (!scopeId) return;
     dispatch(getScopeContext({ scope_id: scopeId, include_empty: true }));
   }, [dispatch, scopeId]);
 
@@ -95,7 +119,7 @@ export function ScopeDetailEditor({
     }
     setSavingName(true);
     try {
-      await dispatch(updateScope({ scope_id: scopeId, name: next })).unwrap();
+      await dispatch(updateScope({ scope_id: scope.id, name: next })).unwrap();
       toast.success("Renamed");
       setEditingName(false);
     } catch (err) {
@@ -115,7 +139,7 @@ export function ScopeDetailEditor({
     setSavingDescription(true);
     try {
       await dispatch(
-        updateScope({ scope_id: scopeId, description: next }),
+        updateScope({ scope_id: scope.id, description: next }),
       ).unwrap();
       toast.success("Description updated");
       setEditingDescription(false);
@@ -139,9 +163,9 @@ export function ScopeDetailEditor({
     if (!ok) return;
     setDeleting(true);
     try {
-      await dispatch(deleteScope(scopeId)).unwrap();
+      await dispatch(deleteScope(scope.id)).unwrap();
       toast.success(`Deleted “${scope.name}”`);
-      router.push(`/organizations/${orgSlugOrId}/scopes/${scopeType.id}`);
+      router.push(scopeTypeHref(orgSlugOrId, scopeType));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete");
       setDeleting(false);
@@ -327,13 +351,13 @@ export function ScopeDetailEditor({
         {rows && rows.length > 0 && (
           <div className="space-y-5">
             {rows.map((row) => (
-              <ScopeFieldInput key={row.item_id} scopeId={scopeId} row={row} />
+              <ScopeFieldInput key={row.item_id} scopeId={scope.id} row={row} />
             ))}
           </div>
         )}
         <div className="pt-2 border-t">
           <AddContextItemInline
-            scopeId={scopeId}
+            scopeId={scope.id}
             scopeTypeId={scopeType.id}
             labelPlural={scopeType.label_plural}
           />
@@ -345,7 +369,7 @@ export function ScopeDetailEditor({
         onOpenChange={setEditingType}
         orgId={scopeType.organization_id}
         typeId={scopeType.id}
-        onDeleted={() => router.push(`/organizations/${orgSlugOrId}/scopes`)}
+        onDeleted={() => router.push(orgScopesHref(orgSlugOrId))}
       />
     </div>
   );

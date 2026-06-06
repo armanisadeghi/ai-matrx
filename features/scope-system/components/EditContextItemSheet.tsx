@@ -46,6 +46,7 @@ import {
   VALUE_TYPE_CONFIG,
   DEFAULT_CATEGORIES,
 } from "@/features/agent-context/constants";
+import { toSlug } from "@/features/scope-system/utils/slugify";
 
 interface EditContextItemSheetProps {
   open: boolean;
@@ -66,6 +67,7 @@ export function EditContextItemSheet({
   const [busy, setBusy] = useState(false);
 
   const [displayName, setDisplayName] = useState("");
+  const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [valueType, setValueType] = useState<ContextValueType>("string");
@@ -80,6 +82,7 @@ export function EditContextItemSheet({
   useEffect(() => {
     if (!open || !item) return;
     setDisplayName(item.display_name);
+    setSlug(item.slug ?? "");
     setDescription(item.description ?? "");
     setCategory(item.category ?? "");
     setValueType(item.value_type);
@@ -113,6 +116,11 @@ export function EditContextItemSheet({
       toast.error("Display name is required");
       return;
     }
+    const trimmedSlug = slug.trim();
+    if (trimmedSlug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(trimmedSlug)) {
+      toast.error("URL slug must be lowercase letters, numbers, and hyphens");
+      return;
+    }
     setBusy(true);
     try {
       const parsedInterval = reviewIntervalDays.trim()
@@ -122,6 +130,7 @@ export function EditContextItemSheet({
         updateContextItem({
           id: item.id,
           display_name: trimmedName,
+          slug: trimmedSlug || null,
           description: description.trim(),
           category: category.trim() || null,
           value_type: valueType,
@@ -189,6 +198,33 @@ export function EditContextItemSheet({
             />
             <p className="text-[10px] font-mono text-muted-foreground">
               <Hash className="h-2.5 w-2.5 inline -mt-0.5" /> {item.key}
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">URL slug</Label>
+            <div className="flex gap-2">
+              <Input
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                placeholder={toSlug(displayName) || "url-slug"}
+                style={{ fontSize: "16px" }}
+                disabled={busy}
+                className="flex-1 font-mono"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setSlug(toSlug(displayName))}
+                disabled={busy || !displayName.trim()}
+              >
+                Auto
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Human-readable segment in the item URL. Must be unique within this
+              scope type.
             </p>
           </div>
 

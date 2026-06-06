@@ -141,8 +141,20 @@ one at a time. Some surfaces are routes, some are drawers — get organized abou
   `ContextValueFormData`). aidream `db/models.py` regenerated (DATE enum + `value_date` DateField).
   Verified end-to-end at the DB layer: create date item → `set_scope_context_value(p_value_date)` → stored &
   returned → `get_scope_context` emits `value_date`. Task 3 #7.
-- **Wave 3 — slug routing.** slug columns + backfill + unique indexes; RPCs emit/accept slug; FE resolvers +
-  URL builder + advanced-edit slug field. Task 1 core.
+- **Wave 3 — slug routing.** ✅ DONE (core). DB: `slug` on `ctx_scope_types` (uniq per org),
+  `ctx_scopes` (uniq per type), `ctx_context_items` (uniq per type, active) — backfilled kebab + partial-unique
+  indexes (`migrations/ctx_add_slugs.sql`). RPCs: create/update_scope_type (+`p_color`,`p_slug`),
+  create/update_scope (+`p_slug`), create_context_item (+`p_slug`) carry slug; `list_scope_type_items` +
+  `get_scope_context` emit `slug`; `list_scope_types`/`list_scopes` emit via `to_jsonb`. FE: `toSlug`/`isUuid`
+  (`utils/slugify.ts`), `scopeRoutes.ts` URL builder, resolver selectors `selectScopeTypeBySlugOrId` /
+  `selectScopeBySlugOrId` / `selectItemBySlugOrId`; `ScopesList` + `ScopeDetailEditor` resolve the route
+  segments as slug-or-id and emit slug hrefs; auto-gen slug on create (ContextItemAddForm, NewScopeInline,
+  EditScopeTypeSheet rapid-add) and editable slug in advanced edit (EditScopeTypeSheet, EditContextItemSheet).
+  Color now persists via the RPC (`p_color`) — the `persistColorIfChanged` direct-write workaround is gone.
+  Canonical URL: `/organizations/:org/scopes/:typeSlug/:scopeSlug`. **Follow-up:** the org-overview
+  `ScopesManager` and global `ScopeDetailView` (both `features/scopes/`) still emit id hrefs (they resolve
+  fine) — slug them when threading slug through the `features/scopes` node types. Scope-slug *editing* UI
+  folds into Wave 4 (scope advanced edit alongside settings JSON). Task 1 core.
 - **Wave 4 — scope settings JSON + `/scopes`-less alias.** `update_scope` settings editor; Next.js rewrite. Task 1 tail.
 - **Wave 5 — item detail route + inventory gaps.** Item detail (`…/:itemSlug`) + cross-scope value view; then
   page-by-page VIEW/EDIT/ADVANCED per the user's further guidance. Big Picture.

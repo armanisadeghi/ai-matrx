@@ -16,7 +16,7 @@ import {
   selectItemsLoadedForType,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
-import { slugifyKey } from "@/features/scope-system/utils/slugify";
+import { slugifyKey, toSlug } from "@/features/scope-system/utils/slugify";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 
 interface NewScopeInlineProps {
@@ -111,6 +111,7 @@ export function NewScopeInline({
           type_id: typeId,
           name: trimmedName,
           description: description.trim(),
+          slug: toSlug(trimmedName) || undefined,
         }),
       ).unwrap();
 
@@ -134,6 +135,7 @@ export function NewScopeInline({
           createContextItem({
             scope_type_id: typeId,
             key: slugifyKey(displayName) || displayName.toLowerCase(),
+            slug: toSlug(displayName) || undefined,
             display_name: displayName,
           }),
         ).unwrap();

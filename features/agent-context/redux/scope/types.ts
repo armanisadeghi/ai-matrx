@@ -7,6 +7,7 @@ export interface ScopeType {
   icon: string;
   description: string;
   color: string;
+  slug?: string | null;
   sort_order: number;
   max_assignments_per_entity: number | null;
   default_variable_keys: string[];
@@ -20,6 +21,7 @@ export interface Scope {
   scope_type_id: string;
   parent_scope_id: string | null;
   name: string;
+  slug?: string | null;
   description: string;
   settings: Record<string, unknown>;
   created_by: string | null;
