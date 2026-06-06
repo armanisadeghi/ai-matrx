@@ -61,6 +61,8 @@ export function useScopeAutoSave(
       } else {
         payload.value_text = next;
       }
+    } else if (valueType === "date") {
+      payload.value_date = next || null;
     } else if (valueType === "document") {
       payload.value_document_url = next || null;
     } else if (valueType === "object" || valueType === "array") {

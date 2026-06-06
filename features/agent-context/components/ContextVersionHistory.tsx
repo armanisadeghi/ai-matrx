@@ -64,6 +64,7 @@ export function ContextVersionHistory({ itemId, scope }: Props) {
         value_text: active.value_text,
         value_number: active.value_number,
         value_boolean: active.value_boolean,
+        value_date: active.value_date,
         value_json: restoredValueJson(active.value_json),
         value_document_url: active.value_document_url,
         value_document_size_bytes: active.value_document_size_bytes,

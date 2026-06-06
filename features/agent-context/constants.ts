@@ -292,6 +292,7 @@ export const VALUE_TYPE_CONFIG: Record<
   string: { label: "String", iconName: "Type" },
   number: { label: "Number", iconName: "Hash" },
   boolean: { label: "Boolean", iconName: "ToggleLeft" },
+  date: { label: "Date", iconName: "Calendar" },
   object: { label: "Object", iconName: "Braces" },
   array: { label: "Array", iconName: "List" },
   document: { label: "Document", iconName: "FileText" },

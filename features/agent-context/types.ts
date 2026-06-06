@@ -24,6 +24,7 @@ export type ContextValueType =
   | "string"
   | "number"
   | "boolean"
+  | "date"
   | "object"
   | "array"
   | "document"
@@ -117,6 +118,7 @@ export type ContextValueFormData = {
   value_text: string | null;
   value_number: number | null;
   value_boolean: boolean | null;
+  value_date: string | null;
   value_json: Record<string, unknown> | unknown[] | null;
   value_document_url: string | null;
   value_document_size_bytes: number | null;

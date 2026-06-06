@@ -78,6 +78,9 @@ function DetailPreview({ value, valueType }: { value?: ContextItemValue | null; 
         </div>
       );
 
+    case 'date':
+      return <p className="text-lg font-mono font-semibold">{value.value_date}</p>;
+
     case 'object':
       return <ObjectPreview data={value.value_json as Record<string, unknown>} dataPointCount={value.data_point_count} />;
 

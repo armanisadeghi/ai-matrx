@@ -69,6 +69,7 @@ export function ContextItemForm({ item, value, defaultScopeTypeId, onSave, isPen
   const [valueText, setValueText] = useState(value?.value_text ?? '');
   const [valueNumber, setValueNumber] = useState(value?.value_number ?? 0);
   const [valueBoolean, setValueBoolean] = useState(value?.value_boolean ?? false);
+  const [valueDate, setValueDate] = useState(value?.value_date ?? '');
   const [valueJson, setValueJson] = useState<{ key: string; value: string }[]>(
     value?.value_json && typeof value.value_json === 'object' && !Array.isArray(value.value_json)
       ? Object.entries(value.value_json).map(([k, v]) => ({ key: k, value: String(v) }))
@@ -88,6 +89,7 @@ export function ContextItemForm({ item, value, defaultScopeTypeId, onSave, isPen
   useEffect(() => {
     if (!isEdit && displayName) {
       const generated = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setKey(generated);
     }
   }, [displayName, isEdit]);
@@ -127,12 +129,13 @@ export function ContextItemForm({ item, value, defaultScopeTypeId, onSave, isPen
 
   const buildValueData = (): ContextValueFormData => {
     const base = { change_summary: changeSummary || null };
-    const empty = { value_text: null, value_number: null, value_boolean: null, value_json: null, value_document_url: null, value_document_size_bytes: null, value_reference_id: null, value_reference_type: null };
+    const empty = { value_text: null, value_number: null, value_boolean: null, value_date: null, value_json: null, value_document_url: null, value_document_size_bytes: null, value_reference_id: null, value_reference_type: null };
 
     switch (valueType) {
       case 'string': return { ...empty, ...base, value_text: valueText || null };
       case 'number': return { ...empty, ...base, value_number: valueNumber };
       case 'boolean': return { ...empty, ...base, value_boolean: valueBoolean };
+      case 'date': return { ...empty, ...base, value_date: valueDate || null };
       case 'object': {
         const obj: Record<string, unknown> = {};
         valueJson.forEach(r => { if (r.key) obj[r.key] = r.value; });
@@ -333,6 +336,7 @@ export function ContextItemForm({ item, value, defaultScopeTypeId, onSave, isPen
               valueText={valueText} onValueTextChange={setValueText}
               valueNumber={valueNumber} onValueNumberChange={setValueNumber}
               valueBoolean={valueBoolean} onValueBooleanChange={setValueBoolean}
+              valueDate={valueDate} onValueDateChange={setValueDate}
               valueJson={valueJson} onValueJsonChange={setValueJson}
               valueArray={valueArray} onValueArrayChange={setValueArray}
               valueDocUrl={valueDocUrl} onValueDocUrlChange={setValueDocUrl}
@@ -513,6 +517,7 @@ type ValueInputProps = {
   valueText: string; onValueTextChange: (v: string) => void;
   valueNumber: number; onValueNumberChange: (v: number) => void;
   valueBoolean: boolean; onValueBooleanChange: (v: boolean) => void;
+  valueDate: string; onValueDateChange: (v: string) => void;
   valueJson: { key: string; value: string }[]; onValueJsonChange: (v: { key: string; value: string }[]) => void;
   valueArray: string[]; onValueArrayChange: (v: string[]) => void;
   valueDocUrl: string; onValueDocUrlChange: (v: string) => void;
@@ -552,6 +557,15 @@ function ValueInput(props: ValueInputProps) {
           <Switch checked={props.valueBoolean} onCheckedChange={props.onValueBooleanChange} />
           <span className="text-sm font-medium">{props.valueBoolean ? 'True' : 'False'}</span>
         </div>
+      );
+    case 'date':
+      return (
+        <Input
+          type="date"
+          value={props.valueDate}
+          onChange={e => props.onValueDateChange(e.target.value)}
+          className="text-sm max-w-[200px]"
+        />
       );
     case 'object':
       return (

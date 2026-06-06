@@ -55,6 +55,7 @@ function EditItemContent({ itemId }: { itemId: string }) {
             valueData.value_text ||
             valueData.value_number != null ||
             valueData.value_boolean != null ||
+            valueData.value_date ||
             valueData.value_json ||
             valueData.value_document_url ||
             valueData.value_reference_id;

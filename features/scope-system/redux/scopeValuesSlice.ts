@@ -28,6 +28,7 @@ export interface ScopeContextRow {
   value_number: number | null;
   value_boolean: boolean | null;
   value_json: unknown | null;
+  value_date: string | null;
   value_document_url: string | null;
   version: number | null;
   updated_at: string | null;
@@ -80,6 +81,7 @@ export const setScopeContextValue = createAsyncThunk(
     value_number?: number | null;
     value_boolean?: boolean | null;
     value_json?: unknown;
+    value_date?: string | null;
     value_document_url?: string | null;
     change_summary?: string;
   }) => {
@@ -90,6 +92,7 @@ export const setScopeContextValue = createAsyncThunk(
       p_value_number: params.value_number ?? undefined,
       p_value_boolean: params.value_boolean ?? undefined,
       p_value_json: params.value_json ?? undefined,
+      p_value_date: params.value_date ?? undefined,
       p_value_document_url: params.value_document_url ?? undefined,
       p_change_summary: params.change_summary ?? undefined,
     });
@@ -102,6 +105,7 @@ export const setScopeContextValue = createAsyncThunk(
         value_number: number | null;
         value_boolean: boolean | null;
         value_json: unknown | null;
+        value_date: string | null;
         value_document_url: string | null;
         version: number;
         created_at: string;
@@ -177,6 +181,7 @@ const slice = createSlice({
                   value_number: value.value_number,
                   value_boolean: value.value_boolean,
                   value_json: value.value_json,
+                  value_date: value.value_date,
                   value_document_url: value.value_document_url,
                   version: value.version,
                   updated_at: value.created_at,
@@ -240,6 +245,7 @@ export const makeEmptyRowFromItem = (item: ContextItem): ScopeContextRow => ({
   value_number: null,
   value_boolean: null,
   value_json: null,
+  value_date: null,
   value_document_url: null,
   version: null,
   updated_at: null,

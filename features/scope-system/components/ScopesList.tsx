@@ -557,6 +557,7 @@ function renderValue(row: ScopeContextRow): string {
   if (row.value_text) return row.value_text;
   if (row.value_number != null) return String(row.value_number);
   if (row.value_boolean != null) return row.value_boolean ? "Yes" : "No";
+  if (row.value_date) return row.value_date;
   if (row.value_document_url) return row.value_document_url;
   if (row.value_json) {
     try {

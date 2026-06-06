@@ -5279,6 +5279,7 @@ export type Database = {
           scope_id: string
           source_type: Database["public"]["Enums"]["context_source_type"]
           value_boolean: boolean | null
+          value_date: string | null
           value_document_size_bytes: number | null
           value_document_url: string | null
           value_json: Json | null
@@ -5301,6 +5302,7 @@ export type Database = {
           scope_id: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
           value_boolean?: boolean | null
+          value_date?: string | null
           value_document_size_bytes?: number | null
           value_document_url?: string | null
           value_json?: Json | null
@@ -5323,6 +5325,7 @@ export type Database = {
           scope_id?: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
           value_boolean?: boolean | null
+          value_date?: string | null
           value_document_size_bytes?: number | null
           value_document_url?: string | null
           value_json?: Json | null
@@ -11462,6 +11465,10 @@ export type Database = {
           permission_level: Database["public"]["Enums"]["permission_level"]
           resource_id: string
           resource_type: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
         }
         Insert: {
           created_at?: string | null
@@ -11473,6 +11480,10 @@ export type Database = {
           permission_level?: Database["public"]["Enums"]["permission_level"]
           resource_id: string
           resource_type: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
         }
         Update: {
           created_at?: string | null
@@ -11484,6 +11495,10 @@ export type Database = {
           permission_level?: Database["public"]["Enums"]["permission_level"]
           resource_id?: string
           resource_type?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
         }
         Relationships: [
           {
@@ -27634,6 +27649,10 @@ export type Database = {
         Args: { p_entity_id: string; p_entity_type: string; p_version: number }
         Returns: number
       }
+      review_org_share: {
+        Args: { p_note?: string; p_permission_id: string; p_status: string }
+        Returns: Json
+      }
       revoke_resource_access: {
         Args: {
           p_resource_id: string
@@ -27777,6 +27796,7 @@ export type Database = {
           p_context_item_id: string
           p_scope_id: string
           p_value_boolean?: boolean
+          p_value_date?: string
           p_value_document_url?: string
           p_value_json?: Json
           p_value_number?: number
@@ -28695,6 +28715,7 @@ export type Database = {
         | "array"
         | "document"
         | "reference"
+        | "date"
       cx_agent_task_creator: "agent" | "user"
       cx_agent_task_status:
         | "pending"
@@ -29443,6 +29464,7 @@ export const Constants = {
         "array",
         "document",
         "reference",
+        "date",
       ],
       cx_agent_task_creator: ["agent", "user"],
       cx_agent_task_status: [

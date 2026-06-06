@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Loader2, AlertCircle, Pencil, Maximize2 } from "lucide-react";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useScopeAutoSave } from "@/features/scope-system/hooks/useScopeAutoSave";
 import type { ScopeContextRow } from "@/features/scope-system/redux/scopeValuesSlice";
@@ -18,6 +19,7 @@ function rowToString(row: ScopeContextRow): string {
   if (row.value_text != null) return row.value_text;
   if (row.value_number != null) return String(row.value_number);
   if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
+  if (row.value_date != null) return row.value_date;
   if (row.value_document_url != null) return row.value_document_url;
   if (row.value_json != null) {
     try {
@@ -52,6 +54,8 @@ export function ScopeFieldInput({ scopeId, row }: ScopeFieldInputProps) {
   // effect on every keystroke, wiping the value back to `initial`.
   useEffect(() => {
     if (isDirtyRef.current) return;
+    // Intentional store→input sync when not mid-edit; see the comment above.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(initial);
   }, [initial]);
 
@@ -88,22 +92,39 @@ export function ScopeFieldInput({ scopeId, row }: ScopeFieldInputProps) {
             </Button>
           </div>
         </div>
-        <ProTextarea
-          id={`field-${row.item_id}`}
-          value={value}
-          onChange={(e) => {
-            isDirtyRef.current = true;
-            setValue(e.target.value);
-          }}
-          onBlur={(e) => {
-            isDirtyRef.current = false;
-            commit(e.target.value);
-          }}
-          placeholder={placeholderForType(row.value_type)}
-          minHeight={80}
-          className={isJsonType ? "font-mono text-sm" : undefined}
-          autoGrow
-        />
+        {row.value_type === "date" ? (
+          <Input
+            id={`field-${row.item_id}`}
+            type="date"
+            value={value}
+            onChange={(e) => {
+              isDirtyRef.current = true;
+              setValue(e.target.value);
+            }}
+            onBlur={(e) => {
+              isDirtyRef.current = false;
+              commit(e.target.value);
+            }}
+            style={{ fontSize: "16px" }}
+          />
+        ) : (
+          <ProTextarea
+            id={`field-${row.item_id}`}
+            value={value}
+            onChange={(e) => {
+              isDirtyRef.current = true;
+              setValue(e.target.value);
+            }}
+            onBlur={(e) => {
+              isDirtyRef.current = false;
+              commit(e.target.value);
+            }}
+            placeholder={placeholderForType(row.value_type)}
+            minHeight={80}
+            className={isJsonType ? "font-mono text-sm" : undefined}
+            autoGrow
+          />
+        )}
         {row.description && (
           <p className="text-xs text-muted-foreground">{row.description}</p>
         )}

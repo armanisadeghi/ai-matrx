@@ -112,8 +112,8 @@ one at a time. Some surfaces are routes, some are drawers — get organized abou
 | **Organization** | list `/organizations`; detail `/organizations/[orgId]` | `/organizations/[orgId]/settings` | settings page | no inline edit drawer |
 | **Scope type** | `ScopesList` header (`…/scopes/[typeId]`) | `EditScopeTypeSheet` drawer; admin `…/settings/scopes` | sort order, max-assign (sheet) | no dedicated edit route; **+slug**; carry color/slug in RPCs |
 | **Scope** | `ScopeDetailEditor` (`…/[typeId]/[scopeId]`); global `/scopes/[scopeId]` (read) | inline name/desc on detail | **none yet** | add settings JSON + slug; no edit drawer/route |
-| **Context item** | row in `ScopesList`; `EditContextItemSheet` | `EditContextItemSheet` drawer; inline add | sensitivity, fetch_hint, review, tags (sheet) | no item route; **+slug, +date type** |
-| **Context value** | inline in `ScopeDetailEditor`; column in `ScopesList` | `EditScopeValueSheet`; `ScopeFieldInput` | change_summary, source_type | no value route; **+date input**; cross-scope value view |
+| **Context item** | row in `ScopesList`; `EditContextItemSheet` | `EditContextItemSheet` drawer; inline add | sensitivity, fetch_hint, review, tags (sheet) | no item route; **+slug** (date type ✅ Wave 2) |
+| **Context value** | inline in `ScopeDetailEditor`; column in `ScopesList` | `EditScopeValueSheet`; `ScopeFieldInput` | change_summary, source_type | no value route; cross-scope value view (date input ✅ Wave 2) |
 
 ---
 
@@ -132,8 +132,15 @@ one at a time. Some surfaces are routes, some are drawers — get organized abou
 - **Wave 1 — scope-type page polish (frontend only).** ✅ Task 3 #1–#6, #8, #9. Files: `scope-colors.ts`,
   `ScopeColorPicker.tsx`, `ScopeGlyph.tsx`, `ContextItemAddForm.tsx`, `AddContextItemInline.tsx`,
   `ScopesList.tsx`, `ScopeDetailEditor.tsx`, `EditScopeTypeSheet.tsx`, scope-type `page.tsx`.
-- **Wave 2 — `date` data type.** DB enum + `value_date` + RPCs + version trigger; FE type/config/input/render;
-  aidream `ContextValueType`. Task 3 #7.
+- **Wave 2 — `date` data type.** ✅ DONE. DB: `context_value_type` += `date`, `value_date date` column on
+  `ctx_context_item_values`, RPCs updated (`get_scope_context`, `set_context_value`, `set_scope_context_value`)
+  — recorded in `migrations/ctx_add_date_value_type.sql`. FE: `ContextValueType` += `date`,
+  `VALUE_TYPE_CONFIG` (Calendar icon), `ScopeContextRow`/thunk/reducer + `useScopeAutoSave` + native date
+  inputs in `ScopeFieldInput` & `EditScopeValueSheet` & `ScopesList.renderValue`; legacy `/agent-context/items`
+  editor wired too (`ContextItemForm` ValueInput/buildValueData, `ContextValuePreview`, save guards,
+  `ContextValueFormData`). aidream `db/models.py` regenerated (DATE enum + `value_date` DateField).
+  Verified end-to-end at the DB layer: create date item → `set_scope_context_value(p_value_date)` → stored &
+  returned → `get_scope_context` emits `value_date`. Task 3 #7.
 - **Wave 3 — slug routing.** slug columns + backfill + unique indexes; RPCs emit/accept slug; FE resolvers +
   URL builder + advanced-edit slug field. Task 1 core.
 - **Wave 4 — scope settings JSON + `/scopes`-less alias.** `update_scope` settings editor; Next.js rewrite. Task 1 tail.
