@@ -1,8 +1,8 @@
 # `features/data-tables/collab` — Workbook CRDT v2
 
-**Status:** `scaffolded` (types only — implementation pending)
+**Status:** `implemented` (behind opt-in `collab` flag — needs e2e verification)
 **Tier:** `2` (extension of the Tier 1 data-tables / workbook surface)
-**Last updated:** `2026-06-06`
+**Last updated:** `2026-06-07`
 
 ---
 
