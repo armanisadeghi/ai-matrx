@@ -46,6 +46,7 @@ export type StreamDispatch = (action: unknown) => unknown;
 
 import { processStream } from "./process-stream";
 import type { JsonExtractionConfig } from "./process-stream";
+import { logApiTarget } from "@/lib/api/log-api-target";
 import {
   registerAbortController,
   unregisterAbortController,
@@ -163,9 +164,7 @@ export async function runAiStream(
   // Ground truth for the Creator Hub Routing tab. Derived from the resolved
   // request inputs so turns and resumes produce identical telemetry.
   {
-    const routedClient = body.client as
-      | { capabilities?: string[] }
-      | undefined;
+    const routedClient = body.client as { capabilities?: string[] } | undefined;
     const routedTools = (body.tools ?? body.tools_replace ?? []) as Array<{
       name?: string;
     }>;
@@ -190,6 +189,20 @@ export async function runAiStream(
 
   const abortController = new AbortController();
   registerAbortController(conversationId, abortController);
+
+  // Final resolved target for this AI stream — the URL was fully resolved by
+  // resolveBackendForConversation (incl. the EC2/sandbox override channel) and
+  // cannot change past this point. `channel` surfaces sandbox/override routing.
+  logApiTarget(url, {
+    source: "runAiStream",
+    method: "POST",
+    channel,
+    activeServer: selectActiveServer(getState()),
+    conversationId,
+    requestId,
+    kind,
+    sandboxAttached: body.sandbox != null,
+  });
 
   try {
     const response = await fetch(url, {
@@ -355,9 +368,8 @@ export async function runAiStream(
     // lost. (markInputPersisted, which normally clears it on success, never
     // ran on this path.) Resume never reads the input box, so it passes false.
     if (clearInputOnError) {
-      const { clearUserInput } = await import(
-        "../instance-user-input/instance-user-input.slice"
-      );
+      const { clearUserInput } =
+        await import("../instance-user-input/instance-user-input.slice");
       dispatch(clearUserInput(conversationId));
     }
 

@@ -115,6 +115,7 @@ import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
 import { toast } from "sonner";
 import { resilientFetch } from "@/lib/net/resilient-fetch";
+import { logApiTarget } from "@/lib/api/log-api-target";
 import { toNetError } from "@/lib/net/errors";
 import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
 import {
@@ -603,6 +604,19 @@ export const executeManualInstance = createAsyncThunk<
           );
         }
       }
+
+      // Final resolved target for the Builder's /ai/manual call — base URL was
+      // resolved by resolveBackendForConversation (incl. sandbox/EC2 override)
+      // and cannot change past this point.
+      logApiTarget(url, {
+        source: "executeManualInstance",
+        method: "POST",
+        channel: backend.channel,
+        activeServer: selectActiveServer(state),
+        conversationId,
+        requestId,
+        sandboxAttached: payload.sandbox != null,
+      });
 
       const submitAt = performance.now();
       const abortController = new AbortController();

@@ -77,6 +77,7 @@ import {
 import { isPersonalPseudoOrgId } from "@/features/agent-context/redux/hierarchySlice";
 // BACKEND_URLS no longer needed here — URL resolution is owned by apiConfigSlice
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
+import { logApiTarget } from "@/lib/api/log-api-target";
 import { resilientFetch } from "@/lib/net/resilient-fetch";
 import { isNetError } from "@/lib/net/errors";
 import { extractErrorMessage } from "@/utils/errors";
@@ -871,6 +872,15 @@ export function callApi<
       config.pathParams as Record<string, string> | undefined,
       config.queryParams,
     );
+
+    // Final resolved target — the base URL cannot change past this point.
+    logApiTarget(url, {
+      source: "callApi",
+      method: config.method,
+      channel: config._testOverrides?.forceBaseUrl ? "force" : "global",
+      activeServer: (state as any)?.apiConfig?.activeServer,
+      stream: !!config.stream,
+    });
 
     // ── Step 4: Resolve scope ─────────────────────────────────────────────
     const _scope = resolveScope(state, config.scopeOverrides);

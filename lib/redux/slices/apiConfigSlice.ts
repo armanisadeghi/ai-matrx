@@ -34,6 +34,7 @@ import {
   PayloadAction,
 } from "@reduxjs/toolkit";
 import { BACKEND_URLS, ENDPOINTS } from "@/lib/api/endpoints";
+import { logApiTarget } from "@/lib/api/log-api-target";
 
 // ============================================================================
 // TYPES
@@ -195,8 +196,17 @@ export const checkServerHealth = createAsyncThunk(
     );
     const startMs = performance.now();
 
+    const healthUrl = `${baseUrl}${ENDPOINTS.health.check}`;
+    logApiTarget(healthUrl, {
+      source: "checkServerHealth",
+      method: "GET",
+      channel: "health-check",
+      activeServer: state.apiConfig.activeServer,
+      targetEnv,
+    });
+
     try {
-      const response = await fetch(`${baseUrl}${ENDPOINTS.health.check}`, {
+      const response = await fetch(healthUrl, {
         method: "GET",
         signal: controller.signal,
       });

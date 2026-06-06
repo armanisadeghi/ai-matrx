@@ -18,7 +18,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   listError,
   listPending,
@@ -81,6 +81,7 @@ export function useKgSuggestions(
 ): UseKgSuggestionsResult {
   const { autoFetch = true } = options;
   const dispatch = useAppDispatch();
+  const store = useAppStore();
 
   // React Compiler is on — no manual memoization. `key` is a primitive derived
   // from the filter; `refresh` recomputes params from the filter when called.
@@ -94,12 +95,21 @@ export function useKgSuggestions(
 
   const abortRef = useRef<AbortController | null>(null);
 
+  // Hold the latest filter in a ref so `refresh` can read it without taking the
+  // (always-fresh, object-literal) `filter` as a dependency. Consumers pass an
+  // inline object every render; depending on it would recreate `refresh` every
+  // render, re-run the fetch effect every render, and — because listSuccess
+  // mutates the slice this component subscribes to — spin into an infinite
+  // refetch loop. The stable `key` is the real identity of a filter.
+  const filterRef = useRef(filter);
+  filterRef.current = filter;
+
   const refresh = useCallback(() => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     dispatch(listPending({ key }));
-    void listKgSuggestions(kgFilterToParams(filter), {
+    void listKgSuggestions(kgFilterToParams(filterRef.current), {
       signal: controller.signal,
     })
       .then((page) => {
@@ -111,13 +121,23 @@ export function useKgSuggestions(
         if (controller.signal.aborted) return;
         dispatch(listError({ key, error: errMessage(err) }));
       });
-  }, [dispatch, key, filter]);
+  }, [dispatch, key]);
 
   useEffect(() => {
     if (!autoFetch) return;
+    // Cross-instance dedupe: many surfaces mount the SAME filter key at once
+    // (e.g. the global notifier + a nav button + a page hook all want
+    // `global:pending`). Each would otherwise fire its own identical request.
+    // Read FRESH status from the store at effect time (not the render-time
+    // `status` value) so the second mounting instance sees the first's
+    // `loading` and skips. Only the first idle/errored instance fetches; the
+    // rest read the shared cache. `refresh()` still force-refetches on demand.
+    const entry = store.getState().kgSuggestions.lists[key];
+    const liveStatus: KgListStatus = entry?.status ?? "idle";
+    if (liveStatus === "loading" || liveStatus === "success") return;
     refresh();
     return () => abortRef.current?.abort();
-  }, [autoFetch, refresh]);
+  }, [autoFetch, refresh, key, store]);
 
   const accept = useCallback(
     async (id: string): Promise<KgAcceptResult> => {
