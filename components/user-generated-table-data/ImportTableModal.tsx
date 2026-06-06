@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/utils/supabase/client";
 import Papa from "papaparse";
 import {
@@ -53,6 +53,12 @@ interface ImportTableModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (tableId: string) => void;
+  /**
+   * Optional pre-loaded file (e.g. from the Smart Import handoff on
+   * /workbooks). When provided, the modal opens directly to the preview
+   * stage with this file already parsed.
+   */
+  prefilledFile?: File | null;
 }
 
 // Local alias preserved so existing JSX references continue to type-check.
@@ -62,6 +68,7 @@ export default function ImportTableModal({
   isOpen,
   onClose,
   onSuccess,
+  prefilledFile = null,
 }: ImportTableModalProps) {
   const [activeTab, setActiveTab] = useState<"upload" | "paste">("upload");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +98,17 @@ export default function ImportTableModal({
   // Loading/submission
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Smart Import handoff — when /workbooks routes a typed-looking file here,
+  // it passes it as `prefilledFile`. We auto-process it the same way the
+  // file-picker change handler does, so the user lands on the preview/config
+  // stage without an extra click.
+  useEffect(() => {
+    if (isOpen && prefilledFile) {
+      handleFileSelect(prefilledFile);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, prefilledFile]);
 
   const handleFileSelect = (file: File) => {
     if (!file) return;

@@ -8,9 +8,10 @@ import TableConfigModal from './TableConfigModal';
 import ExportTableModal from './ExportTableModal';
 import TableReferenceOverlay from './TableReferenceOverlay';
 import RowOrderingModal from './RowOrderingModal';
+import PasteRowsDialog from './PasteRowsDialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, X, Download, Pencil, Trash, Settings, Plus, Link, Zap, ArrowUpDown, GripVertical, Eye } from 'lucide-react';
+import { Search, X, Download, Pencil, Trash, Settings, Plus, Link, Zap, ArrowUpDown, GripVertical, Eye, Clipboard } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
 
 interface TableToolbarProps {
@@ -37,7 +38,8 @@ interface TableToolbarProps {
   showTableSettingsModal: boolean;
   showReferenceOverlay: boolean;
   showRowOrderingModal: boolean;
-  
+  showPasteRowsDialog: boolean;
+
   // Modal visibility state setters
   setShowEditModal: (show: boolean) => void;
   setShowDeleteModal: (show: boolean) => void;
@@ -47,6 +49,7 @@ interface TableToolbarProps {
   setShowTableSettingsModal: (show: boolean) => void;
   setShowReferenceOverlay: (show: boolean) => void;
   setShowRowOrderingModal: (show: boolean) => void;
+  setShowPasteRowsDialog: (show: boolean) => void;
   
   // Success callbacks
   onEditSuccess?: () => void;
@@ -93,7 +96,8 @@ export default function TableToolbar({
   showTableSettingsModal,
   showReferenceOverlay,
   showRowOrderingModal,
-  
+  showPasteRowsDialog,
+
   // Modal visibility state setters
   setShowEditModal,
   setShowDeleteModal,
@@ -103,6 +107,7 @@ export default function TableToolbar({
   setShowTableSettingsModal,
   setShowReferenceOverlay,
   setShowRowOrderingModal,
+  setShowPasteRowsDialog,
   
   // Success callbacks
   onEditSuccess = () => loadTableData(),
@@ -155,13 +160,21 @@ export default function TableToolbar({
                 <Plus className="h-4 w-4" />
                 <span className="hidden md:inline">Column</span>
               </Button>
-              <Button 
+              <Button
                 size="sm"
                 onClick={() => setShowAddRowModal(true)}
                 className="whitespace-nowrap"
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden md:inline">Row</span>
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setShowPasteRowsDialog(true)}
+                className="whitespace-nowrap"
+              >
+                <Clipboard className="h-4 w-4" />
+                <span className="hidden md:inline">Paste rows</span>
               </Button>
             </>
           )}
@@ -280,6 +293,13 @@ export default function TableToolbar({
             tableId={tableId}
             isOpen={showAddRowModal}
             onClose={() => setShowAddRowModal(false)}
+            onSuccess={() => loadTableData()}
+          />
+          <PasteRowsDialog
+            tableId={tableId}
+            fields={fields}
+            isOpen={showPasteRowsDialog}
+            onClose={() => setShowPasteRowsDialog(false)}
             onSuccess={() => loadTableData()}
           />
           <EditRowModal

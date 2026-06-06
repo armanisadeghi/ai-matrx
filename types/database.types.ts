@@ -19818,7 +19818,15 @@ export type Database = {
           user_id?: string
           workbook_name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "udt_workbooks_original_file_id_fkey"
+            columns: ["original_file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ui_client: {
         Row: {
@@ -28085,6 +28093,7 @@ export type Database = {
         }
         Returns: Json
       }
+      udt_dataset_row_versions_trim: { Args: never; Returns: Json }
       udt_upsert_cell: {
         Args: {
           p_field_name: string

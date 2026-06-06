@@ -248,6 +248,8 @@
     "vaul": "latest",
     "web-vitals": "^5.1.0",
     "xlsx": "latest",
+    "y-protocols": "^1.0.7",
+    "yjs": "^13.6.31",
     "zod": "^4.3.6",
     "zustand": "^5.0.12"
   },

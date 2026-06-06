@@ -1,17 +1,36 @@
 'use client'
 import TableCards from "@/components/user-generated-table-data/TableCards";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Plus, Upload } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CreateTableModal from "@/components/user-generated-table-data/CreateTableModal";
 import ImportTableModal from "@/components/user-generated-table-data/ImportTableModal";
 import { FcTemplate } from "react-icons/fc";
+import { consumeSmartImportFile } from "@/features/data-tables/smart-import-pickup";
 
 export default function UserGeneratedDataPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [prefilledFile, setPrefilledFile] = useState<File | null>(null);
+
+  // Smart Import handoff from /workbooks: if the query says smartImport=1,
+  // claim the file from the module slot and open the import modal pre-loaded.
+  // The slot is single-shot; re-navigating to /data without a fresh handoff
+  // gets nothing.
+  useEffect(() => {
+    if (searchParams.get("smartImport") === "1") {
+      const f = consumeSmartImportFile();
+      if (f) {
+        setPrefilledFile(f);
+        setIsImportModalOpen(true);
+      }
+      // Strip the query so refresh doesn't re-attempt.
+      router.replace("/data");
+    }
+  }, [searchParams, router]);
 
   // Handle the create from template button click
   const handleCreateFromTemplate = () => {
@@ -66,10 +85,14 @@ export default function UserGeneratedDataPage() {
       />
 
       {/* Import Table Modal */}
-      <ImportTableModal 
+      <ImportTableModal
         isOpen={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
+        onClose={() => {
+          setIsImportModalOpen(false);
+          setPrefilledFile(null);
+        }}
         onSuccess={handleTableCreated}
+        prefilledFile={prefilledFile}
       />
     </div>
   );
