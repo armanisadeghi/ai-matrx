@@ -163,6 +163,13 @@ NER entities once backfill runs).
 
 ## Change log
 
+- 2026-06-04 — Org picker + bigger card + org-page card. Toolbar now has an
+  always-visible **organization picker** (`KgOrgFilter`) beside the scope picker,
+  so org → scope-type → scope are manually changeable even when arriving via a
+  route filter (the canvas owns `orgFilter`, re-synced from the prop; switching org
+  resets the scope) — the "never feel stuck" fix. The preview card is ~2× taller
+  (elliptical spiral fills the space). The org workspace's plain "Knowledge graph"
+  CTA is replaced by the live `<KgGraphCard variant="org">` preview.
 - 2026-06-04 — Option A: scope filtering + mini graph card. **Filter** the org
   graph to one scope (Client/Case/Kid) via a toolbar picker (`KgScopeFilter`,
   reuses `useScopeTree`) **or** the route — `/knowledge-graph?org=&scope=&scopeType=`

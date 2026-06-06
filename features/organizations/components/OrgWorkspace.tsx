@@ -30,7 +30,6 @@ import {
   Plus,
   LayoutTemplate,
   ListChecks,
-  Network,
   Share2,
   Layers3,
   Boxes,
@@ -47,6 +46,7 @@ import {
   getOrganizationMembers,
 } from "@/features/organizations/service";
 import type { OrganizationMemberWithUser } from "@/features/organizations/types";
+import { KgGraphCard } from "@/features/kg-graph/components/KgGraphCard";
 import { format } from "date-fns";
 import { InlineMediaRef } from "@/features/files";
 import { UserAvatarDisplay } from "@/components/user/UserIdentity";
@@ -366,27 +366,13 @@ export function OrgWorkspace() {
           />
         )}
 
-        {/* ─── Knowledge graph CTA ──────────────────────────────────── */}
-        <button
-          onClick={() =>
-            router.push(`/knowledge-graph?org=${encodeURIComponent(slug)}`)
-          }
-          className="w-full text-left rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-accent/40 transition-all p-5 flex items-center gap-4 group"
-        >
-          <span className="h-12 w-12 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-            <Network className="h-6 w-6" />
-          </span>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-base font-semibold text-foreground">
-              Knowledge graph
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Explore the entities and relationships extracted across{" "}
-              {organization.name}&apos;s content.
-            </p>
-          </div>
-          <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-0.5 transition-transform shrink-0" />
-        </button>
+        {/* ─── Knowledge graph (live preview card → full org-filtered graph) ── */}
+        <KgGraphCard
+          variant="org"
+          id={organization.id as string}
+          orgSlugOrId={slug}
+          title={`${organization.name} · knowledge graph`}
+        />
 
         {/* ─── Context & Scopes ─────────────────────────────────────── */}
         <div className="space-y-3">

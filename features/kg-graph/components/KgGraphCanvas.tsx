@@ -53,6 +53,7 @@ import { KG_LAYOUTS, type KgLayoutId } from "../cytoscape/layouts";
 import { KgGraphSidePanel } from "./KgGraphSidePanel";
 import { KgGraphLegend } from "./KgGraphLegend";
 import { KgScopeFilter } from "./KgScopeFilter";
+import { KgOrgFilter } from "./KgOrgFilter";
 
 // cytoscape + extensions touch window at import → must be client-only.
 const KgGraphCytoscape = dynamic(() => import("./KgGraphCytoscape"), {
@@ -146,8 +147,8 @@ export function KgGraphCanvas({
     fetchKgGraph(
       {
         // scope_id wins when set (backend resolves scope → tagged sources →
-        // entities); otherwise the org-wide corpus.
-        organizationId: effectiveScopeId ? undefined : organizationId,
+        // entities); otherwise the (user-selectable) org's corpus.
+        organizationId: effectiveScopeId ? undefined : orgFilter,
         scopeId: effectiveScopeId ?? undefined,
         depth: KG_DEFAULT_DEPTH,
         // Only the top-N most-connected nodes — a smaller budget = a far faster
@@ -166,7 +167,7 @@ export function KgGraphCanvas({
         setStatus("error");
       });
     return () => controller.abort();
-  }, [mode, organizationId, effectiveScopeId, reloadKey, detail]);
+  }, [mode, orgFilter, effectiveScopeId, reloadKey, detail]);
 
   // Available kinds for the filter dropdown.
   const kinds = useMemo(() => {
@@ -236,15 +237,27 @@ export function KgGraphCanvas({
         ) : null}
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          {/* Scope filter (org graph only): narrow to one Client / Case / Kid. */}
+          {/* Org + scope filters (org graph only): always visible + changeable so
+              the user is never stuck on a route-provided org/scope. Switching org
+              resets the scope (scopes belong to an org). */}
           {mode === "org" ? (
-            <KgScopeFilter
-              organizationId={organizationId ?? null}
-              value={scopeFilter}
-              onChange={setScopeFilter}
-              scopeTypeId={initialScopeTypeId}
-              className={cn(SELECT_TRIGGER, "w-[180px]")}
-            />
+            <>
+              <KgOrgFilter
+                value={orgFilter}
+                onChange={(id) => {
+                  setOrgFilter(id);
+                  setScopeFilter(null);
+                }}
+                className={cn(SELECT_TRIGGER, "w-[160px]")}
+              />
+              <KgScopeFilter
+                organizationId={orgFilter}
+                value={scopeFilter}
+                onChange={setScopeFilter}
+                scopeTypeId={initialScopeTypeId}
+                className={cn(SELECT_TRIGGER, "w-[180px]")}
+              />
+            </>
           ) : null}
 
           {/* Search */}
