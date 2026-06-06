@@ -13,6 +13,7 @@ import {
   Building,
   FileText,
   FolderKanban,
+  ListChecks,
   Network,
   Settings as SettingsIcon,
   Zap,
@@ -96,6 +97,9 @@ export function ScopesHub() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <KgSuggestionsNavButton variant="outline" />
+          <QuickLink href="/context-items" icon={ListChecks}>
+            Context items
+          </QuickLink>
           <QuickLink href="/knowledge-graph" icon={Network}>
             Graph
           </QuickLink>
