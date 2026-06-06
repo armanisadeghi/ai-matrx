@@ -59,6 +59,26 @@ interface AgentConversationColumnProps {
    * lands in the messages slice.
    */
   landingContent?: React.ReactNode;
+  /**
+   * Hide the bottom SmartAgentInput. Used by locked-input surfaces (the
+   * agent-comparison battle modes) where the message is typed once in a
+   * page-level section and each column body is read-only. The transcript,
+   * Creator Panel, and UI-first tools stay intact.
+   */
+  hideInput?: boolean;
+  /**
+   * Force the Creator Panel off regardless of the `showCreatorPanel`
+   * preference. Defaults to false (preference-gated). Battle columns leave
+   * this false so engineers keep per-column telemetry.
+   */
+  hideCreatorPanel?: boolean;
+  /**
+   * Extra content rendered INSIDE the scroll area, flush under the
+   * transcript (after `AgentConversationDisplay`). Used by the battle
+   * columns to mount the per-response `ResponseFeedbackBar` directly below
+   * the last assistant message. Scrolls with the conversation.
+   */
+  afterMessages?: React.ReactNode;
 }
 
 export function AgentConversationColumn({
@@ -68,6 +88,9 @@ export function AgentConversationColumn({
   constrainWidth = false,
   smartInputProps,
   landingContent,
+  hideInput = false,
+  hideCreatorPanel = false,
+  afterMessages,
 }: AgentConversationColumnProps) {
   const displayId = displayConversationId ?? conversationId;
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -139,6 +162,7 @@ export function AgentConversationColumn({
                 conversationId={displayId}
                 surfaceKey={surfaceKey}
               />
+              {afterMessages}
             </motion.div>
           )}
         </AnimatePresence>
@@ -176,7 +200,7 @@ export function AgentConversationColumn({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
         >
-          {showCreatorPanel && (
+          {!hideCreatorPanel && showCreatorPanel && (
             <CreatorRunPanel
               conversationId={conversationId}
               displayConversationId={displayId}
@@ -193,11 +217,13 @@ export function AgentConversationColumn({
           </div>
           <PendingAsksZone conversationId={displayId} />
 
-          <SmartAgentInput
-            conversationId={conversationId}
-            surfaceKey={surfaceKey}
-            {...smartInputProps}
-          />
+          {!hideInput && (
+            <SmartAgentInput
+              conversationId={conversationId}
+              surfaceKey={surfaceKey}
+              {...smartInputProps}
+            />
+          )}
         </motion.div>
       )}
     </div>
