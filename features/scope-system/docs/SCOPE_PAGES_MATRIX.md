@@ -1,117 +1,112 @@
 # Scope System — Pages Matrix (the tracking list)
 
-> The single checklist of **every page** the scope system needs, at every level, so we
-> stop missing surfaces. Companion to [`SCOPE_UI_OVERHAUL.md`](./SCOPE_UI_OVERHAUL.md).
-> Status: ✅ exists · 🟡 partial (drawer-only / inline / legacy) · ❌ missing.
+> The single checklist of **every page** the scope system needs. The key realization:
+> there is **one uniform pattern** that repeats at every level — Org → Scope Type → Scope →
+> Context Item → Value. We stop missing pages by applying the same surface set to each.
+> Status: ✅ exists · 🟡 partial (drawer/inline/legacy, no route) · ❌ missing.
 
-## 1. The mental model (kills the confusion)
+## 1. Mental model
 
-The confusion is **editing a THING vs editing the VALUE of a thing for a nested scope.**
-They are different pages.
+Every level is BOTH a *thing its parent manages* AND the *owner of a nested system*:
 
 ```
-Organization
-  └─ owns → Scope TYPE        ("Clients")           ← a THING (a dimension)
-              ├─ owns → Context ITEM ("Brand Personality")  ← a THING (a field, shared by all clients)
-              └─ owns → SCOPE        ("Cosmetics Injectables Medspa")  ← a THING (one client)
-                          └─ has → VALUE  = (Context ITEM × SCOPE)      ← the cell, NOT a thing of its own
+User → ORG ("Titanium")
+         └─ owns → SCOPE TYPE ("Clients")          ← a thing, and owns TWO nested systems:
+                     ├─ owns → CONTEXT ITEM ("Brand Personality")   (a field, shared by all clients)
+                     └─ owns → SCOPE ("Cosmetics Injectables Medspa") (one client)
+                                 └─ has → VALUE = (ITEM × SCOPE)      ← the cell, not a thing
 ```
 
-- A **Context Item** ("Brand Personality") is **one shared definition** living on the scope type.
-- A **Value** ("Cosmetics Injectables Medspa's Brand Personality") is the **cell** for one item × one scope.
-- Editing **the item** changes it for *every* client. Editing **a value** changes it for *one* client.
+Editing **a thing** = its own settings (affects it / all its children).
+Editing **a value** = one cell (one item for one scope).
 
-## 2. Page archetypes (apply to every THING)
+## 2. The uniform surface set (the "Hub" pattern)
 
-| Archetype | What it is | Permission |
+For **every thing type T** (Org, Scope Type, Scope, Context Item), we need the same surfaces.
+The **Organization** level is the gold standard — copy it everywhere.
+
+| Surface | Meaning | Org gold-standard | Route convention |
+|---|---|---|---|
+| **Collection Hub** | view ALL T (list, add, drill, link to manage) | `/organizations` | `/{things}` |
+| **Collection Manage** | edit/reorder/bulk ALL T | (org: n/a) | `/{things}/manage` |
+| **Add one** | create one T (drawer + page) | "New org" | `/{things}/new` (+ drawer) |
+| **Thing Hub** (view one) | the thing + parent (up) + children (down), drill down | `/organizations/titanium` ⭐ | `/{thing}` |
+| **Thing Manage** (edit one) | the thing's OWN settings — normal + advanced (drawer + page) | `/organizations/titanium/settings` ⭐ | `/{thing}/edit` |
+
+> "Hub" = **view** (and navigate). "Manage" = **edit**. A Hub for a thing that owns a nested system
+> must surface that system with its own add / manage / drill buttons. A Scope-Type Hub ("Clients Hub")
+> surfaces **two** nested systems (its context items AND its scopes) — that's the dynamic complexity.
+
+## 3. Per-level instantiation (with status)
+
+### Level 1 — Organization  (parent: user · children: scope types, projects, members…)
+| Surface | Route | Status |
 |---|---|---|
-| **List** | the collection of these things (with quick add / reorder) | view: all · structural edit: admin |
-| **View** | one thing + **all its nested dimensions** (children/values shown as rows) | all |
-| **Edit (route)** | the thing's **own settings only** — *not* its nested values; a real page, not a drawer | admin (structural) / member (instance) |
-| **Edit (drawer)** | optional quick-edit accelerator; every drawer must have a route equivalent | same as route |
+| Collection Hub (all orgs) | `/organizations` | ✅ |
+| Org Hub (view one) | `/organizations/[org]` | ✅ ⭐ best hub we have |
+| Org Manage (edit one) | `/organizations/[org]/settings` | ✅ ⭐ best manage we have |
 
-The **value** is not a THING — it gets a View/Edit page as `(item × scope)`, but no "list/settings" of its own.
+### Level 2 — Scope Type ("Clients")  (parent: org · children: context items + scopes)
+| Surface | Route | Status | Now |
+|---|---|---|---|
+| Collection Hub (all types) | `/organizations/[org]/scopes` | ✅ | ScopesManager |
+| Collection Manage (manage all types) | `/organizations/[org]/scopes/manage` | 🟡 | reorder dialog only |
+| Type Hub (view "Clients") | `/organizations/[org]/scopes/[type]` | ✅ | ScopesList (surfaces both nested systems) |
+| Type Manage (edit "Clients") | `/organizations/[org]/scopes/[type]/edit` | 🟡 | drawer EditScopeTypeSheet — **no route** |
 
----
+### Level 3a — Scope ("Cosmetics Injectables Medspa")  (parent: scope type · children: values)
+| Surface | Route | Status | Now |
+|---|---|---|---|
+| Collection Hub (all clients) | `/organizations/[org]/scopes/[type]/scopes` *(or the Type Hub's table)* | 🟡 | table inside Type Hub — **no dedicated route** |
+| Scope Hub (view "Medspa") | `/organizations/[org]/scopes/[type]/[scope]` | ✅ | ScopeDetailEditor (view+edit combined) |
+| Scope Manage (edit "Medspa") | `/organizations/[org]/scopes/[type]/[scope]/edit` | 🟡 | inline + ScopeAdvancedSection — **no route** |
 
-## 3. Canonical org-bound route tree (BUILD THESE FIRST)
+### Level 3b — Context Item ("Brand Personality")  (parent: scope type · children: values across scopes)
+| Surface | Route | Status | Now |
+|---|---|---|---|
+| Collection Hub (all items for type) | `/organizations/[org]/scopes/[type]/context-items` | 🟡 | list inside Type Hub — **no route** |
+| Collection Manage (manage all items) | `/organizations/[org]/scopes/[type]/context-items/manage` | 🟡 | reorder dialog only |
+| Item Hub (view "Brand Personality") | `/organizations/[org]/scopes/[type]/context-items/[item]` | ❌ | **KEY MISSING** — settings + value per scope |
+| Item Manage (edit "Brand Personality") | `/organizations/[org]/scopes/[type]/context-items/[item]/edit` | 🟡 | drawer EditContextItemSheet — **no route** |
 
-```
-/organizations/[org]/scopes
- │   View: all scope types for the org                              ✅ ScopesManager
- ├─ /edit            Edit/manage all types (reorder, bulk)          🟡 reorder dialog in-page; no route
- └─ /[type]                                                          ("Clients")
-     │   View: the scope type (scopes table + items + counts)       ✅ ScopesList
-     ├─ /edit         Edit the TYPE's own settings (route)          🟡 drawer EditScopeTypeSheet; no route
-     ├─ /context-items
-     │   │   View: all context items for this type (interact)       🟡 list inside ScopesList; no route
-     │   ├─ /edit     Edit ALL items as a whole (reorder/manage)    🟡 reorder dialog; no route
-     │   └─ /[item]                                                  ("Brand Personality")
-     │       │   View: THE ITEM — its settings at top, then each    ❌ KEY MISSING PAGE
-     │       │   scope listed with its current value (view/edit)
-     │       └─ /edit Edit the ITEM's own settings (route)          🟡 drawer EditContextItemSheet; no route
-     └─ /[scope]                                                     ("Cosmetics Injectables Medspa")
-         │   View: the scope + its values                           ✅ ScopeDetailEditor (view+edit combined)
-         ├─ /edit     Edit the SCOPE's own settings (route)         🟡 inline + ScopeAdvancedSection; no route
-         └─ /[item]
-             View/Edit: the VALUE for this scope × item             ✅ ScopeItemDetail
-             (/edit optional — view currently is the editor)        🟡 view == edit
-```
+### Level 4 — Value  (item × scope — a cell, not a thing)
+| Surface | Route | Status |
+|---|---|---|
+| Value View/Edit | `/organizations/[org]/scopes/[type]/[scope]/[item]` | ✅ ScopeItemDetail |
 
-**The #1 gap** the user called out: `/[type]/context-items/[item]` — the item's own page showing
-**all clients' values for that item** (e.g. Brand Personality across every client), with view/edit per
-client that deep-links into the existing value page `…/[scope]/[item]`.
+## 4. The "felt-missing" navigation (buttons that connect the hubs)
 
-> Route note: `context-items` is a literal segment, so it never collides with `[scope]`. Reserve the
-> slugs `context-items` and `edit` so no scope/item can take them.
+On the **Type Hub** (`/…/scopes/clients`) today, these connectors are missing:
+- Next to **"Context Items"** → a **Manage / Open** button → the Context-Items Collection Hub (`…/context-items`); each item row → its **Item Hub** (`…/context-items/[item]`).
+- Next to the **scopes table** → a **"Manage {plural}"** link → the Scopes Collection Hub (`…/scopes` or a manage page).
+- A **route** (not just the drawer) to **Manage "Clients"** itself (`…/[type]/edit`).
 
----
+Every Hub should expose: **up** (parent), **down** (each child system with add + manage + drill), and **edit this** (route + drawer).
 
-## 4. Direct / cross-nested routes (PHASE 2 — after the nested pages are real)
-
+## 5. Phase 2 — direct / cross-nested routes (after the nested hubs are real)
 | Route | Purpose | Status |
 |---|---|---|
-| `/scopes` | all scopes across all orgs (index) | ✅ `ScopesHub` |
-| `/scopes/[scopeId]` | global scope detail (by id) | ✅ `ScopeDetailView` — ⚠️ collides with a future `/scopes/[typeSlug]` |
-| `/scopes/[type]` | one scope type across orgs ("all my clients") | ❌ (conflicts with `[scopeId]` — needs design) |
-| `/scopes/[type]/context-items` | all items for a type | ❌ |
-| `/context-items` | all context items, all scopes (grouped by type) | ❌ (legacy `/agent-context` dashboard is the closest) |
-| `/context-items/[item]` | item detail + values across scopes | ❌ (legacy `/agent-context/items/[itemId]`) |
-| `/context-items/[item]/edit` | edit item settings (route) | ❌ (legacy `/agent-context/items/[itemId]/edit`) |
+| `/scopes` | all scopes, all orgs | ✅ ScopesHub |
+| `/scopes/[scopeId]` | global scope hub (by id) | ✅ ScopeDetailView — ⚠️ collides with `/scopes/[typeSlug]` |
+| `/scopes/[type]` | a scope type across orgs | ❌ (needs collision design) |
+| `/context-items` · `/context-items/[item]` · `/[item]/edit` | items across scopes | ❌ (legacy `/agent-context/*` is the closest) |
 
----
+## 6. Legacy `/agent-context/*` (old item UI — reconcile in Phase 2)
+`/agent-context` (`ContextDashboard`+`ContextItemList`) ≈ `/context-items`; `/agent-context/items/[itemId]`
+(`ContextItemDetail`) ≈ item Hub; `+/edit`, `+/history`, `+/new`. Migrate into the scope structure + redirect.
 
-## 5. Legacy `/agent-context/*` to reconcile (already exists, old UI)
+## 7. Build order (proposed)
+- **Wave A — Type Hub connectors + Context-Item Collection & Item Hub:** wire the missing buttons on the
+  Type Hub; build `…/context-items` (collection hub) + `…/context-items/[item]` (Item Hub w/ values per scope).
+- **Wave B — Manage routes (single thing):** `…/[type]/edit`, `…/context-items/[item]/edit`, `…/[scope]/edit`
+  — host the existing drawer forms full-page (drawers stay as quick accelerators linking to "open full editor").
+- **Wave C — Collection Manage + Scopes Collection Hub:** `…/scopes/manage`, `…/[type]/scopes`,
+  `…/context-items/manage`.
+- **Wave D — Phase 2 direct routes** + retire legacy `/agent-context/*`.
 
-| Route | Component | Maps to | Decision |
-|---|---|---|---|
-| `/agent-context` | `ContextDashboard` + `ContextItemList` | `/context-items` (all items) | migrate → scope-system, redirect |
-| `/agent-context/items/[itemId]` | `ContextItemDetail` | `/context-items/[item]` (item view) | migrate → scope-system, redirect |
-| `/agent-context/items/[itemId]/edit` | legacy edit | item `/edit` route | migrate, redirect |
-| `/agent-context/items/[itemId]/history` | version history | item view → "History" tab | fold in |
-| `/agent-context/items/new` | create | item create | fold into list "Add" |
-
-These prove the *routes* are wanted; they're just the old agent-context styling, item-by-id (no
-org/type/scope context), and don't show values-across-scopes.
-
----
-
-## 6. Build order (proposed)
-
-- **Wave A — Context Item View (the KEY page):** `/[type]/context-items` (list) +
-  `/[type]/context-items/[item]` (item view: settings header → per-scope value rows, each deep-linking
-  to the existing value page). Highest user value.
-- **Wave B — Dedicated Edit routes:** `/[type]/edit`, `/[type]/context-items/[item]/edit`,
-  `/[scope]/edit` — each reuses the existing drawer form logic, just hosted on a route. Keep drawers as
-  quick accelerators that link to "Open full editor".
-- **Wave C — Edit-all routes:** `/scopes/edit` (manage types), `/[type]/context-items/edit` (manage items).
-- **Wave D — Direct routes (Phase 2):** `/context-items`, `/context-items/[item]`, `/scopes/[type]`,
-  resolving the `/scopes/[scopeId]` vs `[typeSlug]` collision; then retire legacy `/agent-context/*`.
-
-## Open design questions (confirm before building)
-1. Segment name `context-items` for item-definition pages — good, or prefer `fields` / `items`?
-2. Edit routes should **reuse** the existing drawer forms (`EditScopeTypeSheet`, `EditContextItemSheet`,
-   `ScopeAdvancedSection`) hosted full-page — agreed?
-3. Scope View vs Edit: split `ScopeDetailEditor` into a read-first View + a `/edit` route, or keep the
-   combined inline editor as the "View" and add `/edit` as the focused settings page?
-4. Legacy `/agent-context/*`: migrate + redirect into the scope routes (Wave D), or leave for now?
+## Open confirmations
+1. Route words: **Hub = `/{thing}` (view)**, **Manage = `/{thing}/edit` (edit settings)** — or do you prefer
+   `/manage` or `/settings` to match the org's `/settings`?
+2. Reserved slugs `context-items`, `scopes`, `edit`, `manage`, `new` (so no scope/item can take them) — ok?
+3. Edit routes **reuse** the existing drawer forms hosted full-page — agreed?
+4. Build order above — start at Wave A?
