@@ -104,9 +104,19 @@ Every Hub should expose: **up** (parent), **down** (each child system with add +
 - **Wave A.2 — DONE ✅ (one component, two scopes)** — `ContextItemsHub` generalized: with `typeParam` it
   shows one type's items (full manage); without, it shows **every scope type in the org grouped into
   sections** — the new route `/organizations/[org]/context-items`. Dropping the type filter forces the
-  scope-type headers (which also fixes "show me which dimension I'm in"). Linked from `ScopesManager`
-  ("All context items"). **Next:** the all-orgs `/context-items` (iterate `selectFullContextOrganizations`,
-  render an org section each — same component shape).
+  scope-type headers (which also fixes "show me which dimension I'm in").
+- **Wave A.3 — DONE ✅ (all four context-items levels + link/terminology cleanup)** —
+  - **All four scopes of `/context-items` now exist:** all-orgs `/context-items` (`AllContextItemsHub`,
+    iterates `selectFullContextOrganizations`, grouped org → type → items); org `/organizations/[org]/context-items`;
+    type `…/scopes/[type]/context-items`; **scope `…/scopes/[type]/[scope]/context-items`** (`ScopeContextItemsHub`,
+    one scope's items + values as a dedicated page, distinct from the scope hub).
+  - **Orphan routes linked** (found via parallel route-audit agents): org hub (`OrgWorkspace`) "Context & Scopes"
+    header now links **Scope Type Hub** (`/[org]/scopes`) + **Context items** (`/[org]/context-items`) — both were
+    previously unreachable except via settings/edit.
+  - **Terminology fixed** ("Scope" → "Scope Type" where it creates a dimension): `OrgWorkspace`, `AddScopeModal`
+    (title/desc/button), `ScopesManager` (×2), `AddScopeTypeCard`.
+  - **Still orphaned / to consolidate** (route-inventory agent running): `/scopes/templates`, `/scopes/settings`
+    (stub), the `/agent-context/*` family — Wave D consolidation.
 - **Wave B — Manage routes (single thing):** `…/[type]/edit`, `…/context-items/[item]/edit`, `…/[scope]/edit`
   — host the existing drawer forms full-page (drawers stay as quick accelerators linking to "open full editor").
 - **Wave C — Collection Manage + Scopes Collection Hub:** `…/scopes/manage`, `…/[type]/scopes`,
