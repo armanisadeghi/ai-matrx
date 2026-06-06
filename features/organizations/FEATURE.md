@@ -217,13 +217,12 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 | `members_can_add` | **Live** | `share_resource_with_org` blocks non-admin members |
 | `requires_approval` | **Live** | `share_resource_with_org` → grant `status = 'pending'`; surfaced in `OrgShareReviewCard` (Approve/Reject) |
 | `default_permission` | **Live** | `share_resource_with_org` uses it when the caller omits the level (the Contribute flow does); pickers still pass explicit levels |
-| `is_scopeable` | **Stored, not enforced** | See below |
-| `auto_ingest` | **Stored, not enforced** | Backend (aidream) — see below |
+| `is_scopeable` | **Live (FE)** | `EntityScopeTagger` (Surface B write mode) blocks tagging a kind when off — disabled note + guarded `applyNext`. It's a governance preference (not access control), so a UI gate is the boundary; harden server-side in the assignment thunk if ever needed. |
+| `auto_ingest` | **Live (backend)** | aidream `aidream/services/auto_ingest/router.py` `_module_auto_ingest_enabled` skips ingestion when off. Default ON (missing org/kind/row → enabled). |
 
-**To finish `is_scopeable` enforcement** (FE, scopes feature): the scope tag pickers (Surface B, `features/scopes/components/**` — the "tag this with…" UIs that write `ctx_scope_assignments`) should hide/disable a kind when its org module setting has `isScopeable = false`. Integration point already exists: call
-`getOrgModuleSetting(orgId, moduleKey)` from `features/organizations/orgModuleSettings.ts` and check `.isScopeable`. Map the picker's `entity_type` → `moduleKey` via the resource catalogue (`moduleKey(entry)` = canonical table name; e.g. `note → 'notes'`, `agent → 'agx_agent'`). One read per kind; cache per org.
+**`is_scopeable` integration** (done): `EntityScopeTagger` calls `getOrgModuleSetting(orgId, moduleKey(getEntry(entityType)))` and checks `.isScopeable`. Controlled (filter) mode and unknown kinds (`agent_surface_binding`, `project_resource`) are never gated.
 
-**To finish `auto_ingest` enforcement** (backend): the aidream knowledge-ingestion pipeline should read `org_module_settings.auto_ingest` (keyed by `module_key` = canonical table name) before auto-ingesting a newly-created/updated resource of that kind into the org knowledge graph. Default true historically; honoring the flag means: when false, skip auto-ingest for that kind in that org. The column is already populated; this is a read + branch in the ingest entrypoint.
+**`auto_ingest` mapping caveat** (small follow-up): the aidream gate resolves the router's `source_kind` → canonical table via `ShareableResourceRegistry`, then matches `org_module_settings.module_key`. It is fully functional for kinds whose `source_kind` maps cleanly (e.g. `note → notes`, `task → ctx_tasks`); aidream-internal source kinds (`cld_file`, `code_file`, `library_doc`, `scraped`, `repository`, `cx_message`, `project`, `transcript` (singular vs `transcripts`)) currently fall through to default-ON because their `source_kind` doesn't resolve to a registered `module_key`. Unify by registering/aliasing those source kinds in `shareable_resource_registry` (or extend the resolver) — benign until then (no incorrect skips).
 
 ---
 
