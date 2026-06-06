@@ -143,6 +143,8 @@
     "@types/vscode-webview": "^1.57.5",
     "@uidotdev/usehooks": "github:uidotdev/usehooks",
     "@uiw/react-codemirror": "^4.25.9",
+    "@univerjs/core": "^0.25.0",
+    "@univerjs/preset-sheets-core": "^0.25.0",
     "@univerjs/presets": "^0.25.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.36.3",
