@@ -14,7 +14,6 @@
 
 import React from "react";
 import { Loader2, Search, Check, ArrowLeft, Share2, Plus } from "lucide-react";
-import { toast } from "sonner";
 import {
   Sheet,
   SheetContent,
@@ -25,18 +24,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/utils/supabase/client";
-import { shareWithOrg } from "@/utils/permissions/service";
-import type { ResourceType } from "@/utils/permissions/registry";
-import { listOrgSharedIdsForTable } from "@/utils/permissions/orgModeration";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   CONTENT_ROLES,
   contributableEntries,
   getContentRole,
   type OrgResourceEntry,
 } from "../resource-catalogue";
+import { useOrgContributableItems } from "../hooks/useOrgContributableItems";
 
 interface ContributeResourceSheetProps {
   open: boolean;
@@ -49,11 +43,6 @@ interface ContributeResourceSheetProps {
   onContributed?: () => void;
 }
 
-interface MyItem {
-  id: string;
-  title: string;
-}
-
 export function ContributeResourceSheet({
   open,
   onOpenChange,
@@ -62,17 +51,19 @@ export function ContributeResourceSheet({
   initialEntryKey,
   onContributed,
 }: ContributeResourceSheetProps) {
-  const userId = useAppSelector(selectUserId);
   const entries = React.useMemo(() => contributableEntries(), []);
   const [selectedKey, setSelectedKey] = React.useState<string | null>(null);
   const [query, setQuery] = React.useState("");
-  const [items, setItems] = React.useState<MyItem[]>([]);
-  const [alreadyShared, setAlreadyShared] = React.useState<Set<string>>(new Set());
-  const [justShared, setJustShared] = React.useState<Set<string>>(new Set());
-  const [loading, setLoading] = React.useState(false);
-  const [sharingId, setSharingId] = React.useState<string | null>(null);
 
   const selected = entries.find((e) => e.key === selectedKey) ?? null;
+
+  // Shared engine — only active once a kind is picked while the sheet is open.
+  const mine = useOrgContributableItems(
+    open ? orgId : null,
+    orgName,
+    selected,
+    onContributed,
+  );
 
   React.useEffect(() => {
     if (open) {
@@ -81,80 +72,7 @@ export function ContributeResourceSheet({
     }
   }, [open, initialEntryKey]);
 
-  // Load the user's own items for the selected kind.
-  React.useEffect(() => {
-    if (!open || !selected || !userId) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setItems([]);
-      setJustShared(new Set());
-      try {
-        // contributableEntries() guarantees table + titleColumn + shareKey.
-        const table = selected.table!;
-        const titleCol = selected.titleColumn!;
-        let q = supabase
-          .from(table as never)
-          .select(`id, ${titleCol}`)
-          .eq("user_id", userId)
-          .limit(200);
-        if (selected.archivedColumn) {
-          q = q.eq(selected.archivedColumn as never, false);
-        }
-        const [{ data, error }, sharedIds] = await Promise.all([
-          q,
-          listOrgSharedIdsForTable(orgId, selected.shareKey!),
-        ]);
-        if (error) throw error;
-        if (cancelled) return;
-        const rows = (data as unknown as Array<Record<string, unknown>>) ?? [];
-        setItems(
-          rows.map((r) => ({
-            id: String(r.id),
-            title: String(r[titleCol] ?? "").trim() || "Untitled",
-          })),
-        );
-        setAlreadyShared(sharedIds);
-      } catch (err) {
-        if (!cancelled) {
-          console.error("[ContributeResourceSheet] load failed:", err);
-          toast.error("Couldn't load your items for this kind.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, selected, userId, orgId]);
-
-  async function handleShare(item: MyItem) {
-    if (!selected) return;
-    setSharingId(item.id);
-    try {
-      const result = await shareWithOrg({
-        // shareKey is the canonical table name; the share RPC's resolver accepts
-        // canonical names directly. Cast at this boundary because the catalogue
-        // intentionally keys on the (broader) DB registry, not the TS mirror.
-        resourceType: selected.shareKey! as ResourceType,
-        resourceId: item.id,
-        organizationId: orgId,
-        permissionLevel: "viewer",
-      });
-      if (result.success) {
-        setJustShared((prev) => new Set(prev).add(item.id));
-        toast.success(`Shared "${item.title}" with ${orgName}`);
-        onContributed?.();
-      } else {
-        toast.error(result.error ?? "Failed to share");
-      }
-    } finally {
-      setSharingId(null);
-    }
-  }
-
-  const filtered = items.filter((it) =>
+  const filtered = mine.items.filter((it) =>
     it.title.toLowerCase().includes(query.toLowerCase()),
   );
 
@@ -221,7 +139,7 @@ export function ContributeResourceSheet({
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-3">
-              {loading ? (
+              {mine.loading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
@@ -229,7 +147,7 @@ export function ContributeResourceSheet({
                 <div className="text-center py-12">
                   <selected.icon className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
-                    {items.length === 0
+                    {mine.items.length === 0
                       ? `You don't own any ${selected.labelPlural.toLowerCase()} yet.`
                       : "No matches."}
                   </p>
@@ -237,7 +155,8 @@ export function ContributeResourceSheet({
               ) : (
                 <ul className="space-y-1.5">
                   {filtered.map((item) => {
-                    const shared = alreadyShared.has(item.id) || justShared.has(item.id);
+                    const shared =
+                      mine.alreadyShared.has(item.id) || mine.justShared.has(item.id);
                     return (
                       <li
                         key={item.id}
@@ -257,10 +176,10 @@ export function ContributeResourceSheet({
                             size="sm"
                             variant="outline"
                             className="h-7 shrink-0"
-                            disabled={sharingId === item.id}
-                            onClick={() => handleShare(item)}
+                            disabled={mine.sharingId === item.id}
+                            onClick={() => mine.share(item)}
                           >
-                            {sharingId === item.id ? (
+                            {mine.sharingId === item.id ? (
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             ) : (
                               <>
