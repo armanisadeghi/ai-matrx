@@ -24,6 +24,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 
 import { fetchEntityMentions } from "../service/kgGraphService";
+import { fetchSourceNames } from "../service/sourceNames";
 import type { GraphNode, MentionRow } from "../types";
 import { colorForKind } from "../constants";
 
@@ -211,6 +212,10 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
     "loading",
   );
   const [error, setError] = useState<string | null>(null);
+  // source id → human name (note label, filename…); best-effort, async.
+  const [sourceNames, setSourceNames] = useState<Map<string, string>>(
+    new Map(),
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -231,6 +236,27 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
   }, [node.id]);
 
   const groups = useMemo(() => groupMentions(mentions), [mentions]);
+
+  // Resolve the source documents' names (note label, etc.) for the group headers.
+  useEffect(() => {
+    if (groups.length === 0) {
+      setSourceNames(new Map());
+      return;
+    }
+    let cancelled = false;
+    fetchSourceNames(
+      groups.map((g) => ({ kind: g.sourceKind, id: g.sourceId })),
+    )
+      .then((names) => {
+        if (!cancelled) setSourceNames(names);
+      })
+      .catch(() => {
+        /* names are best-effort; the kind label is the fallback */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [groups]);
   const occurrenceCount = useMemo(
     () => groups.reduce((n, g) => n + g.occurrences.length, 0),
     [groups],
@@ -312,16 +338,22 @@ export function KgGraphSidePanel({ node, onClose }: KgGraphSidePanelProps) {
                   className="overflow-hidden rounded-md border border-border/60 bg-background"
                 >
                   <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-muted/40 px-2.5 py-1.5">
-                    <span className="flex items-center gap-1.5 text-[11px] font-medium text-foreground">
-                      {sourceLabel(group.sourceKind)}
-                      <span className="text-muted-foreground">
-                        · {group.occurrences.length} passage
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate text-[11px] font-medium text-foreground">
+                        {(group.sourceId && sourceNames.get(group.sourceId)) ||
+                          sourceLabel(group.sourceKind)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {sourceLabel(group.sourceKind)} ·{" "}
+                        {group.occurrences.length} passage
                         {group.occurrences.length === 1 ? "" : "s"}
                       </span>
                     </span>
                     {href ? (
                       <a
                         href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex shrink-0 items-center gap-1 text-[11px] text-primary hover:underline"
                       >
                         Open <ExternalLink className="h-3 w-3" />

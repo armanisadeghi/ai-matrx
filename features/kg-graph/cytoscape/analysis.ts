@@ -15,9 +15,10 @@ import {
   KG_NODE_MAX_SIZE,
   KG_NODE_MIN_SIZE,
   colorForKind,
+  tierColor,
 } from "../constants";
 
-export type KgColorBy = "kind" | "community";
+export type KgColorBy = "tier" | "kind" | "community";
 export type KgSizeBy = "connections" | "importance";
 
 // Distinct hues for detected communities — mid-saturation so they read on both
@@ -72,6 +73,8 @@ export function buildElements(
         mention_count: n.mention_count,
         importance: 0,
         community: -1,
+        tier: 0,
+        tierColor: tierColor(0),
         sizeConnections,
         sizeImportance: KG_NODE_MIN_SIZE,
         // seed first paint with the default encoding
@@ -106,6 +109,7 @@ export interface GraphAnalysis {
 interface AnalysisState {
   importanceDone: boolean;
   communityDone: boolean;
+  tierDone: boolean;
   communityCount: number;
 }
 const analysisCache = new WeakMap<cytoscape.Core, AnalysisState>();
@@ -113,7 +117,12 @@ const analysisCache = new WeakMap<cytoscape.Core, AnalysisState>();
 function stateFor(cy: cytoscape.Core): AnalysisState {
   let s = analysisCache.get(cy);
   if (!s) {
-    s = { importanceDone: false, communityDone: false, communityCount: 0 };
+    s = {
+      importanceDone: false,
+      communityDone: false,
+      tierDone: false,
+      communityCount: 0,
+    };
     analysisCache.set(cy, s);
   }
   return s;
@@ -125,6 +134,7 @@ export function resetAnalysis(cy: cytoscape.Core): void {
   const s = stateFor(cy);
   s.importanceDone = false;
   s.communityDone = false;
+  s.tierDone = false;
   s.communityCount = 0;
 }
 
@@ -201,6 +211,53 @@ function ensureCommunity(cy: cytoscape.Core): number {
   return communityCount;
 }
 
+/** Tier = depth in each cluster's tree. "Roots" (tier 0) are local importance
+ *  peaks — a node no neighbour outranks (so the top of a chain/cluster); every
+ *  disconnected component therefore has at least one. A multi-source BFS from all
+ *  roots then assigns each node its distance to the nearest top. Reads as "levels"
+ *  when coloured by `tierColor`. Computed at most once per element set; needs
+ *  importance first (for the root test). */
+function ensureTier(cy: cytoscape.Core): void {
+  const s = stateFor(cy);
+  if (s.tierDone) return;
+  const nodes = cy.nodes();
+  if (nodes.empty()) {
+    s.tierDone = true;
+    return;
+  }
+  ensureImportance(cy);
+  // Roots (tier 0) = local importance peaks: no neighbour outranks them.
+  const roots = nodes.filter((n) => {
+    const imp = Number(n.data("importance")) || 0;
+    let maxNbr = -Infinity;
+    n.openNeighborhood()
+      .nodes()
+      .forEach((m) => {
+        const v = Number(m.data("importance")) || 0;
+        if (v > maxNbr) maxNbr = v;
+      });
+    return maxNbr === -Infinity || imp >= maxNbr;
+  });
+  const depthById = new Map<string, number>();
+  if (roots.nonempty()) {
+    cy.elements().bfs({
+      roots,
+      directed: false,
+      visit: (v, _e, _u, _i, depth) => {
+        if (!depthById.has(v.id())) depthById.set(v.id(), depth);
+      },
+    });
+  }
+  cy.batch(() => {
+    nodes.forEach((n) => {
+      const t = depthById.get(n.id()) ?? 0;
+      n.data("tier", t);
+      n.data("tierColor", tierColor(t));
+    });
+  });
+  s.tierDone = true;
+}
+
 /** Point each node's render `color`/`size` at the chosen encoding, lazily running
  *  only the analysis that encoding requires (PageRank for "importance", Markov for
  *  "community"). The default kind/connections encoding triggers NO analysis.
@@ -211,13 +268,17 @@ export function applyEncoding(
   sizeBy: KgSizeBy,
 ): GraphAnalysis {
   if (colorBy === "community") ensureCommunity(cy);
+  if (colorBy === "tier") ensureTier(cy);
   if (sizeBy === "importance") ensureImportance(cy);
   cy.batch(() => {
     cy.nodes().forEach((n) => {
-      n.data(
-        "color",
-        colorBy === "community" ? n.data("communityColor") : n.data("kindColor"),
-      );
+      const color =
+        colorBy === "community"
+          ? n.data("communityColor")
+          : colorBy === "tier"
+            ? n.data("tierColor")
+            : n.data("kindColor");
+      n.data("color", color);
       n.data(
         "size",
         sizeBy === "importance" ? n.data("sizeImportance") : n.data("sizeConnections"),

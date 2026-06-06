@@ -44,6 +44,27 @@ export function colorForKind(kind: string): string {
   return KG_NODE_COLORS[kind] ?? KG_NODE_FALLBACK_COLOR;
 }
 
+// ── Hierarchy / tier palette ────────────────────────────────────────────────
+// Colour nodes by their depth in each cluster's tree: the "top" of a cluster
+// (a local importance peak — tier 0) down through the tiers it links to. A
+// sequential, ordered ramp so the level reads at a glance: deep/cool = top,
+// muted slate = deepest. Index by tier, clamped to the last bucket (5+).
+export const KG_TIER_PALETTE = [
+  "#4338ca", // tier 0 (roots / tops) — deep indigo, most prominent
+  "#2563eb", // tier 1 — blue
+  "#0891b2", // tier 2 — cyan
+  "#059669", // tier 3 — emerald
+  "#65a30d", // tier 4 — lime
+  "#94a3b8", // tier 5+ — muted slate (deepest)
+];
+
+/** Labels for the tier legend, aligned to KG_TIER_PALETTE indices. */
+export const KG_TIER_LABELS = ["Top", "2", "3", "4", "5", "Deeper"];
+
+export function tierColor(tier: number): string {
+  return KG_TIER_PALETTE[Math.min(Math.max(tier, 0), KG_TIER_PALETTE.length - 1)];
+}
+
 // Entity kinds that are almost always document scaffolding — contact details and
 // letterhead, not substance. Hidden by DEFAULT in the canvas (the legal-doc test
 // drowned the signal in phones/addresses/emails); toggled back via "Show noise".

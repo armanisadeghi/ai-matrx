@@ -163,6 +163,13 @@ NER entities once backfill runs).
 
 ## Change log
 
+- 2026-06-04 — Encoding + evidence tweaks. New **hierarchy ("tier") colour** mode
+  (`analysis.ensureTier`: BFS depth from each cluster's local importance peaks;
+  `KG_TIER_PALETTE`) — now the **default colour** (entity-kind colouring demoted to
+  opt-in). **Default size = importance** (PageRank), not raw connections. Evidence
+  panel now shows the **source's name** (note label, resolved via
+  `service/sourceNames.ts`), not just the kind; the **Open link opens in a new tab**
+  (`target=_blank`) so it doesn't disturb the slow graph load.
 - 2026-06-04 — Phase 1: de-noise + evidence drill-down (see
   `docs/PRODUCT_DIRECTION.md` + `docs/knowledge/04_CURRENT_STATE_AND_PATH.md`).
   Co-occurrence edges recede to a faint baseline (they're noise until typed); the
