@@ -6,7 +6,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useOrganization, useUserRole } from "@/features/organizations/hooks";
-import { OrgSettings } from "@/features/organizations/components/OrgSettings";
+import { OrgManage } from "@/features/organizations/components/OrgManage";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 
 /**
@@ -122,13 +122,11 @@ export default function OrganizationSettingsPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl">
-      <OrgSettings
-        organization={organization}
-        userRole={role}
-        isOwner={isOwner}
-        isAdmin={isAdmin}
-      />
-    </div>
+    <OrgManage
+      organization={organization}
+      userRole={role}
+      isOwner={isOwner}
+      isAdmin={isAdmin}
+    />
   );
 }
