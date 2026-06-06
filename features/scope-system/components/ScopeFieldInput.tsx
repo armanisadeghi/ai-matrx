@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, AlertCircle, Pencil, Maximize2 } from "lucide-react";
+import Link from "next/link";
+import {
+  Check,
+  Loader2,
+  AlertCircle,
+  Pencil,
+  Maximize2,
+  ArrowUpRight,
+} from "lucide-react";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +21,8 @@ import { EditScopeValueSheet } from "./EditScopeValueSheet";
 interface ScopeFieldInputProps {
   scopeId: string;
   row: ScopeContextRow;
+  /** When provided, shows a link to the item's dedicated page. */
+  itemHref?: string;
 }
 
 function rowToString(row: ScopeContextRow): string {
@@ -31,7 +41,11 @@ function rowToString(row: ScopeContextRow): string {
   return "";
 }
 
-export function ScopeFieldInput({ scopeId, row }: ScopeFieldInputProps) {
+export function ScopeFieldInput({
+  scopeId,
+  row,
+  itemHref,
+}: ScopeFieldInputProps) {
   const initial = rowToString(row);
   const [value, setValue] = useState(initial);
   const [editingItem, setEditingItem] = useState(false);
@@ -65,15 +79,26 @@ export function ScopeFieldInput({ scopeId, row }: ScopeFieldInputProps) {
     <>
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => setEditingItem(true)}
-            className="group inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary"
-            title="Edit this context item"
-          >
-            {row.display_name}
-            <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
+          <div className="inline-flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setEditingItem(true)}
+              className="group inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary"
+              title="Edit this context item"
+            >
+              {row.display_name}
+              <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+            {itemHref && (
+              <Link
+                href={itemHref}
+                title="Open item page"
+                className="text-muted-foreground hover:text-primary"
+              >
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            )}
+          </div>
           <div className="flex items-center gap-1">
             <FieldStatus
               status={status}

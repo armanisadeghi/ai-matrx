@@ -78,6 +78,7 @@ export function EditContextItemSheet({
   const [tags, setTags] = useState<string[]>([]);
   const [statusNote, setStatusNote] = useState("");
   const [reviewIntervalDays, setReviewIntervalDays] = useState("");
+  const [sortOrder, setSortOrder] = useState("");
 
   useEffect(() => {
     if (!open || !item) return;
@@ -96,6 +97,7 @@ export function EditContextItemSheet({
         ? String(item.review_interval_days)
         : "",
     );
+    setSortOrder(item.sort_order != null ? String(item.sort_order) : "");
   }, [open, item]);
 
   function addTag() {
@@ -139,6 +141,7 @@ export function EditContextItemSheet({
           tags,
           status_note: statusNote.trim() || null,
           review_interval_days: parsedInterval,
+          sort_order: sortOrder.trim() ? Number(sortOrder) : undefined,
         }),
       ).unwrap();
       dispatch(listScopeTypeItems(item.scope_type_id));
@@ -387,7 +390,21 @@ export function EditContextItemSheet({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Sort order</Label>
+              <Input
+                type="number"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                placeholder="0"
+                style={{ fontSize: "16px" }}
+                disabled={busy}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Lower shows first
+              </p>
+            </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Review interval (days)</Label>
               <Input
@@ -400,7 +417,7 @@ export function EditContextItemSheet({
                 disabled={busy}
               />
               <p className="text-[10px] text-muted-foreground">
-                Auto-flags as stale after this many days
+                Stale after N days
               </p>
             </div>
             <div className="space-y-1.5">

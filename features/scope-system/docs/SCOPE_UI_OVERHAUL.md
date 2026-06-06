@@ -112,8 +112,8 @@ one at a time. Some surfaces are routes, some are drawers — get organized abou
 | **Organization** | list `/organizations`; detail `/organizations/[orgId]` | `/organizations/[orgId]/settings` | settings page | no inline edit drawer |
 | **Scope type** | `ScopesList` header (`…/scopes/[typeId]`) | `EditScopeTypeSheet` drawer; admin `…/settings/scopes` | sort order, max-assign (sheet) | no dedicated edit route; **+slug**; carry color/slug in RPCs |
 | **Scope** | `ScopeDetailEditor` (`…/[typeId]/[scopeId]`); global `/scopes/[scopeId]` (read) | inline name/desc on detail | **none yet** | add settings JSON + slug; no edit drawer/route |
-| **Context item** | row in `ScopesList`; `EditContextItemSheet` | `EditContextItemSheet` drawer; inline add | sensitivity, fetch_hint, review, tags (sheet) | no item route; **+slug** (date type ✅ Wave 2) |
-| **Context value** | inline in `ScopeDetailEditor`; column in `ScopesList` | `EditScopeValueSheet`; `ScopeFieldInput` | change_summary, source_type | no value route; cross-scope value view (date input ✅ Wave 2) |
+| **Context item** | row in `ScopesList`; **item route `…/:itemSlug` → `ScopeItemDetail`** ✅ | `EditContextItemSheet` drawer; inline add | sensitivity, fetch_hint, review, tags, **sort order** ✅ (sheet) | cross-scope "all values" view TODO |
+| **Context value** | inline in `ScopeDetailEditor`; column in `ScopesList`; on `ScopeItemDetail` | `EditScopeValueSheet`; `ScopeFieldInput` | change_summary, source_type | no dedicated value route (lives on item page) |
 
 ---
 
@@ -162,8 +162,20 @@ one at a time. Some surfaces are routes, some are drawers — get organized abou
   Next.js rewrite gated on a reserved-segment exclusion list (`agent-apps, files, notes, projects,
   prompt-apps, prompts, scopes, settings, shortcuts, tables, tasks, templates, workflows`) — held for
   explicit go-ahead since a bad rewrite can shadow every org route; the WITH-`scopes` form already works.
-- **Wave 5 — item detail route + inventory gaps.** Item detail (`…/:itemSlug`) + cross-scope value view; then
-  page-by-page VIEW/EDIT/ADVANCED per the user's further guidance. Big Picture.
+- **Wave 5 — item detail route (DONE, v1) + inventory gaps.** ✅ Item route
+  `/organizations/:org/scopes/:typeSlug/:scopeSlug/:itemSlug` (`app/(core)/…/[itemId]/page.tsx` +
+  `ScopeItemDetail`): breadcrumb (org › type › scope › item), item identity (type/category/tags/description),
+  the editable value for that scope×item (reuses `ScopeFieldInput`, all types incl. date), a Details panel
+  (key, slug, type, category, tags, fetch hint, sensitivity, sort order), Edit-item access, and prev/next item
+  nav. Reachable in-app via the new "open item page" ↗ icon on each field of the scope detail page. This is the
+  **starting point** for the user's page-by-page VIEW/EDIT/ADVANCED pass. Cross-scope "all values for an item"
+  view still TODO. — **Round-2 corrections (user feedback):** removed the "Scope Type" badge; the scope-type
+  header now reads as an authoritative "<ORG> / <Type>" page (org eyebrow + big title) with counts full-width
+  below the logo; the add-item form shows Name/Type/Description/Category(dropdown)/Tags(chip-input) inline
+  (Advanced = sort order/fetch hint/sensitivity), no duplicate Add button; **added `ctx_context_items.sort_order`**
+  (migration `ctx_context_items_sort_order.sql`) with up/down reorder in the list + a Sort-order field in the
+  editor; the scopes table now **freezes the first column and the header row** on scroll and shows all item
+  columns.
 
 ---
 

@@ -6,7 +6,9 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Building2,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   Home,
   Layers,
   ListChecks,
@@ -33,6 +35,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { EditScopeTypeSheet } from "./EditScopeTypeSheet";
 import { NewScopeInline } from "./NewScopeInline";
@@ -46,8 +49,10 @@ import {
 import { selectScopeTypeBySlugOrId } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import {
   listScopeTypeItems,
+  updateContextItem,
   selectItemsByType,
   selectItemsLoadedForType,
+  type ContextItem,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import {
   getScopeContext,
@@ -59,8 +64,6 @@ import {
   orgScopesHref,
   scopeHref,
 } from "@/features/scope-system/utils/scopeRoutes";
-
-const MAX_COLUMNS = 6;
 
 interface ScopesListProps {
   orgId: string;
@@ -100,6 +103,7 @@ export function ScopesList({
   const [editingType, setEditingType] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [addingItem, setAddingItem] = useState(false);
+  const [movingId, setMovingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!resolvedTypeId) return;
@@ -123,8 +127,28 @@ export function ScopesList({
     [scopes],
   );
 
-  const columns = items.slice(0, MAX_COLUMNS);
-  const overflowCount = Math.max(0, items.length - MAX_COLUMNS);
+  async function moveItem(index: number, dir: "up" | "down") {
+    const target = items[index];
+    const neighbor = items[index + (dir === "up" ? -1 : 1)];
+    if (!target || !neighbor || movingId) return;
+    const targetOrder = target.sort_order ?? index;
+    const neighborOrder = neighbor.sort_order ?? index;
+    setMovingId(target.id);
+    try {
+      await Promise.all([
+        dispatch(
+          updateContextItem({ id: target.id, sort_order: neighborOrder }),
+        ).unwrap(),
+        dispatch(
+          updateContextItem({ id: neighbor.id, sort_order: targetOrder }),
+        ).unwrap(),
+      ]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to reorder");
+    } finally {
+      setMovingId(null);
+    }
+  }
 
   if (!scopeType) {
     return (
@@ -138,81 +162,47 @@ export function ScopesList({
   const scopeCount = sorted.length;
 
   return (
-    <div className="space-y-6">
-      {/* ── Breadcrumb: Back · Org · Scope type ───────────────────── */}
-      <div className="flex items-center gap-1.5 text-sm flex-wrap">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-          className="h-7 px-2 -ml-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
-        </Button>
-        <span className="text-muted-foreground/50">·</span>
-        <Link
-          href={orgScopesHref(orgSlug)}
-          className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
-        >
-          {orgIsPersonal ? (
-            <Home className="h-3.5 w-3.5" />
-          ) : (
-            <Building2 className="h-3.5 w-3.5" />
-          )}
-          {orgIsPersonal ? "Personal workspace" : orgName}
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-        <span className="font-medium text-foreground">
-          {scopeType.label_plural}
-        </span>
-      </div>
+    <div className="space-y-6 pr-14">
+      {/* ── Back ─────────────────────────────────────────────────── */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => router.back()}
+        className="h-7 px-2 -ml-2 text-muted-foreground"
+      >
+        <ArrowLeft className="h-4 w-4 mr-1" />
+        Back
+      </Button>
 
-      {/* ── Scope Type header ────────────────────────────────────── */}
+      {/* ── Identity header: "<ORG> / <Type plural>" ─────────────── */}
       <Card className="p-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-4 min-w-0">
             <div
-              className={`w-14 h-14 rounded-xl ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
+              className={`w-16 h-16 rounded-2xl ${color.bg} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
             >
-              <ScopeGlyph icon={scopeType.icon} className="h-7 w-7" />
+              <ScopeGlyph icon={scopeType.icon} className="h-9 w-9" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl font-bold text-foreground">
-                  {scopeType.label_plural}
-                </h1>
-                <Badge variant="secondary" className="text-xs font-normal">
-                  Scope Type
-                </Badge>
-              </div>
+              <Link
+                href={orgScopesHref(orgSlug)}
+                className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {orgIsPersonal ? (
+                  <Home className="h-3.5 w-3.5" />
+                ) : (
+                  <Building2 className="h-3.5 w-3.5" />
+                )}
+                {orgIsPersonal ? "Personal workspace" : orgName}
+              </Link>
+              <h1 className="text-3xl font-bold text-foreground leading-tight">
+                {scopeType.label_plural}
+              </h1>
               {scopeType.description && (
-                <p className="text-sm text-muted-foreground mt-1.5 max-w-2xl">
+                <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
                   {scopeType.description}
                 </p>
               )}
-              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
-                <span className="inline-flex items-center gap-1.5">
-                  <Layers className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-semibold text-foreground">
-                    {scopeCount}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {scopeCount === 1
-                      ? scopeType.label_singular.toLowerCase()
-                      : scopeType.label_plural.toLowerCase()}
-                  </span>
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <ListChecks className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-semibold text-foreground">
-                    {items.length}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {items.length === 1 ? "context item" : "context items"}
-                  </span>
-                </span>
-              </div>
             </div>
           </div>
           <Button
@@ -224,6 +214,26 @@ export function ScopesList({
             <Settings2 className="h-3.5 w-3.5 mr-1.5" />
             Edit {scopeType.label_singular} Settings
           </Button>
+        </div>
+
+        {/* Counts — full width, left-aligned, below the logo/title */}
+        <div className="mt-5 pt-4 border-t border-border flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+          <span className="inline-flex items-center gap-1.5">
+            <Layers className="h-4 w-4 text-muted-foreground" />
+            <span className="font-semibold text-foreground">{scopeCount}</span>
+            <span className="text-muted-foreground">
+              {scopeCount === 1
+                ? scopeType.label_singular.toLowerCase()
+                : scopeType.label_plural.toLowerCase()}
+            </span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <ListChecks className="h-4 w-4 text-muted-foreground" />
+            <span className="font-semibold text-foreground">{items.length}</span>
+            <span className="text-muted-foreground">
+              {items.length === 1 ? "context item" : "context items"}
+            </span>
+          </span>
         </div>
       </Card>
 
@@ -287,22 +297,19 @@ export function ScopesList({
           </Card>
         ) : scopeCount > 0 ? (
           <Card className="overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table className="table-fixed w-full">
-                <colgroup>
-                  <col className="w-[180px]" />
-                  {columns.map((col) => (
-                    <col key={col.id} className="w-[200px]" />
-                  ))}
-                  {overflowCount > 0 && <col className="w-[80px]" />}
-                </colgroup>
+            {/* Scroll container: vertical + horizontal, with frozen name column + header */}
+            <div className="overflow-auto max-h-[65vh]">
+              <Table className="w-full border-separate border-spacing-0">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="px-3 whitespace-nowrap">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="sticky left-0 top-0 z-30 bg-card px-3 w-[200px] min-w-[200px] border-b border-border whitespace-nowrap">
                       Name
                     </TableHead>
-                    {columns.map((col) => (
-                      <TableHead key={col.id} className="px-3 max-w-0">
+                    {items.map((col) => (
+                      <TableHead
+                        key={col.id}
+                        className="sticky top-0 z-20 bg-card px-3 w-[200px] min-w-[200px] border-b border-border"
+                      >
                         <span
                           className="block truncate"
                           title={col.display_name}
@@ -311,11 +318,6 @@ export function ScopesList({
                         </span>
                       </TableHead>
                     ))}
-                    {overflowCount > 0 && (
-                      <TableHead className="px-3 text-muted-foreground text-xs whitespace-nowrap">
-                        +{overflowCount} more
-                      </TableHead>
-                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -324,8 +326,7 @@ export function ScopesList({
                       key={scope.id}
                       scopeId={scope.id}
                       scopeName={scope.name}
-                      columns={columns}
-                      overflowCount={overflowCount}
+                      columns={items}
                       onClick={() =>
                         router.push(scopeHref(orgSlugOrId, scopeType, scope))
                       }
@@ -381,61 +382,19 @@ export function ScopesList({
         ) : (
           <Card className="overflow-hidden">
             <div className="divide-y divide-border">
-              {items.map((item) => (
-                <div
+              {items.map((item, index) => (
+                <ContextItemRow
                   key={item.id}
-                  className="flex items-start gap-3 px-4 py-3 hover:bg-accent/30 transition-colors group"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-foreground">
-                        {item.display_name}
-                      </span>
-                      {item.category && (
-                        <Badge variant="outline" className="text-[10px]">
-                          {item.category}
-                        </Badge>
-                      )}
-                      {(item.tags ?? []).slice(0, 3).map((t) => (
-                        <Badge
-                          key={t}
-                          variant="secondary"
-                          className="text-[10px] gap-1 font-normal"
-                        >
-                          <TagIcon className="h-2.5 w-2.5" />
-                          {t}
-                        </Badge>
-                      ))}
-                      {(item.tags?.length ?? 0) > 3 && (
-                        <span className="text-[10px] text-muted-foreground">
-                          +{(item.tags?.length ?? 0) - 3}
-                        </span>
-                      )}
-                      {item.sensitivity && item.sensitivity !== "internal" && (
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700"
-                        >
-                          {item.sensitivity}
-                        </Badge>
-                      )}
-                    </div>
-                    {item.description && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditingItemId(item.id)}
-                    className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity h-7 px-2"
-                    aria-label={`Edit ${item.display_name}`}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+                  item={item}
+                  isFirst={index === 0}
+                  isLast={index === items.length - 1}
+                  moving={movingId === item.id}
+                  disabled={movingId !== null}
+                  scopeTypeSingular={scopeType.label_singular}
+                  onEdit={() => setEditingItemId(item.id)}
+                  onMoveUp={() => moveItem(index, "up")}
+                  onMoveDown={() => moveItem(index, "down")}
+                />
               ))}
 
               {items.length === 0 && !addingItem && (
@@ -472,11 +431,113 @@ export function ScopesList({
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 
+interface ContextItemRowProps {
+  item: ContextItem;
+  isFirst: boolean;
+  isLast: boolean;
+  moving: boolean;
+  disabled: boolean;
+  scopeTypeSingular: string;
+  onEdit: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+}
+
+function ContextItemRow({
+  item,
+  isFirst,
+  isLast,
+  moving,
+  disabled,
+  onEdit,
+  onMoveUp,
+  onMoveDown,
+}: ContextItemRowProps) {
+  return (
+    <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/30 transition-colors group">
+      {/* Reorder controls */}
+      <div className="flex flex-col -my-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          type="button"
+          onClick={onMoveUp}
+          disabled={isFirst || disabled}
+          aria-label="Move up"
+          className="h-4 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          {moving ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <ChevronUp className="h-3.5 w-3.5" />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={onMoveDown}
+          disabled={isLast || disabled}
+          aria-label="Move down"
+          className="h-4 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronDown className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm font-medium text-foreground">
+            {item.display_name}
+          </span>
+          {item.category && (
+            <Badge variant="outline" className="text-[10px]">
+              {item.category}
+            </Badge>
+          )}
+          {(item.tags ?? []).slice(0, 3).map((t) => (
+            <Badge
+              key={t}
+              variant="secondary"
+              className="text-[10px] gap-1 font-normal"
+            >
+              <TagIcon className="h-2.5 w-2.5" />
+              {t}
+            </Badge>
+          ))}
+          {(item.tags?.length ?? 0) > 3 && (
+            <span className="text-[10px] text-muted-foreground">
+              +{(item.tags?.length ?? 0) - 3}
+            </span>
+          )}
+          {item.sensitivity && item.sensitivity !== "internal" && (
+            <Badge
+              variant="outline"
+              className="text-[10px] text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700"
+            >
+              {item.sensitivity}
+            </Badge>
+          )}
+        </div>
+        {item.description && (
+          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+            {item.description}
+          </p>
+        )}
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onEdit}
+        className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity h-7 px-2"
+        aria-label={`Edit ${item.display_name}`}
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
+
 interface ScopeTableRowProps {
   scopeId: string;
   scopeName: string;
   columns: { id: string; display_name: string }[];
-  overflowCount: number;
   onClick: () => void;
 }
 
@@ -484,7 +545,6 @@ function ScopeTableRow({
   scopeId,
   scopeName,
   columns,
-  overflowCount,
   onClick,
 }: ScopeTableRowProps) {
   const rows = useAppSelector((s) => selectValuesByScope(s, scopeId));
@@ -492,24 +552,12 @@ function ScopeTableRow({
   for (const r of rows ?? []) valueMap.set(r.item_id, r);
 
   return (
-    <TableRow
-      onClick={onClick}
-      className="cursor-pointer hover:bg-accent/40 group"
-    >
-      <TableCell className="px-3 font-medium max-w-0">
-        <TooltipProvider delayDuration={400}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="flex items-center gap-1.5 w-full min-w-0">
-                <span className="truncate">{scopeName}</span>
-                <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p className="text-xs">{scopeName}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+    <TableRow onClick={onClick} className="cursor-pointer group">
+      <TableCell className="sticky left-0 z-10 bg-card group-hover:bg-accent/40 px-3 font-medium w-[200px] min-w-[200px] border-b border-border">
+        <span className="flex items-center gap-1.5 w-full min-w-0">
+          <span className="truncate">{scopeName}</span>
+          <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+        </span>
       </TableCell>
       {columns.map((col) => {
         const row = valueMap.get(col.id);
@@ -520,7 +568,7 @@ function ScopeTableRow({
           return (
             <TableCell
               key={col.id}
-              className="px-3 text-muted-foreground max-w-0"
+              className="px-3 text-muted-foreground w-[200px] min-w-[200px] border-b border-border group-hover:bg-accent/40"
             >
               <Loader2 className="h-3 w-3 animate-spin" />
             </TableCell>
@@ -530,7 +578,7 @@ function ScopeTableRow({
         return (
           <TableCell
             key={col.id}
-            className={`px-3 max-w-0 ${isEmpty ? "text-muted-foreground" : ""}`}
+            className={`px-3 w-[200px] min-w-[200px] max-w-[200px] border-b border-border group-hover:bg-accent/40 ${isEmpty ? "text-muted-foreground" : ""}`}
           >
             {isEmpty ? (
               <span className="truncate block text-xs">—</span>
@@ -553,11 +601,6 @@ function ScopeTableRow({
           </TableCell>
         );
       })}
-      {overflowCount > 0 && (
-        <TableCell className="px-3 text-muted-foreground text-xs whitespace-nowrap">
-          …
-        </TableCell>
-      )}
     </TableRow>
   );
 }

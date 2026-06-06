@@ -5370,6 +5370,7 @@ export type Database = {
           scope_type_id: string
           sensitivity: Database["public"]["Enums"]["context_sensitivity"]
           slug: string | null
+          sort_order: number
           source_type: Database["public"]["Enums"]["context_source_type"]
           status: Database["public"]["Enums"]["context_item_status"]
           status_note: string | null
@@ -5397,6 +5398,7 @@ export type Database = {
           scope_type_id: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
           slug?: string | null
+          sort_order?: number
           source_type?: Database["public"]["Enums"]["context_source_type"]
           status?: Database["public"]["Enums"]["context_item_status"]
           status_note?: string | null
@@ -5424,6 +5426,7 @@ export type Database = {
           scope_type_id?: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
           slug?: string | null
+          sort_order?: number
           source_type?: Database["public"]["Enums"]["context_source_type"]
           status?: Database["public"]["Enums"]["context_item_status"]
           status_note?: string | null
@@ -24789,6 +24792,7 @@ export type Database = {
           p_scope_type_id: string
           p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
           p_slug?: string
+          p_sort_order?: number
           p_tags?: string[]
           p_value_type: Database["public"]["Enums"]["context_value_type"]
         }

@@ -17,6 +17,7 @@ import type { ContextValueType, ContextItem } from "./contextItemsSlice";
 export interface ScopeContextRow {
   item_id: string;
   key: string;
+  slug?: string | null;
   display_name: string;
   description?: string;
   category?: string | null;

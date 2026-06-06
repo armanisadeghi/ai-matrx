@@ -39,6 +39,7 @@ import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import {
   orgScopesHref,
   scopeTypeHref,
+  scopeItemHref,
 } from "@/features/scope-system/utils/scopeRoutes";
 
 interface ScopeDetailEditorProps {
@@ -352,7 +353,15 @@ export function ScopeDetailEditor({
         {rows && rows.length > 0 && (
           <div className="space-y-5">
             {rows.map((row) => (
-              <ScopeFieldInput key={row.item_id} scopeId={scope.id} row={row} />
+              <ScopeFieldInput
+                key={row.item_id}
+                scopeId={scope.id}
+                row={row}
+                itemHref={scopeItemHref(orgSlugOrId, scopeType, scope, {
+                  id: row.item_id,
+                  slug: row.slug,
+                })}
+              />
             ))}
           </div>
         )}
