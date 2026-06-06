@@ -16,6 +16,13 @@ import type { KgScopeItemFilter } from "@/features/kg-suggestions/types";
 
 export interface ScopeItemSuggestionsPanelProps {
   scopeItemId: string;
+  /**
+   * When set, only suggestions targeting THIS scope are shown. The backend
+   * filter is by context-item id (shared across every scope of a type), so a
+   * per-scope page must narrow client-side or it would surface fills meant for
+   * a different scope of the same type.
+   */
+  scopeId?: string;
   /** Optional slot label for the heading. */
   slotName?: string | null;
   className?: string;
@@ -23,12 +30,23 @@ export interface ScopeItemSuggestionsPanelProps {
 
 export function ScopeItemSuggestionsPanel({
   scopeItemId,
+  scopeId,
   slotName,
   className,
 }: ScopeItemSuggestionsPanelProps) {
   const filter: KgScopeItemFilter = { scopeItemId, status: "pending" };
-  const { items, count, status, accept, reject, defer } =
-    useKgSuggestions(filter);
+  const {
+    items: allItems,
+    status,
+    accept,
+    reject,
+    defer,
+  } = useKgSuggestions(filter);
+
+  const items = scopeId
+    ? allItems.filter((r) => r.target.scope_id === scopeId)
+    : allItems;
+  const count = items.length;
 
   // Loading shimmer only on first load; nothing once we know there are none.
   if (status === "loading" && items.length === 0) {

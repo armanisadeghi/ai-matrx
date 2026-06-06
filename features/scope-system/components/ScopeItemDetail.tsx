@@ -37,6 +37,7 @@ import {
   selectValuesByScope,
 } from "@/features/scope-system/redux/scopeValuesSlice";
 import { ScopeFieldInput } from "./ScopeFieldInput";
+import { ScopeItemSuggestionsPanel } from "@/features/kg-suggestions/components/ScopeItemSuggestionsPanel";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
@@ -86,7 +87,9 @@ export function ScopeItemDetail({
     selectScopeBySlugOrId(s, resolvedTypeId, scopeParam),
   );
   const scopesLoaded = useAppSelector((s) =>
-    resolvedTypeId ? selectScopesLoadedForType(s, orgId, resolvedTypeId) : false,
+    resolvedTypeId
+      ? selectScopesLoadedForType(s, orgId, resolvedTypeId)
+      : false,
   );
   const item = useAppSelector((s) =>
     selectItemBySlugOrId(s, resolvedTypeId, itemParam),
@@ -154,7 +157,9 @@ export function ScopeItemDetail({
   const itemIndex = items.findIndex((i) => i.id === item.id);
   const prevItem = itemIndex > 0 ? items[itemIndex - 1] : null;
   const nextItem =
-    itemIndex >= 0 && itemIndex < items.length - 1 ? items[itemIndex + 1] : null;
+    itemIndex >= 0 && itemIndex < items.length - 1
+      ? items[itemIndex + 1]
+      : null;
 
   return (
     <div className="space-y-6 pr-14">
@@ -268,6 +273,13 @@ export function ScopeItemDetail({
               Loading value…
             </div>
           )}
+
+          <ScopeItemSuggestionsPanel
+            scopeItemId={item.id}
+            scopeId={scope.id}
+            slotName={item.display_name}
+            className="mt-4"
+          />
         </div>
       </Card>
 
@@ -275,16 +287,24 @@ export function ScopeItemDetail({
       <Card className="p-6">
         <h2 className="text-sm font-semibold text-foreground mb-3">Details</h2>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-          <PropRow label="Type" value={VALUE_TYPE_CONFIG[item.value_type]?.label ?? item.value_type} />
+          <PropRow
+            label="Type"
+            value={VALUE_TYPE_CONFIG[item.value_type]?.label ?? item.value_type}
+          />
           <PropRow label="Category" value={item.category || "—"} />
           <PropRow label="URL slug" value={item.slug || "—"} mono />
           <PropRow label="Key" value={item.key} mono />
           <PropRow label="Sensitivity" value={item.sensitivity} />
-          <PropRow label="Fetch hint" value={item.fetch_hint?.replace(/_/g, " ")} />
+          <PropRow
+            label="Fetch hint"
+            value={item.fetch_hint?.replace(/_/g, " ")}
+          />
           <PropRow label="Sort order" value={String(item.sort_order ?? 0)} />
           <PropRow
             label="Tags"
-            value={(item.tags ?? []).length ? (item.tags ?? []).join(", ") : "—"}
+            value={
+              (item.tags ?? []).length ? (item.tags ?? []).join(", ") : "—"
+            }
           />
         </dl>
       </Card>
@@ -296,7 +316,9 @@ export function ScopeItemDetail({
             variant="ghost"
             size="sm"
             onClick={() =>
-              router.push(scopeItemHref(orgSlugOrId, scopeType, scope, prevItem))
+              router.push(
+                scopeItemHref(orgSlugOrId, scopeType, scope, prevItem),
+              )
             }
             className="text-muted-foreground"
           >
@@ -311,7 +333,9 @@ export function ScopeItemDetail({
             variant="ghost"
             size="sm"
             onClick={() =>
-              router.push(scopeItemHref(orgSlugOrId, scopeType, scope, nextItem))
+              router.push(
+                scopeItemHref(orgSlugOrId, scopeType, scope, nextItem),
+              )
             }
             className="text-muted-foreground"
           >

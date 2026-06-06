@@ -241,6 +241,63 @@ export interface ResolvedContext {
   userId: string;
 }
 
+// ─── Suggestion target resolution ──────────────────────────────────────
+//
+// The fully-resolved, human-readable picture behind a KG suggestion's
+// target. Returned by `scopesService.resolveSuggestionTarget`; consumed by
+// the kg-suggestions decision UI so it can show the org → type → scope →
+// item path, every item on the scope, and the CURRENT value each item holds
+// (so a suggestion that would overwrite a manually-entered value is obvious).
+
+export interface ResolvedSuggestionValue {
+  value_text: string | null;
+  value_number: number | null;
+  value_boolean: boolean | null;
+  value_json: Json | null;
+  /** e.g. "manual" | "ai" | "import" — how the current value was authored. */
+  source_type: string | null;
+  version: number | null;
+  created_at: string | null;
+}
+
+export interface ResolvedSuggestionItem {
+  id: string;
+  slug: string | null;
+  key: string;
+  display_name: string;
+  value_type: string;
+  sort_order: number;
+  /** Current value on this scope, or null if the cell is empty. */
+  current: ResolvedSuggestionValue | null;
+}
+
+export interface ResolvedSuggestionTarget {
+  org: {
+    id: string;
+    name: string;
+    slug: string;
+    is_personal: boolean;
+  };
+  scope_type: {
+    id: string;
+    slug: string | null;
+    label_singular: string;
+    label_plural: string;
+    icon: string | null;
+    color: string | null;
+  };
+  scope: {
+    id: string;
+    slug: string | null;
+    name: string;
+    description: string | null;
+  };
+  /** The specific item the suggestion proposes to fill (null if unresolved). */
+  target_item: ResolvedSuggestionItem | null;
+  /** Every active item on the scope type, in sort order (for context). */
+  items: ResolvedSuggestionItem[];
+}
+
 // ─── Service result envelope ───────────────────────────────────────────
 //
 // Mirrors the RpcResult shape specified in features/scopes/docs/RPC_CONTRACTS.md.

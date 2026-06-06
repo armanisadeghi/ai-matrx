@@ -34,8 +34,24 @@ one click and never destructive. Phase F of the Knowledge-Graph plan.
 - `KgSuggestionsNavButton` (`components/KgSuggestionsNavButton.tsx`) — a
   button-with-count-badge that opens the global drawer; dropped into `/scopes`.
 - `KgSuggestionRowItem` (`components/KgSuggestionRowItem.tsx`) — the ONE shared
-  row UX (entity → slot, value, confidence bar, match-kind chip, accept/reject/
-  defer) used by every surface above.
+  DECISION CARD used by every surface above. For a slot-fill it resolves and
+  shows: the SOURCE (note/task title + one-click "Open" into a window panel),
+  the TARGET path in plain words (org › scope-type › scope › item, + "View"
+  link), the CHANGE (current value → suggested, with a loud overwrite warning
+  + destructive ConfirmDialog when a value already exists), every field on the
+  target scope (targeted one highlighted), confidence, match-kind, and a
+  "Detected …" timestamp. Heavy-hitter rows keep the lightweight "promote to a
+  scope" treatment. Accept/reject/defer come from the hook.
+
+**Enrichment layer** (resolves opaque ids → human-readable decision context)
+- `service/kgEnrichmentService.ts` (`enrichSuggestion`) — combines the scopes
+  chokepoint's `resolveSuggestionTarget` (org/type/scope/item path, all items,
+  current values) with a source-title lookup (notes via `fetchNoteById`).
+- `hooks/useKgSuggestionEnrichment.ts` — per-card resolver with a module-level
+  promise cache keyed by suggestion id (dedupes repeat/concurrent resolves).
+- `scopesService.resolveSuggestionTarget({ scopeId, contextItemId })` — the
+  read RPC-shaped method (in the ctx_* chokepoint) returning
+  `ResolvedSuggestionTarget` (`features/scopes/types.ts`).
 
 **Hooks**
 - `useKgSuggestions(filter, { autoFetch })` (`hooks/useKgSuggestions.ts`) — the
@@ -244,6 +260,22 @@ compile-verified against the typed contract.
 
 ## Change log
 
+- `2026-06-06` — **Decision-UX overhaul.** The shared row was a cramped
+  "entity → slot · set value" line that hid everything a user needs (raw ids,
+  no source, no current value, no overwrite signal), forcing DB spelunking.
+  Rewrote `KgSuggestionRowItem` into a rich decision card backed by a new
+  enrichment layer: `scopesService.resolveSuggestionTarget` (new ctx_*
+  chokepoint read → `ResolvedSuggestionTarget`), `kgEnrichmentService`
+  (target + note-title source), and `useKgSuggestionEnrichment` (per-id
+  promise-cached). The card now shows the source note (title + "Open" in a
+  notes window panel), the org › type › scope › item path with a "View" link,
+  current → suggested with an explicit OVERWRITE warning + destructive
+  `ConfirmDialog` (so accepting over a manual value is no longer a silent
+  data loss), and a collapsible "all fields on this scope" list with the
+  target highlighted. Widened `GlobalSuggestionsDrawer` to `sm:max-w-xl` and
+  added a framing hint. Made `ScopeItemSuggestionsPanel` scope-aware
+  (`scopeId` prop filters out fills meant for other scopes of the same type)
+  and wired it onto the scope-item detail page under the value editor.
 - `2026-06-03` — Dropped the `as unknown` Insert cast in `useAutoRagPreference` now that `auto_rag_enabled` is in the generated `user_preferences` row type. Rewrote the write path as UPDATE-then-INSERT (instead of `.upsert(..., { onConflict: "user_id" })`) so the `preferences` jsonb column is left untouched on existing rows and seeded with `{}` only when the row didn't yet exist — a `.upsert` would have clobbered live preferences. Behaviour identical for callers.
 - `2026-06-02` — Phase F agent: Initial scaffold — types, service, slice, hook,
   chip/popover/panel/drawer/nav-button/heavy-hitter components, drop-ins (notes,

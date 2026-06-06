@@ -29,6 +29,9 @@ import type {
   ContextTemplate,
   OrgNode,
   ProjectNode,
+  ResolvedSuggestionItem,
+  ResolvedSuggestionTarget,
+  ResolvedSuggestionValue,
   ScopeAssignmentEntityType,
   ScopeNode,
   ScopeTreeResponse,
@@ -371,6 +374,129 @@ export const scopesService = {
         .eq("is_current", true);
       if (error) return err(...mapPgErrorPair(error));
       return ok({ values: (data ?? []) as ContextItemValue[] });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  // ──────────────────────────────────────────────────────────────────
+  //  READ — SUGGESTION TARGET RESOLUTION
+  //
+  //  Given a KG suggestion's target (`scope_id` + the proposed
+  //  `context_item_id`), resolve the FULL human-readable picture the
+  //  decision UI needs: the org / scope-type / scope / item path, every
+  //  context item defined on that scope type, and the CURRENT value for
+  //  each item on this scope (so the UI can show what a suggestion would
+  //  overwrite). Read-only; one logical "resolve" RPC's worth of joins.
+  // ──────────────────────────────────────────────────────────────────
+
+  async resolveSuggestionTarget(args: {
+    scopeId: string;
+    contextItemId: string | null;
+  }): Promise<ScopesRpcResult<ResolvedSuggestionTarget>> {
+    try {
+      requireUserId();
+
+      const { data: scope, error: scopeErr } = await supabase
+        .from("ctx_scopes")
+        .select("id, slug, name, description, scope_type_id, organization_id")
+        .eq("id", args.scopeId)
+        .single();
+      if (scopeErr) return err(...mapPgErrorPair(scopeErr));
+      if (!scope) return err("not_found", "Scope not found");
+
+      const scopeTypeP = supabase
+        .from("ctx_scope_types")
+        .select("id, slug, label_singular, label_plural, icon, color")
+        .eq("id", scope.scope_type_id)
+        .single();
+
+      const orgP = supabase
+        .from("organizations")
+        .select("id, name, slug, is_personal")
+        .eq("id", scope.organization_id)
+        .single();
+
+      const itemsP = supabase
+        .from("ctx_context_items")
+        .select("id, slug, key, display_name, value_type, sort_order")
+        .eq("scope_type_id", scope.scope_type_id)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+
+      const valuesP = supabase
+        .from("ctx_context_item_values")
+        .select(
+          "context_item_id, value_text, value_number, value_boolean, value_json, source_type, version, created_at",
+        )
+        .eq("scope_id", args.scopeId)
+        .eq("is_current", true);
+
+      const [scopeTypeRes, orgRes, itemsRes, valuesRes] = await Promise.all([
+        scopeTypeP,
+        orgP,
+        itemsP,
+        valuesP,
+      ]);
+
+      if (scopeTypeRes.error) return err(...mapPgErrorPair(scopeTypeRes.error));
+      if (orgRes.error) return err(...mapPgErrorPair(orgRes.error));
+      if (itemsRes.error) return err(...mapPgErrorPair(itemsRes.error));
+      if (valuesRes.error) return err(...mapPgErrorPair(valuesRes.error));
+
+      const valuesByItem = new Map<string, ResolvedSuggestionValue>();
+      for (const v of valuesRes.data ?? []) {
+        valuesByItem.set(v.context_item_id, {
+          value_text: v.value_text ?? null,
+          value_number: v.value_number ?? null,
+          value_boolean: v.value_boolean ?? null,
+          value_json: v.value_json ?? null,
+          source_type: v.source_type ?? null,
+          version: v.version ?? null,
+          created_at: v.created_at ?? null,
+        });
+      }
+
+      const items: ResolvedSuggestionItem[] = (itemsRes.data ?? []).map(
+        (it) => ({
+          id: it.id,
+          slug: it.slug ?? null,
+          key: it.key,
+          display_name: it.display_name,
+          value_type: it.value_type,
+          sort_order: it.sort_order ?? 0,
+          current: valuesByItem.get(it.id) ?? null,
+        }),
+      );
+
+      const targetItem = args.contextItemId
+        ? (items.find((it) => it.id === args.contextItemId) ?? null)
+        : null;
+
+      return ok({
+        org: {
+          id: orgRes.data.id,
+          name: orgRes.data.name,
+          slug: orgRes.data.slug,
+          is_personal: !!orgRes.data.is_personal,
+        },
+        scope_type: {
+          id: scopeTypeRes.data.id,
+          slug: scopeTypeRes.data.slug ?? null,
+          label_singular: scopeTypeRes.data.label_singular,
+          label_plural: scopeTypeRes.data.label_plural,
+          icon: scopeTypeRes.data.icon ?? null,
+          color: scopeTypeRes.data.color ?? null,
+        },
+        scope: {
+          id: scope.id,
+          slug: scope.slug ?? null,
+          name: scope.name,
+          description: scope.description ?? null,
+        },
+        target_item: targetItem,
+        items,
+      });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }

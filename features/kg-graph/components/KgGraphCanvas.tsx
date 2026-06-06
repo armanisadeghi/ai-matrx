@@ -120,6 +120,16 @@ export function KgGraphCanvas({
   // Hide low-value scaffolding kinds (phone/email/url/address) by default so the
   // signal isn't drowned in document noise — toggleable.
   const [hideNoise, setHideNoise] = useState(true);
+  // Org filter (org mode): always visible + changeable so the user is never stuck
+  // on a route-provided org. Seeded from the prop (route `?org=` / active org),
+  // re-synced when that changes.
+  const [orgFilter, setOrgFilter] = useState<string | null>(
+    organizationId ?? null,
+  );
+  useEffect(() => {
+    setOrgFilter(organizationId ?? null);
+  }, [organizationId]);
+
   // Org mode: narrow the graph to one scope's tagged sources (manual picker or
   // the `?scope=` route param). In scope mode the route's scope is fixed.
   const [scopeFilter, setScopeFilter] = useState<string | null>(initialScopeId);
