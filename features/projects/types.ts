@@ -81,6 +81,9 @@ export interface UpdateProjectOptions {
   name?: string;
   description?: string;
   settings?: Record<string, unknown>;
+  /** Move the project to a different organization (its owner's personal org
+   * counts as an org). Never set to null — every project belongs to an org. */
+  organizationId?: string;
 }
 
 export interface InviteProjectMemberOptions {

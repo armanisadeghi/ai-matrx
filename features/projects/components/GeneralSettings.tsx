@@ -1,13 +1,34 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Save, X, Loader2 } from "lucide-react";
+/**
+ * GeneralSettings — the project's General card on the Manage page.
+ *
+ * Clean read view (definition rows) with an inline Edit mode. Editable: name,
+ * description, AND organization (an org picker — moving a project between orgs,
+ * including the user's personal org, is a first-class action). Read-only: URL
+ * slug + created date (with reasons). Rendered inside ManageSection, so it owns
+ * no header/padding of its own.
+ */
+
+import React from "react";
+import { Save, X, Loader2, Pencil, Building2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
+import { useUserOrganizations } from "@/features/organizations/hooks";
 import { updateProject } from "../service";
 import {
   validateProjectName,
@@ -15,9 +36,6 @@ import {
   type Project,
   type ProjectRole,
 } from "../types";
-import { format } from "date-fns";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 
 interface GeneralSettingsProps {
   project: Project;
@@ -25,59 +43,59 @@ interface GeneralSettingsProps {
   userRole: ProjectRole;
 }
 
-export function GeneralSettings({
-  project,
-  canEdit,
-  userRole,
-}: GeneralSettingsProps) {
+export function GeneralSettings({ project, canEdit, userRole }: GeneralSettingsProps) {
   const dispatch = useAppDispatch();
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const { organizations, loading: orgsLoading } = useUserOrganizations();
 
-  const [name, setName] = useState(project.name);
-  const [description, setDescription] = useState(project.description ?? "");
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
 
-  useEffect(() => {
+  const [name, setName] = React.useState(project.name);
+  const [description, setDescription] = React.useState(project.description ?? "");
+  // Live org id (kept in sync after a successful save so read mode is correct
+  // without a full reload).
+  const [orgId, setOrgId] = React.useState(project.organizationId ?? "");
+
+  React.useEffect(() => {
     setName(project.name);
     setDescription(project.description ?? "");
+    setOrgId(project.organizationId ?? "");
     setIsEditing(false);
   }, [project]);
 
-  const hasChanges =
-    name !== project.name || description !== (project.description ?? "");
+  const currentOrg = organizations.find((o) => o.id === orgId) ?? null;
 
   const nameValidation = name
     ? validateProjectName(name)
     : { valid: false, error: "Name is required" };
-  const isFormValid = nameValidation.valid;
+  const hasChanges =
+    name !== project.name ||
+    description !== (project.description ?? "") ||
+    orgId !== (project.organizationId ?? "");
 
   const handleSave = async () => {
-    if (!isFormValid) {
-      toast.error("Please fix validation errors");
+    if (!nameValidation.valid) {
+      toast.error(nameValidation.error ?? "Please fix the errors");
       return;
     }
-
     setIsSaving(true);
     try {
       const result = await updateProject(project.id, {
         name,
         description: description || undefined,
+        organizationId: orgId || undefined,
       });
       if (result.success) {
         dispatch(
-          invalidateAndRefetchFullContext() as unknown as Parameters<
-            typeof dispatch
-          >[0],
+          invalidateAndRefetchFullContext() as unknown as Parameters<typeof dispatch>[0],
         );
-        toast.success("Project updated successfully");
+        toast.success("Project updated");
         setIsEditing(false);
       } else {
         toast.error(result.error ?? "Failed to update project");
       }
     } catch (error: unknown) {
-      const msg =
-        error instanceof Error ? error.message : "An unexpected error occurred";
-      toast.error(msg);
+      toast.error(error instanceof Error ? error.message : "Something went wrong");
     } finally {
       setIsSaving(false);
     }
@@ -86,94 +104,89 @@ export function GeneralSettings({
   const handleCancel = () => {
     setName(project.name);
     setDescription(project.description ?? "");
+    setOrgId(project.organizationId ?? "");
     setIsEditing(false);
   };
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">General Settings</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage project details
-          </p>
-        </div>
-        {canEdit && !isEditing && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditing(true)}
-          >
-            Edit
-          </Button>
-        )}
-        {canEdit && isEditing && (
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCancel}
-              disabled={isSaving}
-            >
-              <X className="h-4 w-4 mr-1" />
-              Cancel
+    <div className="space-y-4">
+      {/* Action row */}
+      {canEdit && (
+        <div className="flex justify-end -mt-1">
+          {!isEditing ? (
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              <Pencil className="h-3.5 w-3.5 mr-1.5" />
+              Edit
             </Button>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={!hasChanges || !isFormValid || isSaving}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
-            >
-              {isSaving ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-1" />
-              )}
-              Save
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <div className="grid gap-4 max-w-xl">
-        <div className="space-y-1.5">
-          <Label htmlFor="project-name">Project Name</Label>
-          {isEditing ? (
-            <>
-              <Input
-                id="project-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={50}
-                disabled={isSaving}
-                className={!nameValidation.valid ? "border-red-500" : ""}
-              />
-              {!nameValidation.valid && (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {nameValidation.error}
-                </p>
-              )}
-            </>
           ) : (
-            <p className="text-sm font-medium">{project.name}</p>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={handleCancel} disabled={isSaving}>
+                <X className="h-4 w-4 mr-1" />
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={!hasChanges || !nameValidation.valid || isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-1.5" />
+                )}
+                Save
+              </Button>
+            </div>
           )}
         </div>
+      )}
 
-        {project.slug && (
+      {isEditing ? (
+        <div className="grid gap-4 max-w-xl">
           <div className="space-y-1.5">
-            <Label>URL Slug</Label>
-            <p className="text-sm font-mono text-muted-foreground">
-              {project.slug}
-            </p>
+            <Label htmlFor="project-name">Name</Label>
+            <Input
+              id="project-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={50}
+              disabled={isSaving}
+              className={!nameValidation.valid ? "border-red-500" : ""}
+            />
+            {!nameValidation.valid && (
+              <p className="text-xs text-red-600 dark:text-red-400">{nameValidation.error}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="project-org">Organization</Label>
+            <Select value={orgId} onValueChange={setOrgId} disabled={isSaving || orgsLoading}>
+              <SelectTrigger id="project-org">
+                <SelectValue placeholder={orgsLoading ? "Loading…" : "Select an organization"} />
+              </SelectTrigger>
+              <SelectContent>
+                {organizations.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    <span className="flex items-center gap-2">
+                      {o.isPersonal ? (
+                        <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      ) : (
+                        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                      )}
+                      {o.isPersonal ? "Personal" : o.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground">
-              Slug cannot be changed after creation
+              Moving a project changes who can access it. Scopes from the previous
+              organization may no longer apply.
             </p>
           </div>
-        )}
 
-        <div className="space-y-1.5">
-          <Label htmlFor="project-description">Description</Label>
-          {isEditing ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="project-description">Description</Label>
             <Textarea
               id="project-description"
               value={description}
@@ -183,25 +196,72 @@ export function GeneralSettings({
               disabled={isSaving}
               placeholder="What is this project about?"
             />
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {project.description ?? "No description provided"}
-            </p>
+          </div>
+        </div>
+      ) : (
+        <dl className="divide-y divide-border rounded-lg border border-border">
+          <ReadRow label="Name">
+            <span className="font-medium text-foreground">{project.name}</span>
+          </ReadRow>
+          <ReadRow label="Organization">
+            {currentOrg ? (
+              <span className="inline-flex items-center gap-1.5">
+                {currentOrg.isPersonal ? (
+                  <>
+                    <User className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-medium">Personal</span>
+                  </>
+                ) : (
+                  <>
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-medium">{currentOrg.name}</span>
+                  </>
+                )}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">{orgsLoading ? "Loading…" : "—"}</span>
+            )}
+          </ReadRow>
+          <ReadRow label="Description">
+            <span className={project.description ? "text-foreground" : "text-muted-foreground italic"}>
+              {project.description || "No description"}
+            </span>
+          </ReadRow>
+          {project.slug && (
+            <ReadRow label="URL slug" hint="Cannot be changed after creation">
+              <span className="font-mono text-muted-foreground">{project.slug}</span>
+            </ReadRow>
           )}
-        </div>
+          <ReadRow label="Your role">
+            <Badge variant="secondary" className="capitalize">{getRoleLabel(userRole)}</Badge>
+          </ReadRow>
+          <ReadRow label="Created">
+            <span className="text-muted-foreground">
+              {project.createdAt ? format(new Date(project.createdAt), "MMMM d, yyyy") : "—"}
+            </span>
+          </ReadRow>
+        </dl>
+      )}
+    </div>
+  );
+}
 
-        <div className="space-y-1.5">
-          <Label>Your Role</Label>
-          <Badge className="w-fit">{getRoleLabel(userRole)}</Badge>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label>Created</Label>
-          <p className="text-sm text-muted-foreground">
-            {format(new Date(project.createdAt), "MMMM d, yyyy")}
-          </p>
-        </div>
+function ReadRow({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 px-4 py-3">
+      <div className="min-w-0">
+        <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
+        {hint && <p className="text-xs text-muted-foreground/70 mt-0.5">{hint}</p>}
       </div>
+      <dd className="text-sm text-right min-w-0">{children}</dd>
     </div>
   );
 }

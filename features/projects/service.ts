@@ -159,6 +159,12 @@ export async function updateProject(
     if (updates.description !== undefined)
       updateData.description = updates.description;
     if (updates.settings !== undefined) updateData.settings = updates.settings;
+    // Move to a different org (its owner's personal org is a valid target).
+    // Never persist a null org — every project belongs to one.
+    if (updates.organizationId !== undefined) {
+      const orgId = normalizeOrgId(updates.organizationId);
+      if (orgId) updateData.organization_id = orgId;
+    }
 
     const { data, error } = await supabase
       .from("ctx_projects")
