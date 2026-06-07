@@ -4,7 +4,12 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import * as taskService from "../services/taskService";
 import type { UpdateTaskInput } from "../services/taskService";
-import * as projectService from "../services/projectService";
+import {
+  createProject as createProjectSvc,
+  updateProject as updateProjectSvc,
+  deleteProject as deleteProjectSvc,
+} from "@/features/projects/service";
+import { generateProjectSlug } from "@/features/projects/types";
 import {
   fetchFullContext,
   invalidateAndRefetchFullContext,
@@ -87,9 +92,12 @@ export const createProjectThunk = createAsyncThunk<
   if (!name.trim()) return;
   dispatch(setIsCreatingProject(true));
   try {
-    const project = await projectService.createProject(name);
-    if (project) {
-      dispatch(setActiveProject(project.id));
+    const result = await createProjectSvc({
+      name,
+      slug: generateProjectSlug(name),
+    });
+    if (result.success && result.project) {
+      dispatch(setActiveProject(result.project.id));
       dispatch(setNewProjectName(""));
       await dispatch(invalidateAndRefetchFullContext());
     }
@@ -105,8 +113,8 @@ export const updateProjectThunk = createAsyncThunk<
 >("tasksUi/updateProject", async ({ projectId, name }, { dispatch }) => {
   dispatch(setOperatingProjectId(projectId));
   try {
-    const ok = await projectService.updateProject(projectId, { name });
-    if (ok) await dispatch(invalidateAndRefetchFullContext());
+    const result = await updateProjectSvc(projectId, { name });
+    if (result.success) await dispatch(invalidateAndRefetchFullContext());
   } finally {
     dispatch(setOperatingProjectId(null));
   }
@@ -119,8 +127,8 @@ export const deleteProjectThunk = createAsyncThunk<
 >("tasksUi/deleteProject", async (projectId, { dispatch }) => {
   dispatch(setOperatingProjectId(projectId));
   try {
-    const ok = await projectService.deleteProject(projectId);
-    if (ok) await dispatch(invalidateAndRefetchFullContext());
+    const result = await deleteProjectSvc(projectId);
+    if (result.success) await dispatch(invalidateAndRefetchFullContext());
   } finally {
     dispatch(setOperatingProjectId(null));
   }
