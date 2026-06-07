@@ -2,10 +2,11 @@
 
 /**
  * ProjectManage — single-page, sectioned project settings at
- * /projects/[projectId]/settings. Mirrors OrgManage (no tabs): General, Scopes,
- * Members, Invitations, Danger — each a Card, gated by role. Reuses the existing
- * GeneralSettings / MemberManagement / InvitationManager / DangerZone +
- * EntityScopeTagger (scope association). Resolves the project by slug or UUID.
+ * /projects/[projectId]/settings. Models the polished OrgManage aesthetic: an
+ * identity header, then the editable General form (no section chrome — fields
+ * autosave in place), a Details card (ids / slug / created), Scopes, Members,
+ * Invitations, and Danger — each gated by role. Resolves the project by slug or
+ * UUID.
  */
 
 import React from "react";
@@ -14,12 +15,14 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Loader2,
-  Settings,
   Users,
   Mail,
   AlertTriangle,
   Tag,
+  Info,
+  Database,
   FolderKanban,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -30,6 +33,8 @@ import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
 import type { Project } from "@/features/projects/types";
 import { GeneralSettings } from "./GeneralSettings";
+import { ProjectDetails } from "./ProjectDetails";
+import { ProjectReferencesPanel } from "./ProjectReferencesPanel";
 import { MemberManagement } from "./MemberManagement";
 import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
@@ -75,8 +80,11 @@ export function ProjectManage() {
     };
   }, [projectParam]);
 
-  const { role, isOwner, isAdmin, canManageMembers, canManageSettings, canDelete } =
+  const { role, isOwner, canManageMembers, canManageSettings, canDelete } =
     useProjectUserRole(project?.id);
+
+  const applyPatch = (patch: Partial<Project>) =>
+    setProject((prev) => (prev ? { ...prev, ...patch } : prev));
 
   if (resolving) {
     return (
@@ -97,7 +105,11 @@ export function ProjectManage() {
           <p className="text-sm text-muted-foreground mb-6">
             This project doesn&apos;t exist or you don&apos;t have access.
           </p>
-          <Button variant="outline" size="sm" onClick={() => router.push("/projects")}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/projects")}
+          >
             <ArrowLeft className="h-4 w-4 mr-2" /> All projects
           </Button>
         </Card>
@@ -107,31 +119,76 @@ export function ProjectManage() {
 
   return (
     <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
-      <div className="max-w-3xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6">
+      <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6">
+        {/* Top actions */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.push(`/projects/${project.id}`)}
-            className="text-muted-foreground"
+            onClick={() => router.back()}
+            className="text-muted-foreground -ml-2"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back to project
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href={`/projects/${project.id}`}>Open workspace</Link>
+            <Link href={`/projects/${project.id}`}>
+              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+              Open workspace
+            </Link>
           </Button>
         </div>
 
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Manage project</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{project.name}</p>
-        </div>
+        {/* Identity header */}
+        <Card className="p-5 relative overflow-hidden">
+          <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-sky-500 to-emerald-500" />
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-sky-500 text-white">
+              <FolderKanban className="h-6 w-6" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl font-bold text-foreground truncate">
+                Manage project
+              </h1>
+              <p className="mt-0.5 text-sm text-muted-foreground truncate">
+                {project.name}
+              </p>
+            </div>
+          </div>
+        </Card>
 
-        <ManageSection icon={<Settings className="h-4 w-4" />} title="General">
-          <GeneralSettings project={project} canEdit={canManageSettings} userRole={role} />
+        {!canManageSettings && (
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              View-only access. Contact a project admin to make changes.
+            </p>
+          </div>
+        )}
+
+        {/* General — editable form, no section header chrome */}
+        <Card className="p-5">
+          <GeneralSettings
+            project={project}
+            canEdit={canManageSettings}
+            userRole={role}
+            onPatch={applyPatch}
+          />
+        </Card>
+
+        {/* Details — ids, slug, created (copyable) */}
+        <ManageSection
+          icon={<Info className="h-4 w-4" />}
+          title="Details"
+          subtitle="Identifiers and timestamps for this project."
+        >
+          <ProjectDetails project={project} />
         </ManageSection>
 
-        <ManageSection icon={<Tag className="h-4 w-4" />} title="Scopes" subtitle="Tag this project with the org's scopes">
+        {/* Scopes */}
+        <ManageSection
+          icon={<Tag className="h-4 w-4" />}
+          title="Scopes"
+          subtitle="Tag this project with the org's scopes."
+        >
           <EntityScopeTagger
             entityType="project"
             entityId={project.id}
@@ -139,14 +196,28 @@ export function ProjectManage() {
           />
         </ManageSection>
 
+        {/* Members */}
         {canManageMembers && (
-          <ManageSection icon={<Users className="h-4 w-4" />} title="Members">
-            <MemberManagement projectId={project.id} userRole={role} isOwner={isOwner} />
+          <ManageSection
+            icon={<Users className="h-4 w-4" />}
+            title="Members"
+            subtitle="Who's on the project and what they can do."
+          >
+            <MemberManagement
+              projectId={project.id}
+              userRole={role}
+              isOwner={isOwner}
+            />
           </ManageSection>
         )}
 
+        {/* Invitations */}
         {canManageSettings && (
-          <ManageSection icon={<Mail className="h-4 w-4" />} title="Invitations">
+          <ManageSection
+            icon={<Mail className="h-4 w-4" />}
+            title="Invitations"
+            subtitle="Invite people by email and manage pending invites."
+          >
             <InvitationManager
               projectId={project.id}
               projectName={project.name}
@@ -155,9 +226,21 @@ export function ProjectManage() {
           </ManageSection>
         )}
 
+        {/* References — honest audit of every table that references this project */}
+        <ManageSection
+          icon={<Database className="h-4 w-4" />}
+          title="References"
+          subtitle="Every table in the database that references this project."
+        >
+          <ProjectReferencesPanel projectId={project.id} embedded />
+        </ManageSection>
+
+        {/* Danger zone */}
         {canDelete && (
           <ManageSection
-            icon={<AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />}
+            icon={
+              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+            }
             title="Danger zone"
             danger
           >
@@ -184,12 +267,28 @@ function ManageSection({
 }) {
   return (
     <Card className={`p-5 ${danger ? "border-red-200 dark:border-red-900/50" : ""}`}>
-      <div className="flex items-center gap-2 mb-4">
-        <span className={danger ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}>
+      <div className="mb-4 flex items-center gap-2.5">
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+            danger
+              ? "bg-red-500/10 text-red-600 dark:text-red-400"
+              : "bg-muted text-muted-foreground"
+          }`}
+        >
           {icon}
         </span>
-        <h2 className="text-base font-semibold">{title}</h2>
-        {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
+        <div>
+          <h2
+            className={`text-base font-semibold leading-tight ${
+              danger ? "text-red-700 dark:text-red-400" : ""
+            }`}
+          >
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="text-xs text-muted-foreground">{subtitle}</p>
+          )}
+        </div>
       </div>
       {children}
     </Card>

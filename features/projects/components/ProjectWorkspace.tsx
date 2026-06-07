@@ -37,6 +37,7 @@ import { supabase } from "@/utils/supabase/client";
 import { getProject } from "@/features/projects/service";
 import { useProjectMembers, useProjectUserRole } from "@/features/projects/hooks";
 import { ProjectReferencesPanel } from "@/features/projects/components/ProjectReferencesPanel";
+import { ProjectDetails } from "@/features/projects/components/ProjectDetails";
 import type { Project } from "@/features/projects/types";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { AssignedScopesDisplay } from "@/features/scopes/components/entity-context/AssignedScopesDisplay";
@@ -299,12 +300,13 @@ export function ProjectWorkspace() {
           />
         </Card>
 
-        {/* Advanced: all FK references */}
+        {/* Details & all FK references (a useful audit summary, collapsible) */}
         <details className="group">
           <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground select-none">
-            Advanced: all references
+            Details &amp; references
           </summary>
-          <div className="mt-3">
+          <div className="mt-3 space-y-4">
+            <ProjectDetails project={project} />
             <ProjectReferencesPanel projectId={project.id} />
           </div>
         </details>
