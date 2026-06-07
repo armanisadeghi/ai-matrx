@@ -39,7 +39,7 @@ import { cn } from "@/styles/themes/utils";
 import {
   extractAgentJsonBlock,
   findAgentJsonBlockSpan,
-  flattenContent,
+  normalizeAgentObject,
   parsePartialAgentJson,
   splitAroundAgentJsonBlock,
   type PartialAgentData,
@@ -641,38 +641,14 @@ function renderToolBadge(t: unknown): string {
   return "tool";
 }
 
-/** When we already have the parsed object from the JSON tracker, route it
- *  through the same normalizer the raw-text path uses so both paths render
- *  identically. */
+/** When we already have the parsed object from the JSON tracker, normalize it
+ *  directly (object → object). We must NOT re-stringify it into a ```json
+ *  fence and re-parse: a `messages[].content` string that itself contains a
+ *  ``` fence (an embedded output-schema example, common in pipeline agents)
+ *  makes the fence scanner find a premature closing ``` and truncate every
+ *  field after the first message — dropping variables, settings, and tags. */
 function normalizeFromExtracted(
   raw: Record<string, unknown>,
 ): PartialAgentData {
-  const normalized = parsePartialAgentJson(
-    "```json\n" + safeStringify(raw) + "\n```",
-  );
-  if (normalized.isComplete) return normalized;
-  // Fallback: manually flatten from the raw object.
-  const messages = Array.isArray(raw.messages)
-    ? (raw.messages as unknown[])
-        .map((m) => {
-          if (!m || typeof m !== "object") return null;
-          const r = m as { role?: unknown; content?: unknown };
-          if (typeof r.role !== "string") return null;
-          return { role: r.role, content: flattenContent(r.content) };
-        })
-        .filter(Boolean as unknown as <T>(v: T) => v is NonNullable<T>)
-    : undefined;
-  return {
-    ...normalized,
-    messages: messages as PartialAgentData["messages"],
-    isComplete: true,
-  };
-}
-
-function safeStringify(v: unknown): string {
-  try {
-    return JSON.stringify(v, null, 2);
-  } catch {
-    return "{}";
-  }
+  return normalizeAgentObject(raw);
 }
