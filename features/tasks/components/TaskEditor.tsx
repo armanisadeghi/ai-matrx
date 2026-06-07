@@ -52,6 +52,7 @@ import type { TaskLabel } from "@/features/tasks/services/taskService";
 import TaskScopeTags from "./TaskScopeTags";
 import TaskAssigneePicker from "./TaskAssigneePicker";
 import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
+import { TaskAssociatedResources } from "./TaskAssociatedResources";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import { Button } from "@/components/ui/button";
@@ -610,6 +611,9 @@ function TaskEditorInner({ taskId }: { taskId: string }) {
           <section>
             <TaskAttachmentsPanel taskId={taskId} />
           </section>
+
+          {/* Associated resources — anything FK-linked to this task (task_id) */}
+          <TaskAssociatedResources taskId={taskId} />
 
           {/* Comments */}
           <section>
