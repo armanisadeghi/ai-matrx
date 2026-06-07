@@ -37,7 +37,6 @@ export type HierarchyProject = {
   slug: string | null;
   description: string | null;
   organization_id: string | null;
-  is_personal: boolean | null;
   settings: Record<string, unknown> | null;
   created_at: string | null;
   created_by: string | null;
@@ -125,7 +124,7 @@ export const hierarchyService = {
     let query = supabase
       .from("ctx_projects")
       .select(
-        "id, name, slug, description, organization_id, is_personal, settings, created_at, created_by",
+        "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
       .order("name");
 
@@ -144,7 +143,7 @@ export const hierarchyService = {
     const { data, error } = await supabase
       .from("ctx_projects")
       .select(
-        "id, name, slug, description, organization_id, is_personal, settings, created_at, created_by",
+        "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
       .eq("created_by", userId)
       .order("name");
@@ -391,7 +390,6 @@ export const hierarchyService = {
       slug: proj.slug,
       description: proj.description ?? null,
       organization_id: proj.organizationId ?? null,
-      is_personal: proj.isPersonal,
       settings: (proj.settings as Record<string, unknown> | null) ?? null,
       created_at: proj.createdAt,
       created_by: proj.createdBy ?? null,

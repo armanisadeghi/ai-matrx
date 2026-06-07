@@ -5630,7 +5630,6 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
-          is_personal: boolean | null
           name: string
           organization_id: string | null
           settings: Json | null
@@ -5642,7 +5641,6 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          is_personal?: boolean | null
           name: string
           organization_id?: string | null
           settings?: Json | null
@@ -5654,7 +5652,6 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          is_personal?: boolean | null
           name?: string
           organization_id?: string | null
           settings?: Json | null
@@ -24198,7 +24195,6 @@ export type Database = {
           variables_panel_style: string
         }[]
       }
-      agx_get_user_context_tree: { Args: never; Returns: Json }
       agx_get_user_shortcuts: {
         Args: never
         Returns: {
@@ -27283,28 +27279,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      get_user_projects: {
-        Args: { p_org_id?: string }
-        Returns: {
-          created_at: string
-          created_by: string
-          description: string
-          id: string
-          is_personal: boolean
-          member_count: number
-          name: string
-          organization_id: string
-          role: Database["public"]["Enums"]["project_role"]
-          settings: Json
-          slug: string
-          updated_at: string
-        }[]
-      }
       get_user_scopes: { Args: { p_user_id?: string }; Returns: Json }
-      get_user_scopes_with_projects: {
-        Args: { p_user_id?: string }
-        Returns: Json
-      }
       get_user_session_data: {
         Args: { p_user_id: string }
         Returns: {

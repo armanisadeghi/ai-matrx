@@ -64,7 +64,11 @@ export function ProjectWorkspace() {
 
   const [project, setProject] = React.useState<Project | null>(null);
   const [resolving, setResolving] = React.useState(true);
-  const [org, setOrg] = React.useState<{ name: string; slug: string } | null>(null);
+  const [org, setOrg] = React.useState<{
+    name: string;
+    slug: string;
+    isPersonal: boolean;
+  } | null>(null);
   const [taskCounts, setTaskCounts] = React.useState<{ open: number; done: number }>({
     open: 0,
     done: 0,
@@ -94,7 +98,8 @@ export function ProjectWorkspace() {
       setResolving(false);
       if (resolved?.organizationId) {
         const o = await getOrganizationBySlugOrId(resolved.organizationId);
-        if (!cancelled && o) setOrg({ name: o.name, slug: o.slug });
+        if (!cancelled && o)
+          setOrg({ name: o.name, slug: o.slug, isPersonal: o.isPersonal });
       }
     })();
     return () => {
@@ -172,7 +177,7 @@ export function ProjectWorkspace() {
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">{project.name}</h1>
               <div className="flex items-center gap-2 flex-wrap mt-1.5">
-                {!project.organizationId ? (
+                {org?.isPersonal ? (
                   <Badge variant="secondary">Personal</Badge>
                 ) : (
                   <Link href={`/organizations/${org?.slug ?? project.organizationId}`}>

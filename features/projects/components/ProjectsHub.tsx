@@ -53,7 +53,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 type Stat = { open: number; done: number; preview: { id: string; title: string }[] };
 type ViewMode = "cards" | "table";
 type SortKey = "name" | "org" | "open" | "done";
-type OrgMap = Map<string, { name: string; slug: string }>;
+type OrgMap = Map<string, { name: string; slug: string; isPersonal: boolean }>;
 
 export function ProjectsHub({
   orgParam,
@@ -78,9 +78,18 @@ export function ProjectsHub({
 
   const orgMap = React.useMemo<OrgMap>(() => {
     const m: OrgMap = new Map();
-    for (const o of organizations) m.set(o.id, { name: o.name, slug: o.slug });
+    for (const o of organizations)
+      m.set(o.id, { name: o.name, slug: o.slug, isPersonal: o.isPersonal });
     return m;
   }, [organizations]);
+
+  // A project is "personal" iff its owning org is the user's personal org.
+  // ctx_projects.is_personal no longer exists; personal-ness is org-derived.
+  const isPersonalProject = React.useCallback(
+    (organizationId: string | null) =>
+      !!organizationId && orgMap.get(organizationId)?.isPersonal === true,
+    [orgMap],
+  );
 
   // Projects (RLS-filtered, nav-tree-independent).
   const [projects, setProjects] = React.useState<ProjectWithRole[]>([]);
@@ -94,7 +103,7 @@ export function ProjectsHub({
       setLoading(true);
       const { data, error } = await supabase
         .from("ctx_projects")
-        .select("id, name, slug, description, organization_id, is_personal, created_by, updated_at")
+        .select("id, name, slug, description, organization_id, created_by, updated_at")
         .order("updated_at", { ascending: false });
       if (cancelled) return;
       if (error) {
@@ -107,7 +116,6 @@ export function ProjectsHub({
           slug: string | null;
           description: string | null;
           organization_id: string | null;
-          is_personal: boolean | null;
           created_by: string | null;
         };
         setProjects(
@@ -118,7 +126,9 @@ export function ProjectsHub({
             description: r.description ?? null,
             organizationId: r.organization_id ?? null,
             createdBy: r.created_by ?? null,
-            isPersonal: !!r.is_personal,
+            // Personal-ness is org-derived (see isPersonalProject); the project
+            // row no longer carries is_personal. Resolved against orgMap at render.
+            isPersonal: false,
             settings: {},
             createdAt: "",
             updatedAt: "",
@@ -228,11 +238,11 @@ export function ProjectsHub({
   }, [projects, orgFilterId, scopeProjectIds, query]);
 
   const isFiltered = Boolean(orgParam || scopeParam);
-  // "Personal" is org-driven: a project belongs to whatever org owns it; only a
-  // project with NO org is personal. (The legacy is_personal flag is ignored —
-  // it's being removed; see docs/IS_PERSONAL_REMOVAL.md.)
-  const personal = filtered.filter((p) => !p.organizationId);
-  const teams = filtered.filter((p) => p.organizationId);
+  // "Personal" is org-driven: a project is personal iff its owning org is the
+  // user's personal org (organizations.is_personal). Every project now has an
+  // org, so org-less is no longer the signal.
+  const personal = filtered.filter((p) => isPersonalProject(p.organizationId));
+  const teams = filtered.filter((p) => !isPersonalProject(p.organizationId));
   const subtitle = orgFilterId
     ? `Projects in ${orgMap.get(orgFilterId)?.name ?? "this organization"}`
     : scopeParam
@@ -363,8 +373,11 @@ function ProjectsTable({
   const [sortKey, setSortKey] = React.useState<SortKey>("name");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
 
+  const orgEntry = (p: ProjectWithRole) =>
+    p.organizationId ? orgMap.get(p.organizationId) ?? null : null;
+  const isPersonal = (p: ProjectWithRole) => orgEntry(p)?.isPersonal === true;
   const orgLabel = (p: ProjectWithRole) =>
-    !p.organizationId ? "Personal" : orgMap.get(p.organizationId)?.name ?? "Org";
+    isPersonal(p) ? "Personal" : orgEntry(p)?.name ?? "Org";
 
   const sorted = React.useMemo(() => {
     const arr = [...projects];
@@ -417,7 +430,7 @@ function ProjectsTable({
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <SortHead k="name">Project</SortHead>
-            <SortHead k="org" className="w-48">Organization</SortHead>
+            <SortHead k="org" className="w-60">Organization</SortHead>
             <SortHead k="open" className="w-24 text-right">Open</SortHead>
             <SortHead k="done" className="w-24 text-right">Done</SortHead>
             <TableHead className="w-40 text-right">Actions</TableHead>
@@ -426,7 +439,7 @@ function ProjectsTable({
         <TableBody>
           {sorted.map((p) => {
             const s = stats.get(p.id);
-            const isPersonal = !p.organizationId;
+            const rowIsPersonal = isPersonal(p);
             return (
               <TableRow
                 key={p.id}
@@ -442,12 +455,12 @@ function ProjectsTable({
                   </div>
                 </TableCell>
                 <TableCell className="py-2">
-                  {isPersonal ? (
+                  {rowIsPersonal ? (
                     <Badge variant="secondary" className="text-[10px]">Personal</Badge>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
                       <Building2 className="h-3.5 w-3.5" />
-                      {orgMap.get(p.organizationId!)?.name ?? "Org"}
+                      {orgEntry(p)?.name ?? "Org"}
                     </span>
                   )}
                 </TableCell>
@@ -488,6 +501,7 @@ function ProjectHubCard({
   const open = stat?.open ?? 0;
   const done = stat?.done ?? 0;
   const org = project.organizationId ? orgMap.get(project.organizationId) : null;
+  const isPersonal = org?.isPersonal === true;
   const href = `/projects/${project.id}`;
 
   return (
@@ -508,7 +522,7 @@ function ProjectHubCard({
               </h3>
             </button>
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
-              {!project.organizationId ? (
+              {isPersonal ? (
                 <Badge variant="secondary" className="text-[10px]">Personal</Badge>
               ) : (
                 <Badge variant="outline" className="text-[10px] gap-1">
