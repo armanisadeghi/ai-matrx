@@ -22,6 +22,7 @@ import {
   ArrowLeft,
   Loader2,
   Settings,
+  Pencil,
   Network,
   Users,
   ListTodo,
@@ -40,7 +41,7 @@ import { ProjectReferencesPanel } from "@/features/projects/components/ProjectRe
 import type { Project } from "@/features/projects/types";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { UserAvatarDisplay } from "@/components/user/UserIdentity";
-import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
+import { AssignedScopesDisplay } from "@/features/scopes/components/entity-context/AssignedScopesDisplay";
 import {
   CONTENT_ROLES,
   entriesByRole,
@@ -201,16 +202,6 @@ export function ProjectWorkspace() {
                 <Stat icon={<Users className="h-4 w-4" />} value={members.length} label={members.length === 1 ? "member" : "members"} />
               </div>
 
-              {/* Scope chips (associate/disassociate inline) */}
-              <div className="mt-3">
-                <EntityScopeTagger
-                  entityType="project"
-                  entityId={project.id}
-                  organizationId={project.organizationId}
-                  variant="compact"
-                  showHeader={false}
-                />
-              </div>
             </div>
 
             <div className="flex flex-col items-end gap-2 shrink-0">
@@ -281,18 +272,28 @@ export function ProjectWorkspace() {
           })}
         </div>
 
-        {/* Scopes & Knowledge */}
+        {/* Scopes & Knowledge — read-only Scope Type: Scope display */}
         <Card className="p-5">
-          <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center justify-between gap-3 mb-4">
             <h2 className="text-base font-semibold">Scopes</h2>
-            <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
-              <Link href={kgHref}>
-                Knowledge graph
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Link>
-            </Button>
+            <div className="flex items-center gap-1">
+              {role && (
+                <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+                  <Link href={`/projects/${project.id}/settings#scopes`}>
+                    <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                    Edit scopes
+                  </Link>
+                </Button>
+              )}
+              <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+                <Link href={kgHref}>
+                  Knowledge graph
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Link>
+              </Button>
+            </div>
           </div>
-          <EntityScopeTagger
+          <AssignedScopesDisplay
             entityType="project"
             entityId={project.id}
             organizationId={project.organizationId}
