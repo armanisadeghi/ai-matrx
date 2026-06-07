@@ -60,6 +60,7 @@ import {
   selectScopesByOrg,
 } from "@/features/agent-context/redux/scope/scopesSlice";
 import { OrgHomeScopeSection } from "@/features/scope-system/components/OrgHomeScopeSection";
+import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
 import { TemplateGalleryDrawer } from "@/features/scope-system/components/TemplateGalleryDrawer";
 import {
@@ -428,37 +429,15 @@ export function OrgWorkspace() {
           </div>
 
           {scopeTypes.length === 0 ? (
-            <Card className="p-6 space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="text-sky-600 dark:text-sky-400 shrink-0">
-                  <FolderTree className="h-7 w-7" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-base font-semibold mb-1">
-                    Set up your scopes
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Scopes are the dimensions your team works across — clients,
-                    departments, cases, products, anything. They are the most
-                    important part of the context your agents receive. Define a
-                    few and they show up here with all their details.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 pt-2 border-t border-border">
-                <Button size="sm" onClick={() => setAddScopeOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1.5" />
-                  Add a Scope Type
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setGalleryOpen(true)}
-                >
-                  <LayoutTemplate className="h-4 w-4 mr-1.5" />
-                  Browse templates
-                </Button>
-              </div>
+            <Card className="p-6 md:p-8">
+              <ScopeOnboarding
+                orgId={organization.id}
+                isPersonal={organization.isPersonal ?? undefined}
+                onChanged={() => {
+                  dispatch(fetchScopeTypes(organization.id));
+                  dispatch(fetchScopes({ org_id: organization.id }));
+                }}
+              />
             </Card>
           ) : (
             <div className="space-y-4">

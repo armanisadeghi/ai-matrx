@@ -81,7 +81,7 @@ const PRO_DIMENSIONS: PreviewDimension[] = [
     rows: ["Acme Co.", "Globex"],
     columns: [
       { name: "Industry", samples: ["Manufacturing", "Retail"] },
-      { name: "Primary contact", samples: ["Jane Doe", "Sam Lee"] },
+      { name: "Contact", samples: ["Jane Doe", "Sam Lee"] },
       { name: "Status", samples: ["Active", "Prospect"] },
     ],
   },
@@ -95,6 +95,7 @@ const PRO_DIMENSIONS: PreviewDimension[] = [
     columns: [
       { name: "Lead", samples: ["Priya N.", "Marco R."] },
       { name: "Headcount", samples: ["12", "8"] },
+      { name: "Budget", samples: ["$1.4M", "$900K"] },
     ],
   },
   {
@@ -103,10 +104,11 @@ const PRO_DIMENSIONS: PreviewDimension[] = [
     tone: "text-amber-600 dark:text-amber-400",
     singular: "Location",
     plural: "Locations",
-    rows: ["HQ", "West Coast"],
+    rows: ["HQ — Austin", "West Coast"],
     columns: [
       { name: "Region", samples: ["Central", "West"] },
       { name: "Type", samples: ["Office", "Remote"] },
+      { name: "Headcount", samples: ["140", "35"] },
     ],
   },
 ];
@@ -135,6 +137,7 @@ const PERSONAL_DIMENSIONS: PreviewDimension[] = [
     columns: [
       { name: "Species", samples: ["Dog", "Cat"] },
       { name: "Vet", samples: ["Dr. Smith", "Dr. Patel"] },
+      { name: "Age", samples: ["4", "2"] },
     ],
   },
   {
@@ -147,6 +150,7 @@ const PERSONAL_DIMENSIONS: PreviewDimension[] = [
     columns: [
       { name: "Target date", samples: ["Jun 2026", "Dec 2026"] },
       { name: "Status", samples: ["In progress", "Not started"] },
+      { name: "Progress", samples: ["60%", "2 of 12"] },
     ],
   },
 ];
