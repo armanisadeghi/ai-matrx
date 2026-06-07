@@ -2,9 +2,9 @@
 
 **Status:** `active` — both features in production
 **Tier:** `2`
-**Last updated:** `2026-04-25`
+**Last updated:** `2026-06-06`
 
-> Combined doc. Tasks live under projects; they share the org-scoped architecture documented in [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
+> Combined doc. **Projects and Tasks are first-class _containers_** (like orgs and scopes): nearly every resource table carries both a `project_id` and a `task_id` column, so "what belongs to this project/task" is a direct FK query — the same shape as the org workspace's `organization_id`. Tasks nest under projects (`project_id`) and under each other (`parent_task_id`). They share the org-scoped architecture documented in [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 
 ---
 
@@ -16,33 +16,41 @@ Org-scoped project management. Projects group work within an organization; tasks
 
 ## Entry points
 
-**Routes**
-- `app/(authenticated)/projects/` — project list + detail
-- `app/(authenticated)/tasks/` — task list + detail
-- `app/(authenticated)/invitations/project/` — project-scoped invitation accept page (org invitations live at `/invitations/organization/`)
+**Routes (canonical, top-level — un-nested from orgs)**
+- `app/(core)/projects/page.tsx` — **ProjectsHub** launcher; `?org=<slug|id>` / `?scope=<id>` filtered views. Self-fetches `ctx_projects` (RLS-filtered), not nav-tree-dependent.
+- `app/(core)/projects/[projectId]/page.tsx` — **ProjectWorkspace** (resolves by slug or UUID): hero + nested task list + associated resources + scopes + advanced references.
+- `app/(core)/projects/[projectId]/settings/page.tsx` — **ProjectManage** (single-page sectioned, no tabs): General / Scopes / Members / Invitations / Danger.
+- `app/(core)/tasks/page.tsx` — `TasksDesktopShell` (3-pane); `app/(core)/tasks/[id]/page.tsx` — `TaskEditor`.
+- **Legacy redirects:** `app/(core)/organizations/[orgId]/projects/**` → `/projects?org=` and `/projects/[id]`; `(transitional)/settings/projects` → `/projects`. `(transitional)/projects/**` removed.
 
 **Feature code — `features/projects/`**
-- `components/`, `hooks.ts`, `service.ts`, `types.ts`, `index.ts`
-- [`features/scopes/FEATURE.md`](../scopes/FEATURE.md) — the canonical scope architecture (replaces the legacy seed doc)
+- `service.ts` (canonical CRUD + members + invitations + `getProjectReferences`), `hooks.ts`, `types.ts`
+- `components/ProjectWorkspace.tsx`, `ProjectsHub.tsx`, `ProjectManage.tsx`, `ProjectTaskList.tsx` (new), plus `GeneralSettings`/`MemberManagement`/`InvitationManager`/`DangerZone`/`ProjectReferencesPanel`/`ProjectFormSheet`/`CreateProjectModal` (reused)
 - `README.md` — user-facing guide
 
 **Feature code — `features/tasks/`**
-- `components/`, `hooks/`, `services/`, `utils/`, `types/`, `index.ts`
-- `redux/` — slice + selectors
-- `sql/` — schema / migration artifacts
-- `widgets/` — task widgets (renderable mini-components within task detail)
+- `components/` (incl. `TaskEditor.tsx`, `TasksDesktopShell.tsx`, `TaskAssociatedResources.tsx` (new)), `hooks/`, `services/taskService.ts`, `utils/`, `types/`
+- `redux/` — `taskUiSlice`, `selectors`, `thunks`, `taskAssociationsSlice` (M2M engine: `associateWithTask`/`dissociateFromTask` — UI panel pending)
+- `widgets/` — task widgets
+
+**The container primitive (shared, in `features/organizations/`)**
+- `hooks/useContainerInventory.ts` — counts catalogue resources for any container by `{column: organization_id|project_id|task_id, value}`. `useOrgResourceInventory` delegates to it.
+- `components/ContainerResourceSheet.tsx` — lists a kind's FK-linked items with peek/open (reused by project workspace + task editor).
+- `resource-catalogue.ts` + `OrgResourceRoleSection.tsx` (now `onContribute` optional) — role-grouped tiles.
 
 ---
 
 ## Data model
 
-**DB tables** (verify in Supabase; names representative):
-- `projects` — `id`, `organization_id`, `name`, `description`, owner/roles, timestamps
-- `tasks` — `id`, `project_id`, `status`, `assignees[]`, `due_at`, content, links to `cx_conversation` rows
-- `project_members` / `task_assignments` — M2M membership
-- `project_invitations` — invitations scoped to a specific project
+**DB tables** (Supabase, project `txzxabzwovsujtloxrus`):
+- `ctx_projects` — `id`, `organization_id` (nullable — personal/standalone), `name`, `slug`, `description`, `is_personal`, `created_by`, `settings`, timestamps
+- `ctx_tasks` — `id`, `title`, `description`, `project_id`, `parent_task_id` (subtasks), `status` (`incomplete`/`completed`), `priority` (enum), `due_date`, `assignee_id`, `organization_id`, `is_public`, `settings`
+- `ctx_project_members` / `ctx_project_invitations` — membership + invites
+- `ctx_task_comments` / `ctx_task_attachments` / `ctx_task_assignments` — task sub-records
+- `ctx_task_associations` — generic task↔entity M2M (`get_task_associations` / `get_tasks_for_entity` / `associate*` RPCs)
+- `getProjectReferences(projectId)` RPC — every table FK-referencing a project (`{schemaName, tableName, columnName, rowCount}`)
 
-The scope columns `organization_id` on projects, `project_id` on tasks, plus derived `organization_id` on tasks (via join) make these first-class citizens in the [scope system](../scopes/FEATURE.md).
+**Container insight:** nearly every resource table carries both `project_id` and `task_id`. FK-association is therefore universal and read via `useContainerInventory`. Projects/tasks are also scopeable (`ctx_scope_assignments`, entity types `project`/`task`) and counted in the org resource catalogue.
 
 ---
 
@@ -100,6 +108,7 @@ The scope columns `organization_id` on projects, `project_id` on tasks, plus der
 
 ## Change log
 
+- `2026-06-06` — claude: **reimagined Projects + enhanced Tasks as containers.** New `useContainerInventory` primitive (org delegates). New canonical top-level **ProjectWorkspace** (`/projects/[id]` — hero, nested ProjectTaskList with subtasks + quick-add, role-grouped associated resources via `project_id`, scope tagging, ProjectReferencesPanel), **ProjectsHub** (`/projects` with `?org=`/`?scope=` filters + live task previews), and **ProjectManage** (`/projects/[id]/settings`, single-page sectioned — no tabs). Task editor gained an **Associated resources** section (FK by `task_id`). Legacy org-nested + transitional project routes now redirect; `createProjectThunk` migrated to the canonical `features/projects/service.ts`. **Pending:** a UI panel for `ctx_task_associations` (M2M linked items) — the redux engine exists; only the panel is unbuilt. Full `features/tasks/services/projectService.ts` dedup still pending (used by `useTaskManager`/`ImportTasksModal` for `getProjectsWithTasks`/`ensureDefaultProject`).
 - `2026-04-25` — Stopped using `features/projects/index.ts` and `features/tasks/redux/index.ts` as import entry points: call sites import from `service.ts` / `types.ts` / `hooks.ts` / `components/*` (projects) and from `taskUiSlice` / `selectors` / `thunks` / `taskAssociationsSlice` / `quickTasksWindowSlice` (tasks). Root `index.ts` files remain for re-exports only.
 - `2026-04-22` — claude: initial combined FEATURE.md for tasks + projects.
 
