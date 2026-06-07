@@ -23,10 +23,14 @@ import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/
 
 interface DangerZoneProps {
   project: Project;
+  /**
+   * Owning org slug. Still accepted for callsite consistency, but the post-delete
+   * redirect now always lands on the unfiltered /projects list (see handleDelete).
+   */
   orgSlug?: string | null;
 }
 
-export function DangerZone({ project, orgSlug }: DangerZoneProps) {
+export function DangerZone({ project }: DangerZoneProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -49,9 +53,11 @@ export function DangerZone({ project, orgSlug }: DangerZoneProps) {
           >[0],
         );
         toast.success("Project deleted");
-        router.push(
-          orgSlug ? `/organizations/${orgSlug}/projects` : "/projects",
-        );
+        // Always land on the unfiltered /projects list. Routing to
+        // /organizations/<slug>/projects redirects to /projects?org=<slug>
+        // (see next.config.js), silently trapping the user in a filtered view
+        // with no project they just deleted and no way to tell why.
+        router.push("/projects");
       } else {
         toast.error(result.error ?? "Failed to delete project");
       }

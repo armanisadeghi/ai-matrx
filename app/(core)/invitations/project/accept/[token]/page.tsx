@@ -111,6 +111,7 @@ export default function AcceptProjectInvitationPage() {
           createdBy: projectData.created_by,
           // Personal-ness is org-derived; ctx_projects no longer stores it.
           isPersonal: projectData.organizations?.is_personal ?? false,
+          status: "active",
           settings: projectData.settings,
           createdAt: projectData.created_at,
           updatedAt: projectData.updated_at,

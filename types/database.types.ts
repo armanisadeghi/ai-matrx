@@ -1315,6 +1315,81 @@ export type Database = {
           },
         ]
       }
+      agx_version_corruption_backup_20260606: {
+        Row: {
+          agent_id: string | null
+          agent_type: string | null
+          category: string | null
+          change_note: string | null
+          changed_at: string | null
+          context_slots: Json | null
+          custom_tools: Json | null
+          description: string | null
+          id: string | null
+          is_active: boolean | null
+          mcp_servers: string[] | null
+          messages: Json | null
+          model_id: string | null
+          model_tiers: Json | null
+          name: string | null
+          output_schema: Json | null
+          settings: Json | null
+          tags: string[] | null
+          tool_config: Json | null
+          tools: string[] | null
+          variable_definitions: Json | null
+          version_number: number | null
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_type?: string | null
+          category?: string | null
+          change_note?: string | null
+          changed_at?: string | null
+          context_slots?: Json | null
+          custom_tools?: Json | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          mcp_servers?: string[] | null
+          messages?: Json | null
+          model_id?: string | null
+          model_tiers?: Json | null
+          name?: string | null
+          output_schema?: Json | null
+          settings?: Json | null
+          tags?: string[] | null
+          tool_config?: Json | null
+          tools?: string[] | null
+          variable_definitions?: Json | null
+          version_number?: number | null
+        }
+        Update: {
+          agent_id?: string | null
+          agent_type?: string | null
+          category?: string | null
+          change_note?: string | null
+          changed_at?: string | null
+          context_slots?: Json | null
+          custom_tools?: Json | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          mcp_servers?: string[] | null
+          messages?: Json | null
+          model_id?: string | null
+          model_tiers?: Json | null
+          name?: string | null
+          output_schema?: Json | null
+          settings?: Json | null
+          tags?: string[] | null
+          tool_config?: Json | null
+          tools?: string[] | null
+          variable_definitions?: Json | null
+          version_number?: number | null
+        }
+        Relationships: []
+      }
       ai_agent: {
         Row: {
           ai_settings_id: string | null
@@ -5632,8 +5707,12 @@ export type Database = {
           id: string
           name: string
           organization_id: string | null
+          priority: Database["public"]["Enums"]["task_priority"] | null
           settings: Json | null
           slug: string | null
+          start_date: string | null
+          status: string
+          target_date: string | null
           updated_at: string | null
         }
         Insert: {
@@ -5643,8 +5722,12 @@ export type Database = {
           id?: string
           name: string
           organization_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
           settings?: Json | null
           slug?: string | null
+          start_date?: string | null
+          status?: string
+          target_date?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -5654,8 +5737,12 @@ export type Database = {
           id?: string
           name?: string
           organization_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
           settings?: Json | null
           slug?: string | null
+          start_date?: string | null
+          status?: string
+          target_date?: string | null
           updated_at?: string | null
         }
         Relationships: [

@@ -27,7 +27,6 @@ import {
   Users,
   ListTodo,
   Boxes,
-  Building2,
   ChevronRight,
   FolderKanban,
 } from "lucide-react";
@@ -42,6 +41,11 @@ import type { Project } from "@/features/projects/types";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { UserAvatarDisplay } from "@/components/user/UserIdentity";
 import { AssignedScopesDisplay } from "@/features/scopes/components/entity-context/AssignedScopesDisplay";
+import {
+  InlineProjectName,
+  InlineProjectDescription,
+  ProjectMetaRow,
+} from "@/features/projects/components/ProjectInlineEditors";
 import {
   CONTENT_ROLES,
   entriesByRole,
@@ -108,7 +112,15 @@ export function ProjectWorkspace() {
   }, [projectParam]);
 
   const { members } = useProjectMembers(project?.id);
-  const { role } = useProjectUserRole(project?.id);
+  const { role, canManageSettings } = useProjectUserRole(project?.id);
+
+  // Inline edits (name/description/status/priority/dates/org) patch local state
+  // so the workspace IS the edit surface — no trip to a separate page.
+  const applyPatch = React.useCallback(
+    (patch: Partial<Project>) =>
+      setProject((prev) => (prev ? { ...prev, ...patch } : prev)),
+    [],
+  );
   const { counts, loading: countsLoading } = useContainerInventory({
     column: "project_id",
     value: project?.id ?? null,
@@ -175,29 +187,24 @@ export function ProjectWorkspace() {
               <FolderKanban className="h-6 w-6" />
             </span>
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">{project.name}</h1>
-              <div className="flex items-center gap-2 flex-wrap mt-1.5">
-                {org?.isPersonal ? (
-                  <Badge variant="secondary">Personal</Badge>
-                ) : (
-                  <Link href={`/organizations/${org?.slug ?? project.organizationId}`}>
-                    <Badge variant="outline" className="gap-1 hover:bg-accent">
-                      <Building2 className="h-3 w-3" />
-                      {org?.name ?? "Organization"}
-                    </Badge>
-                  </Link>
-                )}
+              <div className="flex items-center gap-2 flex-wrap">
+                <InlineProjectName project={project} canEdit={canManageSettings} onPatch={applyPatch} />
                 {role && (
                   <Badge variant="outline" className="text-xs capitalize">
                     You: {role}
                   </Badge>
                 )}
               </div>
-              {project.description && (
-                <p className="text-sm text-muted-foreground leading-relaxed mt-3">
-                  {project.description}
-                </p>
-              )}
+
+              {/* Editable meta: status / priority / dates / organization */}
+              <div className="mt-3">
+                <ProjectMetaRow project={project} canEdit={canManageSettings} onPatch={applyPatch} />
+              </div>
+
+              {/* Description (always available to edit in place) */}
+              <div className="mt-3">
+                <InlineProjectDescription project={project} canEdit={canManageSettings} onPatch={applyPatch} />
+              </div>
 
               {/* Stats */}
               <div className="flex items-center gap-5 flex-wrap mt-4">

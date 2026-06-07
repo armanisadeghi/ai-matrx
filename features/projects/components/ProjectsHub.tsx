@@ -29,6 +29,8 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
+  Filter,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -46,7 +48,11 @@ import { supabase } from "@/utils/supabase/client";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { CreateProjectModal } from "@/features/projects/components/CreateProjectModal";
-import type { ProjectWithRole } from "@/features/projects/types";
+import type {
+  ProjectWithRole,
+  ProjectStatus,
+  ProjectPriority,
+} from "@/features/projects/types";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -63,6 +69,7 @@ export function ProjectsHub({
   scopeParam?: string | null;
 }) {
   const { organizations } = useUserOrganizations();
+  const router = useRouter();
   const [createOpen, setCreateOpen] = React.useState(false);
   const [view, setView] = React.useState<ViewMode>("cards");
   const [query, setQuery] = React.useState("");
@@ -103,7 +110,9 @@ export function ProjectsHub({
       setLoading(true);
       const { data, error } = await supabase
         .from("ctx_projects")
-        .select("id, name, slug, description, organization_id, created_by, updated_at")
+        .select(
+          "id, name, slug, description, organization_id, created_by, updated_at, status, priority, start_date, target_date",
+        )
         .order("updated_at", { ascending: false });
       if (cancelled) return;
       if (error) {
@@ -117,6 +126,10 @@ export function ProjectsHub({
           description: string | null;
           organization_id: string | null;
           created_by: string | null;
+          status: ProjectStatus | null;
+          priority: ProjectPriority | null;
+          start_date: string | null;
+          target_date: string | null;
         };
         setProjects(
           ((data as Row[]) ?? []).map((r) => ({
@@ -129,6 +142,10 @@ export function ProjectsHub({
             // Personal-ness is org-derived (see isPersonalProject); the project
             // row no longer carries is_personal. Resolved against orgMap at render.
             isPersonal: false,
+            status: (r.status ?? "active") as ProjectStatus,
+            priority: r.priority ?? null,
+            startDate: r.start_date ?? null,
+            targetDate: r.target_date ?? null,
             settings: {},
             createdAt: "",
             updatedAt: "",
@@ -238,6 +255,12 @@ export function ProjectsHub({
   }, [projects, orgFilterId, scopeProjectIds, query]);
 
   const isFiltered = Boolean(orgParam || scopeParam);
+  // Strips ?org= / ?scope= by navigating to the bare list — the single,
+  // discoverable escape hatch out of every filtered view.
+  const clearFilter = React.useCallback(() => router.push("/projects"), [router]);
+  const filterOrgName = orgFilterId
+    ? orgMap.get(orgFilterId)?.name ?? "this organization"
+    : null;
   // "Personal" is org-driven: a project is personal iff its owning org is the
   // user's personal org (organizations.is_personal). Every project now has an
   // org, so org-less is no longer the signal.
@@ -290,6 +313,50 @@ export function ProjectsHub({
           </div>
         </div>
 
+        {isFiltered && (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Filter className="h-3.5 w-3.5" />
+              Filtered by
+            </span>
+            {orgFilterId && (
+              <Badge variant="outline" className="gap-1 pl-2 pr-1 py-0.5 text-xs">
+                <Building2 className="h-3 w-3" />
+                <span>Organization: {filterOrgName}</span>
+                <button
+                  type="button"
+                  aria-label="Remove organization filter"
+                  className="rounded hover:bg-accent p-0.5"
+                  onClick={clearFilter}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {scopeParam && (
+              <Badge variant="outline" className="gap-1 pl-2 pr-1 py-0.5 text-xs">
+                <span>Scope</span>
+                <button
+                  type="button"
+                  aria-label="Remove scope filter"
+                  className="rounded hover:bg-accent p-0.5"
+                  onClick={clearFilter}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs ml-auto"
+              onClick={clearFilter}
+            >
+              Show all projects
+            </Button>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-7 w-7 animate-spin text-primary" />
@@ -303,10 +370,18 @@ export function ProjectsHub({
             <p className="text-sm text-muted-foreground mb-4 max-w-xs mx-auto">
               {query || isFiltered ? "Nothing matches your filters." : "Create a project to organize tasks, resources, and context."}
             </p>
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              New project
-            </Button>
+            <div className="flex items-center justify-center gap-2">
+              {isFiltered && (
+                <Button size="sm" variant="outline" onClick={clearFilter}>
+                  <Filter className="h-4 w-4 mr-1.5" />
+                  Show all projects
+                </Button>
+              )}
+              <Button size="sm" onClick={() => setCreateOpen(true)}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                New project
+              </Button>
+            </div>
           </Card>
         ) : view === "table" ? (
           <ProjectsTable projects={filtered} stats={stats} orgMap={orgMap} />

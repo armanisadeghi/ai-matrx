@@ -13,6 +13,15 @@ import type { Json } from "@/types/database.types";
 
 export type ProjectRole = "owner" | "admin" | "member";
 
+export type ProjectStatus =
+  | "planning"
+  | "active"
+  | "paused"
+  | "completed"
+  | "archived";
+
+export type ProjectPriority = "low" | "medium" | "high";
+
 export interface Project {
   id: string;
   name: string;
@@ -21,6 +30,10 @@ export interface Project {
   organizationId: string | null;
   createdBy?: string | null;
   isPersonal: boolean;
+  status: ProjectStatus;
+  priority?: ProjectPriority | null;
+  startDate?: string | null;
+  targetDate?: string | null;
   settings?: Json | null;
   createdAt: string;
   updatedAt: string;
@@ -84,6 +97,11 @@ export interface UpdateProjectOptions {
   /** Move the project to a different organization (its owner's personal org
    * counts as an org). Never set to null — every project belongs to an org. */
   organizationId?: string;
+  status?: ProjectStatus;
+  priority?: ProjectPriority | null;
+  /** ISO date (yyyy-mm-dd) or null to clear. */
+  startDate?: string | null;
+  targetDate?: string | null;
 }
 
 export interface InviteProjectMemberOptions {

@@ -165,6 +165,12 @@ export async function updateProject(
       const orgId = normalizeOrgId(updates.organizationId);
       if (orgId) updateData.organization_id = orgId;
     }
+    if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.priority !== undefined) updateData.priority = updates.priority;
+    if (updates.startDate !== undefined)
+      updateData.start_date = updates.startDate || null;
+    if (updates.targetDate !== undefined)
+      updateData.target_date = updates.targetDate || null;
 
     const { data, error } = await supabase
       .from("ctx_projects")
@@ -887,6 +893,10 @@ function transformProjectFromDb(dbRecord: Record<string, unknown>): Project {
     organizationId: (dbRecord.organization_id as string) ?? null,
     createdBy: (dbRecord.created_by as string) ?? null,
     isPersonal: org?.is_personal === true,
+    status: ((dbRecord.status as string) ?? "active") as Project["status"],
+    priority: (dbRecord.priority as Project["priority"]) ?? null,
+    startDate: (dbRecord.start_date as string) ?? null,
+    targetDate: (dbRecord.target_date as string) ?? null,
     settings: (dbRecord.settings as Record<string, unknown>) ?? {},
     createdAt: dbRecord.created_at as string,
     updatedAt: dbRecord.updated_at as string,
