@@ -166,7 +166,17 @@ export function OrgWorkspace() {
   }
 
   function handleOpenEntry(entry: OrgResourceEntry) {
-    // Every kind has a consistent, catalogue-driven org page (team view +
+    // Projects + Tasks are first-class containers with their own canonical
+    // top-level homes; the org is a filtered view (?org=slug), not a parent.
+    if (entry.key === "project") {
+      router.push(`/projects?org=${slug}`);
+      return;
+    }
+    if (entry.key === "task") {
+      router.push(`/tasks?org=${slug}`);
+      return;
+    }
+    // Every other kind has a consistent, catalogue-driven org page (team view +
     // share-your-own). The dedicated legacy route, when present, is linked from
     // there as "Full view".
     router.push(`/organizations/${slug}/resources/${entry.key}`);
