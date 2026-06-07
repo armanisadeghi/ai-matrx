@@ -40,14 +40,24 @@ import type {
 } from "@/features/scopes/types";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/utils/cn";
 import { getEntry, moduleKey } from "@/features/organizations/resource-catalogue";
 import { getOrgModuleSetting } from "@/features/organizations/orgModuleSettings";
 
 type CommonProps = {
   className?: string;
-  /** Display variant. `sidebar` = collapsible sections; `compact` = flat chip row. */
-  variant?: "sidebar" | "compact";
+  /** Display variant. `sidebar` = collapsible sections; `compact` = flat chip row;
+   * `dropdown` = one single-select dropdown per scope type (best for forms / when a
+   * type has many scopes — pick at most one per type). */
+  variant?: "sidebar" | "compact" | "dropdown";
   /** Optional org override — defaults to the active org. Useful for cross-org views. */
   organizationId?: string | null;
   /** Limit visible scope types (by scope_type_id). Empty/undefined = all. */
@@ -185,6 +195,16 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
     applyNext([...selected.filter((sid) => !typeIds.has(sid)), scopeId]);
   };
 
+  // Single-select per type (dropdown variant): replace whatever scope of this
+  // type is selected with the chosen one ("none" clears the type).
+  const setTypeScope = (scopeTypeId: string, scopeId: string) => {
+    const typeIds = new Set(
+      scopeTypesAll.find((t) => t.id === scopeTypeId)?.scopes.map((s) => s.id) ?? [],
+    );
+    const withoutType = selected.filter((sid) => !typeIds.has(sid));
+    applyNext(scopeId === "none" ? withoutType : [...withoutType, scopeId]);
+  };
+
   const handleClearAll = () => applyNext([]);
 
   // ─── Collapsible sections (sidebar variant) ────────────────────────────
@@ -248,7 +268,37 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
         </div>
       )}
 
-      {variant === "compact" ? (
+      {variant === "dropdown" ? (
+        <div className="space-y-3 px-3">
+          {scopeTypes.map((type) => {
+            const current = type.scopes.find((s) => selectedSet.has(s.id));
+            return (
+              <div key={type.id} className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                  <DynamicIcon name={type.icon} color={type.color} className="h-3.5 w-3.5" />
+                  {type.label_singular}
+                </Label>
+                <Select
+                  value={current?.id ?? "none"}
+                  onValueChange={(v) => setTypeScope(type.id, v)}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder={`Select ${type.label_singular.toLowerCase()}…`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {type.scopes.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          })}
+        </div>
+      ) : variant === "compact" ? (
         <div className="flex flex-wrap gap-1 px-3">
           {scopeTypes.flatMap((type) =>
             type.scopes.map((scope) => (

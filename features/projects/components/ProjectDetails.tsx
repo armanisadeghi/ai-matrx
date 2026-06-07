@@ -14,7 +14,7 @@
 
 import React from "react";
 import { format } from "date-fns";
-import { Check, Copy, Fingerprint, Link2, CalendarDays } from "lucide-react";
+import { Check, Copy, Fingerprint, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/utils/cn";
 import type { Project } from "../types";
@@ -96,9 +96,6 @@ export function ProjectDetails({ project }: { project: Project }) {
   return (
     <div className="divide-y divide-border rounded-lg border border-border bg-card">
       <DetailRow icon={Fingerprint} label="Project ID" value={project.id} />
-      {project.slug && (
-        <DetailRow icon={Link2} label="Slug" value={project.slug} />
-      )}
       <DetailRow
         icon={CalendarDays}
         label="Created"

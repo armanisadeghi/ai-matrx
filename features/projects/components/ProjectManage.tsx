@@ -193,6 +193,8 @@ export function ProjectManage() {
             entityType="project"
             entityId={project.id}
             organizationId={project.organizationId}
+            variant="dropdown"
+            showHeader={false}
           />
         </ManageSection>
 

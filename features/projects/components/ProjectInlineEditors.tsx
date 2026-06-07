@@ -227,7 +227,7 @@ export function InlineProjectName({
         {project.name}
       </span>
       {canEdit && (
-        <Pencil className="h-4 w-4 text-muted-foreground opacity-0 group-hover/name:opacity-100 transition-opacity shrink-0" />
+        <Pencil className="h-4 w-4 text-muted-foreground/60 shrink-0" />
       )}
     </button>
   );
@@ -316,14 +316,17 @@ export function InlineProjectDescription({
       disabled={!canEdit}
       onClick={() => canEdit && setEditing(true)}
       className={cn(
-        "group/desc block text-left w-full rounded-md -mx-1 px-1 py-0.5",
+        "group/desc flex items-start gap-2 text-left w-full rounded-md -mx-1 px-1 py-0.5",
         canEdit && "hover:bg-accent/40 cursor-text",
       )}
       title={canEdit ? "Click to edit" : undefined}
     >
-      <span className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+      <span className="flex-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
         {project.description}
       </span>
+      {canEdit && (
+        <Pencil className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0 mt-0.5" />
+      )}
     </button>
   );
 }
