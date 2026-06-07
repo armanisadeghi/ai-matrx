@@ -39,7 +39,6 @@ import { useProjectMembers, useProjectUserRole } from "@/features/projects/hooks
 import { ProjectReferencesPanel } from "@/features/projects/components/ProjectReferencesPanel";
 import type { Project } from "@/features/projects/types";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
-import { UserAvatarDisplay } from "@/components/user/UserIdentity";
 import { AssignedScopesDisplay } from "@/features/scopes/components/entity-context/AssignedScopesDisplay";
 import {
   InlineProjectName,
@@ -233,18 +232,6 @@ export function ProjectWorkspace() {
                   </Button>
                 )}
               </div>
-              {members.length > 0 && (
-                <div className="flex -space-x-2">
-                  {members.slice(0, 6).map((m) => (
-                    <UserAvatarDisplay
-                      key={m.id}
-                      user={m.user}
-                      size="xs"
-                      className="ring-2 ring-card"
-                    />
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </Card>

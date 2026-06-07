@@ -54,9 +54,14 @@ import type {
   ProjectPriority,
 } from "@/features/projects/types";
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-type Stat = { open: number; done: number; preview: { id: string; title: string }[] };
+type Stat = {
+  open: number;
+  done: number;
+  preview: { id: string; title: string }[];
+};
 type ViewMode = "cards" | "table";
 type SortKey = "name" | "org" | "open" | "done";
 type OrgMap = Map<string, { name: string; slug: string; isPersonal: boolean }>;
@@ -190,7 +195,8 @@ export function ProjectsHub({
         if (row.status === "completed") s.done += 1;
         else {
           s.open += 1;
-          if (s.preview.length < 4) s.preview.push({ id: row.id, title: row.title });
+          if (s.preview.length < 4)
+            s.preview.push({ id: row.id, title: row.title });
         }
       }
       setStats(m);
@@ -221,7 +227,8 @@ export function ProjectsHub({
   }, [orgParam]);
 
   // ?scope=id → project ids assigned to that scope
-  const [scopeProjectIds, setScopeProjectIds] = React.useState<Set<string> | null>(null);
+  const [scopeProjectIds, setScopeProjectIds] =
+    React.useState<Set<string> | null>(null);
   React.useEffect(() => {
     let cancelled = false;
     if (!scopeParam) {
@@ -236,7 +243,11 @@ export function ProjectsHub({
         .eq("scope_id", scopeParam);
       if (!cancelled) {
         setScopeProjectIds(
-          new Set((data ?? []).map((r) => String((r as { entity_id: string }).entity_id))),
+          new Set(
+            (data ?? []).map((r) =>
+              String((r as { entity_id: string }).entity_id),
+            ),
+          ),
         );
       }
     })();
@@ -247,7 +258,8 @@ export function ProjectsHub({
 
   const filtered = React.useMemo(() => {
     let list = projects;
-    if (orgFilterId) list = list.filter((p) => p.organizationId === orgFilterId);
+    if (orgFilterId)
+      list = list.filter((p) => p.organizationId === orgFilterId);
     if (scopeProjectIds) list = list.filter((p) => scopeProjectIds.has(p.id));
     const q = query.trim().toLowerCase();
     if (q) list = list.filter((p) => p.name.toLowerCase().includes(q));
@@ -257,9 +269,12 @@ export function ProjectsHub({
   const isFiltered = Boolean(orgParam || scopeParam);
   // Strips ?org= / ?scope= by navigating to the bare list — the single,
   // discoverable escape hatch out of every filtered view.
-  const clearFilter = React.useCallback(() => router.push("/projects"), [router]);
+  const clearFilter = React.useCallback(
+    () => router.push("/projects"),
+    [router],
+  );
   const filterOrgName = orgFilterId
-    ? orgMap.get(orgFilterId)?.name ?? "this organization"
+    ? (orgMap.get(orgFilterId)?.name ?? "this organization")
     : null;
   // "Personal" is org-driven: a project is personal iff its owning org is the
   // user's personal org (organizations.is_personal). Every project now has an
@@ -273,8 +288,10 @@ export function ProjectsHub({
       : "Longer-running containers for your tasks, resources, and scopes";
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
-      <div className={`${view === "table" ? "max-w-7xl" : "max-w-5xl"} mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6`}>
+    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured pt-3">
+      <div
+        className="max-w-7xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6"
+      >
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Projects</h1>
@@ -320,7 +337,10 @@ export function ProjectsHub({
               Filtered by
             </span>
             {orgFilterId && (
-              <Badge variant="outline" className="gap-1 pl-2 pr-1 py-0.5 text-xs">
+              <Badge
+                variant="outline"
+                className="gap-1 pl-2 pr-1 py-0.5 text-xs"
+              >
                 <Building2 className="h-3 w-3" />
                 <span>Organization: {filterOrgName}</span>
                 <button
@@ -334,7 +354,10 @@ export function ProjectsHub({
               </Badge>
             )}
             {scopeParam && (
-              <Badge variant="outline" className="gap-1 pl-2 pr-1 py-0.5 text-xs">
+              <Badge
+                variant="outline"
+                className="gap-1 pl-2 pr-1 py-0.5 text-xs"
+              >
                 <span>Scope</span>
                 <button
                   type="button"
@@ -368,7 +391,9 @@ export function ProjectsHub({
             </div>
             <h3 className="font-semibold mb-1">No projects found</h3>
             <p className="text-sm text-muted-foreground mb-4 max-w-xs mx-auto">
-              {query || isFiltered ? "Nothing matches your filters." : "Create a project to organize tasks, resources, and context."}
+              {query || isFiltered
+                ? "Nothing matches your filters."
+                : "Create a project to organize tasks, resources, and context."}
             </p>
             <div className="flex items-center justify-center gap-2">
               {isFiltered && (
@@ -386,9 +411,14 @@ export function ProjectsHub({
         ) : view === "table" ? (
           <ProjectsTable projects={filtered} stats={stats} orgMap={orgMap} />
         ) : isFiltered || query ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {filtered.map((p) => (
-              <ProjectHubCard key={p.id} project={p} stat={stats.get(p.id)} orgMap={orgMap} />
+              <ProjectHubCard
+                key={p.id}
+                project={p}
+                stat={stats.get(p.id)}
+                orgMap={orgMap}
+              />
             ))}
           </div>
         ) : (
@@ -396,14 +426,24 @@ export function ProjectsHub({
             {personal.length > 0 && (
               <Section title="Personal">
                 {personal.map((p) => (
-                  <ProjectHubCard key={p.id} project={p} stat={stats.get(p.id)} orgMap={orgMap} />
+                  <ProjectHubCard
+                    key={p.id}
+                    project={p}
+                    stat={stats.get(p.id)}
+                    orgMap={orgMap}
+                  />
                 ))}
               </Section>
             )}
             {teams.length > 0 && (
               <Section title="Team projects">
                 {teams.map((p) => (
-                  <ProjectHubCard key={p.id} project={p} stat={stats.get(p.id)} orgMap={orgMap} />
+                  <ProjectHubCard
+                    key={p.id}
+                    project={p}
+                    stat={stats.get(p.id)}
+                    orgMap={orgMap}
+                  />
                 ))}
               </Section>
             )}
@@ -424,7 +464,13 @@ export function ProjectsHub({
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <section>
       <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
@@ -449,10 +495,8 @@ function ProjectsTable({
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
 
   const orgEntry = (p: ProjectWithRole) =>
-    p.organizationId ? orgMap.get(p.organizationId) ?? null : null;
-  const isPersonal = (p: ProjectWithRole) => orgEntry(p)?.isPersonal === true;
-  const orgLabel = (p: ProjectWithRole) =>
-    isPersonal(p) ? "Personal" : orgEntry(p)?.name ?? "Org";
+    p.organizationId ? (orgMap.get(p.organizationId) ?? null) : null;
+  const orgLabel = (p: ProjectWithRole) => orgEntry(p)?.name ?? "—";
 
   const sorted = React.useMemo(() => {
     const arr = [...projects];
@@ -464,9 +508,13 @@ function ProjectsTable({
         case "org":
           return orgLabel(a).localeCompare(orgLabel(b)) * dir;
         case "open":
-          return ((stats.get(a.id)?.open ?? 0) - (stats.get(b.id)?.open ?? 0)) * dir;
+          return (
+            ((stats.get(a.id)?.open ?? 0) - (stats.get(b.id)?.open ?? 0)) * dir
+          );
         case "done":
-          return ((stats.get(a.id)?.done ?? 0) - (stats.get(b.id)?.done ?? 0)) * dir;
+          return (
+            ((stats.get(a.id)?.done ?? 0) - (stats.get(b.id)?.done ?? 0)) * dir
+          );
         default:
           return 0;
       }
@@ -483,7 +531,15 @@ function ProjectsTable({
     }
   };
 
-  const SortHead = ({ k, children, className }: { k: SortKey; children: React.ReactNode; className?: string }) => (
+  const SortHead = ({
+    k,
+    children,
+    className,
+  }: {
+    k: SortKey;
+    children: React.ReactNode;
+    className?: string;
+  }) => (
     <TableHead className={className}>
       <button
         onClick={() => toggleSort(k)}
@@ -491,7 +547,11 @@ function ProjectsTable({
       >
         {children}
         {sortKey === k ? (
-          sortDir === "asc" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+          sortDir === "asc" ? (
+            <ChevronUp className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" />
+          )
         ) : (
           <ChevronsUpDown className="h-3.5 w-3.5 opacity-40" />
         )}
@@ -505,16 +565,21 @@ function ProjectsTable({
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <SortHead k="name">Project</SortHead>
-            <SortHead k="org" className="w-60">Organization</SortHead>
-            <SortHead k="open" className="w-24 text-right">Open</SortHead>
-            <SortHead k="done" className="w-24 text-right">Done</SortHead>
+            <SortHead k="org" className="w-60">
+              Organization
+            </SortHead>
+            <SortHead k="open" className="w-24 text-right">
+              Open
+            </SortHead>
+            <SortHead k="done" className="w-24 text-right">
+              Done
+            </SortHead>
             <TableHead className="w-40 text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {sorted.map((p) => {
             const s = stats.get(p.id);
-            const rowIsPersonal = isPersonal(p);
             return (
               <TableRow
                 key={p.id}
@@ -526,27 +591,41 @@ function ProjectsTable({
                     <span className="h-7 w-7 rounded-md flex items-center justify-center shrink-0 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
                       <FolderKanban className="h-4 w-4" />
                     </span>
-                    <span className="font-medium text-foreground truncate">{p.name}</span>
+                    <span className="font-medium text-foreground truncate">
+                      {p.name}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell className="py-2">
-                  {rowIsPersonal ? (
-                    <Badge variant="secondary" className="text-[10px]">Personal</Badge>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
-                      <Building2 className="h-3.5 w-3.5" />
-                      {orgEntry(p)?.name ?? "Org"}
-                    </span>
-                  )}
+                  <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Building2 className="h-3.5 w-3.5 shrink-0" />
+                    {orgEntry(p)?.name ?? "—"}
+                  </span>
                 </TableCell>
-                <TableCell className="py-2 text-right tabular-nums">{s?.open ?? 0}</TableCell>
-                <TableCell className="py-2 text-right tabular-nums text-muted-foreground">{s?.done ?? 0}</TableCell>
+                <TableCell className="py-2 text-right tabular-nums">
+                  {s?.open ?? 0}
+                </TableCell>
+                <TableCell className="py-2 text-right tabular-nums text-muted-foreground">
+                  {s?.done ?? 0}
+                </TableCell>
                 <TableCell className="py-2">
-                  <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-                    <Button size="sm" variant="ghost" onClick={() => router.push(`/projects/${p.id}`)}>
+                  <div
+                    className="flex items-center justify-end gap-1.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => router.push(`/projects/${p.id}`)}
+                    >
                       Open
                     </Button>
-                    <Button asChild size="sm" variant="ghost" className="text-muted-foreground">
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="ghost"
+                      className="text-muted-foreground"
+                    >
                       <Link href={`/projects/${p.id}/settings`}>
                         <Settings className="h-3.5 w-3.5" />
                       </Link>
@@ -575,8 +654,9 @@ function ProjectHubCard({
   const preview = stat?.preview ?? [];
   const open = stat?.open ?? 0;
   const done = stat?.done ?? 0;
-  const org = project.organizationId ? orgMap.get(project.organizationId) : null;
-  const isPersonal = org?.isPersonal === true;
+  const org = project.organizationId
+    ? orgMap.get(project.organizationId)
+    : null;
   const href = `/projects/${project.id}`;
 
   return (
@@ -591,26 +671,25 @@ function ProjectHubCard({
             <FolderKanban className="h-5 w-5" />
           </button>
           <div className="min-w-0 flex-1">
-            <button onClick={() => router.push(href)} className="text-left block max-w-full group/title">
+            <button
+              onClick={() => router.push(href)}
+              className="text-left block max-w-full group/title"
+            >
               <h3 className="font-semibold text-base truncate group-hover/title:text-primary transition-colors">
                 {project.name}
               </h3>
             </button>
-            <div className="flex items-center gap-2 flex-wrap mt-0.5">
-              {isPersonal ? (
-                <Badge variant="secondary" className="text-[10px]">Personal</Badge>
-              ) : (
-                <Badge variant="outline" className="text-[10px] gap-1">
-                  <Building2 className="h-3 w-3" />
-                  {org?.name ?? "Org"}
-                </Badge>
-              )}
+            <div className="flex items-center gap-1.5 flex-wrap mt-0.5 text-xs text-muted-foreground">
+              <Building2 className="h-3 w-3 shrink-0" />
+              {org?.name ?? "—"}
             </div>
           </div>
         </div>
 
         {project.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">{project.description}</p>
+          <p className="text-xs text-muted-foreground line-clamp-2">
+            {project.description}
+          </p>
         )}
 
         <div className="rounded-lg border border-border bg-muted/20 p-2.5 flex-1">
@@ -625,13 +704,18 @@ function ProjectHubCard({
           ) : (
             <ul className="space-y-0.5">
               {preview.map((t) => (
-                <li key={t.id} className="flex items-center gap-2 text-xs text-muted-foreground px-1 py-0.5">
+                <li
+                  key={t.id}
+                  className="flex items-center gap-2 text-xs text-muted-foreground px-1 py-0.5"
+                >
                   <Circle className="h-3 w-3 shrink-0 opacity-50" />
                   <span className="truncate">{t.title}</span>
                 </li>
               ))}
               {open > preview.length && (
-                <li className="text-[11px] text-muted-foreground/70 px-1 pt-0.5">+{open - preview.length} more</li>
+                <li className="text-[11px] text-muted-foreground/70 px-1 pt-0.5">
+                  +{open - preview.length} more
+                </li>
               )}
             </ul>
           )}
@@ -640,11 +724,17 @@ function ProjectHubCard({
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <Circle className="h-3.5 w-3.5" />
-            <span className="font-semibold text-foreground tabular-nums">{open}</span> open
+            <span className="font-semibold text-foreground tabular-nums">
+              {open}
+            </span>{" "}
+            open
           </span>
           <span className="flex items-center gap-1">
             <CircleCheck className="h-3.5 w-3.5" />
-            <span className="font-semibold text-foreground tabular-nums">{done}</span> done
+            <span className="font-semibold text-foreground tabular-nums">
+              {done}
+            </span>{" "}
+            done
           </span>
         </div>
       </div>

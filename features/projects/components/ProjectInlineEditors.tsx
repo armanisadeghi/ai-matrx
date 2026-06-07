@@ -21,7 +21,6 @@ import {
   Pencil,
   X,
   Building2,
-  User,
   Flag,
   CalendarClock,
   CalendarRange,
@@ -329,144 +328,149 @@ export function InlineProjectDescription({
   );
 }
 
-// ─── Meta row: status / priority / start / target / org ──────────────────────
+// ─── Individual field pickers (labeled-form friendly) + meta row ─────────────
+
+type FieldProps = {
+  project: Project;
+  canEdit: boolean;
+  onPatch: (p: Patch) => void;
+};
+
+export function ProjectStatusPicker({ project, canEdit, onPatch }: FieldProps) {
+  const meta = PROJECT_STATUS_META[project.status] ?? PROJECT_STATUS_META.active;
+  const Icon = meta.icon;
+  if (!canEdit) {
+    return (
+      <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 h-7 text-xs font-medium", meta.pill)}>
+        <Icon className="h-3.5 w-3.5" /> {meta.label}
+      </span>
+    );
+  }
+  return (
+    <Select
+      value={project.status}
+      onValueChange={(v) =>
+        save(project.id, { status: v as ProjectStatus }, { status: v as ProjectStatus }, onPatch)
+      }
+    >
+      <SelectTrigger className={cn("h-7 w-auto gap-1.5 rounded-full border px-2.5 text-xs font-medium", meta.pill)}>
+        <Icon className="h-3.5 w-3.5" />
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {STATUS_ORDER.map((s) => (
+          <SelectItem key={s} value={s}>
+            {PROJECT_STATUS_META[s].label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+export function ProjectPriorityPicker({ project, canEdit, onPatch }: FieldProps) {
+  if (!canEdit) {
+    return project.priority ? (
+      <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 h-7 text-xs font-medium", PROJECT_PRIORITY_META[project.priority].pill)}>
+        <Flag className="h-3.5 w-3.5" /> {PROJECT_PRIORITY_META[project.priority].label}
+      </span>
+    ) : (
+      <span className="text-sm text-muted-foreground">None</span>
+    );
+  }
+  return (
+    <Select
+      value={project.priority ?? "none"}
+      onValueChange={(v) => {
+        const next = (v === "none" ? null : v) as ProjectPriority | null;
+        save(project.id, { priority: next }, { priority: next }, onPatch);
+      }}
+    >
+      <SelectTrigger
+        className={cn(
+          "h-7 w-auto gap-1.5 rounded-full border px-2.5 text-xs font-medium",
+          project.priority ? PROJECT_PRIORITY_META[project.priority].pill : "text-muted-foreground",
+        )}
+      >
+        <Flag className="h-3.5 w-3.5" />
+        <SelectValue placeholder="Priority" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">No priority</SelectItem>
+        {PRIORITY_ORDER.map((p) => (
+          <SelectItem key={p} value={p}>
+            {PROJECT_PRIORITY_META[p].label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+export function ProjectDateField({
+  project,
+  field,
+  canEdit,
+  onPatch,
+}: FieldProps & { field: "startDate" | "targetDate" }) {
+  const isTarget = field === "targetDate";
+  return (
+    <DatePill
+      icon={isTarget ? <CalendarRange className="h-3.5 w-3.5" /> : <CalendarClock className="h-3.5 w-3.5" />}
+      label={isTarget ? "Target" : "Start"}
+      value={project[field] ?? null}
+      canEdit={canEdit}
+      overdueAware={isTarget}
+      onChange={(d) =>
+        save(project.id, { [field]: d } as UpdateProjectOptions, { [field]: d } as Patch, onPatch)
+      }
+    />
+  );
+}
+
+export function ProjectOrgPicker({ project, canEdit, onPatch }: FieldProps) {
+  const { organizations } = useUserOrganizations();
+  const currentOrg = organizations.find((o) => o.id === project.organizationId) ?? null;
+  if (!canEdit) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Building2 className="h-3.5 w-3.5" /> {currentOrg ? currentOrg.name : "—"}
+      </span>
+    );
+  }
+  return (
+    <Select
+      value={project.organizationId ?? ""}
+      onValueChange={(v) => save(project.id, { organizationId: v }, { organizationId: v }, onPatch)}
+    >
+      <SelectTrigger className="h-7 w-auto gap-1.5 rounded-full border px-2.5 text-xs font-medium text-muted-foreground">
+        <Building2 className="h-3.5 w-3.5" />
+        <SelectValue placeholder="Organization" />
+      </SelectTrigger>
+      <SelectContent>
+        {organizations.map((o) => (
+          <SelectItem key={o.id} value={o.id}>
+            {o.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 export function ProjectMetaRow({
   project,
   canEdit,
   onPatch,
   showOrg = true,
-}: {
-  project: Project;
-  canEdit: boolean;
-  onPatch: (p: Patch) => void;
-  showOrg?: boolean;
-}) {
-  const { organizations } = useUserOrganizations();
-  const currentOrg = organizations.find((o) => o.id === project.organizationId) ?? null;
-
-  const statusMeta = PROJECT_STATUS_META[project.status] ?? PROJECT_STATUS_META.active;
-  const StatusIcon = statusMeta.icon;
-
+}: FieldProps & { showOrg?: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {/* Status */}
-      {canEdit ? (
-        <Select
-          value={project.status}
-          onValueChange={(v) =>
-            save(project.id, { status: v as ProjectStatus }, { status: v as ProjectStatus }, onPatch)
-          }
-        >
-          <SelectTrigger className={cn("h-7 w-auto gap-1.5 rounded-full border px-2.5 text-xs font-medium", statusMeta.pill)}>
-            <StatusIcon className="h-3.5 w-3.5" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_ORDER.map((s) => {
-              const m = PROJECT_STATUS_META[s];
-              const Icon = m.icon;
-              return (
-                <SelectItem key={s} value={s}>
-                  <span className="flex items-center gap-2">
-                    <Icon className="h-3.5 w-3.5" />
-                    {m.label}
-                  </span>
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
-      ) : (
-        <Badge variant="outline" className={cn("gap-1 rounded-full", statusMeta.pill)}>
-          <StatusIcon className="h-3.5 w-3.5" />
-          {statusMeta.label}
-        </Badge>
-      )}
-
-      {/* Priority */}
-      {canEdit ? (
-        <Select
-          value={project.priority ?? "none"}
-          onValueChange={(v) => {
-            const next = (v === "none" ? null : v) as ProjectPriority | null;
-            save(project.id, { priority: next }, { priority: next }, onPatch);
-          }}
-        >
-          <SelectTrigger
-            className={cn(
-              "h-7 w-auto gap-1.5 rounded-full border px-2.5 text-xs font-medium",
-              project.priority ? PROJECT_PRIORITY_META[project.priority].pill : "text-muted-foreground",
-            )}
-          >
-            <Flag className="h-3.5 w-3.5" />
-            <SelectValue placeholder="Priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">No priority</SelectItem>
-            {PRIORITY_ORDER.map((p) => (
-              <SelectItem key={p} value={p}>
-                {PROJECT_PRIORITY_META[p].label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : project.priority ? (
-        <Badge variant="outline" className={cn("gap-1 rounded-full", PROJECT_PRIORITY_META[project.priority].pill)}>
-          <Flag className="h-3.5 w-3.5" />
-          {PROJECT_PRIORITY_META[project.priority].label}
-        </Badge>
-      ) : null}
-
-      {/* Start date */}
-      <DatePill
-        icon={<CalendarClock className="h-3.5 w-3.5" />}
-        label="Start"
-        value={project.startDate ?? null}
-        canEdit={canEdit}
-        onChange={(d) => save(project.id, { startDate: d }, { startDate: d }, onPatch)}
-      />
-
-      {/* Target date */}
-      <DatePill
-        icon={<CalendarRange className="h-3.5 w-3.5" />}
-        label="Target"
-        value={project.targetDate ?? null}
-        canEdit={canEdit}
-        overdueAware
-        onChange={(d) => save(project.id, { targetDate: d }, { targetDate: d }, onPatch)}
-      />
-
-      {/* Organization */}
-      {showOrg &&
-        (canEdit ? (
-          <Select
-            value={project.organizationId ?? ""}
-            onValueChange={(v) =>
-              save(project.id, { organizationId: v }, { organizationId: v }, onPatch)
-            }
-          >
-            <SelectTrigger className="h-7 w-auto gap-1.5 rounded-full border px-2.5 text-xs font-medium text-muted-foreground">
-              {currentOrg?.isPersonal ? <User className="h-3.5 w-3.5" /> : <Building2 className="h-3.5 w-3.5" />}
-              <SelectValue placeholder="Organization" />
-            </SelectTrigger>
-            <SelectContent>
-              {organizations.map((o) => (
-                <SelectItem key={o.id} value={o.id}>
-                  <span className="flex items-center gap-2">
-                    {o.isPersonal ? <User className="h-3.5 w-3.5" /> : <Building2 className="h-3.5 w-3.5" />}
-                    {o.isPersonal ? "Personal" : o.name}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Badge variant="outline" className="gap-1 rounded-full text-muted-foreground">
-            {currentOrg?.isPersonal ? <User className="h-3.5 w-3.5" /> : <Building2 className="h-3.5 w-3.5" />}
-            {currentOrg ? (currentOrg.isPersonal ? "Personal" : currentOrg.name) : "—"}
-          </Badge>
-        ))}
+      <ProjectStatusPicker project={project} canEdit={canEdit} onPatch={onPatch} />
+      <ProjectPriorityPicker project={project} canEdit={canEdit} onPatch={onPatch} />
+      <ProjectDateField project={project} field="startDate" canEdit={canEdit} onPatch={onPatch} />
+      <ProjectDateField project={project} field="targetDate" canEdit={canEdit} onPatch={onPatch} />
+      {showOrg && <ProjectOrgPicker project={project} canEdit={canEdit} onPatch={onPatch} />}
     </div>
   );
 }
