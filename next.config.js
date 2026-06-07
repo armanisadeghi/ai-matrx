@@ -51,6 +51,15 @@ const pageExtensions =
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     pageExtensions,
+    // Build output directory. Defaults to ".next". Overridable via NEXT_DISTDIR
+    // so a SECOND `next dev` (e.g. an agent's preview server on another port)
+    // can run alongside your own without colliding. Next 16's per-distDir lock
+    // (`<distDir>/dev/lock`) otherwise aborts any second dev server for the same
+    // project — keyed on the directory, not the port — so two servers sharing
+    // ".next" is both blocked AND unsafe (concurrent writes corrupt the build).
+    // Giving the second instance its own distDir gives it its own lock, so they
+    // coexist safely. Unset in production / normal dev → ".next" as before.
+    distDir: process.env.NEXT_DISTDIR || ".next",
     // Vercel Skew Protection: when enabled in the Vercel project settings,
     // Vercel injects NEXT_DEPLOYMENT_ID at build time. Setting `deploymentId`
     // makes Next.js append `?dpl=<id>` to every chunk fetch, and Vercel routes
