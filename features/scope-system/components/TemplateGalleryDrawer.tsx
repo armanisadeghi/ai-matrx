@@ -69,6 +69,56 @@ function humanizeCategory(c: string): string {
     .join(" ");
 }
 
+// The same scope ("Client") appears across a dozen templates. For the
+// "Individual scopes" mode — whose job is to TEACH the concept, not to
+// exhaustively enumerate templates — we collapse duplicates to one row per
+// scope name, keeping the richest example (most context items) so the learner
+// sees a fully-fleshed-out scope. The most universally-understood scopes are
+// pinned to the top so "Clients" is the first thing a new user meets.
+const PINNED_SINGULARS = [
+  "client",
+  "customer",
+  "department",
+  "team",
+  "project",
+  "location",
+  "region",
+];
+
+function dedupeAndPrioritize(
+  list: FlatTemplateScopeType[],
+): FlatTemplateScopeType[] {
+  const best = new Map<string, FlatTemplateScopeType>();
+  for (const item of list) {
+    const key = item.label_singular.trim().toLowerCase();
+    const current = best.get(key);
+    if (!current) {
+      best.set(key, item);
+      continue;
+    }
+    // Prefer the richest example; break ties toward non-personal templates so
+    // a professional "Client" wins over a personal one, then by template name
+    // for stable ordering.
+    const better =
+      item.fields.length > current.fields.length ||
+      (item.fields.length === current.fields.length &&
+        !item.template_is_personal &&
+        current.template_is_personal);
+    if (better) best.set(key, item);
+  }
+
+  return Array.from(best.values()).sort((a, b) => {
+    const ai = PINNED_SINGULARS.indexOf(a.label_singular.trim().toLowerCase());
+    const bi = PINNED_SINGULARS.indexOf(b.label_singular.trim().toLowerCase());
+    const ar = ai === -1 ? Number.MAX_SAFE_INTEGER : ai;
+    const br = bi === -1 ? Number.MAX_SAFE_INTEGER : bi;
+    if (ar !== br) return ar - br;
+    return a.label_plural.localeCompare(b.label_plural, undefined, {
+      sensitivity: "base",
+    });
+  });
+}
+
 export function TemplateGalleryDrawer({
   open,
   onOpenChange,
@@ -148,7 +198,7 @@ export function TemplateGalleryDrawer({
           ),
       );
     }
-    return list;
+    return dedupeAndPrioritize(list);
   }, [allFlat, personalOnly, category, query]);
 
   const categories = useMemo(() => {
@@ -336,10 +386,9 @@ export function TemplateGalleryDrawer({
           ) : (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">
-                {visibleFlat.length}{" "}
-                {visibleFlat.length === 1 ? "scope" : "scopes"} from{" "}
-                {new Set(visibleFlat.map((s) => s.template_id)).size} templates,
-                alphabetical
+                Add a single scope to start. {visibleFlat.length} common{" "}
+                {visibleFlat.length === 1 ? "scope" : "scopes"} — the most
+                widely-used first.
               </p>
               {visibleFlat.map((item, idx) => {
                 const rowKey = `${item.template_id}:${item.label_plural}:${idx}`;

@@ -118,6 +118,7 @@ export default function OrganizationScopesPage() {
     <ScopeManagerPage
       organizationId={resolvedOrgId!}
       organizationName={organization.name}
+      isPersonal={organization.isPersonal}
     />
   );
 }

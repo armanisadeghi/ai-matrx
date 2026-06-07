@@ -19,11 +19,13 @@ import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboard
 interface ScopeManagerPageProps {
   organizationId: string;
   organizationName: string;
+  isPersonal?: boolean;
 }
 
 export function ScopeManagerPage({
   organizationId,
   organizationName,
+  isPersonal,
 }: ScopeManagerPageProps) {
   const dispatch = useAppDispatch();
   const hasFetched = useRef(false);
@@ -62,6 +64,7 @@ export function ScopeManagerPage({
       <div className="p-4 md:p-6 max-w-5xl mx-auto">
         <ScopeOnboarding
           orgId={organizationId}
+          isPersonal={isPersonal}
           onChanged={() => {
             hasFetched.current = false;
             dispatch(fetchScopeTypes(organizationId));
