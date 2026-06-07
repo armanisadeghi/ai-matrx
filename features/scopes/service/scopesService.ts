@@ -722,6 +722,59 @@ export const scopesService = {
     }
   },
 
+  /**
+   * An org-less container adopts the org of its first assigned scope.
+   *
+   * Rule (user-defined): a project/task with NO organization inherits the org
+   * of a scope it's tagged with; a project/task that ALREADY has an org is
+   * never changed. The "never overwrite" half is enforced at the DB with an
+   * `organization_id IS NULL` predicate on the UPDATE — so this is safe to call
+   * unconditionally; if the entity already has an org, zero rows change.
+   *
+   * Only entity types that own an `organization_id` column participate.
+   * NOTE: this writes an entity column, not appContextSlice — it does NOT
+   * violate the Surface A/B global-context invariant.
+   */
+  async adoptEntityOrgFromScopes(
+    entityType: ScopeAssignmentEntityType,
+    entityId: string,
+    scopeIds: string[],
+  ): Promise<ScopesRpcResult<{ organization_id: string | null }>> {
+    const ENTITY_ORG_TABLE: Partial<Record<ScopeAssignmentEntityType, string>> = {
+      project: "ctx_projects",
+      task: "ctx_tasks",
+    };
+    try {
+      const table = ENTITY_ORG_TABLE[entityType];
+      if (!table || scopeIds.length === 0) return ok({ organization_id: null });
+
+      // The org of the first assigned scope (scopes carry organization_id).
+      const { data: scopeRow, error: sErr } = await supabase
+        .from("ctx_scopes")
+        .select("organization_id")
+        .eq("id", scopeIds[0])
+        .maybeSingle();
+      if (sErr) return err(...mapPgErrorPair(sErr));
+      const orgId =
+        (scopeRow as { organization_id?: string | null } | null)?.organization_id ?? null;
+      if (!orgId) return ok({ organization_id: null });
+
+      // Adopt ONLY when the container currently has no org (DB-enforced).
+      const { data: updated, error: uErr } = await supabase
+        .from(table as never)
+        .update({ organization_id: orgId } as never)
+        .eq("id", entityId)
+        .is("organization_id", null)
+        .select("id");
+      if (uErr) return err(...mapPgErrorPair(uErr));
+
+      const didUpdate = Array.isArray(updated) && updated.length > 0;
+      return ok({ organization_id: didUpdate ? orgId : null });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
   // ──────────────────────────────────────────────────────────────────
   //  WRITE — placeholders for Phase 4+ mutation paths.
   //  Each returns `internal` until the corresponding RPC ships and the

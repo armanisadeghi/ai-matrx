@@ -172,7 +172,7 @@ export function ProjectWorkspace() {
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">{project.name}</h1>
               <div className="flex items-center gap-2 flex-wrap mt-1.5">
-                {project.isPersonal || !project.organizationId ? (
+                {!project.organizationId ? (
                   <Badge variant="secondary">Personal</Badge>
                 ) : (
                   <Link href={`/organizations/${org?.slug ?? project.organizationId}`}>

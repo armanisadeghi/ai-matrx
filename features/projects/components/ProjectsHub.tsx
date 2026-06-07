@@ -228,8 +228,11 @@ export function ProjectsHub({
   }, [projects, orgFilterId, scopeProjectIds, query]);
 
   const isFiltered = Boolean(orgParam || scopeParam);
-  const personal = filtered.filter((p) => p.isPersonal || !p.organizationId);
-  const teams = filtered.filter((p) => !p.isPersonal && p.organizationId);
+  // "Personal" is org-driven: a project belongs to whatever org owns it; only a
+  // project with NO org is personal. (The legacy is_personal flag is ignored —
+  // it's being removed; see docs/IS_PERSONAL_REMOVAL.md.)
+  const personal = filtered.filter((p) => !p.organizationId);
+  const teams = filtered.filter((p) => p.organizationId);
   const subtitle = orgFilterId
     ? `Projects in ${orgMap.get(orgFilterId)?.name ?? "this organization"}`
     : scopeParam
@@ -361,7 +364,7 @@ function ProjectsTable({
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
 
   const orgLabel = (p: ProjectWithRole) =>
-    p.isPersonal || !p.organizationId ? "Personal" : orgMap.get(p.organizationId)?.name ?? "Org";
+    !p.organizationId ? "Personal" : orgMap.get(p.organizationId)?.name ?? "Org";
 
   const sorted = React.useMemo(() => {
     const arr = [...projects];
@@ -423,7 +426,7 @@ function ProjectsTable({
         <TableBody>
           {sorted.map((p) => {
             const s = stats.get(p.id);
-            const isPersonal = p.isPersonal || !p.organizationId;
+            const isPersonal = !p.organizationId;
             return (
               <TableRow
                 key={p.id}
@@ -505,7 +508,7 @@ function ProjectHubCard({
               </h3>
             </button>
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
-              {project.isPersonal || !project.organizationId ? (
+              {!project.organizationId ? (
                 <Badge variant="secondary" className="text-[10px]">Personal</Badge>
               ) : (
                 <Badge variant="outline" className="text-[10px] gap-1">
