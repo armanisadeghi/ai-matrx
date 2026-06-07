@@ -22,7 +22,6 @@ import {
   ArrowLeft,
   Loader2,
   Settings,
-  Pencil,
   Network,
   Users,
   ListTodo,
@@ -103,7 +102,7 @@ export function ProjectWorkspace() {
   }, [projectParam]);
 
   const { members } = useProjectMembers(project?.id);
-  const { role, canManageSettings } = useProjectUserRole(project?.id);
+  const { role } = useProjectUserRole(project?.id);
   const { counts, loading: countsLoading } = useContainerInventory({
     column: "project_id",
     value: project?.id ?? null,
@@ -222,14 +221,6 @@ export function ProjectWorkspace() {
                     Graph
                   </Link>
                 </Button>
-                {canManageSettings && (
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/projects/${project.id}/edit`}>
-                      <Pencil className="h-4 w-4 mr-1.5" />
-                      Edit
-                    </Link>
-                  </Button>
-                )}
                 {role && (
                   <Button asChild size="sm">
                     <Link href={`/projects/${project.id}/settings`}>
