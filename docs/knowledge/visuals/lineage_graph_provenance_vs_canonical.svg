@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 380" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" role="img" aria-label="Lineage graph: provenance root versus canonical working copy">
+  <title>Lineage graph — provenance root vs canonical working copy</title>
+  <desc>A derivation chain (PDF page → OCR text → clean text → structured JSON) with the PDF marked as provenance root and the clean text marked as canonical. The clean text fans out to a summary and flashcards. An entity extracted from the JSON has a dashed trace walking back to the provenance root.</desc>
+  <defs>
+    <marker id="aS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#475569"/></marker>
+    <marker id="aA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#D97706"/></marker>
+  </defs>
+
+  <rect x="0" y="0" width="720" height="380" fill="#FFFFFF"/>
+
+  <!-- entity -->
+  <rect x="530" y="44" width="160" height="50" rx="10" fill="#FFFBEB" stroke="#D97706" stroke-width="1.5"/>
+  <text x="610" y="66" text-anchor="middle" font-size="14" font-weight="600" fill="#0F172A">entity: back pain</text>
+  <text x="610" y="83" text-anchor="middle" font-size="11" fill="#475569">extraction 0.92</text>
+
+  <!-- tags -->
+  <rect x="95" y="116" width="52" height="17" rx="8" fill="#64748B"/>
+  <text x="121" y="125" text-anchor="middle" font-size="9" font-weight="700" fill="#FFFFFF" letter-spacing="0.5">ROOT</text>
+  <rect x="392" y="116" width="86" height="17" rx="8" fill="#7C3AED"/>
+  <text x="435" y="125" text-anchor="middle" font-size="9" font-weight="700" fill="#FFFFFF" letter-spacing="0.5">CANONICAL</text>
+
+  <!-- chain -->
+  <rect x="30" y="140" width="140" height="62" rx="10" fill="#F1F5F9" stroke="#64748B" stroke-width="1.5"/>
+  <text x="100" y="166" text-anchor="middle" font-size="14" font-weight="600" fill="#0F172A">PDF p.278</text>
+  <text x="100" y="184" text-anchor="middle" font-size="11" fill="#475569">provenance root</text>
+
+  <rect x="200" y="140" width="140" height="62" rx="10" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+  <text x="270" y="166" text-anchor="middle" font-size="14" font-weight="600" fill="#0F172A">OCR text</text>
+  <text x="270" y="184" text-anchor="middle" font-size="11" fill="#475569">capture q70</text>
+
+  <rect x="370" y="140" width="140" height="62" rx="10" fill="#F5F3FF" stroke="#7C3AED" stroke-width="2"/>
+  <text x="440" y="166" text-anchor="middle" font-size="14" font-weight="600" fill="#0F172A">Clean text</text>
+  <text x="440" y="184" text-anchor="middle" font-size="11" fill="#475569">canonical · q86</text>
+
+  <rect x="540" y="140" width="150" height="62" rx="10" fill="#ECFDF5" stroke="#059669" stroke-width="1.5"/>
+  <text x="615" y="166" text-anchor="middle" font-size="14" font-weight="600" fill="#0F172A">Structured JSON</text>
+  <text x="615" y="184" text-anchor="middle" font-size="11" fill="#475569">utility q88</text>
+
+  <!-- fan-out -->
+  <rect x="320" y="270" width="150" height="54" rx="10" fill="#ECFDF5" stroke="#059669" stroke-width="1.5"/>
+  <text x="395" y="293" text-anchor="middle" font-size="14" font-weight="600" fill="#0F172A">Summary</text>
+  <text x="395" y="310" text-anchor="middle" font-size="11" fill="#475569">utility q84</text>
+
+  <rect x="490" y="270" width="150" height="54" rx="10" fill="#ECFDF5" stroke="#059669" stroke-width="1.5"/>
+  <text x="565" y="293" text-anchor="middle" font-size="14" font-weight="600" fill="#0F172A">Flashcards</text>
+  <text x="565" y="310" text-anchor="middle" font-size="11" fill="#475569">faithfulness q78</text>
+
+  <!-- chain arrows -->
+  <line x1="170" y1="171" x2="198" y2="171" stroke="#475569" stroke-width="1.5" marker-end="url(#aS)"/>
+  <line x1="340" y1="171" x2="368" y2="171" stroke="#475569" stroke-width="1.5" marker-end="url(#aS)"/>
+  <line x1="510" y1="171" x2="538" y2="171" stroke="#475569" stroke-width="1.5" marker-end="url(#aS)"/>
+  <line x1="430" y1="202" x2="398" y2="268" stroke="#475569" stroke-width="1.5" marker-end="url(#aS)"/>
+  <line x1="450" y1="202" x2="560" y2="268" stroke="#475569" stroke-width="1.5" marker-end="url(#aS)"/>
+
+  <!-- entity anchor -->
+  <line x1="612" y1="94" x2="616" y2="140" stroke="#94A3B8" stroke-width="1.25"/>
+
+  <!-- drill-down trace -->
+  <path d="M530 69 H55 V138" fill="none" stroke="#D97706" stroke-width="1.25" stroke-dasharray="5 4" marker-end="url(#aA)"/>
+
+  <!-- caption -->
+  <text x="30" y="346" font-size="11" fill="#475569">Dashed = drill-down: the entity walks back to its provenance root.  Clean text fans out to 26 derived artifacts (3 shown).</text>
+
+  <!-- legend -->
+  <rect x="30" y="360" width="11" height="11" rx="2" fill="#F1F5F9" stroke="#64748B"/>
+  <text x="46" y="369" font-size="10" fill="#475569">provenance root</text>
+  <rect x="160" y="360" width="11" height="11" rx="2" fill="#ECFEFF" stroke="#0E7490"/>
+  <text x="176" y="369" font-size="10" fill="#475569">capture chain</text>
+  <rect x="276" y="360" width="11" height="11" rx="2" fill="#F5F3FF" stroke="#7C3AED"/>
+  <text x="292" y="369" font-size="10" fill="#475569">canonical</text>
+  <rect x="364" y="360" width="11" height="11" rx="2" fill="#ECFDF5" stroke="#059669"/>
+  <text x="380" y="369" font-size="10" fill="#475569">derived</text>
+  <rect x="436" y="360" width="11" height="11" rx="2" fill="#FFFBEB" stroke="#D97706"/>
+  <text x="452" y="369" font-size="10" fill="#475569">entity + trace</text>
+</svg>

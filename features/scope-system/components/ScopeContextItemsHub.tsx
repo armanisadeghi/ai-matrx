@@ -1,15 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Building2,
-  ChevronRight,
-  Home,
-  Loader2,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -32,6 +25,7 @@ import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
+import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
 import {
@@ -70,7 +64,6 @@ export function ScopeContextItemsHub({
   scopeParam,
   canManage,
 }: ScopeContextItemsHubProps) {
-  const router = useRouter();
   const dispatch = useAppDispatch();
 
   const scopeType = useAppSelector((s) =>
@@ -138,46 +131,23 @@ export function ScopeContextItemsHub({
 
   return (
     <div className="space-y-6 pr-14">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-sm flex-wrap">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-          className="h-7 px-2 -ml-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
-        </Button>
-        <span className="text-muted-foreground/50">·</span>
-        <Link
-          href={orgScopesHref(orgSlugOrId)}
-          className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
-        >
-          {orgIsPersonal ? (
-            <Home className="h-3.5 w-3.5" />
-          ) : (
-            <Building2 className="h-3.5 w-3.5" />
-          )}
-          {orgIsPersonal ? "Personal workspace" : orgName}
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-        <Link
-          href={scopeTypeHref(orgSlugOrId, scopeType)}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          {scopeType.label_plural}
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-        <Link
-          href={scopeHref(orgSlugOrId, scopeType, scope)}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          {scope.name}
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-        <span className="font-medium text-foreground">Context items</span>
-      </div>
+      <ScopeBreadcrumb
+        orgSlugOrId={orgSlugOrId}
+        orgName={orgName}
+        orgIsPersonal={orgIsPersonal}
+        backHref={scopeHref(orgSlugOrId, scopeType, scope)}
+        trail={[
+          {
+            label: scopeType.label_plural,
+            href: scopeTypeHref(orgSlugOrId, scopeType),
+          },
+          {
+            label: scope.name,
+            href: scopeHref(orgSlugOrId, scopeType, scope),
+          },
+          { label: "Context items" },
+        ]}
+      />
 
       {/* Header */}
       <Card className="p-6">

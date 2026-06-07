@@ -24,7 +24,9 @@ interface OrgResourceRoleSectionProps {
   counts: Record<string, number | null>;
   loading: boolean;
   onOpen: (entry: OrgResourceEntry) => void;
-  onContribute: (entry: OrgResourceEntry) => void;
+  /** Quick "share yours" affordance. Omit (e.g. project/task containers, where
+   *  association is FK-direct, not org sharing) to hide the per-tile + button. */
+  onContribute?: (entry: OrgResourceEntry) => void;
 }
 
 export function OrgResourceRoleSection({
@@ -89,7 +91,7 @@ export function OrgResourceRoleSection({
                 </span>
               </button>
 
-              {contributable && (
+              {contributable && onContribute && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

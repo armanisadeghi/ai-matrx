@@ -15,8 +15,12 @@ export function scopeSeg(entity: Slugged): string {
   return entity.slug || entity.id;
 }
 
+export function orgHref(orgSlugOrId: string): string {
+  return `/organizations/${orgSlugOrId}`;
+}
+
 export function orgScopesHref(orgSlugOrId: string): string {
-  return `/organizations/${orgSlugOrId}/scopes`;
+  return `${orgHref(orgSlugOrId)}/scopes`;
 }
 
 export function scopeTypeHref(orgSlugOrId: string, type: Slugged): string {

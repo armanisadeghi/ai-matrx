@@ -37,7 +37,9 @@ import {
   selectScopesByOrg,
 } from "@/features/agent-context/redux/scope/scopesSlice";
 import { OrgHomeScopeSection } from "@/features/scope-system/components/OrgHomeScopeSection";
+import { ScopeBreadcrumb } from "@/features/scope-system/components/ScopeBreadcrumb";
 import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
+import { orgHref } from "@/features/scope-system/utils/scopeRoutes";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
 import { TemplateGalleryDrawer } from "@/features/scope-system/components/TemplateGalleryDrawer";
 import { ReorderDialog } from "@/features/scope-system/components/ReorderDialog";
@@ -85,8 +87,19 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
     toast.success("Order saved");
   }
 
+  const orgOverviewHref = orgHref(slug);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pr-14">
+      <ScopeBreadcrumb
+        orgSlugOrId={slug}
+        orgName={organization.name}
+        orgIsPersonal={organization.isPersonal ?? false}
+        backHref={orgOverviewHref}
+        orgLinkHref={orgOverviewHref}
+        trail={[{ label: "Scopes" }]}
+      />
+
       <Card className="p-4 md:p-5">
         <div className="flex items-start gap-4">
           {organization.logoUrl ? (

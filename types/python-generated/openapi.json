@@ -6192,10 +6192,52 @@
         }
       }
     },
+    "/user-secrets/bulk-env": {
+      "post": {
+        "tags": [
+          "User Secrets"
+        ],
+        "summary": "Bulk Import Env",
+        "description": "Paste a .env body (or upload one — the FE submits its text content here).\nEvery well-formed line upserts a secret. Malformed lines are skipped\nwith a server-side log; the response lists the rows that landed.",
+        "operationId": "bulk_import_env_user_secrets_bulk_env_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserSecretBulkEnvRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSecretBulkEnvResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/user-secrets/internal/sandbox-env-for-user": {
       "get": {
         "tags": [
-          "User Secrets"
+          "User Secrets (internal)"
         ],
         "summary": "Get Sandbox Env For User",
         "description": "Return the decrypted sandbox env for `user_id`. Service-token-authed\nvia the existing sandbox-bridge auth path (X-Matrx-User-Id header is\nUUID-validated; Authorization: Bearer <AIDREAM_SANDBOX_SERVICE_TOKEN>\nis constant-time compared).\n\nCalled by the matrx-sandbox orchestrator at sandbox-create time so the\nuser's vaulted secrets land in `docker run -e KEY=value` regardless\nof how the sandbox was created (browser, Ship portal, agent tool,\nautomation). The browser-facing `/sandbox-env` above stays unchanged\nfor in-browser callers.",
@@ -6241,48 +6283,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SandboxEnvResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/user-secrets/bulk-env": {
-      "post": {
-        "tags": [
-          "User Secrets"
-        ],
-        "summary": "Bulk Import Env",
-        "description": "Paste a .env body (or upload one — the FE submits its text content here).\nEvery well-formed line upserts a secret. Malformed lines are skipped\nwith a server-side log; the response lists the rows that landed.",
-        "operationId": "bulk_import_env_user_secrets_bulk_env_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserSecretBulkEnvRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserSecretBulkEnvResponse"
                 }
               }
             }
@@ -53649,6 +53649,10 @@
           "pending_batches": {
             "type": "integer",
             "title": "Pending Batches"
+          },
+          "ner_coverage_pct": {
+            "type": "number",
+            "title": "Ner Coverage Pct"
           }
         },
         "additionalProperties": false,
@@ -53657,7 +53661,8 @@
           "spend_today_usd",
           "spend_7d_usd",
           "orgs_over_80pct",
-          "pending_batches"
+          "pending_batches",
+          "ner_coverage_pct"
         ],
         "title": "KgCostSummaryResponse"
       },

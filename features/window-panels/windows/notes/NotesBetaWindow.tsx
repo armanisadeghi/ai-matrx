@@ -24,17 +24,20 @@ import { NotesWindowView } from "@/features/notes/components/NotesWindowView";
 
 export interface NotesWindowProps extends Omit<
   WindowPanelProps,
-  "children" | "title" | "sidebar"
+  "children" | "title" | "sidebar" | "onClose"
 > {
   title?: string;
   /** Unique overlay instance ID — used to derive stable notes instance + window IDs. */
   windowInstanceId?: string;
+  /** Required — multi-instance overlay; persistence.closeWindow only targets "default". */
+  onClose: () => void;
 }
 
 export function NotesWindow({
   title = "Notes",
   id,
   windowInstanceId,
+  onClose,
   ...windowProps
 }: NotesWindowProps) {
   // Derive stable IDs from the overlay instance ID so multiple windows don't collide.
@@ -66,6 +69,7 @@ export function NotesWindow({
       sidebarDefaultSize={200}
       sidebarMinSize={140}
       sidebarExpandsWindow
+      onClose={onClose}
       {...windowProps}
     >
       <NotesWindowView

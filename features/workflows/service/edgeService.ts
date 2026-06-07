@@ -6,6 +6,15 @@ import {
   WorkflowEdge,
 } from "@/features/workflows/types";
 
+function parseStoredEdgeStyle(
+  style: DbWorkflowEdge["style"],
+): React.CSSProperties {
+  if (style === null || typeof style !== "object" || Array.isArray(style)) {
+    return {};
+  }
+  return style as React.CSSProperties;
+}
+
 export function edgeToReactFlow(dbEdge: DbWorkflowEdge): WorkflowEdge {
   const meta = (
     dbEdge.metadata && typeof dbEdge.metadata === "object"
@@ -20,7 +29,7 @@ export function edgeToReactFlow(dbEdge: DbWorkflowEdge): WorkflowEdge {
     target_handle: dbEdge.target_handle_id,
     edge_type: dbEdge.edge_type,
     animated: dbEdge.animated,
-    style: (dbEdge.style as React.CSSProperties | null) ?? null,
+    style: dbEdge.style === null ? null : parseStoredEdgeStyle(dbEdge.style),
     connectionType: meta.connectionType ?? dbEdge.connection_type ?? undefined,
     sourceBrokerId: meta.sourceBrokerId || "",
     sourceBrokerName: meta.sourceBrokerName || "",
@@ -38,7 +47,7 @@ export function edgeToReactFlow(dbEdge: DbWorkflowEdge): WorkflowEdge {
     targetHandle: dbEdge.target_handle_id,
     type: dbEdge.edge_type || "default",
     animated: dbEdge.animated || false,
-    style: dbEdge.style || {},
+    style: parseStoredEdgeStyle(dbEdge.style),
     data: edgeData,
   };
 }

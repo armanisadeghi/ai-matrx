@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft,
   ArrowUpDown,
   ArrowUpRight,
   Building2,
@@ -71,9 +70,11 @@ import {
   resolveColor,
   SCOPE_ICON_SURFACE,
 } from "@/features/scope-system/constants/scope-colors";
+import { ScopeBreadcrumb } from "@/features/scope-system/components/ScopeBreadcrumb";
 import {
   orgScopesHref,
   scopeHref,
+  scopeSeg,
   contextItemsHref,
   contextItemHref,
   scopeTypeEditHref,
@@ -219,16 +220,13 @@ export function ScopesList({
 
   return (
     <div className="space-y-6 pr-14">
-      {/* ── Back ─────────────────────────────────────────────────── */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => router.back()}
-        className="h-7 px-2 -ml-2 text-muted-foreground"
-      >
-        <ArrowLeft className="h-4 w-4 mr-1" />
-        Back
-      </Button>
+      <ScopeBreadcrumb
+        orgSlugOrId={orgSlugOrId}
+        orgName={orgName}
+        orgIsPersonal={orgIsPersonal}
+        backHref={orgScopesHref(orgSlugOrId)}
+        trail={[{ label: scopeType.label_plural }]}
+      />
 
       {/* ── Identity header: "<ORG> / <Type plural>" ─────────────── */}
       <Card className="p-6">
@@ -359,6 +357,8 @@ export function ScopesList({
             typeId={scopeType.id}
             labelSingular={scopeType.label_singular}
             labelPlural={scopeType.label_plural}
+            orgSlugOrId={orgSlugOrId}
+            typeSlugOrId={scopeSeg(scopeType)}
             onCancel={() => setAdding(false)}
             onCreated={(scopeId) => {
               setAdding(false);

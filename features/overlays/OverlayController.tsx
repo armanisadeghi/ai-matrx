@@ -3212,6 +3212,14 @@ export default function OverlayController() {
         return (
           <NotesBetaWindow
             key={inst.instanceId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "notesBetaWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
             title={typeof data?.title === "string" ? data.title : undefined}
             windowInstanceId={
               typeof data?.windowInstanceId === "string"
@@ -3233,6 +3241,7 @@ export default function OverlayController() {
         return (
           <NotesWindow
             title={typeof data?.title === "string" ? data.title : undefined}
+            onClose={() => dispatch(closeOverlay({ overlayId: "notesWindow" }))}
             initialTabs={
               Array.isArray(data?.initialTabs) &&
               data.initialTabs.every((v) => typeof v === "string")

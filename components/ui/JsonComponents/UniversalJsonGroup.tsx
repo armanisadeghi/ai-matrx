@@ -401,26 +401,31 @@ export const UniversalJsonGroup: React.FC<UniversalJsonGroupProps> = ({
                   draggableId={component.id}
                   index={index}
                 >
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                    >
-                      <ComponentItem
-                        component={component}
-                        isMinimized={minimizedStates[component.id]}
-                        onMinimizeChange={(minimized) =>
-                          handleMinimizeChange(component.id, minimized)
-                        }
-                        isExpanded={expandedStates[component.id]}
-                        onExpandChange={(expanded) =>
-                          handleExpandChange(component.id, expanded)
-                        }
-                        metrics={metrics[component.id]}
-                      />
-                    </div>
-                  )}
+                  {(provided) => {
+                    const { style, ...draggableProps } =
+                      provided.draggableProps;
+                    return (
+                      <div
+                        ref={provided.innerRef}
+                        {...draggableProps}
+                        {...provided.dragHandleProps}
+                        style={style as React.CSSProperties | undefined}
+                      >
+                        <ComponentItem
+                          component={component}
+                          isMinimized={minimizedStates[component.id]}
+                          onMinimizeChange={(minimized) =>
+                            handleMinimizeChange(component.id, minimized)
+                          }
+                          isExpanded={expandedStates[component.id]}
+                          onExpandChange={(expanded) =>
+                            handleExpandChange(component.id, expanded)
+                          }
+                          metrics={metrics[component.id]}
+                        />
+                      </div>
+                    );
+                  }}
                 </Draggable>
               ))}
               {provided.placeholder}

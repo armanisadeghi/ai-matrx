@@ -305,12 +305,14 @@ export function KgSuggestionRowItem({
                 ) : null}
                 {target.scope_type.label_singular}
               </span>
-              <ArrowRight className="h-3 w-3 text-muted-foreground/50" />
-              <span className="font-semibold text-foreground">
+              <ArrowRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+              <span className="font-semibold text-foreground min-w-0 break-words">
                 {target.scope.name}
               </span>
-              <ArrowRight className="h-3 w-3 text-muted-foreground/50" />
-              <span className="font-medium text-foreground">{slotLabel}</span>
+              <ArrowRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+              <span className="font-medium text-foreground min-w-0 break-words">
+                {slotLabel}
+              </span>
               {scopeViewHref ? (
                 <Link
                   href={scopeViewHref}

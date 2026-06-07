@@ -2523,6 +2523,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/user-secrets/bulk-env": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Import Env
+         * @description Paste a .env body (or upload one — the FE submits its text content here).
+         *     Every well-formed line upserts a secret. Malformed lines are skipped
+         *     with a server-side log; the response lists the rows that landed.
+         */
+        post: operations["bulk_import_env_user_secrets_bulk_env_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/user-secrets/internal/sandbox-env-for-user": {
         parameters: {
             query?: never;
@@ -2546,28 +2568,6 @@ export interface paths {
         get: operations["get_sandbox_env_for_user_user_secrets_internal_sandbox_env_for_user_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/user-secrets/bulk-env": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Bulk Import Env
-         * @description Paste a .env body (or upload one — the FE submits its text content here).
-         *     Every well-formed line upserts a secret. Malformed lines are skipped
-         *     with a server-side log; the response lists the rows that landed.
-         */
-        post: operations["bulk_import_env_user_secrets_bulk_env_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19203,6 +19203,8 @@ export interface components {
             orgs_over_80pct: number;
             /** Pending Batches */
             pending_batches: number;
+            /** Ner Coverage Pct */
+            ner_coverage_pct: number;
         };
         /** LLMParams */
         LLMParams: {
@@ -31226,38 +31228,6 @@ export interface operations {
             };
         };
     };
-    get_sandbox_env_for_user_user_secrets_internal_sandbox_env_for_user_get: {
-        parameters: {
-            query?: never;
-            header?: {
-                authorization?: string | null;
-                "X-Matrx-User-Id"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SandboxEnvResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     bulk_import_env_user_secrets_bulk_env_post: {
         parameters: {
             query?: never;
@@ -31278,6 +31248,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserSecretBulkEnvResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sandbox_env_for_user_user_secrets_internal_sandbox_env_for_user_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Matrx-User-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxEnvResponse"];
                 };
             };
             /** @description Validation Error */

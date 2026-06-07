@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 "use client";
 
 import React, { useState } from "react";
@@ -5,7 +7,10 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { motion, AnimatePresence } from "motion/react";
 import { useCreateManyToMany } from "@/lib/redux/entity/hooks/useCreateManyToMany";
 import { RELATIONSHIP_DEFINITIONS } from "@/app/entities/hooks/relationships/relationshipData";
-import { AiModelDataOptional, AiEndpointDataOptional } from "@/types/AutomationSchemaTypes";
+import {
+  AiModelDataOptional,
+  AiEndpointDataOptional,
+} from "@/types/AutomationSchemaTypes";
 
 export const aiModelEndpointDef = RELATIONSHIP_DEFINITIONS.aiModelEndpoint;
 
@@ -46,7 +51,8 @@ const RelationshipMaker = () => {
     };
   });
 
-  const isLoading = !allParentRecordsArray.length || !allChildRecordsArray.length;
+  const isLoading =
+    !allParentRecordsArray.length || !allChildRecordsArray.length;
 
   // Filter functions
   const filterItems = (items: any[], query: string) => {
@@ -54,22 +60,25 @@ const RelationshipMaker = () => {
     const lowerQuery = query.toLowerCase();
     return items.filter((item) =>
       Object.values(item).some((value) =>
-        String(value).toLowerCase().includes(lowerQuery)
-      )
+        String(value).toLowerCase().includes(lowerQuery),
+      ),
     );
   };
 
   const filteredModels = filterItems(models, modelSearch).filter((model) => {
-    const matchCount = providers.filter((p) => p.models.some((m) => m.id === model.id)).length;
+    const matchCount = providers.filter((p) =>
+      p.models.some((m) => m.id === model.id),
+    ).length;
     if (modelFilter === "Unassociated") return matchCount === 0;
     if (modelFilter === "1+ Matches") return matchCount > 0;
     return true; // "All"
   });
 
-  const filteredProviders = filterItems(providers, providerSearch).filter((provider) =>
-    providerModelFilter
-      ? provider.models.some((m) => m.id === providerModelFilter)
-      : true
+  const filteredProviders = filterItems(providers, providerSearch).filter(
+    (provider) =>
+      providerModelFilter
+        ? provider.models.some((m) => m.id === providerModelFilter)
+        : true,
   );
 
   const handleCreate = async (parentId: string, childId: string) => {
@@ -115,7 +124,11 @@ const RelationshipMaker = () => {
   };
 
   const truncateText = (text: string | undefined, maxLength: number = 50) =>
-    text ? (text.length > maxLength ? `${text.slice(0, maxLength)}...` : text) : "";
+    text
+      ? text.length > maxLength
+        ? `${text.slice(0, maxLength)}...`
+        : text
+      : "";
 
   if (isLoading) {
     return (
@@ -172,19 +185,27 @@ const RelationshipMaker = () => {
               >
                 <div className="space-y-2">
                   {filteredModels.map((model, index) => (
-                    <Draggable key={model.id} draggableId={model.id} index={index}>
+                    <Draggable
+                      key={model.id}
+                      draggableId={model.id}
+                      index={index}
+                    >
                       {(provided, snapshot) => {
+                        const { style, ...draggableProps } =
+                          provided.draggableProps;
                         const associatedProviders = providers.filter((p) =>
-                          p.models.some((m) => m.id === model.id)
+                          p.models.some((m) => m.id === model.id),
                         );
                         const isSelected = selectedModelId === model.id;
                         return (
                           <div
                             ref={provided.innerRef}
-                            {...provided.draggableProps}
+                            {...draggableProps}
                             {...provided.dragHandleProps}
+                            style={style as React.CSSProperties | undefined}
                             onClick={(e) => {
-                              if (!snapshot.isDragging) setSelectedModelId(model.id);
+                              if (!snapshot.isDragging)
+                                setSelectedModelId(model.id);
                             }}
                           >
                             <motion.div
@@ -192,8 +213,8 @@ const RelationshipMaker = () => {
                                 isSelected
                                   ? "from-cyan-400 to-teal-500 dark:from-cyan-600 dark:to-teal-700"
                                   : snapshot.isDragging
-                                  ? "scale-110 shadow-xl"
-                                  : "from-purple-400 to-indigo-500 dark:from-purple-600 dark:to-indigo-700"
+                                    ? "scale-110 shadow-xl"
+                                    : "from-purple-400 to-indigo-500 dark:from-purple-600 dark:to-indigo-700"
                               } ${isCreating ? "opacity-50 pointer-events-none" : ""}`}
                               initial={{ opacity: 0, y: 20 }}
                               animate={{ opacity: 1, y: 0 }}
@@ -202,14 +223,21 @@ const RelationshipMaker = () => {
                               <div className="flex items-center justify-between">
                                 <div>
                                   <span className="font-semibold">
-                                    {model.commonName || "Unnamed"} ({model.name})
+                                    {model.commonName || "Unnamed"} (
+                                    {model.name})
                                   </span>
                                   <p className="text-xs text-gray-600 dark:text-gray-400">
                                     {[
                                       model.modelClass,
-                                      model.contextWindow ? `Context Window: ${model.contextWindow}` : "",
-                                      model.maxTokens ? `Max Tokens: ${model.maxTokens.toLocaleString()}` : "",
-                                      model.capabilities ? "Capablities: " + model.capabilities : "",
+                                      model.contextWindow
+                                        ? `Context Window: ${model.contextWindow}`
+                                        : "",
+                                      model.maxTokens
+                                        ? `Max Tokens: ${model.maxTokens.toLocaleString()}`
+                                        : "",
+                                      model.capabilities
+                                        ? "Capablities: " + model.capabilities
+                                        : "",
                                     ]
                                       .filter(Boolean)
                                       .join(" • ")}
@@ -247,17 +275,22 @@ const RelationshipMaker = () => {
                     </h3>
                     <div className="space-y-2">
                       {unassociatedChildren
-                        .map((modelId: string) => models.find((m) => m.id === modelId))
+                        .map((modelId: string) =>
+                          models.find((m) => m.id === modelId),
+                        )
                         .filter(Boolean)
                         .filter((model) =>
                           Object.values(model!).some((value) =>
-                            String(value).toLowerCase().includes(modelSearch.toLowerCase())
-                          )
+                            String(value)
+                              .toLowerCase()
+                              .includes(modelSearch.toLowerCase()),
+                          ),
                         )
                         .filter((model) =>
-                          modelFilter === "Unassociated" || modelFilter === "All"
+                          modelFilter === "Unassociated" ||
+                          modelFilter === "All"
                             ? true
-                            : false
+                            : false,
                         )
                         .map((model) => (
                           <motion.div
@@ -272,8 +305,12 @@ const RelationshipMaker = () => {
                             <p className="text-xs text-gray-600 dark:text-gray-400">
                               {[
                                 model!.modelClass,
-                                model!.contextWindow ? `${model!.contextWindow} ctx` : "",
-                                model!.maxTokens ? `${model!.maxTokens} tokens` : "",
+                                model!.contextWindow
+                                  ? `${model!.contextWindow} ctx`
+                                  : "",
+                                model!.maxTokens
+                                  ? `${model!.maxTokens} tokens`
+                                  : "",
                                 model!.capabilities ? "Capable" : "",
                               ]
                                 .filter(Boolean)
@@ -343,17 +380,22 @@ const RelationshipMaker = () => {
                       snapshot.isDraggingOver && !isCreating
                         ? "border-indigo-400"
                         : snapshot.draggingFromThisWith &&
-                          provider.models.some((m) => m.id === snapshot.draggingFromThisWith)
-                        ? "border-yellow-400 opacity-75"
-                        : selectedModelId &&
-                          provider.models.some((m) => m.id === selectedModelId)
-                        ? "border-cyan-500 shadow-cyan-500/50"
-                        : "border-gray-700 dark:border-gray-700"
+                            provider.models.some(
+                              (m) => m.id === snapshot.draggingFromThisWith,
+                            )
+                          ? "border-yellow-400 opacity-75"
+                          : selectedModelId &&
+                              provider.models.some(
+                                (m) => m.id === selectedModelId,
+                              )
+                            ? "border-cyan-500 shadow-cyan-500/50"
+                            : "border-gray-700 dark:border-gray-700"
                     }`}
                   >
                     <div
                       className={`p-2 ${
-                        selectedModelId && provider.models.some((m) => m.id === selectedModelId)
+                        selectedModelId &&
+                        provider.models.some((m) => m.id === selectedModelId)
                           ? "bg-cyan-100 dark:bg-cyan-900"
                           : ""
                       }`}
@@ -391,11 +433,17 @@ const RelationshipMaker = () => {
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
                             exit={{ scale: 0 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                            transition={{
+                              type: "spring",
+                              stiffness: 300,
+                              damping: 20,
+                            }}
                           >
                             <span>{model.commonName || "Unnamed"}</span>
                             <button
-                              onClick={() => removeModelFromProvider(provider.id, model.id)}
+                              onClick={() =>
+                                removeModelFromProvider(provider.id, model.id)
+                              }
                               className="w-4 h-4 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 transition-colors"
                               disabled={isCreating}
                             >

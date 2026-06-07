@@ -1,15 +1,35 @@
 # Matrx Knowledge System Concept
 
 ## The purpose in one paragraph
-Ingest any content → understand it (entities + themes) → **tag it to the org's own scopes** (Client Ava, Case 123, Patient X) → so users and agents can search **semantically** ("back pain") *and* **structurally** ("everything for Client Ava, Case 123"), trust results **by provenance**, and keep raw data forever, re-processable when instructions change. Scopes are user-defined per tenant (no hardcoded Salesforce dimensions).
+Ingest any content → understand it (entities + themes) → **tag it to the org's own scopes** (Client Ava, Case 123, Patient X) → so users and agents can search **semantically** ("back pain") *and* **structurally** ("everything for Client Ava, Case 123"), trust results **by provenance**, and **retain raw data by default** (never auto-dropped; always user-deletable), re-processable when instructions change. Scopes are user-defined per tenant (no hardcoded Salesforce dimensions).
 
 ## The four planes (how it all connects)
 - **Plane 1 — Content / Entities (the nouns).** Every scopeable thing (notes, files, agent chats, research, scrapes, code, tasks…) catalogued in `public.shareable_resource_registry` (~36 types). Each plays a role: **Source / Destination / Utility / Container** (`scopeable_entities.md`).
 - **Plane 2 — The Pipeline (the verbs).** A **7-phase flow** turns raw content → enriched knowledge; the 5-stage NER pass is Phase 6 (below).
 - **Plane 3 — Scopes (the structure / the target).** Per-org dimensions: `scope type → scope → item → value` (attributes) **plus** `ctx_scope_assignments` (M2M: tag any entity → a scope). Pipeline Stage 4 feeds this. Scope **values are ground truth**, never overwritten by AI.
-- **Plane 4 — Provenance / Authority (the trust).** Rides alongside; annotates how much we trust each thing *now* (`knowledge_provenance_model.md`). Mostly CONCEPT today.
+- **Plane 4 — Provenance / Authority (the trust).** Rides alongside; annotates how much we trust each thing *now*. Scoring is fully specified in [`04_matrx_quality_model.md`](04_matrx_quality_model.md); lineage/roles in `knowledge_provenance_model.md`. Designed, rollout pending.
 - **Consumption.** Hybrid retrieval (`search.py`) + the KG/cluster **visualization** (`kg_graph.py`).
 - **The Agent Fabric (cross-cutting — the differentiator).** A custom agent, built in minutes, can plug in at any phase or edge and manifest as a chatbot, button, form, widget, event automation, or scheduled job (and reach external platforms via MCP). It operates *on* the planes; it is not itself a plane.
+
+---
+
+## The doc map — start here, reach everything
+
+This overview is the entry point. From here:
+
+| Go to | For |
+|---|---|
+| **What's left to build** → [`00_MASTER_TASKLIST.md`](00_MASTER_TASKLIST.md) | The prioritized tracker — every task (big & small) on the road to making this real |
+| Architecture detail → [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md) | Master architecture, Agent Fabric, STOP rules |
+| Phase 6 (NER) detail → [`03_KNOWLEDGE_MODULE.md`](03_KNOWLEDGE_MODULE.md) | The 5-stage NER pipeline |
+| Scopes → [`scope-model.md`](scope-model.md) · [`scopeable_entities.md`](scopeable_entities.md) | The scope chain + what can be tagged |
+| Auto-scoping → [`scope-association-pipeline.md`](scope-association-pipeline.md) | How new content is matched to scopes + scope items (the agent, suggestions, match confidence) |
+| **Agent access → knowledge** → [`agent-knowledge-access.md`](agent-knowledge-access.md) | How an agent reaches RAG/NER — bounded agentic search (mirrors the tool hierarchy), the hit contract + condensed entity map, hint injection |
+| **Quality / scoring** → [`04_matrx_quality_model.md`](04_matrx_quality_model.md) | **Single source of truth for all scoring** — Quality Vector, log-odds propagation, utility profiles, composite, seeding |
+| Trust / lineage → [`knowledge_provenance_model.md`](knowledge_provenance_model.md) | Provenance, content roles, lineage (scoring math lives in `04`) |
+| **What the code actually does today** → [`../rag_and_ner/`](../rag_and_ner/README.md) | Reality docs + the truth-checked backlog (`00_CLEANUP.md` §2.0 bucket index) |
+
+> **Vision lives here** (`docs/knowledge/`). **Code truth + backlog** live in [`docs/rag_and_ner/`](../rag_and_ner/README.md). The tasklist is the bridge.
 
 ---
 
@@ -20,7 +40,7 @@ Raw content → enriched knowledge in seven phases: **1 Acquire · 2 Convert · 
 1. **Extract** entities and concepts from documents using a model (GLiNER2 or Haiku).
 2. **Resolve** duplicates and synonyms with a generic AI pass.
 3. **Score importance** — mark distinctive vs. noisy entities, again with generic AI.
-4. **Link to scopes** — use custom instructions and your structured data (scope types, scope items, scope instances) to map entities to the things that matter operationally (Client Ava, Case 123, etc.). Concepts skip this and stay thematic.
+4. **Link to scopes** — a **Helpful Agent** matches the content against the user's **known** scopes and scope items and proposes links the user confirms. Two parts: **(A)** assign the source to a known scope ("this is *about* Ava"); **(B)** once a scope is known, fill that scope-type's blank/changed items from the content. Always **suggestions**, abstaining-is-good, scored by a **match confidence** that is *not* a trust/quality score. Concepts skip this and stay thematic. → full spec: [`scope-association-pipeline.md`](scope-association-pipeline.md).
 5. **Store enriched chunks** — each RAG chunk carries the resolved entities, importance scores, scope links, and provenance metadata alongside its embedding.
 
 The output is a document system where you can:
@@ -107,7 +127,7 @@ Notes, Files, Tasks, Agents, Agent Apps, Agent Shortcuts, Skills, Conversations,
 
 # Provenance & Authority — the trust layer
 
-> Full detail — tier↔`source_type` mapping, transformation types, entity-field list, storage: [`knowledge_provenance_model.md`](knowledge_provenance_model.md)
+> **Scoring is canonical in [`04_matrx_quality_model.md`](04_matrx_quality_model.md)** (the Quality Vector, log-odds propagation, utility effect types, composite profiles, seeding). Lineage / content roles / `source_type` mapping: [`knowledge_provenance_model.md`](knowledge_provenance_model.md). Nothing else re-explains scoring.
 
 Rides alongside scopes and the pipeline — it annotates trust, replaces nothing.
 **Scopes** = what is it *about*? · **Pipeline** = where in the *flow*? · **Provenance** = how much do we *trust* it now?
@@ -118,29 +138,28 @@ Rides alongside scopes and the pipeline — it annotates trust, replaces nothing
 
 **Content role** — how an entity participates: **Source** (knowledge enters — files, scrapes, transcripts) · **Destination** (knowledge produced — flashcards, research synthesis, agent chats) · **Utility** (operates, no truth of its own — agents, skills, workflows) · **Container** (operational — holds/groups other entities — tasks, projects, batches). Many are dual; role is per-instance where needed.
 
-**Authority tiers** — generalize the scope-value `source_type`: **primary** (assumed factual) · **derived** (trusted process) · **unvalidated** (raw, unreviewed).
+**Authority tiers** — a coarse lens generalizing the scope-value `source_type`: **primary** (assumed factual) · **derived** (trusted process) · **unvalidated** (raw, unreviewed). The canonical scoring underneath is the `04` Quality Vector.
 
-**How authority changes:** `input_authority × utility_transformation = output_authority` — validation ↑ · synthesis ≈/↑ · distillation ≈ · abstraction ↓. A weak source through a strong validation tool can outrank a strong source through a lossy one.
+**How authority changes (intuition):** `input_authority × utility_transformation = output_authority` — a weak source through a strong validation tool can outrank a strong source through a lossy one. **The real computation** (log-odds propagation, the `preserve` / `additive_impact` / `targeted_transform` effect types) is defined in [`04_matrx_quality_model.md`](04_matrx_quality_model.md).
 
-**Through the 5 stages:** entities inherit their document's tier + confidence (1) → merges keep the highest authority (2) → provenance weights importance (3) → scope links are *suggestions* (`scope_association_suggestions`) until human-confirmed, which writes `ctx_context_item_values` via `set_context_value()` (4) → each stored chunk carries entities, scope links, authority tier, confidence, content role, and lineage beside its embedding (5).
+**Through the 5 stages:** entities inherit their document's tier + confidence (1) → merges keep the highest authority (2) → provenance weights importance (3) → **scope linking is agent-driven and always *suggestion-first*** (4): Stage A proposes an *entity→scope assignment* (`scope_association_suggestions` → confirmed to `ctx_scope_assignments`); Stage B, only once a scope is known, proposes *item values* (→ confirmed to `ctx_context_item_values` via `set_context_value()`). Both are gated by a **match confidence** that is a *separate axis* from authority/trust — see [`scope-association-pipeline.md`](scope-association-pipeline.md) → each stored chunk carries entities, scope links, authority tier, confidence, content role, and lineage beside its embedding (5).
 
-Keep raw data forever, tagged — never deleted, just gated; re-process from originals if instructions change.
+Retention is the **default** — never auto-dropped on "done reading"; raw stays tagged & re-processable. **The user is the ultimate boss and may delete anything**; deleting an anchor warns + tombstones (shell + lineage kept, bytes purged), never a system veto.
 
 ---
 
-# Open & undecided — things we want but have NOT decided
+# Quality / trust — DEFINED in `04_matrx_quality_model.md`
 
-**Status: NOT decided.** This is the one thing the system pretends to know and does not. Any DB column, code path, or doc that treats a single trust/confidence number as settled is **wrong by definition** — the decision has not been made. "confidence" is a placeholder, not a contract. Anyone who claims to already know the answer is wrong.
+**Status: DECIDED.** Quality scoring is now fully specified in [`04_matrx_quality_model.md`](04_matrx_quality_model.md) — the **single source of truth**. Every column, code path, and doc that touches scoring **refers to `04`**; nothing re-explains it elsewhere. What `04` settles:
 
-What we *do* know: there are several **distinct** signals, currently collapsed into one number:
+- **Not one number.** Each artifact carries a **Quality Vector** (`source_quality`, `capture_quality`, `faithfulness`, `alignment`, `coverage`, `utility_value`) and a purpose-dependent **`composite_quality`**. Components stay separate so retrieval, ranking, agents, and UI can explain *why*.
+- **Propagation is in log-odds space**, via three utility **effect types**: `preserve` (lossless), `additive_impact` (validation/degradation deltas), `targeted_transform` (derived outputs pulled toward the utility's own expected quality). A strong cleanup can lift weak input; a lossy summary can lower excellent input.
+- **No quality laundering.** Derived artifacts do **not** automatically become trusted seed sources — seeding requires explicit `seed_policy` / validation / human approval (`can_be_seeded`).
+- **Composite is purpose-dependent** (named composite profiles), not one universal formula.
 
-1. **Source prior** — trust from origin (court transcript → high; raw scrape → low). The `authority_tier` idea; not actually applied to the score today.
-2. **Extraction confidence** — the model's certainty it pulled the entity out *correctly*. Mechanical — it says nothing about whether the content is *true*. **The only signal stored today** (per-mention `confidence` → per-entity `confidence_avg`).
-3. **Validation deltas** — an actor reviews and bumps trust; actors have **unequal power** to bump.
-4. **Composite trust** — the single downstream handle the three above should feed.
+**The three score types — never conflate them:**
+1. **Quality** — the Quality Vector + composite above. The real scoring system. Canonical: `04`.
+2. **Scope match confidence** — an agent's guess that content matches a *known* scope/item. A *separate axis*. See [`scope-association-pipeline.md`](scope-association-pipeline.md).
+3. **NER extraction confidence** — a model's mechanical certainty it pulled an entity *correctly*. Says nothing about truth or quality; at most a capture-side gate.
 
-The confusion (unresolved): is this 1 number, or 3–4? How do they combine? We strongly suspect **extraction confidence (2) is being used as if it were trust (4)** — different axes, wrongly averaged.
-
-Suggestion (non-binding): keep extraction confidence as a *quality gate only*; compute trust separately as **source prior moved by validation deltas**. **Do not encode any of this in schema or code until it is decided.**
-
-**Also undecided — seeding control (anti-sprouting).** We *want* a guard so a low-authority derived item (an AI-generated flashcard) can't be re-ingested as an authoritative source and propagate errors — but the mechanism is **undecided** and depends on the scoring question above. Suggestion (non-binding): gate seeding on an explicit human-set `can_be_seeded` flag, not an auto score. **Don't build it as settled yet.**
+**Still open: rollout, not design.** What remains is *implementation* (engine module, DB schema, default utility profiles, backfill) — see `04`'s TASKS section and [`00_MASTER_TASKLIST.md`](00_MASTER_TASKLIST.md), not a design question.

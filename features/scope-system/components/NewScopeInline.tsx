@@ -16,7 +16,12 @@ import {
   selectItemsLoadedForType,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
-import { slugifyKey, toSlug } from "@/features/scope-system/utils/slugify";
+import {
+  slugifyKey,
+  toSlug,
+  isValidSlug,
+  isReservedSlug,
+} from "@/features/scope-system/utils/slugify";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 
 interface NewScopeInlineProps {
@@ -24,6 +29,9 @@ interface NewScopeInlineProps {
   typeId: string;
   labelSingular: string;
   labelPlural: string;
+  /** For the URL slug preview line under the slug field. */
+  orgSlugOrId?: string;
+  typeSlugOrId?: string;
   onCreated?: (scopeId: string) => void;
   onCancel?: () => void;
 }
@@ -61,6 +69,8 @@ export function NewScopeInline({
   typeId,
   labelSingular,
   labelPlural,
+  orgSlugOrId,
+  typeSlugOrId,
   onCreated,
   onCancel,
 }: NewScopeInlineProps) {
@@ -71,6 +81,8 @@ export function NewScopeInline({
   );
 
   const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
   const [description, setDescription] = useState("");
   const [existingValues, setExistingValues] = useState<Record<string, string>>(
     {},
@@ -99,10 +111,26 @@ export function NewScopeInline({
     );
   }
 
+  function handleNameChange(value: string) {
+    setName(value);
+    if (!slugTouched) setSlug(toSlug(value));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmedName = name.trim();
     if (!trimmedName) return;
+
+    const trimmedSlug = slug.trim() || toSlug(trimmedName);
+    if (trimmedSlug && !isValidSlug(trimmedSlug)) {
+      toast.error("URL slug must be lowercase letters, numbers, and hyphens");
+      return;
+    }
+    if (trimmedSlug && isReservedSlug(trimmedSlug)) {
+      toast.error(`"${trimmedSlug}" is a reserved word — choose another slug`);
+      return;
+    }
+
     setBusy(true);
     try {
       const scope = await dispatch(
@@ -111,7 +139,7 @@ export function NewScopeInline({
           type_id: typeId,
           name: trimmedName,
           description: description.trim(),
-          slug: toSlug(trimmedName) || undefined,
+          slug: trimmedSlug || undefined,
         }),
       ).unwrap();
 
@@ -162,6 +190,8 @@ export function NewScopeInline({
           : `Added "${scope.name}"`,
       );
       setName("");
+      setSlug("");
+      setSlugTouched(false);
       setDescription("");
       setExistingValues({});
       setNewItems([]);
@@ -172,6 +202,26 @@ export function NewScopeInline({
       setBusy(false);
     }
   }
+
+  const submitActions = (
+    <div className="flex items-center justify-end gap-2">
+      {onCancel && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onCancel}
+          disabled={busy}
+        >
+          Cancel
+        </Button>
+      )}
+      <Button type="submit" size="sm" disabled={busy || !name.trim()}>
+        {busy && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+        Add {labelSingular}
+      </Button>
+    </div>
+  );
 
   return (
     <>
@@ -186,11 +236,55 @@ export function NewScopeInline({
             autoFocus
             placeholder={`e.g. ${labelSingular}…`}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => handleNameChange(e.target.value)}
             disabled={busy}
             required
             style={{ fontSize: "16px" }}
           />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">URL slug</Label>
+          <div className="flex gap-2">
+            <Input
+              value={slug}
+              onChange={(e) => {
+                setSlugTouched(true);
+                setSlug(e.target.value);
+              }}
+              placeholder={toSlug(name) || "url-slug"}
+              disabled={busy}
+              style={{ fontSize: "16px" }}
+              className="flex-1 font-mono"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSlugTouched(false);
+                setSlug(toSlug(name));
+              }}
+              disabled={busy || !name.trim()}
+            >
+              Auto
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            {orgSlugOrId && typeSlugOrId ? (
+              <>
+                Used in the page URL, e.g. /organizations/{orgSlugOrId}/scopes/
+                <span className="font-mono">
+                  {typeSlugOrId}/{slug || toSlug(name) || "url-slug"}
+                </span>
+                . Must be unique within its scope type.
+              </>
+            ) : (
+              <>
+                Human-readable segment in this {labelSingular.toLowerCase()}
+                &apos;s URL. Must be unique within its scope type.
+              </>
+            )}
+          </p>
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Description (optional)</Label>
@@ -202,6 +296,8 @@ export function NewScopeInline({
             style={{ fontSize: "16px" }}
           />
         </div>
+
+        {submitActions}
 
         {/* Existing context items — stacked, always textarea */}
         {items.length > 0 && (
@@ -302,23 +398,7 @@ export function NewScopeInline({
             <Plus className="h-3.5 w-3.5 mr-1" />
             Add context item
           </Button>
-          <div className="flex items-center gap-2">
-            {onCancel && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onCancel}
-                disabled={busy}
-              >
-                Cancel
-              </Button>
-            )}
-            <Button type="submit" size="sm" disabled={busy || !name.trim()}>
-              {busy && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
-              Add {labelSingular}
-            </Button>
-          </div>
+          {submitActions}
         </div>
       </form>
 

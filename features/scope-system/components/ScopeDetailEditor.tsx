@@ -3,17 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Building2,
-  Check,
-  ChevronRight,
-  Home,
-  Loader2,
-  Pencil,
-  Trash2,
-  X as XIcon,
-} from "lucide-react";
+import { Check, Loader2, Pencil, Trash2, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,6 +30,7 @@ import {
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
 import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
+import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import {
@@ -227,67 +218,45 @@ export function ScopeDetailEditor({
 
   return (
     <div className="space-y-6 pr-14">
-      {/* Breadcrumb: Back · Org › Type › Scope */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-sm flex-wrap min-w-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="h-7 px-2 -ml-2"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-          <span className="text-muted-foreground/50">·</span>
-          <Link
-            href={orgScopesHref(orgSlugOrId)}
-            className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
-          >
-            {orgIsPersonal ? (
-              <Home className="h-3.5 w-3.5" />
-            ) : (
-              <Building2 className="h-3.5 w-3.5" />
-            )}
-            {orgIsPersonal ? "Personal workspace" : orgName}
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-          <Link
-            href={scopeTypeHref(orgSlugOrId, scopeType)}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            {scopeType.label_plural}
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-          <span className="font-medium text-foreground truncate">
-            {scope.name}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button asChild variant="outline" size="sm">
-            <Link href={scopeEditHref(orgSlugOrId, scopeType, scope)}>
-              <Pencil className="h-3.5 w-3.5 mr-1.5" />
-              Edit settings
-            </Link>
-          </Button>
-          {canManage && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDelete}
-              disabled={deleting}
-              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-            >
-              {deleting ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-              )}
-              Delete
+      <ScopeBreadcrumb
+        orgSlugOrId={orgSlugOrId}
+        orgName={orgName}
+        orgIsPersonal={orgIsPersonal}
+        backHref={scopeTypeHref(orgSlugOrId, scopeType)}
+        trail={[
+          {
+            label: scopeType.label_plural,
+            href: scopeTypeHref(orgSlugOrId, scopeType),
+          },
+          { label: scope.name },
+        ]}
+        actions={
+          <>
+            <Button asChild variant="outline" size="sm">
+              <Link href={scopeEditHref(orgSlugOrId, scopeType, scope)}>
+                <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                Edit settings
+              </Link>
             </Button>
-          )}
-        </div>
-      </div>
+            {canManage && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+              >
+                {deleting ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Delete
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <Card className="p-6">
         <div className="flex items-start gap-4">

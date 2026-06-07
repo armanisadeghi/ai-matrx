@@ -20,7 +20,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/utils/cn";
 import { KgSuggestionRowItem } from "./KgSuggestionRowItem";
 import type {
@@ -127,7 +126,11 @@ export function KgSuggestionHint({
             {label ? ` for ${label}` : ""}
           </span>
         </div>
-        <ScrollArea className="max-h-[28rem]">
+        {/* Plain overflow container — NOT Radix ScrollArea, whose
+            `display:table` viewport grows to max-content on long unbreakable
+            strings and blows out the popover width. overflow-x-hidden lets each
+            card's own overflow-hidden clip long values. */}
+        <div className="max-h-[28rem] overflow-y-auto overflow-x-hidden">
           <div className="space-y-2 p-2">
             {rows.map((row) => (
               <KgSuggestionRowItem
@@ -139,7 +142,7 @@ export function KgSuggestionHint({
               />
             ))}
           </div>
-        </ScrollArea>
+        </div>
       </PopoverContent>
     </Popover>
   );

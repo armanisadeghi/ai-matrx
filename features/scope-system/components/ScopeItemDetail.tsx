@@ -4,11 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft,
-  Building2,
   ChevronLeft,
   ChevronRight,
-  Home,
   Loader2,
   Pencil,
   Tag as TagIcon,
@@ -39,6 +36,7 @@ import {
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { ScopeItemSuggestionsPanel } from "@/features/kg-suggestions/components/ScopeItemSuggestionsPanel";
 import { EditContextItemSheet } from "./EditContextItemSheet";
+import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import {
@@ -166,46 +164,23 @@ export function ScopeItemDetail({
 
   return (
     <div className="space-y-6 pr-14">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-sm flex-wrap">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-          className="h-7 px-2 -ml-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
-        </Button>
-        <span className="text-muted-foreground/50">·</span>
-        <Link
-          href={orgScopesHref(orgSlugOrId)}
-          className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
-        >
-          {orgIsPersonal ? (
-            <Home className="h-3.5 w-3.5" />
-          ) : (
-            <Building2 className="h-3.5 w-3.5" />
-          )}
-          {orgIsPersonal ? "Personal workspace" : orgName}
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-        <Link
-          href={scopeTypeHref(orgSlugOrId, scopeType)}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          {scopeType.label_plural}
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-        <Link
-          href={scopeHref(orgSlugOrId, scopeType, scope)}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          {scope.name}
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-        <span className="font-medium text-foreground">{item.display_name}</span>
-      </div>
+      <ScopeBreadcrumb
+        orgSlugOrId={orgSlugOrId}
+        orgName={orgName}
+        orgIsPersonal={orgIsPersonal}
+        backHref={scopeHref(orgSlugOrId, scopeType, scope)}
+        trail={[
+          {
+            label: scopeType.label_plural,
+            href: scopeTypeHref(orgSlugOrId, scopeType),
+          },
+          {
+            label: scope.name,
+            href: scopeHref(orgSlugOrId, scopeType, scope),
+          },
+          { label: item.display_name },
+        ]}
+      />
 
       {/* Item identity + value for this scope */}
       <Card className="p-6 space-y-5">

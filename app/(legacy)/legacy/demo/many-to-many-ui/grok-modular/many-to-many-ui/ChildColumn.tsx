@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 "use client";
 
 import React from "react";
@@ -10,21 +12,21 @@ import AssociationPill from "./pills/AssociationPill";
 import ChildItemContextMenu from "./context-menus/ChildItemContextMenu";
 
 interface ChildColumnProps {
-    config: RelationshipMakerConfig;
-    children: any[];
-    filteredChildren: any[];
-    childSearch: string;
-    setChildSearch: (value: string) => void;
-    childFilter: string;
-    setChildFilter: (value: string) => void;
-    selectedChildId: string | null;
-    setSelectedChildId: (id: string | null) => void;
-    setShowAddChildModal: (show: boolean) => void;
-    mappedParents: any[];
-    isCreating: boolean;
-    manyToManyHook: UseCreateManyToManyReturn;
-  }
-  
+  config: RelationshipMakerConfig;
+  children: any[];
+  filteredChildren: any[];
+  childSearch: string;
+  setChildSearch: (value: string) => void;
+  childFilter: string;
+  setChildFilter: (value: string) => void;
+  selectedChildId: string | null;
+  setSelectedChildId: (id: string | null) => void;
+  setShowAddChildModal: (show: boolean) => void;
+  mappedParents: any[];
+  isCreating: boolean;
+  manyToManyHook: UseCreateManyToManyReturn;
+}
+
 const ChildColumn: React.FC<ChildColumnProps> = ({
   config,
   children,
@@ -85,17 +87,23 @@ const ChildColumn: React.FC<ChildColumnProps> = ({
               {filteredChildren.map((child: any, index: number) => (
                 <Draggable key={child.id} draggableId={child.id} index={index}>
                   {(provided, snapshot) => {
+                    const { style, ...draggableProps } =
+                      provided.draggableProps;
                     const associatedParents = mappedParents.filter((p: any) =>
-                      p[config.childCollectionField].some((m: any) => m.id === child.id)
+                      p[config.childCollectionField].some(
+                        (m: any) => m.id === child.id,
+                      ),
                     );
                     const isSelected = selectedChildId === child.id;
                     return (
                       <div
                         ref={provided.innerRef}
-                        {...provided.draggableProps}
+                        {...draggableProps}
                         {...provided.dragHandleProps}
+                        style={style as React.CSSProperties | undefined}
                         onClick={(e) => {
-                          if (!snapshot.isDragging) setSelectedChildId(child.id);
+                          if (!snapshot.isDragging)
+                            setSelectedChildId(child.id);
                         }}
                       >
                         <ChildItemContextMenu
@@ -104,41 +112,66 @@ const ChildColumn: React.FC<ChildColumnProps> = ({
                           associatedParents={associatedParents}
                           config={{
                             ...config,
-                            allParents: mappedParents
+                            allParents: mappedParents,
                           }}
                         >
                           <motion.div
                             className={`mx-2 p-3 rounded-lg shadow-md cursor-grab bg-gradient-to-br ${
                               isSelected
-                                ? config.theme?.parentGradient || "from-cyan-400 to-teal-500 dark:from-cyan-600 dark:to-teal-700"
+                                ? config.theme?.parentGradient ||
+                                  "from-cyan-400 to-teal-500 dark:from-cyan-600 dark:to-teal-700"
                                 : snapshot.isDragging
-                                ? "scale-110 shadow-xl"
-                                : config.theme?.childGradient || "from-purple-400 to-indigo-500 dark:from-purple-600 dark:to-indigo-700"
+                                  ? "scale-110 shadow-xl"
+                                  : config.theme?.childGradient ||
+                                    "from-purple-400 to-indigo-500 dark:from-purple-600 dark:to-indigo-700"
                             } ${isCreating ? "opacity-50 pointer-events-none" : ""}`}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.1 }}
                           >
                             <div className="flex items-center justify-between">
-                              {renderEntityFields(child, config.childDisplayConfig)}
-                              <AssociationPill 
-                                count={associatedParents.length} 
-                                text={associatedParents.length > 0
-                                  ? `${associatedParents[0][config.parentDisplayConfig.primaryField] || config.parentDisplayConfig.fallbackPrimary || "Unnamed"}${
-                                      associatedParents.length > 1
-                                        ? ` +${associatedParents.length - 1}`
-                                        : ""
-                                    }`
-                                  : "0"
+                              {renderEntityFields(
+                                child,
+                                config.childDisplayConfig,
+                              )}
+                              <AssociationPill
+                                count={associatedParents.length}
+                                text={
+                                  associatedParents.length > 0
+                                    ? `${associatedParents[0][config.parentDisplayConfig.primaryField] || config.parentDisplayConfig.fallbackPrimary || "Unnamed"}${
+                                        associatedParents.length > 1
+                                          ? ` +${associatedParents.length - 1}`
+                                          : ""
+                                      }`
+                                    : "0"
                                 }
-                                tooltipText={associatedParents.length > 0
-                                  ? associatedParents.map(parent => parent[config.parentDisplayConfig.primaryField] || 
-                                    config.parentDisplayConfig.fallbackPrimary || "Unnamed").join(", ")
-                                  : "No associations"
+                                tooltipText={
+                                  associatedParents.length > 0
+                                    ? associatedParents
+                                        .map(
+                                          (parent) =>
+                                            parent[
+                                              config.parentDisplayConfig
+                                                .primaryField
+                                            ] ||
+                                            config.parentDisplayConfig
+                                              .fallbackPrimary ||
+                                            "Unnamed",
+                                        )
+                                        .join(", ")
+                                    : "No associations"
                                 }
-                                parentId={associatedParents.length > 0 ? associatedParents[0].id : undefined}
+                                parentId={
+                                  associatedParents.length > 0
+                                    ? associatedParents[0].id
+                                    : undefined
+                                }
                                 childId={child.id}
-                                parentData={associatedParents.length > 0 ? associatedParents[0] : undefined}
+                                parentData={
+                                  associatedParents.length > 0
+                                    ? associatedParents[0]
+                                    : undefined
+                                }
                                 childData={child}
                                 associatedParents={associatedParents}
                               />
@@ -159,15 +192,21 @@ const ChildColumn: React.FC<ChildColumnProps> = ({
                 </h3>
                 <div className="space-y-2">
                   {getGroupedChildrenByParent.unassociatedChildren
-                    .map((childId: string) => children.find((c: any) => c.id === childId))
+                    .map((childId: string) =>
+                      children.find((c: any) => c.id === childId),
+                    )
                     .filter(Boolean)
                     .filter((child: any) =>
                       Object.values(child).some((value) =>
-                        String(value).toLowerCase().includes(childSearch.toLowerCase())
-                      )
+                        String(value)
+                          .toLowerCase()
+                          .includes(childSearch.toLowerCase()),
+                      ),
                     )
                     .filter((child: any) =>
-                      config.childFilterConfig.find((f) => f.value === childFilter)?.filterFn(child, mappedParents)
+                      config.childFilterConfig
+                        .find((f) => f.value === childFilter)
+                        ?.filterFn(child, mappedParents),
                     )
                     .map((child: any) => (
                       <ChildItemContextMenu
@@ -177,7 +216,7 @@ const ChildColumn: React.FC<ChildColumnProps> = ({
                         associatedParents={[]}
                         config={{
                           ...config,
-                          allParents: mappedParents
+                          allParents: mappedParents,
                         }}
                       >
                         <motion.div

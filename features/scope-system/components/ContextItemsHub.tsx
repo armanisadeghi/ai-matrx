@@ -8,7 +8,6 @@ import {
   ArrowUpDown,
   ArrowUpRight,
   Building2,
-  ChevronRight,
   Home,
   ListChecks,
   Loader2,
@@ -47,6 +46,7 @@ import {
 import { ContextItemAddForm } from "./ContextItemAddForm";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { ReorderDialog } from "./ReorderDialog";
+import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
 import {
@@ -263,10 +263,11 @@ function ContextItemsTypeView({
 
   return (
     <div className="space-y-6 pr-14">
-      <Breadcrumb
+      <ScopeBreadcrumb
         orgSlugOrId={orgSlugOrId}
         orgName={orgName}
         orgIsPersonal={orgIsPersonal}
+        backHref={orgScopesHref(orgSlugOrId)}
         trail={[
           {
             label: scopeType.label_plural,
@@ -395,10 +396,11 @@ function ContextItemsOrgView({
 
   return (
     <div className="space-y-6 pr-14">
-      <Breadcrumb
+      <ScopeBreadcrumb
         orgSlugOrId={orgSlugOrId}
         orgName={orgName}
         orgIsPersonal={orgIsPersonal}
+        backHref={orgScopesHref(orgSlugOrId)}
         trail={[{ label: "Context items" }]}
       />
 
@@ -578,60 +580,6 @@ function ContextItemListRow({
           <Pencil className="h-3.5 w-3.5" />
         </Button>
       )}
-    </div>
-  );
-}
-
-function Breadcrumb({
-  orgSlugOrId,
-  orgName,
-  orgIsPersonal,
-  trail,
-}: {
-  orgSlugOrId: string;
-  orgName: string;
-  orgIsPersonal: boolean;
-  trail: { label: string; href?: string }[];
-}) {
-  const router = useRouter();
-  return (
-    <div className="flex items-center gap-1.5 text-sm flex-wrap">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => router.back()}
-        className="h-7 px-2 -ml-2"
-      >
-        <ArrowLeft className="h-4 w-4 mr-1" />
-        Back
-      </Button>
-      <span className="text-muted-foreground/50">·</span>
-      <Link
-        href={orgScopesHref(orgSlugOrId)}
-        className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
-      >
-        {orgIsPersonal ? (
-          <Home className="h-3.5 w-3.5" />
-        ) : (
-          <Building2 className="h-3.5 w-3.5" />
-        )}
-        {orgIsPersonal ? "Personal workspace" : orgName}
-      </Link>
-      {trail.map((node, i) => (
-        <span key={i} className="inline-flex items-center gap-1.5">
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
-          {node.href ? (
-            <Link
-              href={node.href}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              {node.label}
-            </Link>
-          ) : (
-            <span className="font-medium text-foreground">{node.label}</span>
-          )}
-        </span>
-      ))}
     </div>
   );
 }
