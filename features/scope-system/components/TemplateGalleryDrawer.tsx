@@ -52,6 +52,8 @@ interface TemplateGalleryDrawerProps {
   orgId: string;
   /** Show only personal templates (for personal orgs). Default: show all. */
   personalOnly?: boolean;
+  /** Which mode the drawer opens in. Default: "templates". */
+  initialMode?: Mode;
   /** Called after a template (or single scope-type) is successfully applied. */
   onApplied?: () => void;
 }
@@ -72,6 +74,7 @@ export function TemplateGalleryDrawer({
   onOpenChange,
   orgId,
   personalOnly,
+  initialMode = "templates",
   onApplied,
 }: TemplateGalleryDrawerProps) {
   const dispatch = useAppDispatch();
@@ -81,7 +84,7 @@ export function TemplateGalleryDrawer({
   const loaded = useAppSelector(selectTemplatesLoaded);
   const applying = useAppSelector(selectTemplatesApplying);
 
-  const [mode, setMode] = useState<Mode>("templates");
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>(ALL);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -96,10 +99,12 @@ export function TemplateGalleryDrawer({
   }, [open, loaded, dispatch]);
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      setMode(initialMode);
+    } else {
       setSelectedId(null);
     }
-  }, [open]);
+  }, [open, initialMode]);
 
   const visibleTemplates = useMemo(() => {
     let list = allTemplates;

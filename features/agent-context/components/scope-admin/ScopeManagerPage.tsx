@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Tags, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -14,6 +14,7 @@ import type { ScopeType } from "../../redux/scope/types";
 import { ScopeTypeList } from "./ScopeTypeList";
 import { ScopeInstancePanel } from "./ScopeInstancePanel";
 import { ScopeTemplateStarter } from "./ScopeTemplateStarter";
+import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
 
 interface ScopeManagerPageProps {
   organizationId: string;
@@ -58,24 +59,10 @@ export function ScopeManagerPage({
 
   if (isEmpty) {
     return (
-      <div className="p-4 md:p-6 max-w-4xl mx-auto">
-        <div className="text-center py-12">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
-            <Tags className="h-8 w-8 text-primary" />
-          </div>
-          <h2 className="text-xl font-semibold mb-2">
-            Set Up Your Organization Scopes
-          </h2>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-8">
-            Scopes let you categorize and organize projects, tasks, and
-            resources. Create categories like &quot;Department&quot;,
-            &quot;Region&quot;, or &quot;Team&quot; and assign them to any
-            entity.
-          </p>
-        </div>
-        <ScopeTemplateStarter
-          organizationId={organizationId}
-          onTypesCreated={() => {
+      <div className="p-4 md:p-6 max-w-5xl mx-auto">
+        <ScopeOnboarding
+          orgId={organizationId}
+          onChanged={() => {
             hasFetched.current = false;
             dispatch(fetchScopeTypes(organizationId));
             dispatch(fetchScopes({ org_id: organizationId }));
