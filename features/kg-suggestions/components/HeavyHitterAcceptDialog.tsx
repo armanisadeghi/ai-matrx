@@ -58,10 +58,7 @@ import {
 } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import type { ScopeType } from "@/features/agent-context/redux/scope/types";
 import { useHeavyHitterAccept } from "@/features/kg-suggestions/hooks/useHeavyHitterAccept";
-import type {
-  KgAcceptResult,
-  KgSuggestionRow,
-} from "@/features/kg-suggestions/types";
+import type { KgSuggestionRow } from "@/features/kg-suggestions/types";
 
 export interface HeavyHitterAcceptDialogProps {
   open: boolean;
@@ -69,8 +66,6 @@ export interface HeavyHitterAcceptDialogProps {
   row: KgSuggestionRow;
   /** Active org id — the new scope belongs to it. */
   organizationId: string | null;
-  /** The accept fn from useKgSuggestions (flips status + drops the row). */
-  accept: (id: string) => Promise<KgAcceptResult>;
 }
 
 /**
@@ -105,14 +100,15 @@ export function HeavyHitterAcceptDialog({
   onOpenChange,
   row,
   organizationId,
-  accept,
 }: HeavyHitterAcceptDialogProps) {
   const isMobile = useIsMobile();
   const dispatch = useAppDispatch();
-  const { promote } = useHeavyHitterAccept({ accept });
+  const { promote } = useHeavyHitterAccept();
 
   const types = useAppSelector((s) =>
-    organizationId ? selectScopeTypesByOrg(s, organizationId) : ([] as ScopeType[]),
+    organizationId
+      ? selectScopeTypesByOrg(s, organizationId)
+      : ([] as ScopeType[]),
   );
   const typesLoading = useAppSelector(selectScopeTypesLoading);
 
@@ -148,7 +144,7 @@ export function HeavyHitterAcceptDialog({
     setBusy(true);
     try {
       const result = await promote({
-        suggestionId: row.id,
+        row,
         organizationId,
         scopeTypeId: typeId,
         scopeName: name.trim(),
@@ -156,30 +152,19 @@ export function HeavyHitterAcceptDialog({
 
       if (result.ok) {
         const parts = [`Created scope “${result.scopeName ?? name.trim()}”`];
-        if (result.taggedCount > 0) {
-          parts.push(
-            `tagged ${result.taggedCount} item${result.taggedCount === 1 ? "" : "s"}`,
-          );
-        }
+        if (result.taggedCount > 0) parts.push("tagged its source");
         let msg = parts.join(" and ");
-        const extra: string[] = [];
-        if (result.skippedCount > 0) {
-          extra.push(`${result.skippedCount} not taggable`);
-        }
         if (result.tagFailedCount > 0) {
-          extra.push(`${result.tagFailedCount} failed`);
+          msg += " (source tag failed — tag it from the scope page)";
         }
-        if (extra.length > 0) msg += ` (${extra.join(", ")})`;
         toast.success(msg);
         onOpenChange(false);
-      } else if (result.failedStage === "create") {
-        // Recoverable: the suggestion is accepted but the scope wasn't created.
-        toast.error(
-          `Suggestion accepted, but scope creation failed (${result.error}). Create the scope manually from /scopes.`,
-        );
-        onOpenChange(false);
       } else {
-        toast.error(result.error || "Could not create scope from suggestion");
+        toast.error(
+          result.error
+            ? `Could not create scope: ${result.error}`
+            : "Could not create scope from suggestion",
+        );
       }
     } finally {
       setBusy(false);
@@ -210,11 +195,7 @@ export function HeavyHitterAcceptDialog({
         {typesLoading && !hasTypes ? (
           <Skeleton className="h-9 w-full rounded-md" />
         ) : hasTypes ? (
-          <Select
-            value={typeId}
-            onValueChange={setTypeId}
-            disabled={busy}
-          >
+          <Select value={typeId} onValueChange={setTypeId} disabled={busy}>
             <SelectTrigger>
               <SelectValue placeholder="Choose a scope type" />
             </SelectTrigger>

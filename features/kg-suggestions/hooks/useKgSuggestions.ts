@@ -9,11 +9,15 @@
 //   useKgSuggestions({ global: true })                   // global drawer
 //
 // Reads come from the kgSuggestions slice (shared normalized cache keyed by
-// kgFilterKey); writes route through kgSuggestionsService → aidream. Accept /
-// reject / defer optimistically drop the row from EVERY list that held it, so
-// a chip count and the drawer both update in one tick; on error we refresh to
-// re-sync. Nothing here blocks — accept is the only write that surfaces a
-// value, and even that is a toast, never a modal.
+// kgFilterKey); writes route through kgSuggestionsService → Supabase DIRECTLY
+// (no Next.js / Python hop — the API was removed 2026-06-07). Accept / reject /
+// defer branch on the row's `stage`:
+//   - value      → set_context_value RPC + mark accepted
+//   - link       → tag the source to the scope + mark accepted
+//   - heavy_hitter → NOT handled here (needs UI input — HeavyHitterAcceptDialog
+//                    drives create-scope via useHeavyHitterAccept).
+// All three optimistically drop the row from EVERY list that held it, so a chip
+// count and the drawer both update in one tick; on error we refresh to re-sync.
 
 "use client";
 
@@ -29,20 +33,18 @@ import {
   selectKgListErrorForKey,
   selectKgListStatusForKey,
   setRowMutation,
-  upsertRow,
   type KgListStatus,
 } from "@/lib/redux/slices/kgSuggestionsSlice";
 import {
-  acceptKgSuggestion,
+  acceptAssociationSuggestion,
+  acceptValueSuggestion,
   deferKgSuggestion,
   listKgSuggestions,
   rejectKgSuggestion,
 } from "@/features/kg-suggestions/service/kgSuggestionsService";
 import {
+  isHeavyHitter,
   kgFilterKey,
-  kgFilterToParams,
-  type KgAcceptResult,
-  type KgDecisionResponse,
   type KgSuggestionRow,
   type KgSuggestionsFilter,
 } from "@/features/kg-suggestions/types";
@@ -53,16 +55,16 @@ export interface UseKgSuggestionsResult {
   status: KgListStatus;
   error: string | null;
   /**
-   * Accept the suggestion. Returns the discriminated `KgAcceptResult` so the
-   * caller can branch: a slot-fill accept is fully done here (the row is
-   * dropped optimistically); a heavy-hitter accept returns the scope-creation
-   * plan the caller must still consume (create scope + tag sources). In BOTH
-   * cases the suggestion is already `accepted` server-side, so the row is
-   * removed from every list regardless.
+   * Accept the suggestion. Branches on the row's `stage`: a value suggestion
+   * writes the cell, a link suggestion tags the source. Heavy-hitter rows
+   * throw (they require the create-scope dialog and are never accepted through
+   * this path). On success the row is dropped from every list optimistically.
    */
-  accept: (id: string) => Promise<KgAcceptResult>;
-  reject: (id: string) => Promise<KgDecisionResponse>;
-  defer: (id: string) => Promise<KgDecisionResponse>;
+  accept: (id: string) => Promise<void>;
+  /** Reject; optionally attach a note the user can read later in the manager. */
+  reject: (id: string, note?: string | null) => Promise<void>;
+  /** Defer (snooze); optionally attach a note the user can read later. */
+  defer: (id: string, note?: string | null) => Promise<void>;
   refresh: () => void;
 }
 
@@ -84,7 +86,7 @@ export function useKgSuggestions(
   const store = useAppStore();
 
   // React Compiler is on — no manual memoization. `key` is a primitive derived
-  // from the filter; `refresh` recomputes params from the filter when called.
+  // from the filter; `refresh` recomputes from the filter ref when called.
   const key = kgFilterKey(filter);
 
   const selectRows = makeSelectKgRowsForKey();
@@ -96,11 +98,9 @@ export function useKgSuggestions(
   const abortRef = useRef<AbortController | null>(null);
 
   // Hold the latest filter in a ref so `refresh` can read it without taking the
-  // (always-fresh, object-literal) `filter` as a dependency. Consumers pass an
-  // inline object every render; depending on it would recreate `refresh` every
-  // render, re-run the fetch effect every render, and — because listSuccess
-  // mutates the slice this component subscribes to — spin into an infinite
-  // refetch loop. The stable `key` is the real identity of a filter.
+  // (always-fresh, object-literal) `filter` as a dependency — depending on it
+  // would recreate `refresh` every render and spin into a refetch loop. The
+  // stable `key` is the real identity of a filter.
   const filterRef = useRef(filter);
   filterRef.current = filter;
 
@@ -109,13 +109,9 @@ export function useKgSuggestions(
     const controller = new AbortController();
     abortRef.current = controller;
     dispatch(listPending({ key }));
-    void listKgSuggestions(kgFilterToParams(filterRef.current), {
-      signal: controller.signal,
-    })
+    void listKgSuggestions(filterRef.current, { signal: controller.signal })
       .then((page) => {
-        dispatch(
-          listSuccess({ key, rows: page.suggestions, total: page.total }),
-        );
+        dispatch(listSuccess({ key, rows: page.rows, total: page.total }));
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
@@ -125,13 +121,9 @@ export function useKgSuggestions(
 
   useEffect(() => {
     if (!autoFetch) return;
-    // Cross-instance dedupe: many surfaces mount the SAME filter key at once
-    // (e.g. the global notifier + a nav button + a page hook all want
-    // `global:pending`). Each would otherwise fire its own identical request.
-    // Read FRESH status from the store at effect time (not the render-time
-    // `status` value) so the second mounting instance sees the first's
-    // `loading` and skips. Only the first idle/errored instance fetches; the
-    // rest read the shared cache. `refresh()` still force-refetches on demand.
+    // Cross-instance dedupe: many surfaces mount the SAME filter key at once.
+    // Read FRESH status from the store so the second mounting instance sees the
+    // first's `loading`/`success` and skips. `refresh()` still force-refetches.
     const entry = store.getState().kgSuggestions.lists[key];
     const liveStatus: KgListStatus = entry?.status ?? "idle";
     if (liveStatus === "loading" || liveStatus === "success") return;
@@ -139,57 +131,68 @@ export function useKgSuggestions(
     return () => abortRef.current?.abort();
   }, [autoFetch, refresh, key, store]);
 
+  /** Resolve the live row from the normalized store by id. */
+  const getRow = useCallback(
+    (id: string): KgSuggestionRow | undefined =>
+      store.getState().kgSuggestions.byId[id],
+    [store],
+  );
+
   const accept = useCallback(
-    async (id: string): Promise<KgAcceptResult> => {
+    async (id: string): Promise<void> => {
+      const row = getRow(id);
+      if (!row) throw new Error("Suggestion is no longer available.");
+      if (isHeavyHitter(row)) {
+        throw new Error(
+          "Heavy-hitter suggestions are accepted by creating a scope.",
+        );
+      }
       dispatch(setRowMutation({ id, mutation: "accepting" }));
       try {
-        const res = await acceptKgSuggestion(id);
-        // Both branches carry `.suggestion` (now status=accepted). Drop the
-        // row from every cached list — the server already flipped it, so a
-        // heavy-hitter row that later fails scope creation is still correctly
-        // gone (the suggestion IS accepted; the recoverable error tells the
-        // user to finish creating the scope manually).
-        dispatch(upsertRow(res.suggestion));
+        if (row.stage === "value") {
+          await acceptValueSuggestion(row);
+        } else {
+          await acceptAssociationSuggestion(row);
+        }
         dispatch(removeFromLists({ id }));
-        return res;
       } catch (err) {
         dispatch(setRowMutation({ id, mutation: "idle" }));
         throw err;
       }
     },
-    [dispatch],
+    [dispatch, getRow],
   );
 
   const reject = useCallback(
-    async (id: string): Promise<KgDecisionResponse> => {
+    async (id: string, note?: string | null): Promise<void> => {
+      const row = getRow(id);
+      if (!row) throw new Error("Suggestion is no longer available.");
       dispatch(setRowMutation({ id, mutation: "rejecting" }));
       try {
-        const res = await rejectKgSuggestion(id);
-        dispatch(upsertRow(res.suggestion));
+        await rejectKgSuggestion(row, note);
         dispatch(removeFromLists({ id }));
-        return res;
       } catch (err) {
         dispatch(setRowMutation({ id, mutation: "idle" }));
         throw err;
       }
     },
-    [dispatch],
+    [dispatch, getRow],
   );
 
   const defer = useCallback(
-    async (id: string): Promise<KgDecisionResponse> => {
+    async (id: string, note?: string | null): Promise<void> => {
+      const row = getRow(id);
+      if (!row) throw new Error("Suggestion is no longer available.");
       dispatch(setRowMutation({ id, mutation: "deferring" }));
       try {
-        const res = await deferKgSuggestion(id);
-        dispatch(upsertRow(res.suggestion));
+        await deferKgSuggestion(row, note);
         dispatch(removeFromLists({ id }));
-        return res;
       } catch (err) {
         dispatch(setRowMutation({ id, mutation: "idle" }));
         throw err;
       }
     },
-    [dispatch],
+    [dispatch, getRow],
   );
 
   return { items, count, status, error, accept, reject, defer, refresh };

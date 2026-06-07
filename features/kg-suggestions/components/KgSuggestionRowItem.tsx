@@ -33,11 +33,19 @@ import {
   Clock,
   ExternalLink,
   FileText,
+  Link2,
   Network,
+  StickyNote,
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/utils/cn";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKgRowMutation } from "@/lib/redux/slices/kgSuggestionsSlice";
@@ -54,20 +62,32 @@ import type {
   ResolvedSuggestionValue,
   ResolvedSuggestionTarget,
 } from "@/features/scopes/types";
-import type {
-  KgAcceptResult,
-  KgMatchKind,
-  KgSuggestionRow,
+import {
+  isAssociationLink,
+  isHeavyHitter,
+  type KgAcceptResult,
+  type KgMatchKind,
+  type KgSuggestionRow,
 } from "@/features/kg-suggestions/types";
 import { HeavyHitterAcceptDialog } from "./HeavyHitterAcceptDialog";
 import { extractErrorMessage } from "@/utils/errors";
 
-const MATCH_LABEL: Record<KgMatchKind, string> = {
+const MATCH_LABEL: Partial<Record<KgMatchKind, string>> = {
   exact: "Exact match",
   fuzzy: "Fuzzy match",
   semantic: "Semantic match",
   heavy_hitter: "Recurring entity",
+  "agent.orienter.association": "Suggested link",
+  "agent.orienter.uncertain": "Possible link",
+  "agent.slot_filler.fill_empty": "Fills empty field",
+  "agent.slot_filler.improve": "Improves value",
+  "agent.slot_filler.flag_conflict": "Flagged conflict",
+  "agent.deep_extractor.extracted": "Extracted value",
 };
+
+function matchLabel(kind: KgMatchKind): string {
+  return MATCH_LABEL[kind] ?? "Suggestion";
+}
 
 const SOURCE_KIND_LABEL: Record<string, string> = {
   note: "note",
@@ -84,8 +104,8 @@ const SOURCE_KIND_LABEL: Record<string, string> = {
 export interface KgSuggestionRowItemProps {
   row: KgSuggestionRow;
   accept: (id: string) => Promise<KgAcceptResult>;
-  reject: (id: string) => Promise<unknown>;
-  defer: (id: string) => Promise<unknown>;
+  reject: (id: string, note?: string | null) => Promise<unknown>;
+  defer: (id: string, note?: string | null) => Promise<unknown>;
   /** Compact (popover/panel) trims the all-fields context + snippet. */
   compact?: boolean;
   className?: string;
@@ -107,7 +127,8 @@ export function KgSuggestionRowItem({
   const [showAllFields, setShowAllFields] = useState(false);
   const busy = localBusy || mutation !== "idle";
 
-  const isHeavyHitter = row.match_kind === "heavy_hitter";
+  const heavyHitter = isHeavyHitter(row);
+  const associationLink = isAssociationLink(row);
 
   const { data: enrichment, loading: enriching } =
     useKgSuggestionEnrichment(row);
@@ -137,7 +158,7 @@ export function KgSuggestionRowItem({
   };
 
   // ── Heavy-hitter: keep the lightweight "promote to scope" treatment. ──
-  if (isHeavyHitter) {
+  if (heavyHitter) {
     const entityName =
       row.entity.name ?? row.suggested_value ?? "Recurring entity";
     return (
@@ -167,14 +188,14 @@ export function KgSuggestionRowItem({
             variant="outline"
             className="h-4 text-[10px] px-1.5 border-primary/40 text-primary"
           >
-            {MATCH_LABEL.heavy_hitter}
+            {matchLabel("heavy_hitter")}
           </Badge>
         </div>
         <div className="mt-2 flex items-center justify-end gap-1.5">
-          <DeferButton
+          <DeferControl
             busy={busy}
-            onClick={() =>
-              void run("defer", () => defer(row.id), "Snoozed for 7 days")
+            onDefer={(note) =>
+              void run("defer", () => defer(row.id, note), "Snoozed for 7 days")
             }
           />
           <RejectButton
@@ -198,8 +219,163 @@ export function KgSuggestionRowItem({
           onOpenChange={setScopeDialogOpen}
           row={row}
           organizationId={organizationId}
-          accept={accept}
         />
+      </div>
+    );
+  }
+
+  // ── Association link: "tag this source to an existing scope". ──
+  if (associationLink) {
+    const linkSourceLabel =
+      SOURCE_KIND_LABEL[row.source_kind] ?? row.source_kind;
+    const linkScopeHref =
+      target && target.org.slug
+        ? scopeHref(target.org.slug, target.scope_type, target.scope)
+        : null;
+    const openLinkSource = () => {
+      if (source?.openableAs === "note") {
+        openNoteInWindow({ noteId: source.id, title: source.title ?? "Note" });
+      }
+    };
+    return (
+      <div
+        className={cn(
+          "rounded-lg border border-border bg-card text-sm overflow-hidden",
+          className,
+        )}
+      >
+        <div className="flex items-start gap-2 px-3 pt-2.5 pb-2 border-b border-border/60 bg-muted/30">
+          <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] text-muted-foreground">
+              Found in {linkSourceLabel}
+            </div>
+            <div className="font-medium text-foreground truncate">
+              {source?.title ??
+                (enriching
+                  ? "Resolving source…"
+                  : `Untitled ${linkSourceLabel}`)}
+            </div>
+          </div>
+          {source?.openableAs === "note" ? (
+            <button
+              type="button"
+              onClick={openLinkSource}
+              className="shrink-0 inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-1 text-[11px] text-foreground hover:bg-accent transition-colors"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Open
+            </button>
+          ) : null}
+        </div>
+
+        <div className="px-3 py-2.5 space-y-2.5">
+          <div className="flex items-start gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-2 py-1.5 text-[11px] text-foreground">
+            <Link2 className="h-3.5 w-3.5 shrink-0 mt-px text-primary" />
+            <span>
+              Tag this {linkSourceLabel} to{" "}
+              <b className="break-words">{target?.scope.name ?? "a scope"}</b>
+              {target?.scope_type
+                ? ` (${target.scope_type.label_singular})`
+                : ""}
+              .
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+            {target ? (
+              <>
+                <span className="text-muted-foreground">{target.org.name}</span>
+                <ArrowRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  {target.scope_type.icon ? (
+                    <ScopeGlyph
+                      icon={target.scope_type.icon}
+                      className="h-3 w-3"
+                    />
+                  ) : null}
+                  {target.scope_type.label_singular}
+                </span>
+                <ArrowRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                <span className="font-semibold text-foreground min-w-0 break-words">
+                  {target.scope.name}
+                </span>
+                {linkScopeHref ? (
+                  <Link
+                    href={linkScopeHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-0.5 text-primary hover:underline ml-1"
+                  >
+                    View
+                    <ExternalLink className="h-2.5 w-2.5" />
+                  </Link>
+                ) : null}
+              </>
+            ) : enriching ? (
+              <span className="text-muted-foreground italic">
+                Resolving scope…
+              </span>
+            ) : null}
+          </div>
+
+          {row.context_snippet ? (
+            <div className="text-[11px] text-muted-foreground/80 line-clamp-2 border-l-2 border-border pl-2">
+              “{row.context_snippet}”
+            </div>
+          ) : null}
+
+          <div className="flex items-center gap-2 flex-wrap pt-0.5">
+            <ConfidenceBar pct={confidencePct} />
+            <span className="text-[10px] text-muted-foreground tabular-nums">
+              {confidencePct}%
+            </span>
+            <Badge variant="outline" className="h-4 text-[10px] px-1.5">
+              {matchLabel(row.match_kind)}
+            </Badge>
+            <span className="text-[10px] text-muted-foreground">
+              Detected {formatRelative(row.created_at)}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-end gap-1.5 pt-1">
+            <DeferControl
+              busy={busy}
+              onDefer={(note) =>
+                void run(
+                  "defer",
+                  () => defer(row.id, note),
+                  "Snoozed for 7 days",
+                )
+              }
+            />
+            <RejectButton
+              busy={busy}
+              onClick={() =>
+                void run(
+                  "reject",
+                  () => reject(row.id),
+                  "Dismissed for 30 days",
+                )
+              }
+            />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() =>
+                void run(
+                  "accept",
+                  () => accept(row.id),
+                  `Tagged to ${target?.scope.name ?? "scope"}`,
+                )
+              }
+              className="inline-flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              <Link2 className="h-3 w-3" />
+              Tag to scope
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -265,37 +441,160 @@ export function KgSuggestionRowItem({
         className,
       )}
     >
-      {/* ── Source ── */}
-      <div className="flex items-start gap-2 px-3 pt-2.5 pb-2 border-b border-border/60 bg-muted/30">
-        <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-        <div className="min-w-0 flex-1">
-          <div className="text-[11px] text-muted-foreground">
-            Found in {sourceKindLabel}
+      <div className="px-3 py-2.5 space-y-3">
+        {/* ── Lead: the proposal, front and center ── */}
+        <div className="space-y-2">
+          <div className="text-[15px] font-semibold leading-snug text-foreground">
+            {isOverwrite ? "Update " : ""}
+            <span className="text-primary break-words">{slotLabel}</span>
+            {isOverwrite || isNoOp ? "" : " found"}
+            {target ? (
+              <>
+                {" "}
+                for <span className="break-words">{target.scope.name}</span>
+              </>
+            ) : enriching ? (
+              <span className="text-muted-foreground font-normal"> …</span>
+            ) : null}
           </div>
-          <div className="font-medium text-foreground truncate">
-            {source?.title ??
-              (enriching ? "Resolving source…" : `Untitled ${sourceKindLabel}`)}
+
+          {/* Current / Suggested — labels visible, suggestion emphasized */}
+          <div className="space-y-1.5">
+            <div className="flex items-start gap-2">
+              <span className="w-[4.5rem] shrink-0 pt-1.5 text-[11px] text-muted-foreground">
+                Current
+              </span>
+              <div className="min-w-0 flex-1">
+                <ValueLine
+                  label="Current"
+                  value={currentDisplay}
+                  empty={!hasExistingValue}
+                  loading={enriching && !target}
+                />
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="w-[4.5rem] shrink-0 pt-1.5 text-[11px] font-medium text-foreground">
+                Suggested
+              </span>
+              <div className="min-w-0 flex-1">
+                <ValueLine
+                  label="Suggested"
+                  value={suggestedDisplay}
+                  highlight
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Overwrite / no-op warning — kept beside the values */}
+          {isOverwrite ? (
+            <div className="flex items-start gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-px" />
+              <span>
+                This replaces a value you already have
+                {currentValue?.source_type === "manual"
+                  ? " (entered manually)"
+                  : ""}
+                . Accepting overwrites it.
+              </span>
+            </div>
+          ) : null}
+          {isNoOp ? (
+            <div className="rounded-md border border-border bg-muted/40 px-2 py-1.5 text-[11px] text-muted-foreground">
+              The current value already matches this suggestion.
+            </div>
+          ) : null}
+
+          {/* Existing decision note (deferred/decided rows in the manager) */}
+          {row.decision_note ? (
+            <div className="flex items-start gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1.5 text-[11px] text-muted-foreground">
+              <StickyNote className="h-3.5 w-3.5 shrink-0 mt-px text-amber-500" />
+              <span className="min-w-0 break-words">{row.decision_note}</span>
+            </div>
+          ) : null}
+
+          {/* Actions — the decision, immediately under the proposal */}
+          <div className="flex items-center justify-end gap-1.5">
+            <DeferControl
+              busy={busy}
+              onDefer={(note) =>
+                void run(
+                  "defer",
+                  () => defer(row.id, note),
+                  "Snoozed for 7 days",
+                )
+              }
+            />
+            <RejectButton
+              busy={busy}
+              onClick={() =>
+                void run(
+                  "reject",
+                  () => reject(row.id),
+                  "Dismissed for 30 days",
+                )
+              }
+            />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onAccept}
+              className={cn(
+                "inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-50",
+                isOverwrite
+                  ? "bg-amber-600 text-white hover:bg-amber-600/90"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90",
+              )}
+            >
+              {isOverwrite ? (
+                <>
+                  <AlertTriangle className="h-3 w-3" />
+                  Overwrite
+                </>
+              ) : (
+                <>
+                  <Check className="h-3 w-3" />
+                  Accept
+                </>
+              )}
+            </button>
           </div>
         </div>
-        {source?.openableAs === "note" ? (
-          <button
-            type="button"
-            onClick={openSource}
-            className="shrink-0 inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-1 text-[11px] text-foreground hover:bg-accent transition-colors"
-          >
-            <ExternalLink className="h-3 w-3" />
-            Open
-          </button>
-        ) : null}
-      </div>
 
-      <div className="px-3 py-2.5 space-y-2.5">
-        {/* ── Target path ── */}
-        <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+        {/* ── Details (secondary — only if you care to look) ── */}
+        <div className="space-y-2 border-t border-border/60 pt-2.5">
+          {/* Source */}
+          <div className="flex items-start gap-2">
+            <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Source · found in {sourceKindLabel}
+              </div>
+              <div className="text-xs text-foreground/90 truncate">
+                {source?.title ??
+                  (enriching
+                    ? "Resolving source…"
+                    : `Untitled ${sourceKindLabel}`)}
+              </div>
+            </div>
+            {source?.openableAs === "note" ? (
+              <button
+                type="button"
+                onClick={openSource}
+                className="shrink-0 inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-1 text-[11px] text-foreground hover:bg-accent transition-colors"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Open
+              </button>
+            ) : null}
+          </div>
+
+          {/* Target path */}
           {target ? (
-            <>
+            <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
               <span className="text-muted-foreground">{target.org.name}</span>
-              <ArrowRight className="h-3 w-3 text-muted-foreground/50" />
+              <ArrowRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
               <span className="inline-flex items-center gap-1 text-muted-foreground">
                 {target.scope_type.icon ? (
                   <ScopeGlyph
@@ -306,12 +605,8 @@ export function KgSuggestionRowItem({
                 {target.scope_type.label_singular}
               </span>
               <ArrowRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-              <span className="font-semibold text-foreground min-w-0 break-words">
-                {target.scope.name}
-              </span>
-              <ArrowRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
               <span className="font-medium text-foreground min-w-0 break-words">
-                {slotLabel}
+                {target.scope.name}
               </span>
               {scopeViewHref ? (
                 <Link
@@ -324,140 +619,61 @@ export function KgSuggestionRowItem({
                   <ExternalLink className="h-2.5 w-2.5" />
                 </Link>
               ) : null}
-            </>
-          ) : enriching ? (
-            <span className="text-muted-foreground italic">
-              Resolving target…
+            </div>
+          ) : null}
+
+          {/* All fields on this scope (context) */}
+          {!compact && target && target.items.length > 0 ? (
+            <div className="rounded-md border border-border/60">
+              <button
+                type="button"
+                onClick={() => setShowAllFields((v) => !v)}
+                className="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <span>
+                  All {target.items.length} fields on {target.scope.name}
+                </span>
+                <ChevronDown
+                  className={cn(
+                    "h-3.5 w-3.5 transition-transform",
+                    showAllFields && "rotate-180",
+                  )}
+                />
+              </button>
+              {showAllFields ? (
+                <div className="border-t border-border/60 divide-y divide-border/40">
+                  {target.items.map((it) => (
+                    <FieldRow
+                      key={it.id}
+                      item={it}
+                      isTarget={it.id === targetItem?.id}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* Context snippet */}
+          {!compact && row.context_snippet ? (
+            <div className="text-[11px] text-muted-foreground/80 line-clamp-2 border-l-2 border-border pl-2">
+              “{row.context_snippet}”
+            </div>
+          ) : null}
+
+          {/* Meta */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <ConfidenceBar pct={confidencePct} />
+            <span className="text-[10px] text-muted-foreground tabular-nums">
+              {confidencePct}%
             </span>
-          ) : (
-            <span className="text-muted-foreground">{slotLabel}</span>
-          )}
-        </div>
-
-        {/* ── Overwrite / no-op warning ── */}
-        {isOverwrite ? (
-          <div className="flex items-start gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700 dark:text-amber-400">
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-px" />
-            <span>
-              This replaces a value you already have
-              {currentValue?.source_type === "manual"
-                ? " (entered manually)"
-                : ""}
-              . Accepting overwrites it.
+            <Badge variant="outline" className="h-4 text-[10px] px-1.5">
+              {matchLabel(row.match_kind)}
+            </Badge>
+            <span className="text-[10px] text-muted-foreground">
+              Detected {formatRelative(row.created_at)}
             </span>
           </div>
-        ) : null}
-        {isNoOp ? (
-          <div className="rounded-md border border-border bg-muted/40 px-2 py-1.5 text-[11px] text-muted-foreground">
-            The current value already matches this suggestion.
-          </div>
-        ) : null}
-
-        {/* ── Change: current → suggested ── */}
-        <div className="space-y-1.5">
-          <ValueLine
-            label="Current"
-            value={currentDisplay}
-            empty={!hasExistingValue}
-            loading={enriching && !target}
-          />
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pl-0.5">
-            <ArrowRight className="h-3 w-3" />
-            <span>Suggested</span>
-          </div>
-          <ValueLine label="Suggested" value={suggestedDisplay} highlight />
-        </div>
-
-        {/* ── All fields on this scope (context) ── */}
-        {!compact && target && target.items.length > 0 ? (
-          <div className="rounded-md border border-border/60">
-            <button
-              type="button"
-              onClick={() => setShowAllFields((v) => !v)}
-              className="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <span>
-                All {target.items.length} fields on {target.scope.name}
-              </span>
-              <ChevronDown
-                className={cn(
-                  "h-3.5 w-3.5 transition-transform",
-                  showAllFields && "rotate-180",
-                )}
-              />
-            </button>
-            {showAllFields ? (
-              <div className="border-t border-border/60 divide-y divide-border/40">
-                {target.items.map((it) => (
-                  <FieldRow
-                    key={it.id}
-                    item={it}
-                    isTarget={it.id === targetItem?.id}
-                  />
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-
-        {/* ── Context snippet ── */}
-        {!compact && row.context_snippet ? (
-          <div className="text-[11px] text-muted-foreground/80 line-clamp-2 border-l-2 border-border pl-2">
-            “{row.context_snippet}”
-          </div>
-        ) : null}
-
-        {/* ── Meta ── */}
-        <div className="flex items-center gap-2 flex-wrap pt-0.5">
-          <ConfidenceBar pct={confidencePct} />
-          <span className="text-[10px] text-muted-foreground tabular-nums">
-            {confidencePct}%
-          </span>
-          <Badge variant="outline" className="h-4 text-[10px] px-1.5">
-            {MATCH_LABEL[row.match_kind]}
-          </Badge>
-          <span className="text-[10px] text-muted-foreground">
-            Detected {formatRelative(row.created_at)}
-          </span>
-        </div>
-
-        {/* ── Actions ── */}
-        <div className="flex items-center justify-end gap-1.5 pt-1">
-          <DeferButton
-            busy={busy}
-            onClick={() =>
-              void run("defer", () => defer(row.id), "Snoozed for 7 days")
-            }
-          />
-          <RejectButton
-            busy={busy}
-            onClick={() =>
-              void run("reject", () => reject(row.id), "Dismissed for 30 days")
-            }
-          />
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onAccept}
-            className={cn(
-              "inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-medium transition-colors disabled:opacity-50",
-              isOverwrite
-                ? "bg-amber-600 text-white hover:bg-amber-600/90"
-                : "bg-primary text-primary-foreground hover:bg-primary/90",
-            )}
-          >
-            {isOverwrite ? (
-              <>
-                <AlertTriangle className="h-3 w-3" />
-                Overwrite
-              </>
-            ) : (
-              <>
-                <Check className="h-3 w-3" />
-                Accept
-              </>
-            )}
-          </button>
         </div>
       </div>
 
@@ -600,23 +816,79 @@ function ConfidenceBar({ pct }: { pct: number }) {
   );
 }
 
-function DeferButton({
+/**
+ * Defer control. One click defers immediately (the common case); the small
+ * caret opens a popover to attach an optional note the user can read later in
+ * the suggestions manager.
+ */
+function DeferControl({
   busy,
-  onClick,
+  onDefer,
 }: {
   busy: boolean;
-  onClick: () => void;
+  onDefer: (note: string | null) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState("");
   return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={onClick}
-      className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
-    >
-      <Clock className="h-3 w-3" />
-      Defer
-    </button>
+    <div className="inline-flex items-center rounded border border-transparent hover:border-border">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => onDefer(null)}
+        className="inline-flex items-center gap-1 rounded-l px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+      >
+        <Clock className="h-3 w-3" />
+        Defer
+      </button>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            disabled={busy}
+            aria-label="Defer with a note"
+            className="inline-flex items-center rounded-r border-l border-border/60 px-1 py-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+          >
+            <StickyNote className="h-3 w-3" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-64 p-2 space-y-2">
+          <p className="text-[11px] text-muted-foreground">
+            Snooze this and leave yourself a note for when it comes back.
+          </p>
+          <Textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="e.g. need to confirm with the client first"
+            rows={3}
+            className="text-base sm:text-xs resize-none"
+            style={{ fontSize: "16px" }}
+          />
+          <div className="flex items-center justify-end gap-1.5">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="rounded px-2 py-1 text-[11px] text-muted-foreground hover:bg-accent transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setOpen(false);
+                onDefer(note.trim() ? note.trim() : null);
+                setNote("");
+              }}
+              className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              <Clock className="h-3 w-3" />
+              Defer
+            </button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
 

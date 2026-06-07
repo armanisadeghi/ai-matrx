@@ -298,6 +298,49 @@ export interface ResolvedSuggestionTarget {
   items: ResolvedSuggestionItem[];
 }
 
+// ─── set_context_value (the sanctioned ctx_context_item_values write) ──────
+//
+// `public.set_context_value` is the ONLY sanctioned mutation path for
+// `ctx_context_item_values` (atomic version-flip-then-insert with the scope
+// write-access check inside the SECURITY DEFINER function). EXECUTE is granted
+// to `authenticated`, so the chokepoint calls it directly. The suggestion
+// ledger only stores text, so callers typically send `value_text`; typed slots
+// may instead send the matching typed key.
+
+/** Mirrors the `public.context_source_type` enum. */
+export type ContextSourceType =
+  | "manual"
+  | "ai_generated"
+  | "ai_enriched"
+  | "imported"
+  | "scraped"
+  | "system";
+
+export interface SetContextValuePayload {
+  context_item_id: string;
+  scope_id: string;
+  value_text?: string | null;
+  value_number?: number | null;
+  value_boolean?: boolean | null;
+  value_date?: string | null;
+  value_json?: Json | null;
+  value_document_url?: string | null;
+  value_reference_id?: string | null;
+  /** Defaults to `ai_enriched` server-side when omitted. */
+  source_type?: ContextSourceType;
+  change_summary?: string;
+}
+
+/** The cell row `set_context_value` writes and returns on success. */
+export interface SetContextValueResult {
+  id: string;
+  context_item_id: string;
+  scope_id: string;
+  version: number;
+  value_text: string | null;
+  source_type: string;
+}
+
 // ─── Service result envelope ───────────────────────────────────────────
 //
 // Mirrors the RpcResult shape specified in features/scopes/docs/RPC_CONTRACTS.md.

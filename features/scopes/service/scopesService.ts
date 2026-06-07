@@ -38,6 +38,8 @@ import type {
   ScopeTypeNode,
   ScopesRpcError,
   ScopesRpcResult,
+  SetContextValuePayload,
+  SetContextValueResult,
   TaskBucketLevel,
   TaskNode,
 } from "@/features/scopes/types";
@@ -740,10 +742,11 @@ export const scopesService = {
     entityId: string,
     scopeIds: string[],
   ): Promise<ScopesRpcResult<{ organization_id: string | null }>> {
-    const ENTITY_ORG_TABLE: Partial<Record<ScopeAssignmentEntityType, string>> = {
-      project: "ctx_projects",
-      task: "ctx_tasks",
-    };
+    const ENTITY_ORG_TABLE: Partial<Record<ScopeAssignmentEntityType, string>> =
+      {
+        project: "ctx_projects",
+        task: "ctx_tasks",
+      };
     try {
       const table = ENTITY_ORG_TABLE[entityType];
       if (!table || scopeIds.length === 0) return ok({ organization_id: null });
@@ -756,7 +759,8 @@ export const scopesService = {
         .maybeSingle();
       if (sErr) return err(...mapPgErrorPair(sErr));
       const orgId =
-        (scopeRow as { organization_id?: string | null } | null)?.organization_id ?? null;
+        (scopeRow as { organization_id?: string | null } | null)
+          ?.organization_id ?? null;
       if (!orgId) return ok({ organization_id: null });
 
       // Adopt ONLY when the container currently has no org (DB-enforced).
@@ -793,7 +797,60 @@ export const scopesService = {
   updateContextItem: notYetImplemented("update_context_item"),
   deleteContextItem: notYetImplemented("delete_context_item"),
 
-  setContextValue: notYetImplemented("set_context_value"),
+  /**
+   * Write a value into a scope cell via the `set_context_value` SECURITY
+   * DEFINER RPC — the only sanctioned mutation path for
+   * `ctx_context_item_values` (atomic version-flip-then-insert, scope
+   * write-access checked inside the function). `auth.uid()` is the live user
+   * when called from the FE, so we never pass `acting_user_id`. Defaults
+   * `source_type` to `ai_enriched` (the RPC also defaults it, but we make the
+   * common KG-suggestion intent explicit).
+   */
+  async setContextValue(
+    payload: SetContextValuePayload,
+  ): Promise<ScopesRpcResult<SetContextValueResult>> {
+    try {
+      requireUserId();
+      const { data, error } = await supabase.rpc("set_context_value", {
+        p_payload: {
+          source_type: "ai_enriched",
+          ...payload,
+        } as never,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+
+      // `set_context_value` returns `Json` (i.e. `unknown`) in the generated
+      // types, so decode through a single optional-field shape rather than a
+      // discriminated union (the latter doesn't narrow off an `unknown` cast).
+      const envelope = data as {
+        ok?: boolean;
+        data?: SetContextValueResult;
+        error?: { code?: string; message?: string };
+      } | null;
+
+      if (!envelope || typeof envelope !== "object") {
+        return err("internal", "set_context_value returned no result");
+      }
+      if (!envelope.ok) {
+        const code = envelope.error?.code;
+        const mapped: ScopesRpcError["code"] =
+          code === "unauthorized"
+            ? "unauthorized"
+            : code === "forbidden_org"
+              ? "forbidden_org"
+              : code === "not_found"
+                ? "not_found"
+                : code === "invalid_argument"
+                  ? "invalid_argument"
+                  : "internal";
+        return err(mapped, envelope.error?.message ?? "Could not set value");
+      }
+      return ok(envelope.data as SetContextValueResult);
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
   revertContextValue: notYetImplemented("revert_context_value"),
   deleteContextValue: notYetImplemented("delete_context_value"),
 

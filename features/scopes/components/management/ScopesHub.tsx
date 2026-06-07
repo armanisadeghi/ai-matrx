@@ -13,6 +13,7 @@ import {
   Building,
   FileText,
   FolderKanban,
+  Lightbulb,
   ListChecks,
   Network,
   Settings as SettingsIcon,
@@ -97,6 +98,9 @@ export function ScopesHub() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <KgSuggestionsNavButton variant="outline" />
+          <QuickLink href="/suggestions" icon={Lightbulb}>
+            Suggestions
+          </QuickLink>
           <QuickLink href="/context-items" icon={ListChecks}>
             Context items
           </QuickLink>

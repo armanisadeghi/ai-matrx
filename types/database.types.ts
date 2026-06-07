@@ -1325,7 +1325,7 @@ export type Database = {
           context_slots: Json | null
           custom_tools: Json | null
           description: string | null
-          id: string | null
+          id: string
           is_active: boolean | null
           mcp_servers: string[] | null
           messages: Json | null
@@ -1349,7 +1349,7 @@ export type Database = {
           context_slots?: Json | null
           custom_tools?: Json | null
           description?: string | null
-          id?: string | null
+          id: string
           is_active?: boolean | null
           mcp_servers?: string[] | null
           messages?: Json | null
@@ -1373,7 +1373,7 @@ export type Database = {
           context_slots?: Json | null
           custom_tools?: Json | null
           description?: string | null
-          id?: string | null
+          id?: string
           is_active?: boolean | null
           mcp_servers?: string[] | null
           messages?: Json | null
@@ -14947,7 +14947,9 @@ export type Database = {
           created_at: string
           decided_at: string | null
           decided_by: string | null
+          decision_note: string | null
           id: string
+          is_starred: boolean
           kg_chunk_entity_id: string | null
           kg_entity_id: string | null
           match_kind: string
@@ -14961,6 +14963,7 @@ export type Database = {
           target_scope_item_id: string | null
           target_slot_name: string | null
           user_id: string
+          viewed_at: string | null
         }
         Insert: {
           confidence: number
@@ -14968,7 +14971,9 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          decision_note?: string | null
           id?: string
+          is_starred?: boolean
           kg_chunk_entity_id?: string | null
           kg_entity_id?: string | null
           match_kind: string
@@ -14982,6 +14987,7 @@ export type Database = {
           target_scope_item_id?: string | null
           target_slot_name?: string | null
           user_id: string
+          viewed_at?: string | null
         }
         Update: {
           confidence?: number
@@ -14989,7 +14995,9 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          decision_note?: string | null
           id?: string
+          is_starred?: boolean
           kg_chunk_entity_id?: string | null
           kg_entity_id?: string | null
           match_kind?: string
@@ -15003,6 +15011,7 @@ export type Database = {
           target_scope_item_id?: string | null
           target_slot_name?: string | null
           user_id?: string
+          viewed_at?: string | null
         }
         Relationships: [
           {
@@ -15017,6 +15026,99 @@ export type Database = {
             columns: ["target_scope_item_id"]
             isOneToOne: false
             referencedRelation: "ctx_context_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scope_item_value_suggestions: {
+        Row: {
+          confidence: number
+          context_snippet: string | null
+          created_at: string
+          current_value_snapshot: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          evidence_chunk_id: string | null
+          id: string
+          is_starred: boolean
+          kg_entity_id: string | null
+          match_kind: string
+          organization_id: string | null
+          source_id: string
+          source_kind: string
+          status: string
+          suggested_value: string
+          suppressed_until: string | null
+          target_context_item_id: string
+          target_scope_id: string
+          target_slot_key: string
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          confidence: number
+          context_snippet?: string | null
+          created_at?: string
+          current_value_snapshot?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          evidence_chunk_id?: string | null
+          id?: string
+          is_starred?: boolean
+          kg_entity_id?: string | null
+          match_kind: string
+          organization_id?: string | null
+          source_id: string
+          source_kind: string
+          status?: string
+          suggested_value: string
+          suppressed_until?: string | null
+          target_context_item_id: string
+          target_scope_id: string
+          target_slot_key: string
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          confidence?: number
+          context_snippet?: string | null
+          created_at?: string
+          current_value_snapshot?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          evidence_chunk_id?: string | null
+          id?: string
+          is_starred?: boolean
+          kg_entity_id?: string | null
+          match_kind?: string
+          organization_id?: string | null
+          source_id?: string
+          source_kind?: string
+          status?: string
+          suggested_value?: string
+          suppressed_until?: string | null
+          target_context_item_id?: string
+          target_scope_id?: string
+          target_slot_key?: string
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scope_item_value_suggestions_target_context_item_id_fkey"
+            columns: ["target_context_item_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_context_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scope_item_value_suggestions_target_scope_id_fkey"
+            columns: ["target_scope_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scopes"
             referencedColumns: ["id"]
           },
         ]
@@ -23245,6 +23347,53 @@ export type Database = {
             referencedColumns: ["category_id"]
           },
         ]
+      }
+      v_scope_suggestion_stats: {
+        Row: {
+          is_starred: boolean | null
+          n: number | null
+          organization_id: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      v_scope_suggestions: {
+        Row: {
+          confidence: number | null
+          context_snippet: string | null
+          created_at: string | null
+          current_value_snapshot: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          id: string | null
+          is_starred: boolean | null
+          item_key: string | null
+          item_label: string | null
+          kg_entity_id: string | null
+          match_kind: string | null
+          org_name: string | null
+          org_slug: string | null
+          organization_id: string | null
+          scope_name: string | null
+          scope_slug: string | null
+          scope_type_icon: string | null
+          scope_type_id: string | null
+          scope_type_label: string | null
+          scope_type_slug: string | null
+          source_id: string | null
+          source_kind: string | null
+          stage: string | null
+          status: string | null
+          suggested_value: string | null
+          suppressed_until: string | null
+          target_item_id: string | null
+          target_scope_id: string | null
+          target_slot: string | null
+          user_id: string | null
+          viewed_at: string | null
+        }
+        Relationships: []
       }
       view_registered_function: {
         Row: {

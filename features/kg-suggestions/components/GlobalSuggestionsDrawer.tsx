@@ -13,7 +13,8 @@
 
 "use client";
 
-import { Lightbulb, Network } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Lightbulb, Network } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -156,6 +157,14 @@ export function GlobalSuggestionsDrawer({
               <Lightbulb className="h-4 w-4 text-primary" />
               Suggestions {count > 0 ? `(${count})` : ""}
             </DrawerTitle>
+            <Link
+              href="/suggestions"
+              onClick={onClose}
+              className="mt-1 inline-flex items-center gap-1 self-start text-xs text-primary hover:underline"
+            >
+              Open full manager
+              <ArrowRight className="h-3 w-3" />
+            </Link>
           </DrawerHeader>
           <div className="flex flex-1 min-h-0 flex-col">{body}</div>
         </DrawerContent>
@@ -170,10 +179,20 @@ export function GlobalSuggestionsDrawer({
         className="flex w-full flex-col gap-0 p-0 sm:max-w-xl"
       >
         <SheetHeader className="border-b border-border px-4 py-3 space-y-0.5">
-          <SheetTitle className="flex items-center gap-2 text-base">
-            <Lightbulb className="h-4 w-4 text-primary" />
-            Suggestions {count > 0 ? `(${count})` : ""}
-          </SheetTitle>
+          <div className="flex items-center justify-between gap-2">
+            <SheetTitle className="flex items-center gap-2 text-base">
+              <Lightbulb className="h-4 w-4 text-primary" />
+              Suggestions {count > 0 ? `(${count})` : ""}
+            </SheetTitle>
+            <Link
+              href="/suggestions"
+              onClick={onClose}
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              Open full manager
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
           <p className="text-xs text-muted-foreground">
             Proposed fills from your notes, tasks, and files. Open the source or
             the scope before deciding — nothing changes until you accept.

@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-06-02`
+**Last updated:** `2026-06-08`
 
 ---
 
@@ -41,7 +41,29 @@ one click and never destructive. Phase F of the Knowledge-Graph plan.
   + destructive ConfirmDialog when a value already exists), every field on the
   target scope (targeted one highlighted), confidence, match-kind, and a
   "Detected …" timestamp. Heavy-hitter rows keep the lightweight "promote to a
-  scope" treatment. Accept/reject/defer come from the hook.
+  scope" treatment. Accept/reject/defer come from the hook. The value card also
+  exposes a DEFER-WITH-NOTE popover (the small note icon beside "Defer") and
+  renders any existing `decision_note` so deferred rows explain themselves when
+  they resurface.
+
+**Management surface** (`components/manager/`, route `/suggestions`) — a
+dedicated power-user table for triaging EVERY suggestion (any status), distinct
+from the three cache-keyed inbox views.
+- `SuggestionsManager` (`components/manager/SuggestionsManager.tsx`) — the
+  orchestrator: a stats summary strip, the filter bar, a bulk-action bar
+  (accept/defer/reject/star across the selection), the table (desktop) or
+  stacked decision cards (mobile — tables are banned on phones), and server-side
+  pagination. Stamps rows `viewed_at` as they load.
+- `SuggestionsFilterBar` (`components/manager/SuggestionsFilterBar.tsx`) —
+  multi-status chips + stage / org / scope-type / scope / field / source /
+  confidence selects + starred-only / unseen-only toggles + free-text search.
+  Dimension option lists are derived from the loaded rows (search covers the
+  rest). Every change flows up via `patchQuery` (resets to page 0).
+- `SuggestionsTable` (`components/manager/SuggestionsTable.tsx`) — the dense,
+  sortable desktop table (scope / field / org / confidence / status / detected
+  sort SERVER-SIDE), with a per-row star, unseen dot, inline quick
+  accept/defer/reject (pending) or restore (decided), row select for bulk, and
+  an expand row that renders the canonical `KgSuggestionRowItem` decision card.
 
 **Enrichment layer** (resolves opaque ids → human-readable decision context)
 - `service/kgEnrichmentService.ts` (`enrichSuggestion`) — combines the scopes
@@ -58,21 +80,40 @@ one click and never destructive. Phase F of the Knowledge-Graph plan.
   single read+write hook. Filter is one of `{ sourceKind, sourceId }` |
   `{ scopeItemId }` | `{ global: true }`. Returns
   `{ items, count, status, error, accept, reject, defer, refresh }`.
+- `useSuggestionsQuery(initial?)` (`hooks/useSuggestionsQuery.ts`) — the
+  manager's data layer: owns `KgSuggestionsQuery` state, reads the enriched
+  `v_scope_suggestions` view (server-side filter/sort/paginate, NOT the slice
+  cache), loads `v_scope_suggestion_stats`, and exposes
+  accept/reject/defer/star/restore. Decisions reuse the SAME accept branching
+  and mirror busy state through the kgSuggestions slice mutation map (so the
+  shared row spinner works), then optimistically drop + reconcile.
 - `useAutoRagPreference()` (`hooks/useAutoRagPreference.ts`) — reads/writes the
   per-user `user_preferences.auto_rag_enabled` opt-out (React → Supabase).
 
 **Services**
-- `service/kgSuggestionsService.ts` — typed client for the aidream
-  `/kg-suggestions` router (React → Python directly via `@/lib/python-client`).
-  `listKgSuggestions`, `acceptKgSuggestion(id, body?)`, `rejectKgSuggestion`,
-  `deferKgSuggestion`.
+- `service/kgSuggestionsService.ts` — **direct-Supabase** data layer (the
+  aidream `/kg-suggestions` HTTP API was DELETED 2026-06-07; aidream is a pure
+  producer of rows). Reads/decides straight against the two RLS-scoped ledgers:
+  `listKgSuggestions(filter)` (normalizes both tables → `KgSuggestionRow[]`),
+  `rejectKgSuggestion(row)` / `deferKgSuggestion(row)` (direct status +
+  `suppressed_until` update), `acceptValueSuggestion(row)` (Stage B →
+  `set_context_value` RPC + mark accepted), `acceptAssociationSuggestion(row)`
+  (Stage A link → tag source via `setEntityScopes` + mark accepted),
+  `markKgSuggestionAccepted(row)`. Reject/defer take an optional `note`
+  (persisted to `decision_note`). Manager-only reads/writes:
+  `queryScopeSuggestions(query)` (server-side filter/sort/paginate over
+  `v_scope_suggestions` → `KgEnrichedSuggestionRow[]` + total),
+  `fetchScopeSuggestionStats()` (`v_scope_suggestion_stats`),
+  `restoreKgSuggestion(row)` (back to `pending`), `setKgSuggestionStarred(row,
+  starred)`, `markKgSuggestionsViewed(rows)` (best-effort `viewed_at` stamp).
 
-**API endpoints** (aidream, public URL `/api/kg-suggestions/*`, bare prefix
-`/kg-suggestions`; user-scoped via `ctx.user_id`)
-- `GET  /kg-suggestions` — paginated `SuggestionsPage`.
-- `POST /kg-suggestions/{id}/accept` — writes value into the scope-item slot.
-- `POST /kg-suggestions/{id}/reject` — 30-day suppression.
-- `POST /kg-suggestions/{id}/defer` — 7-day suppression.
+**Data source** (no API — React → Supabase directly, RLS-scoped to `auth.uid()`)
+- Read both ledgers with `supabase.from(...).select(...)`.
+- Reject/defer: a direct `update` (30-day / 7-day suppression window).
+- Accept a Stage-B value: the `set_context_value` SECURITY DEFINER RPC (via the
+  scopes chokepoint `scopesService.setContextValue`), then mark `accepted`.
+- Accept a Stage-A link: tag the source to the scope (`ctx_scope_assignments`
+  chokepoint), then mark `accepted`. Heavy-hitter: create a scope + tag source.
 
 **Redux slice**
 - `lib/redux/slices/kgSuggestionsSlice.ts` — `kgSuggestions`. Normalized
@@ -85,22 +126,59 @@ one click and never destructive. Phase F of the Knowledge-Graph plan.
   hitter inbox.
 - `features/settings/tabs/PrivacyTab.tsx` — auto knowledge-graph toggle.
 - `features/overlays/*` — global drawer registered as `kgSuggestionsDrawer`.
+- `app/(core)/suggestions/page.tsx` — the dedicated manager route (SSR auth
+  shell + `<SuggestionsManager>` client island). Linked from the `/scopes` hub
+  quick-links and the global drawer header ("Open full manager").
 
 ---
 
 ## Data model
 
-**Database tables** (Supabase / aidream)
-- `public.scope_association_suggestions` — owned by the backend (Phase D).
-  Read/written only through the `/kg-suggestions` API. The FE never queries it
-  directly.
-- `public.user_preferences.auto_rag_enabled` — per-user opt-out (Phase A).
+**Database tables** (Supabase — RLS-scoped to `auth.uid() = user_id`; produced
+by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
+- `public.scope_association_suggestions` (**Stage A**) — "this document belongs
+  to scope X". `match_kind`: `exact` | `fuzzy` | `semantic` | `heavy_hitter` |
+  `agent.orienter.association` | `agent.orienter.uncertain`. `target_scope_id`
+  null for heavy_hitter (no scope yet — `suggested_value` is the proposed name).
+- `public.scope_item_value_suggestions` (**Stage B**) — "scope X's slot K should
+  hold value V". `target_scope_id` / `target_context_item_id` / `target_slot_key`
+  / `suggested_value` NOT NULL; `current_value_snapshot` for improve/conflict.
+  `match_kind`: `agent.slot_filler.fill_empty` | `…improve` | `…flag_conflict` |
+  `agent.deep_extractor.extracted`.
+- `public.kg_suggestion_ack` — per-user "permanently dismissed" set for the
+  global notifier toast.
+- `public.user_preferences.auto_rag_enabled` — per-user opt-out.
 
-**Key types** (`types.ts` — mirror the Python Pydantic models)
-- `KgSuggestionRow`, `KgSuggestionsPage`, `KgAcceptResponse`,
-  `KgDecisionResponse`, `KgMatchKind`, `KgSuggestionStatus`.
+**Manager columns + views** (migration `kg_014`)
+- Both ledgers gained `decision_note text`, `viewed_at timestamptz`, and
+  `is_starred boolean not null default false`, plus org/scope/item indexes for
+  the manager's filter/sort dimensions.
+- `public.v_scope_suggestions` (`security_invoker`) — a denormalized UNION of
+  both ledgers with org / scope-type / scope / item names JOINED in, so the
+  manager filters/sorts/paginates by human-readable values SERVER-SIDE while RLS
+  on the base tables still scopes every row to `auth.uid()`.
+- `public.v_scope_suggestion_stats` (`security_invoker`) — per-(org, status,
+  starred) counts for the manager's summary strip.
+
+> The two raw rows have DIFFERENT column names (Stage A: `target_scope_item_id`/
+> `target_slot_name`, both null for links; Stage B: `target_context_item_id`/
+> `target_slot_key`). The service NORMALIZES both into one `KgSuggestionRow`
+> discriminated by `stage`, so every surface consumes a single shape.
+
+**Key types** (`types.ts`)
+- `KgSuggestionRow` (normalized, `stage: "association" | "value"`),
+  `KgMatchKind` (`KgAssociationMatchKind | KgValueMatchKind`),
+  `KgSuggestionStatus`, predicates `isHeavyHitter` / `isAssociationLink` /
+  `isValueSuggestion`.
 - `KgSuggestionsFilter` (`KgSourceFilter | KgScopeItemFilter | KgGlobalFilter`)
-  + `kgFilterKey` / `kgFilterToParams` helpers.
+  + `kgFilterKey` (the three cache-keyed inbox views).
+- `KgEnrichedSuggestionRow` (extends `KgSuggestionRow` with the view's
+  org/scope-type/scope/item labels — so the shared card accepts it unchanged),
+  `KgSuggestionsQuery` (the manager's free-form, server-side query params), and
+  `KgSuggestionSortField`. `KgSuggestionRow` now carries `decision_note`,
+  `is_starred`, `viewed_at`.
+- `set_context_value` payload/result types live in `features/scopes/types.ts`
+  (`SetContextValuePayload`, `SetContextValueResult`, `ContextSourceType`).
 
 ---
 
@@ -187,12 +265,37 @@ one click and never destructive. Phase F of the Knowledge-Graph plan.
 - **`auto_rag_enabled` is not in generated `database.types` yet** (Phase A
   applied the column to the DB; FE types regen is pending). The hook bridges the
   gap with a localized cast and a TODO. Regenerate Supabase types to remove it.
-- **Heavy-hitter accept returns a plan, the FE creates the scope.** The accept
-  endpoint never creates the scope itself (scopes are a frontend-owned write
-  path). `service.acceptKgSuggestion` returns the `KgAcceptResult` union; narrow
-  on `isHeavyHitterPlan(res)`. Scope creation goes through the canonical
-  `createScope` thunk — never hand-roll a `ctx_scopes` insert (the scopes
-  service chokepoint forbids it and `scopesService.createScope` is still a stub).
+- **No API — decisions write to Supabase directly.** The `/api/kg-suggestions`
+  routes are gone. Reads, reject/defer, and accept all go React → Supabase
+  (RLS-scoped). Don't reintroduce a Python hop for reading or deciding.
+- **`set_context_value` is the ONLY ctx-value write path.** Accepting a Stage-B
+  value goes through `scopesService.setContextValue` (the SECURITY DEFINER RPC).
+  Never insert/update `ctx_context_item_values` directly.
+- **Heavy-hitter accept is fully FE-owned, source-tagging is degraded in v1.**
+  There's no server "plan" anymore. `useHeavyHitterAccept` creates the scope
+  (`createScope` thunk → `create_scope` RPC) and tags ONLY the suggestion's own
+  source document — the old plan listed every doc mentioning the entity from
+  `rag.kg_chunk_entities`, which is not exposed to PostgREST. The scope is still
+  created and useful; further docs are tagged from normal scope-tagging UIs.
+  This is the documented v1 boundary (handoff §5 open question).
+- **Accept branches on `stage`.** `useKgSuggestions.accept(id)` resolves the row
+  from the normalized store and routes: `value` → `acceptValueSuggestion`,
+  link → `acceptAssociationSuggestion`, `heavy_hitter` → throws (use the
+  create-scope dialog). Reject/defer are stage-agnostic table updates.
+- **Two read paths, one decision UX.** The three inbox views read the slice
+  cache via `useKgSuggestions(filter)`; the manager reads the enriched view via
+  `useSuggestionsQuery` (NOT the slice). Both feed the SAME
+  `KgSuggestionRowItem`. Don't merge the read paths (the manager needs
+  server-side sort/paginate over every status; the inbox needs the shared
+  normalized cross-surface cache) and don't fork the decision card.
+- **`decision_note` is written ONLY when provided.** `markDecided` skips the
+  column when no note is passed, so a plain accept never clears a note left at
+  defer time.
+- **Manager filter option lists come from loaded rows.** Org/scope-type/scope/
+  field dropdowns reflect the current result page; free-text `search` (ilike on
+  item label / scope name / suggested value) covers anything off-page. If a
+  full distinct-values list is ever needed, add a dedicated read — don't widen
+  the page size.
 
 ---
 
@@ -220,7 +323,9 @@ one click and never destructive. Phase F of the Knowledge-Graph plan.
   `selectUserId` (`lib/redux/selectors/userSelectors`),
   `selectActiveOrganizationId` (scopes).
 - Hooks: `useAppDispatch` / `useAppSelector` (typed), `useIsMobile`.
-- Services: `@/lib/python-client` (`getJson` / `postJson` — JWT auth).
+- Services: `@/utils/supabase/client` (direct RLS-scoped reads/writes),
+  `scopesService` chokepoint (`setContextValue` / `getEntityScopes` /
+  `setEntityScopes` / `resolveSuggestionTarget`).
 
 **Primitives introduced**
 - `kgSuggestionsSlice` (`lib/redux/slices/kgSuggestionsSlice.ts`) — Why a new
@@ -250,16 +355,55 @@ also names `lib/redux/slices/kgSuggestionsSlice.ts` as the canonical home.
 
 ## Current work / migration state
 
-Phase F of the Knowledge-Graph plan. Backend Phases A–E are shipped. The
-heavy-hitter accept → create-scope → tag-sources flow is now wired end to end
-(consumes the Phase E `HeavyHitterAcceptPlan`). Cannot be end-to-end runtime
-tested until NER runs live and produces heavy-hitter suggestion rows; built and
-compile-verified against the typed contract.
+As of 2026-06-07 the FE talks to Supabase directly — the aidream
+`/kg-suggestions` API is deleted (migration `kg_013` split the single ledger
+into `scope_association_suggestions` + `scope_item_value_suggestions`). All
+reads + decisions are direct, RLS-scoped. Built and compile-verified against the
+live table shapes (confirmed via Supabase MCP) and the `set_context_value` RPC;
+end-to-end runtime needs NER to produce live rows in both ledgers.
 
 ---
 
 ## Change log
 
+- `2026-06-08` — **Suggestions manager + defer-with-note + star/seen.** One
+  Supabase migration (`kg_014`) added `decision_note` / `viewed_at` /
+  `is_starred` to both ledgers, org/scope/item manager indexes, and two
+  `security_invoker` read views — `v_scope_suggestions` (denormalized UNION with
+  org/scope/item names joined for server-side filter/sort/paginate) and
+  `v_scope_suggestion_stats` (summary counts). New dedicated route
+  `/suggestions` (`app/(core)/suggestions/page.tsx`) with a full management UI
+  (`components/manager/`: `SuggestionsManager` + `SuggestionsFilterBar` +
+  `SuggestionsTable`) and its own data hook `useSuggestionsQuery` (reads the
+  enriched view, not the slice cache; reuses the shared accept branching + the
+  slice mutation map for busy state). Added service reads/writes
+  `queryScopeSuggestions`, `fetchScopeSuggestionStats`, `restoreKgSuggestion`,
+  `setKgSuggestionStarred`, `markKgSuggestionsViewed`; threaded an optional
+  `note` through reject/defer (persisted to `decision_note`) and gave
+  `KgSuggestionRowItem`'s value card a defer-with-note popover + a render of any
+  existing note. Entry points: a "Suggestions" quick-link on the `/scopes` hub
+  and an "Open full manager" link in the global drawer header. Also fixed
+  `scopesService.setContextValue`'s envelope decode (the `set_context_value` RPC
+  is now generated as `Returns: Json` → `unknown`; decode via an optional-field
+  shape, not a discriminated-union cast that doesn't narrow off `unknown`).
+- `2026-06-07` — **Migrated to direct-Supabase (API deleted).** The aidream
+  `/api/kg-suggestions` HTTP API was removed; aidream is now a pure producer.
+  Migration `kg_013` split the suggestions into two RLS-scoped ledgers —
+  `scope_association_suggestions` (Stage A, doc→scope links) and
+  `scope_item_value_suggestions` (Stage B, slot→value fills). Rewrote the FE to
+  read/decide directly against Supabase: `kgSuggestionsService` now normalizes
+  both raw rows into one `stage`-discriminated `KgSuggestionRow`; reject/defer
+  are direct row updates with suppression windows; Stage-B accept calls the new
+  `scopesService.setContextValue` (`set_context_value` SECURITY DEFINER RPC) and
+  marks the row accepted; Stage-A link accept tags the source via the
+  `ctx_scope_assignments` chokepoint. `KgSuggestionRowItem` gained a third card
+  variant — the "tag this source to scope X" link card (`agent.orienter.*` /
+  `exact`/`fuzzy`/`semantic`) — alongside the value card and heavy-hitter card.
+  `useHeavyHitterAccept` no longer consumes a server plan: it creates the scope
+  and tags the originating source (rag.kg_chunk_entities isn't exposed, so the
+  full source rollup is a documented v1 gap). Implemented `setContextValue` in
+  the scopes chokepoint; added both tables to `types/database.types.ts`. Deleted
+  the python-client transport + all API-only wire types.
 - `2026-06-06` — **Global new-suggestion notifier.** Added an app-wide,
   route-agnostic nudge so a user learns about suggestions produced by a
   background/overnight RAG-NER batch even when they're elsewhere in the app.
