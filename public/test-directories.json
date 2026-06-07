@@ -1,114 +1,114 @@
 [
   {
-    "path": "/tests/_maps",
+    "path": "/demos/tests/_maps",
     "name": "_maps"
   },
   {
-    "path": "/tests/animation-tests",
+    "path": "/demos/tests/animation-tests",
     "name": "animation-tests"
   },
   {
-    "path": "/tests/app-shell-test",
+    "path": "/demos/tests/app-shell-test",
     "name": "app-shell-test"
   },
   {
-    "path": "/tests/applet-tests",
+    "path": "/demos/tests/applet-tests",
     "name": "applet-tests"
   },
   {
-    "path": "/tests/audio-recorder-test",
+    "path": "/demos/tests/audio-recorder-test",
     "name": "audio-recorder-test"
   },
   {
-    "path": "/tests/camera-test",
+    "path": "/demos/tests/camera-test",
     "name": "camera-test"
   },
   {
-    "path": "/tests/chat-tests",
+    "path": "/demos/tests/chat-tests",
     "name": "chat-tests"
   },
   {
-    "path": "/tests/direct-chat-test",
+    "path": "/demos/tests/direct-chat-test",
     "name": "direct-chat-test"
   },
   {
-    "path": "/tests/dynamic-gateway-concept",
+    "path": "/demos/tests/dynamic-gateway-concept",
     "name": "dynamic-gateway-concept"
   },
   {
-    "path": "/tests/extension-bridge",
+    "path": "/demos/tests/extension-bridge",
     "name": "extension-bridge"
   },
   {
-    "path": "/tests/field-tests",
+    "path": "/demos/tests/field-tests",
     "name": "field-tests"
   },
   {
-    "path": "/tests/full-screen-demo",
+    "path": "/demos/tests/full-screen-demo",
     "name": "full-screen-demo"
   },
   {
-    "path": "/tests/google-apis",
+    "path": "/demos/tests/google-apis",
     "name": "google-apis"
   },
   {
-    "path": "/tests/integrations",
+    "path": "/demos/tests/integrations",
     "name": "integrations"
   },
   {
-    "path": "/tests/links",
+    "path": "/demos/tests/links",
     "name": "links"
   },
   {
-    "path": "/tests/markdown-tests",
+    "path": "/demos/tests/markdown-tests",
     "name": "markdown-tests"
   },
   {
-    "path": "/tests/matrx-local",
+    "path": "/demos/tests/matrx-local",
     "name": "matrx-local"
   },
   {
-    "path": "/tests/matrx-table",
+    "path": "/demos/tests/matrx-table",
     "name": "matrx-table"
   },
   {
-    "path": "/tests/metadata-test",
+    "path": "/demos/tests/metadata-test",
     "name": "metadata-test"
   },
   {
-    "path": "/tests/modals",
+    "path": "/demos/tests/modals",
     "name": "modals"
   },
   {
-    "path": "/tests/oauth",
+    "path": "/demos/tests/oauth",
     "name": "oauth"
   },
   {
-    "path": "/tests/qr-labels",
+    "path": "/demos/tests/qr-labels",
     "name": "qr-labels"
   },
   {
-    "path": "/tests/slack",
+    "path": "/demos/tests/slack",
     "name": "slack"
   },
   {
-    "path": "/tests/sms",
+    "path": "/demos/tests/sms",
     "name": "sms"
   },
   {
-    "path": "/tests/tailwind-test",
+    "path": "/demos/tests/tailwind-test",
     "name": "tailwind-test"
   },
   {
-    "path": "/tests/utility-function-tests",
+    "path": "/demos/tests/utility-function-tests",
     "name": "utility-function-tests"
   },
   {
-    "path": "/tests/windows",
+    "path": "/demos/tests/windows",
     "name": "windows"
   },
   {
-    "path": "/tests/workflow-source-config",
+    "path": "/demos/tests/workflow-source-config",
     "name": "workflow-source-config"
   },
   {

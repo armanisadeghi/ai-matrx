@@ -257,7 +257,7 @@
   },
   "devDependencies": {
     "@iconify/react": "^6.0.2",
-    "@next/bundle-analyzer": "^16.2.0",
+    "@next/bundle-analyzer": "^16.2.7",
     "@tailwindcss/postcss": "^4.2.2",
     "@tailwindcss/typography": "0.5.19",
     "@types/chroma-js": "^3.1.2",

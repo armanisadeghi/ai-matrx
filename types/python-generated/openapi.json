@@ -10026,6 +10026,161 @@
         }
       }
     },
+    "/admin/system-errors/recent": {
+      "get": {
+        "tags": [
+          "Admin / System Errors"
+        ],
+        "summary": "Recent Errors",
+        "description": "Most-recent ``system_error`` rows, newest first.\n\nThe default window (last 6h) makes \"what just broke?\" a one-call query.\nEach row carries the full ``traceback`` + request context.",
+        "operationId": "recent_errors_admin_system_errors_recent_get",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO-8601 lower bound on occurred_at. Defaults to 6 hours ago.",
+              "title": "Since"
+            },
+            "description": "ISO-8601 lower bound on occurred_at. Defaults to 6 hours ago."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional exact route filter, e.g. 'POST /assets'.",
+              "title": "Route"
+            },
+            "description": "Optional exact route filter, e.g. 'POST /assets'."
+          },
+          {
+            "name": "error_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional error_type filter, e.g. 'SvgRasterizerUnavailable'.",
+              "title": "Error Type"
+            },
+            "description": "Optional error_type filter, e.g. 'SvgRasterizerUnavailable'."
+          },
+          {
+            "name": "unresolved_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "When true, only rows with resolved_at IS NULL.",
+              "default": false,
+              "title": "Unresolved Only"
+            },
+            "description": "When true, only rows with resolved_at IS NULL."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__api__routers__admin_system_errors__SystemErrorListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/system-errors/{error_id}": {
+      "get": {
+        "tags": [
+          "Admin / System Errors"
+        ],
+        "summary": "Get Error",
+        "description": "Full single ``system_error`` row by id — including the traceback.",
+        "operationId": "get_error_admin_system_errors__error_id__get",
+        "parameters": [
+          {
+            "name": "error_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Error Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemErrorRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/tools": {
       "get": {
         "tags": [
@@ -30242,7 +30397,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SystemErrorListResponse"
+                  "$ref": "#/components/schemas/aidream__api__routers__admin_persistence__SystemErrorListResponse"
                 }
               }
             }
@@ -69121,37 +69276,169 @@
         ],
         "title": "SystemErrorDetail"
       },
-      "SystemErrorListResponse": {
+      "SystemErrorRecord": {
         "properties": {
-          "rows": {
-            "items": {
-              "$ref": "#/components/schemas/SystemErrorSummary"
-            },
-            "type": "array",
-            "title": "Rows"
+          "id": {
+            "type": "string",
+            "title": "Id"
           },
-          "total": {
-            "type": "integer",
-            "title": "Total"
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
           },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
           },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "error_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Text"
+          },
+          "traceback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Traceback"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "context": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurred At"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "resolution_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Note"
           }
         },
-        "additionalProperties": false,
         "type": "object",
         "required": [
-          "rows",
-          "total",
-          "limit",
-          "offset"
+          "id"
         ],
-        "title": "SystemErrorListResponse"
+        "title": "SystemErrorRecord"
       },
       "SystemErrorSummary": {
         "properties": {
@@ -74776,6 +75063,64 @@
           "content"
         ],
         "title": "WriteArgs"
+      },
+      "aidream__api__routers__admin_persistence__SystemErrorListResponse": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SystemErrorSummary"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rows",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "SystemErrorListResponse"
+      },
+      "aidream__api__routers__admin_system_errors__SystemErrorListResponse": {
+        "properties": {
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/SystemErrorRecord"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "filter_summary": {
+            "type": "string",
+            "title": "Filter Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "errors",
+          "count",
+          "filter_summary"
+        ],
+        "title": "SystemErrorListResponse"
       },
       "aidream__api__routers__agents__WarmRequest": {
         "properties": {

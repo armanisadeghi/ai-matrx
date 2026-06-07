@@ -3939,6 +3939,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/system-errors/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent Errors
+         * @description Most-recent ``system_error`` rows, newest first.
+         *
+         *     The default window (last 6h) makes "what just broke?" a one-call query.
+         *     Each row carries the full ``traceback`` + request context.
+         */
+        get: operations["recent_errors_admin_system_errors_recent_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/system-errors/{error_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Error
+         * @description Full single ``system_error`` row by id — including the traceback.
+         */
+        get: operations["get_error_admin_system_errors__error_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/tools": {
         parameters: {
             query?: never;
@@ -24748,16 +24791,38 @@ export interface components {
             /** Resolution Note */
             resolution_note: string | null;
         };
-        /** SystemErrorListResponse */
-        SystemErrorListResponse: {
-            /** Rows */
-            rows: components["schemas"]["SystemErrorSummary"][];
-            /** Total */
-            total: number;
-            /** Limit */
-            limit: number;
-            /** Offset */
-            offset: number;
+        /** SystemErrorRecord */
+        SystemErrorRecord: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind?: string | null;
+            /** Request Id */
+            request_id?: string | null;
+            /** User Id */
+            user_id?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Source App */
+            source_app?: string | null;
+            /** Route */
+            route?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Error Text */
+            error_text?: string | null;
+            /** Traceback */
+            traceback?: string | null;
+            payload?: components["schemas"]["JsonValue"];
+            context?: components["schemas"]["JsonValue"];
+            /** Occurred At */
+            occurred_at?: string | null;
+            /** Resolved At */
+            resolved_at?: string | null;
+            /** Resolution Note */
+            resolution_note?: string | null;
         };
         /** SystemErrorSummary */
         SystemErrorSummary: {
@@ -26657,6 +26722,26 @@ export interface components {
             field_id?: string | null;
             /** Expected Updated At */
             expected_updated_at?: string | null;
+        };
+        /** SystemErrorListResponse */
+        aidream__api__routers__admin_persistence__SystemErrorListResponse: {
+            /** Rows */
+            rows: components["schemas"]["SystemErrorSummary"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /** SystemErrorListResponse */
+        aidream__api__routers__admin_system_errors__SystemErrorListResponse: {
+            /** Errors */
+            errors: components["schemas"]["SystemErrorRecord"][];
+            /** Count */
+            count: number;
+            /** Filter Summary */
+            filter_summary: string;
         };
         /** WarmRequest */
         aidream__api__routers__agents__WarmRequest: {
@@ -33772,6 +33857,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CallTimelineResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recent_errors_admin_system_errors_recent_get: {
+        parameters: {
+            query?: {
+                /** @description ISO-8601 lower bound on occurred_at. Defaults to 6 hours ago. */
+                since?: string | null;
+                limit?: number;
+                /** @description Optional exact route filter, e.g. 'POST /assets'. */
+                route?: string | null;
+                /** @description Optional error_type filter, e.g. 'SvgRasterizerUnavailable'. */
+                error_type?: string | null;
+                /** @description When true, only rows with resolved_at IS NULL. */
+                unresolved_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__api__routers__admin_system_errors__SystemErrorListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_error_admin_system_errors__error_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                error_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemErrorRecord"];
                 };
             };
             /** @description Validation Error */
@@ -46699,7 +46854,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SystemErrorListResponse"];
+                    "application/json": components["schemas"]["aidream__api__routers__admin_persistence__SystemErrorListResponse"];
                 };
             };
             /** @description Validation Error */
