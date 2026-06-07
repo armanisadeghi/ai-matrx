@@ -41,7 +41,9 @@ import {
 export const DEFAULT_SUGGESTIONS_QUERY: KgSuggestionsQuery = {
   statuses: ["pending"],
   stage: "all",
-  sortBy: "created_at",
+  // Rank by confidence by default — the strongest proposals float to the top of
+  // each section (the user re-sorts via the column headers).
+  sortBy: "confidence",
   sortDir: "desc",
   page: 0,
   pageSize: 50,
@@ -53,7 +55,10 @@ export interface UseSuggestionsQueryResult {
   setQuery: (q: KgSuggestionsQuery) => void;
   /** Merge a patch; resets to page 0 unless the patch itself sets `page`. */
   patchQuery: (patch: Partial<KgSuggestionsQuery>) => void;
+  /** Main-table rows (heavy hitters excluded — they live in `heavyHitters`). */
   rows: KgEnrichedSuggestionRow[];
+  /** Heavy-hitter rows (recurring entity → new scope), confidence-ranked. */
+  heavyHitters: KgEnrichedSuggestionRow[];
   total: number;
   stats: KgSuggestionStat[];
   loading: boolean;
@@ -64,6 +69,11 @@ export interface UseSuggestionsQueryResult {
   defer: (id: string, note?: string | null) => Promise<void>;
   star: (id: string, starred: boolean) => Promise<void>;
   restore: (id: string) => Promise<void>;
+}
+
+/** Heavy hitters get their own section unless the user filters down to values. */
+function shouldShowHeavyHitters(q: KgSuggestionsQuery): boolean {
+  return (q.stage ?? "all") !== "value" && !q.matchKind;
 }
 
 function errMessage(e: unknown): string {
@@ -77,14 +87,22 @@ export function useSuggestionsQuery(
 
   const [query, setQuery] = useState<KgSuggestionsQuery>(initial);
   const [rows, setRows] = useState<KgEnrichedSuggestionRow[]>([]);
+  const [heavyHitters, setHeavyHitters] = useState<KgEnrichedSuggestionRow[]>(
+    [],
+  );
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<KgSuggestionStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
+  const heavyAbortRef = useRef<AbortController | null>(null);
   const rowsRef = useRef<KgEnrichedSuggestionRow[]>([]);
   rowsRef.current = rows;
+  const heavyRef = useRef<KgEnrichedSuggestionRow[]>([]);
+  heavyRef.current = heavyHitters;
+
+  const showHeavy = shouldShowHeavyHitters(query);
 
   const patchQuery = useCallback((patch: Partial<KgSuggestionsQuery>) => {
     setQuery((prev) => ({
@@ -95,30 +113,32 @@ export function useSuggestionsQuery(
     }));
   }, []);
 
-  // ── Fetch on query change (abortable, keeps prior rows visible) ──────────
+  // Stamp "seen" for freshly-loaded, still-unseen rows (best-effort).
+  const stampViewed = useCallback((loaded: KgEnrichedSuggestionRow[]) => {
+    const unseen = loaded.filter((r) => !r.viewed_at);
+    if (!unseen.length) return;
+    void markKgSuggestionsViewed(
+      unseen.map((r) => ({ id: r.id, stage: r.stage, viewed_at: r.viewed_at })),
+    );
+  }, []);
+
+  // ── Main table fetch (heavy hitters excluded) ────────────────────────────
   useEffect(() => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true);
     setError(null);
-    void queryScopeSuggestions(query, { signal: controller.signal })
+    void queryScopeSuggestions(query, {
+      signal: controller.signal,
+      excludeHeavyHitter: showHeavy,
+    })
       .then((res) => {
         if (controller.signal.aborted) return;
         setRows(res.rows);
         setTotal(res.total);
         setLoading(false);
-        // Stamp "seen" for the freshly-loaded, still-unseen rows (best-effort).
-        const unseen = res.rows.filter((r) => !r.viewed_at);
-        if (unseen.length) {
-          void markKgSuggestionsViewed(
-            unseen.map((r) => ({
-              id: r.id,
-              stage: r.stage,
-              viewed_at: r.viewed_at,
-            })),
-          );
-        }
+        stampViewed(res.rows);
       })
       .catch((e: unknown) => {
         if (controller.signal.aborted) return;
@@ -126,7 +146,38 @@ export function useSuggestionsQuery(
         setLoading(false);
       });
     return () => controller.abort();
-  }, [query]);
+  }, [query, showHeavy]);
+
+  // ── Heavy-hitter fetch (own section, confidence-ranked, no pagination) ────
+  useEffect(() => {
+    heavyAbortRef.current?.abort();
+    if (!showHeavy) {
+      setHeavyHitters([]);
+      return;
+    }
+    const controller = new AbortController();
+    heavyAbortRef.current = controller;
+    const heavyQuery: KgSuggestionsQuery = {
+      ...query,
+      stage: "association",
+      matchKind: "heavy_hitter",
+      sortBy: "confidence",
+      sortDir: "desc",
+      page: 0,
+      pageSize: 100,
+    };
+    void queryScopeSuggestions(heavyQuery, { signal: controller.signal })
+      .then((res) => {
+        if (controller.signal.aborted) return;
+        setHeavyHitters(res.rows);
+        stampViewed(res.rows);
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setHeavyHitters([]);
+      });
+    return () => controller.abort();
+  }, [query, showHeavy]);
 
   const loadStats = useCallback(() => {
     void fetchScopeSuggestionStats()
@@ -148,9 +199,19 @@ export function useSuggestionsQuery(
 
   const getRow = useCallback(
     (id: string): KgEnrichedSuggestionRow | undefined =>
-      rowsRef.current.find((r) => r.id === id),
+      rowsRef.current.find((r) => r.id === id) ??
+      heavyRef.current.find((r) => r.id === id),
     [],
   );
+
+  // Drop a decided row from whichever list holds it; only the main table tracks
+  // a paginated `total`, so decrement that only when the row was a main row.
+  const dropRow = useCallback((id: string) => {
+    const wasMain = rowsRef.current.some((r) => r.id === id);
+    setRows((prev) => prev.filter((r) => r.id !== id));
+    setHeavyHitters((prev) => prev.filter((r) => r.id !== id));
+    if (wasMain) setTotal((t) => Math.max(0, t - 1));
+  }, []);
 
   // ── Decisions ────────────────────────────────────────────────────────────
   // Optimistically drop the row, mirror busy state through the slice, then
@@ -167,8 +228,7 @@ export function useSuggestionsQuery(
       dispatch(setRowMutation({ id, mutation }));
       try {
         await fn(row);
-        setRows((prev) => prev.filter((r) => r.id !== id));
-        setTotal((t) => Math.max(0, t - 1));
+        dropRow(id);
         dispatch(removeFromLists({ id }));
         loadStats();
       } catch (e) {
@@ -176,7 +236,7 @@ export function useSuggestionsQuery(
         throw e;
       }
     },
-    [dispatch, getRow, loadStats],
+    [dispatch, dropRow, getRow, loadStats],
   );
 
   const accept = useCallback(
@@ -209,17 +269,19 @@ export function useSuggestionsQuery(
     async (id: string, starred: boolean) => {
       const row = getRow(id);
       if (!row) return;
-      // Optimistic flip; revert on failure.
-      setRows((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, is_starred: starred } : r)),
-      );
+      // Optimistic flip across whichever list holds the row; revert on failure.
+      const flip = (val: boolean) => {
+        const apply = (r: KgEnrichedSuggestionRow) =>
+          r.id === id ? { ...r, is_starred: val } : r;
+        setRows((prev) => prev.map(apply));
+        setHeavyHitters((prev) => prev.map(apply));
+      };
+      flip(starred);
       try {
         await setKgSuggestionStarred(row, starred);
         loadStats();
       } catch (e) {
-        setRows((prev) =>
-          prev.map((r) => (r.id === id ? { ...r, is_starred: !starred } : r)),
-        );
+        flip(!starred);
         throw e;
       }
     },
@@ -232,12 +294,11 @@ export function useSuggestionsQuery(
       if (!row) return;
       await restoreKgSuggestion(row);
       // Restored rows leave any non-pending filter; drop + reconcile.
-      setRows((prev) => prev.filter((r) => r.id !== id));
-      setTotal((t) => Math.max(0, t - 1));
+      dropRow(id);
       dispatch(removeFromLists({ id }));
       loadStats();
     },
-    [dispatch, getRow, loadStats],
+    [dispatch, dropRow, getRow, loadStats],
   );
 
   return {
@@ -245,6 +306,7 @@ export function useSuggestionsQuery(
     setQuery,
     patchQuery,
     rows,
+    heavyHitters,
     total,
     stats,
     loading,

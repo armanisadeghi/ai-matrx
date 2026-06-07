@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Clock,
   Lightbulb,
+  Network,
   RefreshCw,
   Star,
   X,
@@ -38,6 +39,7 @@ export function SuggestionsManager() {
     query,
     patchQuery,
     rows,
+    heavyHitters,
     total,
     stats,
     loading,
@@ -95,10 +97,44 @@ export function SuggestionsManager() {
     else toast.error(`${label}: ${ids.length - failed} done, ${failed} failed`);
   };
 
-  // ── Content ────────────────────────────────────────────────────────────
-  let content: React.ReactNode;
-  if (loading && rows.length === 0) {
-    content = (
+  const hasHeavy = heavyHitters.length > 0;
+
+  // The prominent "heavy hitter" section — suggested NEW scopes. They lead the
+  // page because the field suggestions below often depend on them.
+  const heavySection = hasHeavy ? (
+    <section className="border-b border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5">
+      <div className="flex items-center gap-1.5">
+        <Network className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-foreground">
+          Suggested scopes
+        </h2>
+        <span className="rounded-full bg-amber-500/20 px-1.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+          {heavyHitters.length}
+        </span>
+      </div>
+      <p className="mt-0.5 text-[11px] text-muted-foreground">
+        Recurring entities the system thinks deserve their own scope. Decide
+        these first — the field fills below attach to these scopes, so declining
+        one can make its dependent suggestions moot.
+      </p>
+      <div className="mt-2 grid gap-2 lg:grid-cols-2 2xl:grid-cols-3">
+        {heavyHitters.map((row) => (
+          <KgSuggestionRowItem
+            key={row.id}
+            row={row}
+            accept={accept}
+            reject={reject}
+            defer={defer}
+          />
+        ))}
+      </div>
+    </section>
+  ) : null;
+
+  // ── Main area (the "little stuff": field fills + plain links) ────────────
+  let mainArea: React.ReactNode;
+  if (loading && rows.length === 0 && !hasHeavy) {
+    mainArea = (
       <div className="space-y-2 p-3">
         {Array.from({ length: 8 }).map((_, i) => (
           <Skeleton key={i} className="h-10 w-full rounded-md" />
@@ -106,20 +142,22 @@ export function SuggestionsManager() {
       </div>
     );
   } else if (error) {
-    content = (
+    mainArea = (
       <div className="p-6 text-center text-sm text-destructive">
         Couldn&apos;t load suggestions: {error}
       </div>
     );
   } else if (rows.length === 0) {
-    content = (
-      <div className="py-16 text-center text-sm text-muted-foreground">
+    mainArea = (
+      <div className="py-12 text-center text-sm text-muted-foreground">
         <Lightbulb className="mx-auto mb-2 h-6 w-6 text-muted-foreground/60" />
-        No suggestions match these filters.
+        {hasHeavy
+          ? "No field suggestions — just the scopes above."
+          : "No suggestions match these filters."}
       </div>
     );
   } else if (isMobile) {
-    content = (
+    mainArea = (
       <div className="space-y-2 p-3 pb-safe">
         {rows.map((row) => (
           <KgSuggestionRowItem
@@ -133,24 +171,22 @@ export function SuggestionsManager() {
       </div>
     );
   } else {
-    content = (
-      <div className="overflow-x-auto">
-        <SuggestionsTable
-          rows={rows}
-          query={query}
-          patchQuery={patchQuery}
-          expandedId={expandedId}
-          onToggleExpand={toggleExpand}
-          selected={selected}
-          onToggleSelect={toggleSelect}
-          onToggleSelectAll={toggleSelectAll}
-          accept={accept}
-          reject={reject}
-          defer={defer}
-          star={star}
-          restore={restore}
-        />
-      </div>
+    mainArea = (
+      <SuggestionsTable
+        rows={rows}
+        query={query}
+        patchQuery={patchQuery}
+        expandedId={expandedId}
+        onToggleExpand={toggleExpand}
+        selected={selected}
+        onToggleSelect={toggleSelect}
+        onToggleSelectAll={toggleSelectAll}
+        accept={accept}
+        reject={reject}
+        defer={defer}
+        star={star}
+        restore={restore}
+      />
     );
   }
 
@@ -228,8 +264,23 @@ export function SuggestionsManager() {
         </div>
       ) : null}
 
-      {/* Scroll body */}
-      <div className="flex-1 min-h-0 overflow-y-auto">{content}</div>
+      {/* Scroll body — heavy hitters lead; the table owns the vertical scroll so
+          its header stays sticky. On mobile everything shares one scroll area. */}
+      {isMobile ? (
+        <div className="flex-1 min-h-0 overflow-auto">
+          {heavySection}
+          {mainArea}
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col">
+          {hasHeavy ? (
+            <div className="max-h-[45%] shrink-0 overflow-y-auto">
+              {heavySection}
+            </div>
+          ) : null}
+          <div className="min-h-0 flex-1 overflow-auto">{mainArea}</div>
+        </div>
+      )}
 
       {/* Pagination footer */}
       <div className="flex items-center justify-between border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground pb-safe">

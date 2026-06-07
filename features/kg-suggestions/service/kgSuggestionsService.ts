@@ -468,7 +468,7 @@ function sanitizeSearch(term: string): string {
  */
 export async function queryScopeSuggestions(
   q: KgSuggestionsQuery,
-  opts: { signal?: AbortSignal } = {},
+  opts: { signal?: AbortSignal; excludeHeavyHitter?: boolean } = {},
 ): Promise<KgEnrichedListResult> {
   requireUserId();
 
@@ -478,6 +478,11 @@ export async function queryScopeSuggestions(
 
   if (q.statuses && q.statuses.length > 0) {
     query = query.in("status", q.statuses);
+  }
+  // Heavy-hitter rows (recurring entity → NEW scope) are pulled into their own
+  // prominent section, so the main table excludes them.
+  if (opts.excludeHeavyHitter) {
+    query = query.not("match_kind", "eq", "heavy_hitter");
   }
   if (q.stage && q.stage !== "all") query = query.eq("stage", q.stage);
   if (q.orgId) query = query.eq("organization_id", q.orgId);

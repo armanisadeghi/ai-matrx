@@ -386,6 +386,17 @@ end-to-end runtime needs NER to produce live rows in both ledgers.
   `scopesService.setContextValue`'s envelope decode (the `set_context_value` RPC
   is now generated as `Returns: Json` → `unknown`; decode via an optional-field
   shape, not a discriminated-union cast that doesn't narrow off `unknown`).
+- `2026-06-08` — **Manager: heavy-hitter section + confidence ranking + sticky
+  header + split Type/Scope columns.** `useSuggestionsQuery` now runs two reads:
+  the main table (heavy hitters excluded via a new `excludeHeavyHitter` option on
+  `queryScopeSuggestions`) and a separate confidence-ranked heavy-hitter fetch
+  (forced `stage=association` + `match_kind=heavy_hitter`, no pagination), exposed
+  as `heavyHitters`. Default sort is now `confidence desc`. Decisions/star/restore
+  reconcile across both lists (`dropRow`, dual-list star flip). The manager pins a
+  prominent "Suggested scopes" section above a single `overflow-auto` table
+  container — heavy hitters lead the page (and carry a note that field fills depend
+  on them), and the table's `<thead>` now actually sticks. `SuggestionsTable`
+  splits the stacked scope cell into separate `Type` | `Scope` columns.
 - `2026-06-07` — **Migrated to direct-Supabase (API deleted).** The aidream
   `/api/kg-suggestions` HTTP API was removed; aidream is now a pure producer.
   Migration `kg_013` split the suggestions into two RLS-scoped ledgers —

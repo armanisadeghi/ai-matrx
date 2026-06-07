@@ -62,7 +62,7 @@ export interface SuggestionsTableProps {
   restore: (id: string) => Promise<void>;
 }
 
-const COL_COUNT = 10;
+const COL_COUNT = 11;
 
 export function SuggestionsTable({
   rows,
@@ -104,6 +104,7 @@ export function SuggestionsTable({
               />
             </th>
             <th className="w-7 px-1 py-1.5" />
+            <th className="px-2 py-1.5 font-medium">Type</th>
             <SortHead
               label="Scope"
               field="scope_name"
@@ -274,6 +275,19 @@ function SuggestionTableRow({
           </button>
         </td>
         <td className="px-2 py-1.5">
+          <div className="flex items-center gap-1 text-muted-foreground">
+            {row.scopeTypeIcon ? (
+              <ScopeGlyph
+                icon={row.scopeTypeIcon}
+                className="h-3 w-3 shrink-0"
+              />
+            ) : null}
+            <span className="truncate max-w-[8rem]">
+              {row.scopeTypeLabel ?? "—"}
+            </span>
+          </div>
+        </td>
+        <td className="px-2 py-1.5">
           <div className="flex items-center gap-1">
             {unseen ? (
               <span
@@ -281,21 +295,10 @@ function SuggestionTableRow({
                 aria-label="New"
               />
             ) : null}
-            {row.scopeTypeIcon ? (
-              <ScopeGlyph
-                icon={row.scopeTypeIcon}
-                className="h-3 w-3 text-muted-foreground shrink-0"
-              />
-            ) : null}
             <span className="font-medium text-foreground truncate max-w-[10rem]">
               {row.scopeName ?? "—"}
             </span>
           </div>
-          {row.scopeTypeLabel ? (
-            <div className="text-[10px] text-muted-foreground truncate max-w-[10rem]">
-              {row.scopeTypeLabel}
-            </div>
-          ) : null}
         </td>
         <td className="px-2 py-1.5 text-foreground/90 truncate max-w-[9rem]">
           {fieldLabel}
