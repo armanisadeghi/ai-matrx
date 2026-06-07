@@ -1,4 +1,4 @@
-// app/(core)/knowledge-graph/KnowledgeGraphClient.tsx
+// app/(core)/knowledge/graph/KnowledgeGraphClient.tsx
 //
 // Client shell for the org-wide knowledge graph.
 //
@@ -36,7 +36,11 @@ export function KnowledgeGraphClient({
 
   useEffect(() => {
     let cancelled = false;
+    // Syncing local state to the URL param is the legitimate use case
+    // the rule warns about — these synchronous setStates aren't a
+    // cascading render trigger.
     if (!orgParam) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResolvedOrgId(null);
       setResolving(false);
       return;

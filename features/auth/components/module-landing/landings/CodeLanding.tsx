@@ -115,7 +115,7 @@ export default function CodeLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Code where your agents code"
       finalCtaDescription="A workspace where humans and agents both contribute, both leave a trail. Free to start, no credit card."
-      relatedModules={["/sandbox", "/agents", "/rag/data-stores"]}
+      relatedModules={["/sandbox", "/agents", "/knowledge"]}
     />
   );
 }

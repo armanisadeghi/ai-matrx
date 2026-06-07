@@ -18,6 +18,7 @@ import {
   FlaskConical,
   Aperture,
   FileSpreadsheet,
+  Network,
 } from "lucide-react";
 
 /**
@@ -98,10 +99,18 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
   },
   {
     label: "Knowledge",
-    href: "/rag/data-stores",
+    href: "/knowledge",
     icon: Database,
     teaser:
       "Typed data stores for retrieval — hybrid search, cited answers, scoped permissions.",
+    group: "Knowledge & Data",
+  },
+  {
+    label: "Knowledge Graph",
+    href: "/knowledge/graph",
+    icon: Network,
+    teaser:
+      "A live map of every entity and relationship across your org's content — drillable to source, agent-callable.",
     group: "Knowledge & Data",
   },
   {

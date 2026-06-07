@@ -170,7 +170,7 @@ export default function NotesLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Stop losing the good ideas"
       finalCtaDescription="A note system that captures fast, organizes with context, and powers your agents. Free to start, no credit card."
-      relatedModules={["/chat", "/tasks", "/rag/data-stores"]}
+      relatedModules={["/chat", "/tasks", "/knowledge"]}
     />
   );
 }

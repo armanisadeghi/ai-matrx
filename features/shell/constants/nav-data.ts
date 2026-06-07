@@ -351,14 +351,19 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "cyan",
   },
   {
+    // Knowledge umbrella. Authed users jump straight to the live
+    // workspace at `/rag/data-stores`; guests hit `/knowledge` (the
+    // KnowledgeShowcasePage — an informational map of the system, no
+    // auth required). `/knowledge/graph` is the graph sub-route.
     label: "Knowledge",
     href: "/rag/data-stores",
+    guestHref: "/knowledge",
     iconName: "Database",
     section: "primary",
     profileMenu: true,
     dashboard: true,
     description:
-      "Documents, data stores, and RAG search across your indexed content",
+      "Documents, data stores, RAG search, and the org-wide knowledge graph",
     color: "amber",
     children: [
       {
@@ -380,6 +385,11 @@ export const primaryNavItems: ShellNavItem[] = [
         label: "Repositories",
         href: "/rag/repositories",
         iconName: "Code2",
+      },
+      {
+        label: "Knowledge Graph",
+        href: "/knowledge/graph",
+        iconName: "Network",
       },
     ],
   },
