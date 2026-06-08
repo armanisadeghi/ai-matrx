@@ -125,6 +125,7 @@ function ColumnGroup({ columns }: { columns: ModelColumnType[] }) {
           column={col}
           defaultSize={equalSize}
           showHandle={idx > 0}
+          isBaseline={idx === 0}
         />
       ))}
     </ResizablePanelGroup>
@@ -135,10 +136,12 @@ function ColumnSegment({
   column,
   defaultSize,
   showHandle,
+  isBaseline,
 }: {
   column: ModelColumnType;
   defaultSize: string;
   showHandle: boolean;
+  isBaseline: boolean;
 }) {
   const dispatch = useAppDispatch();
   const panelRef = useRef<PanelImperativeHandle>(null);
@@ -177,7 +180,7 @@ function ColumnSegment({
         <ModelColumn
           column={column}
           onToggleCollapse={handleToggleCollapse}
-          isBaseline={idx === 0}
+          isBaseline={isBaseline}
         />
       </ResizablePanel>
     </>
