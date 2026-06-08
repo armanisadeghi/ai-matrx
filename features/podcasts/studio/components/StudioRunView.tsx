@@ -129,14 +129,33 @@ export function StudioRunView({ runId }: { runId: string }) {
             </div>
           )}
           {isError && (
-            <div className="flex items-start gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-              <div>
-                <p className="font-medium">Generation hit an error</p>
-                {state.error && (
-                  <p className="mt-0.5 text-destructive/80">{state.error}</p>
-                )}
+            <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+                <div>
+                  <p className="font-medium">Generation hit an error</p>
+                  {state.error && (
+                    <p className="mt-0.5 text-destructive/80">{state.error}</p>
+                  )}
+                  {canReconnect && (
+                    <p className="mt-0.5 text-destructive/70">
+                      Resume picks up from the failed step — finished work isn&apos;t
+                      redone.
+                    </p>
+                  )}
+                </div>
               </div>
+              {canReconnect && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={reconnect}
+                  className="shrink-0 gap-1.5 border-destructive/40"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Resume
+                </Button>
+              )}
             </div>
           )}
           {isRunning && !streaming && (

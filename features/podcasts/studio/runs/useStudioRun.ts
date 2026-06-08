@@ -129,6 +129,9 @@ export function useStudioRun(runId: string): UseStudioRun {
       } else if (raw.type === "podcast_complete") {
         const c = raw as PodcastCompleteEvent;
         completedRef.current = true;
+        // A failed finish is still RESUMABLE — the backend re-runs only the
+        // failed/missing stage on /resume. Offer a manual Resume.
+        if (!c.success) setCanReconnect(!!backendRunIdRef.current);
         persist({
           status: c.success ? "completed" : "failed",
           title: c.title || "",
@@ -177,7 +180,11 @@ export function useStudioRun(runId: string): UseStudioRun {
         });
         setStartedAt(Date.now());
       } else {
-        setState((s) => (s.status === "running" ? s : { ...s, status: "running" }));
+        // Resuming: the backend replays the full event stream (completed stages
+        // fast), re-running only the failed/missing tail — so clear the terminal
+        // flag and show "running" again.
+        completedRef.current = false;
+        setState((s) => ({ ...s, status: "running", error: null }));
         setStartedAt((p) => p ?? Date.now());
       }
 
@@ -192,11 +199,13 @@ export function useStudioRun(runId: string): UseStudioRun {
           {
             onData: (d) => onData(d as PodcastDataEvent),
             onError: (d) => {
-              // A real backend error event — not a transient drop. Stop.
+              // A real backend error event — not a transient drop. Stop, but the
+              // run is still RESUMABLE: /resume re-runs the failed stage.
               completedRef.current = true;
               const message = d.user_message ?? d.message ?? "Stream error";
               setState((s) => ({ ...s, status: "error", error: message }));
               persist({ status: "failed", error: message });
+              setCanReconnect(!!backendRunIdRef.current);
             },
             onEnd: () => {
               setState((s) => {
@@ -267,6 +276,10 @@ export function useStudioRun(runId: string): UseStudioRun {
       } else if (row.status === "running" && backendRunIdRef.current) {
         // Returned to an interrupted run — reconnect and continue.
         void runStream("resume");
+      } else if (row.status === "failed" && backendRunIdRef.current) {
+        // A failed run with a checkpoint can be resumed from the failed stage —
+        // offer it manually (don't auto-retry a run the backend already failed).
+        setCanReconnect(true);
       } else if (row.status === "running") {
         // Running but no checkpoint id captured (dropped very early) — show the
         // interrupted state; nothing to resume from.
