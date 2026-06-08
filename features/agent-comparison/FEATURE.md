@@ -164,6 +164,7 @@ attributable to this page in analytics.
   display now reaches every battle mode automatically; no second display system
   to keep in sync.
 - 2026-05-17 — Initial scaffold (Phase 1).
+- 2026-06-07 — **Model mode baseline column:** picking a locked agent auto-adds the first column pre-filled with that agent's default model (via instance `baseSettings`, not a redundant override). `ModelColumnHeader` baseline column falls back to the agent model in the picker; `SmartModelSelect` accepts `priorityValues` to pin the default at the top of the dropdown.
 - 2026-05-24 — Added **Variations** mode (`/agents/battle/variations`): start
   from a template agent, edit the FULL agent definition per variation in a
   tabbed floating editor window (reuses the Agent Builder's `AgentBuilderLeftPanel`),

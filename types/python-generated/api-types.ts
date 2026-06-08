@@ -3982,6 +3982,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent-factory/build": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build One
+         * @description Non-streaming build of exactly one agent. Convenience for the script /
+         *     integration tests; the streaming variant below is the FE path.
+         */
+        post: operations["build_one_agent_factory_build_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-factory/build-stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build Stream Endpoint
+         * @description Streaming build of one or more agents. Emits `BuildEvent`s to the FE.
+         */
+        post: operations["build_stream_endpoint_agent_factory_build_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/tools": {
         parameters: {
             query?: never;
@@ -7061,74 +7102,6 @@ export interface paths {
         get: operations["batch_detail_kg_cost_batches__batch_row_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/kg-suggestions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Suggestions */
-        get: operations["list_suggestions_kg_suggestions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/kg-suggestions/{suggestion_id}/accept": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Accept Suggestion */
-        post: operations["accept_suggestion_kg_suggestions__suggestion_id__accept_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/kg-suggestions/{suggestion_id}/reject": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reject Suggestion */
-        post: operations["reject_suggestion_kg_suggestions__suggestion_id__reject_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/kg-suggestions/{suggestion_id}/defer": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Defer Suggestion */
-        post: operations["defer_suggestion_kg_suggestions__suggestion_id__defer_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12048,29 +12021,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AcceptResponse */
-        AcceptResponse: {
-            suggestion: components["schemas"]["SuggestionRow"];
-            value: components["schemas"]["AcceptedValue"];
-        };
-        /**
-         * AcceptedValue
-         * @description The scope-item cell value written when a suggestion is accepted.
-         */
-        AcceptedValue: {
-            /** Id */
-            id: string;
-            /** Context Item Id */
-            context_item_id: string;
-            /** Scope Id */
-            scope_id: string;
-            /** Version */
-            version: number;
-            /** Value Text */
-            value_text: string | null;
-            /** Source Type */
-            source_type: string;
-        };
         /** ActivePageIdsResponse */
         ActivePageIdsResponse: {
             /** File Id */
@@ -13719,6 +13669,46 @@ export interface components {
             quota_bytes: number;
             /** Files Count */
             files_count: number;
+        };
+        /** BuildOnceResponse */
+        BuildOnceResponse: {
+            /** Name */
+            name: string;
+            /** Agent Id */
+            agent_id: string;
+            /** Version Id */
+            version_id: string;
+            /** Runner Path */
+            runner_path: string;
+            /** Spec Path */
+            spec_path: string;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+        };
+        /**
+         * BuildRequest
+         * @description Body for `POST /agent-factory/build`.
+         *
+         *     Three trigger modes (callers pick one):
+         *       * `names` — list of `internal_agents/<name>.md` specs to build
+         *       * `name` (alone) — single spec to build
+         *       * `name` + `contents` — write the spec file first, then build
+         */
+        BuildRequest: {
+            /** Names */
+            names?: string[];
+            /** Name */
+            name?: string | null;
+            /** Contents */
+            contents?: string | null;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
         };
         /** BulkCandidateAction */
         BulkCandidateAction: {
@@ -15991,13 +15981,6 @@ export interface components {
             updated_at?: components["schemas"]["JsonValue"] | null;
         } & {
             [key: string]: unknown;
-        };
-        /**
-         * DecisionResponse
-         * @description Returned by reject / defer — the updated suggestion.
-         */
-        DecisionResponse: {
-            suggestion: components["schemas"]["SuggestionRow"];
         };
         /** DedupResponse */
         DedupResponse: {
@@ -18321,50 +18304,6 @@ export interface components {
             embeddings_in_scope: number;
             /** Distinct Sources */
             distinct_sources: number;
-        };
-        /**
-         * HeavyHitterAcceptPlan
-         * @description Returned when a ``heavy_hitter`` suggestion is accepted. Heavy-hitter
-         *     acceptance CREATES A NEW SCOPE (not a cell value), and scope creation is a
-         *     frontend-owned write path (React → Supabase direct, per the scopes
-         *     invariant). The backend cannot safely hand-roll scope creation without
-         *     forking that mutation path, so it returns this typed plan and flips the
-         *     suggestion to ``accepted``; the FE drives scope creation + source tagging in
-         *     Phase F.
-         *
-         *     ``entity_kind`` maps to the scope-type the FE should offer (e.g.
-         *     organization → a Client/Org scope). ``sources`` are the mentions to tag to
-         *     the new scope via ctx_scope_assignments once it exists.
-         */
-        HeavyHitterAcceptPlan: {
-            /**
-             * Kind
-             * @default heavy_hitter_plan
-             * @constant
-             */
-            kind: "heavy_hitter_plan";
-            suggestion: components["schemas"]["SuggestionRow"];
-            /** Entity Id */
-            entity_id: string;
-            /** Entity Kind */
-            entity_kind: string;
-            /** Suggested Scope Name */
-            suggested_scope_name: string;
-            /** Sources */
-            sources: components["schemas"]["HeavyHitterSource"][];
-        };
-        /**
-         * HeavyHitterSource
-         * @description One source the heavy-hitter entity was mentioned in — the FE tags each of
-         *     these to the newly-created scope via ctx_scope_assignments after creation.
-         */
-        HeavyHitterSource: {
-            /** Source Kind */
-            source_kind: string;
-            /** Source Id */
-            source_id: string;
-            /** Mention Count */
-            mention_count: number;
         };
         /** HideRequest */
         HideRequest: {
@@ -24518,83 +24457,6 @@ export interface components {
             use_user_agent_overrides: boolean;
             /** Topic Id */
             topic_id?: string | null;
-        };
-        /**
-         * SuggestionEntity
-         * @description The KG entity a suggestion points at.
-         */
-        SuggestionEntity: {
-            /** Id */
-            id: string | null;
-            /** Kind */
-            kind?: string | null;
-            /** Name */
-            name?: string | null;
-        };
-        /**
-         * SuggestionRow
-         * @description One suggestion as returned to the owning user.
-         */
-        SuggestionRow: {
-            /** Id */
-            id: string;
-            /** Source Kind */
-            source_kind: string;
-            /** Source Id */
-            source_id: string;
-            entity: components["schemas"]["SuggestionEntity"];
-            target: components["schemas"]["SuggestionTarget"];
-            /** Suggested Value */
-            suggested_value: string | null;
-            /**
-             * Match Kind
-             * @enum {string}
-             */
-            match_kind: "exact" | "fuzzy" | "semantic" | "heavy_hitter";
-            /** Confidence */
-            confidence: number;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "pending" | "accepted" | "rejected" | "deferred" | "expired";
-            /** Context Snippet */
-            context_snippet?: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Decided At */
-            decided_at?: string | null;
-            /** Suppressed Until */
-            suppressed_until?: string | null;
-        };
-        /**
-         * SuggestionTarget
-         * @description The scope-item slot a suggestion proposes to fill.
-         */
-        SuggestionTarget: {
-            /** Scope Id */
-            scope_id: string | null;
-            /** Scope Item Id */
-            scope_item_id: string | null;
-            /** Slot Name */
-            slot_name: string | null;
-        };
-        /**
-         * SuggestionsPage
-         * @description Paginated suggestion list.
-         */
-        SuggestionsPage: {
-            /** Suggestions */
-            suggestions: components["schemas"]["SuggestionRow"][];
-            /** Total */
-            total: number;
-            /** Limit */
-            limit: number;
-            /** Offset */
-            offset: number;
         };
         /**
          * SupabaseAuthWebhookPayload
@@ -33940,6 +33802,72 @@ export interface operations {
             };
         };
     };
+    build_one_agent_factory_build_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuildRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuildOnceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_stream_endpoint_agent_factory_build_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuildRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_admin_tools_get: {
         parameters: {
             query?: never;
@@ -39978,135 +39906,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BatchDetailResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_suggestions_kg_suggestions_get: {
-        parameters: {
-            query?: {
-                status?: string;
-                scope_item_id?: string | null;
-                source_kind?: string | null;
-                source_id?: string | null;
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SuggestionsPage"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    accept_suggestion_kg_suggestions__suggestion_id__accept_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                suggestion_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptResponse"] | components["schemas"]["HeavyHitterAcceptPlan"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reject_suggestion_kg_suggestions__suggestion_id__reject_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                suggestion_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DecisionResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    defer_suggestion_kg_suggestions__suggestion_id__defer_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                suggestion_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DecisionResponse"];
                 };
             };
             /** @description Validation Error */

@@ -23,9 +23,12 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
+import { selectModelOptions } from "@/features/ai-models/redux/modelRegistrySlice";
 import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
-import { selectModelById } from "@/features/ai-models/redux/modelRegistrySlice";
-import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
+import {
+  resetOverride,
+  setOverrides,
+} from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { renameModelColumn } from "../redux/slice";
 import { removeColumnFromModelBattle } from "../redux/thunks";
@@ -34,9 +37,15 @@ import type { ModelColumn } from "../types";
 interface Props {
   column: ModelColumn;
   onToggleCollapse: () => void;
+  /** First column — falls back to the agent's default model when unset. */
+  isBaseline?: boolean;
 }
 
-export function ModelColumnHeader({ column, onToggleCollapse }: Props) {
+export function ModelColumnHeader({
+  column,
+  onToggleCollapse,
+  isBaseline = false,
+}: Props) {
   const dispatch = useAppDispatch();
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(column.label);
@@ -60,12 +69,17 @@ export function ModelColumnHeader({ column, onToggleCollapse }: Props) {
   const overrideState = useAppSelector(
     selectInstanceOverrideState(column.conversationId),
   );
+  const options = useAppSelector(selectModelOptions);
   const overrides = (overrideState?.overrides ?? {}) as Record<string, unknown>;
-  const modelOverrideId =
+  const baseModel =
+    typeof overrideState?.baseSettings?.model === "string"
+      ? overrideState.baseSettings.model
+      : null;
+  const overrideModel =
     typeof overrides.model === "string" ? overrides.model : null;
-  const modelRow = useAppSelector((s) =>
-    modelOverrideId ? selectModelById(s, modelOverrideId) : undefined,
-  );
+  const displayModel = isBaseline
+    ? (overrideModel ?? baseModel)
+    : overrideModel;
 
   const commitLabel = () => {
     const trimmed = labelDraft.trim();
@@ -85,17 +99,23 @@ export function ModelColumnHeader({ column, onToggleCollapse }: Props) {
   };
 
   const handleModelChange = (modelId: string) => {
-    dispatch(
-      setOverrides({
-        conversationId: column.conversationId,
-        changes: { model: modelId },
-      }),
-    );
+    if (baseModel && modelId === baseModel) {
+      dispatch(
+        resetOverride({ conversationId: column.conversationId, key: "model" }),
+      );
+    } else {
+      dispatch(
+        setOverrides({
+          conversationId: column.conversationId,
+          changes: { model: modelId },
+        }),
+      );
+    }
     // Auto-rename the column to the model's display name on first pick,
     // unless the user has already given it a custom label.
     if (column.label.startsWith("Model ")) {
       const friendly =
-        modelRow?.common_name ?? modelRow?.name ?? modelId.slice(0, 20);
+        options.find((o) => o.value === modelId)?.label ?? modelId.slice(0, 20);
       dispatch(
         renameModelColumn({ columnId: column.columnId, label: friendly }),
       );
@@ -209,10 +229,11 @@ export function ModelColumnHeader({ column, onToggleCollapse }: Props) {
         </span>
         <div className="flex-1 min-w-0">
           <SmartModelSelect
-            value={modelOverrideId}
+            value={displayModel}
             onValueChange={handleModelChange}
             placeholder="Pick a model..."
             className="!h-7 !text-[11px]"
+            priorityValues={baseModel ? [baseModel] : undefined}
           />
         </div>
       </div>

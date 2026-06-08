@@ -40,6 +40,21 @@ interface SmartModelSelectProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  /** Model IDs to pin at the top of the dropdown (e.g. the agent default). */
+  priorityValues?: string[];
+}
+
+function orderOptionsWithPriority<T extends { value: string; label: string }>(
+  options: T[],
+  priorityValues?: string[],
+): T[] {
+  if (!priorityValues?.length) return options;
+  const prioritySet = new Set(priorityValues);
+  const pinned = priorityValues
+    .map((id) => options.find((o) => o.value === id))
+    .filter((o): o is T => o != null);
+  const rest = options.filter((o) => !prioritySet.has(o.value));
+  return [...pinned, ...rest];
 }
 
 export function SmartModelSelect({
@@ -48,9 +63,11 @@ export function SmartModelSelect({
   placeholder = "Select a model...",
   disabled = false,
   className,
+  priorityValues,
 }: SmartModelSelectProps) {
   const dispatch = useAppDispatch();
   const options = useAppSelector(selectModelOptions);
+  const orderedOptions = orderOptionsWithPriority(options, priorityValues);
   const isLoading = useAppSelector(selectModelRegistryLoading);
 
   useEffect(() => {
@@ -89,7 +106,7 @@ export function SmartModelSelect({
         </SelectValue>
       </SelectTrigger>
       <SelectContent className="max-h-[400px]">
-        {options.map((opt) => (
+        {orderedOptions.map((opt) => (
           <SelectItem key={opt.value} value={opt.value} className="text-xs">
             {opt.label}
           </SelectItem>

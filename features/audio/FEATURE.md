@@ -76,7 +76,7 @@ All transcription surfaces (window panels above, all 4 Transcript Studio columns
 
 - Audio assets — Supabase Storage + row references
 - TTS jobs — may or may not persist (streaming often ephemeral)
-- Podcasts — episode table with metadata, audio asset references
+- Podcasts — `pc_episodes` with metadata, audio asset references, and nullable `user_id` (creator ownership)
 
 Verify exact schemas in Supabase before extending.
 
@@ -143,6 +143,7 @@ All in-app Cartesia text-to-speech routes through **`lib/cartesia/config.ts`** �
 
 ## Change log
 
+- `2026-06-07` — `pc_episodes.user_id` migration: episode ownership FK to `auth.users`; admin `createEpisode` stamps auth user; added `fetchEpisodesByUser`.
 - `2026-05-23` — Audio modal consolidated onto the canonical TTS system. `components/audio/AudioModal.tsx` now auto-plays via `useCartesiaSpeaker` (through `SpeakerGroupCore`) instead of the old per-modal `TextToSpeechPlayer`; the modal is `next/dynamic` and driven by a single global `<AudioModalHost />` (replaces the never-mounted `AudioModalProvider`, which left flashcard read-aloud broken). Deleted dead/duplicate trash: `components/audio/TextToSpeechPlayer.tsx`, `hooks/tts/TextToSpeechPlayer.tsx`, `components/audio/example-usage.tsx`, `components/audio/QuickAudioHelp.tsx`, `hooks/tts/useAudioExplanation.ts`, and the demo routes `app/(authenticated)/flash-cards/audio/**` + `app/(authenticated)/flash-cards/modal-test/**`. Flashcard UI unchanged.
 - `2026-05-26` — Renamed `voicePadAi` overlay → `transcriptionCleanup` (slug `transcription-cleanup`, component `TranscriptionCleanup.tsx` under `components/official-candidate/transcription-cleanup/`). Renamed `/transcription/mobile` route → `/transcription/scribe` (component `ScribeScreen.tsx` under `features/transcript-studio/components/scribe/`); legacy `/transcription/mobile/*` 308-redirects to `/transcription/scribe/*` via `next.config.js`.
 - `2026-05-23` — TTS consolidated onto `lib/cartesia/config.ts` (Sonic 3.5 + `2026-03-01` + `generation_config`). Migrated `useCartesiaSpeaker`, `useCartesiaStreamingSpeaker`, `useCartesia`, and `hooks/tts/simple/*` off hardcoded models/buffers/`experimentalControls`; default voices Skylar/Daniel via `resolveVoiceId(purpose)`; user voice/speed prefs respected everywhere. Mobile transcript studio moved to real per-session routes (`/transcription/scribe/[sessionId]`, `/unsorted`).

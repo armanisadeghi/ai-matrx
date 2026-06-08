@@ -7,7 +7,7 @@ Podcast sharing system with public shareable pages and an admin management UI.
 Both tables are prefixed `pc_` (podcast module). RLS: public SELECT, authenticated-only INSERT/UPDATE/DELETE.
 
 - **`pc_shows`** — podcast series/channels (title, slug, description, image_url, author, is_published)
-- **`pc_episodes`** — individual audio episodes (slug, show_id FK nullable, audio_url, image_url, video_url, display_mode, episode_number, duration_seconds, is_published)
+- **`pc_episodes`** — individual audio episodes (slug, show_id FK nullable, user_id FK nullable → auth.users, audio_url, image_url, video_url, display_mode, episode_number, duration_seconds, is_published). `user_id` attributes creator ownership for generated and admin-created episodes; nullable for legacy rows.
 
 Cross-table slug uniqueness is enforced via DB triggers — a slug cannot exist in both tables simultaneously.
 

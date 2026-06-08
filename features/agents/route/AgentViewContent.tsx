@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentById,
   selectAgentDefinition,
@@ -19,7 +19,15 @@ import {
   selectAgentOutputSchema,
   selectAgentChangeNote,
 } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchAgentVersionHistory } from "@/features/agents/redux/agent-definition/thunks";
+import { selectCategoryById } from "@/features/agents/redux/agent-shortcut-categories/selectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import {
+  selectModelLabelById,
+  fetchModelOptions,
+} from "@/features/ai-models/redux/modelRegistrySlice";
+import { isUuid } from "@/features/scope-system/utils/slugify";
+import { supabase } from "@/utils/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,6 +60,7 @@ import type { AgentDefinitionMessage } from "@/features/agents/types/agent-messa
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
+import { SystemAgentCopyForAiMenu } from "@/features/agents/route/SystemAgentCopyForAiMenu";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
   if (!msg.content || !Array.isArray(msg.content)) return "";
@@ -78,6 +87,39 @@ function RoleBadge({ role }: { role: string }) {
     >
       {role}
     </span>
+  );
+}
+
+function CopyableIdRow({
+  label,
+  value,
+  copyKey,
+  copied,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  copyKey: string;
+  copied: string | null;
+  onCopy: (key: string, text: string, message: string) => void;
+}) {
+  return (
+    <div className="inline-flex items-center gap-1.5 text-xs min-w-0">
+      <span className="text-muted-foreground shrink-0">{label}:</span>
+      <button
+        type="button"
+        onClick={() => onCopy(copyKey, value, `${label} copied`)}
+        className="group inline-flex items-center gap-1 font-mono text-foreground/90 hover:text-foreground transition-colors min-w-0"
+        title={`Copy ${label}`}
+      >
+        <span className="truncate">{value}</span>
+        {copied === copyKey ? (
+          <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+        ) : (
+          <Copy className="w-3 h-3 opacity-60 group-hover:opacity-100 shrink-0" />
+        )}
+      </button>
+    </div>
   );
 }
 
@@ -159,15 +201,105 @@ function MessageCard({ role, content }: { role?: string; content: string }) {
 }
 
 export function AgentViewContent({ agentId }: { agentId: string }) {
+  const dispatch = useAppDispatch();
   const [mounted, setMounted] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("pretty");
   const [copied, setCopied] = useState<string | null>(null);
+  const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
+  const [categoryLabel, setCategoryLabel] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    dispatch(fetchModelOptions());
+  }, [dispatch]);
 
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
+  const category = useAppSelector((state) =>
+    selectAgentCategory(state, agentId),
+  );
+  const categoryRecord = useAppSelector((state) =>
+    category && isUuid(category)
+      ? selectCategoryById(state, category)
+      : undefined,
+  );
+
+  const liveAgentId = agent
+    ? agent.isVersion
+      ? (agent.parentAgentId ?? agentId)
+      : agent.id
+    : agentId;
+
+  useEffect(() => {
+    if (!agent) {
+      setCurrentVersionId(null);
+      return;
+    }
+
+    if (agent.isVersion) {
+      setCurrentVersionId(agent.id);
+      return;
+    }
+
+    if (agent.version == null) {
+      setCurrentVersionId(null);
+      return;
+    }
+
+    let cancelled = false;
+    dispatch(fetchAgentVersionHistory({ agentId: liveAgentId, limit: 100 }))
+      .unwrap()
+      .then((items) => {
+        if (cancelled) return;
+        const current = items.find(
+          (item) => item.version_number === agent.version,
+        );
+        setCurrentVersionId(current?.version_id ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setCurrentVersionId(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [agent, dispatch, liveAgentId]);
+
+  useEffect(() => {
+    if (!category) {
+      setCategoryLabel(null);
+      return;
+    }
+
+    if (!isUuid(category)) {
+      setCategoryLabel(category);
+      return;
+    }
+
+    if (categoryRecord?.label) {
+      setCategoryLabel(categoryRecord.label);
+      return;
+    }
+
+    let cancelled = false;
+    supabase
+      .from("shortcut_categories")
+      .select("label")
+      .eq("id", category)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data?.label) {
+          setCategoryLabel(category);
+          return;
+        }
+        setCategoryLabel(data.label);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [category, categoryRecord?.label]);
+
   const definition = useAppSelector((state) =>
     selectAgentDefinition(state, agentId),
   );
@@ -188,11 +320,11 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
     selectAgentContextSlots(state, agentId),
   );
   const modelId = useAppSelector((state) => selectAgentModelId(state, agentId));
+  const modelLabel = useAppSelector((state) =>
+    selectModelLabelById(state, modelId ?? null),
+  );
   const version = useAppSelector((state) => selectAgentVersion(state, agentId));
   const tags = useAppSelector((state) => selectAgentTags(state, agentId));
-  const category = useAppSelector((state) =>
-    selectAgentCategory(state, agentId),
-  );
   const mcpServers = useAppSelector((state) =>
     selectAgentMcpServers(state, agentId),
   );
@@ -270,6 +402,11 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
               )}
               Copy JSON
             </Button>
+            <SystemAgentCopyForAiMenu
+              agentId={agentId}
+              liveAgentId={liveAgentId}
+              currentVersionId={currentVersionId}
+            />
             {allowJsonView && (
               <ToggleGroup
                 type="single"
@@ -312,22 +449,31 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
               <h1 className="text-2xl font-bold tracking-tight leading-tight">
                 {agent.name}
               </h1>
-              <button
-                type="button"
-                onClick={() => handleCopy("id", agent.id, "Agent ID copied")}
-                className="group inline-flex items-center gap-1.5 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors"
-                title="Copy agent ID"
-              >
-                <span>{agent.id}</span>
-                {version != null && (
-                  <span className="text-muted-foreground/70">· v{version}</span>
-                )}
-                {copied === "id" ? (
-                  <Check className="w-3 h-3 text-emerald-500" />
-                ) : (
-                  <Copy className="w-3 h-3 opacity-0 group-hover:opacity-60 transition-opacity" />
-                )}
-              </button>
+              <div className="inline-flex items-center gap-1.5 text-xs min-w-0">
+                <span className="text-muted-foreground shrink-0">
+                  Agent ID:
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleCopy("agent-id", liveAgentId, "Agent ID copied")
+                  }
+                  className="group inline-flex items-center gap-1 font-mono text-foreground/90 hover:text-foreground transition-colors min-w-0"
+                  title="Copy agent ID"
+                >
+                  <span className="truncate">{liveAgentId}</span>
+                  {version != null && (
+                    <span className="text-muted-foreground/70 shrink-0">
+                      · v{version}
+                    </span>
+                  )}
+                  {copied === "agent-id" ? (
+                    <Check className="w-3 h-3 text-emerald-500 shrink-0" />
+                  ) : (
+                    <Copy className="w-3 h-3 opacity-60 group-hover:opacity-100 shrink-0" />
+                  )}
+                </button>
+              </div>
               {agent.description && (
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {agent.description}
@@ -339,34 +485,77 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                 </p>
               )}
 
-              {/* Status / metadata pills */}
+              {/* Version + category metadata */}
+              <div className="flex flex-col gap-1.5 pt-1">
+                {currentVersionId && (
+                  <CopyableIdRow
+                    label="Current Version ID"
+                    value={currentVersionId}
+                    copyKey="version-id"
+                    copied={copied}
+                    onCopy={handleCopy}
+                  />
+                )}
+                {(categoryLabel || category) && (
+                  <div className="inline-flex items-center gap-1.5 text-xs flex-wrap">
+                    <Folder className="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground">Category:</span>
+                    <span className="font-medium text-foreground">
+                      {categoryLabel ?? category}
+                    </span>
+                    {!agent.isVersion && agent.isPublic && (
+                      <Badge
+                        variant="outline"
+                        className="gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
+                      >
+                        <Globe className="w-3 h-3" /> Public
+                      </Badge>
+                    )}
+                    {!agent.isVersion && !agent.isPublic && (
+                      <Badge
+                        variant="outline"
+                        className="gap-1 text-muted-foreground"
+                      >
+                        <Lock className="w-3 h-3" /> Private
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Status pills */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
                 {modelId && (
-                  <Badge variant="secondary" className="gap-1">
-                    <Webhook className="w-3 h-3" /> {modelId}
-                  </Badge>
+                  <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-border/60 text-xs">
+                    <Webhook className="w-3 h-3 shrink-0 text-muted-foreground" />
+                    <span className="text-muted-foreground">Model:</span>
+                    <span className="font-medium text-foreground">
+                      {modelLabel ?? modelId}
+                    </span>
+                  </span>
                 )}
-                {category && (
-                  <Badge variant="outline" className="gap-1">
-                    <Folder className="w-3 h-3" /> {category}
-                  </Badge>
-                )}
-                {!agent.isVersion && agent.isPublic && (
-                  <Badge
-                    variant="outline"
-                    className="gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
-                  >
-                    <Globe className="w-3 h-3" /> Public
-                  </Badge>
-                )}
-                {!agent.isVersion && !agent.isPublic && (
-                  <Badge
-                    variant="outline"
-                    className="gap-1 text-muted-foreground"
-                  >
-                    <Lock className="w-3 h-3" /> Private
-                  </Badge>
-                )}
+                {!categoryLabel &&
+                  !category &&
+                  !agent.isVersion &&
+                  agent.isPublic && (
+                    <Badge
+                      variant="outline"
+                      className="gap-1 text-emerald-600 dark:text-emerald-400 border-emerald-500/40"
+                    >
+                      <Globe className="w-3 h-3" /> Public
+                    </Badge>
+                  )}
+                {!categoryLabel &&
+                  !category &&
+                  !agent.isVersion &&
+                  !agent.isPublic && (
+                    <Badge
+                      variant="outline"
+                      className="gap-1 text-muted-foreground"
+                    >
+                      <Lock className="w-3 h-3" /> Private
+                    </Badge>
+                  )}
                 {agent.isArchived && (
                   <Badge
                     variant="outline"

@@ -5145,6 +5145,71 @@ export type Database = {
           },
         ]
       }
+      context_item_suggestions: {
+        Row: {
+          confidence: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          display_name: string
+          example_source_id: string | null
+          example_source_kind: string | null
+          example_value: string | null
+          id: string
+          organization_id: string | null
+          rationale: string | null
+          scope_type_id: string
+          status: string
+          suggested_key: string
+          suppressed_until: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          display_name: string
+          example_source_id?: string | null
+          example_source_kind?: string | null
+          example_value?: string | null
+          id?: string
+          organization_id?: string | null
+          rationale?: string | null
+          scope_type_id: string
+          status?: string
+          suggested_key: string
+          suppressed_until?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          display_name?: string
+          example_source_id?: string | null
+          example_source_kind?: string | null
+          example_value?: string | null
+          id?: string
+          organization_id?: string | null
+          rationale?: string | null
+          scope_type_id?: string
+          status?: string
+          suggested_key?: string
+          suppressed_until?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "context_item_suggestions_scope_type_id_fkey"
+            columns: ["scope_type_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scope_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation: {
         Row: {
           created_at: string
@@ -9998,6 +10063,77 @@ export type Database = {
         }
         Relationships: []
       }
+      kg_alerts: {
+        Row: {
+          confidence: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          description: string
+          evidence: string | null
+          id: string
+          kind: string
+          organization_id: string | null
+          severity: string
+          source_id: string
+          source_kind: string
+          status: string
+          suggested_action: string | null
+          target_scope_id: string
+          target_slot_key: string | null
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          description: string
+          evidence?: string | null
+          id?: string
+          kind: string
+          organization_id?: string | null
+          severity?: string
+          source_id: string
+          source_kind: string
+          status?: string
+          suggested_action?: string | null
+          target_scope_id: string
+          target_slot_key?: string | null
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          description?: string
+          evidence?: string | null
+          id?: string
+          kind?: string
+          organization_id?: string | null
+          severity?: string
+          source_id?: string
+          source_kind?: string
+          status?: string
+          suggested_action?: string | null
+          target_scope_id?: string
+          target_slot_key?: string | null
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kg_alerts_target_scope_id_fkey"
+            columns: ["target_scope_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kg_suggestion_ack: {
         Row: {
           created_at: string
@@ -10012,6 +10148,60 @@ export type Database = {
         Update: {
           created_at?: string
           suggestion_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      kg_value_matches: {
+        Row: {
+          confidence: number
+          created_at: string
+          current_value_snapshot: string | null
+          evidence_chunk_id: string | null
+          id: string
+          kg_entity_id: string | null
+          matched_value: string
+          mention_count: number
+          organization_id: string | null
+          source_id: string
+          source_kind: string
+          target_context_item_id: string
+          target_scope_id: string
+          target_slot_key: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          current_value_snapshot?: string | null
+          evidence_chunk_id?: string | null
+          id?: string
+          kg_entity_id?: string | null
+          matched_value: string
+          mention_count?: number
+          organization_id?: string | null
+          source_id: string
+          source_kind: string
+          target_context_item_id: string
+          target_scope_id: string
+          target_slot_key: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          current_value_snapshot?: string | null
+          evidence_chunk_id?: string | null
+          id?: string
+          kg_entity_id?: string | null
+          matched_value?: string
+          mention_count?: number
+          organization_id?: string | null
+          source_id?: string
+          source_kind?: string
+          target_context_item_id?: string
+          target_scope_id?: string
+          target_slot_key?: string
           user_id?: string
         }
         Relationships: []
@@ -11531,6 +11721,7 @@ export type Database = {
           thumbnail_url: string | null
           title: string
           updated_at: string
+          user_id: string | null
           video_url: string | null
         }
         Insert: {
@@ -11549,6 +11740,7 @@ export type Database = {
           thumbnail_url?: string | null
           title: string
           updated_at?: string
+          user_id?: string | null
           video_url?: string | null
         }
         Update: {
@@ -11567,6 +11759,7 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
+          user_id?: string | null
           video_url?: string | null
         }
         Relationships: [
@@ -15119,6 +15312,71 @@ export type Database = {
             columns: ["target_scope_id"]
             isOneToOne: false
             referencedRelation: "ctx_scopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scope_suggestions: {
+        Row: {
+          confidence: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          organization_id: string | null
+          reasoning: string | null
+          scope_type_id: string | null
+          scope_type_label: string
+          source_id: string
+          source_kind: string
+          status: string
+          suggested_name: string
+          suggested_slot_values: Json
+          suppressed_until: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          organization_id?: string | null
+          reasoning?: string | null
+          scope_type_id?: string | null
+          scope_type_label: string
+          source_id: string
+          source_kind: string
+          status?: string
+          suggested_name: string
+          suggested_slot_values?: Json
+          suppressed_until?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          organization_id?: string | null
+          reasoning?: string | null
+          scope_type_id?: string | null
+          scope_type_label?: string
+          source_id?: string
+          source_kind?: string
+          status?: string
+          suggested_name?: string
+          suggested_slot_values?: Json
+          suppressed_until?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scope_suggestions_scope_type_id_fkey"
+            columns: ["scope_type_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scope_types"
             referencedColumns: ["id"]
           },
         ]
@@ -23348,6 +23606,97 @@ export type Database = {
           },
         ]
       }
+      v_context_item_suggestions: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          decided_at: string | null
+          decided_by: string | null
+          display_name: string | null
+          example_source_id: string | null
+          example_source_kind: string | null
+          example_value: string | null
+          id: string | null
+          organization_id: string | null
+          rationale: string | null
+          scope_type_icon: string | null
+          scope_type_id: string | null
+          scope_type_label: string | null
+          scope_type_label_plural: string | null
+          scope_type_slug: string | null
+          status: string | null
+          suggested_key: string | null
+          suppressed_until: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "context_item_suggestions_scope_type_id_fkey"
+            columns: ["scope_type_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scope_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_kg_alerts: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          decided_at: string | null
+          decided_by: string | null
+          description: string | null
+          evidence: string | null
+          id: string | null
+          kind: string | null
+          organization_id: string | null
+          scope_name: string | null
+          severity: string | null
+          source_id: string | null
+          source_kind: string | null
+          status: string | null
+          suggested_action: string | null
+          target_scope_id: string | null
+          target_slot_key: string | null
+          user_id: string | null
+          viewed_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kg_alerts_target_scope_id_fkey"
+            columns: ["target_scope_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_kg_value_matches: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          current_value_snapshot: string | null
+          evidence_chunk_id: string | null
+          id: string | null
+          item_key: string | null
+          item_label: string | null
+          kg_entity_id: string | null
+          matched_value: string | null
+          mention_count: number | null
+          organization_id: string | null
+          scope_name: string | null
+          scope_slug: string | null
+          scope_type_icon: string | null
+          scope_type_label: string | null
+          source_id: string | null
+          source_kind: string | null
+          target_context_item_id: string | null
+          target_scope_id: string | null
+          target_slot_key: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       v_scope_suggestion_stats: {
         Row: {
           is_starred: boolean | null
@@ -23394,6 +23743,38 @@ export type Database = {
           viewed_at: string | null
         }
         Relationships: []
+      }
+      v_scope_suggestions_new: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          decided_at: string | null
+          decided_by: string | null
+          id: string | null
+          organization_id: string | null
+          reasoning: string | null
+          resolved_scope_type_label: string | null
+          scope_type_icon: string | null
+          scope_type_id: string | null
+          scope_type_label: string | null
+          scope_type_slug: string | null
+          source_id: string | null
+          source_kind: string | null
+          status: string | null
+          suggested_name: string | null
+          suggested_slot_values: Json | null
+          suppressed_until: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scope_suggestions_scope_type_id_fkey"
+            columns: ["scope_type_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scope_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       view_registered_function: {
         Row: {
@@ -27626,6 +28007,11 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }
+      kg_heavy_hitter_accept_plan: {
+        Args: { p_suggestion_id: string }
+        Returns: Json
+      }
+      kg_simulated_scope_graph: { Args: { p_scope_id: string }; Returns: Json }
       list_entities_by_scopes: {
         Args: {
           p_entity_type?: string
