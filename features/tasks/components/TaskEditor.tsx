@@ -64,6 +64,7 @@ import {
   type TaskPriority,
 } from "./TaskPriorityPicker";
 import { TaskDueDatePicker } from "./TaskDueDatePicker";
+import { formatDateOnly } from "@/utils/dateOnly";
 import { cn } from "@/utils/cn";
 
 type Priority = TaskPriority;
@@ -414,7 +415,7 @@ function TaskEditorInner({ taskId }: { taskId: string }) {
               {effective.dueDate && (
                 <span className="inline-flex items-center gap-1 h-5 px-1.5 rounded-md bg-muted/60 text-[10px] font-medium text-foreground">
                   <Calendar className="w-2.5 h-2.5" />
-                  {new Date(effective.dueDate).toLocaleDateString("en-US", {
+                  {formatDateOnly(effective.dueDate, {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
