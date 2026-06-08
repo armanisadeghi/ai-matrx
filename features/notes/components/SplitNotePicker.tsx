@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAllNotesList,
@@ -53,7 +54,8 @@ export function SplitNotePicker({ children }: SplitNotePickerProps) {
       filtered = filtered.filter(
         (n) =>
           n.label.toLowerCase().includes(q) ||
-          n.folder_name?.toLowerCase().includes(q),
+          n.folder_name?.toLowerCase().includes(q) ||
+          idMatchesQuery(n, q),
       );
     }
     return filtered;

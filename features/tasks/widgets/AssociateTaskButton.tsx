@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import {
   Link2,
   Search,
@@ -106,7 +107,8 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
       ? allTasks.filter(
           (t) =>
             t.title.toLowerCase().includes(q) ||
-            t.description?.toLowerCase().includes(q),
+            t.description?.toLowerCase().includes(q) ||
+            idMatchesQuery(t, q),
         )
       : allTasks;
     const open = base.filter((t) => !t.completed);

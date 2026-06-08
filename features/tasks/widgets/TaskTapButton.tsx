@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import {
   CheckSquareTapButton,
   LinkTapButton,
@@ -118,7 +119,8 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
       ? allTasks.filter(
           (t) =>
             t.title.toLowerCase().includes(q) ||
-            t.description?.toLowerCase().includes(q),
+            t.description?.toLowerCase().includes(q) ||
+            idMatchesQuery(t, q),
         )
       : allTasks;
     const active = base.filter((t) => !t.completed);

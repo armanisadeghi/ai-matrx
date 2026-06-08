@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Loader2, Search, Check, X, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { RootState } from "@/lib/redux/store";
@@ -107,7 +108,8 @@ const AiModelsPreferences = () => {
         (m) =>
           m.common_name?.toLowerCase().includes(q) ||
           m.name.toLowerCase().includes(q) ||
-          m.provider?.toLowerCase().includes(q),
+          m.provider?.toLowerCase().includes(q) ||
+          idMatchesQuery(m, q),
       );
     }
 

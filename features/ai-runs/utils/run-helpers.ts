@@ -1,6 +1,7 @@
 // @ts-nocheck
 
 import type { AiRun, RunMessage, AiTask } from "../types";
+import { idMatchesQuery } from "@/utils/search-scoring";
 
 /**
  * Helper functions for working with AI runs
@@ -256,6 +257,9 @@ export function filterRunsBySearch(runs: AiRun[], query: string): AiRun[] {
       run.messages.some((msg) => msg.content.toLowerCase().includes(lowerQuery))
     )
       return true;
+
+    // Search in run id (full or partial UUID paste)
+    if (idMatchesQuery(run, lowerQuery)) return true;
 
     return false;
   });

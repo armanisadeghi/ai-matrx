@@ -14,6 +14,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { idMatchesQuery } from '@/utils/search-scoring';
 import {
   Dialog,
   DialogContent,
@@ -104,7 +105,7 @@ export function BuiltinSelectorModal({
           const query = searchQuery.toLowerCase();
           const matchesName = builtin.name.toLowerCase().includes(query);
           const matchesDescription = builtin.description?.toLowerCase().includes(query);
-          return matchesName || matchesDescription;
+          return matchesName || matchesDescription || idMatchesQuery(builtin, query);
         }
 
         return true;

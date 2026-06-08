@@ -3,6 +3,7 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { selectAllFields, selectFieldLoading, selectFieldsHasFetched } from "@/lib/redux/app-builder/selectors/fieldSelectors";
 import { deleteFieldThunk, fetchFieldsThunk } from "@/lib/redux/app-builder/thunks/fieldBuilderThunks";
 import { Eye, Pencil, TextCursorInput, Trash2, Check } from "lucide-react";
@@ -133,7 +134,8 @@ export default function FieldListTable({
                 (field: FieldBuilder) =>
                     field.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     field.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    field.component?.toLowerCase().includes(searchTerm.toLowerCase())
+                    field.component?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    idMatchesQuery(field, searchTerm)
             );
         }
 

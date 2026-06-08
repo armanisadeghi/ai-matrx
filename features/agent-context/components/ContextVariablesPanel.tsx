@@ -6,6 +6,7 @@ import {
   ChevronDown, ChevronRight, Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { idMatchesQuery } from '@/utils/search-scoring';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,7 +62,8 @@ export function ContextVariablesPanel({ scope }: Props) {
     return variables.filter(v =>
       v.key.toLowerCase().includes(q) ||
       v.description?.toLowerCase().includes(q) ||
-      v.tags?.some(t => t.toLowerCase().includes(q))
+      v.tags?.some(t => t.toLowerCase().includes(q)) ||
+      idMatchesQuery(v, q)
     );
   }, [variables, search]);
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -86,7 +87,8 @@ export default function AuditOverviewTab({
       if (
         !r.model.name.toLowerCase().includes(lq) &&
         !(r.model.common_name ?? "").toLowerCase().includes(lq) &&
-        !(r.model.provider ?? "").toLowerCase().includes(lq)
+        !(r.model.provider ?? "").toLowerCase().includes(lq) &&
+        !idMatchesQuery(r.model, lq)
       )
         return false;
     }

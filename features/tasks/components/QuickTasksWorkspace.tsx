@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Input } from "@/components/ui/input";
@@ -82,8 +83,9 @@ export function QuickTasksSidebar() {
 
   const tasksToDisplay = useMemo(() => {
     if (!searchQuery) return filtered;
-    return filtered.filter((t) =>
-      t.title.toLowerCase().includes(searchQuery.toLowerCase()),
+    const q = searchQuery.toLowerCase();
+    return filtered.filter(
+      (t) => t.title.toLowerCase().includes(q) || idMatchesQuery(t, q),
     );
   }, [filtered, searchQuery]);
 

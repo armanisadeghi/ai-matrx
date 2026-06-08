@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
@@ -245,7 +246,8 @@ export function useShortcutQuickCreate({
       out = out.filter(
         (s) =>
           s.label.toLowerCase().includes(q) ||
-          (s.description ?? "").toLowerCase().includes(q),
+          (s.description ?? "").toLowerCase().includes(q) ||
+          idMatchesQuery(s, q),
       );
     }
     return out;

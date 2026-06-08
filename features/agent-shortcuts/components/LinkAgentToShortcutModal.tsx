@@ -18,6 +18,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -114,7 +115,8 @@ export function LinkAgentToShortcutModal({
       out = out.filter(
         (s) =>
           s.label.toLowerCase().includes(q) ||
-          (s.description ?? "").toLowerCase().includes(q),
+          (s.description ?? "").toLowerCase().includes(q) ||
+          idMatchesQuery(s, q),
       );
     }
     return out;

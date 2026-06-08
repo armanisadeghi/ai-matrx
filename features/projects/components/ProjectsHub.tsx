@@ -13,6 +13,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { useRouter } from "next/navigation";
 import {
   FolderKanban,
@@ -262,7 +263,7 @@ export function ProjectsHub({
       list = list.filter((p) => p.organizationId === orgFilterId);
     if (scopeProjectIds) list = list.filter((p) => scopeProjectIds.has(p.id));
     const q = query.trim().toLowerCase();
-    if (q) list = list.filter((p) => p.name.toLowerCase().includes(q));
+    if (q) list = list.filter((p) => p.name.toLowerCase().includes(q) || idMatchesQuery(p, q));
     return list;
   }, [projects, orgFilterId, scopeProjectIds, query]);
 

@@ -41,6 +41,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 
 const PAGE_LOCATION =
@@ -146,7 +147,8 @@ export default function InvitationRequestsPage() {
     return (
       r.full_name.toLowerCase().includes(q) ||
       r.email.toLowerCase().includes(q) ||
-      r.company.toLowerCase().includes(q)
+      r.company.toLowerCase().includes(q) ||
+      idMatchesQuery(r, q)
     );
   });
 

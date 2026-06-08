@@ -26,6 +26,7 @@ import {
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { supabase } from "@/utils/supabase/client";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { useChatPersistence } from "../../hooks/useChatPersistence";
 import { sidebarEvents } from "../../events/sidebarEvents";
 import type {
@@ -466,7 +467,8 @@ function SharedChatsSection({
     return sharedChats.filter(
       (c) =>
         c.title?.toLowerCase().includes(q) ||
-        c.owner_email?.toLowerCase().includes(q),
+        c.owner_email?.toLowerCase().includes(q) ||
+        idMatchesQuery(c, q),
     );
   }, [sharedChats, searchQuery]);
 
@@ -664,7 +666,9 @@ export function SidebarChats({
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return history;
     const q = searchQuery.toLowerCase();
-    return history.filter((h) => h.title?.toLowerCase().includes(q));
+    return history.filter(
+      (h) => h.title?.toLowerCase().includes(q) || idMatchesQuery(h, q),
+    );
   }, [history, searchQuery]);
 
   const grouped = useMemo(() => groupByTime(filtered), [filtered]);

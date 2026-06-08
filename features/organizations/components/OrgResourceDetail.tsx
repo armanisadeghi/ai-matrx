@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -162,7 +163,7 @@ export function OrgResourceDetail() {
   const role = getContentRole(entry.role);
   const Icon = entry.icon;
   const filteredMine = mine.items.filter((it) =>
-    it.title.toLowerCase().includes(query.toLowerCase()),
+    it.title.toLowerCase().includes(query.toLowerCase()) || idMatchesQuery(it, query),
   );
 
   return (

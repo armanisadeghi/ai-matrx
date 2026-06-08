@@ -2,6 +2,7 @@
 
 import type { Note, NoteFilters, NoteSortConfig, FolderGroup } from '../types';
 import { DEFAULT_FOLDER_NAMES } from '../constants/defaultFolders';
+import { idMatchesQuery } from '@/utils/search-scoring';
 
 /**
  * Filter notes based on search, tags, and folder
@@ -15,7 +16,8 @@ export function filterNotes(notes: Note[], filters: NoteFilters): Note[] {
         filtered = filtered.filter(
             note =>
                 note.label.toLowerCase().includes(searchLower) ||
-                note.content.toLowerCase().includes(searchLower)
+                note.content.toLowerCase().includes(searchLower) ||
+                idMatchesQuery(note, searchLower)
         );
     }
 

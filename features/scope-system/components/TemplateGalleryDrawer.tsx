@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import {
   Loader2,
   Search,
@@ -170,7 +171,8 @@ export function TemplateGalleryDrawer({
         (t) =>
           t.name.toLowerCase().includes(q) ||
           t.description.toLowerCase().includes(q) ||
-          t.scope_types.some((st) => st.label_plural.toLowerCase().includes(q)),
+          t.scope_types.some((st) => st.label_plural.toLowerCase().includes(q)) ||
+          idMatchesQuery(t, q),
       );
     }
     return list;

@@ -22,6 +22,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -73,7 +74,7 @@ export function ContributeResourceSheet({
   }, [open, initialEntryKey]);
 
   const filtered = mine.items.filter((it) =>
-    it.title.toLowerCase().includes(query.toLowerCase()),
+    it.title.toLowerCase().includes(query.toLowerCase()) || idMatchesQuery(it, query),
   );
 
   return (

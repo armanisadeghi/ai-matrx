@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import type { ConnectionUser } from "@/features/messaging/hooks/useUserConnections";
 import type { MembershipRole, MembershipRoleOption } from "./types";
 
@@ -165,7 +166,8 @@ export function InvitationsPanel({
     return availableContacts.filter(
       (c) =>
         (c.display_name && c.display_name.toLowerCase().includes(q)) ||
-        (c.email && c.email.toLowerCase().includes(q)),
+        (c.email && c.email.toLowerCase().includes(q)) ||
+        idMatchesQuery(c, q),
     );
   })();
 

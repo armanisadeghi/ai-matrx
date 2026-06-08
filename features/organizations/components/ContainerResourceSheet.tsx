@@ -17,6 +17,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { supabase } from "@/utils/supabase/client";
 import { getShareableResource } from "@/utils/permissions/registry";
 import type { OrgResourceEntry } from "../resource-catalogue";
@@ -95,7 +96,7 @@ export function ContainerResourceSheet({
   const hrefFor = (id: string): string | null =>
     shareable ? shareable.urlPathTemplate.replace("{id}", id) : null;
   const filtered = items.filter((it) =>
-    it.title.toLowerCase().includes(query.toLowerCase()),
+    it.title.toLowerCase().includes(query.toLowerCase()) || idMatchesQuery(it, query),
   );
 
   return (

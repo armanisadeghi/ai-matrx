@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { idMatchesQuery } from '@/utils/search-scoring';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -86,7 +87,8 @@ export function CategoryNotesModal({
         const query = searchQuery.toLowerCase();
         return categoryNotes.filter(note =>
             note.label.toLowerCase().includes(query) ||
-            note.content.toLowerCase().includes(query)
+            note.content.toLowerCase().includes(query) ||
+            idMatchesQuery(note, query)
         );
     }, [categoryNotes, searchQuery]);
 
@@ -98,7 +100,8 @@ export function CategoryNotesModal({
         return otherNotes.filter(note =>
             note.label.toLowerCase().includes(query) ||
             note.content.toLowerCase().includes(query) ||
-            note.folder_name.toLowerCase().includes(query)
+            note.folder_name.toLowerCase().includes(query) ||
+            idMatchesQuery(note, query)
         );
     }, [otherNotes, importSearchQuery]);
 

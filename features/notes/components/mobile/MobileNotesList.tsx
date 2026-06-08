@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { FolderOpen, Clock, Tag, Plus } from "lucide-react";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -94,7 +95,8 @@ export default function MobileNotesList({
         (n) =>
           n.label.toLowerCase().includes(q) ||
           n.content.toLowerCase().includes(q) ||
-          n.tags?.some((t) => t.toLowerCase().includes(q)),
+          n.tags?.some((t) => t.toLowerCase().includes(q)) ||
+          idMatchesQuery(n, q),
       );
     }
 

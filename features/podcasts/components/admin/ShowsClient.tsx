@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useTransition } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
@@ -94,7 +95,8 @@ export function ShowsClient() {
         (s) =>
           s.title.toLowerCase().includes(search.toLowerCase()) ||
           s.slug.toLowerCase().includes(search.toLowerCase()) ||
-          (s.author ?? "").toLowerCase().includes(search.toLowerCase()),
+          (s.author ?? "").toLowerCase().includes(search.toLowerCase()) ||
+          idMatchesQuery(s, search),
       ),
     [shows, search],
   );

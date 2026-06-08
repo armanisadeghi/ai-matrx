@@ -70,6 +70,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectActiveUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -192,7 +193,12 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
               : 0;
           if (ts < cutoff) return false;
         }
-        if (q && !file.fileName.toLowerCase().includes(q)) return false;
+        if (
+          q &&
+          !file.fileName.toLowerCase().includes(q) &&
+          !idMatchesQuery(file, q)
+        )
+          return false;
         return true;
       })
       .sort((a, b) => {

@@ -32,6 +32,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { useUserMarkdownSamples } from "./useUserMarkdownSamples";
 import { getBlockTypeStyle } from "./block-type-colors";
 import type { UserMarkdownSample } from "./user-samples-service";
@@ -71,7 +72,8 @@ export function SampleLibrarySheet({
     return (
       s.name.toLowerCase().includes(q) ||
       s.description.toLowerCase().includes(q) ||
-      s.detected_blocks.some((b) => b.toLowerCase().includes(q))
+      s.detected_blocks.some((b) => b.toLowerCase().includes(q)) ||
+      idMatchesQuery(s, q)
     );
   });
 

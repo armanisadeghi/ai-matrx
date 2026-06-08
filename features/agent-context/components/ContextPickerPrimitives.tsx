@@ -17,6 +17,7 @@ import {
 } from "react";
 import { ChevronRight, Check, X, Search, Circle } from "lucide-react";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { createPortal } from "react-dom";
 import { cn } from "@/utils/cn";
 
@@ -81,10 +82,10 @@ export function SearchableList({
 
   const q = search.toLowerCase();
   const filtered = q
-    ? options.filter((o) => o.name.toLowerCase().includes(q))
+    ? options.filter((o) => o.name.toLowerCase().includes(q) || idMatchesQuery(o, q))
     : options;
   const filteredOrphans = q
-    ? orphanOptions.filter((o) => o.name.toLowerCase().includes(q))
+    ? orphanOptions.filter((o) => o.name.toLowerCase().includes(q) || idMatchesQuery(o, q))
     : orphanOptions;
 
   return (

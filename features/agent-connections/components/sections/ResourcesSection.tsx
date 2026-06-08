@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { FolderOpen, Loader2, FileText, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";
@@ -33,7 +34,8 @@ export function ResourcesSection() {
       if (!q) return true;
       return (
         r.filename.toLowerCase().includes(q) ||
-        (r.content ?? "").toLowerCase().includes(q)
+        (r.content ?? "").toLowerCase().includes(q) ||
+        idMatchesQuery(r, q)
       );
     });
   }, [resources, search, typeFilter]);

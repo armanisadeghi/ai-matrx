@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import {
   ChevronLeft,
   ChevronRight,
@@ -64,7 +65,8 @@ export function NotesResourcePicker({
           (note) =>
             note.folder_name === folder &&
             (note.label.toLowerCase().includes(query) ||
-              note.content.toLowerCase().includes(query)),
+              note.content.toLowerCase().includes(query) ||
+              idMatchesQuery(note, query)),
         ),
     );
   }, [folders, notes, searchQuery]);
@@ -80,7 +82,8 @@ export function NotesResourcePicker({
     return folderNotes.filter(
       (note) =>
         note.label.toLowerCase().includes(query) ||
-        note.content.toLowerCase().includes(query),
+        note.content.toLowerCase().includes(query) ||
+        idMatchesQuery(note, query),
     );
   }, [folderNotes, searchQuery]);
 

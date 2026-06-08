@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -187,7 +188,9 @@ export function MembersPanel({
       (member.user?.email ?? "").toLowerCase().includes(q) ||
       (member.user?.displayName ?? member.user?.display_name ?? "")
         .toLowerCase()
-        .includes(q)
+        .includes(q) ||
+      idMatchesQuery(member, q) ||
+      (member.userId ?? "").toLowerCase().includes(q)
     );
   });
 

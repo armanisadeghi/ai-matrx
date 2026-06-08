@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { idMatchesQuery } from '@/utils/search-scoring';
 import { Plus, RefreshCw, Search, Pencil, Trash2, Link, Mic, Music, CheckCircle2, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,7 +74,7 @@ export function PodcastsTable({
     const [isDeleting, setIsDeleting] = useState(false);
 
     const filteredShows = useMemo(
-        () => shows.filter((s) => s.title.toLowerCase().includes(search.toLowerCase()) || s.slug.toLowerCase().includes(search.toLowerCase())),
+        () => shows.filter((s) => s.title.toLowerCase().includes(search.toLowerCase()) || s.slug.toLowerCase().includes(search.toLowerCase()) || idMatchesQuery(s, search)),
         [shows, search]
     );
 
@@ -83,7 +84,8 @@ export function PodcastsTable({
                 (e) =>
                     e.title.toLowerCase().includes(search.toLowerCase()) ||
                     e.slug.toLowerCase().includes(search.toLowerCase()) ||
-                    (e.show?.title ?? '').toLowerCase().includes(search.toLowerCase())
+                    (e.show?.title ?? '').toLowerCase().includes(search.toLowerCase()) ||
+                    idMatchesQuery(e, search)
             ),
         [episodes, search]
     );

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import * as icons from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/utils/cn";
 import {
@@ -146,7 +147,7 @@ export function HierarchyTree({
     if (!search.trim()) return tree;
     const q = search.toLowerCase();
     function prune(node: TreeNode): TreeNode | null {
-      if (node.name.toLowerCase().includes(q)) return node;
+      if (node.name.toLowerCase().includes(q) || idMatchesQuery(node, q)) return node;
       const children = node.children.map(prune).filter(Boolean) as TreeNode[];
       if (children.length > 0) return { ...node, children };
       return null;
