@@ -2,10 +2,10 @@
 
 // features/podcasts/studio/components/StudioDashboard.tsx
 //
-// The user-facing home for podcasts: a library of the episodes you've created
-// and the shows that host them, with a prominent path to generate a new one.
-// (Admins manage the catalog under /administration/podcasts; this is the
-// creator-facing surface.)
+// The user-facing home for podcasts (/podcast/studio). Leads with the user's
+// STUDIO RUN HISTORY — every generation they've started (running, done, or
+// failed) is durably recorded in pc_studio_runs and reopenable here, so a
+// creation is never lost. Also surfaces their shows and a path to create.
 
 import { useState } from "react";
 import Link from "next/link";
@@ -18,50 +18,70 @@ import {
   Lock,
   Radio,
   LogIn,
+  CheckCircle2,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InlineMediaRef } from "@/features/files";
 import { useApiAuth } from "@/hooks/useApiAuth";
 import { useMyPodcasts } from "@/features/podcasts/hooks/useMyPodcasts";
+import { useMyStudioRuns } from "@/features/podcasts/studio/runs/useMyStudioRuns";
 import { CreateShowDialog } from "@/features/podcasts/generator/components/CreateShowDialog";
-import type { PcEpisodeWithShow, PcShow } from "@/features/podcasts/types";
+import type { PcShow, PcStudioRun } from "@/features/podcasts/types";
 
-function EpisodeCard({ episode }: { episode: PcEpisodeWithShow }) {
+function RunStatusChip({ status }: { status: PcStudioRun["status"] }) {
+  if (status === "completed") {
+    return (
+      <span className="flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
+        <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+        Ready
+      </span>
+    );
+  }
+  if (status === "failed") {
+    return (
+      <span className="flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
+        <AlertTriangle className="h-3 w-3 text-red-400" />
+        Failed
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
+      <Loader2 className="h-3 w-3 animate-spin text-primary" />
+      In progress
+    </span>
+  );
+}
+
+function RunCard({ run }: { run: PcStudioRun }) {
+  const cover = run.selected_cover_url ?? run.image_urls?.[0] ?? null;
   return (
     <Link
-      href={`/podcast/${episode.slug}`}
+      href={`/podcast/studio/run/${run.id}`}
       className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-primary/40 hover:shadow-md"
     >
       <div className="relative aspect-square w-full bg-muted">
         <InlineMediaRef
-          ref={episode.image_url ?? episode.thumbnail_url ?? null}
+          ref={cover}
           size="fill"
           fit="cover"
-          alt={episode.title}
+          alt={run.title || "Studio run"}
           fallbackIcon={<Mic className="h-7 w-7 text-primary/50" />}
         />
-        <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
-          {episode.is_published ? (
-            <>
-              <Globe className="h-3 w-3" />
-              Public
-            </>
-          ) : (
-            <>
-              <Lock className="h-3 w-3" />
-              Draft
-            </>
-          )}
+        <span className="absolute right-2 top-2">
+          <RunStatusChip status={run.status} />
         </span>
       </div>
       <div className="flex flex-1 flex-col gap-0.5 p-3">
         <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground group-hover:text-primary">
-          {episode.title}
+          {run.title || "Untitled episode"}
         </p>
-        {episode.show?.title && (
-          <p className="truncate text-xs text-muted-foreground">
-            {episode.show.title}
+        {run.description && (
+          <p className="line-clamp-1 text-xs text-muted-foreground">
+            {run.description}
           </p>
         )}
       </div>
@@ -98,7 +118,8 @@ function ShowChip({ show }: { show: PcShow }) {
 
 export function StudioDashboard() {
   const { isAuthenticated } = useApiAuth();
-  const { episodes, myShows, loading, registerShow, refresh } = useMyPodcasts();
+  const { myShows, registerShow, refresh: refreshPodcasts } = useMyPodcasts();
+  const { runs, loading } = useMyStudioRuns();
   const [dialogOpen, setDialogOpen] = useState(false);
 
   if (!isAuthenticated) {
@@ -141,7 +162,7 @@ export function StudioDashboard() {
             <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
               From a single topic, a document, or rough notes — generate a fully
               produced two-host episode with cover art, video, and audio in
-              minutes.
+              minutes. Every creation is saved here, ready to reopen anytime.
             </p>
           </div>
           <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
@@ -177,7 +198,7 @@ export function StudioDashboard() {
         </section>
       )}
 
-      {/* My episodes */}
+      {/* Run history */}
       <section className="mt-10">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Your episodes
@@ -192,7 +213,7 @@ export function StudioDashboard() {
               </div>
             ))}
           </div>
-        ) : episodes.length === 0 ? (
+        ) : runs.length === 0 ? (
           <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
             <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <Mic className="h-7 w-7" />
@@ -200,8 +221,8 @@ export function StudioDashboard() {
             <div className="space-y-1">
               <p className="font-medium text-foreground">No episodes yet</p>
               <p className="max-w-sm text-sm text-muted-foreground">
-                Your first episode is a topic away. Generate one and watch it
-                come to life in real time.
+                Your first episode is a topic away. Generate one and watch it come
+                to life in real time — it&apos;ll be saved here for you.
               </p>
             </div>
             <Button asChild className="gap-2">
@@ -213,8 +234,8 @@ export function StudioDashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {episodes.map((episode) => (
-              <EpisodeCard key={episode.id} episode={episode} />
+            {runs.map((run) => (
+              <RunCard key={run.id} run={run} />
             ))}
           </div>
         )}
@@ -225,7 +246,7 @@ export function StudioDashboard() {
         onOpenChange={setDialogOpen}
         onCreated={(show) => {
           registerShow(show);
-          void refresh();
+          void refreshPodcasts();
         }}
       />
     </div>

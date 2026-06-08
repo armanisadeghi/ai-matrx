@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PodcastGenerator } from "@/features/podcasts/generator/components/PodcastGenerator";
+import { CreateView } from "@/features/podcasts/studio/components/CreateView";
 
 export const metadata: Metadata = {
   title: "Create Episode — Podcast Studio",
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function CreateEpisodePage() {
   return (
     <div className="h-full w-full overflow-y-auto overscroll-contain bg-textured">
-      <PodcastGenerator />
+      <CreateView />
     </div>
   );
 }

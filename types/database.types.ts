@@ -11889,6 +11889,93 @@ export type Database = {
         }
         Relationships: []
       }
+      pc_studio_runs: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          description: string | null
+          episode_id: string | null
+          episode_slug: string | null
+          error: string | null
+          id: string
+          image_prompts: string[]
+          image_urls: string[]
+          input_data_type: string | null
+          podcast_type: string | null
+          request: Json
+          script: string | null
+          selected_cover_url: string | null
+          show_id: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+          video_prompts: string[]
+          video_urls: string[]
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          description?: string | null
+          episode_id?: string | null
+          episode_slug?: string | null
+          error?: string | null
+          id?: string
+          image_prompts?: string[]
+          image_urls?: string[]
+          input_data_type?: string | null
+          podcast_type?: string | null
+          request?: Json
+          script?: string | null
+          selected_cover_url?: string | null
+          show_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+          video_prompts?: string[]
+          video_urls?: string[]
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          description?: string | null
+          episode_id?: string | null
+          episode_slug?: string | null
+          error?: string | null
+          id?: string
+          image_prompts?: string[]
+          image_urls?: string[]
+          input_data_type?: string | null
+          podcast_type?: string | null
+          request?: Json
+          script?: string | null
+          selected_cover_url?: string | null
+          show_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          video_prompts?: string[]
+          video_urls?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pc_studio_runs_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "pc_episodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pc_studio_runs_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "pc_shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           created_at: string | null

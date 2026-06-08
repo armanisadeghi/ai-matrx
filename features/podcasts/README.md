@@ -103,6 +103,30 @@ features/podcasts/
     └── useMyPodcasts.ts            ← signed-in user's episodes + shows
 ```
 
+## Studio persistence (pc_studio_runs)
+
+Every generation is durably recorded in **`pc_studio_runs`** (user-private RLS) the
+moment **Generate** is hit, and updated as the stream flows — so a creation is
+never lost, even mid-run or on navigation. The form (`/podcast/studio/create`)
+creates the run row then routes to the **id-based run page**
+(`/podcast/studio/run/[id]`), which owns the live stream and persists each
+milestone (metadata → assets → complete/error) straight from the events. Return
+to that URL anytime and the full studio view (hero, audio, every cover/video
+option, transcript, actions) is rebuilt from the row. The dashboard lists the
+run history. `pc_studio_runs` stores what `pc_episodes` does not — the transcript
+and the *alternate* cover/video options — which is why it's a separate table.
+
+- `studio/runs/service.ts` — pc_studio_runs CRUD (direct Supabase, RLS-scoped).
+- `studio/runs/mapping.ts` — row ↔ `PodcastRunState` (rebuild + persist patches).
+- `studio/runs/pendingStart.ts` — hands the request from form → run page once
+  (stream once, replay from DB on any refresh/return).
+- `studio/runs/useStudioRun.ts` — loads the row, seeds the view, streams + persists.
+- `studio/runs/useMyStudioRuns.ts` — run history for the dashboard.
+- `studio/components/CreateView.tsx` (form) + `StudioRunView.tsx` (run page).
+
+All authored textareas use `@/components/official/ProTextarea` (built-in voice
+recording / dictation).
+
 ## Change Log
 
 - **2026-06-08** — Added the user-facing **Podcast Studio**: `/podcast/studio` (creator library) and
@@ -120,3 +144,10 @@ features/podcasts/
   (muted/looped). Added `ProductionTeaser` — a rotating cover-art showcase + real script sneak-peek
   (from `create_script` stage output) + honest "producing audio" status — shown in the player slot
   while the long audio step finishes, so the wait is never dead air.
+- **2026-06-08** — **Studio persistence**: new `pc_studio_runs` table makes every
+  creation durable + returnable. Restructured routes — `/create` (form) →
+  `/podcast/studio/run/[id]` (persistent run page, owns the stream + replays from
+  DB); dashboard now lists run history (running / ready / failed). Script parsed
+  into clean speaker dialogue in the transcript. All authored textareas swapped to
+  `ProTextarea` (voice recording). Removed the old single-page `PodcastGenerator`
+  (split into `CreateView` + `StudioRunView`).

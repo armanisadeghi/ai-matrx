@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { podcastService } from "@/features/podcasts/service";
 import type { PcShow } from "@/features/podcasts/types";
@@ -142,12 +142,13 @@ export function CreateShowDialog({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="new-show-desc">Description</Label>
-            <Textarea
+            <ProTextarea
               id="new-show-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional — what's this podcast about?"
               rows={3}
+              showCopyButton={false}
             />
           </div>
         </div>

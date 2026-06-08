@@ -16,7 +16,7 @@ import {
   FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -154,13 +154,15 @@ export function GeneratorForm({
       {/* Matching input control */}
       <div className="space-y-2">
         {activeInput.control === "text" ? (
-          <Textarea
+          <ProTextarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={activeInput.placeholder}
             rows={inputType === "topic" ? 3 : 7}
             dir={isRtl ? "rtl" : undefined}
-            className="resize-y text-base"
+            autoGrow
+            minHeight={inputType === "topic" ? 84 : 168}
+            className="text-base"
           />
         ) : (
           <div className="space-y-2">
@@ -324,22 +326,24 @@ export function GeneratorForm({
             <Label className="text-xs text-muted-foreground">
               Extra instruction to the research / extraction agent
             </Label>
-            <Textarea
+            <ProTextarea
               value={prepMessage}
               onChange={(e) => setPrepMessage(e.target.value)}
               placeholder="Optional — e.g. focus on the practical takeaways"
               rows={2}
+              showCopyButton={false}
             />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">
               Show intro / blurb
             </Label>
-            <Textarea
+            <ProTextarea
               value={firstShowInfo}
               onChange={(e) => setFirstShowInfo(e.target.value)}
               placeholder="Optional — a short intro for the show"
               rows={2}
+              showCopyButton={false}
             />
           </div>
         </CollapsibleContent>
