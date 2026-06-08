@@ -65,23 +65,16 @@ ctx_associations
 
 `ctx_context_item_values` becomes the **typed, named, enforceable relationship + value layer**. A value is no longer just a primitive.
 
-### 3.1 Values can be primitives OR typed references ✅/💡
-A context item definition has a **type**. The value is one of:
-- **primitive** — string / number / bool / date / json
-- **typed reference** — a pointer the DB can recognize: `file:<uuid>`, `agent:<uuid>`, **`scope:<uuid>`**, etc.
+### 3.1 Values can be primitives OR typed references ✅ — STORAGE ALREADY EXISTS
+A context item definition has a **type** (`ctx_context_items.value_type`). Confirmed in the DB: the `context_value_type` enum already includes `reference` and `document` alongside the primitives, and `ctx_context_item_values` already carries **`value_reference_id uuid`** + **`value_reference_type text`**. So a value is one of:
+- **primitive** — `value_text` / `value_number` / `value_boolean` / `value_json` / `value_date`
+- **document** — `value_document_url` / `value_document_size_bytes`
+- **typed reference** — `value_reference_id` + `value_reference_type` (free text: `file`, `agent`, **`scope`**, …)
 
-💡 **Proposed storage (needs confirm, §7):** extend `ctx_context_item_values` with a discriminator so references are first-class, not opaque jsonb:
-```
-value_kind     text        -- 'primitive' | 'reference'
-value_text     ...         -- existing primitive storage
-ref_entity_type text null  -- when reference: 'file','agent','scope',...
-ref_entity_id   uuid null
-index (ref_entity_type, ref_entity_id)   -- enables reverse lookups
-```
-This gives DB-level recognition, indexing, and reverse lookups, which opaque jsonb would not.
+✅ **No schema change needed for storage** — the typed-reference foundation is already built. The remaining work is *logic*: an index on `(value_reference_type, value_reference_id)` for reverse lookups, plus the derive/enforce/cascade behavior below. (This closes old Q7.1.)
 
 ### 3.2 File-into-slot = a reference value (resolves Q1) ✅
-Dropping a PDF into the "Operating Agreement" slot on scope ABC Co. writes **one `ctx_context_item_values` row** (`value_kind='reference'`, `ref_entity_type='file'`). The file *is* ABC Co.'s operating agreement — it lives in its proper versioned home (`is_current`). The association/cascade is **derived from this row** — we do **not** also write a `ctx_associations` row. (Same mechanism for `agent`, `scope`, etc.) Type-mismatch is guarded by the item's declared type.
+Dropping a PDF into the "Operating Agreement" slot on scope ABC Co. writes **one `ctx_context_item_values` row** (`value_type='reference'`/`'document'`, `value_reference_type='file'`, `value_reference_id=<file uuid>`). The file *is* ABC Co.'s operating agreement — it lives in its proper versioned home (`is_current`). The association/cascade is **derived from this row** — we do **not** also write a `ctx_associations` row. (Same mechanism for `agent`, `scope`, etc.) Type-mismatch is guarded by the item's declared `value_type` (and the existing `trg_ctx_validate_value_scope_type` trigger).
 
 ### 3.3 The item key IS the relationship role ✅
 "opposing_counsel", "client", "communication_agent" — the item key supplies the typed, named, directional relationship. No separate `relationship_kind` needed anywhere.
@@ -103,8 +96,13 @@ A scope can be the value of another scope's item. `Case 12345.opposing_counsel �
 - ✅ **Store explicit only; derive ancestors.** Never materialize derived links (or editing becomes contradiction hell — "I deleted the project but it won't go away"). Payoff: deletion is trivially clean — remove the one explicit row and the whole spine vanishes.
 - ✅ **Vertical spine = auto-derived (silent).** `context_item → scope → scope_type → org` is a true single-parent chain → always safe to compute up.
 - ✅ **Lateral edges = suggested, never silent.** `scope → project` is itself M2M; assigning a file to "Acme" (in 5 projects) must **not** drop it into all 5. Surface as one-click suggestions.
-- 💡 **Promotion suggestions** (the warehouse-lease case): something attached at a narrow node (a project) that looks scope-wide should be *offered* for promotion to a scope item — same suggest-don't-force family, vertical direction. Where you attach determines reach; promotion is an explicit upgrade. ⚠️ Exact UX deferred.
+- ✅ **Multi-level association is a first-class concept.** A thing can be explicitly associated at more than one level at once (e.g. a file on both a project *and* its parent scope). This is allowed and expected; it only affects fetch/relationship-building, and that's fine — agents and UI **surface references by layer, never dump everything into context**, so a hit at three layers is informative, not confusing.
+- ✅ **Promotion = additive, never a move.** The warehouse-lease case: a lease uploaded into a project can be **promoted** to the parent scope. Promotion **adds** the upper association and **keeps** the lower one — both persist. (A separate explicit "move" exists; see §7a.)
+- ✅ **Push-down (pull-closer) is also a thing.** From inside a project/agent you can see something that's 2–3 layers away (via a parent scope) and click to associate it **directly** to you. Two payoffs: (1) it becomes first-tier for you and your agents (closer = cheaper to fetch); (2) if it's later dissociated from the higher node, **you don't lose it** — your direct association survives.
 - ✅ **Compute on read via hop-traversal RPC**, indexed as needed. A few seconds worst-case is acceptable.
+
+### 7a. One control: associate / re-associate / move ✅ (UI principle, DB is trivial)
+A single control offers directional options — **add up** (to parent), **add over** (to a sibling/cousin), **add down** (to a child), or **move** (add to the new node *and* remove from the current one). Underneath it is only `INSERT`/`DELETE` rows in `ctx_associations` (or a value row for typed slots). "Move" is just add+remove; the UI frames it directionally because that's how people think. One RPC per action.
 
 ---
 
@@ -141,22 +139,25 @@ Coding agents butcher this constantly because it was unnamed. Fix = explicit nam
 ---
 
 ## 7. Open questions — TO RESOLVE
-- ⚠️ **7.1 Reference-value storage** — confirm the `value_kind` + `ref_entity_type/ref_entity_id` columns on `ctx_context_item_values` (vs opaque jsonb). Leaning typed columns.
-- ⚠️ **7.2 Reference cardinality** — per-item single vs multi (client=1, experts=many); reconcile with `max_assignments_per_entity`.
+- ✅ **7.1 Reference-value storage — RESOLVED.** Columns already exist (`value_reference_id`, `value_reference_type`; `value_type` enum has `reference`/`document`). Use them; just add a reverse-lookup index. No schema change.
+- ⚠️ **7.2 Reference cardinality** — per-item single vs multi (client=1, experts=many); reconcile with `max_assignments_per_entity` on scope types.
 - ⚠️ **7.3 Required-slot enforcement** — block-on-write vs surface-as-gaps. Leaning surface-as-gaps.
-- ⚠️ **7.4 Per-table classification** — which `project_id`/`task_id` are containment (keep) vs litter (convert+drop). Judgment cases: `code_repositories/code_files/code_file_folders`, `wc_claim`, `skl_skill_projects` (likely already a junction), `ai_runs/ai_tasks`. Resolved in the migration analysis (§8 handoff).
-- ⚠️ **7.5 Promotion UX** (§4) — how/when to offer narrow→scope-wide promotion.
+- ⚠️ **7.4 Per-table classification** — judgment cases now tracked in the **removed-FK ledger §E**: `code_*` (likely a *coding-discipline container* — possibly we're misusing `ctx_projects` and a `code_projects` table is the honest answer; **keep the FK for now**, revisit when the next industry module lands), `wc_claim`, `skl_skill_projects`, `ai_runs/ai_tasks`. Resolved by the internals + codebase audits.
+- ⚠️ **7.5 Promotion/move UX timing** — the *control* is decided (§7a); open only: when to *proactively suggest* a promotion. Start simple — manual button now, smart suggestions later.
 
 ## 8. Deferred / out of scope
 - 🚫 Org-first enterprise RLS overhaul (incl. hiding other members' junk agents within an org) — separate security pass before go-live. Don't build now.
 - 🚫 Promoting `client`/`customer` to permanent hard-coded types — separate idea, parked.
 - 🚫 Scheduler subsystem (`sch_task`/`sch_run`/`sch_trigger`) — unrelated `task_id`, leave alone.
 
-## 9. Migration strategy ✅ (shape)
-- ✅ **Build new + backfill first; drop columns later.** Create `ctx_associations`, backfill from both old tables and the few populated FKs.
-- ✅ **Compatibility views** — recreate `ctx_scope_assignments` / `ctx_task_associations` as **views over `ctx_associations`** so reader RPCs keep working untouched; avoids the 4,000-line big-bang transaction.
-- ✅ **Phase 2** — repoint the ~7 writer functions, then drop compat views + dead FK columns once nothing references them.
-- ⚠️ **Executor** — decided after the codebase inventory (§ handoff doc): I produce the migration if it's clean; otherwise the IDE agent writes the transaction from the handoff.
+## 8a. Industry-module binding principle ✅ (why this matters system-wide)
+Workers' comp is our **first** discipline-specific module and a template for the future: a module behaves like a small Next.js + SQL + server/client app a user builds with our agents, where ~99% rides on the core system. The rule that follows: **a module brings its own domain tables, but its connective tissue to scopes / projects / tasks / files / agents goes through `ctx_associations` and typed context-item values — never through bespoke FK columns.** This is the "one overarching system too dominant to work around" — it's what stops every future module (and every coding agent) from re-inventing associations. Anything industry-specific that needs a relationship expresses it through the fabric.
+
+## 9. Migration strategy ✅ (shape) — see the SQL + runbook files
+- ✅ **Build new + backfill first; drop later.** `ctx_associations` created, backfilled from both old tables (+ the tiny populated litter). Backfill volume is ~18 rows total — **the risk is code, not data.**
+- ✅ **Compatibility layer** — old tables renamed `*_deprecated` (data retained); original names re-exposed as **views with INSTEAD OF triggers**, so *reader and writer* RPCs keep working unchanged. Avoids the big-bang transaction.
+- ✅ **Phase 1 = safe one-shot today** (additive, atomic, reversible). **Phase 2 (drops) waits** for the audits + app cutover — dropping litter columns before code is updated orphans the app, not the DB.
+- Files: `ctx-association-migration-phase1.sql`, `ctx-association-migration-phase2-drops.sql`, `ctx-association-removed-fk-ledger.md`, `ctx-association-post-migration-plan.md`, `ctx-supabase-internals-audit-brief.md`.
 
 ## 10. Decision log
-- *2026-06-07* — §0 framing; §2 (`ctx_associations`, no relationship_kind, bounded targets, org excluded); §3 typed-reference values + scope-as-value + required slots (flagship, partly proposed); §4 cascade (vertical auto / lateral+promotion suggest, store-explicit-derive); §5 ownership/audit model decided; §6 Active Context vs Association naming + Context Hints; open items §7, deferrals §8, migration §9.
+- *2026-06-07* — §0 framing; §2 (`ctx_associations`, no relationship_kind, bounded targets, org excluded); §3 typed-reference values (storage confirmed already-present) + scope-as-value + required slots; §4 cascade (vertical auto / lateral suggest; multi-level first-class; promotion additive; push-down) + §7a one directional associate/move control; §5 ownership/audit decided; §6 Active Context vs Association + Context Hints; §8a industry-module binding principle; §9 migration realized as Phase 1 SQL + compat layer + ledger + runbook + audit brief; Q7.1 closed.
