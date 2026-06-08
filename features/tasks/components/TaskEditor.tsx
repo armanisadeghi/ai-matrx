@@ -457,18 +457,18 @@ function TaskEditorInner({ taskId }: { taskId: string }) {
             </PropertyRow>
 
             <PropertyRow icon={Flag} label="Priority">
-              <PrioritySegmented
+              <TaskPriorityPicker
+                variant="segmented"
                 value={effective.priority ?? null}
                 onChange={(v) => patch("priority", v)}
               />
             </PropertyRow>
 
             <PropertyRow icon={Calendar} label="Due date" last>
-              <input
-                type="date"
-                value={effective.dueDate ?? ""}
-                onChange={(e) => patch("due_date", e.target.value || null)}
-                className="h-8 w-full bg-card border border-border rounded-md px-2 text-xs outline-none hover:border-foreground/30 focus:border-primary/60 transition-colors"
+              <TaskDueDatePicker
+                variant="field"
+                value={effective.dueDate ?? null}
+                onChange={(v) => patch("due_date", v)}
               />
             </PropertyRow>
           </section>
@@ -830,46 +830,6 @@ function PropertyRow({
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
-
-function PrioritySegmented({
-  value,
-  onChange,
-}: {
-  value: Priority;
-  onChange: (v: Priority) => void;
-}) {
-  const options: { val: "low" | "medium" | "high" | null; label: string }[] = [
-    { val: null, label: "None" },
-    { val: "low", label: "Low" },
-    { val: "medium", label: "Med" },
-    { val: "high", label: "High" },
-  ];
-  return (
-    <div className="inline-flex items-center gap-0.5 p-0.5 rounded-md bg-muted/50 border border-border/60 w-fit">
-      {options.map((opt) => {
-        const active = value === opt.val;
-        const style = opt.val ? PRIORITY_STYLES[opt.val] : null;
-        return (
-          <button
-            key={opt.val ?? "none"}
-            type="button"
-            onClick={() => onChange(opt.val)}
-            className={cn(
-              "h-6 px-2 rounded text-[11px] font-medium transition-colors",
-              active
-                ? style
-                  ? `${style.bg} ${style.text}`
-                  : "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 function ProjectSelect({
   value,

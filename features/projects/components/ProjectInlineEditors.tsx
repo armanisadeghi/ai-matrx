@@ -16,7 +16,6 @@
  */
 
 import React from "react";
-import { format } from "date-fns";
 import {
   Pencil,
   X,
@@ -50,6 +49,7 @@ import {
 import { cn } from "@/utils/cn";
 import { toast } from "sonner";
 import { useUserOrganizations } from "@/features/organizations/hooks";
+import { parseDateOnly, toDateOnly, formatDateOnly } from "@/utils/dateOnly";
 import { updateProject } from "../service";
 import type {
   Project,
