@@ -2,12 +2,16 @@
 
 // /demos/scopes/context-lab
 //
-// A private, NON-DB, fully-faked lab to look at every "ctx" interaction in one
-// place and to prototype the proposed entity+M2M model with cascade. Nothing
-// here touches Redux or Supabase — it's pure local state with mock data so we
-// can see the BEHAVIOR we want before committing to the real wiring.
+// A private, NON-DB playground for the ctx-association overhaul. Pure local
+// state + mock data — no Redux, no Supabase. It exists so Arman (UI-first) can
+// SEE the behavior + the data shape before any real wiring.
 //
-// Built for Arman to evaluate, not for end users. Annotations are inline.
+// Structure rule (per Arman): every concept is a grouped unit —
+//   [ intro band: informative ] + [ UI card: what actually ships ] + [ notes card ]
+// inside one shared frame, so "what's code" vs "what's commentary" is obvious.
+//
+// Playground rule: a global ERA toggle (Today / Future) reshapes the UI so we
+// can feel how the schema change (ctx_associations + typed item values) lands.
 
 import React, { useMemo, useState } from "react";
 import {
@@ -20,7 +24,6 @@ import {
   Plus,
   Check,
   X,
-  ArrowRight,
   CornerDownRight,
   Lightbulb,
   Lock,
@@ -29,6 +32,10 @@ import {
   CircleDot,
   Wand2,
   AlertTriangle,
+  Database,
+  MessageSquare,
+  ArrowRight,
+  Ban,
   type LucideIcon,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -36,8 +43,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
+type Era = "today" | "future";
+
 /* ────────────────────────────────────────────────────────────────────────
-   FAKE DATA — a law firm org, modeled the way the REAL ctx system would.
+   FAKE DATA — a law firm org, modeled the way the REAL ctx system will be.
    node kinds: org (owner) · scope_type · scope · context_item · project · task
    ──────────────────────────────────────────────────────────────────────── */
 
@@ -48,37 +57,25 @@ interface Node {
   kind: NodeKind;
   label: string;
   sub?: string;
-  // vertical-spine parent (unambiguous, auto-cascaded UP)
-  parent?: string;
-  // lateral links (ambiguous, M2M — only SUGGESTED, never auto-attached)
-  lateral?: string[];
+  parent?: string; // unambiguous vertical spine (auto-derived UP)
+  lateral?: string[]; // ambiguous M2M (only SUGGESTED)
   valueType?: "text" | "file" | "number";
 }
 
-const ORG: Node = {
-  id: "org_castellano",
-  kind: "org",
-  label: "Castellano & Reyes, LLP",
-  sub: "Owning organization",
-};
+const ORG: Node = { id: "org_castellano", kind: "org", label: "Castellano & Reyes, LLP", sub: "Owning organization" };
 
 const NODES: Node[] = [
   ORG,
-  // scope types
   { id: "st_clients", kind: "scope_type", label: "Clients", parent: ORG.id },
   { id: "st_matters", kind: "scope_type", label: "Matters", parent: ORG.id },
-  // scopes (instances)
   { id: "sc_acme", kind: "scope", label: "Acme Corp", sub: "Client", parent: "st_clients", lateral: ["pr_acme_lit"] },
   { id: "sc_globex", kind: "scope", label: "Globex", sub: "Client", parent: "st_clients", lateral: ["pr_globex_ma"] },
   { id: "sc_acme_v_globex", kind: "scope", label: "Acme v. Globex", sub: "Matter", parent: "st_matters", lateral: ["pr_acme_lit"] },
-  // context items (typed slots defined on the Clients scope type)
   { id: "it_opagreement", kind: "item", label: "Operating Agreement", sub: "on Clients · file", parent: "st_clients", valueType: "file" },
   { id: "it_engagement", kind: "item", label: "Engagement Letter", sub: "on Clients · file", parent: "st_clients", valueType: "file" },
   { id: "it_industry", kind: "item", label: "Industry", sub: "on Clients · text", parent: "st_clients", valueType: "text" },
-  // projects (M2M with scopes via lateral)
   { id: "pr_acme_lit", kind: "project", label: "Acme v. Globex Litigation", parent: ORG.id },
   { id: "pr_globex_ma", kind: "project", label: "Globex M&A", parent: ORG.id },
-  // tasks
   { id: "tk_motion", kind: "task", label: "Draft motion to compel", parent: "pr_acme_lit" },
   { id: "tk_discovery", kind: "task", label: "Review discovery", parent: "pr_acme_lit" },
 ];
@@ -94,35 +91,19 @@ const KIND_META: Record<NodeKind, { icon: LucideIcon; tone: string; chip: string
   task: { icon: FolderOpen, tone: "text-rose-600 dark:text-rose-400", chip: "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300", word: "Task" },
 };
 
-/* Walk the unambiguous vertical spine UP from a node (auto-derived ancestors). */
 function spine(id: string): string[] {
   const out: string[] = [];
   let cur: Node | undefined = byId(id);
-  while (cur?.parent) {
-    out.push(cur.parent);
-    cur = byId(cur.parent);
-  }
+  while (cur?.parent) { out.push(cur.parent); cur = byId(cur.parent); }
   return out;
 }
-
-/* Lateral (ambiguous) suggestions for a node — NOT auto-attached. */
-function lateralSuggestions(id: string): string[] {
-  return byId(id).lateral ?? [];
-}
+const lateralOf = (id: string) => byId(id).lateral ?? [];
 
 /* ────────────────────────────────────────────────────────────────────────
-   Small presentational atoms
+   Atoms
    ──────────────────────────────────────────────────────────────────────── */
 
-function NodeChip({
-  id,
-  derived,
-  onRemove,
-}: {
-  id: string;
-  derived?: boolean;
-  onRemove?: () => void;
-}) {
+function NodeChip({ id, derived, onRemove }: { id: string; derived?: boolean; onRemove?: () => void }) {
   const n = byId(id);
   const m = KIND_META[n.kind];
   const Icon = m.icon;
@@ -130,36 +111,17 @@ function NodeChip({
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full pl-2 pr-1.5 py-1 text-xs font-medium border",
-        derived
-          ? "border-dashed border-border bg-muted/40 text-muted-foreground"
-          : cn("border-transparent", m.chip),
+        derived ? "border-dashed border-border bg-muted/40 text-muted-foreground" : cn("border-transparent", m.chip),
       )}
       title={derived ? "Derived automatically (vertical spine)" : "Explicitly assigned"}
     >
       <Icon className="h-3.5 w-3.5 shrink-0" />
       {n.label}
-      {derived ? (
-        <span className="text-[9px] uppercase tracking-wide opacity-70">auto</span>
-      ) : onRemove ? (
-        <button onClick={onRemove} className="rounded p-0.5 hover:bg-black/10 dark:hover:bg-white/10" aria-label="Remove">
-          <X className="h-3 w-3" />
-        </button>
-      ) : null}
+      {derived ? <span className="text-[9px] uppercase tracking-wide opacity-70">auto</span>
+        : onRemove ? (
+          <button onClick={onRemove} className="rounded p-0.5 hover:bg-black/10 dark:hover:bg-white/10" aria-label="Remove"><X className="h-3 w-3" /></button>
+        ) : null}
     </span>
-  );
-}
-
-function SectionHeader({ icon: Icon, title, kicker }: { icon: LucideIcon; title: string; kicker: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary shrink-0">
-        <Icon className="h-5 w-5" />
-      </div>
-      <div>
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{kicker}</div>
-        <h2 className="text-lg font-bold text-foreground leading-tight">{title}</h2>
-      </div>
-    </div>
   );
 }
 
@@ -178,123 +140,153 @@ function Note({ children, tone = "info" }: { children: React.ReactNode; tone?: "
   );
 }
 
-/* ────────────────────────────────────────────────────────────────────────
-   PANEL 1 — The unified ContextAssignmentField (the missing primitive)
-   ──────────────────────────────────────────────────────────────────────── */
-
-const ASSIGNABLE: { kind: NodeKind; ids: string[] }[] = [
-  { kind: "scope", ids: ["sc_acme", "sc_globex", "sc_acme_v_globex"] },
-  { kind: "project", ids: ["pr_acme_lit", "pr_globex_ma"] },
-  { kind: "task", ids: ["tk_motion", "tk_discovery"] },
-];
-
-function AssignmentField({
-  mode,
+/* The structural wrapper Arman asked for: intro band (informative) on top,
+   then a clear two-column split — REAL UI (what ships) | NOTES — inside one
+   shared frame so they're grouped but visibly delineated. */
+function ConceptBlock({
+  icon: Icon, kicker, title, intro, ui, notes,
 }: {
-  mode: "assignment" | "active";
+  icon: LucideIcon; kicker: string; title: string; intro: React.ReactNode;
+  ui: React.ReactNode; notes: React.ReactNode;
 }) {
-  const [picked, setPicked] = useState<Set<string>>(new Set(["sc_acme"]));
-  const [openKind, setOpenKind] = useState<NodeKind | null>(null);
+  return (
+    <div className="rounded-xl border-2 border-border overflow-hidden bg-background">
+      {/* Intro band — informative, sits OUTSIDE the UI card */}
+      <div className="bg-muted/40 border-b-2 border-border px-5 py-4">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary shrink-0"><Icon className="h-5 w-5" /></div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{kicker}</div>
+            <h2 className="text-lg font-bold leading-tight">{title}</h2>
+            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{intro}</p>
+          </div>
+        </div>
+      </div>
+      {/* Two columns: the real UI | the notes */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] divide-y-2 lg:divide-y-0 lg:divide-x-2 divide-border">
+        <div className="p-5">
+          <div className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-emerald-100 dark:bg-emerald-950 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+            <Sparkles className="h-3 w-3" /> What actually ships — exactly what the user sees
+          </div>
+          {ui}
+        </div>
+        <div className="p-5 bg-card/40">
+          <div className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            <Lightbulb className="h-3 w-3" /> Notes — why / how / where
+          </div>
+          <div className="space-y-3">{notes}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   UI 1 — The assignment field (era-aware: Today FK vs Future ctx_associations)
+   ════════════════════════════════════════════════════════════════════════ */
+
+const SCOPES = ["sc_acme", "sc_globex", "sc_acme_v_globex"];
+const PROJECTS = ["pr_acme_lit", "pr_globex_ma"];
+const TASKS = ["tk_motion", "tk_discovery"];
+
+function AssignmentFieldUI({ era, mode }: { era: Era; mode: "assignment" | "active" }) {
+  const [scopes, setScopes] = useState<Set<string>>(new Set(["sc_acme"]));
+  const [projectsSel, setProjectsSel] = useState<Set<string>>(new Set());
+  const [tasksSel, setTasksSel] = useState<Set<string>>(new Set());
+  const [open, setOpen] = useState<NodeKind | null>("scope");
+
+  const future = era === "future";
+  const picked = useMemo(() => new Set<string>([...scopes, ...projectsSel, ...tasksSel]), [scopes, projectsSel, tasksSel]);
 
   const derived = useMemo(() => {
+    if (!future) return new Set<string>(); // Today: no cascade
     const s = new Set<string>();
     picked.forEach((id) => spine(id).forEach((p) => s.add(p)));
-    // remove any that are also explicitly picked
     picked.forEach((id) => s.delete(id));
     return s;
-  }, [picked]);
+  }, [picked, future]);
 
   const suggestions = useMemo(() => {
+    if (!future) return [] as string[];
     const s = new Set<string>();
-    picked.forEach((id) => lateralSuggestions(id).forEach((l) => { if (!picked.has(l)) s.add(l); }));
+    picked.forEach((id) => lateralOf(id).forEach((l) => { if (!picked.has(l)) s.add(l); }));
     return [...s];
-  }, [picked]);
+  }, [picked, future]);
 
-  function toggle(id: string) {
-    setPicked((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+  function toggleIn(setter: React.Dispatch<React.SetStateAction<Set<string>>>, id: string, single: boolean) {
+    setter((prev) => {
+      const next = new Set(single ? [] : prev);
+      if (single) { if (!prev.has(id)) next.add(id); }
+      else { prev.has(id) ? next.delete(id) : next.add(id); }
       return next;
     });
   }
 
+  const groups: { kind: NodeKind; ids: string[]; sel: Set<string>; setter: React.Dispatch<React.SetStateAction<Set<string>>>; single: boolean }[] = [
+    { kind: "scope", ids: SCOPES, sel: scopes, setter: setScopes, single: false }, // scope is M2M in BOTH eras
+    { kind: "project", ids: PROJECTS, sel: projectsSel, setter: setProjectsSel, single: !future }, // FK→single today
+    { kind: "task", ids: TASKS, sel: tasksSel, setter: setTasksSel, single: !future },
+  ];
+
   return (
     <div className="space-y-4">
-      {/* The "resource" being assigned */}
       <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-        <div className="rounded-md bg-rose-100 dark:bg-rose-950 p-2 text-rose-600 dark:text-rose-400">
-          <FileText className="h-5 w-5" />
-        </div>
+        <div className="rounded-md bg-rose-100 dark:bg-rose-950 p-2 text-rose-600 dark:text-rose-400"><FileText className="h-5 w-5" /></div>
         <div className="min-w-0">
           <div className="text-sm font-semibold">Acme_Operating_Agreement_scan.pdf</div>
           <div className="text-xs text-muted-foreground">
-            {mode === "assignment"
-              ? "Source resource being created — tag it now (writes ctx_scope_assignments)"
-              : "Current chat work — what is this relevant to? (writes appContextSlice, no DB tag)"}
+            {mode === "assignment" ? "Source resource — tag it now" : "Current chat work — what is this relevant to?"}
           </div>
         </div>
       </div>
 
-      {/* Owner org — always present, never a casual multi-tag */}
       <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
         <div className="flex items-center gap-2 text-sm">
           <Lock className="h-3.5 w-3.5 text-muted-foreground" />
           <Building2 className="h-4 w-4 text-slate-500" />
           <span className="font-medium">{ORG.label}</span>
         </div>
-        <Badge variant="outline" className="text-[10px]">owning org · single</Badge>
+        <Badge variant="outline" className="text-[10px]">owning org · single (both eras)</Badge>
       </div>
 
-      {/* The pickers: scope / project / task — each multi-select with inline + create */}
+      {!future && (
+        <div className="rounded-md border border-dashed border-rose-300/60 bg-rose-50/60 dark:bg-rose-950/30 px-3 py-1.5 text-[11px] text-rose-700 dark:text-rose-300">
+          Today: scope is a tagger (M2M) but Project / Task are single FK columns — two mental models, no cascade.
+        </div>
+      )}
+
       <div className="space-y-2">
-        {ASSIGNABLE.map(({ kind, ids }) => {
+        {groups.map(({ kind, ids, sel, setter, single }) => {
           const m = KIND_META[kind];
           const Icon = m.icon;
-          const open = openKind === kind;
+          const isOpen = open === kind;
           return (
             <div key={kind} className="rounded-lg border border-border">
-              <button
-                onClick={() => setOpenKind(open ? null : kind)}
-                className="flex w-full items-center justify-between px-3 py-2 text-left"
-              >
+              <button onClick={() => setOpen(isOpen ? null : kind)} className="flex w-full items-center justify-between px-3 py-2 text-left">
                 <span className="flex items-center gap-2 text-sm font-medium">
                   <Icon className={cn("h-4 w-4", m.tone)} />
                   {m.word}s
-                  <span className="text-xs text-muted-foreground">
-                    {ids.filter((i) => picked.has(i)).length} selected
-                  </span>
+                  <span className="text-xs text-muted-foreground">{ids.filter((i) => sel.has(i)).length} selected</span>
                 </span>
-                <Badge variant="secondary" className="text-[10px]">multi</Badge>
+                <Badge variant="secondary" className="text-[10px]">{single ? "single (FK)" : "multi (M2M)"}</Badge>
               </button>
-              {open && (
+              {isOpen && (
                 <div className="border-t border-border p-2 space-y-1">
                   {ids.map((id) => {
-                    const n = byId(id);
-                    const on = picked.has(id);
+                    const n = byId(id); const on = sel.has(id);
                     return (
-                      <button
-                        key={id}
-                        onClick={() => toggle(id)}
-                        className={cn(
-                          "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm",
-                          on ? "bg-accent" : "hover:bg-muted",
-                        )}
-                      >
+                      <button key={id} onClick={() => toggleIn(setter, id, single)} className={cn("flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm", on ? "bg-accent" : "hover:bg-muted")}>
                         <span className="flex items-center gap-2">
-                          <span className={cn("flex h-4 w-4 items-center justify-center rounded border", on ? "bg-primary border-primary text-primary-foreground" : "border-border")}>
+                          <span className={cn("flex h-4 w-4 items-center justify-center border", single ? "rounded-full" : "rounded", on ? "bg-primary border-primary text-primary-foreground" : "border-border")}>
                             {on && <Check className="h-3 w-3" />}
                           </span>
-                          {n.label}
-                          {n.sub && <span className="text-[10px] text-muted-foreground">{n.sub}</span>}
+                          {n.label}{n.sub && <span className="text-[10px] text-muted-foreground">{n.sub}</span>}
                         </span>
                       </button>
                     );
                   })}
-                  {/* THE critical affordance: inline create, never leave the flow */}
                   <button className="flex w-full items-center gap-2 rounded-md border border-dashed border-border px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-primary/40">
-                    <Plus className="h-3.5 w-3.5" />
-                    Create a new {m.word.toLowerCase()}…
-                    <span className="ml-auto text-[10px] opacity-70">opens 1-line quick-add</span>
+                    <Plus className="h-3.5 w-3.5" /> Create a new {m.word.toLowerCase()}… <span className="ml-auto text-[10px] opacity-70">inline quick-add</span>
                   </button>
                 </div>
               )}
@@ -303,31 +295,26 @@ function AssignmentField({
         })}
       </div>
 
-      {/* Live result */}
       <div className="rounded-lg border border-border bg-card p-3 space-y-2">
         <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {mode === "assignment" ? "This file is now tagged with" : "Active context for this work"}
+          {mode === "assignment" ? "Result" : "Active context for this work"}
         </div>
         <div className="flex flex-wrap gap-1.5">
           <NodeChip id={ORG.id} />
-          {[...picked].map((id) => (
-            <NodeChip key={id} id={id} onRemove={() => toggle(id)} />
-          ))}
-          {[...derived].map((id) => (
-            <NodeChip key={id} id={id} derived />
-          ))}
-          {picked.size === 0 && (
-            <span className="text-xs text-muted-foreground italic">Nothing yet — opting out is allowed.</span>
-          )}
+          {[...picked].map((id) => <NodeChip key={id} id={id} onRemove={() => {
+            setScopes((p) => { const n = new Set(p); n.delete(id); return n; });
+            setProjectsSel((p) => { const n = new Set(p); n.delete(id); return n; });
+            setTasksSel((p) => { const n = new Set(p); n.delete(id); return n; });
+          }} />)}
+          {[...derived].map((id) => <NodeChip key={id} id={id} derived />)}
+          {picked.size === 0 && <span className="text-xs italic text-muted-foreground">Nothing yet — opting out is allowed.</span>}
         </div>
         {suggestions.length > 0 && (
           <div className="pt-1">
-            <div className="text-[11px] text-muted-foreground mb-1 flex items-center gap-1">
-              <Wand2 className="h-3 w-3" /> Suggested lateral links (one click — never auto-attached):
-            </div>
+            <div className="mb-1 flex items-center gap-1 text-[11px] text-muted-foreground"><Wand2 className="h-3 w-3" /> Suggested lateral links (one click — never auto-written):</div>
             <div className="flex flex-wrap gap-1.5">
               {suggestions.map((id) => (
-                <button key={id} onClick={() => toggle(id)} className="inline-flex items-center gap-1 rounded-full border border-dashed border-amber-400/60 px-2 py-1 text-xs text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40">
+                <button key={id} onClick={() => setProjectsSel((p) => new Set(p).add(id))} className="inline-flex items-center gap-1 rounded-full border border-dashed border-amber-400/60 px-2 py-1 text-xs text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40">
                   <Plus className="h-3 w-3" /> {byId(id).label}
                 </button>
               ))}
@@ -339,292 +326,229 @@ function AssignmentField({
   );
 }
 
-/* ────────────────────────────────────────────────────────────────────────
-   PANEL 2 — Assign to a CONTEXT ITEM (the cascade unlock)
-   ──────────────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════════════
+   UI 2 — Assign a resource to a context ITEM (typed reference value)
+   ════════════════════════════════════════════════════════════════════════ */
 
-function ItemAssignmentDemo() {
+function ItemAssignmentUI({ era }: { era: Era }) {
+  const future = era === "future";
   const items = ["it_opagreement", "it_engagement", "it_industry"];
-  const scopes = ["sc_acme", "sc_globex"];
-  const [item, setItem] = useState<string>("it_opagreement");
-  const [scope, setScope] = useState<string>("sc_acme");
+  const [item, setItem] = useState("it_opagreement");
+  const [scope, setScope] = useState("sc_acme");
   const [assigned, setAssigned] = useState(false);
-
   const itemNode = byId(item);
   const isFileSlot = itemNode.valueType === "file";
+  const derivedSpine = useMemo(() => [scope, ...spine(scope)], [scope]);
+  const lateral = lateralOf(scope);
 
-  // assigning to an item for a scope = the most-specific node. Spine derives the rest.
-  const derivedSpine = useMemo(() => {
-    // anchor at the scope (item belongs to a type; the actual instance is the scope)
-    const base = [scope, ...spine(scope)];
-    return base;
-  }, [scope]);
-  const lateral = useMemo(() => lateralSuggestions(scope), [scope]);
+  if (!future) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-3">
+          <Ban className="h-5 w-5 text-rose-500" />
+          <div className="text-sm">Today, a context item value is <b>text / number / json</b> only.</div>
+        </div>
+        <div className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
+          The best you can do is paste a URL string into the &quot;Operating Agreement&quot; text field. The file isn&apos;t
+          <i> linked</i>, there&apos;s no cascade, and nothing knows the value IS a resource. This whole interaction doesn&apos;t exist yet.
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div className="space-y-3">
-        <div className="space-y-1.5">
-          <div className="text-xs font-medium text-muted-foreground">1 · Which scope instance?</div>
-          <div className="flex gap-2">
-            {scopes.map((s) => (
-              <button key={s} onClick={() => { setScope(s); setAssigned(false); }} className={cn("rounded-md border px-3 py-1.5 text-sm", scope === s ? "border-primary bg-accent" : "border-border")}>
-                {byId(s).label}
-              </button>
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {["sc_acme", "sc_globex"].map((s) => (
+          <button key={s} onClick={() => { setScope(s); setAssigned(false); }} className={cn("rounded-md border px-3 py-1.5 text-sm", scope === s ? "border-primary bg-accent" : "border-border")}>{byId(s).label}</button>
+        ))}
+      </div>
+      <div className="flex flex-col gap-1.5">
+        {items.map((i) => {
+          const n = byId(i);
+          return (
+            <button key={i} onClick={() => { setItem(i); setAssigned(false); }} className={cn("flex items-center justify-between rounded-md border px-3 py-1.5 text-sm", item === i ? "border-primary bg-accent" : "border-border")}>
+              <span className="flex items-center gap-2"><ListChecks className="h-3.5 w-3.5 text-emerald-600" />{n.label}</span>
+              <Badge variant="outline" className="text-[10px]">{n.valueType}</Badge>
+            </button>
+          );
+        })}
+      </div>
+      <Button size="sm" disabled={!isFileSlot} onClick={() => setAssigned(true)} className="w-full">
+        <FileText className="h-4 w-4 mr-1.5" />
+        {isFileSlot ? `Set this PDF as ${byId(scope).label}'s ${itemNode.label}` : "Pick a file-type slot to drop the PDF"}
+      </Button>
+      {!isFileSlot && <Note tone="warn">&quot;{itemNode.label}&quot; is a <b>{itemNode.valueType}</b> slot — the PDF can&apos;t be its value. The slot&apos;s <i>type</i> decides what you can drop.</Note>}
+      {assigned && (
+        <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300"><Check className="h-4 w-4" /> The file <b>is</b> {byId(scope).label}&apos;s {itemNode.label}.</div>
+          <div className="text-xs text-muted-foreground">Auto-derived vertical spine (stored once, computed upward):</div>
+          <div className="space-y-1.5">
+            {derivedSpine.map((id, idx) => (
+              <div key={id} className="flex items-center gap-2" style={{ paddingLeft: idx * 14 }}>
+                {idx > 0 && <CornerDownRight className="h-3 w-3 text-muted-foreground" />}
+                <NodeChip id={id} derived={idx > 0} />
+              </div>
             ))}
           </div>
+          {lateral.length > 0 && (
+            <div className="pt-1">
+              <div className="mb-1 flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-300"><Wand2 className="h-3 w-3" /> {byId(scope).label} is linked to a project — attach the file too?</div>
+              {lateral.map((id) => <span key={id} className="inline-flex items-center gap-1 rounded-full border border-dashed border-amber-400/60 px-2 py-1 text-xs text-amber-700 dark:text-amber-300"><Plus className="h-3 w-3" /> {byId(id).label} <span className="opacity-60">(suggested)</span></span>)}
+            </div>
+          )}
         </div>
-        <div className="space-y-1.5">
-          <div className="text-xs font-medium text-muted-foreground">2 · Which typed slot (context item)?</div>
-          <div className="flex flex-col gap-1.5">
-            {items.map((i) => {
-              const n = byId(i);
-              return (
-                <button key={i} onClick={() => { setItem(i); setAssigned(false); }} className={cn("flex items-center justify-between rounded-md border px-3 py-1.5 text-sm", item === i ? "border-primary bg-accent" : "border-border")}>
-                  <span className="flex items-center gap-2"><ListChecks className="h-3.5 w-3.5 text-emerald-600" />{n.label}</span>
-                  <Badge variant="outline" className="text-[10px]">{n.valueType}</Badge>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        <Button
-          size="sm"
-          disabled={!isFileSlot}
-          onClick={() => setAssigned(true)}
-          className="w-full"
-        >
-          <FileText className="h-4 w-4 mr-1.5" />
-          {isFileSlot ? `Set this PDF as ${byId(scope).label}'s ${itemNode.label}` : "Pick a file-type slot to drop the PDF"}
-        </Button>
-        {!isFileSlot && (
-          <Note tone="warn">
-            “{itemNode.label}” is a <b>{itemNode.valueType}</b> slot, so the PDF can&apos;t be its value — but a text slot could still hold an extracted summary. The slot&apos;s <i>type</i> drives what you can drop.
-          </Note>
-        )}
-      </div>
+      )}
+    </div>
+  );
+}
 
-      {/* Cascade visualization */}
-      <div className="rounded-lg border border-border bg-card p-4">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-          What one assignment sets off
-        </div>
-        {!assigned ? (
-          <div className="text-sm text-muted-foreground italic py-8 text-center">
-            Assign the file to a slot to watch the chain light up →
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
-              <Check className="h-4 w-4" /> The file <b>is</b> {byId(scope).label}&apos;s {itemNode.label}.
-            </div>
-            <div className="text-xs text-muted-foreground">Auto-derived vertical spine (stored once, computed upward):</div>
-            <div className="space-y-1.5">
-              {[item, ...derivedSpine].map((id, idx) => (
-                <div key={id} className="flex items-center gap-2" style={{ paddingLeft: idx * 14 }}>
-                  {idx > 0 && <CornerDownRight className="h-3 w-3 text-muted-foreground" />}
-                  <NodeChip id={id} derived={idx > 0} />
-                </div>
-              ))}
-            </div>
-            {lateral.length > 0 && (
-              <div className="pt-1">
-                <div className="text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-1 mb-1">
-                  <Wand2 className="h-3 w-3" /> {byId(scope).label} is linked to a project — attach the file too?
-                </div>
-                {lateral.map((id) => (
-                  <button key={id} className="inline-flex items-center gap-1 rounded-full border border-dashed border-amber-400/60 px-2 py-1 text-xs text-amber-700 dark:text-amber-300">
-                    <Plus className="h-3 w-3" /> {byId(id).label} <span className="opacity-60">(suggested)</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+/* ════════════════════════════════════════════════════════════════════════
+   UI 3 — Active Context vs Durable Association (the §6 distinction)
+   ════════════════════════════════════════════════════════════════════════ */
+
+function ActiveVsDurableUI() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="rounded-lg border border-border p-3 space-y-2">
+        <div className="flex items-center gap-2 text-sm font-semibold"><MessageSquare className="h-4 w-4 text-violet-500" /> Chat composer</div>
+        <div className="flex flex-wrap gap-1.5"><NodeChip id="sc_acme" /><NodeChip id="pr_acme_lit" /></div>
+        <div className="rounded bg-muted/60 px-2 py-1 text-[10px] font-mono text-muted-foreground">appContextSlice / ctx_user_active_context</div>
+        <div className="text-[11px] text-muted-foreground">Ephemeral. &quot;My current work is relevant to these.&quot; Feeds the AI. Cleared when you switch context.</div>
+      </div>
+      <div className="rounded-lg border border-border p-3 space-y-2">
+        <div className="flex items-center gap-2 text-sm font-semibold"><FileText className="h-4 w-4 text-rose-500" /> File assignment</div>
+        <div className="flex flex-wrap gap-1.5"><NodeChip id="sc_acme" /><NodeChip id="pr_acme_lit" /></div>
+        <div className="rounded bg-muted/60 px-2 py-1 text-[10px] font-mono text-muted-foreground">ctx_associations (durable row)</div>
+        <div className="text-[11px] text-muted-foreground">Permanent. &quot;This file belongs to these.&quot; Survives forever, independent of where you&apos;re working.</div>
       </div>
     </div>
   );
 }
 
-/* ────────────────────────────────────────────────────────────────────────
-   PANEL 3 — FK vs M2M opinion
-   ──────────────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════════════
+   UI 4 — The actual DB rows (see the data THROUGH the UI)
+   ════════════════════════════════════════════════════════════════════════ */
 
-function ModelCompare() {
+function Row({ children }: { children: React.ReactNode }) {
+  return <div className="rounded-md border border-border bg-card px-3 py-2 font-mono text-[11px] leading-relaxed">{children}</div>;
+}
+
+function DataShapeUI({ era }: { era: Era }) {
+  if (era === "today") {
+    return (
+      <div className="space-y-2">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Scattered across tables</div>
+        <Row><span className="text-rose-500">user_files</span>.project_id = <span className="text-amber-500">pr_acme_lit</span>  <span className="text-muted-foreground">— single FK, only ONE project possible</span></Row>
+        <Row><span className="text-sky-500">ctx_scope_assignments</span>(entity=&apos;file&apos;, scope=<span className="text-violet-500">sc_acme</span>)</Row>
+        <Row><span className="text-sky-500">ctx_task_associations</span>(entity=&apos;file&apos;, task=<span className="text-rose-500">tk_motion</span>)  <span className="text-muted-foreground">— separate table again</span></Row>
+        <div className="text-[11px] text-muted-foreground">3 tables, 2 shapes, 1 FK ceiling. No row says &quot;this also lives in the matter.&quot;</div>
+      </div>
+    );
+  }
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <Card className="p-4 border-rose-300/50">
-        <div className="flex items-center gap-2 mb-2">
-          <Badge variant="outline" className="text-[10px] border-rose-400 text-rose-600">today</Badge>
-          <h3 className="font-semibold text-sm">FK for org/project/task, M2M for scopes</h3>
-        </div>
-        <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
-          <li>A file gets <b>one</b> project, <b>one</b> task — a lie; real work spans several.</li>
-          <li>Two different pickers, two mental models (FK select vs scope tagger).</li>
-          <li>No cascade — every link is set by hand.</li>
-          <li>Org is an FK — which is actually <b>right</b> (tenancy boundary).</li>
-        </ul>
-      </Card>
-      <Card className="p-4 border-emerald-300/50">
-        <div className="flex items-center gap-2 mb-2">
-          <Badge variant="outline" className="text-[10px] border-emerald-400 text-emerald-600">proposed</Badge>
-          <h3 className="font-semibold text-sm">One M2M for scope/project/task/item · org stays owner</h3>
-        </div>
-        <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
-          <li>One <code>context_assignments</code> table; one picker; one mental model.</li>
-          <li>Multi-everything is honest about reality.</li>
-          <li><b>Cascade:</b> assign the most-specific node, derive the vertical spine.</li>
-          <li><b>Guardrail:</b> org stays a single owning FK (RLS / billing / isolation).</li>
-          <li><b>Guardrail:</b> lateral edges (scope↔project) are <i>suggested</i>, not auto-written.</li>
-          <li><b>Guardrail:</b> store explicit only, derive ancestors — no contradiction on edit.</li>
-        </ul>
-      </Card>
+    <div className="space-y-2">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">One polymorphic table</div>
+      <Row><span className="text-emerald-500">ctx_associations</span>(entity=&apos;user_file&apos;:f1, target=&apos;scope&apos;:<span className="text-violet-500">sc_acme</span>)</Row>
+      <Row><span className="text-emerald-500">ctx_associations</span>(entity=&apos;user_file&apos;:f1, target=&apos;project&apos;:<span className="text-amber-500">pr_acme_lit</span>)</Row>
+      <Row><span className="text-emerald-500">ctx_associations</span>(entity=&apos;user_file&apos;:f1, target=&apos;task&apos;:<span className="text-rose-500">tk_motion</span>)</Row>
+      <div className="pt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">…or the single strongest row (assign-to-item)</div>
+      <Row><span className="text-emerald-500">ctx_context_item_values</span>(scope=<span className="text-violet-500">sc_acme</span>, item=opagreement, <span className="text-emerald-500">value_kind=&apos;reference&apos;</span>, ref_entity_type=&apos;user_file&apos;, ref_entity_id=f1)</Row>
+      <div className="text-[11px] text-muted-foreground">org stays the tenancy owner FK (<span className="font-mono">user_files.organization_id</span>) — never an association.</div>
     </div>
   );
 }
 
-/* ────────────────────────────────────────────────────────────────────────
-   PANEL 4 — Where each pattern should live (candidate placements)
-   ──────────────────────────────────────────────────────────────────────── */
-
-const PLACEMENTS: { where: string; route: string; pattern: string; mode: string }[] = [
-  { where: "Note quick-save", route: "/notes (quick capture dialog)", pattern: "ContextAssignmentField (assignment)", mode: "Force it: source content almost always belongs to a scope." },
-  { where: "File upload", route: "/files, /rag library", pattern: "ContextAssignmentField (assignment)", mode: "Show inline on the dropzone; opt-out allowed." },
-  { where: "Chat composer", route: "/chat", pattern: "ContextAssignmentField (active)", mode: "Sets appContextSlice — 'this work is relevant to…' feeds the AI. NO db tag." },
-  { where: "Agent edit", route: "/agents/[id]", pattern: "ContextAssignmentField (assignment)", mode: "Agent = Utility; multi-scope; auto-set org if none." },
-  { where: "Scope value (item)", route: "/organizations/[org]/scopes/[type]/[scope]", pattern: "Item assignment (cascade)", mode: "Drop a resource into a typed slot = fill value + tag + cascade." },
-  { where: "Empty org", route: "/organizations/[org]", pattern: "ScopeOnboarding", mode: "Done. Canonical first-run." },
-  { where: "View hierarchy", route: "/organizations/[org]/settings?tab=members", pattern: "OrgScopeTree", mode: "Done. Canonical read-only viewer to push everywhere." },
-];
-
-function Placements() {
-  return (
-    <div className="overflow-hidden rounded-lg border border-border">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/50 text-xs text-muted-foreground">
-          <tr>
-            <th className="text-left font-medium px-3 py-2">Where users actually work</th>
-            <th className="text-left font-medium px-3 py-2">Route</th>
-            <th className="text-left font-medium px-3 py-2">Canonical pattern</th>
-            <th className="text-left font-medium px-3 py-2">How it behaves</th>
-          </tr>
-        </thead>
-        <tbody>
-          {PLACEMENTS.map((p) => (
-            <tr key={p.where} className="border-t border-border">
-              <td className="px-3 py-2 font-medium">{p.where}</td>
-              <td className="px-3 py-2"><code className="text-[11px] text-muted-foreground">{p.route}</code></td>
-              <td className="px-3 py-2"><Badge variant="secondary" className="text-[10px]">{p.pattern}</Badge></td>
-              <td className="px-3 py-2 text-xs text-muted-foreground">{p.mode}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────
+/* ════════════════════════════════════════════════════════════════════════
    PAGE
-   ──────────────────────────────────────────────────────────────────────── */
+   ════════════════════════════════════════════════════════════════════════ */
 
 export default function ContextLabPage() {
+  const [era, setEra] = useState<Era>("future");
   const [mode, setMode] = useState<"assignment" | "active">("assignment");
+
   return (
     <div className="min-h-dvh bg-textured">
-      <div className="mx-auto max-w-[1600px] p-5 lg:p-8 space-y-8">
-        {/* Header */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-primary">
-            <Sparkles className="h-3.5 w-3.5" /> Context Lab · non-DB prototype · for Arman
+      <div className="mx-auto max-w-[1600px] p-5 lg:p-8 space-y-7">
+        {/* Header + global playground controls */}
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-primary"><Sparkles className="h-3.5 w-3.5" /> Context Lab · non-DB playground · for Arman</div>
+            <h1 className="text-3xl font-bold">The ctx system — playground</h1>
+            <p className="max-w-3xl text-sm text-muted-foreground">Faked local state, no DB. Flip the era to watch the <b>ctx_associations</b> overhaul reshape the UI. Every block separates the <b>real UI that ships</b> from the <b>notes</b>.</p>
           </div>
-          <h1 className="text-3xl font-bold">The ctx system, end to end — and where it should go</h1>
-          <p className="max-w-3xl text-sm text-muted-foreground">
-            Everything here is faked local state — no Redux, no Supabase. It exists so we can see the
-            <b> behavior</b> we want (the unified picker, the entity+M2M model, and the cascade) before wiring it for real.
-            My opinion is baked into the panels; the short version is at the bottom.
-          </p>
+          <div className="flex flex-col items-end gap-2">
+            <div className="inline-flex rounded-lg border-2 border-border bg-card p-0.5">
+              <button onClick={() => setEra("today")} className={cn("rounded-md px-4 py-1.5 text-sm font-semibold", era === "today" ? "bg-rose-500 text-white" : "text-muted-foreground")}>Today (FK)</button>
+              <button onClick={() => setEra("future")} className={cn("rounded-md px-4 py-1.5 text-sm font-semibold", era === "future" ? "bg-emerald-600 text-white" : "text-muted-foreground")}>Future (ctx_associations)</button>
+            </div>
+            <div className="inline-flex rounded-md border border-border bg-card p-0.5">
+              <button onClick={() => setMode("assignment")} className={cn("rounded px-3 py-1 text-xs font-medium", mode === "assignment" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>Assignment</button>
+              <button onClick={() => setMode("active")} className={cn("rounded px-3 py-1 text-xs font-medium", mode === "active" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>Active context</button>
+            </div>
+          </div>
         </div>
 
-        {/* Panel 1 */}
-        <Card className="p-5 space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <SectionHeader
-              icon={Layers}
-              kicker="The missing primitive"
-              title="ContextAssignmentField — one component, two modes"
-            />
-            <div className="inline-flex rounded-md border border-border bg-card p-0.5">
-              <button onClick={() => setMode("assignment")} className={cn("rounded px-3 py-1 text-xs font-medium", mode === "assignment" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>
-                Assignment (Source/Utility)
-              </button>
-              <button onClick={() => setMode("active")} className={cn("rounded px-3 py-1 text-xs font-medium", mode === "active" ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>
-                Active context (Chat)
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-5">
-            <AssignmentField mode={mode} />
-            <div className="space-y-3">
-              <Note>
-                <b>The whole game.</b> This is the one component that doesn&apos;t exist yet. Multi-select scope/project/task,
-                each with an inline <b>+ create</b> so a brand-new user never has to leave the flow to make their first scope.
-                That friction is exactly why people don&apos;t opt in today.
-              </Note>
-              <Note tone="good">
-                <b>One prop flips the meaning.</b> In <i>Assignment</i> mode it writes <code>ctx_scope_assignments</code> (the file
-                belongs to these). In <i>Active</i> mode it writes <code>appContextSlice</code> (the chat work is <i>relevant</i> to
-                these — feeds the AI, no DB tag). Toggle it above — same UI, different contract. This is how we stop surfaces from
-                &quot;doing stupid things&quot; by guessing.
-              </Note>
-              <Note tone="warn">
-                <b>Org is locked.</b> One owning org (tenancy/RLS). Cross-org sharing stays an explicit, audited act — never a casual
-                multi-tag. This is my one disagreement with &quot;multiple orgs if you want.&quot;
-              </Note>
-            </div>
-          </div>
-        </Card>
+        <ConceptBlock
+          icon={Layers}
+          kicker="The missing primitive"
+          title="ContextAssignmentField"
+          intro={<>One component for org/scope/project/task, multi-select with inline <b>+ create</b>. Flip the era toggle: Today it&apos;s a scope-tagger glued next to single-FK project/task dropdowns; Future it&apos;s one uniform multi-everything field with cascade.</>}
+          ui={<AssignmentFieldUI era={era} mode={mode} />}
+          notes={<>
+            <Note><b>The whole game.</b> This is the component that doesn&apos;t exist yet. The inline <b>+ create</b> is what gets brand-new users to opt in — they never leave the flow to make a first scope.</Note>
+            <Note tone="good"><b>One prop flips meaning.</b> <i>Assignment</i> → <code>ctx_associations</code>. <i>Active</i> → <code>appContextSlice</code>. Same UI, different contract — that&apos;s how surfaces stop guessing. Toggle &quot;Active context&quot; above.</Note>
+            <Note tone="warn"><b>Org is locked, both eras.</b> Single owning FK (tenancy/RLS/billing). The brief confirms: org is never an association.</Note>
+          </>}
+        />
 
-        {/* Panel 2 */}
-        <Card className="p-5 space-y-4">
-          <SectionHeader
-            icon={ArrowRight}
-            kicker="The unlock you stumbled into"
-            title="Assign a resource to a context ITEM — and the chain sets itself"
-          />
-          <ItemAssignmentDemo />
-          <Note tone="good">
-            This is the best idea in your message. A context item like <b>Operating Agreement</b> (type: file) is a typed slot.
-            Dropping the PDF into it for <b>Acme</b> does two things at once: it <b>fills the scope&apos;s value with a real resource</b>
-            (structured data — the file <i>is</i> the agreement) and it&apos;s the <b>most-specific assignment</b>, so it cascades the
-            furthest. Scope values and resource tagging become the same act.
-          </Note>
-        </Card>
+        <ConceptBlock
+          icon={ArrowRight}
+          kicker="The flagship interaction"
+          title="Assign a resource to a context ITEM"
+          intro={<>A context item like <b>Operating Agreement</b> (type: file) is a typed slot. Dropping the PDF in fills the scope&apos;s value AND cascades. This is the new <code>value_kind=&apos;reference&apos;</code> from the brief — it doesn&apos;t exist Today (flip the toggle to see the dead end).</>}
+          ui={<ItemAssignmentUI era={era} />}
+          notes={<>
+            <Note tone="good"><b>Scope values and resource tagging become one act.</b> The file <i>is</i> the agreement (structured data) and it&apos;s the most-specific node, so it cascades the furthest.</Note>
+            <Note><b>Store explicit, derive ancestors.</b> Only the one item-value row is written; item→scope→type→org is computed at read time. No materialized ancestors = no edit contradictions.</Note>
+            <Note tone="warn"><b>Lateral edges are suggested, not auto-written.</b> A scope can sit in many projects — never silently attach the file to all of them.</Note>
+          </>}
+        />
 
-        {/* Panel 3 */}
-        <Card className="p-5 space-y-4">
-          <SectionHeader icon={Scale} kicker="The architecture question" title="FK vs M2M — my recommendation" />
-          <ModelCompare />
-        </Card>
+        <ConceptBlock
+          icon={MessageSquare}
+          kicker="The §6 distinction (known agent failure mode)"
+          title="Active Context vs Durable Association"
+          intro={<>They look identical and that&apos;s the trap. Same chips, totally different lifetimes and tables. Conflating them is exactly what the brief flags as the thing to never do.</>}
+          ui={<ActiveVsDurableUI />}
+          notes={<>
+            <Note tone="warn"><b>The failure mode:</b> a picker that &quot;helpfully&quot; writes your chat&apos;s active selection into a durable file tag — or vice-versa. One <code>mode</code> prop on the shared field prevents it structurally.</Note>
+            <Note><b>Where each lives:</b> Active = chat composer, the sidebar context picker. Durable = note save, file upload, agent edit, the item-value drop above.</Note>
+          </>}
+        />
 
-        {/* Panel 4 */}
-        <Card className="p-5 space-y-4">
-          <SectionHeader icon={ListChecks} kicker="Rollout map" title="Where each canonical pattern should live" />
-          <Placements />
-        </Card>
+        <ConceptBlock
+          icon={Database}
+          kicker="See the data through the UI"
+          title="What actually gets written"
+          intro={<>Since you read UI before data — here are the literal rows for the same file, Today vs Future. Flip the toggle.</>}
+          ui={<DataShapeUI era={era} />}
+          notes={<>
+            <Note><b>Compat-views strategy</b> (from the brief): readers keep working through views over <code>ctx_associations</code>; only writers repoint. End users see zero change during migration.</Note>
+            <Note tone="good"><b>One table, one picker, one mental model.</b> The 3-tables-2-shapes mess on the left is the whole reason the UI has been impossible to get right.</Note>
+          </>}
+        />
 
-        {/* My bottom line */}
+        {/* Bottom line — informative, intentionally OUTSIDE the concept frames */}
         <Card className="p-5 border-primary/30 bg-primary/[0.03]">
-          <div className="flex items-center gap-2 mb-2">
-            <Lightbulb className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-bold">My bottom line</h2>
-          </div>
-          <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal pl-5 max-w-3xl">
-            <li><b>Do the M2M unification</b> for scope/project/task/item — it&apos;s honest about reality and collapses 4 pickers into 1.</li>
-            <li><b>Keep org as the single owning FK.</b> It&apos;s your tenancy/RLS/billing boundary; multi-org-per-row is an enterprise data-leak.</li>
-            <li><b>Store explicit assignments only; derive the vertical spine</b> (item→scope→type→org) at read time. No materialized ancestors = no edit contradictions.</li>
-            <li><b>Auto-cascade the spine; suggest lateral edges</b> (scope↔project) with one click — never silently attach a file to 5 projects.</li>
-            <li><b>&quot;Assign to a context item&quot; is the flagship interaction.</b> It unifies scope values + resource tagging and triggers the deepest cascade. Build the picker around it.</li>
+          <div className="mb-2 flex items-center gap-2"><Lightbulb className="h-5 w-5 text-primary" /><h2 className="text-lg font-bold">Where this is going (matches the migration brief)</h2></div>
+          <ol className="max-w-3xl list-decimal space-y-1.5 pl-5 text-sm text-muted-foreground">
+            <li><b>One <code>ctx_associations</code> table</b> folds in scope + task assignments and the dropped project/task FK litter.</li>
+            <li><b>Org stays the tenancy owner FK</b> — backfilled, NOT NULL, never an association.</li>
+            <li><b><code>ctx_context_item_values</code> gains <code>value_kind</code> + <code>ref_entity_type/id</code></b> → the &quot;assign a resource to a typed slot&quot; flagship.</li>
+            <li><b>FK spine = containment stays</b> (task in project); the polymorphic table is the resource↔node M2M.</li>
+            <li><b>Active Context (<code>ctx_user_active_context</code>) stays separate</b> from durable associations — the one <code>mode</code> prop keeps the UI honest.</li>
+            <li><b>Build-new + backfill + compat-views first; drop columns later.</b> Zero end-user behavior change throughout.</li>
           </ol>
         </Card>
       </div>
