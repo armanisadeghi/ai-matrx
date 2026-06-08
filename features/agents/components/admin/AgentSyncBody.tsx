@@ -138,7 +138,6 @@ export function AgentSyncBody({ agentId, onClose }: AgentSyncBodyProps) {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agentId]);
 
   const pair = counterpart ? resolvePair(selfType, counterpart) : null;
