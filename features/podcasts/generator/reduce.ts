@@ -155,8 +155,18 @@ export function reduce(
     }
 
     case "podcast_complete": {
+      // Some per-asset stages (image_n / video_n) stream their result as an
+      // `asset` event and never emit a matching stage_done — they'd otherwise
+      // be left spinning in the timeline. On a successful finish, resolve any
+      // still-"running" stage to done so the rail reflects reality.
+      const resolvedStages = data.success
+        ? state.stages.map((s) =>
+            s.status === "running" ? { ...s, status: "done" as const } : s,
+          )
+        : state.stages;
       return {
         ...state,
+        stages: resolvedStages,
         title: data.title || state.title,
         description: data.description || state.description,
         audioUrl: data.audio_url,
