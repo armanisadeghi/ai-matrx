@@ -67,6 +67,18 @@ Always use the latest stable release of every package — no deprecated APIs.
 - **Project:** `txzxabzwovsujtloxrus` (Matrx Main, `us-west-1`, Postgres 17). The only DB this repo talks to. `NEXT_PUBLIC_SUPABASE_URL` → `db.matrxserver.com`. Always pass `project_id: "txzxabzwovsujtloxrus"` to Supabase MCP tools — do not guess between Matrx Main / My Matrx / Matrx Flow / Matrx DM / Matrx Games.
 - **Clients:** `@/utils/supabase/client` (browser), `@/utils/supabase/server` (SSR). `createAdminClient()` is restricted — see Protected Resources.
 
+### Database migrations — the DB is the source of truth, NOT the files
+
+> A `.sql` file in `migrations/` has changed **nothing** until it is applied to Supabase. Writing one and reporting the task "done" is the single most damaging mistake here. A migration is not done until it is **applied AND verified live AND `pnpm db-types` regenerated.**
+
+This repo has **no Postgres connection** (Supabase JS / PostgREST only — it cannot run DDL). So the cross-repo migration system works like this:
+
+- **One shared ledger:** `public._schema_migrations` (composite key `(source, filename)`) records every applied migration across aidream, matrx-frontend, and matrx-extend — they all share the same DB.
+- **Verify (loud):** `pnpm check:migrations` diffs `migrations/*.sql` against the ledger (rows where `source='matrx-frontend'`) and screams in a red box about anything never applied. Runs on every commit via the pre-commit hook (non-blocking); `pnpm check:migrations:strict` exits non-zero for CI.
+- **Apply + record:** from the **aidream** repo (the one box with DB write creds), run `python db/apply_migrations.py --source matrx-frontend` — it applies pending files in a transaction, regenerates models, and records them in the ledger. For a one-off, apply via the Supabase MCP `apply_migration`, then re-run aidream's applier (or `db/detect_applied.py`) so the ledger records it — otherwise `check:migrations` keeps flagging it.
+- **After applying:** run `pnpm db-types` to regenerate `types/database.types.ts`.
+- A migration that must never apply (superseded / destructive / already live) gets `-- migrate: skip: <reason>` in its first 25 lines.
+
 ---
 
 ## File Organization
