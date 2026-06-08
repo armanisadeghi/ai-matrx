@@ -97,6 +97,11 @@ const THIS_AGENT_ITEMS: MenuItem[] = [
 const AGENT_MANAGEMENT_ITEMS: MenuItem[] = [
   { label: "Create Shortcut", icon: Link2 },
   { label: "Duplicate", icon: Copy },
+  // Unified link surface (user agent ⇄ system agent): create/open my personal
+  // copy, pull system updates, push to system, or convert a user agent into a
+  // new system agent. Valid on both user and builtin agents — the window
+  // resolves the relationship and gates each action.
+  { label: "Linked Agent Sync", icon: RefreshCw },
   { label: "Convert to Template", icon: Shield },
   { label: "Create App", icon: AppWindow },
   { label: "Add Data Storage Support", icon: Database },
@@ -138,7 +143,6 @@ const NEW_TAB_ITEMS: {
 ];
 
 const ADMIN_ITEMS: MenuItem[] = [
-  { label: "Convert/Update System Agent", icon: RefreshCw },
   { label: "Find Usages (Admin)", icon: Search },
 ];
 

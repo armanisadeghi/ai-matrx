@@ -10582,6 +10582,81 @@ export type Database = {
         }
         Relationships: []
       }
+      ner_canonicalizer_shadow: {
+        Row: {
+          agent_cost_usd: number | null
+          agent_elapsed_ms: number | null
+          agent_error: string | null
+          agent_input_json: Json | null
+          agent_merge_group_count: number
+          agent_model: string | null
+          agent_only_merge_surface_count: number
+          agent_output_json: Json | null
+          agreed_merge_surface_count: number
+          comparison_json: Json | null
+          created_at: string
+          deterministic_groups_json: Json | null
+          deterministic_merge_group_count: number
+          deterministic_only_merge_surface_count: number
+          id: string
+          input_pair_count: number
+          organization_id: string | null
+          run_id: string | null
+          source_id: string
+          source_kind: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          agent_cost_usd?: number | null
+          agent_elapsed_ms?: number | null
+          agent_error?: string | null
+          agent_input_json?: Json | null
+          agent_merge_group_count?: number
+          agent_model?: string | null
+          agent_only_merge_surface_count?: number
+          agent_output_json?: Json | null
+          agreed_merge_surface_count?: number
+          comparison_json?: Json | null
+          created_at?: string
+          deterministic_groups_json?: Json | null
+          deterministic_merge_group_count?: number
+          deterministic_only_merge_surface_count?: number
+          id?: string
+          input_pair_count?: number
+          organization_id?: string | null
+          run_id?: string | null
+          source_id: string
+          source_kind: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          agent_cost_usd?: number | null
+          agent_elapsed_ms?: number | null
+          agent_error?: string | null
+          agent_input_json?: Json | null
+          agent_merge_group_count?: number
+          agent_model?: string | null
+          agent_only_merge_surface_count?: number
+          agent_output_json?: Json | null
+          agreed_merge_surface_count?: number
+          comparison_json?: Json | null
+          created_at?: string
+          deterministic_groups_json?: Json | null
+          deterministic_merge_group_count?: number
+          deterministic_only_merge_surface_count?: number
+          id?: string
+          input_pair_count?: number
+          organization_id?: string | null
+          run_id?: string | null
+          source_id?: string
+          source_kind?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       node_category: {
         Row: {
           color: Database["public"]["Enums"]["color"] | null
@@ -23697,6 +23772,81 @@ export type Database = {
         }
         Relationships: []
       }
+      v_ner_canonicalizer_shadow: {
+        Row: {
+          agent_cost_usd: number | null
+          agent_elapsed_ms: number | null
+          agent_error: string | null
+          agent_input_json: Json | null
+          agent_merge_group_count: number | null
+          agent_model: string | null
+          agent_only_merge_surface_count: number | null
+          agent_output_json: Json | null
+          agreed_merge_surface_count: number | null
+          comparison_json: Json | null
+          created_at: string | null
+          deterministic_groups_json: Json | null
+          deterministic_merge_group_count: number | null
+          deterministic_only_merge_surface_count: number | null
+          id: string | null
+          input_pair_count: number | null
+          organization_id: string | null
+          run_id: string | null
+          source_id: string | null
+          source_kind: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agent_cost_usd?: number | null
+          agent_elapsed_ms?: number | null
+          agent_error?: string | null
+          agent_input_json?: Json | null
+          agent_merge_group_count?: number | null
+          agent_model?: string | null
+          agent_only_merge_surface_count?: number | null
+          agent_output_json?: Json | null
+          agreed_merge_surface_count?: number | null
+          comparison_json?: Json | null
+          created_at?: string | null
+          deterministic_groups_json?: Json | null
+          deterministic_merge_group_count?: number | null
+          deterministic_only_merge_surface_count?: number | null
+          id?: string | null
+          input_pair_count?: number | null
+          organization_id?: string | null
+          run_id?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agent_cost_usd?: number | null
+          agent_elapsed_ms?: number | null
+          agent_error?: string | null
+          agent_input_json?: Json | null
+          agent_merge_group_count?: number | null
+          agent_model?: string | null
+          agent_only_merge_surface_count?: number | null
+          agent_output_json?: Json | null
+          agreed_merge_surface_count?: number | null
+          comparison_json?: Json | null
+          created_at?: string | null
+          deterministic_groups_json?: Json | null
+          deterministic_merge_group_count?: number | null
+          deterministic_only_merge_surface_count?: number | null
+          id?: string | null
+          input_pair_count?: number | null
+          organization_id?: string | null
+          run_id?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       v_scope_suggestion_stats: {
         Row: {
           is_starred: boolean | null
@@ -24951,6 +25101,14 @@ export type Database = {
       agx_purge_versions: {
         Args: { p_agent_id: string; p_keep_count?: number }
         Returns: Json
+      }
+      agx_sync_linked_agents: {
+        Args: {
+          p_from_id: string
+          p_include_identity?: boolean
+          p_to_id: string
+        }
+        Returns: string
       }
       agx_update_from_source: { Args: { p_agent_id: string }; Returns: Json }
       append_rows_to_user_table: {

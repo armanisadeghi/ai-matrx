@@ -403,6 +403,41 @@ export interface UpdateFromSourceResult {
   agent_name?: string;
 }
 
+/**
+ * A minimal reference to an agent on one side of a linked pair (user agent ⇄
+ * system/builtin agent). Used by the bidirectional sync UI.
+ */
+export interface LinkedAgentRef {
+  id: string;
+  agentType: AgentType;
+  name: string;
+  /** The agent this one was copied from (lineage pointer), if any. */
+  sourceAgentId: string | null;
+  /** When this pair was last reconciled (push/pull). Lives on the derived side. */
+  sourceSnapshotAt: string | null;
+  updatedAt: string;
+  /** True when the current user owns this agent (false for builtins / others). */
+  isOwnedByMe: boolean;
+}
+
+/**
+ * Resolved linkage around a single agent. `source` is what it was copied from;
+ * `derived` are the agents copied from it (RLS-limited to what the caller can
+ * see — e.g. the caller's own personal copies of a system agent).
+ */
+export interface LinkedCounterpartResult {
+  self: LinkedAgentRef;
+  source: LinkedAgentRef | null;
+  derived: LinkedAgentRef[];
+}
+
+/** Result of `createPersonalCopy` — idempotent personal copy of a system agent. */
+export interface PersonalCopyResult {
+  agentId: string;
+  /** True when a personal copy already existed and was returned instead of created. */
+  alreadyExisted: boolean;
+}
+
 /** Returned by `agx_get_version_snapshot(agent_id, version_number)`. */
 export interface AgentVersionSnapshot {
   version_id: string;

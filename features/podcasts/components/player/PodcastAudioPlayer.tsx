@@ -14,6 +14,7 @@ import {
   Check,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 import {
   Popover,
   PopoverContent,
@@ -257,6 +258,12 @@ export function PodcastAudioPlayer({
     : "p-2 rounded-full text-foreground hover:bg-muted transition-colors";
   const waveformBg = dark ? "bg-white/10" : "bg-muted";
   const waveformFill = dark ? "bg-primary/20" : "bg-primary/15";
+  // In dark mode the player sits on a near-black surface where the shared
+  // Slider's `bg-primary/20` track and `bg-background` thumb nearly vanish —
+  // override the track/thumb so the rail stays visible against black.
+  const darkSlider = dark
+    ? "[&>span:first-of-type]:bg-white/25 [&_[role=slider]]:bg-white [&_[role=slider]]:border-white/40"
+    : "";
 
   return (
     <div className="w-full flex flex-col gap-4">
@@ -351,7 +358,7 @@ export function PodcastAudioPlayer({
         max={duration || 100}
         step={0.5}
         onValueChange={([v]) => handleSeek(v)}
-        className="h-1"
+        className={cn("h-1", darkSlider)}
         aria-label="Seek"
       />
 
@@ -477,7 +484,7 @@ export function PodcastAudioPlayer({
             max={1}
             step={0.02}
             onValueChange={([v]) => handleVolumeChange(v)}
-            className="w-16 hidden sm:block"
+            className={cn("w-16 hidden sm:block", darkSlider)}
             aria-label="Volume"
           />
         </div>

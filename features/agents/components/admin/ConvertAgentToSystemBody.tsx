@@ -441,7 +441,7 @@ export function ConvertAgentToSystemBody({
   );
 
   return (
-    <div className="p-4">
+    <div>
       {step === "checking" && renderChecking}
       {step === "error" && renderError}
       {step === "builtin-choice" && renderChoice}
