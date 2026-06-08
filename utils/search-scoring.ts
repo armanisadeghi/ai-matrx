@@ -22,6 +22,15 @@
  *
  * Within each field, an EXACT match > STARTS-WITH match > INCLUDES match.
  * Fields declared first are a slight tiebreaker (via field-index bonus).
+ *
+ * ── Automatic id matching ─────────────────────────────────────────────────────
+ * Every item with a string `id` is ALSO matched against the query at the `id`
+ * weight tier, automatically — you do NOT need to declare an id field. This
+ * means a user can paste a full or partial UUID into ANY search box wired to
+ * this helper and find the record. It kicks in from {@link MIN_AUTO_ID_QUERY_LEN}
+ * characters up (so short queries don't match random hex). Declare an explicit
+ * `{ weight: "id" }` field only if you want id matching at any length / on a
+ * non-`id` property; doing so opts that callsite out of the automatic pass.
  */
 
 export type SearchFieldWeight =
@@ -58,6 +67,23 @@ const WEIGHT_TABLE: Record<
   meta: { exact: 200, startsWith: 150, includes: 100 },
   id: { exact: 100, startsWith: 75, includes: 50 },
 };
+
+/**
+ * Below this query length we do NOT auto-match the row `id`. A 1–2 char query
+ * is almost always a substring of *some* hex chars in *every* UUID, so matching
+ * id at that length would flood results with the whole table. From 3 chars up a
+ * partial-UUID paste is selective enough to be a real lookup.
+ */
+const MIN_AUTO_ID_QUERY_LEN = 3;
+
+/** Pull a non-empty string `id` off an item, or null if it has none. */
+function getStringId(item: unknown): string | null {
+  if (item && typeof item === "object" && "id" in item) {
+    const id = (item as { id?: unknown }).id;
+    if (typeof id === "string" && id.length > 0) return id;
+  }
+  return null;
+}
 
 function resolveTiers(field: SearchFieldConfig<unknown>) {
   if (field.weight === "custom" || field.exact != null) {
@@ -122,6 +148,19 @@ export function computeSearchScore<T>(
       total += best + (fields.length - idx);
     }
   });
+
+  // Auto-match the row's UUID `id` against EVERY search box. A user can paste a
+  // full or partial id and find the record, without each callsite remembering
+  // to declare an id field. Skipped when the caller already declared an
+  // explicit `weight: "id"` field (so we don't double-score), and gated on a
+  // minimum query length so short queries don't match random hex substrings.
+  const hasExplicitId = fields.some((f) => f.weight === "id");
+  if (!hasExplicitId && q.length >= MIN_AUTO_ID_QUERY_LEN) {
+    const id = getStringId(item);
+    if (id) {
+      total += scoreValue(id, q, WEIGHT_TABLE.id);
+    }
+  }
 
   return total;
 }
