@@ -8,10 +8,12 @@
  */
 
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Hash, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchAgentVersionHistory,
+  fetchFullAgent,
   type AgentVersionHistoryItem,
 } from "@/features/agents/redux/agent-definition/thunks";
 import {
@@ -22,10 +24,7 @@ import { AgentListDropdown } from "@/features/agents/components/agent-listings/A
 import SearchableSelect from "@/components/matrx/SearchableSelect";
 import type { Option } from "@/components/matrx/SearchableSelect";
 import { cn } from "@/lib/utils";
-import {
-  setLockedUserMessage,
-  setLockedVariable,
-} from "../redux/slice";
+import { setLockedUserMessage, setLockedVariable } from "../redux/slice";
 import {
   selectLockedAgentId,
   selectLockedAgentVersion,
@@ -53,6 +52,8 @@ export function LockedInputSection() {
   >([]);
   const [versionsLoading, setVersionsLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [idInput, setIdInput] = useState("");
+  const [idLoading, setIdLoading] = useState(false);
 
   useEffect(() => {
     if (!agentId) {
@@ -80,8 +81,7 @@ export function LockedInputSection() {
   const versionOptions: Option[] = [
     {
       value: "current",
-      label:
-        agent?.version != null ? `Current (v${agent.version})` : "Current",
+      label: agent?.version != null ? `Current (v${agent.version})` : "Current",
     },
     ...versionHistory.map((v) => ({
       value: v.version_number.toString(),
@@ -93,6 +93,28 @@ export function LockedInputSection() {
 
   const handleAgentSelect = (newAgentId: string) => {
     dispatch(setLockedAgent({ agentId: newAgentId }));
+  };
+
+  const handleLoadById = async () => {
+    const id = idInput.trim();
+    if (!id || idLoading) return;
+    setIdLoading(true);
+    try {
+      // Validate access up front — fetchFullAgent reads the row directly via
+      // RLS, so any agent you have DB access to (incl. system agents that don't
+      // surface in search) loads here. setLockedAgent swallows fetch errors, so
+      // we unwrap explicitly to give real feedback when access is denied.
+      await dispatch(fetchFullAgent(id)).unwrap();
+      await dispatch(setLockedAgent({ agentId: id })).unwrap();
+      setIdInput("");
+      toast.success("Agent loaded by ID");
+    } catch {
+      toast.error(
+        "Could not load that agent — check the ID and that you have access.",
+      );
+    } finally {
+      setIdLoading(false);
+    }
   };
 
   const handleVersionChange = (opt: Option) => {
@@ -149,9 +171,7 @@ export function LockedInputSection() {
                     className={cn(
                       "inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium w-full",
                       "border border-border bg-background hover:bg-muted/50 transition-colors",
-                      agentName
-                        ? "text-foreground"
-                        : "text-muted-foreground",
+                      agentName ? "text-foreground" : "text-muted-foreground",
                     )}
                   >
                     <span className="truncate flex-1 text-left">
@@ -169,16 +189,12 @@ export function LockedInputSection() {
                   agentVersion == null
                     ? undefined
                     : agentVersion === "current"
-                    ? "current"
-                    : String(agentVersion)
+                      ? "current"
+                      : String(agentVersion)
                 }
                 onChange={handleVersionChange}
                 placeholder={
-                  !agentId
-                    ? "—"
-                    : versionsLoading
-                    ? "Loading..."
-                    : "Version..."
+                  !agentId ? "—" : versionsLoading ? "Loading..." : "Version..."
                 }
                 searchPlaceholder="Search versions..."
                 className="!h-8 !py-0 !px-2 !border !text-xs !font-medium !bg-background"
@@ -187,6 +203,39 @@ export function LockedInputSection() {
             {versionsLoading && (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
             )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-muted-foreground shrink-0 w-20">
+              Or by ID
+            </span>
+            <div className="flex-1 min-w-0 flex items-center gap-2">
+              <div className="relative flex-1 min-w-0">
+                <Hash className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground/60" />
+                <input
+                  value={idInput}
+                  onChange={(e) => setIdInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void handleLoadById();
+                    }
+                  }}
+                  placeholder="Paste an agent ID (e.g. a system agent not in search)..."
+                  spellCheck={false}
+                  className="w-full h-8 pl-7 pr-2 text-xs font-mono bg-background border border-border rounded-md text-foreground focus:outline-none focus:border-primary"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleLoadById()}
+                disabled={!idInput.trim() || idLoading}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium border border-border bg-background hover:bg-muted/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              >
+                {idLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                Load
+              </button>
+            </div>
           </div>
 
           {variableDefs.length > 0 && (
@@ -251,8 +300,8 @@ function LockedVariableInput({
     typeof value === "string"
       ? value
       : value == null
-      ? ""
-      : JSON.stringify(value);
+        ? ""
+        : JSON.stringify(value);
 
   return (
     <div className="space-y-0.5">
