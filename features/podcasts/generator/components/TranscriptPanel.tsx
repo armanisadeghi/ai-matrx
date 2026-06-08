@@ -1,17 +1,20 @@
 "use client";
 
 // features/podcasts/generator/components/TranscriptPanel.tsx
-// Collapsible full transcript with copy. RTL-aware for Persian episodes.
+// Collapsible transcript rendered as a clean two-host conversation — the raw
+// `script` is parsed by its delimiters (JSON header / duration / dialogue tags
+// stripped) so only the real speaker turns show. RTL-aware for Persian.
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { FileText, ChevronDown, Copy, Check } from "lucide-react";
+import { FileText, ChevronDown, Copy, Check, Clock } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { parseScript, speakerSlot } from "../script";
 
 interface TranscriptPanelProps {
   script: string;
@@ -24,11 +27,17 @@ export function TranscriptPanel({ script, rtl }: TranscriptPanelProps) {
 
   if (!script.trim()) return null;
 
-  const wordCount = script.trim().split(/\s+/).length;
+  const parsed = parseScript(script);
+  const hasDialogue = parsed.turns.length > 0;
+  const wordCount = (hasDialogue ? parsed.plain : script)
+    .trim()
+    .split(/\s+/).length;
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(script);
+      await navigator.clipboard.writeText(
+        hasDialogue ? parsed.plain : script,
+      );
       setCopied(true);
       toast.success("Transcript copied");
       setTimeout(() => setCopied(false), 1500);
@@ -44,8 +53,14 @@ export function TranscriptPanel({ script, rtl }: TranscriptPanelProps) {
           <CollapsibleTrigger className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <FileText className="h-4 w-4 text-primary" />
             Transcript
-            <span className="text-xs font-normal text-muted-foreground">
-              {wordCount.toLocaleString()} words
+            <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
+              {parsed.duration && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {parsed.duration}
+                </span>
+              )}
+              <span>{wordCount.toLocaleString()} words</span>
             </span>
             <ChevronDown
               className={cn(
@@ -70,9 +85,34 @@ export function TranscriptPanel({ script, rtl }: TranscriptPanelProps) {
         <CollapsibleContent>
           <div
             dir={rtl ? "rtl" : undefined}
-            className="max-h-96 overflow-y-auto border-t border-border px-4 py-3 text-sm leading-relaxed text-foreground/90"
+            className="max-h-[28rem] overflow-y-auto border-t border-border px-4 py-4"
           >
-            <p className="whitespace-pre-wrap">{script}</p>
+            {hasDialogue ? (
+              <div className="space-y-4">
+                {parsed.turns.map((turn, i) => {
+                  const slot = speakerSlot(turn.speaker, parsed.speakers);
+                  return (
+                    <div key={i} className="flex flex-col gap-1">
+                      <span
+                        className={cn(
+                          "text-xs font-semibold uppercase tracking-wide",
+                          slot === 0 ? "text-primary" : "text-secondary",
+                        )}
+                      >
+                        {turn.speaker}
+                      </span>
+                      <p className="text-sm leading-relaxed text-foreground/90">
+                        {turn.text}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+                {script}
+              </p>
+            )}
           </div>
         </CollapsibleContent>
       </Collapsible>

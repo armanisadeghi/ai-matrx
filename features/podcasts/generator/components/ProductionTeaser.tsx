@@ -18,6 +18,7 @@ import { AudioLines } from "lucide-react";
 import { InlineMediaRef } from "@/features/files";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "./ElapsedTimer";
+import { parseScript, speakerSlot } from "../script";
 import type { PodcastRunState } from "../types";
 
 interface ProductionTeaserProps {
@@ -38,18 +39,28 @@ export function ProductionTeaser({ state, startedAt }: ProductionTeaserProps) {
   const readyImages = state.images.filter((s) => s.status === "done" && s.url);
   const rtl = state.podcastType === "persian";
 
-  // Prefer streamed text, then the script sneak-peek, then the source preview.
-  const peek =
-    (state.liveText.trim().length > 40 ? state.liveText : "") ||
-    state.scriptPreview ||
-    state.sourcePreview;
+  // Tease the actual two-host conversation by speaker. Prefer streamed text
+  // (its tail is the freshest dialogue); fall back to the create_script preview.
+  const live = parseScript(state.liveText);
+  const fromPreview = parseScript(state.scriptPreview);
+  const streaming = live.turns.length > 0;
+  const dialogue = streaming ? live : fromPreview;
+  const turns = dialogue.turns;
+  // While streaming, ride the live tail; otherwise gently rotate the snippet.
+  const windowStart =
+    turns.length <= 2
+      ? 0
+      : streaming
+        ? turns.length - 2
+        : tick % (turns.length - 1);
+  const teaseTurns = turns.slice(windowStart, windowStart + 2);
 
-  // Rotating concept line when there's no text yet.
+  // Rotating concept line when there's no dialogue text yet.
   const prompts = [
     ...state.images.map((s) => s.prompt),
     ...state.videos.map((s) => s.prompt),
   ].filter(Boolean);
-  const concept = prompts.length ? prompts[tick % prompts.length] : "";
+  const concept = state.description || (prompts.length ? prompts[tick % prompts.length] : "");
 
   const activeImage = readyImages.length
     ? readyImages[tick % readyImages.length]
@@ -118,25 +129,39 @@ export function ProductionTeaser({ state, startedAt }: ProductionTeaserProps) {
             {state.title || "Producing your episode…"}
           </p>
 
-          {peek ? (
-            <div className="relative min-h-0 flex-1">
-              <p
-                dir={rtl ? "rtl" : undefined}
-                className="max-h-32 overflow-hidden text-sm leading-relaxed text-muted-foreground"
-              >
-                <span className="font-medium text-foreground/70">
-                  Sneak peek —{" "}
-                </span>
-                {peek.slice(0, 360).trimEnd()}…
+          {teaseTurns.length > 0 ? (
+            <div className="relative min-h-0 flex-1" dir={rtl ? "rtl" : undefined}>
+              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                Sneak peek of the conversation
               </p>
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-card to-transparent" />
+              <div className="max-h-32 space-y-2 overflow-hidden">
+                {teaseTurns.map((turn, i) => (
+                  <p key={windowStart + i} className="text-sm leading-relaxed">
+                    <span
+                      className={cn(
+                        "font-semibold",
+                        speakerSlot(turn.speaker, dialogue.speakers) === 0
+                          ? "text-primary"
+                          : "text-secondary",
+                      )}
+                    >
+                      {turn.speaker}:
+                    </span>{" "}
+                    <span className="text-muted-foreground">
+                      {turn.text.slice(0, 200)}
+                      {turn.text.length > 200 ? "…" : ""}
+                    </span>
+                  </p>
+                ))}
+              </div>
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
             </div>
           ) : (
             <div className="min-h-0 flex-1">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
-                Now imagining
+                {state.description ? "About this episode" : "Now imagining"}
               </p>
-              <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-muted-foreground transition-opacity">
+              <p className="mt-1 line-clamp-4 text-sm leading-relaxed text-muted-foreground transition-opacity">
                 {concept || "Setting the scene…"}
               </p>
             </div>
