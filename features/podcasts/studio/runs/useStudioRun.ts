@@ -33,6 +33,7 @@ import {
 import { studioRunsService } from "./service";
 import { rowToRunState } from "./mapping";
 import { takePendingStart } from "./pendingStart";
+import { reportMediaDurabilityViolation } from "@/lib/media/durability";
 
 const GENERATE_PATH = "/podcast/generate";
 const resumePath = (backendRunId: string) => `/podcast/resume/${backendRunId}`;
@@ -301,6 +302,12 @@ export function useStudioRun(runId: string): UseStudioRun {
       setSelectedCoverUrl(url);
       persist({ selected_cover_url: url });
       if (state.episodeId) {
+        // pc_episodes.image_url is read by anonymous public viewers who CANNOT
+        // re-mint a signed URL. If the stream handed us an expiring S3 link this
+        // write will rot — scream now (the DB guard also queues a heal) so the
+        // backend persist-public regression can't hide. The cover should be a
+        // durable CDN/public URL by the time it reaches here.
+        reportMediaDurabilityViolation(url, "podcast selectCover → pc_episodes.image_url");
         void podcastService
           .updateEpisode(state.episodeId, { image_url: url })
           .then(() => toast.success("Cover updated"))
