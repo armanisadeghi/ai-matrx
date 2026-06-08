@@ -1,25 +1,21 @@
 // features/admin/components/FeatureAdminPage.tsx
 //
-// The platform primitive every feature's admin map renders through.
-// Server component. Admin-gated (any admin level — redirects everyone
-// else to home; never throws). Utilitarian — built for an admin who
-// already knows what these resources are. No headers explaining
-// "Core Routes are pages users navigate to", no novel-length card
-// descriptions, no max-width that wastes 60% of the viewport. Every
-// resource link opens in a new tab so the map stays as a workspace.
-// Every window-panel card has an "Open" button that dispatches the
-// overlay live.
+// Platform primitive for `/[feature]/admin`. Server component, admin-gated
+// (any admin level), `force-dynamic`. Utilitarian by mandate — densest
+// scannable layout we can ship, zero narration, every link new-tab, every
+// window-panel card actually launches the panel.
 //
-// Add a new feature: write a `FeatureAdminMap` object, render
-// `<FeatureAdminPage map={...} />` from `app/(core)/[feature]/admin/
-// page.tsx`. The drift warnings flag anything you forgot.
+// Renders a TABLE per resource family (routes, window panels, overlays,
+// components, APIs, slices, demos, related). No card chrome. Each row is
+// one line: link · label · path · pills · actions. Long notes are reachable
+// from a single `▸` toggle that actually expands. Done.
 
-import Link from "next/link";
+export const dynamic = "force-dynamic";
+
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import {
   AlertCircle,
-  Boxes,
   Component,
   Database,
   FileText,
@@ -56,55 +52,45 @@ interface FeatureAdminPageProps {
 }
 
 const STATUS_STYLES: Record<FeatureResourceStatus, string> = {
-  Live: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
-  Beta: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+  Live: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/20",
+  Beta: "bg-amber-500/10 text-amber-700 dark:text-amber-400 ring-1 ring-amber-500/20",
   "Coming soon":
-    "bg-muted text-muted-foreground border-border",
+    "bg-muted text-muted-foreground ring-1 ring-border",
   Deprecated:
-    "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20",
+    "bg-rose-500/10 text-rose-700 dark:text-rose-400 ring-1 ring-rose-500/20",
   "Demo only":
-    "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20",
+    "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 ring-1 ring-indigo-500/20",
 };
 
 const TIER_STYLES: Record<NonNullable<FeatureAdminComponent["tier"]>, string> = {
   official:
-    "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+    "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500/30",
   candidate:
-    "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
-  internal: "bg-muted text-muted-foreground border-border",
+    "bg-amber-500/10 text-amber-700 dark:text-amber-400 ring-1 ring-amber-500/30",
+  internal: "bg-transparent text-muted-foreground/70 ring-1 ring-border/60",
 };
 
-function StatusPill({ status }: { status?: FeatureResourceStatus }) {
-  if (!status) return null;
+function Pill({
+  text,
+  className,
+  icon: Icon,
+  title,
+}: {
+  text: string;
+  className: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  title?: string;
+}) {
   return (
     <span
+      title={title}
       className={cn(
-        "shrink-0 inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider leading-4",
-        STATUS_STYLES[status],
+        "inline-flex items-center gap-0.5 rounded px-1 text-[10px] font-medium uppercase tracking-wider leading-4 whitespace-nowrap",
+        className,
       )}
     >
-      {status}
-    </span>
-  );
-}
-
-function TierPill({ tier }: { tier: NonNullable<FeatureAdminComponent["tier"]> }) {
-  return (
-    <span
-      className={cn(
-        "shrink-0 inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider leading-4",
-        TIER_STYLES[tier],
-      )}
-      title={
-        tier === "official"
-          ? "Registered in the official-components registry"
-          : tier === "candidate"
-            ? "Official-candidate — promoted-by-use but not yet in the official registry"
-            : "Internal — feature-local file path readout"
-      }
-    >
-      {tier === "official" && <ShieldCheck className="h-2.5 w-2.5" />}
-      {tier}
+      {Icon && <Icon className="h-2.5 w-2.5" />}
+      {text}
     </span>
   );
 }
@@ -119,12 +105,12 @@ function SectionHeading({
   count: number;
 }) {
   return (
-    <div className="flex items-baseline gap-2 mb-2 border-b border-border pb-1">
+    <div className="flex items-baseline gap-2 mt-6 mb-2 px-3">
       <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-      <h2 className="text-sm font-semibold tracking-tight uppercase text-muted-foreground">
+      <h2 className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground">
         {title}
       </h2>
-      <span className="text-[10px] text-muted-foreground/70 tabular-nums">
+      <span className="text-[10px] text-muted-foreground/60 tabular-nums">
         {count}
       </span>
     </div>
@@ -132,79 +118,86 @@ function SectionHeading({
 }
 
 /**
- * Compact row used by every section. Single-line title (mono path), an
- * optional inline label, status + tier pills on the right, and an optional
- * details expander when `notes` are provided. Click the title to navigate
- * (new tab). No paragraph descriptions — admins don't need them.
+ * Dense row. ONE line, table-style. Optional notes expand inline via a
+ * single `<details>` element so the toggle actually works. Path / meta is
+ * tiny mono inline, not a second line.
  */
-function ResourceRow({
-  title,
+function Row({
   href,
+  primary,
   label,
   meta,
-  status,
-  tier,
+  pills,
+  actions,
   notes,
-  rightSlot,
 }: {
-  title: string;
   href?: string;
+  primary: string;
   label?: string;
-  meta?: React.ReactNode;
-  status?: FeatureResourceStatus;
-  tier?: NonNullable<FeatureAdminComponent["tier"]>;
+  meta?: string;
+  pills?: React.ReactNode;
+  actions?: React.ReactNode;
   notes?: string[];
-  rightSlot?: React.ReactNode;
 }) {
-  const titleEl = href ? (
+  const primaryEl = href ? (
     <ExternalTabLink
       href={href}
-      className="font-mono text-xs text-primary hover:underline"
+      className="font-mono text-xs text-primary hover:underline truncate min-w-0"
     >
-      <span className="truncate">{title}</span>
+      <span className="truncate">{primary}</span>
     </ExternalTabLink>
   ) : (
-    <span className="font-mono text-xs text-foreground truncate">{title}</span>
+    <span className="font-mono text-xs text-foreground truncate min-w-0">
+      {primary}
+    </span>
   );
 
-  return (
-    <div className="rounded-sm border border-border bg-card px-2.5 py-1.5 hover:border-primary/30 transition-colors">
-      <div className="flex items-center gap-2 min-w-0">
-        <div className="min-w-0 flex-1 flex items-center gap-2">
-          {titleEl}
+  if (notes && notes.length > 0) {
+    return (
+      <details className="group">
+        <summary className="cursor-pointer list-none px-3 py-1 flex items-center gap-2 hover:bg-muted/40 border-b border-border/40">
+          <span className="text-muted-foreground text-[10px] w-3 select-none group-open:rotate-90 transition-transform">
+            ▸
+          </span>
+          {primaryEl}
           {label && (
-            <span className="text-xs text-muted-foreground truncate">
-              · {label}
+            <span className="text-xs text-muted-foreground/80 truncate">
+              {label}
             </span>
           )}
-        </div>
-        {tier && <TierPill tier={tier} />}
-        <StatusPill status={status} />
-        {rightSlot}
-        {notes && notes.length > 0 && (
-          <details className="group">
-            <summary className="cursor-pointer text-[10px] font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground select-none list-none">
-              <span className="group-open:hidden">notes</span>
-              <span className="hidden group-open:inline">hide</span>
-            </summary>
-          </details>
-        )}
-      </div>
+          {meta && (
+            <span className="text-[10px] text-muted-foreground/60 font-mono truncate ml-auto">
+              {meta}
+            </span>
+          )}
+          <span className="flex items-center gap-1 shrink-0">{pills}</span>
+          <span className="flex items-center gap-1 shrink-0">{actions}</span>
+        </summary>
+        <ul className="px-3 pl-10 py-1.5 space-y-0.5 text-[11px] text-muted-foreground bg-muted/20 border-b border-border/40 list-disc">
+          {notes.map((n, i) => (
+            <li key={i}>{n}</li>
+          ))}
+        </ul>
+      </details>
+    );
+  }
+
+  return (
+    <div className="px-3 py-1 flex items-center gap-2 hover:bg-muted/40 border-b border-border/40">
+      <span className="w-3" />
+      {primaryEl}
+      {label && (
+        <span className="text-xs text-muted-foreground/80 truncate">
+          {label}
+        </span>
+      )}
       {meta && (
-        <div className="mt-0.5 text-[10px] text-muted-foreground/70 font-mono truncate">
+        <span className="text-[10px] text-muted-foreground/60 font-mono truncate ml-auto">
           {meta}
-        </div>
+        </span>
       )}
-      {notes && notes.length > 0 && (
-        <details className="mt-1">
-          <summary className="sr-only">Details</summary>
-          <ul className="mt-1 ml-3 space-y-0.5 text-[11px] text-muted-foreground list-disc">
-            {notes.map((n, i) => (
-              <li key={i}>{n}</li>
-            ))}
-          </ul>
-        </details>
-      )}
+      <span className="flex items-center gap-1 shrink-0">{pills}</span>
+      <span className="flex items-center gap-1 shrink-0">{actions}</span>
     </div>
   );
 }
@@ -225,16 +218,14 @@ async function RouteDriftWarning({
   });
   if (drift.length === 0) return null;
   return (
-    <div className="mt-2 rounded-sm border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5">
-      <div className="flex items-center gap-1.5 text-xs">
-        <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
-        <span className="font-semibold text-amber-900 dark:text-amber-200">
-          Undeclared sub-routes:
-        </span>
-        <span className="font-mono text-amber-800/90 dark:text-amber-300/90">
-          {drift.map((n) => `/${slug}/${n}`).join(", ")}
-        </span>
-      </div>
+    <div className="mx-3 my-1 px-2 py-1 rounded bg-amber-500/10 ring-1 ring-amber-500/30 text-xs flex items-center gap-1.5">
+      <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
+      <span className="font-semibold text-amber-900 dark:text-amber-200">
+        Undeclared:
+      </span>
+      <span className="font-mono text-amber-800/90 dark:text-amber-300/90">
+        {drift.map((n) => `/${slug}/${n}`).join(", ")}
+      </span>
     </div>
   );
 }
@@ -250,36 +241,26 @@ function WindowPanelDriftWarning({
   const drift = found.filter((entry) => !declaredOverlayIds.has(entry.overlayId));
   if (drift.length === 0) return null;
   return (
-    <div className="mt-2 rounded-sm border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5">
-      <div className="flex items-center gap-1.5 text-xs">
-        <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
-        <span className="font-semibold text-amber-900 dark:text-amber-200">
-          Undeclared windows ({slugPrefix}*):
-        </span>
-        <span className="font-mono text-amber-800/90 dark:text-amber-300/90">
-          {drift.map((e) => `${e.slug}`).join(", ")}
-        </span>
-      </div>
+    <div className="mx-3 my-1 px-2 py-1 rounded bg-amber-500/10 ring-1 ring-amber-500/30 text-xs flex items-center gap-1.5">
+      <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
+      <span className="font-semibold text-amber-900 dark:text-amber-200">
+        Undeclared windows:
+      </span>
+      <span className="font-mono text-amber-800/90 dark:text-amber-300/90">
+        {drift.map((e) => e.slug).join(", ")}
+      </span>
     </div>
   );
 }
 
-/**
- * Resolve a `FeatureAdminDocLink.href` to the right open-in-new-tab target.
- * Repo-relative `.md` paths route through `/admin/docs/...` so the markdown
- * renders inline. External URLs pass through unchanged.
- */
 function docHref(link: FeatureAdminDocLink): string {
   if (/^https?:\/\//.test(link.href)) return link.href;
-  // Normalize leading slash + repo-relative path.
   const clean = link.href.replace(/^\/+/, "");
   return `/admin/docs/${clean}`;
 }
 
 export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
   const status = await getCurrentUserAdminStatus();
-  // Gate: admin (any level) — not super-admin. Bounce guests + non-admins
-  // to home. Redirect, never throw — that's an error page, this is UX.
   if (!status || !status.isAdmin) {
     redirect("/");
   }
@@ -292,26 +273,26 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
 
   return (
     <div className="min-h-dvh bg-background w-full">
-      {/* Compact header — single line + doc chips. No paragraph. */}
-      <header className="border-b border-border px-4 py-2.5 flex items-center gap-3 flex-wrap">
-        <div className="flex items-baseline gap-2 min-w-0">
-          <span className="text-xs text-muted-foreground font-mono">
-            /{map.slug}/admin
-          </span>
-          <span className="text-xs text-muted-foreground">·</span>
-          <h1 className="text-sm font-bold tracking-tight">{map.name}</h1>
-          <span className="text-xs text-muted-foreground capitalize">
-            ({status.level ?? "admin"})
-          </span>
-        </div>
-        <div className="flex-1" />
+      {/* Single-line header. No paragraph. */}
+      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur px-3 py-1.5 flex items-center gap-3">
+        <span className="font-mono text-[11px] text-muted-foreground shrink-0">
+          /{map.slug}/admin
+        </span>
+        <span className="text-muted-foreground/40">·</span>
+        <h1 className="text-sm font-semibold tracking-tight shrink-0">
+          {map.name}
+        </h1>
+        <span className="text-[10px] text-muted-foreground capitalize shrink-0">
+          ({status.level ?? "admin"})
+        </span>
+        <span className="flex-1" />
         {map.docs && map.docs.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {map.docs.map((doc) => (
               <ExternalTabLink
                 key={doc.href}
                 href={docHref(doc)}
-                className="text-[11px] font-medium text-primary hover:underline"
+                className="text-[11px] text-primary hover:underline"
               >
                 <FileText className="h-3 w-3" />
                 {doc.label}
@@ -319,22 +300,32 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
             ))}
           </div>
         )}
+        <ExternalTabLink
+          href={`/admin/docs/app/(core)/${map.slug}/admin/page.tsx`}
+          className="text-[10px] font-mono text-muted-foreground/70 hover:text-foreground hover:underline shrink-0"
+        >
+          edit map
+        </ExternalTabLink>
       </header>
 
-      <div className="px-4 py-4 space-y-6">
+      <div className="w-full">
         {/* Routes */}
         <section>
           <SectionHeading icon={Link2} title="Routes" count={map.routes.length} />
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+          <div className="border-t border-border">
             {map.routes.map((route) => (
-              <ResourceRow
+              <Row
                 key={route.url}
-                title={route.url}
                 href={route.url}
+                primary={route.url}
                 label={route.label}
                 meta={route.filePath}
-                status={route.status}
                 notes={route.notes}
+                pills={
+                  route.status ? (
+                    <Pill text={route.status} className={STATUS_STYLES[route.status]} />
+                  ) : null
+                }
               />
             ))}
           </div>
@@ -357,35 +348,30 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
               title="Window Panels"
               count={map.windowPanels.length}
             />
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+            <div className="border-t border-border">
               {map.windowPanels.map((entry) => {
                 const resolved = resolveWindowPanel(entry.overlayId);
                 if (!resolved) {
                   return (
-                    <ResourceRow
+                    <Row
                       key={entry.overlayId}
-                      title={entry.overlayId}
+                      primary={entry.overlayId}
                       label="(missing from registry)"
-                      status="Deprecated"
+                      pills={<Pill text="Deprecated" className={STATUS_STYLES.Deprecated} />}
                     />
                   );
                 }
+                const inferredStatus: FeatureResourceStatus =
+                  entry.status ??
+                  (resolved.deprecated ? "Deprecated" : "Live");
                 return (
-                  <ResourceRow
+                  <Row
                     key={entry.overlayId}
-                    title={resolved.label}
+                    primary={resolved.label}
                     label={resolved.slug}
-                    meta={
-                      <>
-                        {resolved.kind} · {resolved.instanceMode} ·{" "}
-                        {resolved.mobilePresentation}
-                      </>
-                    }
-                    status={
-                      entry.status ??
-                      (resolved.deprecated ? "Deprecated" : "Live")
-                    }
-                    rightSlot={
+                    meta={`${resolved.kind} · ${resolved.instanceMode} · ${resolved.mobilePresentation}`}
+                    pills={<Pill text={inferredStatus} className={STATUS_STYLES[inferredStatus]} />}
+                    actions={
                       <OverlayLaunchButton
                         overlayId={entry.overlayId}
                         label={resolved.label}
@@ -410,27 +396,28 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
               title="Modals / Sheets"
               count={map.overlays.length}
             />
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+            <div className="border-t border-border">
               {map.overlays.map((entry) => {
                 const resolved = resolveOverlay(entry.overlayId);
                 if (!resolved) {
                   return (
-                    <ResourceRow
+                    <Row
                       key={entry.overlayId}
-                      title={entry.overlayId}
+                      primary={entry.overlayId}
                       label="(missing from catalogue)"
-                      status="Deprecated"
+                      pills={<Pill text="Deprecated" className={STATUS_STYLES.Deprecated} />}
                     />
                   );
                 }
+                const s: FeatureResourceStatus = entry.status ?? "Live";
                 return (
-                  <ResourceRow
+                  <Row
                     key={entry.overlayId}
-                    title={resolved.label}
+                    primary={resolved.label}
                     label={resolved.overlayId}
                     meta={resolved.instanceMode}
-                    status={entry.status ?? "Live"}
-                    rightSlot={
+                    pills={<Pill text={s} className={STATUS_STYLES[s]} />}
+                    actions={
                       <OverlayLaunchButton
                         overlayId={entry.overlayId}
                         label={resolved.label}
@@ -443,7 +430,7 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
           </section>
         )}
 
-        {/* Components — tiered. Official + candidate get visible badges. */}
+        {/* Components — tiered. */}
         {map.components && map.components.length > 0 && (
           <section>
             <SectionHeading
@@ -451,26 +438,41 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
               title="Components"
               count={map.components.length}
             />
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+            <div className="border-t border-border">
               {map.components.map((c) => {
                 const tier = c.tier ?? "internal";
-                const isCandidate = tier === "candidate";
-                const isOfficial = tier === "official";
-                // Official components are linked to the registry index;
-                // candidates / internals just show the file path (no link).
-                const href = isOfficial
-                  ? "/administration/official-components"
-                  : undefined;
+                // Officials get a link to the registry; everything else is
+                // just a path readout (no link — these aren't user-facing).
+                const href =
+                  tier === "official"
+                    ? "/administration/official-components"
+                    : undefined;
                 return (
-                  <ResourceRow
+                  <Row
                     key={c.filePath}
-                    title={c.name}
                     href={href}
-                    label={isCandidate ? "candidate" : undefined}
+                    primary={c.name}
                     meta={c.filePath}
-                    status={c.status}
-                    tier={tier}
                     notes={c.notes}
+                    pills={
+                      <>
+                        <Pill
+                          text={tier}
+                          className={TIER_STYLES[tier]}
+                          icon={tier === "official" ? ShieldCheck : undefined}
+                          title={
+                            tier === "official"
+                              ? "Registered in the official-components registry"
+                              : tier === "candidate"
+                                ? "components/official-candidate/ — promoted-by-use"
+                                : "Feature-internal path"
+                          }
+                        />
+                        {c.status && (
+                          <Pill text={c.status} className={STATUS_STYLES[c.status]} />
+                        )}
+                      </>
+                    }
                   />
                 );
               })}
@@ -478,7 +480,7 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
           </section>
         )}
 
-        {/* API routes */}
+        {/* API */}
         {map.apiRoutes && map.apiRoutes.length > 0 && (
           <section>
             <SectionHeading
@@ -486,11 +488,11 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
               title="API"
               count={map.apiRoutes.length}
             />
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+            <div className="border-t border-border">
               {map.apiRoutes.map((api) => (
-                <ResourceRow
+                <Row
                   key={api.url}
-                  title={api.url}
+                  primary={api.url}
                   label={api.method}
                   meta={api.filePath}
                 />
@@ -499,7 +501,7 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
           </section>
         )}
 
-        {/* Redux slices */}
+        {/* Redux */}
         {map.reduxSlices && map.reduxSlices.length > 0 && (
           <section>
             <SectionHeading
@@ -507,11 +509,11 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
               title="Redux Slices"
               count={map.reduxSlices.length}
             />
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+            <div className="border-t border-border">
               {map.reduxSlices.map((slice) => (
-                <ResourceRow
+                <Row
                   key={slice.filePath}
-                  title={slice.name}
+                  primary={slice.name}
                   meta={slice.filePath}
                 />
               ))}
@@ -519,7 +521,7 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
           </section>
         )}
 
-        {/* Demos / tests */}
+        {/* Demos */}
         {map.demoRoutes && map.demoRoutes.length > 0 && (
           <section>
             <SectionHeading
@@ -527,22 +529,25 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
               title="Demos / Tests"
               count={map.demoRoutes.length}
             />
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
-              {map.demoRoutes.map((route) => (
-                <ResourceRow
-                  key={route.url}
-                  title={route.url}
-                  href={route.url}
-                  label={route.label}
-                  meta={route.filePath}
-                  status={route.status ?? "Demo only"}
-                />
-              ))}
+            <div className="border-t border-border">
+              {map.demoRoutes.map((route) => {
+                const s: FeatureResourceStatus = route.status ?? "Demo only";
+                return (
+                  <Row
+                    key={route.url}
+                    href={route.url}
+                    primary={route.url}
+                    label={route.label}
+                    meta={route.filePath}
+                    pills={<Pill text={s} className={STATUS_STYLES[s]} />}
+                  />
+                );
+              })}
             </div>
           </section>
         )}
 
-        {/* Related features */}
+        {/* Related */}
         {map.relatedFeatures && map.relatedFeatures.length > 0 && (
           <section>
             <SectionHeading
@@ -550,33 +555,18 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
               title="Related Features"
               count={map.relatedFeatures.length}
             />
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+            <div className="border-t border-border">
               {map.relatedFeatures.map((rel) => (
-                <ResourceRow
+                <Row
                   key={rel.name}
-                  title={rel.name}
                   href={rel.adminUrl}
+                  primary={rel.name}
                   meta={rel.description}
                 />
               ))}
             </div>
           </section>
         )}
-
-        {/* Footer reminder — single line, mono. */}
-        <footer className="pt-2 border-t border-border">
-          <p className="text-[10px] text-muted-foreground/70 font-mono">
-            <Boxes className="inline h-3 w-3 -mt-0.5 mr-1" />
-            source: hand-curated FeatureAdminMap config at{" "}
-            <ExternalTabLink
-              href={`/admin/docs/app/(core)/${map.slug}/admin/page.tsx`}
-              className="hover:underline text-primary"
-            >
-              app/(core)/{map.slug}/admin/page.tsx
-            </ExternalTabLink>{" "}
-            · drift warnings above flag what's missed.
-          </p>
-        </footer>
       </div>
     </div>
   );
