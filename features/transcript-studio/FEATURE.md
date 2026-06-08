@@ -57,6 +57,17 @@ A 4-column live transcription workspace. Users record audio, see raw transcript 
 
 ---
 
+## Admin map
+
+The full transcription ecosystem (this feature + simple `features/transcripts/`, the official-candidate transcription-cleanup + voice-pad components, audio APIs, voice-related demos, related TTS / Voice Agent / Podcasts surfaces) is catalogued on a single super-admin page:
+
+- **Live URL:** `/transcription/admin` (super-admin gated; redirects everyone else to `/`).
+- **Config:** `app/(core)/transcription/admin/page.tsx` — a `FeatureAdminMap` object passed to `<FeatureAdminPage>`.
+
+When you add a new transcription-related route, window panel, modal, component, demo, API endpoint, or Redux slice, **append it to that config**. The rendered page surfaces yellow drift warnings for sub-routes under `app/(core)/transcription/` and window-panel registry slugs starting with `transcription` that aren't declared on the map — adding-without-listing is structurally caught.
+
+---
+
 ## Data model
 
 **Database tables** (Supabase)

@@ -36,6 +36,18 @@
 
 ---
 
+## Admin map
+
+Every Tier 1 feature ships a super-admin-gated **feature admin map** at `/<feature>/admin` — the single utilitarian page where an admin can see every route, window panel, modal, component, API endpoint, Redux slice, and demo route this feature owns (including the ones that aren't reachable from the primary sidebar surface).
+
+- **Map config:** `app/(core)/<feature>/admin/page.tsx` — a `FeatureAdminMap` object passed to `<FeatureAdminPage>`.
+- **Primitive:** `features/admin/components/FeatureAdminPage.tsx` + `features/admin/types/featureAdminMap.ts`.
+- **Live URL:** `/<feature>/admin` (404s for non-super-admins via redirect).
+
+When you add a new route, window panel, overlay, modular component, demo, or API endpoint to this feature, **also append it to the admin map config**. The rendered page surfaces a yellow drift warning for any route under the feature's directory or any window panel whose registry slug starts with the feature's slug that isn't declared on the map.
+
+---
+
 ## Data model
 
 **Database tables** (Supabase)

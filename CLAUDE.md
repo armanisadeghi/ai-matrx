@@ -214,6 +214,16 @@ Every Tier 1/2 feature has a `FEATURE.md` — the single source of truth for tha
 
 **Non-negotiable:** after any substantive change, update the matching `FEATURE.md` (status, flows, entry points, invariants) and append to its Change Log (date + one-line summary). Cross-feature changes update every doc affected. Stale docs corrupt every future agent's mental model — treat doc updates with the same weight as code changes in the same PR.
 
+### Per-feature admin map — `/[feature]/admin`
+
+Every Tier 1 feature also ships a super-admin-gated **admin map page** at `/[feature]/admin` (e.g. `/transcription/admin`, `/knowledge/admin`). The map is utilitarian by design — never pretty, never fails to connect every resource. It lists, in one place, every URL, window panel, modal, component, API route, Redux slice, and demo route the feature owns. Authors fill in a `FeatureAdminMap` config (`features/admin/types/featureAdminMap.ts`) and render `<FeatureAdminPage map={...} />` (`features/admin/components/FeatureAdminPage.tsx`).
+
+**Why it exists:** features sprawl. Window panels live in `features/window-panels/windows/`, official-candidate components in `components/official-candidate/`, demos under `(dev)/demos/general/<topic>/`, related modules in sibling feature folders. Without a central index per feature, half the surface becomes invisible. The admin page is the one place an agent or admin can land to see everything that belongs to the feature, including the pieces nothing else surfaces.
+
+**Auto-surfaces drift.** The primitive scans the feature's route directory and the window-panels registry; any route or window panel whose slug matches the feature but isn't declared on the map appears as a yellow warning. Adding a new resource without listing it on the admin map is structurally caught.
+
+**When adding a route / window panel / overlay / component to a feature**, append it to that feature's admin map config. CI doctrine checks (`pnpm check:doctrine:staged`) flag missing entries. The pre-commit hook is the enforcement seam.
+
 ### Tier 1 — core features
 
 | Feature | Doc |
