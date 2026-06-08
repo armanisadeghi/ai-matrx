@@ -10668,6 +10668,66 @@ export type Database = {
         }
         Relationships: []
       }
+      mtx_media_heal_queue: {
+        Row: {
+          bad_value: string | null
+          column_name: string
+          created_at: string
+          error: string | null
+          healed_at: string | null
+          id: string
+          row_id: string
+          status: string
+          table_name: string
+        }
+        Insert: {
+          bad_value?: string | null
+          column_name: string
+          created_at?: string
+          error?: string | null
+          healed_at?: string | null
+          id?: string
+          row_id: string
+          status?: string
+          table_name: string
+        }
+        Update: {
+          bad_value?: string | null
+          column_name?: string
+          created_at?: string
+          error?: string | null
+          healed_at?: string | null
+          id?: string
+          row_id?: string
+          status?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
+      mtx_public_url_guard: {
+        Row: {
+          column_name: string
+          created_at: string
+          id: string
+          note: string | null
+          table_name: string
+        }
+        Insert: {
+          column_name: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          table_name: string
+        }
+        Update: {
+          column_name?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       ner_canonicalizer_shadow: {
         Row: {
           agent_cost_usd: number | null
@@ -28429,6 +28489,7 @@ export type Database = {
         Args: { p_message_id: string }
         Returns: undefined
       }
+      mtx_is_durable_media_url: { Args: { url: string }; Returns: boolean }
       pin_prompt_app_to_version: {
         Args: { p_app_id: string; p_version_id: string }
         Returns: Json
