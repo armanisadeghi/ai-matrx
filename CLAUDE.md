@@ -214,13 +214,30 @@ Every Tier 1/2 feature has a `FEATURE.md` — the single source of truth for tha
 
 **Non-negotiable:** after any substantive change, update the matching `FEATURE.md` (status, flows, entry points, invariants) and append to its Change Log (date + one-line summary). Cross-feature changes update every doc affected. Stale docs corrupt every future agent's mental model — treat doc updates with the same weight as code changes in the same PR.
 
+### Feature entry pages are LIST views, not forced workspaces
+
+`/[feature]` is the user's first stop. Treat it like `/agents`: a list of everything they can do, with options to create / open / fork. **Never shove the user into a single record's UI as if it were the home page.** A user landing on `/transcripts` should see "every transcript I have / shared with me, sorted recent-first, with filters, a New button, and a row of UI choices per record (view / edit / studio / scribe / run / etc.)" — not a forced detail page on whatever the last opened item was.
+
+The `/agents` route is the gold standard for this pattern. From it: list everything → click an item → choose the UI you want (view, build, run, versions) → from inside any UI, back out to the list or jump to a different UI for the same item via the header row. Replicate this shape for every feature with multiple items + multiple UIs.
+
+If today you find a feature where the entry page traps the user in one detail UI, the fix is **not** to redesign that UI — it's to introduce the missing list-view "savior" page and demote the current page to an internal detail route. Cheap; high value.
+
 ### Per-feature admin map — `/[feature]/admin`
 
-Every Tier 1 feature also ships a super-admin-gated **admin map page** at `/[feature]/admin` (e.g. `/transcription/admin`, `/knowledge/admin`). The map is utilitarian by design — never pretty, never fails to connect every resource. It lists, in one place, every URL, window panel, modal, component, API route, Redux slice, and demo route the feature owns. Authors fill in a `FeatureAdminMap` config (`features/admin/types/featureAdminMap.ts`) and render `<FeatureAdminPage map={...} />` (`features/admin/components/FeatureAdminPage.tsx`).
+Every Tier 1 feature also ships an **admin-gated** map page (any admin level — `requireAdmin`, not super-admin) at `/[feature]/admin` (e.g. `/transcripts/admin`, `/knowledge/admin`). The map is utilitarian by design — never pretty, never fails to connect every resource. It lists, in one place, every URL, window panel, modal, component, API route, Redux slice, and demo route the feature owns. Authors fill in a `FeatureAdminMap` config (`features/admin/types/featureAdminMap.ts`) and render `<FeatureAdminPage map={...} />` (`features/admin/components/FeatureAdminPage.tsx`).
 
 **Why it exists:** features sprawl. Window panels live in `features/window-panels/windows/`, official-candidate components in `components/official-candidate/`, demos under `(dev)/demos/general/<topic>/`, related modules in sibling feature folders. Without a central index per feature, half the surface becomes invisible. The admin page is the one place an agent or admin can land to see everything that belongs to the feature, including the pieces nothing else surfaces.
 
-**Auto-surfaces drift.** The primitive scans the feature's route directory and the window-panels registry; any route or window panel whose slug matches the feature but isn't declared on the map appears as a yellow warning. Adding a new resource without listing it on the admin map is structurally caught.
+**Design rules for the admin map** (the primitive enforces these — don't fight them):
+- **Admin already knows what "Routes" / "Window Panels" / "Components" are.** Zero section descriptions, zero hero paragraph at the top — just the data.
+- **Full viewport width.** No `max-w-6xl` centered column wasting the admin's screen real estate.
+- **Every link opens in a new tab.** The admin map stays as a workspace.
+- **Resource rows are single-line + compact.** No novel-length card descriptions. Use the `notes?: string[]` field for a 1-4 bullet expand on the rare row that needs it.
+- **Window-panel cards have an "Open" button** that dispatches the overlay live (via the generic `OverlayLaunchButton` client island).
+- **Components are tiered:** `official` (registered in the official-components registry — links there), `candidate` (under `components/official-candidate/`), `internal` (feature-local — just a path readout). Three distinct visual treatments so admins can tell at a glance which is which.
+- **`.md` doc links route through `/admin/docs/<repo-relative-path>`** (admin-gated, renders inline via `BasicMarkdownContent`) — clicking a FEATURE.md link opens the rendered markdown in a new tab.
+
+**Auto-surfaces drift.** The primitive scans the feature's route directory and the window-panels registry; any route or window panel whose slug matches the feature but isn't declared on the map appears as a yellow warning. Adding a new resource without listing it on the admin map is structurally caught. The page also self-links to its own config file so admins can jump straight to where the map is edited.
 
 **When adding a route / window panel / overlay / component to a feature**, append it to that feature's admin map config. CI doctrine checks (`pnpm check:doctrine:staged`) flag missing entries. The pre-commit hook is the enforcement seam.
 

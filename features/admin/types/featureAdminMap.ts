@@ -22,7 +22,7 @@ export type FeatureResourceStatus =
   | "Demo only";
 
 export interface FeatureAdminRoute {
-  /** The URL — e.g. `/transcription/studio`. */
+  /** The URL — e.g. `/transcripts/studio`. */
   url: string;
   /** Short label — shown as the row title. */
   label: string;
@@ -32,6 +32,12 @@ export interface FeatureAdminRoute {
   filePath?: string;
   /** Optional: status / lifecycle stage. */
   status?: FeatureResourceStatus;
+  /**
+   * Optional: a few CONCISE bullets surfaced on hover/expand. Avoid prose —
+   * if you're tempted to write a paragraph, put it in FEATURE.md instead and
+   * link it via the map's `docs` array.
+   */
+  notes?: string[];
 }
 
 export interface FeatureAdminApiRoute {
@@ -54,6 +60,22 @@ export interface FeatureAdminComponent {
   description: string;
   /** Optional: status / lifecycle stage. */
   status?: FeatureResourceStatus;
+  /**
+   * Tier of the component. Drives visual treatment on the admin page so
+   * "this is an officially-registered, registry-backed component" reads
+   * differently from "this is an internal feature file".
+   *
+   * - `official` — listed in `components/official/` and registered in the
+   *   official-components registry. Cards link to the registry page.
+   * - `candidate` — under `components/official-candidate/`. Promoted-by-use
+   *   building blocks not yet in the official registry.
+   * - `internal` — feature-local. Just a path readout.
+   *
+   * Defaults to `internal` when omitted.
+   */
+  tier?: "official" | "candidate" | "internal";
+  /** Optional concise bullets shown on expand (avoid prose). */
+  notes?: string[];
 }
 
 export interface FeatureAdminWindowPanel {
@@ -94,7 +116,11 @@ export interface FeatureAdminRelatedFeature {
 
 export interface FeatureAdminDocLink {
   label: string;
-  /** Repo-relative path or external URL. */
+  /**
+   * Either a repo-relative path to a `.md` file (rendered via
+   * `/admin/docs/<path>`) or an absolute external URL. The admin page
+   * detects which and routes accordingly. All doc links open in a new tab.
+   */
   href: string;
 }
 

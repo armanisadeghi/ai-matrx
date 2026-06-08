@@ -1,7 +1,7 @@
 # Transcription Cleanup (page route)
 
 **Status:** Active · new starting point (2026-06-08)
-**Route:** `/transcription/cleanup` → [`app/(core)/transcription/cleanup/page.tsx`](../../app/(core)/transcription/cleanup/page.tsx)
+**Route:** `/transcripts/cleanup` → [`app/(core)/transcripts/cleanup/page.tsx`](../../app/(core)/transcripts/cleanup/page.tsx) (legacy `/transcription/cleanup` 308-redirects via `next.config.js`)
 **Entry component:** [`components/CleanupPad.tsx`](./components/CleanupPad.tsx)
 
 ## What this is

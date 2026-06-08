@@ -1,29 +1,27 @@
 // features/admin/components/FeatureAdminPage.tsx
 //
 // The platform primitive every feature's admin map renders through.
-// Server component. Super-admin gated (redirects guests + non-admins
-// to home; never throws). Renders one section per resource family
-// (routes, window panels, overlays, components, APIs, slices, demos,
-// related features) — utilitarian, not designed. The goal is
-// completeness, not polish: the admin page is the place where a
-// reader can SEE everything a feature owns, including the pieces
-// that aren't surfaced anywhere else in the product (window panels,
-// official-candidate components, scattered demos).
+// Server component. Admin-gated (any admin level — redirects everyone
+// else to home; never throws). Utilitarian — built for an admin who
+// already knows what these resources are. No headers explaining
+// "Core Routes are pages users navigate to", no novel-length card
+// descriptions, no max-width that wastes 60% of the viewport. Every
+// resource link opens in a new tab so the map stays as a workspace.
+// Every window-panel card has an "Open" button that dispatches the
+// overlay live.
 //
-// Adding a new feature admin map: write the config (a
-// `FeatureAdminMap` object), then render
+// Add a new feature: write a `FeatureAdminMap` object, render
 // `<FeatureAdminPage map={...} />` from `app/(core)/[feature]/admin/
-// page.tsx`. That's it.
+// page.tsx`. The drift warnings flag anything you forgot.
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import {
   AlertCircle,
+  Boxes,
   Component,
   Database,
-  ExternalLink,
-  FileCode,
   FileText,
   FlaskConical,
   GitBranch,
@@ -31,12 +29,15 @@ import {
   Link2,
   PanelTopOpen,
   Server,
+  ShieldCheck,
 } from "lucide-react";
 
 import { getCurrentUserAdminStatus } from "@/utils/auth/adminUtils";
 import { scanRoutesShallow } from "@/utils/route-discovery";
 import { cn } from "@/lib/utils";
 import type {
+  FeatureAdminComponent,
+  FeatureAdminDocLink,
   FeatureAdminMap,
   FeatureResourceStatus,
 } from "../types/featureAdminMap";
@@ -45,6 +46,10 @@ import {
   resolveOverlay,
   resolveWindowPanel,
 } from "../utils/lookupOverlay";
+import {
+  ExternalTabLink,
+  OverlayLaunchButton,
+} from "./OverlayLaunchButton";
 
 interface FeatureAdminPageProps {
   map: FeatureAdminMap;
@@ -61,12 +66,20 @@ const STATUS_STYLES: Record<FeatureResourceStatus, string> = {
     "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20",
 };
 
+const TIER_STYLES: Record<NonNullable<FeatureAdminComponent["tier"]>, string> = {
+  official:
+    "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+  candidate:
+    "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+  internal: "bg-muted text-muted-foreground border-border",
+};
+
 function StatusPill({ status }: { status?: FeatureResourceStatus }) {
   if (!status) return null;
   return (
     <span
       className={cn(
-        "shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider",
+        "shrink-0 inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider leading-4",
         STATUS_STYLES[status],
       )}
     >
@@ -75,78 +88,124 @@ function StatusPill({ status }: { status?: FeatureResourceStatus }) {
   );
 }
 
+function TierPill({ tier }: { tier: NonNullable<FeatureAdminComponent["tier"]> }) {
+  return (
+    <span
+      className={cn(
+        "shrink-0 inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0 text-[10px] font-medium uppercase tracking-wider leading-4",
+        TIER_STYLES[tier],
+      )}
+      title={
+        tier === "official"
+          ? "Registered in the official-components registry"
+          : tier === "candidate"
+            ? "Official-candidate — promoted-by-use but not yet in the official registry"
+            : "Internal — feature-local file path readout"
+      }
+    >
+      {tier === "official" && <ShieldCheck className="h-2.5 w-2.5" />}
+      {tier}
+    </span>
+  );
+}
+
 function SectionHeading({
   icon: Icon,
   title,
   count,
-  description,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   count: number;
-  description?: string;
 }) {
   return (
-    <div className="mb-3">
-      <div className="flex items-baseline gap-2">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          ({count})
-        </span>
-      </div>
-      {description && (
-        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-      )}
+    <div className="flex items-baseline gap-2 mb-2 border-b border-border pb-1">
+      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      <h2 className="text-sm font-semibold tracking-tight uppercase text-muted-foreground">
+        {title}
+      </h2>
+      <span className="text-[10px] text-muted-foreground/70 tabular-nums">
+        {count}
+      </span>
     </div>
   );
 }
 
-function ResourceCard({
-  href,
+/**
+ * Compact row used by every section. Single-line title (mono path), an
+ * optional inline label, status + tier pills on the right, and an optional
+ * details expander when `notes` are provided. Click the title to navigate
+ * (new tab). No paragraph descriptions — admins don't need them.
+ */
+function ResourceRow({
   title,
-  description,
+  href,
+  label,
   meta,
   status,
+  tier,
+  notes,
+  rightSlot,
 }: {
-  href?: string;
   title: string;
-  description?: string;
+  href?: string;
+  label?: string;
   meta?: React.ReactNode;
   status?: FeatureResourceStatus;
+  tier?: NonNullable<FeatureAdminComponent["tier"]>;
+  notes?: string[];
+  rightSlot?: React.ReactNode;
 }) {
-  const inner = (
-    <div className="rounded-md border border-border bg-card p-3 hover:border-primary/40 transition-colors">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-medium text-foreground truncate">
-              {title}
+  const titleEl = href ? (
+    <ExternalTabLink
+      href={href}
+      className="font-mono text-xs text-primary hover:underline"
+    >
+      <span className="truncate">{title}</span>
+    </ExternalTabLink>
+  ) : (
+    <span className="font-mono text-xs text-foreground truncate">{title}</span>
+  );
+
+  return (
+    <div className="rounded-sm border border-border bg-card px-2.5 py-1.5 hover:border-primary/30 transition-colors">
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="min-w-0 flex-1 flex items-center gap-2">
+          {titleEl}
+          {label && (
+            <span className="text-xs text-muted-foreground truncate">
+              · {label}
             </span>
-            {href && (
-              <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
-            )}
-          </div>
-          {description && (
-            <p className="mt-1 text-xs text-muted-foreground leading-snug">
-              {description}
-            </p>
-          )}
-          {meta && (
-            <div className="mt-1.5 text-[10px] text-muted-foreground/80 font-mono">
-              {meta}
-            </div>
           )}
         </div>
+        {tier && <TierPill tier={tier} />}
         <StatusPill status={status} />
+        {rightSlot}
+        {notes && notes.length > 0 && (
+          <details className="group">
+            <summary className="cursor-pointer text-[10px] font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground select-none list-none">
+              <span className="group-open:hidden">notes</span>
+              <span className="hidden group-open:inline">hide</span>
+            </summary>
+          </details>
+        )}
       </div>
+      {meta && (
+        <div className="mt-0.5 text-[10px] text-muted-foreground/70 font-mono truncate">
+          {meta}
+        </div>
+      )}
+      {notes && notes.length > 0 && (
+        <details className="mt-1">
+          <summary className="sr-only">Details</summary>
+          <ul className="mt-1 ml-3 space-y-0.5 text-[11px] text-muted-foreground list-disc">
+            {notes.map((n, i) => (
+              <li key={i}>{n}</li>
+            ))}
+          </ul>
+        </details>
+      )}
     </div>
-  );
-  if (!href) return inner;
-  return (
-    <Link href={href} className="block">
-      {inner}
-    </Link>
   );
 }
 
@@ -160,33 +219,21 @@ async function RouteDriftWarning({
   slug: string;
 }) {
   const found = await scanRoutesShallow(scanPath);
-  // Anything in `found` that doesn't appear as a declared route under
-  // `/[slug]/<name>` is undeclared drift.
   const drift = found.filter((name) => {
-    if (name === "admin") return false; // The admin page itself
+    if (name === "admin") return false;
     return !declaredUrls.has(`/${slug}/${name}`);
   });
   if (drift.length === 0) return null;
   return (
-    <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
-      <div className="flex items-start gap-2">
-        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-        <div className="text-xs">
-          <div className="font-semibold text-amber-900 dark:text-amber-200 mb-1">
-            Undeclared sub-routes found
-          </div>
-          <p className="text-amber-800/80 dark:text-amber-300/80 mb-1.5">
-            These sub-routes exist on disk but aren&apos;t listed under
-            Routes. Either declare them or relocate.
-          </p>
-          <ul className="space-y-0.5">
-            {drift.map((name) => (
-              <li key={name} className="font-mono">
-                /{slug}/{name}
-              </li>
-            ))}
-          </ul>
-        </div>
+    <div className="mt-2 rounded-sm border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5">
+      <div className="flex items-center gap-1.5 text-xs">
+        <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
+        <span className="font-semibold text-amber-900 dark:text-amber-200">
+          Undeclared sub-routes:
+        </span>
+        <span className="font-mono text-amber-800/90 dark:text-amber-300/90">
+          {drift.map((n) => `/${slug}/${n}`).join(", ")}
+        </span>
       </div>
     </div>
   );
@@ -203,38 +250,37 @@ function WindowPanelDriftWarning({
   const drift = found.filter((entry) => !declaredOverlayIds.has(entry.overlayId));
   if (drift.length === 0) return null;
   return (
-    <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
-      <div className="flex items-start gap-2">
-        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-        <div className="text-xs">
-          <div className="font-semibold text-amber-900 dark:text-amber-200 mb-1">
-            Undeclared window panels with matching slug prefix
-          </div>
-          <p className="text-amber-800/80 dark:text-amber-300/80 mb-1.5">
-            Registry entries whose slug starts with{" "}
-            <code className="font-mono">{slugPrefix}</code> but aren&apos;t
-            in this map. Add to <code>windowPanels</code> or rename the slug.
-          </p>
-          <ul className="space-y-0.5">
-            {drift.map((entry) => (
-              <li key={entry.overlayId} className="font-mono">
-                {entry.slug} ({entry.overlayId})
-              </li>
-            ))}
-          </ul>
-        </div>
+    <div className="mt-2 rounded-sm border border-amber-500/30 bg-amber-500/5 px-2.5 py-1.5">
+      <div className="flex items-center gap-1.5 text-xs">
+        <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400 shrink-0" />
+        <span className="font-semibold text-amber-900 dark:text-amber-200">
+          Undeclared windows ({slugPrefix}*):
+        </span>
+        <span className="font-mono text-amber-800/90 dark:text-amber-300/90">
+          {drift.map((e) => `${e.slug}`).join(", ")}
+        </span>
       </div>
     </div>
   );
 }
 
+/**
+ * Resolve a `FeatureAdminDocLink.href` to the right open-in-new-tab target.
+ * Repo-relative `.md` paths route through `/admin/docs/...` so the markdown
+ * renders inline. External URLs pass through unchanged.
+ */
+function docHref(link: FeatureAdminDocLink): string {
+  if (/^https?:\/\//.test(link.href)) return link.href;
+  // Normalize leading slash + repo-relative path.
+  const clean = link.href.replace(/^\/+/, "");
+  return `/admin/docs/${clean}`;
+}
+
 export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
   const status = await getCurrentUserAdminStatus();
-
-  // Gate: super-admin only. Bounce everyone else to /. Throwing would
-  // mean an error page; redirect is cleaner UX for guests and non-admins
-  // who land here through a stray link.
-  if (!status || status.level !== "super_admin") {
+  // Gate: admin (any level) — not super-admin. Bounce guests + non-admins
+  // to home. Redirect, never throw — that's an error page, this is UX.
+  if (!status || !status.isAdmin) {
     redirect("/");
   }
 
@@ -245,285 +291,293 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
   ]);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-8">
-      {/* Header */}
-      <header className="border-b border-border pb-4">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-          <Link href="/" className="hover:underline">
-            /
-          </Link>
-          <span>›</span>
-          <span className="font-mono">{map.slug}</span>
-          <span>›</span>
-          <span className="font-mono font-semibold text-foreground">admin</span>
+    <div className="min-h-dvh bg-background w-full">
+      {/* Compact header — single line + doc chips. No paragraph. */}
+      <header className="border-b border-border px-4 py-2.5 flex items-center gap-3 flex-wrap">
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="text-xs text-muted-foreground font-mono">
+            /{map.slug}/admin
+          </span>
+          <span className="text-xs text-muted-foreground">·</span>
+          <h1 className="text-sm font-bold tracking-tight">{map.name}</h1>
+          <span className="text-xs text-muted-foreground capitalize">
+            ({status.level ?? "admin"})
+          </span>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          {map.name} — Feature Admin Map
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground max-w-3xl">
-          {map.description}
-        </p>
+        <div className="flex-1" />
         {map.docs && map.docs.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="flex items-center gap-2">
             {map.docs.map((doc) => (
-              <Link
+              <ExternalTabLink
                 key={doc.href}
-                href={doc.href}
-                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                href={docHref(doc)}
+                className="text-[11px] font-medium text-primary hover:underline"
               >
                 <FileText className="h-3 w-3" />
                 {doc.label}
-              </Link>
+              </ExternalTabLink>
             ))}
           </div>
         )}
       </header>
 
-      {/* Routes */}
-      <section>
-        <SectionHeading
-          icon={Link2}
-          title="Core Routes"
-          count={map.routes.length}
-          description="Pages users navigate to. Use these to confirm the full set of URLs that ship for this feature."
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {map.routes.map((route) => (
-            <ResourceCard
-              key={route.url}
-              href={route.url}
-              title={route.url}
-              description={`${route.label} — ${route.description}`}
-              meta={route.filePath}
-              status={route.status}
-            />
-          ))}
-        </div>
-        {map.routeScanPath && (
-          <Suspense fallback={null}>
-            <RouteDriftWarning
-              scanPath={map.routeScanPath}
-              declaredUrls={declaredRouteUrls}
-              slug={map.slug}
-            />
-          </Suspense>
-        )}
-      </section>
-
-      {/* Window Panels */}
-      {map.windowPanels && map.windowPanels.length > 0 && (
+      <div className="px-4 py-4 space-y-6">
+        {/* Routes */}
         <section>
-          <SectionHeading
-            icon={LayoutPanelTop}
-            title="Window Panels"
-            count={map.windowPanels.length}
-            description="Floating / draggable workspace surfaces owned by this feature. Open via the overlay controller."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {map.windowPanels.map((entry) => {
-              const resolved = resolveWindowPanel(entry.overlayId);
-              if (!resolved) {
-                return (
-                  <ResourceCard
-                    key={entry.overlayId}
-                    title={entry.overlayId}
-                    description="MISSING from window registry — id is declared here but no metadata entry exists"
-                    status="Deprecated"
-                  />
-                );
-              }
-              return (
-                <ResourceCard
-                  key={entry.overlayId}
-                  title={resolved.label}
-                  description={entry.description}
-                  meta={
-                    <>
-                      slug: {resolved.slug} · kind: {resolved.kind} · mode:{" "}
-                      {resolved.instanceMode} · mobile:{" "}
-                      {resolved.mobilePresentation}
-                    </>
-                  }
-                  status={
-                    entry.status ??
-                    (resolved.deprecated ? "Deprecated" : "Live")
-                  }
-                />
-              );
-            })}
-          </div>
-          <WindowPanelDriftWarning
-            slugPrefix={map.slug}
-            declaredOverlayIds={declaredOverlayIds}
-          />
-        </section>
-      )}
-
-      {/* Overlays / Modals */}
-      {map.overlays && map.overlays.length > 0 && (
-        <section>
-          <SectionHeading
-            icon={PanelTopOpen}
-            title="Modals / Sheets / Overlays"
-            count={map.overlays.length}
-            description="Non-window overlays — modals, sheets, command palettes, toasts the feature ships."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {map.overlays.map((entry) => {
-              const resolved = resolveOverlay(entry.overlayId);
-              if (!resolved) {
-                return (
-                  <ResourceCard
-                    key={entry.overlayId}
-                    title={entry.overlayId}
-                    description="MISSING from overlay catalogue — id is declared here but no metadata entry exists"
-                    status="Deprecated"
-                  />
-                );
-              }
-              return (
-                <ResourceCard
-                  key={entry.overlayId}
-                  title={resolved.label}
-                  description={entry.description}
-                  meta={`id: ${resolved.overlayId} · mode: ${resolved.instanceMode}`}
-                  status={entry.status ?? "Live"}
-                />
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Components */}
-      {map.components && map.components.length > 0 && (
-        <section>
-          <SectionHeading
-            icon={Component}
-            title="Modules / Components"
-            count={map.components.length}
-            description="Reusable building blocks the feature exposes. Includes official-candidate and feature-internal components."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {map.components.map((c) => (
-              <ResourceCard
-                key={c.filePath}
-                title={c.name}
-                description={c.description}
-                meta={c.filePath}
-                status={c.status}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* API routes */}
-      {map.apiRoutes && map.apiRoutes.length > 0 && (
-        <section>
-          <SectionHeading
-            icon={Server}
-            title="API Routes"
-            count={map.apiRoutes.length}
-            description="Next.js API handlers this feature relies on (or owns)."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {map.apiRoutes.map((api) => (
-              <ResourceCard
-                key={api.url}
-                title={`${api.method} ${api.url}`}
-                description={api.description}
-                meta={api.filePath}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Redux slices */}
-      {map.reduxSlices && map.reduxSlices.length > 0 && (
-        <section>
-          <SectionHeading
-            icon={Database}
-            title="Redux Slices"
-            count={map.reduxSlices.length}
-            description="Global state owned by this feature."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {map.reduxSlices.map((slice) => (
-              <ResourceCard
-                key={slice.filePath}
-                title={slice.name}
-                description={slice.description}
-                meta={slice.filePath}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Demo / test routes */}
-      {map.demoRoutes && map.demoRoutes.length > 0 && (
-        <section>
-          <SectionHeading
-            icon={FlaskConical}
-            title="Demos / Tests"
-            count={map.demoRoutes.length}
-            description="Demo, test, and playground routes related to this feature — anywhere in the repo."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {map.demoRoutes.map((route) => (
-              <ResourceCard
+          <SectionHeading icon={Link2} title="Routes" count={map.routes.length} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+            {map.routes.map((route) => (
+              <ResourceRow
                 key={route.url}
-                href={route.url}
                 title={route.url}
-                description={`${route.label} — ${route.description}`}
+                href={route.url}
+                label={route.label}
                 meta={route.filePath}
-                status={route.status ?? "Demo only"}
+                status={route.status}
+                notes={route.notes}
               />
             ))}
           </div>
-        </section>
-      )}
-
-      {/* Related features */}
-      {map.relatedFeatures && map.relatedFeatures.length > 0 && (
-        <section>
-          <SectionHeading
-            icon={GitBranch}
-            title="Related Features"
-            count={map.relatedFeatures.length}
-            description="Other features this one shares concepts, data, or surfaces with."
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {map.relatedFeatures.map((rel) => (
-              <ResourceCard
-                key={rel.name}
-                href={rel.adminUrl}
-                title={rel.name}
-                description={rel.description}
-                meta={rel.adminUrl}
+          {map.routeScanPath && (
+            <Suspense fallback={null}>
+              <RouteDriftWarning
+                scanPath={map.routeScanPath}
+                declaredUrls={declaredRouteUrls}
+                slug={map.slug}
               />
-            ))}
-          </div>
+            </Suspense>
+          )}
         </section>
-      )}
 
-      {/* Footer reminder */}
-      <footer className="border-t border-border pt-4 text-xs text-muted-foreground">
-        <div className="flex items-start gap-2">
-          <FileCode className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-          <div>
-            <span className="font-medium text-foreground">Source of truth:</span>{" "}
-            this map is generated from a hand-curated{" "}
-            <code className="font-mono">FeatureAdminMap</code> config.
-            When you add a route, window panel, overlay, or component to{" "}
-            <code className="font-mono">features/{map.slug}/</code>, also
-            append it here. The yellow drift warnings above will flag
-            anything you forgot.
-          </div>
-        </div>
-      </footer>
+        {/* Window Panels */}
+        {map.windowPanels && map.windowPanels.length > 0 && (
+          <section>
+            <SectionHeading
+              icon={LayoutPanelTop}
+              title="Window Panels"
+              count={map.windowPanels.length}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+              {map.windowPanels.map((entry) => {
+                const resolved = resolveWindowPanel(entry.overlayId);
+                if (!resolved) {
+                  return (
+                    <ResourceRow
+                      key={entry.overlayId}
+                      title={entry.overlayId}
+                      label="(missing from registry)"
+                      status="Deprecated"
+                    />
+                  );
+                }
+                return (
+                  <ResourceRow
+                    key={entry.overlayId}
+                    title={resolved.label}
+                    label={resolved.slug}
+                    meta={
+                      <>
+                        {resolved.kind} · {resolved.instanceMode} ·{" "}
+                        {resolved.mobilePresentation}
+                      </>
+                    }
+                    status={
+                      entry.status ??
+                      (resolved.deprecated ? "Deprecated" : "Live")
+                    }
+                    rightSlot={
+                      <OverlayLaunchButton
+                        overlayId={entry.overlayId}
+                        label={resolved.label}
+                      />
+                    }
+                  />
+                );
+              })}
+            </div>
+            <WindowPanelDriftWarning
+              slugPrefix={map.slug}
+              declaredOverlayIds={declaredOverlayIds}
+            />
+          </section>
+        )}
+
+        {/* Overlays / Modals */}
+        {map.overlays && map.overlays.length > 0 && (
+          <section>
+            <SectionHeading
+              icon={PanelTopOpen}
+              title="Modals / Sheets"
+              count={map.overlays.length}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+              {map.overlays.map((entry) => {
+                const resolved = resolveOverlay(entry.overlayId);
+                if (!resolved) {
+                  return (
+                    <ResourceRow
+                      key={entry.overlayId}
+                      title={entry.overlayId}
+                      label="(missing from catalogue)"
+                      status="Deprecated"
+                    />
+                  );
+                }
+                return (
+                  <ResourceRow
+                    key={entry.overlayId}
+                    title={resolved.label}
+                    label={resolved.overlayId}
+                    meta={resolved.instanceMode}
+                    status={entry.status ?? "Live"}
+                    rightSlot={
+                      <OverlayLaunchButton
+                        overlayId={entry.overlayId}
+                        label={resolved.label}
+                      />
+                    }
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Components — tiered. Official + candidate get visible badges. */}
+        {map.components && map.components.length > 0 && (
+          <section>
+            <SectionHeading
+              icon={Component}
+              title="Components"
+              count={map.components.length}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+              {map.components.map((c) => {
+                const tier = c.tier ?? "internal";
+                const isCandidate = tier === "candidate";
+                const isOfficial = tier === "official";
+                // Official components are linked to the registry index;
+                // candidates / internals just show the file path (no link).
+                const href = isOfficial
+                  ? "/administration/official-components"
+                  : undefined;
+                return (
+                  <ResourceRow
+                    key={c.filePath}
+                    title={c.name}
+                    href={href}
+                    label={isCandidate ? "candidate" : undefined}
+                    meta={c.filePath}
+                    status={c.status}
+                    tier={tier}
+                    notes={c.notes}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* API routes */}
+        {map.apiRoutes && map.apiRoutes.length > 0 && (
+          <section>
+            <SectionHeading
+              icon={Server}
+              title="API"
+              count={map.apiRoutes.length}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+              {map.apiRoutes.map((api) => (
+                <ResourceRow
+                  key={api.url}
+                  title={api.url}
+                  label={api.method}
+                  meta={api.filePath}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Redux slices */}
+        {map.reduxSlices && map.reduxSlices.length > 0 && (
+          <section>
+            <SectionHeading
+              icon={Database}
+              title="Redux Slices"
+              count={map.reduxSlices.length}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+              {map.reduxSlices.map((slice) => (
+                <ResourceRow
+                  key={slice.filePath}
+                  title={slice.name}
+                  meta={slice.filePath}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Demos / tests */}
+        {map.demoRoutes && map.demoRoutes.length > 0 && (
+          <section>
+            <SectionHeading
+              icon={FlaskConical}
+              title="Demos / Tests"
+              count={map.demoRoutes.length}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+              {map.demoRoutes.map((route) => (
+                <ResourceRow
+                  key={route.url}
+                  title={route.url}
+                  href={route.url}
+                  label={route.label}
+                  meta={route.filePath}
+                  status={route.status ?? "Demo only"}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Related features */}
+        {map.relatedFeatures && map.relatedFeatures.length > 0 && (
+          <section>
+            <SectionHeading
+              icon={GitBranch}
+              title="Related Features"
+              count={map.relatedFeatures.length}
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-1.5">
+              {map.relatedFeatures.map((rel) => (
+                <ResourceRow
+                  key={rel.name}
+                  title={rel.name}
+                  href={rel.adminUrl}
+                  meta={rel.description}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Footer reminder — single line, mono. */}
+        <footer className="pt-2 border-t border-border">
+          <p className="text-[10px] text-muted-foreground/70 font-mono">
+            <Boxes className="inline h-3 w-3 -mt-0.5 mr-1" />
+            source: hand-curated FeatureAdminMap config at{" "}
+            <ExternalTabLink
+              href={`/admin/docs/app/(core)/${map.slug}/admin/page.tsx`}
+              className="hover:underline text-primary"
+            >
+              app/(core)/{map.slug}/admin/page.tsx
+            </ExternalTabLink>{" "}
+            · drift warnings above flag what's missed.
+          </p>
+        </footer>
+      </div>
     </div>
   );
 }

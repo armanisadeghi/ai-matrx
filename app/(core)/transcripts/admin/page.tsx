@@ -67,9 +67,22 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/transcripts/cleanup",
+      label: "Cleanup (standalone page)",
+      description:
+        "Standalone full-page version of the Transcription Cleanup tool. Powered by `features/transcription-cleanup/` (its own feature folder).",
+      filePath: "app/(core)/transcripts/cleanup/page.tsx",
+      status: "Live",
+      notes: [
+        "Deliberate, isolated rewrite of the cleanup window panel",
+        "Responsive page shell, inline sidebar desktop / drawer mobile",
+        "Reuses voice-pad / agent-exec Redux primitives",
+      ],
+    },
+    {
       url: "/transcripts/admin",
       label: "Admin map (this page)",
-      description: "The page you're reading — super-admin index of every transcripts resource.",
+      description: "The page you're reading — admin index of every transcripts resource.",
       filePath: "app/(core)/transcripts/admin/page.tsx",
       status: "Live",
     },
@@ -109,30 +122,35 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/transcripts/components/TranscriptsLayout.tsx",
       description: "Portal-header layout that hosts the processor + sidebar + viewer.",
       status: "Live",
+      tier: "internal",
     },
     {
       name: "TranscriptViewer",
       filePath: "features/transcripts/components/TranscriptViewer.tsx",
       description: "Read / edit a saved transcript. Used by the processor workspace.",
       status: "Live",
+      tier: "internal",
     },
     {
       name: "CreateTranscriptModal",
       filePath: "features/transcripts/components/CreateTranscriptModal.tsx",
       description: "Upload audio + run Whisper. Saves to the simple transcripts table.",
       status: "Live",
+      tier: "internal",
     },
     {
       name: "ImportTranscriptModal",
       filePath: "features/transcripts/components/ImportTranscriptModal.tsx",
       description: "Import AI-generated transcripts (pasted or fetched).",
       status: "Live",
+      tier: "internal",
     },
     {
       name: "TranscriptsSidebar",
       filePath: "features/transcripts/components/TranscriptsSidebar.tsx",
       description: "Folder + transcript browser for the processor workspace.",
       status: "Live",
+      tier: "internal",
     },
     {
       name: "StudioView",
@@ -140,12 +158,14 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
       description:
         "Core config-driven 4-column workspace. Drives `/transcripts/studio` and the Studio window panel.",
       status: "Live",
+      tier: "internal",
     },
     {
       name: "StudioSidebar",
       filePath: "features/transcript-studio/components/StudioSidebar.tsx",
       description: "Studio session list.",
       status: "Live",
+      tier: "internal",
     },
     {
       name: "Studio columns",
@@ -153,12 +173,14 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
       description:
         "RawTranscriptColumn / CleanedTranscriptColumn / ConceptsColumn / ModuleColumn — the four parallel streams.",
       status: "Live",
+      tier: "internal",
     },
     {
       name: "ScribeScreen",
       filePath: "features/transcript-studio/components/scribe/ScribeScreen.tsx",
       description: "Mobile Scribe controller — switches between capture + assistant modes.",
       status: "Live",
+      tier: "internal",
     },
     {
       name: "ScribeCaptureScreen",
@@ -166,27 +188,40 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
         "features/transcript-studio/components/scribe/ScribeCaptureScreen.tsx",
       description: "Mobile capture UI: big record button, live transcript strip.",
       status: "Live",
+      tier: "internal",
     },
     {
-      name: "TranscriptionCleanup",
+      name: "CleanupPad",
+      filePath: "features/transcription-cleanup/components/CleanupPad.tsx",
+      description:
+        "Standalone-page version of the cleanup tool. Used by `/transcripts/cleanup`.",
+      status: "Live",
+      tier: "internal",
+    },
+    {
+      name: "TranscriptionCleanup (legacy)",
       filePath:
         "components/official-candidate/transcription-cleanup/components/TranscriptionCleanup.tsx",
       description:
-        "Official-candidate AI cleanup module. Powers the cleanup window panel AND the Scribe cleanup sheet.",
+        "Original cleanup component still backing the window panel + the Scribe cleanup sheet. The `/transcripts/cleanup` page intentionally diverges via CleanupPad.",
       status: "Live",
+      tier: "candidate",
     },
     {
       name: "VoicePad family",
       filePath: "components/official-candidate/voice-pad/components/",
       description:
-        "VoicePad / VoicePadAdvanced / VoicePadExpanded — three UI variants on the same `voicePadSlice` state. Consolidation candidate.",
+        "VoicePad / VoicePadAdvanced / VoicePadExpanded — three UI variants on the same `voicePadSlice` state.",
       status: "Live",
+      tier: "candidate",
+      notes: ["Consolidation candidate", "All three share one slice"],
     },
     {
       name: "MicrophoneRecordingModal",
       filePath: "features/audio/components/MicrophoneRecordingModal.tsx",
       description: "Modal overlay for one-shot recording with live transcription progress.",
       status: "Live",
+      tier: "internal",
     },
     {
       name: "AdvancedTranscriptViewer",
@@ -195,6 +230,7 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
       description:
         "In-markdown viewer for AI-generated transcripts. Renders inside agent responses.",
       status: "Live",
+      tier: "internal",
     },
   ],
 
