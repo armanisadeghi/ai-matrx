@@ -262,7 +262,7 @@ export function CleanupContextPanel({ onChange }: ContextBlocksPanelProps) {
       {blocks.map((block) => (
         <div
           key={block.id}
-          className="flex flex-col rounded-md border border-border/50 overflow-hidden bg-background"
+          className="flex flex-col rounded-lg border border-border overflow-hidden bg-background"
         >
           {/* ── Block header ────────────────────────────────────────────── */}
           <div className="flex items-center gap-1 px-2 pt-1.5 pb-0.5">
@@ -271,7 +271,7 @@ export function CleanupContextPanel({ onChange }: ContextBlocksPanelProps) {
               value={block.title}
               onChange={(e) => handleTitleChange(block.id, e.target.value)}
               placeholder="Title (optional)"
-              className="flex-1 min-w-0 bg-transparent text-[11px] font-medium placeholder:text-muted-foreground/40 focus:outline-none"
+              className="flex-1 min-w-0 bg-transparent text-xs font-medium placeholder:text-muted-foreground/50 focus:outline-none"
             />
 
             {/* Note badge — shown when linked */}
@@ -328,7 +328,8 @@ export function CleanupContextPanel({ onChange }: ContextBlocksPanelProps) {
             onChange={(e) => handleTextChange(block.id, e.target.value)}
             placeholder="Provide context for the AI…"
             className={cn(
-              "min-h-[80px] w-full resize-none border-0 bg-background px-2 py-1.5 text-[11px] leading-snug",
+              "min-h-[96px] w-full resize-none border-0 bg-background px-3 py-2 text-xs leading-relaxed",
+              "text-base md:text-xs", // ≥16px on mobile to prevent iOS zoom
               "focus:outline-none focus:ring-0",
             )}
           />
@@ -345,7 +346,7 @@ export function CleanupContextPanel({ onChange }: ContextBlocksPanelProps) {
                   }
                 }}
                 onBlur={() => setOpenDropdownId(null)}
-                className="w-full rounded border border-border/50 bg-background text-[11px] px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-ring"
+                className="w-full rounded border border-border bg-background text-xs px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="" disabled>
                   {loadingNotes

@@ -1,24 +1,36 @@
-import { cn } from "@/lib/utils";
+import { cookies } from "next/headers";
 import CleanupPad from "@/features/transcription-cleanup/components/CleanupPad";
 
-export default function TranscriptionCleanupPage() {
+/**
+ * Read a persisted react-resizable-panels layout cookie (written client-side by
+ * CleanupPad's `onLayoutChanged`). Returns the percentage map so the split
+ * paints at the user's saved widths on the first frame — no flash.
+ */
+async function readLayout(
+  name: string,
+): Promise<Record<string, number> | undefined> {
+  const raw = (await cookies()).get(name)?.value;
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(decodeURIComponent(raw)) as Record<string, number>;
+  } catch {
+    return undefined;
+  }
+}
+
+export default async function TranscriptionCleanupPage() {
+  const [hLayout, vLayout] = await Promise.all([
+    readLayout("panels:cleanup-h"),
+    readLayout("panels:cleanup-v"),
+  ]);
+
+  // h-full fills the shell main area (which already reserves the mobile dock via
+  // its own padding). The shell header is transparent and content sits behind
+  // it — the page header is portaled in via <PageHeader>, panels clear it with
+  // their own pt-[var(--shell-header-h)].
   return (
-    <div
-      className={cn(
-        "flex h-dvh w-full flex-col overflow-hidden bg-textured",
-        // Below 1024px the app shell shows a floating bottom dock; reserve
-        // space for it so the body/Clean Up button never hide behind it.
-        "pb-[calc(var(--shell-dock-h)+var(--shell-dock-bottom)+var(--shell-safe-area-bottom)+0.5rem)] lg:pb-0",
-      )}
-    >
-      {/* Clear the fixed app shell header */}
-      <div
-        style={{ height: "var(--shell-header-h, 2.75rem)" }}
-        className="shrink-0"
-      />
-      <div className="min-h-0 flex-1">
-        <CleanupPad />
-      </div>
+    <div className="h-full overflow-hidden bg-textured">
+      <CleanupPad defaultHLayout={hLayout} defaultVLayout={vLayout} />
     </div>
   );
 }

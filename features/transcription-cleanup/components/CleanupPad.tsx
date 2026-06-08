@@ -3,26 +3,29 @@
 /**
  * CleanupPad — the standalone-route version of the Transcription Cleanup tool.
  *
- * This is a deliberate, user-requested duplicate of the floating window panel
- * (`components/official-candidate/transcription-cleanup/components/TranscriptionCleanup.tsx`).
- * The behaviour is identical; only the chrome differs: instead of a draggable
- * `WindowPanel` overlay, this renders a full responsive page shell so the tool
- * can live at its own URL and be perfected for both desktop and mobile.
+ * Behaviour is a faithful copy of the floating window panel
+ * (`components/official-candidate/transcription-cleanup/`); only the chrome is
+ * page-native:
  *
- * - Sidebar: agent picker + context editor + Clean Up button.
- *     · Desktop: a collapsible inline column.
- *     · Mobile: a slide-over drawer.
- * - Main body: transcript textarea on top, AI response textarea on bottom.
- *   Both are always rendered (even when empty) so the split is stable.
- * - Auto-processing: when a transcription completes, the agent fires
- *   immediately — the user doesn't have to click Clean Up.
+ * - Header lives in the app shell header via `<PageHeader>` (portal into
+ *   `#shell-header-center`) — no in-body header bar, no wasted vertical space.
+ * - Desktop/tablet: two resizable splits — sidebar │ main, and within main,
+ *   transcript ─ response. Both dividers drag and persist via cookies.
+ * - Mobile: options collapse into a drawer; transcript/response stack.
+ * - The mic is the hero: a central, prominent record control, not a corner icon.
  *
- * State is keyed under its own overlay id (`transcriptionCleanupPage`) so the
- * page's voice-pad state never collides with the floating overlay's.
+ * Voice-pad state is keyed under `overlayId="transcriptionCleanupPage"`,
+ * `instanceId="main"` so it never collides with the floating overlay's state.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, PanelLeftClose, PanelLeftOpen, Stars, X } from "lucide-react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { Loader2, PanelLeftOpen, Stars, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -34,6 +37,14 @@ import {
   clearAllEntries,
   setDraftText,
 } from "@/lib/redux/slices/voicePadSlice";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { FilesTapButton } from "@/components/icons/tap-buttons";
@@ -53,7 +64,24 @@ import { useAiPostProcess } from "../hooks/useAiPostProcess";
 const OVERLAY_ID = "transcriptionCleanupPage" as const;
 const INSTANCE_ID = "main" as const;
 
-export default function CleanupPad() {
+const H_COOKIE = "panels:cleanup-h";
+const V_COOKIE = "panels:cleanup-v";
+
+function writeLayoutCookie(name: string, layout: Record<string, number>) {
+  document.cookie =
+    `${name}=${encodeURIComponent(JSON.stringify(layout))}` +
+    `; path=/; max-age=31536000; SameSite=Lax`;
+}
+
+interface CleanupPadProps {
+  defaultHLayout?: Record<string, number>;
+  defaultVLayout?: Record<string, number>;
+}
+
+export default function CleanupPad({
+  defaultHLayout,
+  defaultVLayout,
+}: CleanupPadProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   const entries = useAppSelector((s) =>
@@ -67,14 +95,11 @@ export default function CleanupPad() {
     DEFAULT_AI_POST_PROCESS_AGENT_ID,
   );
   const [editedResponse, setEditedResponse] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  // No userContext state — context is managed by CleanupContextPanel and
-  // reported back via contextRef (updated synchronously on every block change).
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // The drawer would otherwise cover the whole screen on first paint on a
-  // phone. Open by default on desktop/tablet, closed on true mobile (<768px).
+  // Close the mobile options drawer whenever we leave mobile width.
   useEffect(() => {
-    setSidebarOpen(!isMobile);
+    if (!isMobile) setDrawerOpen(false);
   }, [isMobile]);
 
   const ai = useAiPostProcess();
@@ -158,9 +183,7 @@ export default function CleanupPad() {
         }),
       );
       // Lock draftText to `combined` so the textarea renders exactly what we
-      // just sent to the AI. Without this, a pre-existing draftText would
-      // diverge from the newly appended entries and the visible text would no
-      // longer match the model input.
+      // just sent to the AI.
       dispatch(
         setDraftText({
           overlayId: OVERLAY_ID,
@@ -187,7 +210,9 @@ export default function CleanupPad() {
   }, []);
 
   const handleClearAll = useCallback(() => {
-    dispatch(clearAllEntries({ overlayId: OVERLAY_ID, instanceId: INSTANCE_ID }));
+    dispatch(
+      clearAllEntries({ overlayId: OVERLAY_ID, instanceId: INSTANCE_ID }),
+    );
     ai.reset();
     setEditedResponse(null);
   }, [ai, dispatch]);
@@ -224,8 +249,8 @@ export default function CleanupPad() {
       transcript,
       context: contextRef.current,
     });
-    if (isMobile) setSidebarOpen(false);
-  }, [ai, selectedAgent, isMobile]);
+    setDrawerOpen(false);
+  }, [ai, selectedAgent]);
 
   const handleCopyJoined = useCallback(async () => {
     const transcript = transcriptDisplayRef.current.trim();
@@ -246,9 +271,7 @@ export default function CleanupPad() {
   }, []);
 
   // Strip <thinking>/<reasoning> blocks from the streaming model output so
-  // chain-of-thought never reaches the textarea or the clipboard. While a
-  // thinking block is open (closer hasn't arrived), surface a "Thinking…"
-  // indicator in the header instead.
+  // chain-of-thought never reaches the textarea or the clipboard.
   const { visible: strippedResponse, isThinking } = useMemo(
     () => stripThinkingStreaming(ai.accumulatedText),
     [ai.accumulatedText],
@@ -268,75 +291,113 @@ export default function CleanupPad() {
           ? (ai.error ?? "Something went wrong. Please try again.")
           : "Preparing your response...";
 
-  // ── Sidebar content (shared between desktop column and mobile drawer) ──────
-  const sidebarBody = (
+  const recordStatus = liveTranscript
+    ? "Listening…"
+    : ai.isBusy
+      ? "Processing…"
+      : "Tap to record";
+
+  // ── Central record control (the hero) ──────────────────────────────────────
+  const recordControl = (
+    <div className="flex shrink-0 items-center justify-center gap-3 border-b border-border px-4 py-3">
+      <div className="flex items-center gap-2.5 rounded-full border border-border bg-card py-1 pl-1 pr-4 shadow-sm">
+        <span
+          className={cn(
+            "inline-flex items-center justify-center rounded-full p-1 transition-colors",
+            liveTranscript
+              ? "bg-red-500/15 text-red-500"
+              : "bg-primary/10 text-primary",
+          )}
+        >
+          <MicrophoneIconButton
+            id={micId}
+            onTranscriptionComplete={handleTranscriptionComplete}
+            onLiveTranscript={handleLiveTranscript}
+            variant="icon-only"
+            size="lg"
+          />
+        </span>
+        <span className="text-sm font-medium text-foreground">
+          {recordStatus}
+        </span>
+      </div>
+    </div>
+  );
+
+  // ── Sidebar / options content (shared by desktop panel and mobile drawer) ───
+  const optionsBody = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 pt-3 pb-2">
-        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 pt-4 pb-3">
+        <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Agent
         </div>
-        <div className="flex flex-col gap-1">
-          {allAgents.map((agent) => (
-            <label
-              key={agent.id}
-              className={cn(
-                "flex items-start gap-2 rounded-md border p-2 cursor-pointer transition-colors text-xs",
-                agent.id === agentId
-                  ? "bg-primary/10 border-primary/50"
-                  : "border-border/50 hover:bg-accent/40",
-              )}
-            >
-              <input
-                type="radio"
-                name={`transcription-cleanup-page-agent-${INSTANCE_ID}`}
-                value={agent.id}
-                checked={agent.id === agentId}
-                onChange={() => setAgentId(agent.id)}
-                className="mt-0.5 shrink-0"
-              />
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-[11px] font-medium leading-tight">
-                  {agent.name}
-                </span>
-                <span className="text-[10px] text-muted-foreground/80 leading-tight break-all">
-                  var: <code>{agent.transcriptVariableKey}</code>
-                  {agent.contextSlotKey && (
-                    <>
-                      {" "}
-                      · ctx: <code>{agent.contextSlotKey}</code>
-                    </>
-                  )}
-                </span>
-              </div>
-            </label>
-          ))}
-        </div>
+        <RadioGroup
+          value={agentId}
+          onValueChange={setAgentId}
+          className="gap-2"
+        >
+          {allAgents.map((agent) => {
+            const active = agent.id === agentId;
+            return (
+              <Label
+                key={agent.id}
+                htmlFor={`cleanup-agent-${agent.id}`}
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors",
+                  active
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:bg-accent/50",
+                )}
+              >
+                <RadioGroupItem
+                  value={agent.id}
+                  id={`cleanup-agent-${agent.id}`}
+                  className="mt-0.5"
+                />
+                <div className="flex min-w-0 flex-col gap-1">
+                  <span className="text-sm font-medium leading-snug text-foreground">
+                    {agent.name}
+                  </span>
+                  <span className="text-xs leading-snug text-muted-foreground">
+                    var: <code className="text-[11px]">{agent.transcriptVariableKey}</code>
+                    {agent.contextSlotKey && (
+                      <>
+                        {" · "}ctx:{" "}
+                        <code className="text-[11px]">{agent.contextSlotKey}</code>
+                      </>
+                    )}
+                  </span>
+                </div>
+              </Label>
+            );
+          })}
+        </RadioGroup>
 
-        <div className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+        <div className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Context
         </div>
         <CleanupContextPanel onChange={handleContextChange} />
       </div>
 
-      <div className="shrink-0 border-t border-border/50 p-2 flex flex-col gap-1.5">
+      <div className="shrink-0 border-t border-border p-3">
         <button
           type="button"
           onClick={handleProcess}
           disabled={ai.isBusy}
           className={cn(
-            "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition-colors",
+            "inline-flex w-full items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
             ai.isBusy
-              ? "bg-muted text-muted-foreground cursor-not-allowed"
+              ? "cursor-not-allowed bg-muted text-muted-foreground"
               : "bg-primary text-primary-foreground hover:bg-primary/90",
           )}
         >
           {ai.isBusy ? (
             <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Analyzing...
+              <Loader2 className="h-4 w-4 animate-spin" /> Analyzing...
             </>
           ) : (
             <>
-              <Stars className="h-3.5 w-3.5" /> Clean Up
+              <Stars className="h-4 w-4" /> Clean Up
             </>
           )}
         </button>
@@ -344,182 +405,216 @@ export default function CleanupPad() {
     </div>
   );
 
-  return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background">
-      {/* ── Page header ─────────────────────────────────────────────────── */}
-      <header className="flex shrink-0 items-center gap-2 border-b border-border/60 bg-card/60 px-3 py-2">
-        <button
-          type="button"
-          onClick={() => setSidebarOpen((o) => !o)}
-          aria-label={sidebarOpen ? "Hide options" : "Show options"}
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          {sidebarOpen ? (
-            <PanelLeftClose className="h-4 w-4" />
-          ) : (
-            <PanelLeftOpen className="h-4 w-4" />
-          )}
-        </button>
-        <div className="flex min-w-0 flex-col">
-          <h1 className="flex items-center gap-1.5 truncate text-sm font-semibold leading-tight">
-            <Stars className="h-4 w-4 shrink-0 text-primary/80" />
-            Transcription Cleanup
-          </h1>
-        </div>
-        <div className="ml-auto flex shrink-0 items-center gap-1.5 pr-14">
-          <MicrophoneIconButton
-            id={micId}
-            onTranscriptionComplete={handleTranscriptionComplete}
-            onLiveTranscript={handleLiveTranscript}
-            variant="icon-only"
-            size="sm"
+  // ── Transcript pane ─────────────────────────────────────────────────────────
+  const transcriptPane = (
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Transcript{" "}
+          <span className="text-muted-foreground/60">({entries.length})</span>
+        </span>
+        {(transcriptDisplay.trim().length > 0 || entries.length > 0) && (
+          <ContentActionBar
+            content={transcriptDisplay}
+            title="Voice Pad Transcript"
+            instanceKey={`transcription-cleanup-page-transcript-${INSTANCE_ID}`}
+            hideSpeaker
+            hidePencil
+            onDelete={handleClearAll}
+            deleteAriaLabel="Clear transcript"
           />
-        </div>
-      </header>
-
-      {/* ── Body: sidebar + main ────────────────────────────────────────── */}
-      <div className="relative flex min-h-0 flex-1 overflow-hidden">
-        {/* Desktop sidebar — inline collapsible column */}
-        {!isMobile && sidebarOpen && (
-          <aside className="w-72 shrink-0 border-r border-border/60 overflow-hidden">
-            {sidebarBody}
-          </aside>
         )}
+      </div>
+      <textarea
+        value={transcriptDisplay}
+        onChange={(e) => handleDraftChange(e.target.value)}
+        placeholder="Tap the mic above to record. Transcribed text appears here and is processed automatically..."
+        className={cn(
+          "min-h-0 w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
+          "text-base md:text-sm", // ≥16px on mobile to prevent iOS zoom
+          "focus:outline-none focus:ring-0",
+        )}
+      />
+    </div>
+  );
 
-        {/* Mobile sidebar — slide-over drawer */}
-        {isMobile && sidebarOpen && (
-          <>
-            <div
-              className="absolute inset-0 z-30 bg-black/40"
-              onClick={() => setSidebarOpen(false)}
+  // ── Response pane ───────────────────────────────────────────────────────────
+  const responsePane = (
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
+        <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <Stars className="h-3.5 w-3.5 text-primary/80" />
+          AI Response
+          {isThinking && (
+            <span className="inline-flex items-center gap-1 font-normal normal-case text-primary/80">
+              · Thinking
+              <span className="inline-flex gap-0.5">
+                <span className="h-1 w-1 animate-bounce rounded-full bg-primary/70 [animation-delay:-0.3s]" />
+                <span className="h-1 w-1 animate-bounce rounded-full bg-primary/70 [animation-delay:-0.15s]" />
+                <span className="h-1 w-1 animate-bounce rounded-full bg-primary/70" />
+              </span>
+            </span>
+          )}
+          {ai.phase === "complete" && responseValue.trim() && (
+            <span className="font-normal normal-case text-green-600 dark:text-green-400">
+              · Ready
+            </span>
+          )}
+        </span>
+        <div className="flex items-center gap-1">
+          <Loader2
+            className={cn(
+              "h-4 w-4 text-muted-foreground",
+              isBusyEarly || isThinking ? "animate-spin" : "invisible",
+            )}
+          />
+          {ai.phase === "complete" && responseValue.trim().length > 0 && (
+            <ContentActionBar
+              content={responseValue}
+              title={`AI-cleaned: ${selectedAgent.name}`}
+              metadata={{
+                agent_id: selectedAgent.id,
+                agent_name: selectedAgent.name,
+                source: "transcription-cleanup-page",
+              }}
+              instanceKey={`transcription-cleanup-page-response-${INSTANCE_ID}`}
+              hideSpeaker
+              hidePencil
+              extras={
+                <FilesTapButton
+                  variant="group"
+                  onClick={handleCopyJoined}
+                  ariaLabel="Copy transcript + AI response"
+                  className="text-muted-foreground"
+                />
+              }
             />
-            <aside className="absolute inset-y-0 left-0 z-40 flex w-[86%] max-w-sm flex-col border-r border-border/60 bg-background shadow-xl">
-              <div className="flex shrink-0 items-center justify-between border-b border-border/50 px-3 py-2">
+          )}
+        </div>
+      </div>
+      <textarea
+        value={responseValue}
+        onChange={(e) => setEditedResponse(e.target.value)}
+        placeholder={responsePlaceholder}
+        className={cn(
+          "min-h-0 w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
+          "text-base md:text-sm",
+          "focus:outline-none focus:ring-0",
+          ai.phase === "error" && "text-destructive",
+        )}
+      />
+    </div>
+  );
+
+  // ── Header (portaled into the app shell header) ─────────────────────────────
+  const header = (
+    <PageHeader>
+      <div className="flex w-full items-center justify-center gap-2 px-1">
+        {isMobile && (
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Open options"
+            className="-ml-1 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <PanelLeftOpen className="h-4 w-4" />
+          </button>
+        )}
+        <Stars className="h-4 w-4 shrink-0 text-primary/80" />
+        <span className="text-sm font-semibold text-foreground">
+          Transcription Cleanup
+        </span>
+      </div>
+    </PageHeader>
+  );
+
+  // ── Mobile layout: stacked + drawer ─────────────────────────────────────────
+  if (isMobile) {
+    return (
+      <>
+        {header}
+        <div className="flex h-full min-h-0 flex-col bg-background pt-[var(--shell-header-h)]">
+          {recordControl}
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1">{transcriptPane}</div>
+            <div className="h-px shrink-0 bg-border" />
+            <div className="min-h-0 flex-1">{responsePane}</div>
+          </div>
+        </div>
+
+        {drawerOpen && (
+          <div className="fixed inset-0 z-50">
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setDrawerOpen(false)}
+            />
+            <aside className="absolute inset-y-0 left-0 flex w-[86%] max-w-sm flex-col border-r border-border bg-background shadow-xl pb-[calc(var(--shell-dock-h)+var(--shell-dock-bottom)+var(--shell-safe-area-bottom)+0.5rem)]">
+              <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Options
                 </span>
                 <button
                   type="button"
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={() => setDrawerOpen(false)}
                   aria-label="Close options"
                   className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="min-h-0 flex-1">{sidebarBody}</div>
+              <div className="min-h-0 flex-1">{optionsBody}</div>
             </aside>
-          </>
+          </div>
         )}
+      </>
+    );
+  }
 
-        {/* Main: transcript (top) + AI response (bottom) */}
-        <main className="flex min-h-0 flex-1 flex-col bg-background">
-          {/* Top half: transcript */}
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex shrink-0 items-center justify-between px-3 py-1.5 border-b border-border/40">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Transcript{" "}
-                <span className="text-muted-foreground/60">
-                  ({entries.length})
-                </span>
-              </span>
-              <div className="flex items-center gap-1">
-                {(transcriptDisplay.trim().length > 0 || entries.length > 0) && (
-                  <ContentActionBar
-                    content={transcriptDisplay}
-                    title="Voice Pad Transcript"
-                    instanceKey={`transcription-cleanup-page-transcript-${INSTANCE_ID}`}
-                    hideSpeaker
-                    hidePencil
-                    onDelete={handleClearAll}
-                    deleteAriaLabel="Clear transcript"
-                  />
-                )}
-              </div>
+  // ── Desktop / tablet layout: two resizable splits ───────────────────────────
+  return (
+    <>
+      {header}
+      <div className="h-full overflow-hidden">
+        <ResizablePanelGroup
+          id="cleanup-h"
+          orientation="horizontal"
+          defaultLayout={defaultHLayout}
+          onLayoutChanged={(layout) => writeLayoutCookie(H_COOKIE, layout)}
+          className="h-full w-full"
+        >
+          <ResizablePanel
+            id="sidebar"
+            defaultSize="30%"
+            minSize="18%"
+            maxSize="46%"
+          >
+            <div className="h-full pt-[var(--shell-header-h)]">{optionsBody}</div>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          <ResizablePanel id="main" minSize="40%">
+            <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
+              {recordControl}
+              <ResizablePanelGroup
+                id="cleanup-v"
+                orientation="vertical"
+                defaultLayout={defaultVLayout}
+                onLayoutChanged={(layout) => writeLayoutCookie(V_COOKIE, layout)}
+                className="min-h-0 flex-1"
+              >
+                <ResizablePanel id="transcript" defaultSize="50%" minSize="20%">
+                  {transcriptPane}
+                </ResizablePanel>
+                <ResizableHandle style={{ cursor: "row-resize" }} />
+                <ResizablePanel id="response" defaultSize="50%" minSize="20%">
+                  {responsePane}
+                </ResizablePanel>
+              </ResizablePanelGroup>
             </div>
-            <textarea
-              value={transcriptDisplay}
-              onChange={(e) => handleDraftChange(e.target.value)}
-              placeholder="Tap the mic in the header to record. Transcribed text appears here and is processed automatically..."
-              className={cn(
-                "flex-1 min-h-0 w-full resize-none border-0 bg-background px-3 py-2 leading-snug",
-                "text-base md:text-sm", // ≥16px on mobile to prevent iOS zoom
-                "focus:outline-none focus:ring-0",
-              )}
-            />
-          </div>
-
-          {/* Divider */}
-          <div className="h-px shrink-0 bg-border/60" />
-
-          {/* Bottom half: AI response */}
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex shrink-0 items-center justify-between px-3 py-1.5 border-b border-border/40">
-              <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                <Stars className="h-3 w-3 text-primary/80" />
-                AI Response
-                {isThinking && (
-                  <span className="normal-case font-normal text-primary/80 inline-flex items-center gap-1">
-                    · Thinking
-                    <span className="inline-flex gap-0.5">
-                      <span className="h-1 w-1 rounded-full bg-primary/70 animate-bounce [animation-delay:-0.3s]" />
-                      <span className="h-1 w-1 rounded-full bg-primary/70 animate-bounce [animation-delay:-0.15s]" />
-                      <span className="h-1 w-1 rounded-full bg-primary/70 animate-bounce" />
-                    </span>
-                  </span>
-                )}
-                {ai.phase === "complete" && responseValue.trim() && (
-                  <span className="normal-case font-normal text-green-600 dark:text-green-400">
-                    · Ready
-                  </span>
-                )}
-              </span>
-              <div className="flex items-center gap-1">
-                {/* Spinner occupies space always; invisible when not processing */}
-                <Loader2
-                  className={cn(
-                    "h-3.5 w-3.5 text-muted-foreground",
-                    isBusyEarly || isThinking ? "animate-spin" : "invisible",
-                  )}
-                />
-                {ai.phase === "complete" && responseValue.trim().length > 0 && (
-                  <ContentActionBar
-                    content={responseValue}
-                    title={`AI-cleaned: ${selectedAgent.name}`}
-                    metadata={{
-                      agent_id: selectedAgent.id,
-                      agent_name: selectedAgent.name,
-                      source: "transcription-cleanup-page",
-                    }}
-                    instanceKey={`transcription-cleanup-page-response-${INSTANCE_ID}`}
-                    hideSpeaker
-                    hidePencil
-                    extras={
-                      <FilesTapButton
-                        variant="group"
-                        onClick={handleCopyJoined}
-                        ariaLabel="Copy transcript + AI response"
-                        className="text-muted-foreground"
-                      />
-                    }
-                  />
-                )}
-              </div>
-            </div>
-            <textarea
-              value={responseValue}
-              onChange={(e) => setEditedResponse(e.target.value)}
-              placeholder={responsePlaceholder}
-              className={cn(
-                "flex-1 min-h-0 w-full resize-none border-0 bg-background px-3 py-2 leading-snug",
-                "text-base md:text-sm", // ≥16px on mobile to prevent iOS zoom
-                "focus:outline-none focus:ring-0",
-                ai.phase === "error" && "text-destructive",
-              )}
-            />
-          </div>
-        </main>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
-    </div>
+    </>
   );
 }
