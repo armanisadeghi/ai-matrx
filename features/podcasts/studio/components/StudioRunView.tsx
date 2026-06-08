@@ -16,6 +16,7 @@ import {
   Plus,
   Loader2,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,8 +31,17 @@ import { episodeHref } from "@/features/podcasts/generator/constants";
 import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
 
 export function StudioRunView({ runId }: { runId: string }) {
-  const { state, startedAt, loading, notFound, streaming, selectedCoverUrl, selectCover } =
-    useStudioRun(runId);
+  const {
+    state,
+    startedAt,
+    loading,
+    notFound,
+    streaming,
+    canReconnect,
+    reconnect,
+    selectedCoverUrl,
+    selectCover,
+  } = useStudioRun(runId);
 
   if (loading) {
     return (
@@ -130,13 +140,27 @@ export function StudioRunView({ runId }: { runId: string }) {
             </div>
           )}
           {isRunning && !streaming && (
-            <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-500">
-              <Clock className="h-5 w-5 shrink-0" />
-              <span>
-                This run was still in progress when you left. Everything generated
-                so far is saved below; if it finished on the server, your episode
-                will appear in your studio shortly.
+            <div className="flex flex-col gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-500 sm:flex-row sm:items-center sm:justify-between">
+              <span className="flex items-start gap-2.5">
+                <Clock className="mt-0.5 h-5 w-5 shrink-0" />
+                <span>
+                  This run was interrupted. Everything generated so far is saved;
+                  {canReconnect
+                    ? " reconnect to pick up where it left off."
+                    : " if it finished on the server, your episode will appear shortly."}
+                </span>
               </span>
+              {canReconnect && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={reconnect}
+                  className="shrink-0 gap-1.5 border-amber-500/40"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Reconnect
+                </Button>
+              )}
             </div>
           )}
 

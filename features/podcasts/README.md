@@ -140,6 +140,20 @@ recording / dictation).
 - Five square covers lay out as a **bento** (2 large + 3 small) so there's no
   empty slot.
 
+## Durability & resume
+
+- **Media never breaks**: the pipeline streams *expiring* signed S3 URLs.
+  `generator/media.ts#podcastMediaRef` recovers the `cld_files` file_id from the
+  S3 path so `<InlineMediaRef>` re-mints a fresh URL on every load (or serves the
+  CDN/public URL). A completed run also pulls the **durable** audio + cover off
+  its persisted episode.
+- **Long runs survive interruption**: the backend mints a checkpoint `run_id`
+  (echoed in the `podcast_run` event); we store it in `pc_studio_runs.backend_run_id`.
+  On a dropped connection (tab backgrounded, navigation, network blip) or on
+  returning to a still-running run, `useStudioRun` POSTs
+  `/podcast/resume/{backend_run_id}` and the backend replays from its last good
+  stage. Auto-retries with backoff; a manual **Reconnect** button is the fallback.
+
 ## Change Log
 
 - **2026-06-08** — Added the user-facing **Podcast Studio**: `/podcast/studio` (creator library) and

@@ -50,6 +50,14 @@ export interface PodcastGenerateRequest {
 
 // ── Podcast stream events (inside `event: "data"`) ──────────────────────────
 
+/** Emitted early on /generate and /resume — echoes the backend's checkpoint
+ *  run id (used to resume an interrupted run) and the total stage count. */
+export interface PodcastRunEvent {
+  type: "podcast_run";
+  run_id: string;
+  total?: number;
+}
+
 export interface PodcastStageStartedEvent {
   type: "podcast_stage_started";
   stage: string;
@@ -103,6 +111,7 @@ export interface PodcastCompleteEvent {
 }
 
 export type PodcastDataEvent =
+  | PodcastRunEvent
   | PodcastStageStartedEvent
   | PodcastStageEvent
   | PodcastMetadataEvent

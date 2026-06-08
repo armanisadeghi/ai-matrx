@@ -19,6 +19,7 @@ import { InlineMediaRef } from "@/features/files";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "./ElapsedTimer";
 import { parseScript, speakerSlot } from "../script";
+import { podcastMediaRef } from "../media";
 import type { PodcastRunState } from "../types";
 
 interface ProductionTeaserProps {
@@ -82,7 +83,7 @@ export function ProductionTeaser({ state, startedAt }: ProductionTeaserProps) {
                 )}
               >
                 <InlineMediaRef
-                  ref={slot.url ?? null}
+                  ref={podcastMediaRef(slot.url)}
                   size="fill"
                   fit="cover"
                   alt="Cover concept"

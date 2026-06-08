@@ -29,6 +29,7 @@ import { useApiAuth } from "@/hooks/useApiAuth";
 import { useMyPodcasts } from "@/features/podcasts/hooks/useMyPodcasts";
 import { useMyStudioRuns } from "@/features/podcasts/studio/runs/useMyStudioRuns";
 import { CreateShowDialog } from "@/features/podcasts/generator/components/CreateShowDialog";
+import { podcastMediaRef } from "@/features/podcasts/generator/media";
 import type { PcShow, PcStudioRun } from "@/features/podcasts/types";
 
 function RunStatusChip({ status }: { status: PcStudioRun["status"] }) {
@@ -65,7 +66,7 @@ function RunCard({ run }: { run: PcStudioRun }) {
     >
       <div className="relative aspect-square w-full bg-muted">
         <InlineMediaRef
-          ref={cover}
+          ref={podcastMediaRef(cover)}
           size="fill"
           fit="cover"
           alt={run.title || "Studio run"}

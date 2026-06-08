@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { InlineMediaRef } from "@/features/files";
 import { AssetCard } from "./AssetCard";
+import { podcastMediaRef } from "../media";
 import type { MediaSlot, PodcastRunState } from "../types";
 
 interface MediaOptionsGridProps {
@@ -138,7 +139,7 @@ export function MediaOptionsGrid({
             <div className="flex flex-col">
               <div className="relative aspect-square w-full bg-black">
                 <InlineMediaRef
-                  ref={lightbox.url ?? null}
+                  ref={podcastMediaRef(lightbox.url)}
                   size="fill"
                   fit="contain"
                   alt="Cover preview"

@@ -17,10 +17,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "./ElapsedTimer";
 import { useStageDisplay } from "../useStageDisplay";
-import { STAGE_KIND_ICON } from "../constants";
+import { STAGE_KIND_ICON, STAGE_KIND_COLOR } from "../constants";
 import type { PodcastRunState } from "../types";
 import type { DisplayStage } from "../useStageDisplay";
 
@@ -29,19 +30,46 @@ interface LiveProgressRailProps {
   startedAt: number | null;
 }
 
+// A colorful, kind-specific status chip. RUNNING shows the step's own icon in
+// its own color with a spinning ring around it (each kind is a different hue, so
+// the timeline reads like a real production console — not a wall of green
+// checks). DONE shows a small solid check in the kind's color; FAILED a red X.
 function StageIcon({ stage }: { stage: DisplayStage }) {
   const Icon = STAGE_KIND_ICON[stage.kind];
+  const color = STAGE_KIND_COLOR[stage.kind];
+
+  if (stage.status === "running") {
+    return (
+      <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
+        <span
+          className={cn(
+            "absolute inset-0 animate-spin rounded-full border-2 border-t-transparent",
+            color.ring,
+          )}
+        />
+        <Icon className={cn("h-2.5 w-2.5", color.text)} />
+      </span>
+    );
+  }
+
+  if (stage.status === "failed") {
+    return (
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-destructive/15">
+        <X className="h-3 w-3 text-destructive" />
+      </span>
+    );
+  }
+
+  // done — kind-tinted chip with the kind icon (distinct per type), check on hover-less.
   return (
-    <Icon
+    <span
       className={cn(
-        "h-4 w-4 shrink-0",
-        stage.status === "done"
-          ? "text-emerald-500"
-          : stage.status === "failed"
-            ? "text-destructive"
-            : "animate-pulse text-primary",
+        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+        color.bg,
       )}
-    />
+    >
+      <Icon className={cn("h-3 w-3", color.text)} />
+    </span>
   );
 }
 

@@ -688,6 +688,92 @@ export type Database = {
           },
         ]
       }
+      agent_run: {
+        Row: {
+          created_at: string
+          error: Json | null
+          id: string
+          input_fingerprint: string | null
+          kind: string
+          request: Json
+          result: Json | null
+          status: string
+          total_cost: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: Json | null
+          id?: string
+          input_fingerprint?: string | null
+          kind: string
+          request?: Json
+          result?: Json | null
+          status?: string
+          total_cost?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: Json | null
+          id?: string
+          input_fingerprint?: string | null
+          kind?: string
+          request?: Json
+          result?: Json | null
+          status?: string
+          total_cost?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      agent_run_stage: {
+        Row: {
+          cost: number | null
+          error: Json | null
+          finished_at: string | null
+          id: string
+          output: Json | null
+          run_id: string
+          stage_key: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          cost?: number | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          output?: Json | null
+          run_id: string
+          stage_key: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          cost?: number | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          output?: Json | null
+          run_id?: string
+          stage_key?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_run_stage_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_user_kv: {
         Row: {
           key: string
@@ -11892,6 +11978,7 @@ export type Database = {
       pc_studio_runs: {
         Row: {
           audio_url: string | null
+          backend_run_id: string | null
           created_at: string
           description: string | null
           episode_id: string | null
@@ -11915,6 +12002,7 @@ export type Database = {
         }
         Insert: {
           audio_url?: string | null
+          backend_run_id?: string | null
           created_at?: string
           description?: string | null
           episode_id?: string | null
@@ -11938,6 +12026,7 @@ export type Database = {
         }
         Update: {
           audio_url?: string | null
+          backend_run_id?: string | null
           created_at?: string
           description?: string | null
           episode_id?: string | null

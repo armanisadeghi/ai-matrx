@@ -97,6 +97,8 @@ export type PcStudioRun = {
   show_id: string | null;
   episode_id: string | null;
   episode_slug: string | null;
+  /** The backend's checkpoint run id (from the podcast_run event) — for resume. */
+  backend_run_id: string | null;
   error: string | null;
   created_at: string;
   updated_at: string;

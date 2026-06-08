@@ -91,9 +91,12 @@ export function useStageDisplay(state: PodcastRunState): StageDisplay {
   useEffect(() => {
     if (!plan || prepareSettled) return;
     if (doneCount >= plan.steps.length - 1) return;
+    // Snappy: ~2.2–5.5s per sub-step (the first ones especially shouldn't dwell)
+    // so the phase feels brisk, while the LAST step still holds for the real
+    // stage to finish.
     const id = setTimeout(
       () => setDoneCount((c) => c + 1),
-      4000 + Math.random() * 7000,
+      2200 + Math.random() * 3300,
     );
     return () => clearTimeout(id);
   }, [plan, prepareSettled, doneCount]);

@@ -181,6 +181,47 @@ export const STAGE_KIND_ICON: Record<StageKind, LucideIcon> = {
   other: Circle,
 };
 
+// A distinct color per kind so the timeline reads like a colorful production
+// console — not a wall of identical green checks. `text` colors the icon, `ring`
+// colors the spinner ring while a step runs, `bg` tints the icon chip.
+export interface StageKindColor {
+  text: string;
+  ring: string;
+  bg: string;
+}
+
+export const STAGE_KIND_COLOR: Record<StageKind, StageKindColor> = {
+  research: { text: "text-sky-500", ring: "border-sky-500", bg: "bg-sky-500/10" },
+  prepare: {
+    text: "text-violet-500",
+    ring: "border-violet-500",
+    bg: "bg-violet-500/10",
+  },
+  post: { text: "text-amber-500", ring: "border-amber-500", bg: "bg-amber-500/10" },
+  script: { text: "text-blue-500", ring: "border-blue-500", bg: "bg-blue-500/10" },
+  metadata: {
+    text: "text-pink-500",
+    ring: "border-pink-500",
+    bg: "bg-pink-500/10",
+  },
+  audio: {
+    text: "text-emerald-500",
+    ring: "border-emerald-500",
+    bg: "bg-emerald-500/10",
+  },
+  image: {
+    text: "text-fuchsia-500",
+    ring: "border-fuchsia-500",
+    bg: "bg-fuchsia-500/10",
+  },
+  video: {
+    text: "text-orange-500",
+    ring: "border-orange-500",
+    bg: "bg-orange-500/10",
+  },
+  other: { text: "text-slate-400", ring: "border-slate-400", bg: "bg-slate-400/10" },
+};
+
 /** Public episode route — build the "Open the podcast" link from the slug. */
 export function episodeHref(slug: string | null, id: string | null): string | null {
   if (slug) return `/podcast/${slug}`;

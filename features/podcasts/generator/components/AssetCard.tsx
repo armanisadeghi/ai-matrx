@@ -11,6 +11,7 @@
 import { Loader2, ImageOff, Maximize2, Check, Star } from "lucide-react";
 import { InlineMediaRef } from "@/features/files";
 import { cn } from "@/lib/utils";
+import { podcastMediaRef } from "../media";
 import type { MediaSlot } from "../types";
 
 interface AssetCardProps {
@@ -94,7 +95,7 @@ export function AssetCard({
           (slot.kind === "image" ? (
             <div className="absolute inset-0 animate-[fadeIn_0.4s_ease]">
               <InlineMediaRef
-                ref={slot.url ?? null}
+                ref={podcastMediaRef(slot.url)}
                 size="fill"
                 fit="cover"
                 alt={label}
