@@ -3,18 +3,15 @@
 // features/podcasts/generator/components/LiveProgressRail.tsx
 //
 // The drumbeat. A status header (progress + LIVE dot + elapsed + the current
-// step) over the full stage timeline. The featured "current step" is DERIVED
-// from the stages that are actually running — so when work finishes out of
-// order (audio is the long pole while images/videos land early) it always
-// tracks the next live thing instead of sticking on the last one that started.
+// step) over the full stage timeline. Each step shows a DOMAIN-SPECIFIC icon
+// (web globe for research, film for video, waveform for audio, …) so finished
+// steps don't collapse into one identical green check — and a running step
+// shows its own icon, pulsing, so the loader "looks the part". The long
+// prepare/research stage is expanded into synthetic sub-steps (see
+// useStageDisplay) so the first minute never sits dead.
 
 import { useState } from "react";
-import {
-  CheckCircle2,
-  Loader2,
-  XCircle,
-  ChevronDown,
-} from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -22,38 +19,37 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "./ElapsedTimer";
-import type { PodcastRunState, StageRow } from "../types";
+import { useStageDisplay } from "../useStageDisplay";
+import { STAGE_KIND_ICON } from "../constants";
+import type { PodcastRunState } from "../types";
+import type { DisplayStage } from "../useStageDisplay";
 
 interface LiveProgressRailProps {
   state: PodcastRunState;
   startedAt: number | null;
 }
 
-/** Pick the label to feature in the header — always a live thing, never stuck. */
-function featuredLabel(state: PodcastRunState): string {
-  if (state.status === "done") return "Episode ready";
-  if (state.status === "error") return "Finished with errors";
-  const running = state.stages.filter((s) => s.status === "running");
-  if (running.length > 0) {
-    // Feature the earliest-position running stage (e.g. audio, the long pole),
-    // so the header advances naturally as later stages finish around it.
-    const earliest = running.reduce<StageRow>(
-      (a, b) => (a.step <= b.step ? a : b),
-      running[0],
-    );
-    if (running.length > 1) {
-      return `${earliest.label} · +${running.length - 1} more`;
-    }
-    return earliest.label;
-  }
-  return state.currentLabel || "Starting up…";
+function StageIcon({ stage }: { stage: DisplayStage }) {
+  const Icon = STAGE_KIND_ICON[stage.kind];
+  return (
+    <Icon
+      className={cn(
+        "h-4 w-4 shrink-0",
+        stage.status === "done"
+          ? "text-emerald-500"
+          : stage.status === "failed"
+            ? "text-destructive"
+            : "animate-pulse text-primary",
+      )}
+    />
+  );
 }
 
 export function LiveProgressRail({ state, startedAt }: LiveProgressRailProps) {
   const [open, setOpen] = useState(true);
+  const { stages, doneCount, total, featuredLabel, progress } =
+    useStageDisplay(state);
   const running = state.status === "running";
-  const doneCount = state.stages.filter((s) => s.status !== "running").length;
-  const total = Math.max(state.totalSteps, state.stages.length);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
@@ -77,13 +73,13 @@ export function LiveProgressRail({ state, startedAt }: LiveProgressRailProps) {
               />
             </span>
             <span className="truncate text-sm font-medium text-foreground">
-              {featuredLabel(state)}
+              {featuredLabel}
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-3 text-xs tabular-nums text-muted-foreground">
             <ElapsedTimer startedAt={startedAt} running={running} />
             <span className="font-semibold text-foreground">
-              {Math.round(state.progress)}%
+              {Math.round(progress)}%
             </span>
           </div>
         </div>
@@ -97,13 +93,13 @@ export function LiveProgressRail({ state, startedAt }: LiveProgressRailProps) {
                 ? "bg-destructive"
                 : "bg-gradient-to-r from-primary via-primary to-secondary",
             )}
-            style={{ width: `${Math.min(100, Math.max(2, state.progress))}%` }}
+            style={{ width: `${Math.min(100, Math.max(2, progress))}%` }}
           />
         </div>
       </div>
 
-      {/* Stage timeline — all steps, scrolls only if it can't fit the viewport */}
-      {state.stages.length > 0 && (
+      {/* Stage timeline — all steps, scrolls only past the viewport */}
+      {stages.length > 0 && (
         <Collapsible open={open} onOpenChange={setOpen}>
           <CollapsibleTrigger className="flex w-full items-center justify-between border-t border-border px-4 py-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground">
             <span>
@@ -115,18 +111,12 @@ export function LiveProgressRail({ state, startedAt }: LiveProgressRailProps) {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <ul className="max-h-[min(60vh,32rem)] space-y-0.5 overflow-y-auto border-t border-border p-2">
-              {state.stages.map((stage) => (
+              {stages.map((stage) => (
                 <li
-                  key={stage.stage}
+                  key={stage.key}
                   className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm"
                 >
-                  {stage.status === "done" ? (
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
-                  ) : stage.status === "failed" ? (
-                    <XCircle className="h-4 w-4 shrink-0 text-destructive" />
-                  ) : (
-                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
-                  )}
+                  <StageIcon stage={stage} />
                   <span
                     className={cn(
                       "min-w-0 flex-1",

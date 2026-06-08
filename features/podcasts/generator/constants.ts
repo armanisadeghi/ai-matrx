@@ -16,6 +16,14 @@ import {
   GraduationCap,
   Newspaper,
   Languages,
+  Globe,
+  FileSearch,
+  ListFilter,
+  LayoutGrid,
+  AudioLines,
+  ImageIcon,
+  Clapperboard,
+  Circle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -134,6 +142,44 @@ export const STAGE_FALLBACK_LABELS: Record<string, string> = {
 
 export const EXPECTED_IMAGE_COUNT = 5;
 export const EXPECTED_VIDEO_COUNT = 2;
+
+// ── Stage kinds — drive a domain-specific icon per stage (so finished steps
+//    don't all collapse into an identical green check). ─────────────────────
+
+export type StageKind =
+  | "research"
+  | "prepare"
+  | "post"
+  | "script"
+  | "metadata"
+  | "audio"
+  | "image"
+  | "video"
+  | "other";
+
+export function stageKind(stage: string): StageKind {
+  if (stage.startsWith("image")) return "image";
+  if (stage.startsWith("video")) return "video";
+  if (stage === "create_audio") return "audio";
+  if (stage === "create_script") return "script";
+  if (stage === "generate_metadata") return "metadata";
+  if (stage === "post_prep") return "post";
+  if (stage.includes("research")) return "research";
+  if (stage.startsWith("prepare_content")) return "prepare";
+  return "other";
+}
+
+export const STAGE_KIND_ICON: Record<StageKind, LucideIcon> = {
+  research: Globe,
+  prepare: FileSearch,
+  post: ListFilter,
+  script: FileText,
+  metadata: LayoutGrid,
+  audio: AudioLines,
+  image: ImageIcon,
+  video: Clapperboard,
+  other: Circle,
+};
 
 /** Public episode route — build the "Open the podcast" link from the slug. */
 export function episodeHref(slug: string | null, id: string | null): string | null {

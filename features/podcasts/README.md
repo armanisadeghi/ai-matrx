@@ -127,6 +127,19 @@ and the *alternate* cover/video options — which is why it's a separate table.
 All authored textareas use `@/components/official/ProTextarea` (built-in voice
 recording / dictation).
 
+## Live-experience polish
+
+- The live rail expands the long prepare/research stage into synthetic sub-steps
+  (`useStageDisplay`) that auto-advance on randomized timers and snap to done the
+  instant the real stage finishes — the first minute is never dead.
+- Each stage shows a **domain-specific icon** (web globe for research, film for
+  video, waveform for audio, image for covers, …) so finished steps don't all
+  collapse into one identical green check.
+- `ProductionTeaser` uses **fixed-height** regions so streaming/rotating text
+  never resizes the card (no page shift).
+- Five square covers lay out as a **bento** (2 large + 3 small) so there's no
+  empty slot.
+
 ## Change Log
 
 - **2026-06-08** — Added the user-facing **Podcast Studio**: `/podcast/studio` (creator library) and

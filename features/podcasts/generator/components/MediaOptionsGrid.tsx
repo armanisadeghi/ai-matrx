@@ -65,6 +65,17 @@ export function MediaOptionsGrid({
 
   if (!hasImages && !hasVideos) return null;
 
+  const imageCard = (slot: MediaSlot) => (
+    <AssetCard
+      slot={slot}
+      label={`Style ${slot.index + 1}`}
+      selectable={interactive}
+      selected={!!slot.url && slot.url === selectedCoverUrl}
+      onSelectCover={onSelectCover}
+      onEnlarge={setLightbox}
+    />
+  );
+
   return (
     <div className="space-y-6">
       {hasImages && (
@@ -75,19 +86,27 @@ export function MediaOptionsGrid({
             done={imagesDone}
             total={state.images.length}
           />
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-            {state.images.map((slot) => (
-              <AssetCard
-                key={`img-${slot.index}`}
-                slot={slot}
-                label={`Style ${slot.index + 1}`}
-                selectable={interactive}
-                selected={!!slot.url && slot.url === selectedCoverUrl}
-                onSelectCover={onSelectCover}
-                onEnlarge={setLightbox}
-              />
-            ))}
-          </div>
+          {state.images.length === 5 ? (
+            // Bento — 2 large + 3 small fills the row cleanly (no empty slot
+            // from an odd count of square covers). 6-col grid: top row two
+            // col-span-3, bottom row three col-span-2.
+            <div className="grid grid-cols-6 gap-3">
+              {state.images.map((slot, i) => (
+                <div
+                  key={`img-${slot.index}`}
+                  className={i < 2 ? "col-span-3" : "col-span-2"}
+                >
+                  {imageCard(slot)}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+              {state.images.map((slot) => (
+                <div key={`img-${slot.index}`}>{imageCard(slot)}</div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 

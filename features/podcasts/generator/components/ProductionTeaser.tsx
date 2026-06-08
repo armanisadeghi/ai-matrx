@@ -125,47 +125,55 @@ export function ProductionTeaser({ state, startedAt }: ProductionTeaserProps) {
             </span>
           </div>
 
-          <p className="mb-3 line-clamp-2 text-base font-semibold leading-tight text-foreground">
+          {/* Reserve two lines so a 1- vs 2-line title never shifts layout. */}
+          <p className="mb-3 line-clamp-2 min-h-[2.75rem] text-base font-semibold leading-tight text-foreground">
             {state.title || "Producing your episode…"}
           </p>
 
-          {teaseTurns.length > 0 ? (
-            <div className="relative min-h-0 flex-1" dir={rtl ? "rtl" : undefined}>
-              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
-                Sneak peek of the conversation
-              </p>
-              <div className="max-h-32 space-y-2 overflow-hidden">
-                {teaseTurns.map((turn, i) => (
-                  <p key={windowStart + i} className="text-sm leading-relaxed">
-                    <span
-                      className={cn(
-                        "font-semibold",
-                        speakerSlot(turn.speaker, dialogue.speakers) === 0
-                          ? "text-primary"
-                          : "text-secondary",
-                      )}
-                    >
-                      {turn.speaker}:
-                    </span>{" "}
-                    <span className="text-muted-foreground">
-                      {turn.text.slice(0, 200)}
-                      {turn.text.length > 200 ? "…" : ""}
-                    </span>
-                  </p>
-                ))}
-              </div>
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
-            </div>
-          ) : (
-            <div className="min-h-0 flex-1">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
-                {state.description ? "About this episode" : "Now imagining"}
-              </p>
-              <p className="mt-1 line-clamp-4 text-sm leading-relaxed text-muted-foreground transition-opacity">
-                {concept || "Setting the scene…"}
-              </p>
-            </div>
-          )}
+          {/* FIXED height — streaming/rotating text changes content inside this
+              box but never its size, so the card (and the page) never shift. */}
+          <div
+            className="relative h-28 overflow-hidden"
+            dir={rtl ? "rtl" : undefined}
+          >
+            {teaseTurns.length > 0 ? (
+              <>
+                <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                  Sneak peek of the conversation
+                </p>
+                <div className="space-y-2">
+                  {teaseTurns.map((turn, i) => (
+                    <p key={windowStart + i} className="text-sm leading-relaxed">
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          speakerSlot(turn.speaker, dialogue.speakers) === 0
+                            ? "text-primary"
+                            : "text-secondary",
+                        )}
+                      >
+                        {turn.speaker}:
+                      </span>{" "}
+                      <span className="text-muted-foreground">
+                        {turn.text.slice(0, 180)}
+                        {turn.text.length > 180 ? "…" : ""}
+                      </span>
+                    </p>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
+                  {state.description ? "About this episode" : "Now imagining"}
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  {concept || "Setting the scene…"}
+                </p>
+              </>
+            )}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
+          </div>
 
           {/* Honest status — producing audio, with a live equalizer */}
           <div className="mt-4 flex items-center gap-2.5 border-t border-border pt-3 text-sm">
