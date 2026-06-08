@@ -11,10 +11,10 @@ export default function ScribePage() {
   return (
     <ScribeSessionsList
       onOpenSession={(sessionId) =>
-        startTransition(() => router.push(`/transcription/scribe/${sessionId}`))
+        startTransition(() => router.push(`/transcripts/scribe/${sessionId}`))
       }
       onOpenUnsorted={() =>
-        startTransition(() => router.push("/transcription/scribe/unsorted"))
+        startTransition(() => router.push("/transcripts/scribe/unsorted"))
       }
     />
   );

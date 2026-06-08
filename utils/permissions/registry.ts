@@ -182,7 +182,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "user_id",
     isPublicColumn: "is_public",
     displayLabel: "Transcript",
-    urlPathTemplate: "/transcription/processor/{id}",
+    urlPathTemplate: "/transcripts/{id}",
     rlsUsesHasPermission: true,
   },
   quiz_sessions: {

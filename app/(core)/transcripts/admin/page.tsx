@@ -1,10 +1,10 @@
-// app/(core)/transcription/admin/page.tsx
+// app/(core)/transcripts/admin/page.tsx
 //
-// Per-feature admin map for the transcription ecosystem. Renders via
+// Per-feature admin map for the Transcripts ecosystem. Renders via
 // the platform primitive `<FeatureAdminPage>` (super-admin gated,
 // utilitarian). The config below is the single source of truth for
-// what the transcription feature owns + every transcription-aware
-// resource scattered across the rest of the repo (window panels in
+// what the Transcripts feature owns + every transcript-aware resource
+// scattered across the rest of the repo (window panels in
 // `components/official-candidate/`, voice pad variants, scribe screens,
 // the studio's 4-column workspace, demos under `(dev)/demos/general/
 // voice/`, etc.). When you add a new transcript-related route /
@@ -14,64 +14,63 @@
 import FeatureAdminPage from "@/features/admin/components/FeatureAdminPage";
 import type { FeatureAdminMap } from "@/features/admin/types/featureAdminMap";
 
-const TRANSCRIPTION_ADMIN_MAP: FeatureAdminMap = {
-  name: "Transcription",
-  slug: "transcription",
+const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
+  name: "Transcripts",
+  slug: "transcripts",
   description:
-    "Everything that turns audio into text and back: simple-CRUD transcripts, the live 4-column Studio workspace, mobile Scribe capture, transcription cleanup, voice pads, and the audio pipeline behind them. Sister features (TTS, Voice Agent, Podcasts) live under the audio umbrella — see Related Features.",
+    "Everything that turns audio into text and back: the canonical transcripts workspace (record / upload / browse / edit), the live 4-column Studio workspace, mobile Scribe capture, transcription cleanup, voice pads, and the audio pipeline behind them. Sister features (TTS, Voice Agent) live under the audio umbrella — see Related Features. Podcasts deliberately excluded — different concept.",
   docs: [
     { label: "Transcripts FEATURE.md", href: "/features/transcripts/FEATURE.md" },
     { label: "Transcript Studio FEATURE.md", href: "/features/transcript-studio/FEATURE.md" },
     { label: "Audio FEATURE.md", href: "/features/audio/FEATURE.md" },
   ],
-  routeScanPath: "app/(core)/transcription",
+  routeScanPath: "app/(core)/transcripts",
 
   routes: [
     {
-      url: "/transcription",
-      label: "Hub",
+      url: "/transcripts",
+      label: "Workspace (canonical processor)",
       description:
-        "Top-level landing for the transcription ecosystem — links into Processor, Studio, Scribe.",
-      filePath: "app/(core)/transcription/page.tsx",
+        "Authed users land here on the processor (record / upload / browse / edit / organize). Guests see the marketing landing. Replaces the old `/transcription/processor` URL.",
+      filePath: "app/(core)/transcripts/page.tsx",
       status: "Live",
     },
     {
-      url: "/transcription/processor",
-      label: "Processor",
-      description:
-        "Canonical transcript CRUD: upload audio, transcribe via Groq Whisper, view, edit, organize into folders.",
-      filePath: "app/(core)/transcription/processor/page.tsx",
-      status: "Live",
-    },
-    {
-      url: "/transcription/studio",
+      url: "/transcripts/studio",
       label: "Studio (live 4-column workspace)",
       description:
-        "Live workspace: Column 1 raw stream → Column 2 cleaned → Column 3 concepts → Column 4 modules (tasks / flashcards / decisions).",
-      filePath: "app/(core)/transcription/studio/page.tsx",
+        "Live workspace: Column 1 raw stream → Column 2 cleaned → Column 3 concepts → Column 4 modules (tasks / flashcards / decisions). Replaces `/transcription/studio`.",
+      filePath: "app/(core)/transcripts/studio/page.tsx",
       status: "Live",
     },
     {
-      url: "/transcription/scribe",
+      url: "/transcripts/scribe",
       label: "Scribe (mobile capture)",
       description:
-        "Mobile-first audio-capture landing — sessions list with quick record / resume.",
-      filePath: "app/(core)/transcription/scribe/page.tsx",
+        "Mobile-first audio-capture landing — sessions list with quick record / resume. Replaces `/transcription/scribe`.",
+      filePath: "app/(core)/transcripts/scribe/page.tsx",
       status: "Live",
     },
     {
-      url: "/transcription/scribe/unsorted",
+      url: "/transcripts/scribe/unsorted",
       label: "Scribe — Unsorted archive",
       description: "Catch-all session bucket for captures the user hasn't filed yet.",
-      filePath: "app/(core)/transcription/scribe/unsorted/page.tsx",
+      filePath: "app/(core)/transcripts/scribe/unsorted/page.tsx",
       status: "Live",
     },
     {
-      url: "/transcription/scribe/<sessionId>",
+      url: "/transcripts/scribe/<sessionId>",
       label: "Scribe — Session workspace",
       description:
         "Individual Scribe session: big record button, live transcript strip, AI assistant panel.",
-      filePath: "app/(core)/transcription/scribe/[sessionId]/page.tsx",
+      filePath: "app/(core)/transcripts/scribe/[sessionId]/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/transcripts/admin",
+      label: "Admin map (this page)",
+      description: "The page you're reading — super-admin index of every transcripts resource.",
+      filePath: "app/(core)/transcripts/admin/page.tsx",
       status: "Live",
     },
   ],
@@ -80,7 +79,7 @@ const TRANSCRIPTION_ADMIN_MAP: FeatureAdminMap = {
     {
       overlayId: "transcriptStudioWindow",
       description:
-        "Floating-window version of the 4-column Studio workspace. Same body as `/transcription/studio` but draggable / resizable / persistable.",
+        "Floating-window version of the 4-column Studio workspace. Same body as `/transcripts/studio` but draggable / resizable / persistable.",
     },
     {
       overlayId: "voicePad",
@@ -90,7 +89,7 @@ const TRANSCRIPTION_ADMIN_MAP: FeatureAdminMap = {
     {
       overlayId: "voicePadAdvanced",
       description:
-        "Expanded voice-pad variant — same Redux slice as `voicePad`, wider layout with more controls.",
+        "Expanded voice-pad variant — same Redux slice as `voicePad`, wider layout with more controls. Consolidation candidate.",
     },
     {
       overlayId: "transcriptionCleanup",
@@ -100,7 +99,7 @@ const TRANSCRIPTION_ADMIN_MAP: FeatureAdminMap = {
     {
       overlayId: "aiVoiceWindow",
       description:
-        "Floating AI voice workspace — primarily TTS-focused, but consumes transcripts as context. (Lives under the Audio umbrella.)",
+        "Floating AI voice workspace — primarily TTS-focused but consumes transcripts as context. Borderline ownership (lives under the Audio umbrella).",
     },
   ],
 
@@ -108,13 +107,13 @@ const TRANSCRIPTION_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "TranscriptsLayout",
       filePath: "features/transcripts/components/TranscriptsLayout.tsx",
-      description: "Portal-header layout that hosts Processor + sidebar + viewer.",
+      description: "Portal-header layout that hosts the processor + sidebar + viewer.",
       status: "Live",
     },
     {
       name: "TranscriptViewer",
       filePath: "features/transcripts/components/TranscriptViewer.tsx",
-      description: "Read / edit a saved transcript. Used by Processor.",
+      description: "Read / edit a saved transcript. Used by the processor workspace.",
       status: "Live",
     },
     {
@@ -132,14 +131,14 @@ const TRANSCRIPTION_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "TranscriptsSidebar",
       filePath: "features/transcripts/components/TranscriptsSidebar.tsx",
-      description: "Folder + transcript browser for the Processor.",
+      description: "Folder + transcript browser for the processor workspace.",
       status: "Live",
     },
     {
       name: "StudioView",
       filePath: "features/transcript-studio/components/StudioView.tsx",
       description:
-        "Core config-driven 4-column workspace. Drives `/transcription/studio` and the Studio window.",
+        "Core config-driven 4-column workspace. Drives `/transcripts/studio` and the Studio window panel.",
       status: "Live",
     },
     {
@@ -324,7 +323,7 @@ const TRANSCRIPTION_ADMIN_MAP: FeatureAdminMap = {
       name: "Audio",
       adminUrl: "/voice/admin",
       description:
-        "Recording, playback, voice providers. The transcription routes consume Audio hooks (useRecordAndTranscribe, useChunkedRecordAndTranscribe).",
+        "Recording, playback, voice providers. The transcripts workspace consumes Audio hooks (useRecordAndTranscribe, useChunkedRecordAndTranscribe).",
     },
     {
       name: "TTS",
@@ -337,10 +336,6 @@ const TRANSCRIPTION_ADMIN_MAP: FeatureAdminMap = {
         "xAI Realtime agent. Produces transcripts as a byproduct (see voiceTranscriptWriter).",
     },
     {
-      name: "Podcasts",
-      description: "Generation + management under the Audio umbrella. Shares the TTS pipeline.",
-    },
-    {
       name: "Knowledge",
       adminUrl: "/knowledge/admin",
       description:
@@ -349,6 +344,6 @@ const TRANSCRIPTION_ADMIN_MAP: FeatureAdminMap = {
   ],
 };
 
-export default function TranscriptionAdminPage() {
-  return <FeatureAdminPage map={TRANSCRIPTION_ADMIN_MAP} />;
+export default function TranscriptsAdminPage() {
+  return <FeatureAdminPage map={TRANSCRIPTS_ADMIN_MAP} />;
 }

@@ -239,14 +239,31 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "pink",
   },
   {
+    // Transcripts umbrella — one feature, slash-versioned sub-routes.
+    // `/transcripts` is BOTH the public landing (for guests) AND the
+    // canonical processor workspace (for authed users); server-side
+    // branched in `app/(core)/transcripts/page.tsx`. Studio + Scribe
+    // live as sub-routes. Old `/transcription/*` URLs redirect via
+    // `next.config.js`.
     label: "Transcripts",
-    href: "/transcription/processor",
+    href: "/transcripts",
     iconName: "Mic",
     section: "primary",
     profileMenu: true,
     dashboard: true,
-    description: "Record, transcribe and manage audio content",
+    description:
+      "Record, transcribe, and manage audio. Includes Studio (4-column live workspace) and Scribe (mobile capture).",
     color: "rose",
+    children: [
+      {
+        label: "All Transcripts",
+        href: "/transcripts",
+        iconName: "List",
+        exact: true,
+      },
+      { label: "Studio", href: "/transcripts/studio", iconName: "Columns2" },
+      { label: "Scribe", href: "/transcripts/scribe", iconName: "Mic" },
+    ],
   },
   {
     label: "Tables",

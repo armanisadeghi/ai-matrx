@@ -235,7 +235,7 @@ export default function TranscriptionLanding() {
               className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
               asChild
             >
-              <Link href="/transcription/studio">
+              <Link href="/transcripts/studio">
                 <Mic className="h-4 w-4" />
                 Open the Studio
                 <ArrowRight className="h-4 w-4" />
@@ -247,7 +247,7 @@ export default function TranscriptionLanding() {
               className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
               asChild
             >
-              <Link href="/transcription/processor">
+              <Link href="/transcripts">
                 <FileAudio className="h-4 w-4" />
                 Use the Processor
               </Link>
@@ -258,7 +258,7 @@ export default function TranscriptionLanding() {
               className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
               asChild
             >
-              <Link href="/transcription/scribe">
+              <Link href="/transcripts/scribe">
                 <NotebookPen className="h-4 w-4" />
                 Open Scribe
               </Link>
@@ -292,7 +292,7 @@ export default function TranscriptionLanding() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Studio — emphasized */}
           <Link
-            href="/transcription/studio"
+            href="/transcripts/studio"
             className={cn(
               "group relative overflow-hidden rounded-3xl border-2 border-primary/30 bg-card p-6 sm:p-8",
               "transition-all duration-300",
@@ -346,7 +346,7 @@ export default function TranscriptionLanding() {
 
           {/* Processor */}
           <Link
-            href="/transcription/processor"
+            href="/transcripts"
             className={cn(
               "group relative rounded-3xl border border-border bg-card p-6 sm:p-8",
               "transition-all duration-300",
@@ -384,7 +384,7 @@ export default function TranscriptionLanding() {
 
           {/* Scribe */}
           <Link
-            href="/transcription/scribe"
+            href="/transcripts/scribe"
             className={cn(
               "group relative rounded-3xl border border-border bg-card p-6 sm:p-8",
               "transition-all duration-300",
@@ -556,7 +556,7 @@ export default function TranscriptionLanding() {
               className="min-h-[44px] text-base px-6 gap-2"
               asChild
             >
-              <Link href="/transcription/processor">
+              <Link href="/transcripts">
                 Open the Processor
                 <ArrowRight className="h-4 w-4" />
               </Link>
@@ -676,7 +676,7 @@ export default function TranscriptionLanding() {
               className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
               asChild
             >
-              <Link href="/transcription/studio">
+              <Link href="/transcripts/studio">
                 <Mic className="h-4 w-4" />
                 Open the Studio
                 <ArrowRight className="h-4 w-4" />
@@ -688,7 +688,7 @@ export default function TranscriptionLanding() {
               className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
               asChild
             >
-              <Link href="/transcription/processor">
+              <Link href="/transcripts">
                 <FileAudio className="h-4 w-4" />
                 Use the Processor
               </Link>
@@ -699,7 +699,7 @@ export default function TranscriptionLanding() {
               className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
               asChild
             >
-              <Link href="/transcription/scribe">
+              <Link href="/transcripts/scribe">
                 <NotebookPen className="h-4 w-4" />
                 Open Scribe
               </Link>

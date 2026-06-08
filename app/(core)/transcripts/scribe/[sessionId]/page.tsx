@@ -12,7 +12,7 @@ export default function ScribeSessionPage() {
   return (
     <ScribeScreen
       sessionId={params.sessionId}
-      onBack={() => startTransition(() => router.push("/transcription/scribe"))}
+      onBack={() => startTransition(() => router.push("/transcripts/scribe"))}
     />
   );
 }

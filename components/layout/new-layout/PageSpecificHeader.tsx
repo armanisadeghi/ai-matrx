@@ -251,7 +251,10 @@ export function TranscriptsHeaderPortal(props: TranscriptsHeaderProps) {
   const [TranscriptsHeader, setTranscriptsHeader] = useState<any>(null);
 
   useEffect(() => {
-    if (!pathname?.includes("/transcription/processor")) return;
+    // Match the canonical processor workspace only — `/transcripts` exact,
+    // NOT the sub-routes `/transcripts/studio` or `/transcripts/scribe`
+    // which have their own headers.
+    if (pathname !== "/transcripts") return;
     import("@/features/transcripts/components/TranscriptsHeader").then(
       (module) => {
         setTranscriptsHeader(() => module.TranscriptsHeader);
@@ -259,7 +262,7 @@ export function TranscriptsHeaderPortal(props: TranscriptsHeaderProps) {
     );
   }, [pathname]);
 
-  if (!pathname?.includes("/transcription/processor") || !TranscriptsHeader) {
+  if (pathname !== "/transcripts" || !TranscriptsHeader) {
     return null;
   }
 

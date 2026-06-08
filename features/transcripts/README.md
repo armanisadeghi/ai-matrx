@@ -53,7 +53,7 @@ This creates:
 
 ### Step 2: Verify the Route
 
-Navigate to `/transcription/processor` to access the transcript management interface.
+Navigate to `/transcripts` to access the transcript management interface.
 
 ### Step 3: Import Your First Transcript
 
@@ -61,7 +61,7 @@ Navigate to `/transcription/processor` to access the transcript management inter
 2. Click the "Import" button on the transcript block
 3. Fill in title and details
 4. Click "Import Transcript"
-5. View it in `/transcription/processor`!
+5. View it in `/transcripts`!
 
 ---
 
@@ -273,7 +273,7 @@ The system seamlessly integrates with the existing `AdvancedTranscriptViewer` co
 3. **Segments parsed** → From markdown format to structured data
 4. **User configures** → Title, description, folder, etc.
 5. **Import** → Saved to database via transcriptsService
-6. **View in /transcription/processor** → Full editing capabilities
+6. **View in /transcripts** → Full editing capabilities
 
 ### Supported Input Format
 

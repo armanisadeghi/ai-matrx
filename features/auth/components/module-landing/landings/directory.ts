@@ -139,7 +139,7 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
   },
   {
     label: "Transcripts",
-    href: "/transcription/processor",
+    href: "/transcripts",
     icon: Mic,
     teaser:
       "Speaker-attributed, multilingual transcripts with action items and summaries.",

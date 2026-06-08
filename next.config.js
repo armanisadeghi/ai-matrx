@@ -141,6 +141,16 @@ const nextConfig = {
     headers: getHeaders,
     async redirects() {
         return [
+            // 2026-06-08: Transcripts consolidation. Renamed `/transcription/*`
+            // route group to `/transcripts/*` so the feature has ONE canonical
+            // URL with slash-versioned sub-routes (studio, scribe, admin).
+            // Also lifted the processor up so `/transcripts` IS the workspace
+            // (no `/processor` sub-route — matches the "one thing with slashes"
+            // structure). Permanent so search indexes update.
+            { source: '/transcription', destination: '/transcripts', permanent: true },
+            { source: '/transcription/processor', destination: '/transcripts', permanent: true },
+            { source: '/transcription/:path*', destination: '/transcripts/:path*', permanent: true },
+            { source: '/transcripts/processor', destination: '/transcripts', permanent: true },
             // 2026-05-28: SSR experiment consolidation. The (ssr) route group
             // moved from URL /ssr/* to /demos/ssr/* so every demo/test surface
             // shares the unified /demos/* prefix. The (ssr) layout (LiteStoreProvider
@@ -167,13 +177,17 @@ const nextConfig = {
             { source: '/org/:orgId/:path*', destination: '/organizations/:orgId/:path*', permanent: true },
             { source: '/org/:orgId', destination: '/organizations/:orgId', permanent: true },
             { source: '/org', destination: '/organizations', permanent: true },
-            // Transcription hub: legacy transcript URLs → app/(core)/transcription/*
-            { source: '/transcript-studio/:path*', destination: '/transcription/studio/:path*', permanent: true },
-            { source: '/transcript-studio', destination: '/transcription/studio', permanent: true },
-            { source: '/transcripts/:path*', destination: '/transcription/processor/:path*', permanent: true },
-            { source: '/transcripts', destination: '/transcription/processor', permanent: true },
-            { source: '/transcription/mobile/:path*', destination: '/transcription/scribe/:path*', permanent: true },
-            { source: '/transcription/mobile', destination: '/transcription/scribe', permanent: true },
+            // Legacy Transcripts deep-link redirects. The canonical URL is now
+            // `/transcripts/*` (see the 2026-06-08 block at the top of this
+            // list). These rules normalize OLDER aliases that pre-dated the
+            // 2026-06-08 consolidation. NOTE: do NOT re-add the pre-consolidation
+            // rules that pointed `/transcripts*` → `/transcription/processor*` —
+            // they will cause an infinite redirect loop with the consolidation
+            // block.
+            { source: '/transcript-studio/:path*', destination: '/transcripts/studio/:path*', permanent: true },
+            { source: '/transcript-studio', destination: '/transcripts/studio', permanent: true },
+            { source: '/transcription/mobile/:path*', destination: '/transcripts/scribe/:path*', permanent: true },
+            { source: '/transcription/mobile', destination: '/transcripts/scribe', permanent: true },
             // Entity-isolation migration (Phase 2+): legacy entity-bound routes
             // moved under /legacy/* so they can boot through the entity-aware
             // store/providers without bloating slim chunks. Old URLs are 307'd

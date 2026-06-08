@@ -102,7 +102,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 **Purpose:** database-backed audio/video transcript store. Upload audio, transcribe with Groq Whisper Large V3 Turbo, persist segments (timecoded + speaker-labeled), edit, organize, export.
 
 **Entry points**
-- Route: `app/(a)/transcription/processor/` — public URL `/transcription/processor` (legacy `/transcripts` → permanent redirect in `next.config.js`).
+- Route: `app/(a)/transcripts/` — public URL `/transcripts` (legacy `/transcripts` → permanent redirect in `next.config.js`).
 - Service: `features/transcripts/service/transcriptsService.ts` (CRUD + storage-file deletion), `service/audioStorageService.ts` (Supabase Storage uploads).
 - Context: `features/transcripts/context/TranscriptsContext.tsx` — optimistic updates, real-time subscription, `createTranscript`, `updateTranscript`, `deleteTranscript`, `copyTranscript`, `refreshTranscripts`.
 - Hooks: `useFileSrc` (resolves a renderable URL; signed-URL refresh handled centrally by the handler's expiry-wheel).
@@ -179,7 +179,7 @@ The boundary is: **ingestion pipelines own persistence; agents read from those t
 ## Change log
 
 - `2026-05-28` — claude: **"Process for RAG" added to the scraper floating workspace toolbar** (`parts/ScraperFloatingWorkspace.tsx`). The `<ProcessForRagButton sourceKind="scraped" sourceId={selectedScraped.url} …>` sits next to Copy and Reset in the rightActions cluster; on success the toast offers a "View in library" action. `source_kind: "scraped"` was added to the FE `IngestRequestBody` union in `features/rag/api/ingest.ts` to keep the new affordance compiling in lock-step with aidream's `IngestRequest` widening.
-- `2026-05-07` — Documented transcript processor public URL `/transcription/processor` (studio at `/transcription/studio`; legacy `/transcripts` and `/transcript-studio` redirect in `next.config.js`).
+- `2026-05-07` — Documented transcript processor public URL `/transcripts` (studio at `/transcription/studio`; legacy `/transcripts` and `/transcript-studio` redirect in `next.config.js`).
 - `2026-04-22` — claude: initial combined doc for scraper + pdf-extractor + research + transcripts.
 
 ---

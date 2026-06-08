@@ -10,7 +10,7 @@ export default function ScribeUnsortedPage() {
 
   return (
     <ScribeUnsortedScreen
-      onBack={() => startTransition(() => router.push("/transcription/scribe"))}
+      onBack={() => startTransition(() => router.push("/transcripts/scribe"))}
     />
   );
 }
