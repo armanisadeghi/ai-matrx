@@ -2,16 +2,17 @@
 
 // features/podcasts/generator/components/LiveProgressRail.tsx
 //
-// The drumbeat. A sticky status header (progress + LIVE dot + elapsed + current
-// step) over an expandable stage timeline. This is what keeps the UI alive — it
-// is always moving while the long-running pipeline streams.
+// The drumbeat. A status header (progress + LIVE dot + elapsed + the current
+// step) over the full stage timeline. The featured "current step" is DERIVED
+// from the stages that are actually running — so when work finishes out of
+// order (audio is the long pole while images/videos land early) it always
+// tracks the next live thing instead of sticking on the last one that started.
 
 import { useState } from "react";
 import {
   CheckCircle2,
   Loader2,
   XCircle,
-  Circle,
   ChevronDown,
 } from "lucide-react";
 import {
@@ -21,17 +22,38 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "./ElapsedTimer";
-import type { PodcastRunState } from "../types";
+import type { PodcastRunState, StageRow } from "../types";
 
 interface LiveProgressRailProps {
   state: PodcastRunState;
   startedAt: number | null;
 }
 
+/** Pick the label to feature in the header — always a live thing, never stuck. */
+function featuredLabel(state: PodcastRunState): string {
+  if (state.status === "done") return "Episode ready";
+  if (state.status === "error") return "Finished with errors";
+  const running = state.stages.filter((s) => s.status === "running");
+  if (running.length > 0) {
+    // Feature the earliest-position running stage (e.g. audio, the long pole),
+    // so the header advances naturally as later stages finish around it.
+    const earliest = running.reduce<StageRow>(
+      (a, b) => (a.step <= b.step ? a : b),
+      running[0],
+    );
+    if (running.length > 1) {
+      return `${earliest.label} · +${running.length - 1} more`;
+    }
+    return earliest.label;
+  }
+  return state.currentLabel || "Starting up…";
+}
+
 export function LiveProgressRail({ state, startedAt }: LiveProgressRailProps) {
   const [open, setOpen] = useState(true);
   const running = state.status === "running";
-  const done = state.stages.filter((s) => s.status === "done").length;
+  const doneCount = state.stages.filter((s) => s.status !== "running").length;
+  const total = Math.max(state.totalSteps, state.stages.length);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
@@ -55,8 +77,7 @@ export function LiveProgressRail({ state, startedAt }: LiveProgressRailProps) {
               />
             </span>
             <span className="truncate text-sm font-medium text-foreground">
-              {state.currentLabel ||
-                (running ? "Starting up…" : "Ready")}
+              {featuredLabel(state)}
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-3 text-xs tabular-nums text-muted-foreground">
@@ -81,19 +102,19 @@ export function LiveProgressRail({ state, startedAt }: LiveProgressRailProps) {
         </div>
       </div>
 
-      {/* Stage timeline */}
+      {/* Stage timeline — all steps, scrolls only if it can't fit the viewport */}
       {state.stages.length > 0 && (
         <Collapsible open={open} onOpenChange={setOpen}>
           <CollapsibleTrigger className="flex w-full items-center justify-between border-t border-border px-4 py-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground">
             <span>
-              {done} of {state.stages.length} steps
+              {doneCount} of {total} steps done
             </span>
             <ChevronDown
               className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
             />
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <ul className="max-h-56 space-y-0.5 overflow-y-auto border-t border-border p-2">
+            <ul className="max-h-[min(60vh,32rem)] space-y-0.5 overflow-y-auto border-t border-border p-2">
               {state.stages.map((stage) => (
                 <li
                   key={stage.stage}
@@ -108,10 +129,12 @@ export function LiveProgressRail({ state, startedAt }: LiveProgressRailProps) {
                   )}
                   <span
                     className={cn(
-                      "truncate",
+                      "min-w-0 flex-1",
                       stage.status === "running"
                         ? "font-medium text-foreground"
-                        : "text-muted-foreground",
+                        : stage.status === "failed"
+                          ? "text-destructive/80"
+                          : "text-muted-foreground",
                     )}
                   >
                     {stage.label}

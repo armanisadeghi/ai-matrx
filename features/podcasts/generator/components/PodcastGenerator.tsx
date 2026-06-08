@@ -29,6 +29,7 @@ import { useMyPodcasts } from "@/features/podcasts/hooks/useMyPodcasts";
 import { usePodcastRun } from "../usePodcastRun";
 import { GeneratorForm } from "./GeneratorForm";
 import { LiveProgressRail } from "./LiveProgressRail";
+import { ProductionTeaser } from "./ProductionTeaser";
 import { MetadataHero } from "./MetadataHero";
 import { MediaOptionsGrid } from "./MediaOptionsGrid";
 import { ResultActions } from "./ResultActions";
@@ -152,7 +153,7 @@ export function PodcastGenerator() {
         </div>
       ) : (
         /* ── Live console ──────────────────────────────────────────────── */
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           {/* Main column */}
           <div className="order-2 space-y-6 lg:order-1">
             {/* Completion / error banner */}
@@ -179,8 +180,9 @@ export function PodcastGenerator() {
 
             <MetadataHero state={state} />
 
-            {/* Audio player (on complete) */}
-            {state.audioUrl && (
+            {/* Audio player (on complete) — or the production teaser while the
+                audio is still rendering, so the wait is never dead air. */}
+            {state.audioUrl ? (
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <PodcastAudioPlayer
                   audioUrl={state.audioUrl}
@@ -188,7 +190,9 @@ export function PodcastGenerator() {
                   coverImageUrl={effectiveCover ?? undefined}
                 />
               </div>
-            )}
+            ) : isRunning && state.title ? (
+              <ProductionTeaser state={state} startedAt={startedAt} />
+            ) : null}
 
             {/* Post-creation toolkit */}
             {isDone && state.episodeId && (

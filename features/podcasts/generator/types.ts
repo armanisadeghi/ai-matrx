@@ -136,16 +136,25 @@ export type RunStatus = "idle" | "running" | "done" | "error";
 export interface PodcastRunState {
   status: RunStatus;
   stages: StageRow[];
-  /** Current "▶ label" — the latest stage that started. */
+  /** Fallback "▶ label" — the latest stage that started. The live rail derives
+   *  the *featured* label from the currently-running stages instead. */
   currentLabel: string;
-  /** step/total*100 while running; 100 on complete. */
+  /** Honest completion: done-stage-count / totalSteps * 100; 100 on complete. */
   progress: number;
+  /** Total steps the pipeline reports (max `total` seen). */
+  totalSteps: number;
   title: string;
   description: string;
   images: MediaSlot[];
   videos: MediaSlot[];
   audioUrl: string | null;
   script: string;
+  /** Real ~500-char sneak-peek of the script (from create_script stage_done). */
+  scriptPreview: string;
+  /** Real preview of the prepared/researched source content. */
+  sourcePreview: string;
+  /** Accumulated token-level `chunk` text, if the pipeline streams any. */
+  liveText: string;
   showId: string | null;
   episodeId: string | null;
   episodeSlug: string | null;
@@ -159,12 +168,16 @@ export const INITIAL_RUN_STATE: PodcastRunState = {
   stages: [],
   currentLabel: "",
   progress: 0,
+  totalSteps: 0,
   title: "",
   description: "",
   images: [],
   videos: [],
   audioUrl: null,
   script: "",
+  scriptPreview: "",
+  sourcePreview: "",
+  liveText: "",
   showId: null,
   episodeId: null,
   episodeSlug: null,

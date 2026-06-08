@@ -111,3 +111,12 @@ features/podcasts/
   stream). Added quick-create-show, post-generation actions (publish / pick cover / display mode /
   download / share), and `useMyPodcasts`. Reuses `consumeStream`, `useBackendApi`,
   `PodcastAudioPlayer`, and `InlineMediaRef` — no new primitives.
+- **2026-06-08** — Generator engagement + correctness pass: per-asset `image_n`/`video_n` stage rows
+  now settle to done/failed when their `podcast_asset` lands (no more stuck spinners); progress is
+  derived from completed stages (+½ credit for in-flight) so it's honest and never hits 100% early;
+  the live rail shows **all** steps and derives its featured "current" label from the running stages
+  (async-aware, never stuck on the last one started). Asset cards show the **full prompt in the tile
+  while rendering**, then swap to media-only on arrival; images are larger; videos auto-play
+  (muted/looped). Added `ProductionTeaser` — a rotating cover-art showcase + real script sneak-peek
+  (from `create_script` stage output) + honest "producing audio" status — shown in the player slot
+  while the long audio step finishes, so the wait is never dead air.

@@ -12,10 +12,7 @@ import type {
 } from "./types";
 import { EXPECTED_IMAGE_COUNT, EXPECTED_VIDEO_COUNT } from "./constants";
 
-function upsertStage(
-  stages: StageRow[],
-  next: StageRow,
-): StageRow[] {
+function upsertStage(stages: StageRow[], next: StageRow): StageRow[] {
   const idx = stages.findIndex((s) => s.stage === next.stage);
   if (idx === -1) return [...stages, next];
   const copy = stages.slice();
@@ -23,14 +20,48 @@ function upsertStage(
   return copy;
 }
 
+/**
+ * Flip a stage row to a terminal status while preserving its existing label.
+ * Used when a `podcast_asset` lands — the per-asset image_n / video_n stages
+ * stream their result as an asset event and never emit a matching stage_done,
+ * so without this they'd spin forever in the timeline.
+ */
+function settleStage(
+  stages: StageRow[],
+  stageKey: string,
+  status: "done" | "failed",
+  fallbackLabel: string,
+): StageRow[] {
+  const idx = stages.findIndex((s) => s.stage === stageKey);
+  if (idx === -1) {
+    return [
+      ...stages,
+      { stage: stageKey, label: fallbackLabel, status, step: 0, total: 0 },
+    ];
+  }
+  const copy = stages.slice();
+  copy[idx] = { ...copy[idx], status };
+  return copy;
+}
+
+/**
+ * Honest progress: completed stages over the pipeline's reported total, plus a
+ * half-step credit for stages currently running so a long stage (research,
+ * audio) still shows gentle movement instead of sitting at a flat number.
+ * Capped at 99 until `podcast_complete` fires — it never claims 100% early.
+ */
+function computeProgress(stages: StageRow[], totalSteps: number): number {
+  if (totalSteps <= 0) return 0;
+  const done = stages.filter((s) => s.status !== "running").length;
+  const running = stages.filter((s) => s.status === "running").length;
+  return Math.min(99, Math.round(((done + running * 0.5) / totalSteps) * 100));
+}
+
 function makeSlots(
   prompts: string[],
   kind: MediaSlot["kind"],
   expected: number,
 ): MediaSlot[] {
-  // The pipeline pads to `expected` by repeating the last prompt, so lay out at
-  // least `expected` slots (or more if metadata returned more) — never fewer.
-  // If zero prompts came back, lay out none (no media will be generated).
   const count = prompts.length === 0 ? 0 : Math.max(prompts.length, expected);
   return Array.from({ length: count }, (_, index) => ({
     index,
@@ -57,7 +88,6 @@ function applyAsset(
     status: success ? "done" : "failed",
   };
   if (idx === -1) {
-    // More assets than metadata prompts — create the slot on demand.
     return [...slots, next].sort((a, b) => a.index - b.index);
   }
   const copy = slots.slice();
@@ -84,38 +114,61 @@ function reconcile(
   });
 }
 
+/** A stage_done `output` is text we can tease only for content stages — not for
+ *  audio / image / video stages whose output is a URL. */
+function looksLikeUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value.trim());
+}
+
 export function reduce(
   state: PodcastRunState,
   data: PodcastDataEvent,
 ): PodcastRunState {
   switch (data.type) {
     case "podcast_stage_started": {
-      const progress =
-        data.total > 0 ? Math.round((data.step / data.total) * 100) : state.progress;
+      const totalSteps = Math.max(state.totalSteps, data.total);
+      const stages = upsertStage(state.stages, {
+        stage: data.stage,
+        label: data.label,
+        status: "running",
+        step: data.step,
+        total: data.total,
+      });
       return {
         ...state,
         currentLabel: data.label,
-        progress: Math.max(state.progress, progress),
-        stages: upsertStage(state.stages, {
-          stage: data.stage,
-          label: data.label,
-          status: "running",
-          step: data.step,
-          total: data.total,
-        }),
+        totalSteps,
+        progress: computeProgress(stages, totalSteps),
+        stages,
       };
     }
 
     case "podcast_stage": {
+      const totalSteps = Math.max(state.totalSteps, data.total);
+      const stages = upsertStage(state.stages, {
+        stage: data.stage,
+        label: data.label,
+        status: data.success ? "done" : "failed",
+        step: data.step,
+        total: data.total,
+      });
+      // Capture real content previews from the stages that produce text.
+      let scriptPreview = state.scriptPreview;
+      let sourcePreview = state.sourcePreview;
+      const output = (data.output ?? "").trim();
+      if (data.success && output && !looksLikeUrl(output)) {
+        if (data.stage === "create_script") scriptPreview = output;
+        else if (data.stage.startsWith("prepare_content") && !sourcePreview) {
+          sourcePreview = output;
+        }
+      }
       return {
         ...state,
-        stages: upsertStage(state.stages, {
-          stage: data.stage,
-          label: data.label,
-          status: data.success ? "done" : "failed",
-          step: data.step,
-          total: data.total,
-        }),
+        totalSteps,
+        progress: computeProgress(stages, totalSteps),
+        stages,
+        scriptPreview,
+        sourcePreview,
       };
     }
 
@@ -130,9 +183,23 @@ export function reduce(
     }
 
     case "podcast_asset": {
-      if (data.asset_kind === "image") {
+      const kind = data.asset_kind;
+      const status: "done" | "failed" = data.success ? "done" : "failed";
+      // Settle the matching stage row (image_n / video_n) so it stops spinning.
+      const stages = settleStage(
+        state.stages,
+        `${kind}_${data.index}`,
+        status,
+        `${kind === "video" ? "Video" : "Image"} ${data.index + 1}`,
+      );
+      const base = {
+        ...state,
+        stages,
+        progress: computeProgress(stages, state.totalSteps),
+      };
+      if (kind === "image") {
         return {
-          ...state,
+          ...base,
           images: applyAsset(
             state.images,
             data.index,
@@ -143,7 +210,7 @@ export function reduce(
         };
       }
       return {
-        ...state,
+        ...base,
         videos: applyAsset(
           state.videos,
           data.index,
@@ -155,10 +222,8 @@ export function reduce(
     }
 
     case "podcast_complete": {
-      // Some per-asset stages (image_n / video_n) stream their result as an
-      // `asset` event and never emit a matching stage_done — they'd otherwise
-      // be left spinning in the timeline. On a successful finish, resolve any
-      // still-"running" stage to done so the rail reflects reality.
+      // Resolve any stage still "running" on a successful finish — per-asset
+      // stages can be left dangling if their asset event didn't arrive.
       const resolvedStages = data.success
         ? state.stages.map((s) =>
             s.status === "running" ? { ...s, status: "done" as const } : s,

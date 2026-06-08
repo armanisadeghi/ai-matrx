@@ -83,6 +83,16 @@ export function usePodcastRun(): UsePodcastRun {
             onData: (data) => {
               setState((s) => reduce(s, data as PodcastDataEvent));
             },
+            onChunk: (chunk) => {
+              // The pipeline may stream token-level text (research / script).
+              // Keep a bounded rolling buffer for the live "studio feed" teaser.
+              const text = chunk?.text ?? "";
+              if (!text) return;
+              setState((s) => ({
+                ...s,
+                liveText: (s.liveText + text).slice(-2000),
+              }));
+            },
             onError: (data) => {
               setState((s) => ({
                 ...s,
