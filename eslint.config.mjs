@@ -205,8 +205,73 @@ const deletedFileHooksRestriction = {
 // `no-restricted-imports` / `no-restricted-syntax` slots, without flat
 // config's "later rule wins" replacing those higher-severity bans.
 const BANNED_LUCIDE_ICON_RE = /^(Wand2?|Sparkles?|Bot)$/;
+
+// Media durability — a raw <img>/<video>/<audio>/<source> pointing at OUR
+// storage can't self-heal: a signed S3 link rots when its signature expires,
+// and a public viewer can't re-mint it. The doctrine (CLAUDE.md "Media
+// durability") is: render our media through <InlineMediaRef> (it re-mints from a
+// file_id / serves the CDN URL). We can't lint dynamic `src={var}` (the runtime
+// value is unknown — that's the DB-edge guard's job), but a hardcoded storage
+// URL in a raw tag is an unambiguous, catchable regression. See KNOWN_DEFECTS D1.
+const OUR_STORAGE_HOST_RE =
+    /matrx-user-files\.s3|cdn\.matrxserver|\.supabase\.co\/storage|\/podcast-assets\//i;
+
 const matrxLintPlugin = {
     rules: {
+        'no-raw-storage-media': {
+            meta: {
+                type: 'problem',
+                docs: {
+                    description:
+                        'Disallow raw <img>/<video>/<audio>/<source> whose src is a hardcoded AI-Matrx storage URL — render via <InlineMediaRef> instead.',
+                },
+                schema: [],
+                messages: {
+                    raw: "Raw <{{tag}}> with a hardcoded AI-Matrx storage URL. Our media must render through <InlineMediaRef> (@/features/files) so it re-mints / serves a durable URL — a raw tag can't self-heal and a signed S3 link rots. See CLAUDE.md 'Media durability' / KNOWN_DEFECTS D1.",
+                },
+            },
+            create(context) {
+                const MEDIA_TAGS = new Set(['img', 'video', 'audio', 'source']);
+                const check = (node, raw, tag) => {
+                    if (typeof raw === 'string' && OUR_STORAGE_HOST_RE.test(raw)) {
+                        context.report({ node, messageId: 'raw', data: { tag } });
+                    }
+                };
+                return {
+                    JSXOpeningElement(node) {
+                        const tag =
+                            node.name && node.name.type === 'JSXIdentifier'
+                                ? node.name.name
+                                : null;
+                        if (!tag || !MEDIA_TAGS.has(tag)) return;
+                        for (const attr of node.attributes) {
+                            if (
+                                attr.type !== 'JSXAttribute' ||
+                                attr.name.name !== 'src' ||
+                                !attr.value
+                            ) {
+                                continue;
+                            }
+                            const v = attr.value;
+                            if (v.type === 'Literal') {
+                                check(attr, v.value, tag);
+                            } else if (v.type === 'JSXExpressionContainer') {
+                                const e = v.expression;
+                                if (e.type === 'Literal') {
+                                    check(attr, e.value, tag);
+                                } else if (e.type === 'TemplateLiteral') {
+                                    check(
+                                        attr,
+                                        e.quasis.map((q) => q.value.cooked).join(''),
+                                        tag,
+                                    );
+                                }
+                            }
+                        }
+                    },
+                };
+            },
+        },
         'no-banned-lucide-icons': {
             meta: {
                 type: 'suggestion',
@@ -395,6 +460,9 @@ export default [
             // Loud but non-blocking — keep at 'warn' so CI / Vercel builds
             // don't fail while we clean up existing usages.
             'matrx/no-banned-lucide-icons': 'warn',
+            // Media durability — hardcoded storage URLs in raw media tags. Loud
+            // but non-blocking; the DB-edge guard covers the dynamic-src case.
+            'matrx/no-raw-storage-media': 'warn',
             'react-hooks/exhaustive-deps': 'off',
             '@next/next/no-img-element': 'off',
             'react/no-unescaped-entities': 'off',
@@ -517,6 +585,40 @@ export default [
             // internals. It still must NOT use legacy Supabase API key
             // env vars.
             'no-restricted-syntax': ['error', ...legacySupabaseKeyBan],
+        },
+    },
+    {
+        // Media durability fence (see CLAUDE.md "Media durability" +
+        // KNOWN_DEFECTS.md D1). Podcast surfaces render OUR OWN media (covers,
+        // clip video, audio) which is persisted from a stream and can arrive as
+        // an expiring signed S3 URL. A raw <img>/<video> can't re-mint and
+        // silently rots when the signature expires — and an anonymous public
+        // page (/podcast/[slug]) can't re-mint at all. Render through
+        // <InlineMediaRef> from @/features/files, which serves the durable
+        // CDN/public URL and re-mints from a file_id for authed owners.
+        // The ONE justified raw element is PodcastAudioPlayer's headless
+        // <audio> (a custom imperative transport InlineMediaRef doesn't model);
+        // <audio> is intentionally NOT banned here. This override re-lists the
+        // global syntax bans because flat-config replaces (not merges) the rule.
+        files: ['features/podcasts/**/*.{ts,tsx}'],
+        rules: {
+            'no-restricted-syntax': [
+                'error',
+                ...legacySupabaseKeyBan,
+                ...fileHandlerSyntaxRestrictions,
+                ...scopesChokepointSyntaxRestrictions,
+                ...toolResultsChokepointSyntaxRestrictions,
+                {
+                    selector: "JSXOpeningElement[name.name='img']",
+                    message:
+                        "Raw <img> is banned in features/podcasts — render via <InlineMediaRef> from @/features/files so the media URL stays durable and self-heals. A raw <img> silently rots when a signed S3 URL expires. See CLAUDE.md \"Media durability\" / KNOWN_DEFECTS.md D1.",
+                },
+                {
+                    selector: "JSXOpeningElement[name.name='video']",
+                    message:
+                        "Raw <video> is banned in features/podcasts — render via <InlineMediaRef as=\"video\"> from @/features/files (it supports ambient autoPlay/loop/muted/playsInline/preload). A raw <video> silently rots when a signed S3 URL expires. See CLAUDE.md \"Media durability\" / KNOWN_DEFECTS.md D1.",
+                },
+            ],
         },
     },
     {
