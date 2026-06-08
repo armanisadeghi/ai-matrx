@@ -119,21 +119,9 @@ export const PROJECT_PRIORITY_META: Record<
 
 const PRIORITY_ORDER: ProjectPriority[] = ["high", "medium", "low"];
 
-// ─── date helpers (date-only, no TZ shift) ─────────────────────────────────
-
-function parseDateOnly(v: string | null | undefined): Date | undefined {
-  if (!v) return undefined;
-  const [y, m, d] = v.split("-").map(Number);
-  if (!y || !m || !d) return undefined;
-  return new Date(y, m - 1, d);
-}
-function toDateOnly(d: Date): string {
-  return format(d, "yyyy-MM-dd");
-}
-function fmtDate(v: string): string {
-  const d = parseDateOnly(v);
-  return d ? d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : v;
-}
+// Date-only (`yyyy-mm-dd`, no TZ shift) helpers now live in `@/utils/dateOnly`.
+const fmtDate = (v: string): string =>
+  formatDateOnly(v, { month: "short", day: "numeric", year: "numeric" });
 
 // ─── shared persistence ────────────────────────────────────────────────────
 
