@@ -3,6 +3,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { buildSearchOr } from "@/utils/supabase-search";
 import type {
   AiRun,
   AiRunWithTasks,
@@ -129,7 +130,7 @@ export async function listAiRuns(
   if (starred !== undefined) query = query.eq("is_starred", starred);
 
   if (search) {
-    query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    query = query.or(buildSearchOr(search, ["name", "description"]));
   }
 
   query = query.order(order_by, { ascending: order_direction === "asc" });

@@ -24,6 +24,7 @@ import { useResearchStream } from "../../hooks/useResearchStream";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchSynthesis, ResearchDataEvent } from "../../types";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import MarkdownStream from "@/components/markdown";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 
@@ -165,7 +166,8 @@ export default function SynthesisList() {
           (s.error ?? "").toLowerCase().includes(q) ||
           getKeywordLabel(s.keyword_id).toLowerCase().includes(q) ||
           (s.model_id ?? "").toLowerCase().includes(q) ||
-          s.scope.toLowerCase().includes(q),
+          s.scope.toLowerCase().includes(q) ||
+          idMatchesQuery(s, q),
       );
     }
     return items;

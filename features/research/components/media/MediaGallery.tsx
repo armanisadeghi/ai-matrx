@@ -25,6 +25,7 @@ import { useTopicContext } from "../../context/ResearchContext";
 import { useResearchMedia } from "../../hooks/useResearchState";
 import { updateMedia } from "../../service";
 import type { ResearchMedia } from "../../types";
+import { idMatchesQuery } from "@/utils/search-scoring";
 
 const TYPE_ICONS = {
   image: ImageIcon,
@@ -93,7 +94,8 @@ export default function MediaGallery() {
         (m) =>
           (m.alt_text ?? "").toLowerCase().includes(q) ||
           (m.caption ?? "").toLowerCase().includes(q) ||
-          m.url.toLowerCase().includes(q),
+          m.url.toLowerCase().includes(q) ||
+          idMatchesQuery(m, q),
       );
     }
     return items;

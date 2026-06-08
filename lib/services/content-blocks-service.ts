@@ -11,6 +11,7 @@ import {
   SubcategoryConfig,
 } from "@/features/rich-text-editor/config/contentBlocks";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
+import { buildSearchOr } from "@/utils/supabase-search";
 import { getIconComponent as resolveIconComponent } from "@/components/official/icons/IconResolver";
 import { createClient } from "@/utils/supabase/client";
 
@@ -87,7 +88,7 @@ export async function fetchContentBlocks(
 
   if (options.search) {
     query = query.or(
-      `label.ilike.%${options.search}%,description.ilike.%${options.search}%,block_id.ilike.%${options.search}%`,
+      buildSearchOr(options.search, ["label", "description", "block_id"]),
     );
   }
 

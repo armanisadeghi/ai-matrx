@@ -1,6 +1,7 @@
 // @ts-nocheck
 
 import { createClient } from "@/utils/supabase/client";
+import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import {
   mapAiRunRow,
@@ -136,7 +137,7 @@ export const aiRunsService = {
 
     // Search in name and description
     if (search) {
-      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+      query = query.or(buildSearchOr(search, ["name", "description"]));
     }
 
     // Order and pagination

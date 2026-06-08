@@ -23,6 +23,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
+import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import {
@@ -499,7 +500,7 @@ export async function queryScopeSuggestions(
     const t = sanitizeSearch(q.search);
     if (t) {
       query = query.or(
-        `item_label.ilike.%${t}%,scope_name.ilike.%${t}%,suggested_value.ilike.%${t}%`,
+        buildSearchOr(t, ["item_label", "scope_name", "suggested_value"]),
       );
     }
   }

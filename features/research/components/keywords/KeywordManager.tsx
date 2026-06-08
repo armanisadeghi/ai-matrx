@@ -11,6 +11,7 @@ import { deleteKeyword as deleteKeywordService } from "../../service";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchKeyword } from "../../types";
+import { idMatchesQuery } from "@/utils/search-scoring";
 
 export default function KeywordManager() {
   const { topicId } = useTopicContext();
@@ -43,7 +44,8 @@ export default function KeywordManager() {
         (k) =>
           k.keyword.toLowerCase().includes(q) ||
           k.search_provider.toLowerCase().includes(q) ||
-          (k.last_searched_at ?? "").toLowerCase().includes(q),
+          (k.last_searched_at ?? "").toLowerCase().includes(q) ||
+          idMatchesQuery(k, q),
       );
     }
     return list;

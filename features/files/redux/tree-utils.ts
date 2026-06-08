@@ -14,6 +14,7 @@ import type {
   TreeState,
 } from "@/features/files/types";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
+import { idMatchesQuery } from "@/utils/search-scoring";
 
 const EMPTY_SORTED_IDS: string[] = [];
 
@@ -283,7 +284,8 @@ export function searchFiles(
     if (file.deletedAt) continue;
     if (
       file.fileName.toLowerCase().includes(needle) ||
-      file.filePath.toLowerCase().includes(needle)
+      file.filePath.toLowerCase().includes(needle) ||
+      idMatchesQuery(file, needle)
     ) {
       out.push(file);
     }
@@ -302,7 +304,8 @@ export function searchFolders(
     if (folder.deletedAt) continue;
     if (
       folder.folderName.toLowerCase().includes(needle) ||
-      folder.folderPath.toLowerCase().includes(needle)
+      folder.folderPath.toLowerCase().includes(needle) ||
+      idMatchesQuery(folder, needle)
     ) {
       out.push(folder);
     }

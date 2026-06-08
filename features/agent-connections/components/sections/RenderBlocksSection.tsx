@@ -19,6 +19,7 @@ import { useRenderBlocks } from "../../hooks/useRenderBlocks";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
 import type { CategoryTreeNode } from "../../redux/skl/selectors";
 import type { SklRenderDefinition } from "../../redux/skl/types";
+import { idMatchesQuery } from "@/utils/search-scoring";
 
 export function RenderBlocksSection() {
   const dispatch = useAppDispatch();
@@ -32,7 +33,8 @@ export function RenderBlocksSection() {
     !lowerSearch ||
     d.label.toLowerCase().includes(lowerSearch) ||
     d.blockId.toLowerCase().includes(lowerSearch) ||
-    (d.description ?? "").toLowerCase().includes(lowerSearch);
+    (d.description ?? "").toLowerCase().includes(lowerSearch) ||
+    idMatchesQuery(d, lowerSearch);
 
   const selected = selectedItemId
     ? (definitions.find((d) => d.id === selectedItemId) ?? null)

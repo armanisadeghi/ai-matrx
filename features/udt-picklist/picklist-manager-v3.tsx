@@ -140,6 +140,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { idMatchesQuery } from "@/utils/search-scoring";
 
 // ---------- Types ----------
 
@@ -634,7 +635,7 @@ export function PicklistManager({ supabase, userId }: PicklistManagerProps) {
     const filteredLists = React.useMemo(() => {
         const q = search.trim().toLowerCase();
         if (!q) return lists;
-        return lists.filter((l) => (l.list_name || "").toLowerCase().includes(q));
+        return lists.filter((l) => (l.list_name || "").toLowerCase().includes(q) || idMatchesQuery(l, q));
     }, [lists, search]);
 
     const activeList = React.useMemo(() => lists.find((l) => l.id === activeId) ?? null, [lists, activeId]);

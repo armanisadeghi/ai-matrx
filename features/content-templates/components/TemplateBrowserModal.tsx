@@ -42,6 +42,7 @@ import {
 } from "@/features/content-templates/services/content-templates-service";
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
 
@@ -132,7 +133,8 @@ export function TemplateBrowserModal({
         template.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         template.tags?.some((tag) =>
           tag.toLowerCase().includes(searchTerm.toLowerCase()),
-        );
+        ) ||
+        idMatchesQuery(template, searchTerm);
 
       // Tag filter - template must have ALL selected tags
       const matchesTags =

@@ -1,6 +1,7 @@
 // features/transcripts/service/transcriptsService.ts
 
 import { supabase } from "@/utils/supabase/client";
+import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import type { Database, Json } from "@/types/database.types";
 import type {
@@ -435,7 +436,7 @@ export async function searchTranscripts(query: string): Promise<Transcript[]> {
     .from("transcripts")
     .select("*")
     .eq("is_deleted", false)
-    .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+    .or(buildSearchOr(query, ["title", "description"]))
     .order("updated_at", { ascending: false });
 
   if (error) {
