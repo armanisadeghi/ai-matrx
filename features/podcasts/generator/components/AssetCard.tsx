@@ -144,15 +144,21 @@ export function AssetCard({
               </div>
             </div>
           ) : (
-            <video
-              src={slot.url ?? undefined}
+            <InlineMediaRef
+              ref={podcastMediaRef(slot.url)}
+              as="video"
+              size="fill"
+              fit="cover"
+              rounded="none"
               autoPlay
               muted
               loop
               playsInline
               controls
               preload="metadata"
-              className="absolute inset-0 h-full w-full animate-[fadeIn_0.4s_ease] bg-black object-cover"
+              fallback="skeleton"
+              className="absolute inset-0 animate-[fadeIn_0.4s_ease] bg-black"
+              alt={label}
             />
           ))}
 

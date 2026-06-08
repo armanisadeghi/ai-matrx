@@ -48,7 +48,7 @@ URLs and work fine; the new pipeline regressed.
 | 1. Server persists media PUBLIC at generation | **OPEN (backend)** | Mirror the official-video path — `save_media_envelope_async(..., visibility="public")` for podcast image/audio/clip assets, or `SyncEngine.change_visibility_async(file_id,"public")` post-gen. Tracked in aidream `KNOWN_DEFECTS.md`. |
 | 2. DB-edge guard | **DONE + ROLLED OUT** | `migrations/mtx_public_media_url_guard.sql` — registry (`mtx_public_url_guard`) + generic trigger that, on any write of a non-durable URL to a registered column, RAISES a loud WARNING and queues a heal job (`mtx_media_heal_queue`). Reusable for any table/column. Non-blocking. `migrations/mtx_public_media_url_guard_rollout.sql` (2026-06-08) made the trigger **array-aware** (`text[]` columns checked element-by-element) and registered every other public-read media column: `pc_shows.{image_url,og_image_url,thumbnail_url}`, `aga_apps.{preview_image_url,favicon_url}`, `shared_canvas_items.thumbnail_url`, `site_metadata.{logo_url,default_share_image_url}`, `custom_app_configs.image_url`, `custom_applet_configs.image_url`, `wf_template.preview_image_url`, `pc_studio_runs.{audio_url,selected_cover_url,image_urls[],video_urls[]}`. Existing non-durable rows backfilled (incl. 2 studio-run array rows). 9 tables guarded total. |
 | 3. Frontend classifier + loud logger | **DONE** | `lib/media/durability.ts` — `classifyMediaUrl` / `isDurableMediaUrl` (twin of the DB classifier) + `reportMediaDurabilityViolation()` which screams in the console when an expiring URL reaches a render/store path (so the defect can't be ignored). |
-| 4. Canonical render component re-mints | **PARTIAL** | In the **authed** studio, `podcastMediaRef()` recovers the file_id from the signed URL → `<InlineMediaRef>` re-mints a fresh URL (durable for owners). Anonymous public viewers CAN'T re-mint (needs auth) → they require a truly durable URL (layer 1/2/owner-heal). |
+| 4. Canonical render component re-mints | **DONE (podcasts)** | `<InlineMediaRef>` now extended with ambient/preview video flags (`autoPlay`/`loop`/`muted`/`playsInline`/`controls`/`preload`), so it covers background video — no more raw `<video>`. Every podcast display surface migrated: show hero, episode hero (metadata + ambient video), grid backdrop, studio `AssetCard` (image + video). **Authed** studio uses `podcastMediaRef()` (file_id → re-mint, durable for owners); **public/anonymous** pages pass the durable URL string directly (anonymous CANNOT re-mint a file_id, so they rely on layer 1/2/heal for durability) and get the informative error fallback instead of a silently-vanishing cover. Justified exception: `PodcastAudioPlayer`'s headless `<audio>` (custom transport) stays raw + documented. |
 | 5. Owner heal path | **OPEN/PARTIAL** | An authed owner viewing their run/episode should process `mtx_media_heal_queue`: extract file_id → `useFileMutation().setVisibility(fileId,"public")` → fetch the CDN URL → rewrite the `pc_episodes` column → mark healed. (Wire-up pending; see below.) |
 
 **What's still open.**
@@ -67,10 +67,13 @@ URLs and work fine; the new pipeline regressed.
   column" endpoint. That endpoint doesn't exist yet (needs a small aidream route).
 - **Lint enforcement** — there is no ESLint rule banning raw `<img>`/`<video>` for
   our media. The doctrine (CLAUDE.md "File Handling") says use `<InlineMediaRef>`;
-  add a rule so it's enforced, not just documented.
-- **Public pages still use raw `<img>`** in some spots — migrate the hero renders
-  to `<InlineMediaRef>` + a fallback chain (`image_url → og_image_url →
-  thumbnail_url → show image`) + the loud guard.
+  add a rule so it's enforced, not just documented. (Phase 3.)
+- **Public pages still use raw `<img>`** — DONE for podcasts (2026-06-08): show
+  hero, episode hero, grid backdrop, ambient video all migrated to
+  `<InlineMediaRef>` with visible fallbacks. Remaining sweep: agent-app
+  `appImageUrl` renders (`features/applet/home/**`, `Banner.tsx`) and the
+  `/p/[slug]` public app surfaces — their source columns are already guarded
+  (`aga_apps.preview_image_url`), so this is render-polish, not a durability gap.
 
 ---
 

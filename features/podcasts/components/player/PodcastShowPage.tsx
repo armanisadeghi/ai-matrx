@@ -42,41 +42,43 @@ export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
   return (
     <div className="h-full w-full flex flex-col overflow-hidden bg-background">
       {/* ── Hero — full-width image ───────────────────────────────── */}
-      <div className="relative shrink-0 overflow-hidden bg-zinc-900">
+      <div
+        className="relative shrink-0 overflow-hidden bg-zinc-900"
+        style={{ height: coverImage ? "38vh" : "20vh" }}
+      >
         {coverImage ? (
           <>
-            <img
-              src={coverImage}
+            {/* Blurred backdrop — decorative; the handler keeps the URL durable. */}
+            <InlineMediaRef
+              ref={coverImage}
+              size="fill"
+              fit="cover"
+              rounded="none"
+              fallback={null}
+              errorFallback={null}
+              className="absolute inset-0 scale-110 blur-2xl opacity-50"
               alt=""
-              aria-hidden
-              className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50"
-              loading="eager"
-              decoding="async"
             />
-            <img
-              src={coverImage}
+            <InlineMediaRef
+              ref={coverImage}
+              size="fill"
+              fit="cover"
+              rounded="none"
+              fallbackIcon={<Mic className="h-16 w-16 text-white/20" />}
+              errorFallback="icon"
+              className="relative z-10"
               alt={show.title}
-              className="relative z-10 w-full object-cover"
-              style={{ maxHeight: "38vh" }}
-              loading="eager"
-              decoding="async"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
             />
           </>
         ) : (
-          <div
-            className="w-full flex items-center justify-center bg-zinc-900"
-            style={{ height: "20vh" }}
-          >
+          <div className="absolute inset-0 flex items-center justify-center">
             <Mic className="h-16 w-16 text-white/20" />
           </div>
         )}
-        <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none z-20" />
+        <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-zinc-900 via-zinc-900/70 to-transparent pointer-events-none z-20" />
 
-        {/* Info + share row */}
-        <div className="relative z-30 px-4 pb-3 pt-2 flex items-end gap-3">
+        {/* Info + share row — overlaid on the bottom of the hero */}
+        <div className="absolute bottom-0 inset-x-0 z-30 px-4 pb-3 pt-8 flex items-end gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="text-white font-bold text-xl leading-tight line-clamp-1">
               {show.title}

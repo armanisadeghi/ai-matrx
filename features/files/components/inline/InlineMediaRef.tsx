@@ -101,6 +101,20 @@ export interface InlineMediaRefProps {
   alt?: string;
   /** Force the media element type. Default: infer from `mime_type` (falls back to `<img>`). */
   as?: "img" | "video" | "audio";
+  /**
+   * Playback flags forwarded to the underlying `<video>` / `<audio>` element.
+   * Defaults preserve the historical "display media" behaviour: `controls`
+   * shown, nothing autoplaying. Set these for ambient/background video (a hero
+   * loop) or autoplaying previews: e.g. `autoPlay muted loop playsInline
+   * controls={false}`. Browsers require `muted` for `autoPlay` to start.
+   * `playsInline` is ignored for audio.
+   */
+  controls?: boolean;
+  autoPlay?: boolean;
+  loop?: boolean;
+  muted?: boolean;
+  playsInline?: boolean;
+  preload?: "none" | "metadata" | "auto";
   /** Optional rounded corners. Default `"md"`. */
   rounded?: "none" | "sm" | "md" | "lg" | "full";
   /** Click handler — wires up cursor + role + keyboard activation. */
@@ -519,6 +533,12 @@ export function InlineMediaRef({
   errorFallback = "info",
   alt = "",
   as,
+  controls = true,
+  autoPlay,
+  loop,
+  muted,
+  playsInline,
+  preload,
   rounded = "md",
   onClick,
   onError,
@@ -656,7 +676,12 @@ export function InlineMediaRef({
         src={url}
         {...sizeAttrs}
         className={cn(baseCls, objectFitClass)}
-        controls
+        controls={controls}
+        autoPlay={autoPlay}
+        loop={loop}
+        muted={muted}
+        playsInline={playsInline}
+        preload={preload}
         onLoadedData={
           onLoad as React.ReactEventHandler<HTMLVideoElement> | undefined
         }
@@ -672,7 +697,11 @@ export function InlineMediaRef({
         ref={mediaElementRef as React.Ref<HTMLAudioElement> | undefined}
         src={url}
         className={cn(baseCls)}
-        controls
+        controls={controls}
+        autoPlay={autoPlay}
+        loop={loop}
+        muted={muted}
+        preload={preload}
         onLoadedData={
           onLoad as React.ReactEventHandler<HTMLAudioElement> | undefined
         }

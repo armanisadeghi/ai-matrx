@@ -267,6 +267,15 @@ export function PodcastAudioPlayer({
 
   return (
     <div className="w-full flex flex-col gap-4">
+      {/*
+        Headless <audio> driven by this component's custom transport (imperative
+        audioRef + timeupdate/loadedmetadata/ended events, seek, speed, loop).
+        InlineMediaRef is a *display* element (it renders its own controls) and
+        deliberately doesn't model a headless player, so this is the one justified
+        raw media element here. Durability is guaranteed upstream: audio_url is
+        registered with the public-media-URL guard (pc_episodes/pc_studio_runs)
+        and persisted public — it is never a raw signed S3 link.
+      */}
       <audio
         ref={audioRef}
         src={audioUrl}

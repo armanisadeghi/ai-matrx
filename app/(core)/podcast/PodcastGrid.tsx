@@ -26,16 +26,17 @@ export function PodcastGrid({ shows }: { shows: PcShow[] }) {
           <div className="relative aspect-square overflow-hidden bg-zinc-800">
             {show.image_url ? (
               <>
-                {/* Blurred backdrop — keep as plain <img> so it stays
-                    layout-agnostic and bypasses the wrapper. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={show.image_url}
+                {/* Blurred backdrop — durable render via the handler. Decorative,
+                    so no fallback/error chrome (the main image owns those). */}
+                <InlineMediaRef
+                  ref={show.image_url}
+                  size="fill"
+                  fit="cover"
+                  rounded="none"
+                  fallback={null}
+                  errorFallback={null}
+                  className="absolute inset-0 scale-110 blur-xl opacity-40"
                   alt=""
-                  aria-hidden
-                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-40"
-                  loading="lazy"
-                  decoding="async"
                 />
                 <InlineMediaRef
                   ref={(show.thumbnail_url ?? show.image_url) ?? null}
