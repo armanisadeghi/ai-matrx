@@ -104,7 +104,7 @@ export function ScopesHub() {
           <QuickLink href="/context-items" icon={ListChecks}>
             Context items
           </QuickLink>
-          <QuickLink href="/knowledge-graph" icon={Network}>
+          <QuickLink href="/knowledge/graph" icon={Network}>
             Graph
           </QuickLink>
           <QuickLink href="/scopes/templates" icon={Zap}>

@@ -17,7 +17,7 @@ export default function AgentNotFound() {
               This agent doesn&apos;t exist or you don&apos;t have access to it.
             </p>
           </div>
-          <Link href="/agents">
+          <Link href="/agents/all">
             <Button>Back to Agents</Button>
           </Link>
         </div>

@@ -76,10 +76,10 @@ export function NavSidebar({ section }: NavSidebarProps) {
       const folder = foldersById[folderId];
       if (folder?.source.kind === "real") {
         const segments = encodeFolderPathSegments(folder.folderPath);
-        router.push(segments ? `/files/${segments}` : "/files");
+        router.push(segments ? `/files/all/${segments}` : "/files/all");
         return;
       }
-      if (isFilteredSection) router.push("/files");
+      if (isFilteredSection) router.push("/files/all");
     },
     [dispatch, foldersById, isFilteredSection, router],
   );
@@ -87,7 +87,7 @@ export function NavSidebar({ section }: NavSidebarProps) {
   const handleSelectFile = useCallback(
     (fileId: string) => {
       dispatch(setActiveFileId(fileId));
-      if (isFilteredSection) router.push("/files");
+      if (isFilteredSection) router.push("/files/all");
     },
     [dispatch, isFilteredSection, router],
   );

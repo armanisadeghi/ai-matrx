@@ -15,7 +15,7 @@ export default function VersionNotFound() {
             This version doesn&apos;t exist for this agent.
           </p>
         </div>
-        <Link href="/agents">
+        <Link href="/agents/all">
           <Button>Back to Agents</Button>
         </Link>
       </div>

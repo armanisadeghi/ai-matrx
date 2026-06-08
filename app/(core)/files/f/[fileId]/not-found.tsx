@@ -22,7 +22,7 @@ export default function CloudFileNotFound() {
           </p>
         </div>
         <Link
-          href="/files"
+          href="/files/all"
           className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
         >
           Back to files

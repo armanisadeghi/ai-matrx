@@ -121,13 +121,13 @@ export function ContentHeader({
     // route can resolve, so they only update Redux. Real folders
     // (including null = root) push the canonical /files/<path> URL.
     if (folderId === null) {
-      router.push("/files");
+      router.push("/files/all");
       return;
     }
     const folder = foldersById[folderId];
     if (folder?.source.kind === "real") {
       const segments = encodeFolderPathSegments(folder.folderPath);
-      router.push(segments ? `/files/${segments}` : "/files");
+      router.push(segments ? `/files/all/${segments}` : "/files/all");
     }
   };
 

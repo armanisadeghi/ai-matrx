@@ -55,7 +55,7 @@ interface AgentRunnerPageProps {
 
 export function AgentRunnerPage({
   agentId,
-  backHref = "/agents",
+  backHref = "/agents/all",
   basePath = "/agents",
   buildConversationUrl,
 }: AgentRunnerPageProps) {

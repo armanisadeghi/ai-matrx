@@ -127,7 +127,7 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
       }
     }
     onClose();
-    router.push("/agents");
+    router.push("/agents/all");
   };
 
   const handleRetranscribe = async () => {

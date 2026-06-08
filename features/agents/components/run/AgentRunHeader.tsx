@@ -19,7 +19,7 @@ export function AgentRunHeader({
   agentId,
   agentName,
   surfaceKey,
-  backHref = "/agents",
+  backHref = "/agents/all",
   basePath = "/agents",
   currentPath,
 }: AgentRunHeaderProps) {

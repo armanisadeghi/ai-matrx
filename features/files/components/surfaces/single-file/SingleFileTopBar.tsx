@@ -93,7 +93,7 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
   const ancestorHrefs = useMemo(() => {
     return ancestors.map((folder) => {
       const encoded = encodeFolderPathSegments(folder.folderPath);
-      return encoded.length > 0 ? `/files/${encoded}` : "/files";
+      return encoded.length > 0 ? `/files/all/${encoded}` : "/files/all";
     });
   }, [ancestors]);
 
@@ -133,7 +133,7 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
         <TooltipTrigger asChild>
           <button
             type="button"
-            onClick={() => router.push("/files")}
+            onClick={() => router.push("/files/all")}
             aria-label="Back to all files"
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
@@ -151,7 +151,7 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
         className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
       >
         <Link
-          href="/files"
+          href="/files/all"
           className="inline-flex items-center rounded p-1 hover:bg-accent hover:text-foreground"
           title="Home"
         >

@@ -164,7 +164,7 @@ export function ProjectWorkspace() {
     );
   }
 
-  const kgHref = org ? `/knowledge-graph?org=${encodeURIComponent(org.slug)}` : "/knowledge-graph";
+  const kgHref = org ? `/knowledge/graph?org=${encodeURIComponent(org.slug)}` : "/knowledge/graph";
 
   return (
     <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
