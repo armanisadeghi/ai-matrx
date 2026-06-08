@@ -9,7 +9,7 @@ import type {
   PodcastAudioStyle,
 } from "./types";
 import {
-  Sparkles,
+  Lightbulb,
   FileText,
   ScrollText,
   Files,
@@ -36,7 +36,7 @@ export const INPUT_TYPE_OPTIONS: InputTypeOption[] = [
     value: "topic",
     label: "From a topic",
     helper: "A topic, question, or single keyword — our research agent does the rest.",
-    icon: Sparkles,
+    icon: Lightbulb,
     control: "text",
     placeholder: "e.g. How CRISPR gene editing actually works",
   },

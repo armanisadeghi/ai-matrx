@@ -24,7 +24,6 @@ export function ElapsedTimer({ startedAt, running, className }: ElapsedTimerProp
 
   useEffect(() => {
     if (!running || startedAt == null) return;
-    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [running, startedAt]);

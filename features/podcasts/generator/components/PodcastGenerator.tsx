@@ -12,7 +12,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
-  Sparkles,
+  Podcast,
   Mic,
   RotateCcw,
   X,
@@ -114,7 +114,7 @@ export function PodcastGenerator() {
           </Link>
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-sm">
-              <Sparkles className="h-5 w-5" />
+              <Podcast className="h-5 w-5" />
             </span>
             Create an episode
           </h1>

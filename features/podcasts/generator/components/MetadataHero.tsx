@@ -6,7 +6,7 @@
 // reveals the title + description the instant they parse (well before audio
 // finishes). RTL for Persian.
 
-import { Sparkles } from "lucide-react";
+import { AudioLines } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PodcastRunState } from "../types";
 
@@ -22,7 +22,7 @@ export function MetadataHero({ state }: MetadataHeroProps) {
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <Sparkles className="h-3.5 w-3.5 animate-pulse text-primary" />
+          <AudioLines className="h-3.5 w-3.5 animate-pulse text-primary" />
           Composing the episode…
         </div>
         <div className="h-9 w-3/4 animate-pulse rounded-lg bg-muted" />

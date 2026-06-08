@@ -10,7 +10,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Sparkles,
+  Podcast,
+  AudioLines,
   Mic,
   Plus,
   Globe,
@@ -131,7 +132,7 @@ export function StudioDashboard() {
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-xl space-y-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-              <Sparkles className="h-3.5 w-3.5" />
+              <Podcast className="h-3.5 w-3.5" />
               Podcast Studio
             </span>
             <h1 className="bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl">
@@ -154,7 +155,7 @@ export function StudioDashboard() {
             </Button>
             <Button asChild size="lg" className="gap-2 shadow-md">
               <Link href="/podcast/studio/create">
-                <Sparkles className="h-4.5 w-4.5" />
+                <AudioLines className="h-4.5 w-4.5" />
                 Create episode
               </Link>
             </Button>
@@ -205,7 +206,7 @@ export function StudioDashboard() {
             </div>
             <Button asChild className="gap-2">
               <Link href="/podcast/studio/create">
-                <Sparkles className="h-4 w-4" />
+                <AudioLines className="h-4 w-4" />
                 Create your first episode
               </Link>
             </Button>

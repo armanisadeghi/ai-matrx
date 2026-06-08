@@ -8,11 +8,11 @@
 
 import { useState } from "react";
 import {
-  Sparkles,
+  AudioLines,
   Plus,
   X,
   ChevronDown,
-  Wand2,
+  SlidersHorizontal,
   FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -256,7 +256,7 @@ export function GeneratorForm({
       <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
         <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-1 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
           <span className="flex items-center gap-1.5">
-            <Wand2 className="h-3.5 w-3.5" />
+            <SlidersHorizontal className="h-3.5 w-3.5" />
             Advanced options
           </span>
           <ChevronDown
@@ -378,7 +378,7 @@ export function GeneratorForm({
           disabled={!canGenerate}
           className="gap-2 shadow-md"
         >
-          <Sparkles className="h-4.5 w-4.5" />
+          <AudioLines className="h-4.5 w-4.5" />
           Generate episode
         </Button>
       </div>

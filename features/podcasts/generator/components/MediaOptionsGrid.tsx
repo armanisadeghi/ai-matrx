@@ -119,7 +119,7 @@ export function MediaOptionsGrid({
             <div className="flex flex-col">
               <div className="relative aspect-square w-full bg-black">
                 <InlineMediaRef
-                  ref={lightbox.url}
+                  ref={lightbox.url ?? null}
                   size="fill"
                   fit="contain"
                   alt="Cover preview"

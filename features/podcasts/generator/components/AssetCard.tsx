@@ -73,7 +73,7 @@ export function AssetCard({
             {slot.kind === "image" ? (
               <div className="absolute inset-0 animate-[fadeIn_0.4s_ease]">
                 <InlineMediaRef
-                  ref={slot.url}
+                  ref={slot.url ?? null}
                   size="fill"
                   fit="cover"
                   alt={label}
