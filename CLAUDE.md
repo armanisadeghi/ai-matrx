@@ -247,6 +247,7 @@ Every Tier 1 feature also ships a super-admin-gated **admin map page** at `/[fea
 | RAG | `features/rag/FEATURE.md` |
 | Universal file handler | `features/files/handler/FEATURE.md` |
 | Scheduling | `features/scheduling/FEATURE.md` |
+| Podcasts (studio + generation) | `features/podcasts/FEATURE.md` (+ `features/podcasts/docs/`) |
 
 ### Tier 2 — secondary features
 

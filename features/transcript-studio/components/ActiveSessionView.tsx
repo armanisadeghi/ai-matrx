@@ -50,6 +50,8 @@ interface ActiveSessionViewProps {
   session: StudioSession;
   /** Server-supplied layout from the studio columns cookie. */
   defaultColumnLayout?: Layout;
+  /** Called after delete so the page route can clear `?session=`. */
+  onSessionDeleted?: () => void;
 }
 
 /**
@@ -62,6 +64,7 @@ interface ActiveSessionViewProps {
 export function ActiveSessionView({
   session,
   defaultColumnLayout,
+  onSessionDeleted,
 }: ActiveSessionViewProps) {
   const dispatch = useAppDispatch();
   const recording = useStudioSession({ sessionId: session.id });
@@ -140,16 +143,16 @@ export function ActiveSessionView({
           header, leaving the studio's local header for status + settings. */}
       <StudioHeaderPortal session={session} />
 
-      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-background px-3 py-1.5 sm:px-4 sm:gap-3">
-        <div className="flex min-w-0 flex-col">
-          {/* Title is in the global header; show a thinner secondary label
-              here on small viewports where the global header is hidden. */}
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-background px-3 py-1.5 sm:px-4 sm:gap-3 md:justify-end">
+        {/* Title + actions live in the global header portal on md+; keep a
+            compact local strip on phones only. */}
+        <div className="flex min-w-0 flex-col md:hidden">
           <EditableSessionTitle
             sessionId={session.id}
             title={session.title}
             className="sm:hidden"
           />
-          <p className="hidden sm:block text-[11px] text-muted-foreground">
+          <p className="hidden text-[11px] text-muted-foreground sm:block">
             {subtitle}
           </p>
         </div>
@@ -224,7 +227,9 @@ export function ActiveSessionView({
         variant="destructive"
         onConfirm={() => {
           setConfirmDelete(false);
-          void dispatch(deleteSessionThunk(session.id));
+          void dispatch(deleteSessionThunk(session.id)).then(() => {
+            onSessionDeleted?.();
+          });
         }}
       />
 

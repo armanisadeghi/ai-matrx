@@ -493,7 +493,7 @@ export function PodcastAudioPlayer({
             max={1}
             step={0.02}
             onValueChange={([v]) => handleVolumeChange(v)}
-            className={cn("w-16 hidden sm:block", darkSlider)}
+            className={cn("w-16 hidden sm:flex", darkSlider)}
             aria-label="Volume"
           />
         </div>

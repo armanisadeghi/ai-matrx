@@ -33,6 +33,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Users } from "lucide-react";
+import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
 import { cn } from "@/lib/utils";
 import { ShowPicker } from "./ShowPicker";
 import {
@@ -246,6 +249,49 @@ export function GeneratorForm({
         </div>
       </div>
 
+      {/* Hosts — display-only preview; only 2 hosts is supported today */}
+      <div className="space-y-2.5">
+        <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <Users className="h-3.5 w-3.5" />
+          Hosts
+        </Label>
+        <div className="grid grid-cols-4 gap-2.5">
+          {[
+            { value: "1", label: "1", helper: "Solo", active: false },
+            { value: "2", label: "2", helper: "Current", active: true },
+            { value: "3", label: "3", helper: null, active: false },
+            { value: "4+", label: "4+", helper: null, active: false },
+          ].map((opt) => (
+            <div
+              key={opt.value}
+              aria-disabled={!opt.active}
+              className={cn(
+                "relative flex flex-col items-center gap-1 rounded-xl border p-3 text-center",
+                opt.active
+                  ? "border-primary/60 bg-primary/5 shadow-sm ring-1 ring-primary/30"
+                  : "cursor-not-allowed border-dashed border-border bg-muted/20 opacity-70",
+              )}
+            >
+              <span
+                className={cn(
+                  "text-base font-semibold",
+                  opt.active ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
+                {opt.label}
+              </span>
+              {opt.helper ? (
+                <span className="text-[11px] text-muted-foreground">
+                  {opt.helper}
+                </span>
+              ) : (
+                <ComingSoonBadge />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Show picker */}
       <ShowPicker
         shows={shows}
@@ -345,6 +391,40 @@ export function GeneratorForm({
               rows={2}
               showCopyButton={false}
             />
+          </div>
+
+          {/* Format & theme — display-only preview, not yet wired */}
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-2 text-xs text-muted-foreground">
+              Format &amp; theme
+              <ComingSoonBadge />
+            </Label>
+            <Select disabled value="interview">
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="interview">Interview</SelectItem>
+                <SelectItem value="debate">Debate</SelectItem>
+                <SelectItem value="panel">Panel</SelectItem>
+                <SelectItem value="monologue">Monologue</SelectItem>
+                <SelectItem value="fair-unfair">
+                  Fair vs unfair news
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Generate blog post — display-only preview, not yet wired */}
+          <div className="flex items-center gap-2.5 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2.5">
+            <Checkbox id="generate-blog" disabled className="cursor-not-allowed" />
+            <Label
+              htmlFor="generate-blog"
+              className="flex flex-1 items-center gap-2 text-sm text-muted-foreground"
+            >
+              Generate blog post for this episode
+              <ComingSoonBadge />
+            </Label>
           </div>
         </CollapsibleContent>
       </Collapsible>

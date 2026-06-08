@@ -8,8 +8,12 @@ import {
   ChevronRight,
   Share2,
   Link as LinkIcon,
+  Rss,
+  Copy,
+  Check,
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import type { PcShow, PcEpisode } from "../../types";
 import { useShare } from "../../hooks/useShare";
 import { InlineMediaRef } from "@/features/files";
@@ -31,6 +35,25 @@ export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
   const publishedEpisodes = episodes.filter((e) => e.is_published);
   const coverImage = show.image_url ?? null;
   const { share, copied, fallbackDialog } = useShare();
+  const [rssCopied, setRssCopied] = React.useState(false);
+
+  // Built client-side from the live origin so it works on any host
+  // (localhost, preview, production) without hardcoding a domain.
+  const feedUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/podcast/${show.slug}/feed.xml`
+      : `/podcast/${show.slug}/feed.xml`;
+
+  async function copyRss() {
+    try {
+      await navigator.clipboard.writeText(feedUrl);
+      setRssCopied(true);
+      toast.success("RSS feed URL copied");
+      window.setTimeout(() => setRssCopied(false), 2000);
+    } catch {
+      toast.error("Couldn't copy the RSS URL");
+    }
+  }
 
   function handleShare() {
     share({
@@ -125,6 +148,46 @@ export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
       {/* ── Episode list ─────────────────────────────────────────── */}
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
         <div className="max-w-2xl mx-auto px-4 py-3">
+          {/* Subscribe / RSS — distribution surface for Apple Podcasts & Spotify */}
+          <div className="mb-3 rounded-2xl border border-border bg-card p-3.5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Rss className="h-4.5 w-4.5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground leading-tight">
+                  Subscribe with any podcast app
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
+                  Copy this RSS feed, then submit it to Apple Podcasts or Spotify
+                  to publish the show.
+                </p>
+                <div className="mt-2.5 flex items-center gap-2">
+                  <code className="min-w-0 flex-1 truncate rounded-lg border border-border bg-muted/50 px-2.5 py-1.5 text-xs text-muted-foreground">
+                    {feedUrl}
+                  </code>
+                  <button
+                    onClick={copyRss}
+                    aria-label="Copy RSS feed URL"
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all"
+                  >
+                    {rssCopied ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        <span>Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" />
+                        <span>Copy RSS</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {publishedEpisodes.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full py-20 gap-3 text-muted-foreground">
               <Music className="h-12 w-12 opacity-20" />

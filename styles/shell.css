@@ -1130,6 +1130,15 @@ body:has(.shell-root[data-pathname^="/transcription/scribe"]) .shell-dock {
   display: none;
 }
 
+/* Transcript Studio: shell-main pulls up under the transparent header row, so
+   the studio sidebar's top bar (New / collapse) sits beneath
+   #shell-header-center. Pass clicks through the header shell; interactive
+   portal controls opt back in via pointer-events-auto in StudioHeaderPortal. */
+.shell-root[data-pathname^="/transcription/studio"] .shell-header > .shell-header-center,
+.shell-root[data-pathname^="/transcription/studio"] .shell-header-inject {
+  pointer-events: none;
+}
+
 /* ---------------------------------------------------------------------------
    14. Mobile Dock — iOS-style Bottom Navigation
    --------------------------------------------------------------------------- */

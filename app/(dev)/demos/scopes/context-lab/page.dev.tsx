@@ -36,6 +36,11 @@ import {
   MessageSquare,
   ArrowRight,
   Ban,
+  GitBranch,
+  ShieldCheck,
+  ShieldAlert,
+  Bell,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -78,6 +83,11 @@ const NODES: Node[] = [
   { id: "pr_globex_ma", kind: "project", label: "Globex M&A", parent: ORG.id },
   { id: "tk_motion", kind: "task", label: "Draft motion to compel", parent: "pr_acme_lit" },
   { id: "tk_discovery", kind: "task", label: "Review discovery", parent: "pr_acme_lit" },
+  // scope-as-value relational graph (§3.5)
+  { id: "sc_case", kind: "scope", label: "Case 12345", sub: "Matter", parent: "st_matters" },
+  { id: "sc_oppcounsel", kind: "scope", label: "Dewey & Cheatem", sub: "Opposing Counsel", parent: "st_matters" },
+  { id: "sc_expert_a", kind: "scope", label: "Dr. Ramirez", sub: "Expert", parent: "st_matters" },
+  { id: "sc_expert_b", kind: "scope", label: "Dr. Okafor", sub: "Expert", parent: "st_matters" },
 ];
 
 const byId = (id: string) => NODES.find((n) => n.id === id)!;
@@ -460,6 +470,170 @@ function DataShapeUI({ era }: { era: Era }) {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
+   The 3-mechanism taxonomy (§0) — the mental model, rendered as a legend
+   ════════════════════════════════════════════════════════════════════════ */
+
+const MECHANISMS: { icon: LucideIcon; name: string; expresses: string; storage: string; mult: string; tone: string }[] = [
+  { icon: Lock, name: "Ownership / containment", expresses: "“you belong / live inside”", storage: "hard FK (the spine)", mult: "single-parent", tone: "text-slate-600 dark:text-slate-300" },
+  { icon: Network, name: "Loose membership", expresses: "“filed under / tagged to”", storage: "ctx_associations", mult: "many-to-many · no role", tone: "text-emerald-600 dark:text-emerald-400" },
+  { icon: ListChecks, name: "Typed slot", expresses: "“X’s «role» IS Y” (maybe required)", storage: "ctx_context_item_values", mult: "per-item cardinality", tone: "text-violet-600 dark:text-violet-400" },
+];
+
+function TaxonomyLegend() {
+  return (
+    <div className="rounded-xl border-2 border-border overflow-hidden">
+      <div className="bg-muted/40 border-b-2 border-border px-5 py-3">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Every relationship is exactly one of these three (§0)</h2>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
+        {MECHANISMS.map((m) => {
+          const Icon = m.icon;
+          return (
+            <div key={m.name} className="p-4 space-y-1.5">
+              <div className={cn("flex items-center gap-2 text-sm font-semibold", m.tone)}><Icon className="h-4 w-4" />{m.name}</div>
+              <div className="text-xs text-foreground">{m.expresses}</div>
+              <div className="text-[11px] text-muted-foreground font-mono">{m.storage}</div>
+              <Badge variant="secondary" className="text-[10px]">{m.mult}</Badge>
+            </div>
+          );
+        })}
+      </div>
+      <div className="border-t-2 border-border bg-card/40 px-5 py-2 text-[11px] text-muted-foreground">
+        Orthogonal to all three: <b>Audit + tenancy</b> (fixed columns, org owner) and <b>Active Context</b> (runtime, feeds the agent). Store explicit, derive the rest.
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   UI 5 — Scope-as-value: the relational graph (§3.5, the breakthrough)
+   ════════════════════════════════════════════════════════════════════════ */
+
+const REL_ITEMS: { key: string; label: string; targets: string[]; multi: boolean }[] = [
+  { key: "client", label: "client", targets: ["sc_acme"], multi: false },
+  { key: "opposing_counsel", label: "opposing_counsel", targets: ["sc_oppcounsel"], multi: false },
+  { key: "experts", label: "experts", targets: ["sc_expert_a", "sc_expert_b"], multi: true },
+];
+
+function ScopeAsValueUI({ era }: { era: Era }) {
+  const [focus, setFocus] = useState("sc_expert_a");
+  if (era !== "future") {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-3">
+        <Ban className="h-5 w-5 text-rose-500" />
+        <div className="text-sm">Today scopes can&apos;t reference each other — there&apos;s no typed-reference value. No relational graph exists.</div>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <div className="rounded-lg border border-border bg-card p-3">
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><CircleDot className="h-4 w-4 text-violet-500" />Case 12345 <span className="text-[11px] font-normal text-muted-foreground">(a Matter scope)</span></div>
+        <div className="space-y-1.5">
+          {REL_ITEMS.map((it) => (
+            <div key={it.key} className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 w-36 shrink-0">.{it.label}</span>
+              <ArrowRight className="h-3 w-3 text-muted-foreground" />
+              {it.targets.map((t) => <NodeChip key={t} id={t} />)}
+              <Badge variant="outline" className="text-[10px]">{it.multi ? "multi" : "single"} · ref→scope</Badge>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-lg border border-dashed border-border p-3">
+        <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Reverse lookup (derived, never stored)</div>
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {["sc_expert_a", "sc_expert_b", "sc_oppcounsel"].map((id) => (
+            <button key={id} onClick={() => setFocus(id)} className={cn("rounded-md border px-2 py-1 text-xs", focus === id ? "border-primary bg-accent" : "border-border")}>{byId(id).label}</button>
+          ))}
+        </div>
+        <div className="text-sm flex items-center gap-2">
+          <span className="text-muted-foreground text-xs">“Which matters name</span>
+          <NodeChip id={focus} />
+          <span className="text-muted-foreground text-xs">?” →</span>
+          <NodeChip id="sc_case" />
+        </div>
+        <div className="mt-1.5 text-[11px] text-muted-foreground">Computed from the <span className="font-mono">(ref_entity_type, ref_entity_id)</span> index — the reference lives once, on Case 12345; the reverse is free.</div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   UI 6 — Required slots → surface-as-gaps (§3.4)
+   ════════════════════════════════════════════════════════════════════════ */
+
+function RequiredSlotsUI() {
+  const required = { item: "communication_agent", type: "agent", onType: "Clients" };
+  const rows = [
+    { scope: "Acme Corp", filled: "Acme Intake Agent" },
+    { scope: "Globex", filled: null },
+    { scope: "Initech", filled: null },
+  ];
+  const filled = rows.filter((r) => r.filled).length;
+  return (
+    <div className="space-y-3">
+      <div className="rounded-lg border border-border bg-card p-3">
+        <div className="flex items-center gap-2 text-sm">
+          <ShieldCheck className="h-4 w-4 text-emerald-500" />
+          <span>Required item <span className="font-mono text-[12px] text-emerald-600 dark:text-emerald-400">{required.item}</span> <span className="text-muted-foreground text-xs">(type: {required.type})</span> on every <b>{required.onType}</b> scope</span>
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        {rows.map((r) => (
+          <div key={r.scope} className={cn("flex items-center justify-between rounded-md border px-3 py-2 text-sm", r.filled ? "border-border" : "border-amber-300/60 bg-amber-50/50 dark:bg-amber-950/30")}>
+            <span className="flex items-center gap-2"><CircleDot className="h-3.5 w-3.5 text-violet-500" />{r.scope}</span>
+            {r.filled ? (
+              <span className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400"><Check className="h-3.5 w-3.5" />{r.filled}</span>
+            ) : (
+              <span className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300"><ShieldAlert className="h-3.5 w-3.5" />Gap — <button className="underline">assign one</button></span>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+          <div className="h-full bg-emerald-500" style={{ width: `${(filled / rows.length) * 100}%` }} />
+        </div>
+        <span className="text-xs text-muted-foreground">{filled}/{rows.length} compliant</span>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   UI 7 — Context Hints: the sanctioned Active→Durable bridge (§6)
+   ════════════════════════════════════════════════════════════════════════ */
+
+function ContextHintsUI() {
+  const [decided, setDecided] = useState<null | "added" | "dismissed">(null);
+  return (
+    <div className="space-y-3">
+      <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs">
+        <span className="text-muted-foreground">Active context right now:</span>{" "}
+        <span className="font-medium">Titanium Marketing</span> · <span className="font-medium">SEO department</span>
+      </div>
+      <div className="rounded-lg border border-border bg-card p-3 text-sm">You just created an <b>agent</b>. It is <i>not</i> auto-filed anywhere.</div>
+      {decided === null ? (
+        <div className="rounded-lg border-2 border-dashed border-sky-300/70 bg-sky-50 dark:bg-sky-950/40 p-3 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-sky-800 dark:text-sky-200"><Bell className="h-4 w-4" />A nudge — never an auto-write</div>
+          <div className="text-xs text-sky-900/80 dark:text-sky-200/80">You&apos;re working in the SEO department. Add this agent to its corpus?</div>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => setDecided("added")}><Plus className="h-3.5 w-3.5 mr-1" />Add to SEO department</Button>
+            <Button size="sm" variant="outline" onClick={() => setDecided("dismissed")}>Not now</Button>
+          </div>
+        </div>
+      ) : (
+        <div className={cn("rounded-lg border p-3 text-sm", decided === "added" ? "border-emerald-300/60 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200" : "border-border text-muted-foreground")}>
+          {decided === "added" ? <span className="flex items-center gap-2"><Check className="h-4 w-4" />Durable association written — by your explicit choice.</span> : "Dismissed. Nothing was written. Active context stayed ephemeral."}
+          <button className="ml-2 underline text-xs" onClick={() => setDecided(null)}>reset</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════
    PAGE
    ════════════════════════════════════════════════════════════════════════ */
 
@@ -488,6 +662,8 @@ export default function ContextLabPage() {
             </div>
           </div>
         </div>
+
+        <TaxonomyLegend />
 
         <ConceptBlock
           icon={Layers}
@@ -536,6 +712,43 @@ export default function ContextLabPage() {
           notes={<>
             <Note><b>Compat-views strategy</b> (from the brief): readers keep working through views over <code>ctx_associations</code>; only writers repoint. End users see zero change during migration.</Note>
             <Note tone="good"><b>One table, one picker, one mental model.</b> The 3-tables-2-shapes mess on the left is the whole reason the UI has been impossible to get right.</Note>
+          </>}
+        />
+
+        <ConceptBlock
+          icon={GitBranch}
+          kicker="The breakthrough (§3.5)"
+          title="Scope-as-value — scopes reference scopes"
+          intro={<>A scope can be the typed value of another scope&apos;s item. <code>Case 12345.opposing_counsel → «Dewey &amp; Cheatem»</code>. The scope set becomes a real, typed, directional entity-relationship graph — and the reverse direction is free.</>}
+          ui={<ScopeAsValueUI era={era} />}
+          notes={<>
+            <Note tone="good"><b>Directional by construction.</b> The reference lives once, on the source scope&apos;s item. &quot;Which matters name expert X?&quot; is <i>derived</i> from the <code>(ref_entity_type, ref_entity_id)</code> index — never stored twice.</Note>
+            <Note><b>The item key IS the role.</b> No <code>relationship_kind</code> column anywhere — &quot;client&quot;, &quot;opposing_counsel&quot;, &quot;experts&quot; are the typed, named, directional relationships.</Note>
+            <Note tone="warn"><b>Cardinality (open §7.2):</b> client = single, experts = many — maps onto the item&apos;s <code>max_assignments_per_entity</code>. My vote: make it per-item, not per-type.</Note>
+          </>}
+        />
+
+        <ConceptBlock
+          icon={ShieldCheck}
+          kicker="Enforceable structure (§3.4)"
+          title="Required slots → surface as gaps"
+          intro={<>An item can be <b>required</b>: every Client must have a <code>communication_agent</code>. That converts loose options into org-admin-enforceable structure — shown as a compliance/gaps view, not a hard block.</>}
+          ui={<RequiredSlotsUI />}
+          notes={<>
+            <Note tone="good"><b>Surface-as-gaps, never block-on-write (open §7.3 — my strong vote).</b> Hard-blocking writes in a knowledge system creates dead-ends and kills adoption. Show what&apos;s missing; let admins chase it.</Note>
+            <Note><b>This is structure we have zero of today.</b> &quot;Every client needs a dedicated agent&quot; becomes a measurable, fillable checklist instead of tribal knowledge.</Note>
+          </>}
+        />
+
+        <ConceptBlock
+          icon={Bell}
+          kicker="The sanctioned bridge (§6)"
+          title="Context Hints — Active seeds Durable, never auto-writes"
+          intro={<>Active Context may <b>suggest</b> durable associations — but a human always confirms. This is the exact line coding agents keep crossing; here it&apos;s a nudge with an explicit Add.</>}
+          ui={<ContextHintsUI />}
+          notes={<>
+            <Note tone="warn"><b>The forbidden move:</b> silently turning your chat&apos;s active selection into a permanent file/agent tag. The hint makes the helpfulness available <i>without</i> the data corruption.</Note>
+            <Note><b>Why it&apos;s safe:</b> dismiss writes nothing; Add writes one explicit row. Active context stays ephemeral either way.</Note>
           </>}
         />
 

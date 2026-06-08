@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Music, Share2, Link as LinkIcon } from 'lucide-react';
+import { Music, Share2, Link as LinkIcon, ListChecks, BookOpen } from 'lucide-react';
 import type { PcEpisodeWithShow } from '../../types';
 import { PodcastAudioPlayer } from './PodcastAudioPlayer';
 import { useShare } from '../../hooks/useShare';
 import { InlineMediaRef } from '@/features/files';
+import { ComingSoonBadge } from '@/components/coming-soon/ComingSoonBadge';
 
 interface PodcastEpisodePageProps {
     episode: PcEpisodeWithShow;
@@ -187,6 +188,24 @@ export function PodcastEpisodePage({ episode }: PodcastEpisodePageProps) {
                                 <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">{episode.description}</p>
                             </div>
                         )}
+
+                        {/* Coming-soon companion content for this episode */}
+                        <div className="mt-5 space-y-2">
+                            <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-border bg-muted/20 px-3 py-2.5">
+                                <ListChecks className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                                <span className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
+                                    Chapters &amp; show notes
+                                    <ComingSoonBadge />
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-border bg-muted/20 px-3 py-2.5">
+                                <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                                <span className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
+                                    Read the blog post
+                                    <ComingSoonBadge />
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 {fallbackDialog}

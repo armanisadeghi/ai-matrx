@@ -18,7 +18,6 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
 import {
   Loader2,
   Plus,
@@ -27,20 +26,11 @@ import {
   CircleCheck,
   Circle,
   CornerDownRight,
-  Calendar as CalendarIcon,
-  Flag,
-  X,
   ExternalLink,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Table,
   TableHeader,
@@ -58,47 +48,15 @@ import {
   type UpdateTaskInput,
 } from "@/features/tasks/services/taskService";
 import type { DatabaseTask } from "@/features/tasks/types/database";
-
-type Priority = "low" | "medium" | "high" | null;
-
-const PRIORITY_OPTIONS: { value: Priority; label: string }[] = [
-  { value: null, label: "None" },
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-];
-
-const PRIORITY_PILL: Record<string, string> = {
-  high: "text-red-600 dark:text-red-400 border-red-300 dark:border-red-800 bg-red-500/5",
-  medium:
-    "text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 bg-amber-500/5",
-  low: "text-sky-600 dark:text-sky-400 border-sky-300 dark:border-sky-800 bg-sky-500/5",
-};
+import {
+  TaskPriorityPicker,
+  type TaskPriority,
+} from "@/features/tasks/components/TaskPriorityPicker";
+import { TaskDueDatePicker } from "@/features/tasks/components/TaskDueDatePicker";
+import { isDateOnlyOverdue } from "@/utils/dateOnly";
 
 const isDone = (t: DatabaseTask) => t.status === "completed";
-const isOverdue = (t: DatabaseTask) =>
-  !isDone(t) &&
-  !!t.due_date &&
-  new Date(t.due_date) < new Date(new Date().toDateString());
-
-/** Parse a `yyyy-mm-dd` (date-only) string into a local Date with no TZ shift. */
-function parseDateOnly(value: string | null | undefined): Date | undefined {
-  if (!value) return undefined;
-  const [y, m, d] = value.split("-").map(Number);
-  if (!y || !m || !d) return undefined;
-  return new Date(y, m - 1, d);
-}
-
-/** Serialize a Date back to a `yyyy-mm-dd` string (local, no TZ shift). */
-function toDateOnly(date: Date): string {
-  return format(date, "yyyy-MM-dd");
-}
-
-function formatDueLabel(value: string): string {
-  const d = parseDateOnly(value);
-  if (!d) return value;
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
+const isOverdue = (t: DatabaseTask) => !isDone(t) && isDateOnlyOverdue(t.due_date);
 
 export function ProjectTaskList({
   projectId,
@@ -182,7 +140,7 @@ export function ProjectTaskList({
     await patchField(t, { title: next });
   }
 
-  async function setPriority(t: DatabaseTask, priority: Priority) {
+  async function setPriority(t: DatabaseTask, priority: TaskPriority) {
     if (priority === (t.priority ?? null)) return;
     await patchField(t, { priority });
   }
@@ -363,7 +321,7 @@ function TaskTableRow({
   busyId: string | null;
   onToggle: (t: DatabaseTask) => void;
   onRename: (t: DatabaseTask, title: string) => void;
-  onPriority: (t: DatabaseTask, p: Priority) => void;
+  onPriority: (t: DatabaseTask, p: TaskPriority) => void;
   onDueDate: (t: DatabaseTask, due: string | null) => void;
   onOpen: (id: string) => void;
   onAddSubtask?: () => void;
@@ -418,13 +376,13 @@ function TaskTableRow({
         </div>
       </TableCell>
       <TableCell className="py-1.5">
-        <PriorityPicker
-          value={(task.priority ?? null) as Priority}
+        <TaskPriorityPicker
+          value={(task.priority ?? null) as TaskPriority}
           onChange={(p) => onPriority(task, p)}
         />
       </TableCell>
       <TableCell className="py-1.5">
-        <DueDatePicker
+        <TaskDueDatePicker
           value={task.due_date}
           overdue={isOverdue(task)}
           onChange={(due) => onDueDate(task, due)}
@@ -512,128 +470,6 @@ function InlineTitle({
   );
 }
 
-/* ─── Priority picker ───────────────────────────────────────────────────── */
-
-function PriorityPicker({
-  value,
-  onChange,
-}: {
-  value: Priority;
-  onChange: (p: Priority) => void;
-}) {
-  const [open, setOpen] = React.useState(false);
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          className={cn(
-            "inline-flex items-center gap-1 h-6 px-1.5 rounded-md border text-[10px] font-medium transition-colors hover:bg-accent",
-            value
-              ? PRIORITY_PILL[value]
-              : "border-transparent text-muted-foreground/50 hover:text-foreground",
-          )}
-          title="Set priority"
-        >
-          <Flag className="h-2.5 w-2.5" />
-          {value
-            ? value.charAt(0).toUpperCase() + value.slice(1)
-            : "—"}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-32 p-1">
-        {PRIORITY_OPTIONS.map((opt) => {
-          const active = (value ?? null) === opt.value;
-          return (
-            <button
-              key={opt.value ?? "none"}
-              onClick={() => {
-                onChange(opt.value);
-                setOpen(false);
-              }}
-              className={cn(
-                "flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-left hover:bg-accent",
-                active && "bg-accent",
-              )}
-            >
-              <Flag
-                className={cn(
-                  "h-3 w-3",
-                  opt.value === "high" && "text-red-500",
-                  opt.value === "medium" && "text-amber-500",
-                  opt.value === "low" && "text-sky-500",
-                  !opt.value && "text-muted-foreground/40",
-                )}
-              />
-              {opt.label}
-            </button>
-          );
-        })}
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-/* ─── Due-date picker ───────────────────────────────────────────────────── */
-
-function DueDatePicker({
-  value,
-  overdue,
-  onChange,
-}: {
-  value: string | null;
-  overdue?: boolean;
-  onChange: (due: string | null) => void;
-}) {
-  const [open, setOpen] = React.useState(false);
-  const selected = parseDateOnly(value);
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          className={cn(
-            "inline-flex items-center gap-1 h-6 px-1.5 rounded-md text-[12px] transition-colors hover:bg-accent",
-            value
-              ? overdue
-                ? "text-red-600 dark:text-red-400 font-medium"
-                : "text-muted-foreground hover:text-foreground"
-              : "text-muted-foreground/40 hover:text-foreground",
-          )}
-          title="Set due date"
-        >
-          <CalendarIcon className="h-3 w-3" />
-          {value ? formatDueLabel(value) : "—"}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto p-0">
-        <Calendar
-          mode="single"
-          selected={selected}
-          defaultMonth={selected}
-          autoFocus
-          onSelect={(date) => {
-            onChange(date ? toDateOnly(date) : null);
-            setOpen(false);
-          }}
-        />
-        {value && (
-          <div className="border-t border-border p-1.5">
-            <button
-              onClick={() => {
-                onChange(null);
-                setOpen(false);
-              }}
-              className="flex w-full items-center justify-center gap-1.5 rounded px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
-              <X className="h-3 w-3" />
-              Clear due date
-            </button>
-          </div>
-        )}
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 /* ─── Quick-add row ─────────────────────────────────────────────────────── */
 
 function QuickAddRow({
@@ -647,7 +483,7 @@ function QuickAddRow({
 }) {
   const [active, setActive] = React.useState(false);
   const [title, setTitle] = React.useState("");
-  const [priority, setPriority] = React.useState<Priority>(null);
+  const [priority, setPriority] = React.useState<TaskPriority>(null);
   const [due, setDue] = React.useState<string | null>(null);
   const [advanced, setAdvanced] = React.useState(false);
   const [description, setDescription] = React.useState("");
@@ -722,14 +558,10 @@ function QuickAddRow({
           </div>
         </TableCell>
         <TableCell className="py-1.5">
-          <PriorityPicker value={priority} onChange={setPriority} />
+          <TaskPriorityPicker value={priority} onChange={setPriority} />
         </TableCell>
         <TableCell className="py-1.5">
-          <DueDatePicker
-            value={due}
-            overdue={false}
-            onChange={setDue}
-          />
+          <TaskDueDatePicker value={due} overdue={false} onChange={setDue} />
         </TableCell>
         <TableCell className="py-1.5">
           <div className="flex items-center gap-1">

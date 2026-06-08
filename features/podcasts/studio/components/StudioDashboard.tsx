@@ -21,8 +21,11 @@ import {
   CheckCircle2,
   Loader2,
   AlertTriangle,
+  Rss,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ComingSoonCard } from "@/components/coming-soon/ComingSoonCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InlineMediaRef } from "@/features/files";
 import { useApiAuth } from "@/hooks/useApiAuth";
@@ -240,6 +243,20 @@ export function StudioDashboard() {
             ))}
           </div>
         )}
+      </section>
+
+      {/* What's coming to the studio */}
+      <section className="mt-10 grid gap-4 sm:grid-cols-2">
+        <ComingSoonCard
+          icon={Rss}
+          title="RSS feeds"
+          description="Publish every show as a podcast feed listeners can subscribe to in any podcast app."
+        />
+        <ComingSoonCard
+          icon={BookOpen}
+          title="Blog posts"
+          description="Auto-generate a written article for each episode to grow reach and SEO."
+        />
       </section>
 
       <CreateShowDialog

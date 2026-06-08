@@ -24,8 +24,11 @@ import {
   AudioLines,
   ImageIcon,
   Clapperboard,
+  FileText,
+  ListChecks,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ComingSoonInline } from "@/components/coming-soon/ComingSoonInline";
 import { cn } from "@/lib/utils";
 import { podcastService } from "@/features/podcasts/service";
 import { useShare } from "@/features/podcasts/hooks/useShare";
@@ -156,6 +159,18 @@ export function ResultActions({
           <Share2 className="h-4 w-4" />
           Share
         </Button>
+        <ComingSoonInline tooltip="Blog post — coming soon">
+          <Button variant="outline" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Blog post
+          </Button>
+        </ComingSoonInline>
+        <ComingSoonInline tooltip="Show notes — coming soon">
+          <Button variant="outline" className="gap-2">
+            <ListChecks className="h-4 w-4" />
+            Show notes
+          </Button>
+        </ComingSoonInline>
       </div>
 
       {/* Display mode */}

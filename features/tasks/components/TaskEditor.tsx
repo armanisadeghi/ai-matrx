@@ -58,30 +58,15 @@ import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  TaskPriorityPicker,
+  TASK_PRIORITY_META,
+  type TaskPriority,
+} from "./TaskPriorityPicker";
+import { TaskDueDatePicker } from "./TaskDueDatePicker";
 import { cn } from "@/utils/cn";
 
-type Priority = "low" | "medium" | "high" | null;
-
-const PRIORITY_STYLES: Record<
-  string,
-  { bg: string; text: string; label: string }
-> = {
-  high: {
-    bg: "bg-red-500/10 border-red-500/40",
-    text: "text-red-600 dark:text-red-400",
-    label: "High",
-  },
-  medium: {
-    bg: "bg-amber-500/10 border-amber-500/40",
-    text: "text-amber-600 dark:text-amber-400",
-    label: "Medium",
-  },
-  low: {
-    bg: "bg-green-500/10 border-green-500/40",
-    text: "text-green-600 dark:text-green-400",
-    label: "Low",
-  },
-};
+type Priority = TaskPriority;
 
 export default function TaskEditor() {
   const taskId = useAppSelector(selectSelectedTaskId);
@@ -418,12 +403,12 @@ function TaskEditorInner({ taskId }: { taskId: string }) {
                 <span
                   className={cn(
                     "inline-flex items-center gap-1 h-5 px-1.5 rounded-md border text-[10px] font-medium",
-                    PRIORITY_STYLES[effective.priority].bg,
-                    PRIORITY_STYLES[effective.priority].text,
+                    TASK_PRIORITY_META[effective.priority].fill,
+                    TASK_PRIORITY_META[effective.priority].text,
                   )}
                 >
                   <Flag className="w-2.5 h-2.5" />
-                  {PRIORITY_STYLES[effective.priority].label}
+                  {TASK_PRIORITY_META[effective.priority].label}
                 </span>
               )}
               {effective.dueDate && (
