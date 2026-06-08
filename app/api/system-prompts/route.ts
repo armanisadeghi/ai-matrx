@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
+import { buildSearchOr } from "@/utils/supabase-search";
 
 /**
  * GET /api/system-prompts
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
         }
 
         if (search) {
-            query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,system_prompt_id.ilike.%${search}%`);
+            query = query.or(buildSearchOr(search, ['name', 'description', 'system_prompt_id']));
         }
 
         // Order by sort_order, then by name

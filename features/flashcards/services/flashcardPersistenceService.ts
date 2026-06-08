@@ -7,6 +7,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { buildSearchOr } from "@/utils/supabase-search";
 import type { Json } from "@/types/database.types";
 import type {
   FlashcardSetRow,
@@ -93,7 +94,7 @@ export const flashcardPersistenceService = {
         query = query.eq("is_archived", filters.is_archived);
       }
       if (filters?.search) {
-        query = query.ilike("title", `%${filters.search}%`);
+        query = query.or(buildSearchOr(filters.search, ["title"]));
       }
 
       query = query.order("updated_at", { ascending: false });

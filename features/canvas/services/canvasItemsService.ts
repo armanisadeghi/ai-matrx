@@ -1,6 +1,7 @@
 import { CanvasContent } from "@/features/canvas/redux/canvasSlice";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { buildSearchOr } from "@/utils/supabase-search";
 import type { Database } from "@/types/database.types";
 
 type CanvasItemDbRow = Database["public"]["Tables"]["canvas_items"]["Row"];
@@ -263,7 +264,7 @@ export const canvasItemsService = {
         query = query.eq("task_id", filters.task_id);
       }
       if (filters?.search) {
-        query = query.ilike("title", `%${filters.search}%`);
+        query = query.or(buildSearchOr(filters.search, ["title"]));
       }
 
       // Default order: recent first

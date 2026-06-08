@@ -174,6 +174,24 @@ export function matchesSearch<T>(
 }
 
 /**
+ * Drop-in id-match for hand-rolled `.filter()` predicates that can't (yet) move
+ * onto {@link filterAndSortBySearch}. Returns true when `query` is a substring
+ * of the item's string `id`, applying the same {@link MIN_AUTO_ID_QUERY_LEN}
+ * guard as the automatic pass so short queries don't match random hex.
+ *
+ *   list.filter((x) => x.name.toLowerCase().includes(q) || idMatchesQuery(x, q))
+ *
+ * Prefer migrating the callsite to `filterAndSortBySearch` (which does this for
+ * free); reach for this only when an existing custom sort must be preserved.
+ */
+export function idMatchesQuery(item: unknown, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (q.length < MIN_AUTO_ID_QUERY_LEN) return false;
+  const id = getStringId(item);
+  return id != null && id.toLowerCase().includes(q);
+}
+
+/**
  * Filter out non-matches and sort remaining items by descending relevance.
  * Stable with respect to the original order when two items tie.
  */
