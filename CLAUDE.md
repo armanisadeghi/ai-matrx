@@ -181,6 +181,19 @@ Every file flow (`<img>`, AI media blocks, downloads, uploads, share links, mid-
 
 New input shape → extend `FileSource` in `features/files/handler/types.ts` and add an adapter. Don't fork the handler.
 
+### Media durability — public/owned media is NEVER a raw signed URL
+
+A signed S3 URL (`…?X-Amz-Signature=…&Expires=…`) expires and breaks days later — and an anonymous public page can't re-mint it. This bit us hard (see [KNOWN_DEFECTS.md](./KNOWN_DEFECTS.md) D1). Rules:
+
+- **Render media ONLY through `<InlineMediaRef>` (`@/features/files`).** Never a raw `<img>`/`<video>` `src` for our own media — `<InlineMediaRef>` re-mints from a `file_id` for authed owners and serves CDN/public URLs. Raw tags can't self-heal and silently rot.
+- **Persist DURABLE references**, not expiring URLs: a public/CDN URL, or a `file_id` (let the handler resolve it). If you receive a signed URL from a stream, recover the `file_id` (`lib/media/durability.ts#fileIdFromUserFilesUrl`) before storing/rendering.
+- **A column the public web reads MUST hold a public URL.** Register it with the DB-edge guard (`migrations/mtx_public_media_url_guard.sql`): `insert into mtx_public_url_guard(table_name,column_name)…` + attach `mtx_public_url_guard_trigger`. The guard loudly logs + queues any non-durable write to `mtx_media_heal_queue`.
+- **Surface violations loudly, don't paper over them.** `lib/media/durability.ts#reportMediaDurabilityViolation()` screams in the console when an expiring URL reaches a render/store path — that's a server-side defect, not something to silently fix.
+
+## Known defects
+
+Track bugs/gaps you can't fully fix in [KNOWN_DEFECTS.md](./KNOWN_DEFECTS.md) (the frontend twin of aidream's). If a fix is partial, record what's open there — a defect that lives only in a chat log will recur.
+
 ---
 
 ## Feature Documentation
