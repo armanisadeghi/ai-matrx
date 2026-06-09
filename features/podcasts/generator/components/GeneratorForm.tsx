@@ -9,18 +9,20 @@
 // visible now and trivial to wire later.
 //
 // Section order (top → bottom):
-//   1. Source        ("What's your source?")
+//   1. Source        ("What's your source?")  — every tile is functional:
+//        topic / rough notes / full script → text; file → URLs;
+//        website / note / YouTube / audio file → SourceResolverPanel resolves
+//        external content into editable text that's sent as input_data.
 //   2. Processing     (pre-script · post-script — both ComingSoon)
-//   3. Language       (Gemini 2.5 TTS locales — English wired, rest Soon)
+//   3. Language       (Gemini 2.5 TTS locales — English + Persian live, rest Soon)
 //   4. Format         (Educational + News wired, rest ComingSoon)
 //   5. Hosts          (2 wired, rest ComingSoon + Advanced-hosts disclosure)
 //   6. Show picker
 //   7. Advanced       (extra instruction, show blurb, Test mode)
 //
-// Only the request fields the backend honors are sent for the wired path:
-// input_data / file_urls, podcast_type (derived from Language + Format),
-// post_prep_option, show_id, prep_user_message, first_show_info_text,
-// truncate_audio_for_testing.
+// Request fields sent: input_data / file_urls, input_data_type, podcast_type
+// (derived from Language + Format), language, host_count, post_prep_option,
+// show_id, prep_user_message, first_show_info_text, truncate_audio_for_testing.
 
 import { useState } from "react";
 import {
@@ -62,6 +64,7 @@ import { Badge } from "@/components/ui/badge";
 import { ComingSoonBadge } from "@/components/coming-soon/ComingSoonBadge";
 import { cn } from "@/lib/utils";
 import { ShowPicker } from "./ShowPicker";
+import { SourceResolverPanel } from "./SourceResolverPanel";
 import {
   SOURCE_OPTIONS,
   LANGUAGE_OPTIONS,
@@ -70,6 +73,7 @@ import {
   deriveBackendPodcastType,
   FORMAT_OPTIONS,
   HOST_COUNT_OPTIONS,
+  HOST_COUNT_DEFAULT,
   PRE_SCRIPT_PROCESSING_OPTIONS,
   POST_SCRIPT_PROCESSING_OPTIONS,
 } from "../constants";
@@ -100,6 +104,10 @@ export function GeneratorForm({
   const [sourceKind, setSourceKind] = useState<PodcastSourceKind>("topic");
   const [text, setText] = useState("");
   const [urls, setUrls] = useState<string[]>([""]);
+  /** Editable text resolved from a `resolve` source (website/note/YouTube/audio). */
+  const [resolvedText, setResolvedText] = useState("");
+  /** True while a resolve source is fetching/cleaning — blocks Generate. */
+  const [resolverBusy, setResolverBusy] = useState(false);
   const [language, setLanguage] = useState<PodcastLanguageCode>(DEFAULT_LANGUAGE);
   const [format, setFormat] = useState<PodcastFormat>("educational");
   const [hostCount, setHostCount] = useState("2");
@@ -117,30 +125,42 @@ export function GeneratorForm({
 
   const canGenerate =
     !busy &&
-    !activeSource.comingSoon &&
+    !resolverBusy &&
+    !!activeSource.inputDataType &&
     (activeSource.control === "urls"
       ? cleanUrls.length > 0
-      : activeSource.control === "text"
-        ? text.trim().length > 0
-        : false);
+      : activeSource.control === "resolve"
+        ? resolvedText.trim().length > 0
+        : text.trim().length > 0);
 
   const handleGenerate = () => {
     if (!canGenerate || !activeSource.inputDataType) return;
     const body: PodcastGenerateRequest = {
       input_data_type: activeSource.inputDataType,
       podcast_type: deriveBackendPodcastType(language, format),
+      language,
+      host_count: Number(hostCount) || HOST_COUNT_DEFAULT,
       truncate_audio_for_testing: truncate,
       post_prep_option: "none",
       show_id: showId,
     };
     if (activeSource.control === "urls") {
       body.file_urls = cleanUrls;
+    } else if (activeSource.control === "resolve") {
+      body.input_data = resolvedText.trim();
     } else {
       body.input_data = text.trim();
     }
     if (prepMessage.trim()) body.prep_user_message = prepMessage.trim();
     if (firstShowInfo.trim()) body.first_show_info_text = firstShowInfo.trim();
     onGenerate(body);
+  };
+
+  /** Switch source — clear the per-source text so stale content never leaks. */
+  const handleSourceChange = (kind: PodcastSourceKind) => {
+    setSourceKind(kind);
+    setResolvedText("");
+    setResolverBusy(false);
   };
 
   return (
@@ -152,18 +172,16 @@ export function GeneratorForm({
           {SOURCE_OPTIONS.map((opt) => {
             const Icon = opt.icon;
             const selected = sourceKind === opt.kind;
-            const tile = (
+            return (
               <button
                 key={opt.kind}
                 type="button"
-                onClick={() => setSourceKind(opt.kind)}
+                onClick={() => handleSourceChange(opt.kind)}
                 className={cn(
                   "group relative flex h-full w-full flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-all",
                   selected
                     ? "border-primary/60 bg-primary/5 shadow-sm ring-1 ring-primary/30"
-                    : opt.comingSoon
-                      ? "border-dashed border-border bg-muted/20 hover:border-primary/30"
-                      : "border-border bg-card hover:border-primary/30 hover:bg-accent/40",
+                    : "border-border bg-card hover:border-primary/30 hover:bg-accent/40",
                 )}
               >
                 <span
@@ -182,19 +200,7 @@ export function GeneratorForm({
                 <span className="text-[11px] leading-snug text-muted-foreground">
                   {opt.helper}
                 </span>
-                {opt.comingSoon && (
-                  <ComingSoonBadge className="mt-0.5" />
-                )}
               </button>
-            );
-            // Coming-soon tiles explain themselves in a tooltip on hover.
-            return opt.comingSoon ? (
-              <Tooltip key={opt.kind}>
-                <TooltipTrigger asChild>{tile}</TooltipTrigger>
-                <TooltipContent>{opt.helper}</TooltipContent>
-              </Tooltip>
-            ) : (
-              tile
             );
           })}
         </div>
@@ -252,23 +258,15 @@ export function GeneratorForm({
                 Add another file URL
               </Button>
             </div>
-          ) : (
-            // Coming-soon source — placeholder panel where the real control lands.
-            <div className="flex items-start gap-3 rounded-xl border border-dashed border-border bg-muted/20 p-4">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                <activeSource.icon className="h-4.5 w-4.5" />
-              </span>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  {activeSource.label}
-                  <ComingSoonBadge />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {activeSource.helper} Pick a wired source above to generate now.
-                </p>
-              </div>
-            </div>
-          )}
+          ) : activeSource.control === "resolve" && activeSource.resolveKind ? (
+            <SourceResolverPanel
+              resolveKind={activeSource.resolveKind}
+              value={resolvedText}
+              onChange={setResolvedText}
+              rtl={isRtl}
+              onBusyChange={setResolverBusy}
+            />
+          ) : null}
         </div>
       </section>
 
@@ -332,8 +330,8 @@ export function GeneratorForm({
           </SelectContent>
         </Select>
         <p className="text-[11px] text-muted-foreground">
-          English is live today. Other languages preview Gemini&apos;s 24
-          supported voices — wiring lands soon.
+          English and Persian are live today. Other languages preview
+          Gemini&apos;s 24 supported voices — wiring lands soon.
         </p>
       </section>
 

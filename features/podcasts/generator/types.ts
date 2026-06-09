@@ -32,8 +32,10 @@ export type PodcastPostPrepOption =
 // collapses them back to the backend's `podcast_type` via
 // `deriveBackendPodcastType()`.
 
-/** Source tiles. The first four map to a wired `PodcastInputDataType`; the rest
- *  are display-only (no backend wiring yet). */
+/** Source tiles. Each resolves to a wired `PodcastInputDataType` — either
+ *  directly (topic / pasted text / file URL) or by first fetching + cleaning
+ *  external content into editable text (website / note / YouTube / audio file)
+ *  that is then sent as `input_data`. */
 export type PodcastSourceKind =
   | "topic"
   | "partial_content"
@@ -41,7 +43,8 @@ export type PodcastSourceKind =
   | "file_url"
   | "website_url"
   | "note"
-  | "voice_memo";
+  | "youtube"
+  | "audio_file";
 
 /** BCP-47 locale codes — the Gemini 2.5 TTS supported languages. English is
  *  wired; the rest are display-only previews. */
@@ -88,6 +91,11 @@ export interface PodcastGenerateRequest {
   // Style — the single discriminator the backend honors.
   podcast_type: PodcastType;
   post_prep_option?: PodcastPostPrepOption;
+
+  // User-facing dimensions the backend will honor once wired. Carried on every
+  // request so the choice is persisted with the run from second zero.
+  language?: PodcastLanguageCode;
+  host_count?: number;
 
   // Optional context.
   show_id?: string | null;

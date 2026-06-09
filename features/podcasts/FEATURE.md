@@ -67,6 +67,19 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+- 2026-06-08 — **Generator sources fully wired + Persian live.** Every source tile
+  in `GeneratorForm` is now functional — no more ComingSoon source placeholders.
+  Website / Note / YouTube / Audio-file sources resolve external content into an
+  editable textarea (sent as `input_data`) via new `SourceResolverPanel` +
+  `useSourceResolvers`: website → `useScraperApi` + Web Content Extractor agent
+  (`bbfc9567-…`); YouTube → YouTube Transcription & Research agent (`7402d782-…`);
+  audio file → `useFileUpload` (durable) + `useAudioTranscription` (STT); note →
+  `useNotes` content. Agent runs go through the new reusable one-shot primitive
+  `features/agents/run/useRunAgent.ts` (`POST /ai/agents/{id}` → NDJSON via
+  `consumeStream`). Persian (`fa-IR`) flipped to `enabled: true` (maps to the wired
+  `podcast_type: "persian"` path). Request now carries `language` + `host_count`
+  (default 2). Replaced the `voice_memo`/"Record yourself" source with `audio_file`
+  /"From an audio file"; added `youtube` source.
 - 2026-06-08 — **User-facing show management.** Added owner show-settings page
   (`/podcast/studio/show/[showId]` → `ShowManageClient`): cover/title/description/author
   + RSS distribution settings persisted to new `pc_shows.rss_settings` jsonb

@@ -16,7 +16,8 @@ import {
   Files,
   Globe,
   StickyNote,
-  Mic,
+  Youtube,
+  FileAudio,
   GraduationCap,
   Newspaper,
   PartyPopper,
@@ -39,21 +40,39 @@ import {
 // sources are display-only (no backend wiring yet) and carry their own
 // `kind` so the form can show a placeholder panel for the selected tile.
 
+/**
+ * The control the form renders for a source:
+ *   text    — a textarea the user types/pastes into directly.
+ *   urls    — one or more file-URL inputs (multimodal file reading).
+ *   resolve — a fetch/upload step (scrape · note · YouTube · audio) that
+ *             resolves external content into editable text, which is then sent
+ *             as `input_data`. Each `resolve` source declares how to fetch.
+ */
+export type SourceControl = "text" | "urls" | "resolve";
+
+/** How a `resolve` source turns the user's input into editable text. */
+export type ResolveKind = "website" | "note" | "youtube" | "audio_file";
+
 export interface SourceOption {
-  /** Stable key for selection + the placeholder panel. */
+  /** Stable key for selection + the resolve panel. */
   kind: PodcastSourceKind;
   label: string;
   /** One-line helper explaining what the pipeline does with this input. */
   helper: string;
   icon: LucideIcon;
-  /** The form control to render for a wired source. */
-  control: "text" | "urls" | "none";
+  /** The form control to render for this source. */
+  control: SourceControl;
   /** Placeholder for the text control. */
   placeholder?: string;
-  /** Wired sources carry the request's input_data_type; coming-soon ones don't. */
+  /**
+   * The request's input_data_type. `text`/`urls` sources map directly; `resolve`
+   * sources collapse to "full_content" (verbatim, e.g. a note) or
+   * "partial_content" (cleaned/extracted, e.g. a scrape or transcript) — the
+   * resolver sets this, this is the default.
+   */
   inputDataType?: PodcastInputDataType;
-  /** Display-only tiles render a ComingSoon badge and a placeholder panel. */
-  comingSoon?: boolean;
+  /** For `resolve` sources — which fetch/clean path to run. */
+  resolveKind?: ResolveKind;
 }
 
 export const SOURCE_OPTIONS: SourceOption[] = [
@@ -95,37 +114,75 @@ export const SOURCE_OPTIONS: SourceOption[] = [
   {
     kind: "website_url",
     label: "From a website URL",
-    helper: "Paste a link — we scrape the page and clean it into a clean source.",
+    helper: "Paste a link — we scrape the page and clean it into editable text.",
     icon: Globe,
-    control: "none",
-    comingSoon: true,
+    control: "resolve",
+    resolveKind: "website",
+    inputDataType: "partial_content",
   },
   {
     kind: "note",
     label: "From a note",
     helper: "Pick from your existing Notes and turn it into an episode.",
     icon: StickyNote,
-    control: "none",
-    comingSoon: true,
+    control: "resolve",
+    resolveKind: "note",
+    inputDataType: "full_content",
   },
   {
-    kind: "voice_memo",
-    label: "Record yourself",
-    helper: "Record a quick voice memo — we transcribe it into the source.",
-    icon: Mic,
-    control: "none",
-    comingSoon: true,
+    kind: "youtube",
+    label: "From YouTube",
+    helper: "Paste a YouTube link — we transcribe and research it into editable text.",
+    icon: Youtube,
+    control: "resolve",
+    resolveKind: "youtube",
+    inputDataType: "partial_content",
+  },
+  {
+    kind: "audio_file",
+    label: "From an audio file",
+    helper: "Drop or upload any audio file — we transcribe it into editable text.",
+    icon: FileAudio,
+    control: "resolve",
+    resolveKind: "audio_file",
+    inputDataType: "partial_content",
   },
 ];
+
+// ── Cleanup agents ───────────────────────────────────────────────────────────
+//
+// Two system agents clean fetched content into podcast-ready editable text.
+// Run them via the platform's one-shot agent runner (`useRunAgent`):
+//   POST /ai/agents/{id} with the declared variables → streamed text.
+
+/** Web Content Extractor — turns raw scraped page text into a clean source.
+ *  Variables: `scraped_content` (the scrape), `focus_area` (optional steer). */
+export const WEB_CONTENT_EXTRACTOR_AGENT_ID =
+  "bbfc9567-fe40-4624-9668-34e6d809f13e";
+
+/** YouTube Video Transcription & Research — turns a YouTube URL into a
+ *  transcript + research write-up. Variables: `youtube_url`,
+ *  `timestamp_instruction` (optional). */
+export const YOUTUBE_RESEARCH_AGENT_ID =
+  "7402d782-81ea-4765-bb24-d08a639c4aa8";
+
+export const HOST_COUNT_DEFAULT = 2;
+
+/** Default focus steer passed to the Web Content Extractor (empty = no steer). */
+export const DEFAULT_EXTRACTOR_FOCUS = "";
+
+/** Default timestamp instruction for the YouTube agent (empty = full video). */
+export const DEFAULT_YOUTUBE_TIMESTAMP_INSTRUCTION = "";
 
 // ── Languages ───────────────────────────────────────────────────────────────
 //
 // Source: Google Gemini 2.5 TTS supported languages (the 24 GA locales) plus
 // Persian (Preview). https://docs.cloud.google.com/text-to-speech/docs/gemini-tts
-// English is wired/default today; the rest are display-only (`enabled: false`)
-// and render a small "Soon" chip but stay selectable-looking so the full reach
-// is visible. Persian maps behind the scenes to the wired `podcast_type:
-// "persian"` Farsi path — see deriveBackendPodcastType().
+// English and Persian are the two live languages today; the rest are
+// display-only (`enabled: false`) and render a small "Soon" chip but stay
+// selectable-looking so the full reach is visible. Persian maps behind the
+// scenes to the wired `podcast_type: "persian"` Farsi path — see
+// deriveBackendPodcastType().
 
 export interface LanguageOption {
   /** BCP-47 locale code (Gemini TTS). */
@@ -155,7 +212,7 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
   { code: "uk-UA", label: "Ukrainian", native: "Українська", enabled: false },
   { code: "tr-TR", label: "Turkish", native: "Türkçe", enabled: false },
   { code: "ar-EG", label: "Arabic", native: "العربية", enabled: false, rtl: true },
-  { code: "fa-IR", label: "Persian", native: "فارسی", enabled: false, rtl: true },
+  { code: "fa-IR", label: "Persian", native: "فارسی", enabled: true, rtl: true },
   { code: "hi-IN", label: "Hindi", native: "हिन्दी", enabled: false },
   { code: "bn-BD", label: "Bangla", native: "বাংলা", enabled: false },
   { code: "mr-IN", label: "Marathi", native: "मराठी", enabled: false },
