@@ -17,9 +17,6 @@ import {
   Plus,
   Radio,
   LogIn,
-  CheckCircle2,
-  Loader2,
-  AlertTriangle,
   Rss,
   BookOpen,
   UploadCloud,
@@ -27,73 +24,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ComingSoonCard } from "@/components/coming-soon/ComingSoonCard";
-import { Skeleton } from "@/components/ui/skeleton";
 import { InlineMediaRef } from "@/features/files";
 import { useApiAuth } from "@/hooks/useApiAuth";
 import { useMyPodcasts } from "@/features/podcasts/hooks/useMyPodcasts";
-import { useMyStudioRuns } from "@/features/podcasts/studio/runs/useMyStudioRuns";
 import { CreateShowDialog } from "@/features/podcasts/generator/components/CreateShowDialog";
 import { UploadEpisodeDialog } from "@/features/podcasts/studio/components/UploadEpisodeDialog";
-import { podcastMediaRef } from "@/features/podcasts/generator/media";
-import type { PcShow, PcStudioRun } from "@/features/podcasts/types";
-
-function RunStatusChip({ status }: { status: PcStudioRun["status"] }) {
-  if (status === "completed") {
-    return (
-      <span className="flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
-        <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-        Ready
-      </span>
-    );
-  }
-  if (status === "failed") {
-    return (
-      <span className="flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
-        <AlertTriangle className="h-3 w-3 text-red-400" />
-        Failed
-      </span>
-    );
-  }
-  return (
-    <span className="flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur">
-      <Loader2 className="h-3 w-3 animate-spin text-primary" />
-      In progress
-    </span>
-  );
-}
-
-function RunCard({ run }: { run: PcStudioRun }) {
-  const cover = run.selected_cover_url ?? run.image_urls?.[0] ?? null;
-  return (
-    <Link
-      href={`/podcast/studio/run/${run.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-primary/40 hover:shadow-md"
-    >
-      <div className="relative aspect-square w-full bg-muted">
-        <InlineMediaRef
-          ref={podcastMediaRef(cover)}
-          size="fill"
-          fit="cover"
-          alt={run.title || "Studio run"}
-          fallbackIcon={<Mic className="h-7 w-7 text-primary/50" />}
-        />
-        <span className="absolute right-2 top-2">
-          <RunStatusChip status={run.status} />
-        </span>
-      </div>
-      <div className="flex flex-1 flex-col gap-0.5 p-3">
-        <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground group-hover:text-primary">
-          {run.title || "Untitled episode"}
-        </p>
-        {run.description && (
-          <p className="line-clamp-1 text-xs text-muted-foreground">
-            {run.description}
-          </p>
-        )}
-      </div>
-    </Link>
-  );
-}
+import { RunsManageView } from "@/features/podcasts/studio/components/RunsManageView";
+import type { PcShow } from "@/features/podcasts/types";
 
 function ShowChip({ show }: { show: PcShow }) {
   return (
@@ -134,7 +71,6 @@ export function StudioDashboard() {
     registerEpisode,
     refresh: refreshPodcasts,
   } = useMyPodcasts();
-  const { runs, loading } = useMyStudioRuns();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
 
@@ -228,48 +164,9 @@ export function StudioDashboard() {
         </section>
       )}
 
-      {/* Run history */}
-      <section className="mt-10">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Your episodes
-        </h2>
-
-        {loading ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="aspect-square w-full rounded-xl" />
-                <Skeleton className="h-3 w-3/4" />
-              </div>
-            ))}
-          </div>
-        ) : runs.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Mic className="h-7 w-7" />
-            </span>
-            <div className="space-y-1">
-              <p className="font-medium text-foreground">No episodes yet</p>
-              <p className="max-w-sm text-sm text-muted-foreground">
-                Your first episode is a topic away. Generate one and watch it come
-                to life in real time — it&apos;ll be saved here for you.
-              </p>
-            </div>
-            <Button asChild className="gap-2">
-              <Link href="/podcast/studio/create">
-                <AudioLines className="h-4 w-4" />
-                Create your first episode
-              </Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {runs.map((run) => (
-              <RunCard key={run.id} run={run} />
-            ))}
-          </div>
-        )}
-      </section>
+      {/* Run history — every attempt, its source, status, and recovery,
+          read from the durable agent_run record (GET /podcast/runs). */}
+      <RunsManageView />
 
       {/* What's coming to the studio */}
       <section className="mt-10 grid gap-4 sm:grid-cols-2">
