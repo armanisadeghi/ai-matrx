@@ -15,8 +15,14 @@ import {
 } from "@/components/ui/dialog";
 import { InlineMediaRef } from "@/features/files";
 import { AssetCard } from "./AssetCard";
+import { AddAssetCard } from "./AddAssetCard";
+import type { AssetRegenerateOpts } from "./AssetActionsMenu";
 import { podcastMediaRef } from "../media";
 import type { MediaSlot, PodcastRunState } from "../types";
+import type { RunAssetKind } from "@/features/podcasts/studio/runs/run-types";
+
+const VISIBLE_IMAGES = 5;
+const VISIBLE_VIDEOS = 2;
 
 interface MediaOptionsGridProps {
   state: PodcastRunState;
@@ -24,6 +30,14 @@ interface MediaOptionsGridProps {
   interactive: boolean;
   selectedCoverUrl: string | null;
   onSelectCover: (url: string) => void;
+  /** Per-asset regenerate (enables the "…" menu, Retry, model picker). */
+  onRegenerate?: (kind: RunAssetKind, slot: number, opts: AssetRegenerateOpts) => void;
+  /** Add a new asset from a user description (also how you go past 5/2). */
+  onAddAsset?: (kind: RunAssetKind, description: string) => void;
+  /** Per-slot busy map from useStudioRun ("image:2", "video:new", …). */
+  assetBusy?: Record<string, boolean>;
+  /** Internal model counts per kind (from the durable record). */
+  modelCounts?: { image?: number; video?: number };
 }
 
 function SectionHeader({
@@ -55,8 +69,14 @@ export function MediaOptionsGrid({
   interactive,
   selectedCoverUrl,
   onSelectCover,
+  onRegenerate,
+  onAddAsset,
+  assetBusy,
+  modelCounts,
 }: MediaOptionsGridProps) {
   const [lightbox, setLightbox] = useState<MediaSlot | null>(null);
+  const [showAllImages, setShowAllImages] = useState(false);
+  const [showAllVideos, setShowAllVideos] = useState(false);
 
   const imagesDone = state.images.filter((s) => s.status === "done").length;
   const videosDone = state.videos.filter((s) => s.status === "done").length;
@@ -66,6 +86,15 @@ export function MediaOptionsGrid({
 
   if (!hasImages && !hasVideos) return null;
 
+  // Per-asset editing is enabled once a regenerate handler is supplied (i.e. the
+  // run is loaded + not actively streaming).
+  const editable = !!onRegenerate;
+  const imageModelCount = modelCounts?.image ?? 0;
+  const videoModelCount = modelCounts?.video ?? 0;
+  const isBusy = (kind: RunAssetKind, slot: number) =>
+    !!assetBusy?.[`${kind}:${slot}`];
+  const addBusy = (kind: RunAssetKind) => !!assetBusy?.[`${kind}:new`];
+
   const imageCard = (slot: MediaSlot) => (
     <AssetCard
       slot={slot}
@@ -74,8 +103,26 @@ export function MediaOptionsGrid({
       selected={!!slot.url && slot.url === selectedCoverUrl}
       onSelectCover={onSelectCover}
       onEnlarge={setLightbox}
+      onRegenerate={onRegenerate ? (opts) => onRegenerate("image", slot.index, opts) : undefined}
+      modelCount={imageModelCount}
+      busy={isBusy("image", slot.index)}
     />
   );
+
+  const videoCard = (slot: MediaSlot) => (
+    <AssetCard
+      slot={slot}
+      label={`Clip ${slot.index + 1}`}
+      onRegenerate={onRegenerate ? (opts) => onRegenerate("video", slot.index, opts) : undefined}
+      modelCount={videoModelCount}
+      busy={isBusy("video", slot.index)}
+    />
+  );
+
+  const visibleImages =
+    editable && !showAllImages ? state.images.slice(0, VISIBLE_IMAGES) : state.images;
+  const visibleVideos =
+    editable && !showAllVideos ? state.videos.slice(0, VISIBLE_VIDEOS) : state.videos;
 
   return (
     <div className="space-y-6">
@@ -87,10 +134,8 @@ export function MediaOptionsGrid({
             done={imagesDone}
             total={state.images.length}
           />
-          {state.images.length === 5 ? (
-            // Bento — 2 large + 3 small fills the row cleanly (no empty slot
-            // from an odd count of square covers). 6-col grid: top row two
-            // col-span-3, bottom row three col-span-2.
+          {!editable && state.images.length === 5 ? (
+            // Bento — 2 large + 3 small fills the row cleanly. Live-run view.
             <div className="grid grid-cols-6 gap-3">
               {state.images.map((slot, i) => (
                 <div
@@ -103,10 +148,28 @@ export function MediaOptionsGrid({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-              {state.images.map((slot) => (
+              {visibleImages.map((slot) => (
                 <div key={`img-${slot.index}`}>{imageCard(slot)}</div>
               ))}
+              {editable && onAddAsset && (showAllImages || state.images.length <= VISIBLE_IMAGES) && (
+                <AddAssetCard
+                  kind="image"
+                  busy={addBusy("image")}
+                  onAdd={(d) => onAddAsset("image", d)}
+                />
+              )}
             </div>
+          )}
+          {editable && state.images.length > VISIBLE_IMAGES && (
+            <button
+              type="button"
+              onClick={() => setShowAllImages((v) => !v)}
+              className="mt-3 text-xs font-medium text-primary hover:underline"
+            >
+              {showAllImages
+                ? "Show fewer"
+                : `See all ${state.images.length} images`}
+            </button>
           )}
         </section>
       )}
@@ -120,14 +183,26 @@ export function MediaOptionsGrid({
             total={state.videos.length}
           />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {state.videos.map((slot) => (
-              <AssetCard
-                key={`vid-${slot.index}`}
-                slot={slot}
-                label={`Clip ${slot.index + 1}`}
-              />
+            {visibleVideos.map((slot) => (
+              <div key={`vid-${slot.index}`}>{videoCard(slot)}</div>
             ))}
+            {editable && onAddAsset && (showAllVideos || state.videos.length <= VISIBLE_VIDEOS) && (
+              <AddAssetCard
+                kind="video"
+                busy={addBusy("video")}
+                onAdd={(d) => onAddAsset("video", d)}
+              />
+            )}
           </div>
+          {editable && state.videos.length > VISIBLE_VIDEOS && (
+            <button
+              type="button"
+              onClick={() => setShowAllVideos((v) => !v)}
+              className="mt-3 text-xs font-medium text-primary hover:underline"
+            >
+              {showAllVideos ? "Show fewer" : `See all ${state.videos.length} clips`}
+            </button>
+          )}
         </section>
       )}
 

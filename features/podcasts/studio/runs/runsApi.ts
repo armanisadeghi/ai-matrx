@@ -5,7 +5,7 @@
 // and don't bind a hook) — the hooks in this folder supply the client.
 
 import type { useBackendApi } from "@/hooks/useBackendApi";
-import type { RunDetail, RunStatusDto, RunSummary } from "./run-types";
+import type { RunAsset, RunAssetKind, RunDetail, RunStatusDto, RunSummary } from "./run-types";
 
 type Api = ReturnType<typeof useBackendApi>;
 
@@ -45,4 +45,27 @@ export async function fetchRunStatus(
 ): Promise<RunStatusDto> {
   const res = await api.get(`/podcast/runs/${runId}/status`, signal);
   return (await res.json()) as RunStatusDto;
+}
+
+export async function regenerateAsset(
+  api: Api,
+  runId: string,
+  body: {
+    asset_kind: RunAssetKind;
+    slot: number;
+    model_alias?: string;
+    custom_prompt?: string;
+  },
+): Promise<RunAsset> {
+  const res = await api.post(`/podcast/runs/${runId}/assets/regenerate`, body);
+  return (await res.json()) as RunAsset;
+}
+
+export async function addAsset(
+  api: Api,
+  runId: string,
+  body: { asset_kind: RunAssetKind; description: string; model_alias?: string },
+): Promise<RunAsset> {
+  const res = await api.post(`/podcast/runs/${runId}/assets/add`, body);
+  return (await res.json()) as RunAsset;
 }

@@ -85,6 +85,8 @@ export interface RunDetail extends RunSummary {
   recovery: RunRecovery;
   /** Raw original request — used to "re-run from saved source". */
   request: Record<string, unknown>;
+  /** How many internal models the user can pick per asset kind (for the picker). */
+  model_counts: { image?: number; video?: number };
 }
 
 export interface RunStatusDto {

@@ -8,11 +8,12 @@
 // images fade in, videos auto-play (muted, looped). Per-asset failure is
 // non-fatal: a failed slot keeps its prompt and shows a quiet badge.
 
-import { Loader2, ImageOff, Maximize2, Check, Star } from "lucide-react";
+import { Loader2, ImageOff, Maximize2, Check, Star, RotateCcw } from "lucide-react";
 import { InlineMediaRef } from "@/features/files";
 import { cn } from "@/lib/utils";
 import { podcastMediaRef } from "../media";
 import type { MediaSlot } from "../types";
+import { AssetActionsMenu, type AssetRegenerateOpts } from "./AssetActionsMenu";
 
 interface AssetCardProps {
   slot: MediaSlot;
@@ -22,6 +23,12 @@ interface AssetCardProps {
   selected?: boolean;
   onSelectCover?: (url: string) => void;
   onEnlarge?: (slot: MediaSlot) => void;
+  /** Per-asset regenerate (enables the "…" menu + Retry). */
+  onRegenerate?: (opts: AssetRegenerateOpts) => void;
+  /** Number of internal models available (drives the model picker). */
+  modelCount?: number;
+  /** This slot is currently (re)generating. */
+  busy?: boolean;
 }
 
 export function AssetCard({
@@ -31,9 +38,14 @@ export function AssetCard({
   selected = false,
   onSelectCover,
   onEnlarge,
+  onRegenerate,
+  modelCount = 0,
+  busy = false,
 }: AssetCardProps) {
   const aspect = slot.kind === "video" ? "aspect-video" : "aspect-square";
   const isDone = slot.status === "done" && !!slot.url;
+  const defaultAlias =
+    modelCount > 0 && slot.index < modelCount ? `model_${slot.index + 1}` : "model_1";
 
   return (
     <div
@@ -49,6 +61,32 @@ export function AssetCard({
         <span className="absolute left-2 top-2 z-20 rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur">
           {label}
         </span>
+
+        {/* Per-asset "…" menu — always visible when there's no media to hover. */}
+        {onRegenerate && (
+          <div
+            className={cn(
+              "absolute right-2 top-2 z-30 transition-opacity",
+              isDone ? "opacity-0 group-hover:opacity-100" : "opacity-100",
+            )}
+          >
+            <AssetActionsMenu
+              kind={slot.kind}
+              slot={slot.index}
+              modelCount={modelCount}
+              currentPrompt={slot.prompt}
+              busy={busy}
+              onRegenerate={onRegenerate}
+            />
+          </div>
+        )}
+
+        {/* Busy overlay while (re)generating this slot. */}
+        {busy && (
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <Loader2 className="h-6 w-6 animate-spin text-white" />
+          </div>
+        )}
 
         {/* Pending / running / failed — the prompt fills the tile */}
         {!isDone && (
@@ -77,6 +115,17 @@ export function AssetCard({
                   <span className="text-muted-foreground/70">
                     Couldn&apos;t render
                   </span>
+                  {onRegenerate && (
+                    <button
+                      type="button"
+                      onClick={() => onRegenerate({ modelAlias: defaultAlias })}
+                      disabled={busy}
+                      className="ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Retry
+                    </button>
+                  )}
                 </>
               ) : slot.status === "running" ? (
                 <>
@@ -162,9 +211,10 @@ export function AssetCard({
             />
           ))}
 
-        {/* Selected check (image) */}
+        {/* Selected indicator (image) — bottom-left so it never collides with
+            the top-right "…" menu. The primary ring also signals selection. */}
         {selected && isDone && (
-          <span className="absolute right-2 top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <span className="absolute bottom-2 left-2 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Check className="h-3 w-3" />
           </span>
         )}

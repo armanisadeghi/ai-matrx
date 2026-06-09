@@ -47,6 +47,9 @@ export function StudioRunView({ runId }: { runId: string }) {
     refresh,
     detail,
     recovery,
+    assetBusy,
+    regenerateAsset,
+    addAsset,
     selectedCoverUrl,
     selectCover,
   } = useStudioRun(runId);
@@ -200,6 +203,10 @@ export function StudioRunView({ runId }: { runId: string }) {
             interactive={isDone && !!state.episodeId}
             selectedCoverUrl={effectiveCover}
             onSelectCover={selectCover}
+            onRegenerate={!streaming ? regenerateAsset : undefined}
+            onAddAsset={!streaming ? addAsset : undefined}
+            assetBusy={assetBusy}
+            modelCounts={detail?.model_counts}
           />
 
           <TranscriptPanel script={state.script} rtl={rtl} />

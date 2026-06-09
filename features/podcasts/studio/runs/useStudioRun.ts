@@ -32,14 +32,19 @@ import {
   type PodcastMetadataEvent,
   type PodcastAssetEvent,
   type PodcastCompleteEvent,
+  type MediaSlot,
 } from "@/features/podcasts/generator/types";
 import { studioRunsService } from "./service";
 import { rowToRunState, detailToRunState } from "./mapping";
 import { takePendingStart } from "./pendingStart";
 import { reportMediaDurabilityViolation } from "@/lib/media/durability";
-import { fetchRun } from "./runsApi";
+import {
+  fetchRun,
+  regenerateAsset as regenerateAssetApi,
+  addAsset as addAssetApi,
+} from "./runsApi";
 import { deriveRecoveryState, type RecoveryState } from "./recovery";
-import type { RunDetail } from "./run-types";
+import type { RunAsset, RunAssetKind, RunDetail } from "./run-types";
 
 const GENERATE_PATH = "/podcast/generate";
 const resumePath = (backendRunId: string) => `/podcast/resume/${backendRunId}`;
@@ -64,6 +69,20 @@ export interface UseStudioRun {
   rerunFromSource: () => void;
   /** Re-pull the durable server record (recovers a page stuck in a stale state). */
   refresh: () => void;
+  /** Per-slot busy map. Keys: "image:2", "video:0", "image:new", "video:new". */
+  assetBusy: Record<string, boolean>;
+  /** Re-render one image/video in place (optionally a different model / prompt). */
+  regenerateAsset: (
+    kind: RunAssetKind,
+    slot: number,
+    opts?: { modelAlias?: string; customPrompt?: string },
+  ) => Promise<void>;
+  /** Add a brand-new asset from a user prompt (also how you go past 5/2). */
+  addAsset: (
+    kind: RunAssetKind,
+    description: string,
+    opts?: { modelAlias?: string },
+  ) => Promise<void>;
   /** Durable run record (null until loaded / for a brand-new live run). */
   detail: RunDetail | null;
   recovery: RecoveryState;
@@ -86,6 +105,7 @@ export function useStudioRun(runId: string): UseStudioRun {
   const [recovery, setRecovery] = useState<RecoveryState>(() =>
     deriveRecoveryState(null),
   );
+  const [assetBusy, setAssetBusy] = useState<Record<string, boolean>>({});
 
   const abortRef = useRef<AbortController | null>(null);
   const startedRef = useRef(false);
@@ -439,6 +459,116 @@ export function useStudioRun(runId: string): UseStudioRun {
   const rerunFromSource = useCallback(() => rerunRef.current?.(), []);
   const refresh = useCallback(() => reloadRef.current?.(), []);
 
+  // Upsert one asset into the render state from a RunAsset (regen/add result).
+  const applyAssetToState = useCallback((asset: RunAsset) => {
+    setState((s) => {
+      const isImg = asset.asset_kind === "image";
+      const slots = isImg ? s.images : s.videos;
+      const idx = slots.findIndex((x) => x.index === asset.slot);
+      const next: MediaSlot = {
+        index: asset.slot,
+        kind: asset.asset_kind,
+        prompt: asset.prompt ?? slots[idx]?.prompt ?? "",
+        url: asset.url,
+        status:
+          asset.status === "completed"
+            ? "done"
+            : asset.status === "failed"
+              ? "failed"
+              : "running",
+      };
+      const copy = idx === -1 ? [...slots, next] : slots.map((x, i) => (i === idx ? next : x));
+      copy.sort((a, b) => a.index - b.index);
+      return isImg ? { ...s, images: copy } : { ...s, videos: copy };
+    });
+  }, []);
+
+  const regenerateAsset = useCallback<UseStudioRun["regenerateAsset"]>(
+    async (kind, slot, opts) => {
+      const rid = backendRunIdRef.current;
+      if (!rid) {
+        toast.error("This run can't be edited yet — try Refresh.");
+        return;
+      }
+      const key = `${kind}:${slot}`;
+      setAssetBusy((b) => ({ ...b, [key]: true }));
+      // Optimistic: show the slot rendering immediately.
+      applyAssetToState({
+        asset_kind: kind,
+        slot,
+        status: "processing",
+        url: null,
+        file_id: null,
+        prompt: opts?.customPrompt ?? null,
+        model_alias: opts?.modelAlias ?? null,
+        is_manual: !!opts?.customPrompt,
+      });
+      try {
+        const asset = await regenerateAssetApi(api, rid, {
+          asset_kind: kind,
+          slot,
+          model_alias: opts?.modelAlias,
+          custom_prompt: opts?.customPrompt,
+        });
+        applyAssetToState(asset);
+        if (asset.status === "failed")
+          toast.error("Couldn't regenerate — try a different model.");
+        else toast.success(kind === "image" ? "New image ready." : "New clip ready.");
+      } catch (e) {
+        applyAssetToState({
+          asset_kind: kind,
+          slot,
+          status: "failed",
+          url: null,
+          file_id: null,
+          prompt: opts?.customPrompt ?? null,
+          model_alias: null,
+          is_manual: false,
+        });
+        toast.error(e instanceof Error ? e.message : "Regenerate failed.");
+      } finally {
+        setAssetBusy((b) => {
+          const n = { ...b };
+          delete n[key];
+          return n;
+        });
+      }
+    },
+    [api, applyAssetToState],
+  );
+
+  const addAsset = useCallback<UseStudioRun["addAsset"]>(
+    async (kind, description, opts) => {
+      const rid = backendRunIdRef.current;
+      if (!rid) {
+        toast.error("This run can't be edited yet — try Refresh.");
+        return;
+      }
+      const key = `${kind}:new`;
+      setAssetBusy((b) => ({ ...b, [key]: true }));
+      try {
+        const asset = await addAssetApi(api, rid, {
+          asset_kind: kind,
+          description,
+          model_alias: opts?.modelAlias,
+        });
+        applyAssetToState(asset);
+        if (asset.status === "failed")
+          toast.error("Couldn't generate — try again or a different model.");
+        else toast.success(kind === "image" ? "Image added." : "Clip added.");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Add failed.");
+      } finally {
+        setAssetBusy((b) => {
+          const n = { ...b };
+          delete n[key];
+          return n;
+        });
+      }
+    },
+    [api, applyAssetToState],
+  );
+
   const selectCover = useCallback(
     (url: string) => {
       setSelectedCoverUrl(url);
@@ -472,6 +602,9 @@ export function useStudioRun(runId: string): UseStudioRun {
     reconnect,
     rerunFromSource,
     refresh,
+    assetBusy,
+    regenerateAsset,
+    addAsset,
     detail,
     recovery,
     selectedCoverUrl,
