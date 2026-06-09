@@ -2,11 +2,12 @@
 
 // features/transcripts/components/TranscriptsListPage.tsx
 //
-// The list-savior page for /transcripts. Replaces the forced "trapped in
-// the processor" entry with an /agents-style list view: every transcript
-// the user owns, with per-row UI pickers (Processor / Studio / Cleanup /
-// Open / Delete). Lightweight client state for search + sort. Server
-// already filtered + ordered; this only handles in-memory refinement.
+// Mirrors the /agents/all pattern: title + actions portaled into the
+// shell header via <PageHeader>; body is a max-w-[1800px] container
+// with a pill-style search bar above a 4-column card grid. Each card
+// is a compact summary with three quick-launch buttons (Processor /
+// Studio / Cleanup). Search + sort are client-side over the
+// server-fetched summary array.
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -15,16 +16,15 @@ import {
   FileVideo,
   Headphones,
   Mic,
-  MoreHorizontal,
+  Eraser,
+  Columns2 as StudioIcon,
+  Eye,
   Plus,
   Search,
-  Columns2 as StudioIcon,
-  Eraser,
-  Eye,
-  Pencil,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PageHeader from "@/features/shell/components/header/PageHeader";
 import { cn } from "@/lib/utils";
 
 export interface TranscriptListRow {
@@ -54,6 +54,14 @@ const SOURCE_ICON: Record<string, React.ComponentType<{ className?: string }>> =
   meeting: Headphones,
   interview: Mic,
   other: FileAudio,
+};
+
+const SOURCE_LABEL: Record<string, string> = {
+  audio: "Audio",
+  video: "Video",
+  meeting: "Meeting",
+  interview: "Interview",
+  other: "Other",
 };
 
 function formatDuration(seconds: number | null): string {
@@ -89,6 +97,54 @@ function formatRelative(iso: string): string {
   return `${Math.floor(mo / 12)}y ago`;
 }
 
+// Title + count + Sort + New — portaled into the shell header strip
+// via <PageHeader>. Mirrors `AgentsListHeader`.
+function TranscriptsHeader({
+  count,
+  total,
+  sortKey,
+  setSortKey,
+}: {
+  count: number;
+  total: number;
+  sortKey: SortKey;
+  setSortKey: (k: SortKey) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between w-full gap-2 px-1">
+      <div className="flex items-center gap-2 shrink-0">
+        <Mic className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm font-semibold text-foreground">
+          Transcripts
+        </span>
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {count === total ? `${total}` : `${count} / ${total}`}
+        </span>
+      </div>
+      <div className="flex items-center gap-1">
+        <select
+          value={sortKey}
+          onChange={(e) => setSortKey(e.target.value as SortKey)}
+          className="h-8 text-xs rounded-md border border-border bg-background px-2 focus:outline-none focus:ring-1 focus:ring-primary"
+          aria-label="Sort transcripts"
+        >
+          <option value="updated">Recently updated</option>
+          <option value="created">Recently created</option>
+          <option value="title">Title (A→Z)</option>
+          <option value="duration">Longest first</option>
+          <option value="words">Most words</option>
+        </select>
+        <Button asChild size="sm" className="h-8 gap-1.5">
+          <Link href="/transcripts/new" aria-label="Create new transcript">
+            <Plus className="h-3.5 w-3.5" />
+            <span className="text-xs font-medium hidden sm:inline">New</span>
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function TranscriptsListPage({ rows }: TranscriptsListPageProps) {
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("updated");
@@ -105,7 +161,6 @@ export function TranscriptsListPage({ rows }: TranscriptsListPageProps) {
         return false;
       });
     }
-    // copy before sort (sort is in-place)
     list = [...list];
     switch (sortKey) {
       case "title":
@@ -128,151 +183,152 @@ export function TranscriptsListPage({ rows }: TranscriptsListPageProps) {
   }, [rows, query, sortKey]);
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height,2.5rem))] w-full flex flex-col bg-background">
-      {/* Toolbar — title pulled by app shell; this is the secondary action bar. */}
-      <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur px-3 sm:px-4 py-2 flex items-center gap-2 flex-wrap">
-        <h1 className="text-base font-semibold tracking-tight mr-2">
-          Transcripts
-        </h1>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {filtered.length === rows.length
-            ? `${rows.length}`
-            : `${filtered.length} / ${rows.length}`}
-        </span>
+    <>
+      {/* Portal title + sort + New into the shell header strip. */}
+      <PageHeader>
+        <TranscriptsHeader
+          count={filtered.length}
+          total={rows.length}
+          sortKey={sortKey}
+          setSortKey={setSortKey}
+        />
+      </PageHeader>
 
-        <div className="relative flex-1 max-w-md min-w-[180px]">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search title, description, folder, tag…"
-            className="w-full pl-7 pr-7 py-1.5 text-sm rounded-md border border-border bg-card focus:outline-none focus:ring-1 focus:ring-primary"
-            aria-label="Search transcripts"
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-              aria-label="Clear search"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+      {/* Body — mirrors AgentsGrid container shape exactly. */}
+      <div className="w-full">
+        <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 max-w-[1800px]">
+          {/* Search pill — matches AgentsGrid styling. */}
+          <div className="mb-4 flex items-center gap-3 p-1 rounded-full matrx-glass-thin-border hover:shadow-xl transition-shadow">
+            <Search className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-3" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search transcripts by title, description, folder, tag…"
+              className="flex-1 bg-transparent border-0 outline-none text-sm text-foreground placeholder:text-muted-foreground py-1.5"
+              aria-label="Search transcripts"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="p-1.5 hover:bg-muted/50 rounded-lg transition-colors flex-shrink-0 mr-1"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+
+          {filtered.length === 0 ? (
+            <EmptyState hasQuery={query.length > 0} hasAny={rows.length > 0} />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-3">
+              {filtered.map((row) => (
+                <TranscriptCard key={row.id} row={row} />
+              ))}
+            </div>
           )}
         </div>
-
-        <select
-          value={sortKey}
-          onChange={(e) => setSortKey(e.target.value as SortKey)}
-          className="text-sm rounded-md border border-border bg-card px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary"
-          aria-label="Sort transcripts"
-        >
-          <option value="updated">Recently updated</option>
-          <option value="created">Recently created</option>
-          <option value="title">Title (A→Z)</option>
-          <option value="duration">Longest first</option>
-          <option value="words">Most words</option>
-        </select>
-
-        <div className="flex-1" />
-
-        <Button asChild size="sm" className="h-8 gap-1.5">
-          <Link href="/transcripts/new">
-            <Plus className="h-3.5 w-3.5" />
-            New
-          </Link>
-        </Button>
       </div>
-
-      {/* Body */}
-      {filtered.length === 0 ? (
-        <EmptyState hasQuery={query.length > 0} hasAny={rows.length > 0} />
-      ) : (
-        <div className="flex-1 overflow-y-auto">
-          <ul className="divide-y divide-border">
-            {filtered.map((row) => (
-              <TranscriptRow key={row.id} row={row} />
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+    </>
   );
 }
 
-function TranscriptRow({ row }: { row: TranscriptListRow }) {
+function TranscriptCard({ row }: { row: TranscriptListRow }) {
   const SourceIcon = SOURCE_ICON[row.sourceType] ?? FileAudio;
-  // Default action: open in the processor (the existing workspace
-  // people are used to). The processor's own sidebar takes them
-  // anywhere from there; the row's secondary action buttons are
-  // shortcuts to the alternate UIs.
   const openHref = `/transcripts/processor?focus=${encodeURIComponent(row.id)}`;
   const studioHref = `/transcripts/studio?import=${encodeURIComponent(row.id)}`;
   const cleanupHref = `/transcripts/cleanup?import=${encodeURIComponent(row.id)}`;
 
   return (
-    <li className="group hover:bg-muted/40 transition-colors">
-      <div className="flex items-center gap-3 px-3 sm:px-4 py-2 min-w-0">
-        <SourceIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-
-        {/* Title + meta — main column */}
-        <Link
-          href={openHref}
-          className="flex-1 min-w-0 flex items-baseline gap-2"
-        >
-          <span className="text-sm font-medium text-foreground truncate hover:underline">
+    <div
+      className={cn(
+        "group rounded-xl border border-border bg-card overflow-hidden",
+        "transition-colors hover:border-primary/40 hover:shadow-md",
+        "flex flex-col",
+      )}
+    >
+      {/* Body — clickable to open. */}
+      <Link
+        href={openHref}
+        className="flex-1 p-3.5 flex flex-col gap-1.5 min-w-0"
+      >
+        <div className="flex items-start gap-2 min-w-0">
+          <SourceIcon className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+          <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-snug flex-1 min-w-0">
             {row.title}
-          </span>
+          </h3>
           {row.isDraft && (
-            <span className="text-[10px] uppercase tracking-wider px-1.5 py-0 rounded ring-1 ring-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+            <span
+              className={cn(
+                "shrink-0 text-[10px] uppercase tracking-wider px-1.5 py-0 rounded leading-4",
+                "ring-1 ring-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+              )}
+            >
               draft
             </span>
           )}
-          {row.folderName && row.folderName !== "Transcripts" && (
-            <span className="text-xs text-muted-foreground truncate">
-              · {row.folderName}
-            </span>
-          )}
-          {row.description && (
-            <span className="hidden md:inline text-xs text-muted-foreground/80 truncate">
-              · {row.description}
-            </span>
-          )}
-        </Link>
-
-        {/* Stats — hidden on mobile, tabular on desktop */}
-        <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground tabular-nums shrink-0">
-          <span className="w-12 text-right" title="Duration">
-            {formatDuration(row.durationSeconds)}
-          </span>
-          <span className="w-12 text-right" title="Words">
-            {formatNumber(row.wordCount)} w
-          </span>
-          <span className="w-16 text-right" title={row.updatedAt}>
-            {formatRelative(row.updatedAt)}
-          </span>
         </div>
-
-        {/* Action chips — visible on hover (desktop) / always (mobile) */}
-        <div className="flex items-center gap-1 shrink-0">
-          <RowAction href={openHref} label="Open in processor" icon={Eye} />
-          <RowAction href={studioHref} label="Open in studio" icon={StudioIcon} />
-          <RowAction href={cleanupHref} label="Run cleanup" icon={Eraser} />
+        {row.description && (
+          <p className="text-xs text-muted-foreground line-clamp-2 leading-snug">
+            {row.description}
+          </p>
+        )}
+        <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground tabular-nums mt-auto pt-1">
+          <span title="Source type">
+            {SOURCE_LABEL[row.sourceType] ?? "Other"}
+          </span>
+          <span aria-hidden className="text-muted-foreground/40">·</span>
+          <span title="Duration">{formatDuration(row.durationSeconds)}</span>
+          <span aria-hidden className="text-muted-foreground/40">·</span>
+          <span title="Word count">{formatNumber(row.wordCount)} words</span>
+          <span aria-hidden className="text-muted-foreground/40">·</span>
+          <span title={row.updatedAt}>{formatRelative(row.updatedAt)}</span>
         </div>
+        {row.folderName && row.folderName !== "Transcripts" && (
+          <div className="text-[11px] text-muted-foreground/80 truncate">
+            in {row.folderName}
+          </div>
+        )}
+      </Link>
+
+      {/* Action bar — three UI shortcuts. Matches the agent-card footer
+          pattern (border-top, low-chrome icon buttons). */}
+      <div className="border-t border-border bg-muted/20 px-2 py-1 flex items-center gap-1">
+        <CardAction
+          href={openHref}
+          label="Open in Processor"
+          icon={Eye}
+          text="Open"
+        />
+        <CardAction
+          href={studioHref}
+          label="Open in Studio"
+          icon={StudioIcon}
+          text="Studio"
+        />
+        <CardAction
+          href={cleanupHref}
+          label="Run Cleanup"
+          icon={Eraser}
+          text="Cleanup"
+        />
       </div>
-    </li>
+    </div>
   );
 }
 
-function RowAction({
+function CardAction({
   href,
   label,
   icon: Icon,
+  text,
 }: {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  text: string;
 }) {
   return (
     <Link
@@ -280,12 +336,13 @@ function RowAction({
       title={label}
       aria-label={label}
       className={cn(
-        "inline-flex items-center justify-center h-7 w-7 rounded-md",
+        "flex-1 inline-flex items-center justify-center gap-1 h-7 rounded text-[11px] font-medium",
         "text-muted-foreground hover:text-foreground hover:bg-muted",
         "transition-colors",
       )}
     >
-      <Icon className="h-3.5 w-3.5" />
+      <Icon className="h-3 w-3" />
+      {text}
     </Link>
   );
 }
@@ -299,7 +356,7 @@ function EmptyState({
 }) {
   if (hasQuery) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-12 text-muted-foreground">
+      <div className="py-16 flex flex-col items-center justify-center text-center text-muted-foreground">
         <Search className="h-8 w-8 mb-3 opacity-40" />
         <p className="text-sm">No transcripts match your search.</p>
       </div>
@@ -307,7 +364,7 @@ function EmptyState({
   }
   if (!hasAny) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-12">
+      <div className="py-16 flex flex-col items-center justify-center text-center">
         <FileAudio className="h-10 w-10 mb-3 text-muted-foreground opacity-50" />
         <h2 className="text-base font-semibold mb-1">No transcripts yet</h2>
         <p className="text-sm text-muted-foreground max-w-sm mb-4">
