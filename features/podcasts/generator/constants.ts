@@ -79,7 +79,8 @@ export const SOURCE_OPTIONS: SourceOption[] = [
   {
     kind: "topic",
     label: "From a topic",
-    helper: "A topic, question, or single keyword — our research agent does the rest.",
+    helper:
+      "A topic, question, or single keyword — our research agent does the rest.",
     icon: Lightbulb,
     control: "text",
     placeholder: "e.g. How CRISPR gene editing actually works",
@@ -114,7 +115,8 @@ export const SOURCE_OPTIONS: SourceOption[] = [
   {
     kind: "website_url",
     label: "From a website URL",
-    helper: "Paste a link — we scrape the page and clean it into editable text.",
+    helper:
+      "Paste a link — we scrape the page and clean it into editable text.",
     icon: Globe,
     control: "resolve",
     resolveKind: "website",
@@ -132,7 +134,8 @@ export const SOURCE_OPTIONS: SourceOption[] = [
   {
     kind: "youtube",
     label: "From YouTube",
-    helper: "Paste a YouTube link — we transcribe and research it into editable text.",
+    helper:
+      "Paste a YouTube link — we transcribe and research it into editable text.",
     icon: Youtube,
     control: "resolve",
     resolveKind: "youtube",
@@ -141,7 +144,8 @@ export const SOURCE_OPTIONS: SourceOption[] = [
   {
     kind: "audio_file",
     label: "From an audio file",
-    helper: "Drop or upload any audio file — we transcribe it into editable text.",
+    helper:
+      "Drop or upload any audio file — we transcribe it into editable text.",
     icon: FileAudio,
     control: "resolve",
     resolveKind: "audio_file",
@@ -163,8 +167,7 @@ export const WEB_CONTENT_EXTRACTOR_AGENT_ID =
 /** YouTube Video Transcription & Research — turns a YouTube URL into a
  *  transcript + research write-up. Variables: `youtube_url`,
  *  `timestamp_instruction` (optional). */
-export const YOUTUBE_RESEARCH_AGENT_ID =
-  "7402d782-81ea-4765-bb24-d08a639c4aa8";
+export const YOUTUBE_RESEARCH_AGENT_ID = "7402d782-81ea-4765-bb24-d08a639c4aa8";
 
 export const HOST_COUNT_DEFAULT = 2;
 
@@ -211,8 +214,20 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
   { code: "ru-RU", label: "Russian", native: "Русский", enabled: false },
   { code: "uk-UA", label: "Ukrainian", native: "Українська", enabled: false },
   { code: "tr-TR", label: "Turkish", native: "Türkçe", enabled: false },
-  { code: "ar-EG", label: "Arabic", native: "العربية", enabled: false, rtl: true },
-  { code: "fa-IR", label: "Persian", native: "فارسی", enabled: true, rtl: true },
+  {
+    code: "ar-EG",
+    label: "Arabic",
+    native: "العربية",
+    enabled: false,
+    rtl: true,
+  },
+  {
+    code: "fa-IR",
+    label: "Persian",
+    native: "فارسی",
+    enabled: true,
+    rtl: true,
+  },
   { code: "hi-IN", label: "Hindi", native: "हिन्दी", enabled: false },
   { code: "bn-BD", label: "Bangla", native: "বাংলা", enabled: false },
   { code: "mr-IN", label: "Marathi", native: "मराठी", enabled: false },
@@ -312,16 +327,44 @@ export interface ProcessingOption {
 }
 
 export const PRE_SCRIPT_PROCESSING_OPTIONS: ProcessingOption[] = [
-  { value: "translate", label: "Translate", helper: "Render the source in another language first." },
-  { value: "summarize", label: "Summarize", helper: "Condense a long source to its essentials." },
-  { value: "expand", label: "Expand", helper: "Enrich a thin source with researched detail." },
-  { value: "fact_check", label: "Fact-check", helper: "Verify claims before they reach the script." },
+  {
+    value: "translate",
+    label: "Translate",
+    helper: "Render the source in another language first.",
+  },
+  {
+    value: "summarize",
+    label: "Summarize",
+    helper: "Condense a long source to its essentials.",
+  },
+  {
+    value: "expand",
+    label: "Expand",
+    helper: "Enrich a thin source with researched detail.",
+  },
+  {
+    value: "fact_check",
+    label: "Fact-check",
+    helper: "Verify claims before they reach the script.",
+  },
 ];
 
 export const POST_SCRIPT_PROCESSING_OPTIONS: ProcessingOption[] = [
-  { value: "tone_polish", label: "Tone polish", helper: "Smooth phrasing and pacing for the voices." },
-  { value: "length_trim", label: "Length trim", helper: "Tighten the script to a target runtime." },
-  { value: "ssml_markup", label: "Emphasis markup", helper: "Add emphasis and pauses for delivery." },
+  {
+    value: "tone_polish",
+    label: "Tone polish",
+    helper: "Smooth phrasing and pacing for the voices.",
+  },
+  {
+    value: "length_trim",
+    label: "Length trim",
+    helper: "Tighten the script to a target runtime.",
+  },
+  {
+    value: "ssml_markup",
+    label: "Emphasis markup",
+    helper: "Add emphasis and pauses for delivery.",
+  },
 ];
 
 // ── Hosts ───────────────────────────────────────────────────────────────────
@@ -354,7 +397,7 @@ export const STAGE_FALLBACK_LABELS: Record<string, string> = {
   post_prep: "Post-processing",
   create_script: "Writing the script",
   generate_metadata: "Generating title, cover & video concepts",
-  create_audio: "Producing the audio (the longest step)",
+  create_audio: "Producing the audio",
 };
 
 export const EXPECTED_IMAGE_COUNT = 5;
@@ -408,14 +451,26 @@ export interface StageKindColor {
 }
 
 export const STAGE_KIND_COLOR: Record<StageKind, StageKindColor> = {
-  research: { text: "text-sky-500", ring: "border-sky-500", bg: "bg-sky-500/10" },
+  research: {
+    text: "text-sky-500",
+    ring: "border-sky-500",
+    bg: "bg-sky-500/10",
+  },
   prepare: {
     text: "text-violet-500",
     ring: "border-violet-500",
     bg: "bg-violet-500/10",
   },
-  post: { text: "text-amber-500", ring: "border-amber-500", bg: "bg-amber-500/10" },
-  script: { text: "text-blue-500", ring: "border-blue-500", bg: "bg-blue-500/10" },
+  post: {
+    text: "text-amber-500",
+    ring: "border-amber-500",
+    bg: "bg-amber-500/10",
+  },
+  script: {
+    text: "text-blue-500",
+    ring: "border-blue-500",
+    bg: "bg-blue-500/10",
+  },
   metadata: {
     text: "text-pink-500",
     ring: "border-pink-500",
@@ -436,11 +491,18 @@ export const STAGE_KIND_COLOR: Record<StageKind, StageKindColor> = {
     ring: "border-orange-500",
     bg: "bg-orange-500/10",
   },
-  other: { text: "text-slate-400", ring: "border-slate-400", bg: "bg-slate-400/10" },
+  other: {
+    text: "text-slate-400",
+    ring: "border-slate-400",
+    bg: "bg-slate-400/10",
+  },
 };
 
 /** Public episode route — build the "Open the podcast" link from the slug. */
-export function episodeHref(slug: string | null, id: string | null): string | null {
+export function episodeHref(
+  slug: string | null,
+  id: string | null,
+): string | null {
   if (slug) return `/podcast/${slug}`;
   if (id) return `/podcast/${id}`;
   return null;
