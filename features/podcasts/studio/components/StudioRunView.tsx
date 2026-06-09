@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   Plus,
+  RefreshCw,
   BookOpen,
   Bookmark,
   ListChecks,
@@ -43,6 +44,7 @@ export function StudioRunView({ runId }: { runId: string }) {
     canReconnect,
     reconnect,
     rerunFromSource,
+    refresh,
     detail,
     recovery,
     selectedCoverUrl,
@@ -113,12 +115,24 @@ export function StudioRunView({ runId }: { runId: string }) {
             {isRunning && !streaming ? "Studio run" : "Episode"}
           </h1>
         </div>
-        <Button asChild variant="outline" className="gap-2">
-          <Link href="/podcast/studio/create">
-            <Plus className="h-4 w-4" />
-            New episode
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={refresh}
+            className="gap-1.5 text-muted-foreground"
+            title="Re-sync this run from the server"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
+          <Button asChild variant="outline" className="gap-2">
+            <Link href="/podcast/studio/create">
+              <Plus className="h-4 w-4" />
+              New episode
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">

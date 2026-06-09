@@ -62,6 +62,8 @@ export interface UseStudioRun {
   reconnect: () => void;
   /** Start a fresh run from the saved source (when resume can't proceed). */
   rerunFromSource: () => void;
+  /** Re-pull the durable server record (recovers a page stuck in a stale state). */
+  refresh: () => void;
   /** Durable run record (null until loaded / for a brand-new live run). */
   detail: RunDetail | null;
   recovery: RecoveryState;
@@ -99,6 +101,7 @@ export function useStudioRun(runId: string): UseStudioRun {
   // (Resume / Re-run buttons) can trigger them.
   const resumeRef = useRef<(() => void) | null>(null);
   const rerunRef = useRef<(() => void) | null>(null);
+  const reloadRef = useRef<(() => void) | null>(null);
 
   const cancel = useCallback(() => {
     abortRef.current?.abort();
@@ -285,6 +288,48 @@ export function useStudioRun(runId: string): UseStudioRun {
       }
     };
 
+    // Re-pull the durable server record on demand. The fix for a page stuck in
+    // a stale state (server failed/advanced and the client never heard): re-sync
+    // from the source of truth. Never stomps a live in-progress stream.
+    async function reloadDurable() {
+      const agentRunId = backendRunIdRef.current ?? runId;
+      let d: RunDetail | null = null;
+      try {
+        d = await fetchRun(api, agentRunId);
+      } catch {
+        d = null;
+      }
+      if (cancelled || !d) return;
+      setDetail(d);
+      setRecovery(deriveRecoveryState(d));
+      setNotFound(false);
+      setStalled(false);
+      backendRunIdRef.current = d.run_id;
+      requestRef.current =
+        d.request && Object.keys(d.request).length > 0
+          ? (d.request as unknown as PodcastGenerateRequest)
+          : null;
+      if (streamingRef.current) return; // a live stream owns the state — don't stomp it
+      setState(detailToRunState(d));
+      imgUrlsRef.current = d.assets
+        .filter((a) => a.asset_kind === "image" && a.url)
+        .map((a) => a.url as string);
+      vidUrlsRef.current = d.assets
+        .filter((a) => a.asset_kind === "video" && a.url)
+        .map((a) => a.url as string);
+      if (d.episode_id) {
+        const episode = await podcastService.fetchEpisodeById(d.episode_id);
+        if (episode && !cancelled) {
+          setState((s) => ({ ...s, audioUrl: episode.audio_url || s.audioUrl }));
+          if (episode.image_url) setSelectedCoverUrl(episode.image_url);
+        }
+      }
+      setCanReconnect(
+        (d.liveness === "stalled" || d.liveness === "failed") && d.recovery.resumable,
+      );
+    }
+    reloadRef.current = () => void reloadDurable();
+
     async function boot() {
       setLoading(true);
       // The legacy live-flow row (may be null for agent_run-only manage links).
@@ -392,6 +437,7 @@ export function useStudioRun(runId: string): UseStudioRun {
 
   const reconnect = useCallback(() => resumeRef.current?.(), []);
   const rerunFromSource = useCallback(() => rerunRef.current?.(), []);
+  const refresh = useCallback(() => reloadRef.current?.(), []);
 
   const selectCover = useCallback(
     (url: string) => {
@@ -425,6 +471,7 @@ export function useStudioRun(runId: string): UseStudioRun {
     canReconnect,
     reconnect,
     rerunFromSource,
+    refresh,
     detail,
     recovery,
     selectedCoverUrl,

@@ -10,6 +10,7 @@
 import { AlertTriangle, Clock, RefreshCw, RotateCcw, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { RunStatus } from "@/features/podcasts/generator/types";
+import { humanizeGenerationError } from "@/features/podcasts/generator/errorMessages";
 
 interface RunRecoveryBannerProps {
   status: RunStatus;
@@ -86,19 +87,26 @@ export function RunRecoveryBanner({
   }
 
   if (status === "error") {
+    const h = humanizeGenerationError(error);
     return (
       <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-2.5">
+        <div className="min-w-0 flex items-start gap-2.5">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-          <div>
-            <p className="font-medium">Generation hit an error</p>
-            {error && <p className="mt-0.5 text-destructive/80">{error}</p>}
-            {(canReconnect || canRerun) && (
-              <p className="mt-0.5 text-destructive/70">
-                {canReconnect
+          <div className="min-w-0">
+            <p className="font-medium">{h.short}</p>
+            <p className="mt-0.5 text-destructive/70">
+              {h.hint ??
+                (canReconnect
                   ? "Resume picks up from the failed step — finished work isn't redone."
-                  : "Re-run starts fresh from your saved source."}
-              </p>
+                  : "Re-run starts fresh from your saved source.")}
+            </p>
+            {h.detail && (
+              <details className="mt-1 text-xs text-destructive/60">
+                <summary className="cursor-pointer select-none">Technical details</summary>
+                <p className="mt-1 max-h-32 overflow-y-auto whitespace-pre-wrap break-words font-mono">
+                  {h.detail}
+                </p>
+              </details>
             )}
           </div>
         </div>
