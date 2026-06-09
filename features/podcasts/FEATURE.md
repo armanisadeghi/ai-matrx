@@ -67,6 +67,18 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+- 2026-06-08 — **Per-asset failures are non-fatal (server + client).** A single
+  image/video rejection (Together.ai / Black Forest Labs content moderation
+  false-flagging a benign concept) no longer kills the whole run. Server
+  (`aidream` `podcast_generator._generate_image/_generate_video`): provider
+  exceptions become failed `StageResult`s (soft failures the pipeline carries
+  past), the media gather uses `return_exceptions=True` as a backstop, and
+  Together image gen defaults `disable_safety_checker=True`. Client
+  (`generator/reduce.ts`, `studio/runs/mapping.ts`): a run with audio/an episode
+  is `done` (not `error`) even on `success=false`; `reconcile` no longer drops
+  failed slots (they persist as retryable "Couldn't render" cards via
+  `AssetCard`); durable records the old backend marked `failed` heal to `done`
+  on read. Backend needs deploy to stop *new* aborts; client heals existing ones.
 - 2026-06-08 — **Generator sources fully wired + Persian live.** Every source tile
   in `GeneratorForm` is now functional — no more ComingSoon source placeholders.
   Website / Note / YouTube / Audio-file sources resolve external content into an
