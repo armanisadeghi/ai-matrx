@@ -95,23 +95,28 @@ function applyAsset(
   return copy;
 }
 
-/** Reconcile slots against the authoritative ordered URL list from complete. */
+/**
+ * Reconcile slots at completion. The slots we already hold were built from the
+ * per-asset stream events and ALREADY carry the correct per-slot url + status
+ * (done / failed) — a failed slot must survive so it renders as a retryable
+ * "Couldn't render" card. The complete event's url list is COMPACTED (failed
+ * slots removed), so index-mapping it would misalign and silently drop the
+ * failures. So: trust the streamed slots when we have them; only derive from the
+ * url list when we have none (a reconnect that missed the asset events).
+ */
 function reconcile(
   slots: MediaSlot[],
   urls: string[],
   kind: MediaSlot["kind"],
 ): MediaSlot[] {
-  if (urls.length === 0) return slots;
-  return urls.map((url, index) => {
-    const existing = slots.find((s) => s.index === index);
-    return {
-      index,
-      kind,
-      prompt: existing?.prompt ?? "",
-      url: url || existing?.url || null,
-      status: url ? "done" : existing?.status === "failed" ? "failed" : "done",
-    };
-  });
+  if (slots.length > 0) return slots;
+  return urls.map((url, index) => ({
+    index,
+    kind,
+    prompt: "",
+    url: url || null,
+    status: url ? ("done" as const) : ("failed" as const),
+  }));
 }
 
 /** A stage_done `output` is text we can tease only for content stages — not for
@@ -242,13 +247,23 @@ export function reduce(
     }
 
     case "podcast_complete": {
-      // Resolve any stage still "running" on a successful finish — per-asset
+      // A run is only a TOP-LEVEL failure when the critical path produced
+      // nothing usable — no audio AND no episode. Per-asset failures (a
+      // moderation false-positive on one of several images) are NOT a run
+      // failure: they show as retryable "Couldn't render" cards, never a
+      // page-wide red banner. This mirrors the server, where a non-critical
+      // asset failure is a soft failure the pipeline carries past. (Guards the
+      // client even if a future/older backend still reports success=false on a
+      // run that clearly produced an episode.)
+      const producedEpisode = Boolean(data.audio_url) || Boolean(data.episode_id);
+      const runFailed = !data.success && !producedEpisode;
+      // Resolve any stage still "running" on a non-failed finish — per-asset
       // stages can be left dangling if their asset event didn't arrive.
-      const resolvedStages = data.success
-        ? state.stages.map((s) =>
+      const resolvedStages = runFailed
+        ? state.stages
+        : state.stages.map((s) =>
             s.status === "running" ? { ...s, status: "done" as const } : s,
-          )
-        : state.stages;
+          );
       return {
         ...state,
         stages: resolvedStages,
@@ -262,9 +277,9 @@ export function reduce(
         images: reconcile(state.images, data.image_urls, "image"),
         videos: reconcile(state.videos, data.video_urls, "video"),
         progress: 100,
-        currentLabel: data.success ? "Episode ready" : "Finished with errors",
-        status: data.success ? "done" : "error",
-        error: data.success ? null : (data.error ?? "Generation failed"),
+        currentLabel: runFailed ? "Finished with errors" : "Episode ready",
+        status: runFailed ? "error" : "done",
+        error: runFailed ? (data.error ?? "Generation failed") : null,
       };
     }
 

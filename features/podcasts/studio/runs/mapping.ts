@@ -41,7 +41,13 @@ function slotsFromUrls(
 
 /** Rebuild render-ready run state from a persisted row (no live stream). */
 export function rowToRunState(row: PcStudioRun): PodcastRunState {
-  const status = statusToRun(row.status);
+  // A run that produced audio (or an episode) is a SUCCESS with, at most, some
+  // failed assets — never a page-wide failure, even if the row was marked
+  // 'failed' (e.g. by the pre-fix backend that aborted the whole run on one
+  // moderation-rejected image). Per-asset failures show as retryable cards.
+  const producedEpisode = Boolean(row.audio_url) || Boolean(row.episode_id);
+  const status =
+    row.status === "failed" && producedEpisode ? "done" : statusToRun(row.status);
   return {
     ...INITIAL_RUN_STATE,
     status,
@@ -61,7 +67,7 @@ export function rowToRunState(row: PcStudioRun): PodcastRunState {
     showId: row.show_id ?? null,
     episodeId: row.episode_id ?? null,
     episodeSlug: row.episode_slug ?? null,
-    error: row.error ?? null,
+    error: status === "error" ? (row.error ?? null) : null,
     podcastType: (row.podcast_type as PodcastType | null) ?? null,
   };
 }
@@ -105,7 +111,15 @@ function slotsFromAssets(
 
 /** Rebuild render-ready run state from the durable agent_run detail. */
 export function detailToRunState(detail: RunDetail): PodcastRunState {
-  const status = livenessToRunStatus(detail.liveness);
+  // A run that produced audio (or an episode) is a SUCCESS with, at most, some
+  // failed assets — never a page-wide failure, even if the durable record was
+  // marked 'failed' by the pre-fix backend that aborted the whole run on one
+  // moderation-rejected image. This heals those records on read; per-asset
+  // failures still render as retryable "Couldn't render" cards below.
+  const producedEpisode = Boolean(detail.audio_url) || Boolean(detail.episode_id);
+  const rawStatus = livenessToRunStatus(detail.liveness);
+  const status =
+    rawStatus === "error" && producedEpisode ? "done" : rawStatus;
   const { done, total } = detail.stage_progress;
   const stages: StageRow[] = detail.stages.map((s) => ({
     stage: s.stage_key,
@@ -144,7 +158,7 @@ export function detailToRunState(detail: RunDetail): PodcastRunState {
     episodeId: detail.episode_id ?? null,
     episodeSlug: detail.episode_slug ?? null,
     error:
-      detail.liveness === "failed"
+      status === "error"
         ? "This run was interrupted before finishing."
         : null,
     podcastType: (detail.podcast_type as PodcastType | null) ?? null,
