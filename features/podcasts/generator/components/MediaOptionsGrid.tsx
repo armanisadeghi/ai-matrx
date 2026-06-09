@@ -38,6 +38,8 @@ interface MediaOptionsGridProps {
   assetBusy?: Record<string, boolean>;
   /** Internal model counts per kind (from the durable record). */
   modelCounts?: { image?: number; video?: number };
+  /** Render only one kind's section (so images / videos can be placed apart). */
+  only?: "image" | "video";
 }
 
 function SectionHeader({
@@ -73,6 +75,7 @@ export function MediaOptionsGrid({
   onAddAsset,
   assetBusy,
   modelCounts,
+  only,
 }: MediaOptionsGridProps) {
   const [lightbox, setLightbox] = useState<MediaSlot | null>(null);
   const [showAllImages, setShowAllImages] = useState(false);
@@ -81,8 +84,8 @@ export function MediaOptionsGrid({
   const imagesDone = state.images.filter((s) => s.status === "done").length;
   const videosDone = state.videos.filter((s) => s.status === "done").length;
 
-  const hasImages = state.images.length > 0;
-  const hasVideos = state.videos.length > 0;
+  const hasImages = state.images.length > 0 && only !== "video";
+  const hasVideos = state.videos.length > 0 && only !== "image";
 
   if (!hasImages && !hasVideos) return null;
 
@@ -147,7 +150,7 @@ export function MediaOptionsGrid({
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {visibleImages.map((slot) => (
                 <div key={`img-${slot.index}`}>{imageCard(slot)}</div>
               ))}
@@ -182,7 +185,7 @@ export function MediaOptionsGrid({
             done={videosDone}
             total={state.videos.length}
           />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {visibleVideos.map((slot) => (
               <div key={`vid-${slot.index}`}>{videoCard(slot)}</div>
             ))}

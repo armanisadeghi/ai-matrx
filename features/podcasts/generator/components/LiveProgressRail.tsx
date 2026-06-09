@@ -138,7 +138,7 @@ export function LiveProgressRail({ state, startedAt }: LiveProgressRailProps) {
             />
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <ul className="max-h-[min(60vh,32rem)] space-y-0.5 overflow-y-auto border-t border-border p-2">
+            <ul className="space-y-0.5 border-t border-border p-2">
               {stages.map((stage) => (
                 <li
                   key={stage.key}

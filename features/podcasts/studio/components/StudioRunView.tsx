@@ -11,7 +11,6 @@ import Link from "next/link";
 import {
   Podcast,
   ArrowLeft,
-  CheckCircle2,
   Plus,
   RefreshCw,
   BookOpen,
@@ -31,6 +30,7 @@ import { TranscriptPanel } from "@/features/podcasts/generator/components/Transc
 import { episodeHref } from "@/features/podcasts/generator/constants";
 import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
 import { RunRecoveryBanner } from "@/features/podcasts/studio/components/RunRecoveryBanner";
+import { SourceSummaryPanel } from "@/features/podcasts/studio/components/SourceSummaryPanel";
 
 export function StudioRunView({ runId }: { runId: string }) {
   const {
@@ -97,10 +97,25 @@ export function StudioRunView({ runId }: { runId: string }) {
     state.images.find((s) => s.status === "done" && s.url)?.url ?? null;
   const effectiveCover = selectedCoverUrl ?? firstDoneImage;
   const hasVideo = state.videos.some((s) => s.status === "done" && s.url);
-  const showRail = streaming || state.stages.length > 0;
+  const hasStages = state.stages.length > 0;
+  const hasImages = state.images.length > 0;
+  const hasVideos = state.videos.length > 0;
+  const publicLink = episodeHref(state.episodeSlug, state.episodeId);
+
+  // Shared media-grid wiring (rendered once for images, once for videos).
+  const mediaProps = {
+    state,
+    interactive: isDone && !!state.episodeId,
+    selectedCoverUrl: effectiveCover,
+    onSelectCover: selectCover,
+    onRegenerate: !streaming ? regenerateAsset : undefined,
+    onAddAsset: !streaming ? addAsset : undefined,
+    assetBusy,
+    modelCounts: detail?.model_counts,
+  } as const;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
@@ -138,33 +153,15 @@ export function StudioRunView({ runId }: { runId: string }) {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        {/* Main column */}
-        <div className="order-2 space-y-6 lg:order-1">
-          {isDone && (
-            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
-              <CheckCircle2 className="h-5 w-5 shrink-0" />
-              <span className="font-medium">
-                Your episode is ready — listen, pick a cover, then open or
-                publish it.
-              </span>
-            </div>
-          )}
-          <RunRecoveryBanner
-            status={state.status}
-            streaming={streaming}
-            stalled={stalled}
-            backgroundWorking={backgroundWorking}
-            canReconnect={canReconnect}
-            canRerun={recovery.canRerun}
-            error={state.error}
-            onResume={reconnect}
-            onRerun={rerunFromSource}
-          />
-
+      {/* ── TOP SECTION — fixed two-column. LEFT: the episode (title, description,
+          audio) holds its space so nothing shifts. RIGHT: live status + steps +
+          notifications (this is where the status belongs — no banner on top). ── */}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        {/* LEFT — the episode itself */}
+        <div className="min-w-0 space-y-5">
           <MetadataHero state={state} />
 
-          {/* Audio player on completion — or the live production teaser */}
+          {/* Audio: the finished player, or the live teaser while it renders. */}
           {state.audioUrl ? (
             <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
               <PodcastAudioPlayer
@@ -186,77 +183,82 @@ export function StudioRunView({ runId }: { runId: string }) {
               hasVideo={hasVideo}
             />
           )}
+        </div>
 
-          {isDone && (
-            <ComingSoonCard
-              icon={BookOpen}
-              title="Blog post"
-              description="Turn this episode into a polished, shareable article — generated from the same script."
-            />
-          )}
-
-          <MediaOptionsGrid
-            state={state}
-            interactive={isDone && !!state.episodeId}
-            selectedCoverUrl={effectiveCover}
-            onSelectCover={selectCover}
-            onRegenerate={!streaming ? regenerateAsset : undefined}
-            onAddAsset={!streaming ? addAsset : undefined}
-            assetBusy={assetBusy}
-            modelCounts={detail?.model_counts}
+        {/* RIGHT — status, steps, and notifications */}
+        <div className="space-y-4">
+          {hasStages && <LiveProgressRail state={state} startedAt={startedAt} />}
+          <RunRecoveryBanner
+            status={state.status}
+            streaming={streaming}
+            stalled={stalled}
+            backgroundWorking={backgroundWorking}
+            canReconnect={canReconnect}
+            canRerun={recovery.canRerun}
+            error={state.error}
+            onResume={reconnect}
+            onRerun={rerunFromSource}
           />
+        </div>
+      </div>
 
-          <TranscriptPanel script={state.script} rtl={rtl} />
+      {/* ── FULL WIDTH — images, then blog, then videos, then the details ── */}
+      <div className="mt-10 space-y-8">
+        {hasImages && <MediaOptionsGrid only="image" {...mediaProps} />}
 
-          {isDone && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ComingSoonCard
-                icon={Bookmark}
-                title="Chapter markers"
-                description="Auto-generated timestamps that let listeners jump to each topic."
-              />
-              <ComingSoonCard
-                icon={ListChecks}
-                title="Show notes"
-                description="A structured summary with key points, links, and references."
-              />
-            </div>
-          )}
+        {isDone && (
+          <ComingSoonCard
+            icon={BookOpen}
+            title="Blog post"
+            description="Turn this episode into a polished, shareable article — generated from the same script."
+          />
+        )}
 
-          {isDone && (
-            <div className="space-y-1.5 rounded-xl border border-dashed border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+        {hasVideos && <MediaOptionsGrid only="video" {...mediaProps} />}
+
+        <TranscriptPanel script={state.script} rtl={rtl} />
+
+        {/* The bottom shelf — coming-soon extras, the source, and ids. Tucked
+            away so the episode leads; click to expand the source. */}
+        {isDone && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ComingSoonCard
+              icon={Bookmark}
+              title="Chapter markers"
+              description="Auto-generated timestamps that let listeners jump to each topic."
+            />
+            <ComingSoonCard
+              icon={ListChecks}
+              title="Show notes"
+              description="A structured summary with key points, links, and references."
+            />
+          </div>
+        )}
+
+        {detail && <SourceSummaryPanel detail={detail} />}
+
+        {isDone && (state.episodeId || publicLink) && (
+          <details className="group rounded-2xl border border-border bg-card/40 p-4 text-xs text-muted-foreground">
+            <summary className="cursor-pointer list-none font-medium text-foreground/70">
+              Episode details
+            </summary>
+            <div className="mt-2 space-y-1.5">
               {state.episodeId && (
                 <p className="break-all">
-                  <span className="font-medium text-foreground/70">
-                    Episode ID:
-                  </span>{" "}
+                  <span className="font-medium text-foreground/70">Episode ID:</span>{" "}
                   {state.episodeId}
                 </p>
               )}
-              {episodeHref(state.episodeSlug, state.episodeId) && (
+              {publicLink && (
                 <p>
-                  <span className="font-medium text-foreground/70">
-                    Public link:
-                  </span>{" "}
-                  <Link
-                    href={episodeHref(state.episodeSlug, state.episodeId)!}
-                    className="text-primary hover:underline"
-                  >
-                    {episodeHref(state.episodeSlug, state.episodeId)}
+                  <span className="font-medium text-foreground/70">Public link:</span>{" "}
+                  <Link href={publicLink} className="text-primary hover:underline">
+                    {publicLink}
                   </Link>
                 </p>
               )}
             </div>
-          )}
-        </div>
-
-        {/* Sidebar — live rail only while streaming */}
-        {showRail && (
-          <div className="order-1 lg:order-2">
-            <div className="lg:sticky lg:top-4">
-              <LiveProgressRail state={state} startedAt={startedAt} />
-            </div>
-          </div>
+          </details>
         )}
       </div>
     </div>
