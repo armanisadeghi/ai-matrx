@@ -21,7 +21,10 @@ export const podcastService = {
   },
 
   async createShow(
-    payload: Omit<PcShow, "id" | "created_at" | "updated_at">,
+    // rss_settings is nullable + defaultable in the DB, so callers may omit it.
+    payload: Omit<PcShow, "id" | "created_at" | "updated_at" | "rss_settings"> & {
+      rss_settings?: PcShow["rss_settings"];
+    },
   ): Promise<PcShow> {
     const { data, error } = await supabase
       .from("pc_shows")

@@ -12002,6 +12002,7 @@ export type Database = {
           image_url: string | null
           is_published: boolean
           og_image_url: string | null
+          rss_settings: Json | null
           slug: string
           thumbnail_url: string | null
           title: string
@@ -12015,6 +12016,7 @@ export type Database = {
           image_url?: string | null
           is_published?: boolean
           og_image_url?: string | null
+          rss_settings?: Json | null
           slug: string
           thumbnail_url?: string | null
           title: string
@@ -12028,6 +12030,7 @@ export type Database = {
           image_url?: string | null
           is_published?: boolean
           og_image_url?: string | null
+          rss_settings?: Json | null
           slug?: string
           thumbnail_url?: string | null
           title?: string

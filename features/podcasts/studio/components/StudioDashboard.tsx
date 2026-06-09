@@ -7,15 +7,14 @@
 // failed) is durably recorded in pc_studio_runs and reopenable here, so a
 // creation is never lost. Also surfaces their shows and a path to create.
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Podcast,
   AudioLines,
   Mic,
   Plus,
-  Globe,
-  Lock,
   Radio,
   LogIn,
   CheckCircle2,
@@ -23,6 +22,8 @@ import {
   AlertTriangle,
   Rss,
   BookOpen,
+  UploadCloud,
+  Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ComingSoonCard } from "@/components/coming-soon/ComingSoonCard";
@@ -32,6 +33,7 @@ import { useApiAuth } from "@/hooks/useApiAuth";
 import { useMyPodcasts } from "@/features/podcasts/hooks/useMyPodcasts";
 import { useMyStudioRuns } from "@/features/podcasts/studio/runs/useMyStudioRuns";
 import { CreateShowDialog } from "@/features/podcasts/generator/components/CreateShowDialog";
+import { UploadEpisodeDialog } from "@/features/podcasts/studio/components/UploadEpisodeDialog";
 import { podcastMediaRef } from "@/features/podcasts/generator/media";
 import type { PcShow, PcStudioRun } from "@/features/podcasts/types";
 
@@ -96,7 +98,7 @@ function RunCard({ run }: { run: PcStudioRun }) {
 function ShowChip({ show }: { show: PcShow }) {
   return (
     <Link
-      href={`/podcast/${show.slug}`}
+      href={`/podcast/studio/show/${show.id}`}
       className="flex items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2.5 transition-all hover:border-primary/40 hover:shadow-sm"
     >
       <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
@@ -108,7 +110,7 @@ function ShowChip({ show }: { show: PcShow }) {
           fallbackIcon={<Radio className="h-4 w-4 text-primary/50" />}
         />
       </span>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-foreground">
           {show.title}
         </p>
@@ -116,15 +118,25 @@ function ShowChip({ show }: { show: PcShow }) {
           <p className="truncate text-xs text-muted-foreground">{show.author}</p>
         )}
       </div>
+      <Settings2 className="h-4 w-4 shrink-0 text-muted-foreground" />
     </Link>
   );
 }
 
 export function StudioDashboard() {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const { isAuthenticated } = useApiAuth();
-  const { myShows, registerShow, refresh: refreshPodcasts } = useMyPodcasts();
+  const {
+    myShows,
+    shows,
+    registerShow,
+    registerEpisode,
+    refresh: refreshPodcasts,
+  } = useMyPodcasts();
   const { runs, loading } = useMyStudioRuns();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   if (!isAuthenticated) {
     return (
@@ -177,6 +189,20 @@ export function StudioDashboard() {
             >
               <Plus className="h-4 w-4" />
               New podcast
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (shows.length === 0) {
+                  setDialogOpen(true);
+                  return;
+                }
+                setUploadOpen(true);
+              }}
+              className="gap-2"
+            >
+              <UploadCloud className="h-4 w-4" />
+              Upload episode
             </Button>
             <Button asChild size="lg" className="gap-2 shadow-md">
               <Link href="/podcast/studio/create">
@@ -264,6 +290,20 @@ export function StudioDashboard() {
         onOpenChange={setDialogOpen}
         onCreated={(show) => {
           registerShow(show);
+          void refreshPodcasts();
+          // Take the owner straight to the manage page so a brand-new show
+          // (which has no episodes yet, so it won't appear under "Your
+          // podcasts") is immediately reachable and configurable.
+          startTransition(() => router.push(`/podcast/studio/show/${show.id}`));
+        }}
+      />
+
+      <UploadEpisodeDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        shows={shows}
+        onCreated={(episode) => {
+          registerEpisode(episode);
           void refreshPodcasts();
         }}
       />

@@ -5,18 +5,23 @@
 
 import type {
   PodcastInputDataType,
-  PodcastType,
-  PodcastAudioStyle,
+  PodcastSourceKind,
+  PodcastFormat,
+  PodcastLanguageCode,
 } from "./types";
 import {
   Lightbulb,
   FileText,
   ScrollText,
   Files,
+  Globe,
+  StickyNote,
+  Mic,
   GraduationCap,
   Newspaper,
-  Languages,
-  Globe,
+  PartyPopper,
+  MessageSquare,
+  BookOpen,
   FileSearch,
   ListFilter,
   LayoutGrid,
@@ -27,102 +32,257 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export interface InputTypeOption {
-  value: PodcastInputDataType;
+// ── Sources ─────────────────────────────────────────────────────────────────
+//
+// The source list is data-driven so new inputs can be added without touching
+// the form. Wired sources map to a real `PodcastInputDataType`; coming-soon
+// sources are display-only (no backend wiring yet) and carry their own
+// `kind` so the form can show a placeholder panel for the selected tile.
+
+export interface SourceOption {
+  /** Stable key for selection + the placeholder panel. */
+  kind: PodcastSourceKind;
   label: string;
   /** One-line helper explaining what the pipeline does with this input. */
   helper: string;
   icon: LucideIcon;
-  /** The form control to render for this input type. */
-  control: "text" | "urls";
+  /** The form control to render for a wired source. */
+  control: "text" | "urls" | "none";
   /** Placeholder for the text control. */
   placeholder?: string;
+  /** Wired sources carry the request's input_data_type; coming-soon ones don't. */
+  inputDataType?: PodcastInputDataType;
+  /** Display-only tiles render a ComingSoon badge and a placeholder panel. */
+  comingSoon?: boolean;
 }
 
-export const INPUT_TYPE_OPTIONS: InputTypeOption[] = [
+export const SOURCE_OPTIONS: SourceOption[] = [
   {
-    value: "topic",
+    kind: "topic",
     label: "From a topic",
     helper: "A topic, question, or single keyword — our research agent does the rest.",
     icon: Lightbulb,
     control: "text",
     placeholder: "e.g. How CRISPR gene editing actually works",
+    inputDataType: "topic",
   },
   {
-    value: "partial_content",
+    kind: "partial_content",
     label: "From rough notes",
     helper: "Paste partial or messy text — we clean and structure it for you.",
     icon: FileText,
     control: "text",
     placeholder: "Paste your rough notes, bullet points, or draft…",
+    inputDataType: "partial_content",
   },
   {
-    value: "full_content",
+    kind: "full_content",
     label: "From a full script",
     helper: "Ready-to-go content, passed through unchanged. Fastest path.",
     icon: ScrollText,
     control: "text",
     placeholder: "Paste your complete, finished content…",
+    inputDataType: "full_content",
   },
   {
-    value: "file_url",
-    label: "From files",
+    kind: "file_url",
+    label: "From a file",
     helper: "PDFs, slides, or docs by URL — read multimodally and distilled.",
     icon: Files,
     control: "urls",
+    inputDataType: "file_url",
+  },
+  {
+    kind: "website_url",
+    label: "From a website URL",
+    helper: "Paste a link — we scrape the page and clean it into a clean source.",
+    icon: Globe,
+    control: "none",
+    comingSoon: true,
+  },
+  {
+    kind: "note",
+    label: "From a note",
+    helper: "Pick from your existing Notes and turn it into an episode.",
+    icon: StickyNote,
+    control: "none",
+    comingSoon: true,
+  },
+  {
+    kind: "voice_memo",
+    label: "Record yourself",
+    helper: "Record a quick voice memo — we transcribe it into the source.",
+    icon: Mic,
+    control: "none",
+    comingSoon: true,
   },
 ];
 
-export interface PodcastTypeOption {
-  value: PodcastType;
+// ── Languages ───────────────────────────────────────────────────────────────
+//
+// Source: Google Gemini 2.5 TTS supported languages (the 24 GA locales) plus
+// Persian (Preview). https://docs.cloud.google.com/text-to-speech/docs/gemini-tts
+// English is wired/default today; the rest are display-only (`enabled: false`)
+// and render a small "Soon" chip but stay selectable-looking so the full reach
+// is visible. Persian maps behind the scenes to the wired `podcast_type:
+// "persian"` Farsi path — see deriveBackendPodcastType().
+
+export interface LanguageOption {
+  /** BCP-47 locale code (Gemini TTS). */
+  code: PodcastLanguageCode;
   label: string;
-  helper: string;
-  icon: LucideIcon;
+  /** Endonym shown after the English name. */
+  native: string;
+  /** Only English is wired today; the rest show a "Soon" chip. */
+  enabled: boolean;
+  /** Right-to-left script (Arabic, Persian). */
   rtl?: boolean;
 }
 
-export const PODCAST_TYPE_OPTIONS: PodcastTypeOption[] = [
+export const DEFAULT_LANGUAGE: PodcastLanguageCode = "en-US";
+
+export const LANGUAGE_OPTIONS: LanguageOption[] = [
+  { code: "en-US", label: "English", native: "English", enabled: true },
+  { code: "es-ES", label: "Spanish", native: "Español", enabled: false },
+  { code: "fr-FR", label: "French", native: "Français", enabled: false },
+  { code: "de-DE", label: "German", native: "Deutsch", enabled: false },
+  { code: "it-IT", label: "Italian", native: "Italiano", enabled: false },
+  { code: "pt-BR", label: "Portuguese", native: "Português", enabled: false },
+  { code: "nl-NL", label: "Dutch", native: "Nederlands", enabled: false },
+  { code: "pl-PL", label: "Polish", native: "Polski", enabled: false },
+  { code: "ro-RO", label: "Romanian", native: "Română", enabled: false },
+  { code: "ru-RU", label: "Russian", native: "Русский", enabled: false },
+  { code: "uk-UA", label: "Ukrainian", native: "Українська", enabled: false },
+  { code: "tr-TR", label: "Turkish", native: "Türkçe", enabled: false },
+  { code: "ar-EG", label: "Arabic", native: "العربية", enabled: false, rtl: true },
+  { code: "fa-IR", label: "Persian", native: "فارسی", enabled: false, rtl: true },
+  { code: "hi-IN", label: "Hindi", native: "हिन्दी", enabled: false },
+  { code: "bn-BD", label: "Bangla", native: "বাংলা", enabled: false },
+  { code: "mr-IN", label: "Marathi", native: "मराठी", enabled: false },
+  { code: "ta-IN", label: "Tamil", native: "தமிழ்", enabled: false },
+  { code: "te-IN", label: "Telugu", native: "తెలుగు", enabled: false },
+  { code: "id-ID", label: "Indonesian", native: "Indonesia", enabled: false },
+  { code: "vi-VN", label: "Vietnamese", native: "Tiếng Việt", enabled: false },
+  { code: "th-TH", label: "Thai", native: "ไทย", enabled: false },
+  { code: "ja-JP", label: "Japanese", native: "日本語", enabled: false },
+  { code: "ko-KR", label: "Korean", native: "한국어", enabled: false },
+];
+
+/** True for languages whose script reads right-to-left. */
+export function isRtlLanguage(code: PodcastLanguageCode): boolean {
+  return LANGUAGE_OPTIONS.find((l) => l.code === code)?.rtl ?? false;
+}
+
+/**
+ * Bridge the user-facing Language + Format split back to the single
+ * `podcast_type` the backend still honors. Persian/Farsi is a language to the
+ * user, but the wired pipeline models it as `podcast_type: "persian"`, so we
+ * derive it here. Every other language currently runs the English path; only
+ * the Format drives `podcast_type` for them.
+ */
+export function deriveBackendPodcastType(
+  language: PodcastLanguageCode,
+  format: PodcastFormat,
+): "educational" | "news" | "persian" {
+  if (language === "fa-IR") return "persian";
+  if (format === "news") return "news";
+  return "educational";
+}
+
+// ── Formats ─────────────────────────────────────────────────────────────────
+//
+// Formerly conflated with `podcast_type` (which also carried "persian" — that
+// has moved to Language). Educational + News are wired; the rest are
+// display-only previews of the product vision.
+
+export interface FormatOption {
+  value: PodcastFormat;
+  label: string;
+  helper: string;
+  icon: LucideIcon;
+  /** Educational + News are wired; others render a ComingSoon badge. */
+  enabled: boolean;
+}
+
+export const FORMAT_OPTIONS: FormatOption[] = [
   {
     value: "educational",
     label: "Educational",
     helper: "Two-host teaching dialogue.",
     icon: GraduationCap,
+    enabled: true,
   },
   {
     value: "news",
     label: "News",
     helper: "News-interview style.",
     icon: Newspaper,
+    enabled: true,
   },
   {
-    value: "persian",
-    label: "Persian",
-    helper: "Persian-language news (RTL).",
-    icon: Languages,
-    rtl: true,
+    value: "entertainment",
+    label: "Entertainment",
+    helper: "Loose, lively, for-fun banter.",
+    icon: PartyPopper,
+    enabled: false,
+  },
+  {
+    value: "interview",
+    label: "Interview",
+    helper: "Host-and-guest Q&A.",
+    icon: MessageSquare,
+    enabled: false,
+  },
+  {
+    value: "storytelling",
+    label: "Storytelling",
+    helper: "Narrative, single-thread arc.",
+    icon: BookOpen,
+    enabled: false,
   },
 ];
 
-export const AUDIO_STYLE_OPTIONS: { value: PodcastAudioStyle; label: string }[] =
-  [
-    { value: "Podcast Interview", label: "Podcast Interview" },
-    { value: "Educational Podcast", label: "Educational Podcast" },
-    { value: "پادکست خبری ایران", label: "پادکست خبری ایران (Persian News)" },
-  ];
+// ── Processing layers ───────────────────────────────────────────────────────
+//
+// Two distinct stages, both display-only today. Pre-script runs between the
+// source and the script (translate / summarize / expand / fact-check the
+// source). Post-script runs between the script and the audio.
 
-export interface PostPrepOption {
+export interface ProcessingOption {
   value: string;
   label: string;
-  /** Only "none" is wired today; the rest render disabled with a "Soon" chip. */
+  helper: string;
+}
+
+export const PRE_SCRIPT_PROCESSING_OPTIONS: ProcessingOption[] = [
+  { value: "translate", label: "Translate", helper: "Render the source in another language first." },
+  { value: "summarize", label: "Summarize", helper: "Condense a long source to its essentials." },
+  { value: "expand", label: "Expand", helper: "Enrich a thin source with researched detail." },
+  { value: "fact_check", label: "Fact-check", helper: "Verify claims before they reach the script." },
+];
+
+export const POST_SCRIPT_PROCESSING_OPTIONS: ProcessingOption[] = [
+  { value: "tone_polish", label: "Tone polish", helper: "Smooth phrasing and pacing for the voices." },
+  { value: "length_trim", label: "Length trim", helper: "Tighten the script to a target runtime." },
+  { value: "ssml_markup", label: "Emphasis markup", helper: "Add emphasis and pauses for delivery." },
+];
+
+// ── Hosts ───────────────────────────────────────────────────────────────────
+//
+// Only 2 hosts is wired today. The rest are display-only previews.
+
+export interface HostCountOption {
+  value: string;
+  label: string;
+  helper: string | null;
   enabled: boolean;
 }
 
-export const POST_PREP_OPTIONS: PostPrepOption[] = [
-  { value: "none", label: "None", enabled: true },
-  { value: "translation", label: "Translation", enabled: false },
-  { value: "summarization", label: "Summarization", enabled: false },
-  { value: "expansion", label: "Expansion", enabled: false },
-  { value: "fact_checking", label: "Fact checking", enabled: false },
+export const HOST_COUNT_OPTIONS: HostCountOption[] = [
+  { value: "1", label: "1", helper: "Solo", enabled: false },
+  { value: "2", label: "2", helper: "Current", enabled: true },
+  { value: "3", label: "3", helper: null, enabled: false },
+  { value: "4-20", label: "4–20", helper: "Up to 20", enabled: false },
 ];
 
 /**

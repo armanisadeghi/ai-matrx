@@ -14,6 +14,8 @@ files, with a live-streaming studio, resumable runs, and public share pages.
 | Studio dashboard | `/podcast/studio` | `features/podcasts/studio/components/StudioDashboard.tsx` |
 | Create | `/podcast/studio/create` | `CreateView.tsx` → `generator/components/GeneratorForm.tsx` |
 | Live run | `/podcast/studio/run/[id]` | `StudioRunView.tsx` → `studio/runs/useStudioRun.ts` |
+| **Manage show (owner)** | `/podcast/studio/show/[showId]` | `studio/components/ShowManageClient.tsx` — owner-facing show settings: cover/title/description/author, RSS distribution (`rss_settings`), feed URL + submit helpers, episodes list |
+| **Upload episode (owner)** | dialog (Studio dashboard + manage page) | `studio/components/UploadEpisodeDialog.tsx` — non-AI "upload your own audio/video" episode creation via `useFileUpload` |
 | Admin | `/administration/podcasts` | `components/admin/PodcastsContainer.tsx` |
 
 ## Data flow
@@ -30,7 +32,7 @@ files, with a live-streaming studio, resumable runs, and public share pages.
 
 ## Tables (`pc_*`, project `txzxabzwovsujtloxrus`)
 
-- **`pc_shows`** — series (slug, title, description, image_url, og/thumbnail, author, is_published). No owner column → "my shows" is derived from episodes.
+- **`pc_shows`** — series (slug, title, description, image_url, og/thumbnail, author, is_published, **`rss_settings` jsonb**). No owner column → "my shows" is derived from episodes. `rss_settings` (Apple category, owner name/email, language, explicit) is read by the feed builder + manage UI; always guard with `?? {}` (migration `pc_shows_rss_settings.sql`).
 - **`pc_episodes`** — episode (slug, show_id, user_id, title, description, audio_url, image_url, video_url, og_image_url, thumbnail_url, display_mode, episode_number, duration_seconds, is_published).
 - **`pc_studio_runs`** — durable generation record (status, request, title, description, script, audio_url, image_urls[], video_urls[], prompts[], selected_cover_url, episode_id, backend_run_id, error).
 
@@ -65,6 +67,16 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+- 2026-06-08 — **User-facing show management.** Added owner show-settings page
+  (`/podcast/studio/show/[showId]` → `ShowManageClient`): cover/title/description/author
+  + RSS distribution settings persisted to new `pc_shows.rss_settings` jsonb
+  (Apple category list, owner name/email, language, explicit) + computed feed URL
+  with copy/submit helpers (Verify-&-submit gated `ComingSoon`). Added the non-AI
+  "Upload an episode" flow (`UploadEpisodeDialog`): audio via `useFileUpload`
+  (durable public URL), optional cover/video via `AssetUploader`, `display_mode`
+  derived from provided media. Wired `feed.xml` to read `rss_settings ?? {}`.
+  Migration `migrations/pc_shows_rss_settings.sql` written but NOT yet applied —
+  reads guard with `?? {}` until then.
 - 2026-06-08 — Media durability defense-in-depth (DB guard + classifier + server
   primitive + `_persist_episode` fix + ESLint fence); healed 5 live episodes.
   Created this FEATURE.md + roadmap docs. Began the feature push (RSS, file_id,

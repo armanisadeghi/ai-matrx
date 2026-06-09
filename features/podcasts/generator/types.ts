@@ -13,6 +13,8 @@ export type PodcastInputDataType =
   | "full_content"
   | "file_url";
 
+/** The backend's single style discriminator. Still carries "persian" for the
+ *  Farsi pipeline; the form derives it from the user-facing Language. */
 export type PodcastType = "educational" | "news" | "persian";
 
 export type PodcastPostPrepOption =
@@ -22,10 +24,60 @@ export type PodcastPostPrepOption =
   | "expansion"
   | "fact_checking";
 
-export type PodcastAudioStyle =
-  | "Podcast Interview"
-  | "Educational Podcast"
-  | "پادکست خبری ایران";
+// ── User-facing dimensions (form-only) ──────────────────────────────────────
+//
+// These model how the user thinks about a podcast — separate Language and
+// Format axes, plus a richer set of source kinds. Some values are wired to the
+// request; others are display-only previews of the product vision. The form
+// collapses them back to the backend's `podcast_type` via
+// `deriveBackendPodcastType()`.
+
+/** Source tiles. The first four map to a wired `PodcastInputDataType`; the rest
+ *  are display-only (no backend wiring yet). */
+export type PodcastSourceKind =
+  | "topic"
+  | "partial_content"
+  | "full_content"
+  | "file_url"
+  | "website_url"
+  | "note"
+  | "voice_memo";
+
+/** BCP-47 locale codes — the Gemini 2.5 TTS supported languages. English is
+ *  wired; the rest are display-only previews. */
+export type PodcastLanguageCode =
+  | "en-US"
+  | "es-ES"
+  | "fr-FR"
+  | "de-DE"
+  | "it-IT"
+  | "pt-BR"
+  | "nl-NL"
+  | "pl-PL"
+  | "ro-RO"
+  | "ru-RU"
+  | "uk-UA"
+  | "tr-TR"
+  | "ar-EG"
+  | "fa-IR"
+  | "hi-IN"
+  | "bn-BD"
+  | "mr-IN"
+  | "ta-IN"
+  | "te-IN"
+  | "id-ID"
+  | "vi-VN"
+  | "th-TH"
+  | "ja-JP"
+  | "ko-KR";
+
+/** Conversational format. Educational + News are wired; the rest are previews. */
+export type PodcastFormat =
+  | "educational"
+  | "news"
+  | "entertainment"
+  | "interview"
+  | "storytelling";
 
 export interface PodcastGenerateRequest {
   // What to make a podcast about (pick the input type, fill the matching field).
@@ -33,9 +85,8 @@ export interface PodcastGenerateRequest {
   input_data?: string; // topic / partial_content / full_content / single file URL
   file_urls?: string[]; // file_url: one or more publicly accessible URLs
 
-  // Style.
+  // Style — the single discriminator the backend honors.
   podcast_type: PodcastType;
-  audio_style?: PodcastAudioStyle | null;
   post_prep_option?: PodcastPostPrepOption;
 
   // Optional context.

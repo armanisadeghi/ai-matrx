@@ -14,7 +14,7 @@
 // Resolves the show by slug OR id. Returns 404 (plain Response) when missing.
 
 import { createClient } from '@/utils/supabase/server';
-import type { PcShow, PcEpisode } from '@/features/podcasts/types';
+import type { PcShow, PcEpisode, PcShowRssSettings } from '@/features/podcasts/types';
 
 export const revalidate = 3600;
 
@@ -107,9 +107,17 @@ export async function GET(
 
     const episodes = (episodeRows ?? []) as PcEpisode[];
 
+    // Owner-authored distribution settings. Guard with `?? {}` — the
+    // `rss_settings` column may be null or absent until its migration is applied.
+    const rss = (show.rss_settings ?? {}) as PcShowRssSettings;
+    const channelCategory = rss.category ?? DEFAULT_CATEGORY;
+    const channelLanguage = rss.language ?? DEFAULT_LANGUAGE;
+    const channelExplicit = rss.explicit === true;
+    const ownerEmail = rss.owner_email ?? DEFAULT_OWNER_EMAIL;
+
     const showPageUrl = `${BASE}/podcast/${show.slug}`;
     const channelCover = show.image_url ?? show.og_image_url ?? show.thumbnail_url ?? '';
-    const ownerName = show.author ?? DEFAULT_OWNER_NAME;
+    const ownerName = rss.owner_name ?? show.author ?? DEFAULT_OWNER_NAME;
     const channelDescription = show.description ?? `Listen to ${show.title}`;
 
     // lastBuildDate = newest episode's created_at, or now if there are none.
@@ -154,15 +162,15 @@ export async function GET(
   <title>${cdata(show.title)}</title>
   <link>${escapeXml(showPageUrl)}</link>
   <description>${cdata(channelDescription)}</description>
-  <language>${DEFAULT_LANGUAGE}</language>
+  <language>${escapeXml(channelLanguage)}</language>
   <lastBuildDate>${rfc822(lastBuild)}</lastBuildDate>
   <itunes:author>${escapeXml(ownerName)}</itunes:author>
   <itunes:summary>${cdata(channelDescription)}</itunes:summary>
-  <itunes:explicit>false</itunes:explicit>
-  <itunes:category text="${escapeXml(DEFAULT_CATEGORY)}"/>
+  <itunes:explicit>${channelExplicit ? 'true' : 'false'}</itunes:explicit>
+  <itunes:category text="${escapeXml(channelCategory)}"/>
   <itunes:owner>
     <itunes:name>${escapeXml(ownerName)}</itunes:name>
-    <itunes:email>${escapeXml(DEFAULT_OWNER_EMAIL)}</itunes:email>
+    <itunes:email>${escapeXml(ownerEmail)}</itunes:email>
   </itunes:owner>${
       channelCover ? `\n  <itunes:image href="${escapeXml(channelCover)}"/>` : ''
   }

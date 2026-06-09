@@ -1,5 +1,25 @@
 export type PcDisplayMode = "audio_only" | "with_metadata" | "with_video";
 
+/**
+ * Owner-authored RSS / podcast-directory distribution config for a show.
+ * Persisted to `pc_shows.rss_settings` (JSONB — migration
+ * `migrations/pc_shows_rss_settings.sql`). Every field is optional; the
+ * settings UI and the feed builder supply defaults, and reads guard with
+ * `?? {}` so a null/absent column is safe before the migration is applied.
+ */
+export type PcShowRssSettings = {
+  /** Apple Podcasts top-level category text (see PC_APPLE_CATEGORIES). */
+  category?: string;
+  /** Podcast owner display name (required by Apple before submission). */
+  owner_name?: string;
+  /** Podcast owner email (required by Apple; used for directory contact). */
+  owner_email?: string;
+  /** Feed language code, e.g. "en-us". */
+  language?: string;
+  /** iTunes explicit flag. */
+  explicit?: boolean;
+};
+
 export type PcShow = {
   id: string;
   slug: string;
@@ -10,6 +30,11 @@ export type PcShow = {
   thumbnail_url: string | null;
   author: string | null;
   is_published: boolean;
+  /**
+   * RSS distribution settings. Nullable + may be absent until the
+   * `pc_shows_rss_settings` migration is applied — always read with `?? {}`.
+   */
+  rss_settings: PcShowRssSettings | null;
   created_at: string;
   updated_at: string;
 };
