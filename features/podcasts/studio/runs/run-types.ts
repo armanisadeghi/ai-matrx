@@ -98,6 +98,14 @@ export interface RunStatusDto {
   episode_id: string | null;
 }
 
+/** How many internal models the user can pick per asset kind (the per-asset
+ *  model picker). Static product config — mirrors the backend alias map
+ *  (5 image agents, 2 video agents). The regenerate/add compute endpoints
+ *  validate the chosen alias server-side, so a drift here only mis-sizes the
+ *  picker, never breaks generation. NOT data — so it lives client-side, not
+ *  fetched from the Python backend. */
+export const MODEL_COUNTS: { image: number; video: number } = { image: 5, video: 2 };
+
 /** A run is non-terminal (worth polling / showing live) while it can still change. */
 export function isNonTerminal(liveness: RunLiveness): boolean {
   return liveness === "alive" || liveness === "stalled";

@@ -8,37 +8,33 @@
 // the old useMyStudioRuns (which read the fragile pc_studio_runs table).
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useBackendApi } from "@/hooks/useBackendApi";
 import { useApiAuth } from "@/hooks/useApiAuth";
-import { fetchRuns } from "./runsApi";
+import { fetchPodcastRuns } from "./runsRepository";
 import { isNonTerminal, type RunSummary } from "./run-types";
 
 const POLL_MS = 15_000;
 
 export function useStudioRuns() {
-  const api = useBackendApi();
   const { isAuthenticated } = useApiAuth();
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const load = useCallback(
-    async (signal?: AbortSignal) => {
-      try {
-        const next = await fetchRuns(api, { signal });
-        if (signal?.aborted) return;
-        setRuns(next);
-        setError(null);
-      } catch (err) {
-        if (signal?.aborted) return;
-        setError(err instanceof Error ? err.message : "Failed to load runs");
-      } finally {
-        if (!signal?.aborted) setLoading(false);
-      }
-    },
-    [api],
-  );
+  const load = useCallback(async (signal?: AbortSignal) => {
+    try {
+      // Direct Supabase read (RLS-scoped to the user) — no backend hop.
+      const next = await fetchPodcastRuns();
+      if (signal?.aborted) return;
+      setRuns(next);
+      setError(null);
+    } catch (err) {
+      if (signal?.aborted) return;
+      setError(err instanceof Error ? err.message : "Failed to load runs");
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
+  }, []);
 
   // Initial load (once auth is ready).
   useEffect(() => {

@@ -39,10 +39,10 @@ import { rowToRunState, detailToRunState } from "./mapping";
 import { takePendingStart } from "./pendingStart";
 import { reportMediaDurabilityViolation } from "@/lib/media/durability";
 import {
-  fetchRun,
   regenerateAsset as regenerateAssetApi,
   addAsset as addAssetApi,
 } from "./runsApi";
+import { fetchPodcastRunDetail } from "./runsRepository";
 import { deriveRecoveryState, type RecoveryState } from "./recovery";
 import type { RunAsset, RunAssetKind, RunDetail } from "./run-types";
 
@@ -315,7 +315,7 @@ export function useStudioRun(runId: string): UseStudioRun {
       const agentRunId = backendRunIdRef.current ?? runId;
       let d: RunDetail | null = null;
       try {
-        d = await fetchRun(api, agentRunId);
+        d = await fetchPodcastRunDetail(agentRunId);
       } catch {
         d = null;
       }
@@ -360,7 +360,7 @@ export function useStudioRun(runId: string): UseStudioRun {
       const agentRunId = row?.backend_run_id ?? runId;
       let runDetail: RunDetail | null = null;
       try {
-        runDetail = await fetchRun(api, agentRunId);
+        runDetail = await fetchPodcastRunDetail(agentRunId);
       } catch {
         runDetail = null;
       }

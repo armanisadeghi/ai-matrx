@@ -1,52 +1,18 @@
 // features/podcasts/studio/runs/runsApi.ts
 //
-// Thin client over the aidream podcast-runs endpoints. Pure functions that take
-// the `useBackendApi()` client as the first arg (so they're trivially testable
-// and don't bind a hook) — the hooks in this folder supply the client.
+// COMPUTE-only client for the podcast-runs backend. Per the platform rule the
+// React client reads the database DIRECTLY via Supabase (see runsRepository.ts);
+// the Python backend is only called to DO things that require server compute —
+// here, regenerating or adding a single asset by invoking an AI image/video
+// agent. Reads never go through here.
 
 import type { useBackendApi } from "@/hooks/useBackendApi";
-import type { RunAsset, RunAssetKind, RunDetail, RunStatusDto, RunSummary } from "./run-types";
+import type { RunAsset, RunAssetKind } from "./run-types";
 
 type Api = ReturnType<typeof useBackendApi>;
 
-export interface ListRunsParams {
-  status?: string;
-  includeDrafts?: boolean;
-  limit?: number;
-  signal?: AbortSignal;
-}
-
-export async function fetchRuns(
-  api: Api,
-  { status, includeDrafts = true, limit = 100, signal }: ListRunsParams = {},
-): Promise<RunSummary[]> {
-  const qs = new URLSearchParams();
-  if (status) qs.set("status", status);
-  qs.set("include_drafts", String(includeDrafts));
-  qs.set("limit", String(limit));
-  const res = await api.get(`/podcast/runs?${qs.toString()}`, signal);
-  const data = (await res.json()) as { runs: RunSummary[] };
-  return data.runs ?? [];
-}
-
-export async function fetchRun(
-  api: Api,
-  runId: string,
-  signal?: AbortSignal,
-): Promise<RunDetail> {
-  const res = await api.get(`/podcast/runs/${runId}`, signal);
-  return (await res.json()) as RunDetail;
-}
-
-export async function fetchRunStatus(
-  api: Api,
-  runId: string,
-  signal?: AbortSignal,
-): Promise<RunStatusDto> {
-  const res = await api.get(`/podcast/runs/${runId}/status`, signal);
-  return (await res.json()) as RunStatusDto;
-}
-
+/** Regenerate a single image/video (optionally with a chosen model / prompt).
+ *  Runs an AI agent server-side and returns the new durable asset. */
 export async function regenerateAsset(
   api: Api,
   runId: string,
@@ -61,6 +27,8 @@ export async function regenerateAsset(
   return (await res.json()) as RunAsset;
 }
 
+/** Add a brand-new asset (manual description / beyond the default slots).
+ *  Runs an AI agent server-side and returns the new durable asset. */
 export async function addAsset(
   api: Api,
   runId: string,
