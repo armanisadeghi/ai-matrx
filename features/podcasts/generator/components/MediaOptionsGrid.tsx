@@ -150,7 +150,7 @@ export function MediaOptionsGrid({
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
               {visibleImages.map((slot) => (
                 <div key={`img-${slot.index}`}>{imageCard(slot)}</div>
               ))}
@@ -185,7 +185,7 @@ export function MediaOptionsGrid({
             done={videosDone}
             total={state.videos.length}
           />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {visibleVideos.map((slot) => (
               <div key={`vid-${slot.index}`}>{videoCard(slot)}</div>
             ))}

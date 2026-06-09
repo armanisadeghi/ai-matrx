@@ -98,24 +98,10 @@ export function StudioRunView({ runId }: { runId: string }) {
   const effectiveCover = selectedCoverUrl ?? firstDoneImage;
   const hasVideo = state.videos.some((s) => s.status === "done" && s.url);
   const hasStages = state.stages.length > 0;
-  const hasImages = state.images.length > 0;
-  const hasVideos = state.videos.length > 0;
   const publicLink = episodeHref(state.episodeSlug, state.episodeId);
 
-  // Shared media-grid wiring (rendered once for images, once for videos).
-  const mediaProps = {
-    state,
-    interactive: isDone && !!state.episodeId,
-    selectedCoverUrl: effectiveCover,
-    onSelectCover: selectCover,
-    onRegenerate: !streaming ? regenerateAsset : undefined,
-    onAddAsset: !streaming ? addAsset : undefined,
-    assetBusy,
-    modelCounts: detail?.model_counts,
-  } as const;
-
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
@@ -153,12 +139,9 @@ export function StudioRunView({ runId }: { runId: string }) {
         </div>
       </div>
 
-      {/* ── TOP SECTION — fixed two-column. LEFT: the episode (title, description,
-          audio) holds its space so nothing shifts. RIGHT: live status + steps +
-          notifications (this is where the status belongs — no banner on top). ── */}
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-        {/* LEFT — the episode itself */}
-        <div className="min-w-0 space-y-5">
+      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        {/* LEFT — the episode: title, description, audio, then the visual options. */}
+        <div className="order-1 min-w-0 space-y-6">
           <MetadataHero state={state} />
 
           {/* Audio: the finished player, or the live teaser while it renders. */}
@@ -183,11 +166,46 @@ export function StudioRunView({ runId }: { runId: string }) {
               hasVideo={hasVideo}
             />
           )}
+
+          {isDone && (
+            <ComingSoonCard
+              icon={BookOpen}
+              title="Blog post"
+              description="Turn this episode into a polished, shareable article — generated from the same script."
+            />
+          )}
+
+          <MediaOptionsGrid
+            state={state}
+            interactive={isDone && !!state.episodeId}
+            selectedCoverUrl={effectiveCover}
+            onSelectCover={selectCover}
+            onRegenerate={!streaming ? regenerateAsset : undefined}
+            onAddAsset={!streaming ? addAsset : undefined}
+            assetBusy={assetBusy}
+            modelCounts={detail?.model_counts}
+          />
+
+          {isDone && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ComingSoonCard
+                icon={Bookmark}
+                title="Chapter markers"
+                description="Auto-generated timestamps that let listeners jump to each topic."
+              />
+              <ComingSoonCard
+                icon={ListChecks}
+                title="Show notes"
+                description="A structured summary with key points, links, and references."
+              />
+            </div>
+          )}
         </div>
 
-        {/* RIGHT — status, steps, and notifications */}
-        <div className="space-y-4">
+        {/* RIGHT — status & steps on top, then the script, source, and resources. */}
+        <div className="order-2 space-y-4">
           {hasStages && <LiveProgressRail state={state} startedAt={startedAt} />}
+
           <RunRecoveryBanner
             status={state.status}
             streaming={streaming}
@@ -199,67 +217,35 @@ export function StudioRunView({ runId }: { runId: string }) {
             onResume={reconnect}
             onRerun={rerunFromSource}
           />
+
+          {state.script && <TranscriptPanel script={state.script} rtl={rtl} />}
+
+          {detail && <SourceSummaryPanel detail={detail} />}
+
+          {isDone && (state.episodeId || publicLink) && (
+            <details className="group rounded-2xl border border-border bg-card/40 p-4 text-xs text-muted-foreground">
+              <summary className="cursor-pointer list-none font-medium text-foreground/70">
+                Episode details
+              </summary>
+              <div className="mt-2 space-y-1.5">
+                {state.episodeId && (
+                  <p className="break-all">
+                    <span className="font-medium text-foreground/70">Episode ID:</span>{" "}
+                    {state.episodeId}
+                  </p>
+                )}
+                {publicLink && (
+                  <p>
+                    <span className="font-medium text-foreground/70">Public link:</span>{" "}
+                    <Link href={publicLink} className="text-primary hover:underline">
+                      {publicLink}
+                    </Link>
+                  </p>
+                )}
+              </div>
+            </details>
+          )}
         </div>
-      </div>
-
-      {/* ── FULL WIDTH — images, then blog, then videos, then the details ── */}
-      <div className="mt-10 space-y-8">
-        {hasImages && <MediaOptionsGrid only="image" {...mediaProps} />}
-
-        {isDone && (
-          <ComingSoonCard
-            icon={BookOpen}
-            title="Blog post"
-            description="Turn this episode into a polished, shareable article — generated from the same script."
-          />
-        )}
-
-        {hasVideos && <MediaOptionsGrid only="video" {...mediaProps} />}
-
-        <TranscriptPanel script={state.script} rtl={rtl} />
-
-        {/* The bottom shelf — coming-soon extras, the source, and ids. Tucked
-            away so the episode leads; click to expand the source. */}
-        {isDone && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ComingSoonCard
-              icon={Bookmark}
-              title="Chapter markers"
-              description="Auto-generated timestamps that let listeners jump to each topic."
-            />
-            <ComingSoonCard
-              icon={ListChecks}
-              title="Show notes"
-              description="A structured summary with key points, links, and references."
-            />
-          </div>
-        )}
-
-        {detail && <SourceSummaryPanel detail={detail} />}
-
-        {isDone && (state.episodeId || publicLink) && (
-          <details className="group rounded-2xl border border-border bg-card/40 p-4 text-xs text-muted-foreground">
-            <summary className="cursor-pointer list-none font-medium text-foreground/70">
-              Episode details
-            </summary>
-            <div className="mt-2 space-y-1.5">
-              {state.episodeId && (
-                <p className="break-all">
-                  <span className="font-medium text-foreground/70">Episode ID:</span>{" "}
-                  {state.episodeId}
-                </p>
-              )}
-              {publicLink && (
-                <p>
-                  <span className="font-medium text-foreground/70">Public link:</span>{" "}
-                  <Link href={publicLink} className="text-primary hover:underline">
-                    {publicLink}
-                  </Link>
-                </p>
-              )}
-            </div>
-          </details>
-        )}
       </div>
     </div>
   );
