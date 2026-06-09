@@ -2,23 +2,26 @@
 
 // features/podcasts/studio/runs/useStudioRun.ts
 //
-// The run page's state owner. Given a runId it:
-//   1. Loads the persisted pc_studio_runs row and seeds the render-ready state,
-//      so a returning user sees the full creation rebuilt from the DB.
-//   2. If reached fresh from the create form, it streams the live generation and
-//      persists each milestone straight from the events.
-//   3. SURVIVES interruptions: the backend mints a checkpoint run_id (echoed in
-//      the early podcast_run event) which we store. If the connection drops
-//      (tab backgrounded, navigation, network blip) or the user returns to a
-//      still-running run, we POST /podcast/resume/{backend_run_id} — the backend
-//      replays from its last good stage (completed work is reused), so a long
-//      run is never lost.
+// The run page's state owner. The DURABLE source of truth is the server-side
+// agent_run record (GET /podcast/runs/{id}); pc_studio_runs is only a live-flow
+// scratch row. Given a runId this:
+//   1. Resolves the agent_run id (the URL id IS one for manage-page links; for a
+//      live create-flow run it's the pc_studio_runs id whose backend_run_id is
+//      the agent_run id) and loads the durable detail — so a run is NEVER a dead
+//      end, even with no pc_studio_runs row.
+//   2. If reached fresh from the create form, streams the live generation and
+//      persists each milestone.
+//   3. Recovers: Resume replays the server checkpoint (only the missing tail
+//      re-runs); Re-run-from-source starts fresh from the saved request.
+//   4. Heartbeat watchdog: the server emits podcast_tick every ~3s; if the
+//      stream goes silent we mark the run "stalled" and settle lingering
+//      "queued" assets to failed — never claiming queued without a pulse.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { consumeStream } from "@/lib/api/stream-parser";
-import { reduce } from "@/features/podcasts/generator/reduce";
+import { reduce, settleStaleAssets } from "@/features/podcasts/generator/reduce";
 import { podcastService } from "@/features/podcasts/service";
 import {
   INITIAL_RUN_STATE,
@@ -31,13 +34,19 @@ import {
   type PodcastCompleteEvent,
 } from "@/features/podcasts/generator/types";
 import { studioRunsService } from "./service";
-import { rowToRunState } from "./mapping";
+import { rowToRunState, detailToRunState } from "./mapping";
 import { takePendingStart } from "./pendingStart";
 import { reportMediaDurabilityViolation } from "@/lib/media/durability";
+import { fetchRun } from "./runsApi";
+import { deriveRecoveryState, type RecoveryState } from "./recovery";
+import type { RunDetail } from "./run-types";
 
 const GENERATE_PATH = "/podcast/generate";
 const resumePath = (backendRunId: string) => `/podcast/resume/${backendRunId}`;
 const MAX_AUTO_RESUMES = 3;
+// No live event (podcast_tick fires ~every 3s) for this long ⇒ the stream is
+// silently dead. Mark stalled + settle "queued" assets. 5+ missed ticks.
+const STALL_MS = 20_000;
 
 export interface UseStudioRun {
   state: PodcastRunState;
@@ -46,9 +55,16 @@ export interface UseStudioRun {
   notFound: boolean;
   /** True while this page owns a live generation/resume stream. */
   streaming: boolean;
-  /** True when the run is interrupted (running, no live stream) and resumable. */
+  /** Live stream went silent (no heartbeat) — recoverable, not done. */
+  stalled: boolean;
+  /** True when the run is interrupted and resumable from a checkpoint. */
   canReconnect: boolean;
   reconnect: () => void;
+  /** Start a fresh run from the saved source (when resume can't proceed). */
+  rerunFromSource: () => void;
+  /** Durable run record (null until loaded / for a brand-new live run). */
+  detail: RunDetail | null;
+  recovery: RecoveryState;
   selectedCoverUrl: string | null;
   selectCover: (url: string) => void;
   cancel: () => void;
@@ -61,8 +77,13 @@ export function useStudioRun(runId: string): UseStudioRun {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [streaming, setStreaming] = useState(false);
+  const [stalled, setStalled] = useState(false);
   const [canReconnect, setCanReconnect] = useState(false);
   const [selectedCoverUrl, setSelectedCoverUrl] = useState<string | null>(null);
+  const [detail, setDetail] = useState<RunDetail | null>(null);
+  const [recovery, setRecovery] = useState<RecoveryState>(() =>
+    deriveRecoveryState(null),
+  );
 
   const abortRef = useRef<AbortController | null>(null);
   const startedRef = useRef(false);
@@ -72,9 +93,12 @@ export function useStudioRun(runId: string): UseStudioRun {
   const completedRef = useRef(false);
   const imgUrlsRef = useRef<string[]>([]);
   const vidUrlsRef = useRef<string[]>([]);
+  const lastHeartbeatRef = useRef(0);
+  const requestRef = useRef<PodcastGenerateRequest | null>(null);
   // Bound to the run driver inside the boot effect so external callers
-  // (reconnect button) can trigger a resume.
+  // (Resume / Re-run buttons) can trigger them.
   const resumeRef = useRef<(() => void) | null>(null);
+  const rerunRef = useRef<(() => void) | null>(null);
 
   const cancel = useCallback(() => {
     abortRef.current?.abort();
@@ -99,6 +123,17 @@ export function useStudioRun(runId: string): UseStudioRun {
     vidUrlsRef.current = [];
 
     function onData(raw: PodcastDataEvent) {
+      // Any event is a sign of life — feed the heartbeat watchdog. Resetting
+      // to false is a no-op render when already false (React bails on an
+      // unchanged primitive), so no need to read `stalled` here.
+      lastHeartbeatRef.current = Date.now();
+      setStalled(false);
+
+      const kind = (raw as { type?: string }).type;
+      // podcast_tick is a pure heartbeat — already counted above; reduce ignores
+      // it, so short-circuit to avoid a no-op render.
+      if (kind === "podcast_tick") return;
+
       if (raw.type === "podcast_run") {
         const r = raw as PodcastRunEvent;
         if (r.run_id && backendRunIdRef.current !== r.run_id) {
@@ -156,7 +191,7 @@ export function useStudioRun(runId: string): UseStudioRun {
         resumeAttemptsRef.current >= MAX_AUTO_RESUMES
       ) {
         // Out of automatic retries (or unresumable) — leave it interrupted but
-        // recoverable. The user can hit Reconnect, or it resumes on next visit.
+        // recoverable. The user can hit Resume, or it resumes on next visit.
         setCanReconnect(!!backendRunIdRef.current && !completedRef.current);
         return;
       }
@@ -172,7 +207,9 @@ export function useStudioRun(runId: string): UseStudioRun {
       abortRef.current = controller;
       streamingRef.current = true;
       setStreaming(true);
+      setStalled(false);
       setCanReconnect(false);
+      lastHeartbeatRef.current = Date.now();
       if (kind === "generate") {
         setState({
           ...INITIAL_RUN_STATE,
@@ -240,28 +277,66 @@ export function useStudioRun(runId: string): UseStudioRun {
         void runStream("resume");
       }
     };
+    rerunRef.current = () => {
+      if (requestRef.current && !streamingRef.current) {
+        resumeAttemptsRef.current = 0;
+        completedRef.current = false;
+        void runStream("generate", requestRef.current);
+      }
+    };
 
     async function boot() {
       setLoading(true);
+      // The legacy live-flow row (may be null for agent_run-only manage links).
       const row = await studioRunsService.fetchRunById(runId);
       if (cancelled) return;
-      if (!row) {
+      // Resolve the durable agent_run id: a live row points at it via
+      // backend_run_id; otherwise the URL id IS the agent_run id.
+      const agentRunId = row?.backend_run_id ?? runId;
+      let runDetail: RunDetail | null = null;
+      try {
+        runDetail = await fetchRun(api, agentRunId);
+      } catch {
+        runDetail = null;
+      }
+      if (cancelled) return;
+
+      if (!row && !runDetail) {
         setNotFound(true);
         setLoading(false);
         return;
       }
 
-      setState(rowToRunState(row));
-      setSelectedCoverUrl(row.selected_cover_url ?? null);
-      backendRunIdRef.current = row.backend_run_id ?? null;
-      imgUrlsRef.current = [...(row.image_urls ?? [])];
-      vidUrlsRef.current = [...(row.video_urls ?? [])];
+      if (runDetail) {
+        setDetail(runDetail);
+        setRecovery(deriveRecoveryState(runDetail));
+        setState(detailToRunState(runDetail));
+        backendRunIdRef.current = runDetail.run_id;
+        requestRef.current =
+          runDetail.request && Object.keys(runDetail.request).length > 0
+            ? (runDetail.request as unknown as PodcastGenerateRequest)
+            : null;
+        imgUrlsRef.current = runDetail.assets
+          .filter((a) => a.asset_kind === "image" && a.url)
+          .map((a) => a.url as string);
+        vidUrlsRef.current = runDetail.assets
+          .filter((a) => a.asset_kind === "video" && a.url)
+          .map((a) => a.url as string);
+        setSelectedCoverUrl(runDetail.cover_url ?? null);
+      } else if (row) {
+        setState(rowToRunState(row));
+        setSelectedCoverUrl(row.selected_cover_url ?? null);
+        backendRunIdRef.current = row.backend_run_id ?? null;
+        imgUrlsRef.current = [...(row.image_urls ?? [])];
+        vidUrlsRef.current = [...(row.video_urls ?? [])];
+      }
       setLoading(false);
 
       // A completed run carries DURABLE (public/CDN) audio + cover on its
       // episode — prefer those over the expiring signed stream URLs.
-      if (row.episode_id) {
-        const episode = await podcastService.fetchEpisodeById(row.episode_id);
+      const episodeId = runDetail?.episode_id ?? row?.episode_id ?? null;
+      if (episodeId) {
+        const episode = await podcastService.fetchEpisodeById(episodeId);
         if (episode && !cancelled) {
           setState((s) => ({ ...s, audioUrl: episode.audio_url || s.audioUrl }));
           if (episode.image_url) setSelectedCoverUrl(episode.image_url);
@@ -272,19 +347,22 @@ export function useStudioRun(runId: string): UseStudioRun {
       startedRef.current = true;
 
       const pending = takePendingStart(runId);
-      if (pending && row.status === "running") {
+      const liveness = runDetail?.liveness;
+      if (pending && (row?.status === "running" || liveness === "alive" || !runDetail)) {
+        // Fresh from the create form — stream the live generation.
         void runStream("generate", pending);
-      } else if (row.status === "running" && backendRunIdRef.current) {
-        // Returned to an interrupted run — reconnect and continue.
+      } else if (liveness === "alive" && backendRunIdRef.current) {
+        // Still running server-side — attach to the live stream (replay).
         void runStream("resume");
-      } else if (row.status === "failed" && backendRunIdRef.current) {
-        // A failed run with a checkpoint can be resumed from the failed stage —
-        // offer it manually (don't auto-retry a run the backend already failed).
+      } else if (
+        (liveness === "stalled" ||
+          liveness === "failed" ||
+          row?.status === "running" ||
+          row?.status === "failed") &&
+        backendRunIdRef.current
+      ) {
+        // Interrupted with a checkpoint — offer manual Resume (don't auto-burn).
         setCanReconnect(true);
-      } else if (row.status === "running") {
-        // Running but no checkpoint id captured (dropped very early) — show the
-        // interrupted state; nothing to resume from.
-        setCanReconnect(false);
       }
     }
 
@@ -295,7 +373,25 @@ export function useStudioRun(runId: string): UseStudioRun {
     };
   }, [runId, api, persist]);
 
+  // Heartbeat watchdog: while a stream is open but silent past STALL_MS, mark
+  // the run stalled and settle lingering "queued" assets to failed.
+  useEffect(() => {
+    if (!streaming) return;
+    const id = setInterval(() => {
+      if (
+        lastHeartbeatRef.current &&
+        Date.now() - lastHeartbeatRef.current > STALL_MS
+      ) {
+        setStalled(true);
+        setState((s) => (s.status === "running" ? settleStaleAssets(s) : s));
+        setCanReconnect(!!backendRunIdRef.current);
+      }
+    }, 4000);
+    return () => clearInterval(id);
+  }, [streaming]);
+
   const reconnect = useCallback(() => resumeRef.current?.(), []);
+  const rerunFromSource = useCallback(() => rerunRef.current?.(), []);
 
   const selectCover = useCallback(
     (url: string) => {
@@ -325,8 +421,12 @@ export function useStudioRun(runId: string): UseStudioRun {
     loading,
     notFound,
     streaming,
+    stalled,
     canReconnect,
     reconnect,
+    rerunFromSource,
+    detail,
+    recovery,
     selectedCoverUrl,
     selectCover,
     cancel,

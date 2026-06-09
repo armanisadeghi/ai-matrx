@@ -8,10 +8,12 @@ import {
   INITIAL_RUN_STATE,
   type PodcastRunState,
   type MediaSlot,
+  type StageRow,
   type PodcastType,
 } from "@/features/podcasts/generator/types";
 import type { PcStudioRun, PcStudioRunStatus } from "@/features/podcasts/types";
 import type { PcStudioRunUpdate } from "./service";
+import type { RunAsset, RunDetail, RunLiveness } from "./run-types";
 
 function statusToRun(status: PcStudioRunStatus): PodcastRunState["status"] {
   if (status === "completed") return "done";
@@ -61,6 +63,91 @@ export function rowToRunState(row: PcStudioRun): PodcastRunState {
     episodeSlug: row.episode_slug ?? null,
     error: row.error ?? null,
     podcastType: (row.podcast_type as PodcastType | null) ?? null,
+  };
+}
+
+// ── Durable run record (agent_run) → render state ───────────────────────────
+//
+// The manage page + recovery read the durable record (GET /podcast/runs/{id}),
+// not pc_studio_runs. This rebuilds the same render-ready state from it, so an
+// interrupted run shows its source, script, and every asset generated so far.
+
+function livenessToRunStatus(l: RunLiveness): PodcastRunState["status"] {
+  if (l === "completed") return "done";
+  if (l === "failed" || l === "cancelled") return "error";
+  if (l === "draft") return "idle";
+  return "running"; // alive | stalled
+}
+
+function assetStatusToSlot(status: string): MediaSlot["status"] {
+  if (status === "completed") return "done";
+  if (status === "failed") return "failed";
+  return "pending";
+}
+
+function slotsFromAssets(
+  assets: RunAsset[],
+  kind: MediaSlot["kind"],
+): MediaSlot[] {
+  return assets
+    .filter((a) => a.asset_kind === kind)
+    .sort((a, b) => a.slot - b.slot)
+    .map((a) => ({
+      index: a.slot,
+      kind,
+      prompt: a.prompt ?? "",
+      // Prefer the (often signed) URL; podcastMediaRef recovers the file_id so
+      // InlineMediaRef re-mints a durable URL for the owner.
+      url: a.url ?? null,
+      status: assetStatusToSlot(a.status),
+    }));
+}
+
+/** Rebuild render-ready run state from the durable agent_run detail. */
+export function detailToRunState(detail: RunDetail): PodcastRunState {
+  const status = livenessToRunStatus(detail.liveness);
+  const { done, total } = detail.stage_progress;
+  const stages: StageRow[] = detail.stages.map((s) => ({
+    stage: s.stage_key,
+    label: s.stage_key,
+    status:
+      s.status === "completed" ? "done" : s.status === "failed" ? "failed" : "running",
+    step: 0,
+    total: 0,
+  }));
+  return {
+    ...INITIAL_RUN_STATE,
+    status,
+    totalSteps: total,
+    progress:
+      status === "done"
+        ? 100
+        : total > 0
+          ? Math.min(99, Math.round((done / total) * 100))
+          : 0,
+    currentLabel:
+      status === "done"
+        ? "Episode ready"
+        : status === "error"
+          ? "Finished with errors"
+          : status === "running"
+            ? "In progress"
+            : "",
+    title: detail.title ?? "",
+    description: detail.description ?? "",
+    script: detail.script ?? "",
+    scriptPreview: detail.script ?? "",
+    audioUrl: detail.audio_url ?? null,
+    images: slotsFromAssets(detail.assets, "image"),
+    videos: slotsFromAssets(detail.assets, "video"),
+    stages,
+    episodeId: detail.episode_id ?? null,
+    episodeSlug: detail.episode_slug ?? null,
+    error:
+      detail.liveness === "failed"
+        ? "This run was interrupted before finishing."
+        : null,
+    podcastType: (detail.podcast_type as PodcastType | null) ?? null,
   };
 }
 

@@ -83,6 +83,8 @@ export interface RunDetail extends RunSummary {
     error: unknown;
   }>;
   recovery: RunRecovery;
+  /** Raw original request — used to "re-run from saved source". */
+  request: Record<string, unknown>;
 }
 
 export interface RunStatusDto {

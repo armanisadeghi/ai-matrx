@@ -120,6 +120,26 @@ function looksLikeUrl(value: string): boolean {
   return /^https?:\/\//i.test(value.trim());
 }
 
+/**
+ * Settle assets/stages that are still "pending"/"running" when the live stream
+ * has gone silent (no heartbeat) — so the UI stops claiming "queued" for work
+ * that is no longer happening. Pure + orthogonal to `reduce` (the watchdog in
+ * useStudioRun calls this; it never rides on a stream event). On resume/refresh
+ * the durable record restores the true per-asset status.
+ */
+export function settleStaleAssets(state: PodcastRunState): PodcastRunState {
+  const settle = (slots: MediaSlot[]): MediaSlot[] =>
+    slots.map((s) =>
+      s.status === "pending" || s.status === "running"
+        ? { ...s, status: "failed" as const }
+        : s,
+    );
+  const stages = state.stages.map((s) =>
+    s.status === "running" ? { ...s, status: "failed" as const } : s,
+  );
+  return { ...state, images: settle(state.images), videos: settle(state.videos), stages };
+}
+
 export function reduce(
   state: PodcastRunState,
   data: PodcastDataEvent,
