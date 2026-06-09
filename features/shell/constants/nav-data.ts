@@ -261,8 +261,11 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: "List",
         exact: true,
       },
+      { label: "New Transcript", href: "/transcripts/new", iconName: "Plus" },
+      { label: "Processor", href: "/transcripts/processor", iconName: "FileText" },
       { label: "Studio", href: "/transcripts/studio", iconName: "Columns2" },
       { label: "Scribe", href: "/transcripts/scribe", iconName: "Mic" },
+      { label: "Cleanup", href: "/transcripts/cleanup", iconName: "Eraser" },
     ],
   },
   {

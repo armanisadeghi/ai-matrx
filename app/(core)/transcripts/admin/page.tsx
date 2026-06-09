@@ -29,10 +29,31 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
   routes: [
     {
       url: "/transcripts",
-      label: "Workspace (canonical processor)",
+      label: "List (savior entry)",
       description:
-        "Authed users land here on the processor (record / upload / browse / edit / organize). Guests see the marketing landing. Replaces the old `/transcription/processor` URL.",
+        "Authed users see the list of all their transcripts with per-row UI pickers. Guests see the marketing landing. Replaces the forced-into-processor trap.",
       filePath: "app/(core)/transcripts/page.tsx",
+      status: "Live",
+      notes: [
+        "Mirrors the /agents/all shape",
+        "Search + sort + paginate client-side",
+        "Per-row actions: Processor / Studio / Cleanup",
+      ],
+    },
+    {
+      url: "/transcripts/processor",
+      label: "Processor (the original workspace)",
+      description:
+        "Single-transcript record / upload / browse / edit / organize UI. Reached from the list row 'Open' action. Replaces the old `/transcription/processor` URL.",
+      filePath: "app/(core)/transcripts/processor/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/transcripts/new",
+      label: "New transcript (picker)",
+      description:
+        "Server-rendered picker: upload / record / studio / cleanup / import. Mirrors `/agents/new`.",
+      filePath: "app/(core)/transcripts/new/page.tsx",
       status: "Live",
     },
     {

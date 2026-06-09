@@ -148,9 +148,8 @@ const nextConfig = {
             // (no `/processor` sub-route — matches the "one thing with slashes"
             // structure). Permanent so search indexes update.
             { source: '/transcription', destination: '/transcripts', permanent: true },
-            { source: '/transcription/processor', destination: '/transcripts', permanent: true },
+            { source: '/transcription/processor', destination: '/transcripts/processor', permanent: true },
             { source: '/transcription/:path*', destination: '/transcripts/:path*', permanent: true },
-            { source: '/transcripts/processor', destination: '/transcripts', permanent: true },
             // 2026-05-28: SSR experiment consolidation. The (ssr) route group
             // moved from URL /ssr/* to /demos/ssr/* so every demo/test surface
             // shares the unified /demos/* prefix. The (ssr) layout (LiteStoreProvider
