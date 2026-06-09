@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { activeSessionIdSet } from "../redux/slice";
 
-export const STUDIO_ROUTE_BASE = "/transcription/studio";
+export const STUDIO_ROUTE_BASE = "/transcripts/studio";
 
 export function studioSessionHref(sessionId: string | null): string {
   if (!sessionId) return STUDIO_ROUTE_BASE;
