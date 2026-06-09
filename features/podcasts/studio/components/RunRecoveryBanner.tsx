@@ -7,7 +7,7 @@
 // Resume (replay the server checkpoint — finished work isn't redone) and/or
 // Re-run from the saved source. Alive/completed runs render nothing here.
 
-import { AlertTriangle, Clock, RefreshCw, RotateCcw, WifiOff } from "lucide-react";
+import { AlertTriangle, Clock, Loader2, RefreshCw, RotateCcw, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { RunStatus } from "@/features/podcasts/generator/types";
 import { humanizeGenerationError } from "@/features/podcasts/generator/errorMessages";
@@ -16,6 +16,8 @@ interface RunRecoveryBannerProps {
   status: RunStatus;
   streaming: boolean;
   stalled: boolean;
+  /** Connection dropped but the backend is still generating server-side. */
+  backgroundWorking: boolean;
   canReconnect: boolean;
   canRerun: boolean;
   error: string | null;
@@ -58,12 +60,28 @@ export function RunRecoveryBanner({
   status,
   streaming,
   stalled,
+  backgroundWorking,
   canReconnect,
   canRerun,
   error,
   onResume,
   onRerun,
 }: RunRecoveryBannerProps) {
+  // Connection dropped, but the backend keeps generating server-side — we're
+  // polling the durable record. This is the calm, common case (audio is long).
+  if (backgroundWorking) {
+    return (
+      <div className="flex items-start gap-2.5 rounded-xl border border-sky-500/30 bg-sky-500/5 px-4 py-3 text-sm text-sky-700 dark:text-sky-400">
+        <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin" />
+        <span>
+          Still generating in the background — this can take a few minutes (the
+          audio is the long step). You can leave this page; it&apos;ll keep going
+          and update automatically.
+        </span>
+      </div>
+    );
+  }
+
   // Live stream went silent — recoverable, not done.
   if (streaming && stalled) {
     return (

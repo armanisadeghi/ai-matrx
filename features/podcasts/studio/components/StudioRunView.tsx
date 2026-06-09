@@ -29,6 +29,9 @@ import { MediaOptionsGrid } from "@/features/podcasts/generator/components/Media
 import { ResultActions } from "@/features/podcasts/generator/components/ResultActions";
 import { TranscriptPanel } from "@/features/podcasts/generator/components/TranscriptPanel";
 import { episodeHref } from "@/features/podcasts/generator/constants";
+import { useFileSrc } from "@/features/files";
+import type { FileSource } from "@/features/files";
+import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
 import { RunRecoveryBanner } from "@/features/podcasts/studio/components/RunRecoveryBanner";
 import { SourceSummaryPanel } from "@/features/podcasts/studio/components/SourceSummaryPanel";
@@ -41,6 +44,7 @@ export function StudioRunView({ runId }: { runId: string }) {
     notFound,
     streaming,
     stalled,
+    backgroundWorking,
     canReconnect,
     reconnect,
     rerunFromSource,
@@ -53,6 +57,31 @@ export function StudioRunView({ runId }: { runId: string }) {
     selectedCoverUrl,
     selectCover,
   } = useStudioRun(runId);
+
+  // The durable run record's `audio_url` is an EXPIRING signed URL — fed raw to
+  // <audio> it 403s once the signature lapses, which is the "audio flashes then
+  // 'Unable to load audio'" bug on any run revisited after the signature window.
+  // Re-mint through the file handler: prefer the recoverable file_id, otherwise
+  // recover the id from the URL path. Public/CDN URLs (episode audio) pass
+  // through unchanged. This is the single durable lane for the studio player.
+  // Resolve a DURABLE audio src through the file handler: prefer a recoverable
+  // file_id (re-minted for the owner, never an expiring signed URL), else
+  // recover the id from the URL path, else fall back to the raw URL as a
+  // signed source. Passing a proper FileSource (not a MediaRef output target).
+  const audioFileId =
+    detail?.audio_file_id ??
+    (state.audioUrl ? fileIdFromUserFilesUrl(state.audioUrl) : null);
+  const audioSource: FileSource | null = audioFileId
+    ? { kind: "file_id", fileId: audioFileId }
+    : state.audioUrl
+      ? { kind: "signed_url", url: state.audioUrl }
+      : null;
+  const durableAudioUrl = useFileSrc(audioSource);
+  // Show the player whenever audio EXISTS — either a direct url on the state or a
+  // recoverable file_id on the durable record (state.audioUrl is often null for a
+  // revisited run even though the audio is there). The handler-resolved url is
+  // preferred; fall back to the raw state url while it resolves.
+  const playableAudioUrl = durableAudioUrl ?? state.audioUrl ?? null;
 
   if (loading) {
     return (
@@ -145,8 +174,8 @@ export function StudioRunView({ runId }: { runId: string }) {
             <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
               <CheckCircle2 className="h-5 w-5 shrink-0" />
               <span className="font-medium">
-                Your episode is ready — listen, pick a cover, then open or publish
-                it.
+                Your episode is ready — listen, pick a cover, then open or
+                publish it.
               </span>
             </div>
           )}
@@ -154,6 +183,7 @@ export function StudioRunView({ runId }: { runId: string }) {
             status={state.status}
             streaming={streaming}
             stalled={stalled}
+            backgroundWorking={backgroundWorking}
             canReconnect={canReconnect}
             canRerun={recovery.canRerun}
             error={state.error}
@@ -168,10 +198,10 @@ export function StudioRunView({ runId }: { runId: string }) {
           <MetadataHero state={state} />
 
           {/* Audio player on completion — or the live production teaser */}
-          {state.audioUrl ? (
+          {playableAudioUrl ? (
             <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
               <PodcastAudioPlayer
-                audioUrl={state.audioUrl}
+                audioUrl={playableAudioUrl}
                 title={state.title}
                 coverImageUrl={effectiveCover ?? undefined}
               />

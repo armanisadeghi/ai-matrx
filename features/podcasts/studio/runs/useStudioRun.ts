@@ -48,7 +48,6 @@ import type { RunAsset, RunAssetKind, RunDetail } from "./run-types";
 
 const GENERATE_PATH = "/podcast/generate";
 const resumePath = (backendRunId: string) => `/podcast/resume/${backendRunId}`;
-const MAX_AUTO_RESUMES = 3;
 // No live event (podcast_tick fires ~every 3s) for this long ⇒ the stream is
 // silently dead. Mark stalled + settle "queued" assets. 5+ missed ticks.
 const STALL_MS = 20_000;
@@ -62,6 +61,9 @@ export interface UseStudioRun {
   streaming: boolean;
   /** Live stream went silent (no heartbeat) — recoverable, not done. */
   stalled: boolean;
+  /** The client connection dropped but the backend is still generating
+   *  server-side (detach_on_disconnect) — we're polling the durable record. */
+  backgroundWorking: boolean;
   /** True when the run is interrupted and resumable from a checkpoint. */
   canReconnect: boolean;
   reconnect: () => void;
@@ -99,6 +101,7 @@ export function useStudioRun(runId: string): UseStudioRun {
   const [notFound, setNotFound] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [stalled, setStalled] = useState(false);
+  const [backgroundWorking, setBackgroundWorking] = useState(false);
   const [canReconnect, setCanReconnect] = useState(false);
   const [selectedCoverUrl, setSelectedCoverUrl] = useState<string | null>(null);
   const [detail, setDetail] = useState<RunDetail | null>(null);
@@ -139,6 +142,7 @@ export function useStudioRun(runId: string): UseStudioRun {
 
   useEffect(() => {
     let cancelled = false;
+    let bgPollTimer: ReturnType<typeof setTimeout> | null = null;
     backendRunIdRef.current = null;
     resumeAttemptsRef.current = 0;
     completedRef.current = false;
@@ -206,23 +210,65 @@ export function useStudioRun(runId: string): UseStudioRun {
       }
     }
 
-    function scheduleResume() {
-      if (
-        cancelled ||
-        completedRef.current ||
-        !backendRunIdRef.current ||
-        resumeAttemptsRef.current >= MAX_AUTO_RESUMES
-      ) {
-        // Out of automatic retries (or unresumable) — leave it interrupted but
-        // recoverable. The user can hit Resume, or it resumes on next visit.
+    // The backend keeps generating after a client disconnect
+    // (detach_on_disconnect on /generate AND /resume). So when our stream drops
+    // we OBSERVE the durable record via Supabase polls instead of re-firing the
+    // stream — re-streaming would re-run the in-flight audio (double work +
+    // checkpoint races). The run completes server-side; we reflect it. Manual
+    // Resume is offered only if the run is genuinely stalled (no server pulse).
+    async function watchInBackground() {
+      if (cancelled || completedRef.current || !backendRunIdRef.current) {
         setCanReconnect(!!backendRunIdRef.current && !completedRef.current);
         return;
       }
-      resumeAttemptsRef.current += 1;
-      const delay = 1500 * resumeAttemptsRef.current;
-      setTimeout(() => {
-        if (!cancelled) void runStream("resume");
-      }, delay);
+      setBackgroundWorking(true);
+      setStalled(false);
+      setCanReconnect(false);
+      let polls = 0;
+      const MAX_POLLS = 80; // ~16 min @ 12s — covers the long TTS audio step
+      const poll = async () => {
+        bgPollTimer = null;
+        if (cancelled || streamingRef.current) {
+          setBackgroundWorking(false);
+          return;
+        }
+        polls += 1;
+        const d = await fetchPodcastRunDetail(
+          backendRunIdRef.current ?? runId,
+        ).catch(() => null);
+        if (cancelled) return;
+        if (d) {
+          setDetail(d);
+          setRecovery(deriveRecoveryState(d));
+          setState(detailToRunState(d));
+          if (d.liveness === "completed" || d.liveness === "failed") {
+            completedRef.current = true;
+            setBackgroundWorking(false);
+            if (d.episode_id) {
+              const ep = await podcastService.fetchEpisodeById(d.episode_id);
+              if (ep && !cancelled) {
+                setState((s) => ({ ...s, audioUrl: ep.audio_url || s.audioUrl }));
+                if (ep.image_url) setSelectedCoverUrl(ep.image_url);
+              }
+            }
+            return; // terminal — stop polling
+          }
+          if (d.liveness === "stalled") {
+            // No server-side heartbeat — genuinely stuck; offer manual Resume.
+            setBackgroundWorking(false);
+            setCanReconnect(d.recovery.resumable);
+            return;
+          }
+          // 'alive' — still generating server-side; keep observing.
+        }
+        if (polls < MAX_POLLS) {
+          bgPollTimer = setTimeout(poll, 12_000);
+        } else {
+          setBackgroundWorking(false);
+          setCanReconnect(!!backendRunIdRef.current);
+        }
+      };
+      bgPollTimer = setTimeout(poll, 6_000);
     }
 
     async function runStream(kind: "generate" | "resume", body?: PodcastGenerateRequest) {
@@ -269,25 +315,27 @@ export function useStudioRun(runId: string): UseStudioRun {
               setCanReconnect(!!backendRunIdRef.current);
             },
             onEnd: () => {
-              setState((s) => {
-                if (s.status !== "running") return s;
-                // Stream closed without a complete event → interrupted, not done.
-                if (!completedRef.current) {
-                  scheduleResume();
-                  return s;
-                }
-                return { ...s, status: "done", progress: 100 };
-              });
+              if (completedRef.current) {
+                setState((s) =>
+                  s.status === "running" ? { ...s, status: "done", progress: 100 } : s,
+                );
+              } else {
+                // Stream closed without a complete event → the backend is most
+                // likely still generating (detach_on_disconnect). Observe the
+                // durable record instead of re-driving the pipeline.
+                void watchInBackground();
+              }
             },
           },
           controller.signal,
         );
       } catch (e) {
         if (controller.signal.aborted) return; // navigation/cancel — not a failure
-        // Network drop (TypeError "network error", reset, etc.) — try to resume
-        // from the backend checkpoint instead of losing the run.
-        console.warn("[studio-run] stream dropped, will try resume:", e);
-        scheduleResume();
+        // Network drop (TypeError "network error", reset, etc.). The backend
+        // keeps running on disconnect — poll the durable record rather than
+        // re-firing the stream (which would re-run the in-flight audio).
+        console.warn("[studio-run] stream dropped; watching durable record:", e);
+        void watchInBackground();
       } finally {
         streamingRef.current = false;
         setStreaming(false);
@@ -434,6 +482,7 @@ export function useStudioRun(runId: string): UseStudioRun {
     void boot();
     return () => {
       cancelled = true;
+      if (bgPollTimer) clearTimeout(bgPollTimer);
       abortRef.current?.abort();
     };
   }, [runId, api, persist]);
@@ -598,6 +647,7 @@ export function useStudioRun(runId: string): UseStudioRun {
     notFound,
     streaming,
     stalled,
+    backgroundWorking,
     canReconnect,
     reconnect,
     rerunFromSource,
