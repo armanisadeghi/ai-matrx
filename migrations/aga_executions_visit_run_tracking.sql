@@ -14,10 +14,18 @@
 -- The rate-limit BEFORE-INSERT trigger now fires only for kind='run' so
 -- visits never count against an app's quota.
 --
+-- 2026-06-08 REWRITE: the original draft of this file targeted the
+-- pre-rename object names (update_agent_app_success_rate /
+-- trg_agent_app_rate_limit / enforce_agent_app_rate_limit). The deployed
+-- schema renamed the agent_app* family to aga_* (finished in code 2026-04-25),
+-- so the original would have errored on apply (enforce_agent_app_rate_limit()
+-- does not exist) and rolled back, leaving aga_executions.kind absent — which
+-- is exactly why /api/agent-apps/[id]/track inserts were silently failing.
+-- This version targets the live aga_ names. Transaction wrapping is handled by
+-- db/apply_migrations.py (no in-file BEGIN/COMMIT).
+--
 -- Idempotent: rerunnable.
 -- ============================================================
-
-BEGIN;
 
 -- ------------------------------------------------------------
 -- 1. Add `kind` column ('visit' | 'run').
@@ -49,14 +57,15 @@ CREATE INDEX IF NOT EXISTS idx_aga_executions_app_kind_created
 -- ------------------------------------------------------------
 -- 3. Success-rate rollup: only count completed runs.
 --
--- The original trigger counted every row regardless of `success` IS NULL
--- and regardless of `kind`. After this migration:
+-- Replaces the live update_aga_success_rate() (which counted every row
+-- regardless of `success` IS NULL and regardless of `kind`). After this:
 --   - Visit rows are ignored entirely (early return).
 --   - Run rows with success NULL (in-flight) don't bump totals.
 --   - Once the client UPDATEs success to true/false, the trigger fires
 --     again and the row is counted.
+-- Bound to the existing trigger trg_aga_exec_success_rate (unchanged).
 -- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.update_agent_app_success_rate()
+CREATE OR REPLACE FUNCTION public.update_aga_success_rate()
 RETURNS TRIGGER
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -94,31 +103,17 @@ $$;
 -- ------------------------------------------------------------
 -- 4. Rate-limit BEFORE-INSERT trigger: skip visit rows.
 --
--- The function body itself is unchanged from the original
--- create_agent_app_rate_limits_table.sql migration. We only re-attach the
--- trigger with a WHEN clause so kind='visit' inserts bypass it entirely.
--- (Visits aren't billable execution attempts.)
+-- Re-attach the LIVE rate-limit trigger (trg_aga_rate_limit, calling
+-- enforce_aga_rate_limit()) with a WHEN clause so kind='visit' inserts
+-- bypass it entirely. (Visits aren't billable execution attempts.)
+-- The function body is unchanged — only the trigger gains the WHEN guard.
 -- ------------------------------------------------------------
-DROP TRIGGER IF EXISTS trg_agent_app_rate_limit ON public.aga_executions;
-CREATE TRIGGER trg_agent_app_rate_limit
+DROP TRIGGER IF EXISTS trg_aga_rate_limit ON public.aga_executions;
+CREATE TRIGGER trg_aga_rate_limit
   BEFORE INSERT ON public.aga_executions
   FOR EACH ROW
   WHEN (NEW.kind = 'run')
-  EXECUTE FUNCTION public.enforce_agent_app_rate_limit();
-
--- ------------------------------------------------------------
--- 5. INSERT RLS for guest visits.
---
--- The original `agent_app_executions_insert_anon` policy required the app
--- to be both `status='published'` AND `is_public=true`. That's the right
--- gate for run-start writes from /p/<slug>, but it also gates visit
--- writes. We keep the published+public gate intact — the API route uses
--- the admin client so it bypasses RLS regardless. This block is just a
--- belt-and-suspenders comment to make the contract obvious to future
--- agents.
--- ------------------------------------------------------------
-
-COMMIT;
+  EXECUTE FUNCTION public.enforce_aga_rate_limit();
 
 COMMENT ON COLUMN public.aga_executions.kind IS
   'Lifecycle kind: ''visit'' (page opened, no run) or ''run'' (run-start INSERT, then success UPDATEd to true/false on completion/error).';

@@ -478,6 +478,7 @@ export type Database = {
           fingerprint: string | null
           id: string
           ip_address: unknown
+          kind: string
           metadata: Json | null
           referer: string | null
           success: boolean | null
@@ -498,6 +499,7 @@ export type Database = {
           fingerprint?: string | null
           id?: string
           ip_address?: unknown
+          kind?: string
           metadata?: Json | null
           referer?: string | null
           success?: boolean | null
@@ -518,6 +520,7 @@ export type Database = {
           fingerprint?: string | null
           id?: string
           ip_address?: unknown
+          kind?: string
           metadata?: Json | null
           referer?: string | null
           success?: boolean | null
@@ -691,10 +694,12 @@ export type Database = {
       agent_run: {
         Row: {
           created_at: string
+          episode_id: string | null
           error: Json | null
           id: string
           input_fingerprint: string | null
           kind: string
+          last_heartbeat_at: string | null
           request: Json
           result: Json | null
           status: string
@@ -704,10 +709,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          episode_id?: string | null
           error?: Json | null
           id?: string
           input_fingerprint?: string | null
           kind: string
+          last_heartbeat_at?: string | null
           request?: Json
           result?: Json | null
           status?: string
@@ -717,10 +724,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          episode_id?: string | null
           error?: Json | null
           id?: string
           input_fingerprint?: string | null
           kind?: string
+          last_heartbeat_at?: string | null
           request?: Json
           result?: Json | null
           status?: string
@@ -728,7 +737,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agent_run_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "pc_episodes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agent_run_stage: {
         Row: {
@@ -12037,6 +12054,79 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      pc_studio_run_assets: {
+        Row: {
+          asset_kind: string
+          created_at: string
+          error: Json | null
+          id: string
+          is_manual: boolean
+          model_alias: string | null
+          prompt: string | null
+          run_id: string
+          slot: number
+          stage_id: string | null
+          status: string
+          superseded_by: string | null
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          asset_kind: string
+          created_at?: string
+          error?: Json | null
+          id?: string
+          is_manual?: boolean
+          model_alias?: string | null
+          prompt?: string | null
+          run_id: string
+          slot: number
+          stage_id?: string | null
+          status?: string
+          superseded_by?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          asset_kind?: string
+          created_at?: string
+          error?: Json | null
+          id?: string
+          is_manual?: boolean
+          model_alias?: string | null
+          prompt?: string | null
+          run_id?: string
+          slot?: number
+          stage_id?: string | null
+          status?: string
+          superseded_by?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pc_studio_run_assets_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pc_studio_run_assets_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "agent_run_stage"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pc_studio_run_assets_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "pc_studio_run_assets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pc_studio_runs: {
         Row: {
