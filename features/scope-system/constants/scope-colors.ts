@@ -131,6 +131,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-pink-50 dark:bg-pink-950/40",
     fg: "text-pink-600 dark:text-pink-400",
     ring: "ring-pink-500/20",
+    border: "border-pink-500/40",
   },
   {
     key: "fuchsia",

@@ -197,13 +197,20 @@ export function CanvasSideSheetInner() {
             {showSplit ? (
               <ResizablePanelGroup
                 orientation="vertical"
-                onLayout={(sizes) => {
-                  if (sizes.length === 2 && Number.isFinite(sizes[0])) {
-                    dispatch(setCanvasSplitRatio(Math.round(sizes[0])));
+                // v4: Layout is a {panelId: flexGrow} map (not number[]) and
+                // the settle-time callback is onLayoutChanged. Normalize to a
+                // percentage so the stored ratio is stable regardless of how
+                // flexGrow values are scaled.
+                onLayoutChanged={(layout) => {
+                  const top = layout["canvas-top"];
+                  const bottom = layout["canvas-bottom"];
+                  if (Number.isFinite(top) && Number.isFinite(bottom) && top + bottom > 0) {
+                    dispatch(setCanvasSplitRatio(Math.round((top / (top + bottom)) * 100)));
                   }
                 }}
               >
                 <ResizablePanel
+                  id="canvas-top"
                   defaultSize={splitRatio}
                   minSize={20}
                   style={{ overflow: "hidden", height: "100%" }}
@@ -215,6 +222,7 @@ export function CanvasSideSheetInner() {
                     horizontally so the user expects row-resize. */}
                 <ResizableHandle style={{ cursor: "row-resize" }} />
                 <ResizablePanel
+                  id="canvas-bottom"
                   defaultSize={100 - splitRatio}
                   minSize={20}
                   style={{ overflow: "hidden", height: "100%" }}
