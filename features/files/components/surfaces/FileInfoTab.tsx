@@ -43,6 +43,8 @@ import {
   fileInfoHumanSummary,
   type FileInfoSnapshot,
 } from "@/features/files/utils/file-info-format";
+import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
+import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import Link from "next/link";
 
 export interface FileInfoTabProps {
@@ -61,6 +63,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
   );
   const actions = useFileActions(fileId);
   const docState = useFileDocument(fileId);
+  const activeContext = useActiveContext();
 
   const details = useMemo(
     () => getFileTypeDetails(file?.fileName ?? ""),
@@ -244,6 +247,35 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
               <Row label="Soft-deleted" value={formatTs(file.deletedAt)} />
             ) : null}
           </Section>
+
+          {/*
+           * Scopes — tag this file to the org's scopes (Client Ava, Case 123,
+           * Patient X). Writes ctx_scope_assignments via the canonical
+           * EntityScopeTagger (NEVER appContext — this is local, per-entity
+           * tagging). Real files only; virtual rows live in their own systems.
+           * This is what makes a file discoverable structurally ("all files
+           * for Client Ava") and feeds the Knowledge scope-association pipeline.
+           */}
+          {file.source.kind === "real" ? (
+            <Section title="Scopes">
+              {activeContext.organizationId ? (
+                <div className="px-3 py-2">
+                  <EntityScopeTagger
+                    entityType="file"
+                    entityId={fileId}
+                    organizationId={activeContext.organizationId}
+                    variant="compact"
+                    showHeader={false}
+                  />
+                </div>
+              ) : (
+                <Row
+                  label="Scopes"
+                  value="Select an organization in the context bar to tag this file to a scope."
+                />
+              )}
+            </Section>
+          ) : null}
 
           {/*
            * RAG status — visible only for real (non-virtual) files.
