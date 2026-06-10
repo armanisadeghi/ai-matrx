@@ -25,7 +25,6 @@
 import Link from "next/link";
 import { ArrowLeft, AudioLines, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
 import { useMockRun } from "./useMockRun";
 import { Pipeline } from "./Pipeline";
 import { StageMonitor } from "./StageMonitor";
@@ -34,27 +33,11 @@ import { FinishedPlayer } from "./FinishedPlayer";
 import { Elapsed } from "./Elapsed";
 import "./console.css";
 
-/** True below `maxWidth` — collapses the pipeline rail into the stacked layout
- *  so neither the rail nor the monitor gets crushed in the 768–1024 zone.
- *  Initializer is SSR-safe (false on the server) so we never setState in an
- *  effect just to flip the mounted flag. */
-function useBelow(maxWidth: number): boolean {
-  const [below, setBelow] = useState(() =>
-    typeof window === "undefined" ? false : window.innerWidth < maxWidth,
-  );
-  useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${maxWidth - 1}px)`);
-    const onChange = () => setBelow(window.innerWidth < maxWidth);
-    onChange();
-    mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
-  }, [maxWidth]);
-  return below;
-}
-
+// Running layout switches between a stacked view (below lg) and a pipeline-rail
+// + monitor view (lg+) via CSS breakpoints — no JS width branch, so there is no
+// SSR/hydration flash and the 768–1024 zone never gets crushed.
 export function RunConsole() {
   const { state, startedAt, replay } = useMockRun();
-  const isMobile = useBelow(1024);
   const isDone = state.status === "done";
   const doneCount = state.stages.filter((s) => s.status === "done").length;
   const progress = Math.round(state.progress);
@@ -128,41 +111,43 @@ export function RunConsole() {
         <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
           <FinishedPlayer state={state} />
         </div>
-      ) : isMobile ? (
-        // Mobile: monitor on top, then assets, then pipeline — single scroll.
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto scrollbar-thin p-4">
-          <div className="h-72">
-            <StageMonitor state={state} />
-          </div>
-          <Section title="Assets">
-            <AssetStrip images={state.images} videos={state.videos} />
-          </Section>
-          <Section title="Pipeline">
-            <Pipeline stages={state.stages} />
-          </Section>
-        </div>
       ) : (
-        // Desktop: pipeline rail + monitor stack.
-        <div className="flex min-h-0 flex-1">
-          <aside className="w-72 shrink-0 overflow-y-auto border-r border-border bg-card/40 p-4 scrollbar-thin">
-            <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Pipeline
-            </p>
-            <Pipeline stages={state.stages} />
-          </aside>
-
-          <main className="flex min-w-0 flex-1 flex-col gap-4 overflow-hidden p-4">
-            <div className="min-h-0 flex-1">
+        <>
+          {/* Stacked (below lg): monitor → assets → pipeline, single scroll. */}
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto scrollbar-thin p-4 lg:hidden">
+            <div className="h-72">
               <StageMonitor state={state} />
             </div>
-            <div className="shrink-0">
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Produced assets
-              </p>
+            <Section title="Produced assets">
               <AssetStrip images={state.images} videos={state.videos} />
-            </div>
-          </main>
-        </div>
+            </Section>
+            <Section title="Pipeline">
+              <Pipeline stages={state.stages} />
+            </Section>
+          </div>
+
+          {/* Pipeline rail + monitor stack (lg+). */}
+          <div className="hidden min-h-0 flex-1 lg:flex">
+            <aside className="w-72 shrink-0 overflow-y-auto border-r border-border bg-card/40 p-4 scrollbar-thin">
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Pipeline
+              </p>
+              <Pipeline stages={state.stages} />
+            </aside>
+
+            <main className="flex min-w-0 flex-1 flex-col gap-4 overflow-hidden p-4">
+              <div className="min-h-0 flex-1">
+                <StageMonitor state={state} />
+              </div>
+              <div className="shrink-0">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Produced assets
+                </p>
+                <AssetStrip images={state.images} videos={state.videos} />
+              </div>
+            </main>
+          </div>
+        </>
       )}
     </div>
   );

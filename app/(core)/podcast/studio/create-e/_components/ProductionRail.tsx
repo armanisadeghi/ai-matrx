@@ -8,7 +8,7 @@
 // the advanced fields live in one quiet disclosure at the bottom. Every option
 // is first-class; nothing is disabled or "soon".
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Languages,
   LayoutTemplate,
@@ -23,16 +23,6 @@ import {
   FlaskConical,
   type LucideIcon,
 } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -124,7 +114,7 @@ export function ProductionRail({
         Production
       </p>
 
-      <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="divide-y divide-border rounded-2xl border border-border bg-card">
         {/* Format */}
         <SettingPopover
           icon={LayoutTemplate}
@@ -272,13 +262,16 @@ export function ProductionRail({
         </SettingPopover>
       </div>
 
-      {/* ── Advanced disclosure: processing + steer + test mode. ─────────── */}
-      <Collapsible
-        open={advancedOpen}
-        onOpenChange={setAdvancedOpen}
-        className="mt-2"
-      >
-        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent/50">
+      {/* ── Advanced disclosure: processing + steer + test mode. ───────────
+          Self-managed (no hydration-gated wrapper) so the trigger is always
+          visible and the section never silently disappears. */}
+      <div className="mt-2">
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((o) => !o)}
+          aria-expanded={advancedOpen}
+          className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-3.5 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent/50"
+        >
           <span className="flex items-center gap-2">
             <Workflow className="h-4 w-4 text-muted-foreground" />
             Processing &amp; advanced
@@ -294,9 +287,10 @@ export function ProductionRail({
               advancedOpen && "rotate-180",
             )}
           />
-        </CollapsibleTrigger>
+        </button>
 
-        <CollapsibleContent className="mt-2 space-y-4 rounded-xl border border-border bg-card p-4">
+        {advancedOpen && (
+        <div className="mt-2 space-y-4 rounded-xl border border-border bg-card p-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <ProcessingLayer
               caption="Source"
@@ -365,13 +359,20 @@ export function ProductionRail({
               </div>
             </div>
           </div>
-        </CollapsibleContent>
-      </Collapsible>
+        </div>
+        )}
+      </div>
     </section>
   );
 }
 
-// ── A single settings row that opens a popover. ────────────────────────────
+// ── A single settings row with a self-managed dropdown. ─────────────────────
+//
+// Intentionally NOT built on the app's hydration-gated <Popover> wrapper (which
+// returns null until mounted and can leave the whole row invisible if the mount
+// effect is delayed). Here the row button is always rendered; the dropdown is a
+// plain absolutely-positioned panel with click-outside + Escape to close. The
+// setting can never silently disappear.
 
 function SettingPopover({
   icon: Icon,
@@ -389,31 +390,63 @@ function SettingPopover({
   contentClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-accent/50"
-        >
-          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="text-sm font-medium text-foreground">{label}</span>
-          <span className="ml-auto flex items-center gap-1.5 truncate text-sm text-muted-foreground">
-            <span className="truncate">{value}</span>
-            <ChevronRight className="h-4 w-4 shrink-0 opacity-60" />
-          </span>
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="end"
-        className={cn("p-1.5", contentClassName ?? "w-60")}
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-accent/50"
       >
-        <p className="px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {title}
-        </p>
-        {children(() => setOpen(false))}
-      </PopoverContent>
-    </Popover>
+        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <span className="text-sm font-medium text-foreground">{label}</span>
+        <span className="ml-auto flex items-center gap-1.5 truncate text-sm text-muted-foreground">
+          <span className="truncate">{value}</span>
+          <ChevronRight
+            className={cn(
+              "h-4 w-4 shrink-0 opacity-60 transition-transform",
+              open && "rotate-90",
+            )}
+          />
+        </span>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className={cn(
+            "absolute right-2 top-full z-50 mt-1 rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-md",
+            contentClassName ?? "w-60",
+          )}
+        >
+          <p className="px-2 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {title}
+          </p>
+          {children(() => setOpen(false))}
+        </div>
+      )}
+    </div>
   );
 }
 

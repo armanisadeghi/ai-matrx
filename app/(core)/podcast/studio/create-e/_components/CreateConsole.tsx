@@ -32,7 +32,7 @@
 //   • Every option is real and first-class — no "soon" chips, no disabled tiles.
 //   • Demo: Generate routes to /podcast/studio/run-e (no backend).
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -66,28 +66,11 @@ import { SourceRail } from "./SourceRail";
 import { ProductionRail } from "./ProductionRail";
 import { EpisodePreview } from "./EpisodePreview";
 
-/**
- * True below the given width. The 3-pane studio layout needs real width
- * (≥1024px) — below it we collapse the rails into drawers so the center stage
- * never gets crushed (the 768–1024 dead zone the JS mobile flag missed).
- */
-function useBelow(maxWidth: number): boolean {
-  const [below, setBelow] = useState(() =>
-    typeof window === "undefined" ? false : window.innerWidth < maxWidth,
-  );
-  useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${maxWidth - 1}px)`);
-    const onChange = () => setBelow(window.innerWidth < maxWidth);
-    onChange();
-    mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
-  }, [maxWidth]);
-  return below;
-}
-
+// The 3-pane studio layout needs real width (≥1024px); below it the side rails
+// collapse into drawers via CSS breakpoints (lg:) so the center stage never gets
+// crushed and there is no SSR/hydration flash. Only the drawer open/close is JS.
 export function CreateConsole() {
   const router = useRouter();
-  const isMobile = useBelow(1024);
   const [, startTransition] = useTransition();
   const [busy, setBusy] = useState(false);
 
@@ -169,7 +152,7 @@ export function CreateConsole() {
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 shrink items-center gap-2">
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <AudioLines className="h-4 w-4" />
           </span>
@@ -177,58 +160,53 @@ export function CreateConsole() {
             <h1 className="truncate text-sm font-semibold text-foreground">
               New episode
             </h1>
-            <p className="truncate text-[11px] text-muted-foreground">
+            <p className="hidden truncate text-[11px] text-muted-foreground sm:block">
               Source → script → cover → video → audio
             </p>
           </div>
         </div>
 
-        {/* Mobile pane toggles */}
-        {isMobile && (
-          <div className="ml-auto flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setMobilePane("source")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground"
-            >
-              <SlidersHorizontal className="h-3.5 w-3.5" />
-              Source
-            </button>
-            <button
-              type="button"
-              onClick={() => setMobilePane("preview")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground"
-            >
-              <Disc3 className="h-3.5 w-3.5 text-primary" />
-              Preview
-            </button>
-          </div>
-        )}
-
-        {!isMobile && (
-          <Button
-            onClick={handleGenerate}
-            disabled={!canGenerate || busy}
-            className="ml-auto h-9 shrink-0 gap-2 shadow-sm"
+        {/* Mobile/tablet pane toggles (below lg) */}
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMobilePane("source")}
+            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground"
           >
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Radio className="h-4 w-4" />
-            )}
-            {busy ? "Starting…" : "Generate episode"}
-          </Button>
-        )}
+            <SlidersHorizontal className="h-3.5 w-3.5 shrink-0" />
+            Source
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobilePane("preview")}
+            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground"
+          >
+            <Disc3 className="h-3.5 w-3.5 shrink-0 text-primary" />
+            Preview
+          </button>
+        </div>
+
+        {/* Desktop generate (lg+) */}
+        <Button
+          onClick={handleGenerate}
+          disabled={!canGenerate || busy}
+          className="ml-auto hidden h-9 shrink-0 gap-2 shadow-sm lg:flex"
+        >
+          {busy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Radio className="h-4 w-4" />
+          )}
+          {busy ? "Starting…" : "Generate episode"}
+        </Button>
       </header>
 
       {/* ── Body ─────────────────────────────────────────────────────────── */}
       <div className="relative flex min-h-0 flex-1">
-        {/* Left rail (desktop) */}
-        {!isMobile && (
-          <aside className="w-64 shrink-0 overflow-y-auto border-r border-border bg-card/40 scrollbar-thin">
-            {sourceRail}
-          </aside>
-        )}
+        {/* Left rail (lg+) */}
+        <aside className="hidden w-64 shrink-0 overflow-y-auto border-r border-border bg-card/40 scrollbar-thin lg:block">
+          {sourceRail}
+        </aside>
 
         {/* Center stage */}
         <main className="min-w-0 flex-1 overflow-y-auto scrollbar-thin">
@@ -263,9 +241,8 @@ export function CreateConsole() {
               onTruncate={setTruncate}
             />
 
-            {/* Mobile generate (sticky bottom) */}
-            {isMobile && (
-              <div className="sticky bottom-0 -mx-4 mt-6 border-t border-border bg-card/90 px-4 py-3 pb-safe backdrop-blur-sm">
+            {/* Mobile/tablet generate (sticky bottom, below lg) */}
+            <div className="sticky bottom-0 -mx-4 mt-6 border-t border-border bg-card/90 px-4 py-3 pb-safe backdrop-blur-sm lg:hidden">
                 <Button
                   onClick={handleGenerate}
                   disabled={!canGenerate || busy}
@@ -279,21 +256,18 @@ export function CreateConsole() {
                   )}
                   {busy ? "Starting…" : "Generate episode"}
                 </Button>
-              </div>
-            )}
+            </div>
           </div>
         </main>
 
-        {/* Right preview (desktop) */}
-        {!isMobile && (
-          <aside className="w-80 shrink-0 overflow-y-auto border-l border-border bg-card/40 scrollbar-thin">
-            {preview}
-          </aside>
-        )}
+        {/* Right preview (lg+) */}
+        <aside className="hidden w-80 shrink-0 overflow-y-auto border-l border-border bg-card/40 scrollbar-thin lg:block">
+          {preview}
+        </aside>
 
-        {/* Mobile drawers */}
-        {isMobile && mobilePane && (
-          <div className="absolute inset-0 z-20 flex flex-col bg-background">
+        {/* Mobile/tablet drawers (below lg only) */}
+        {mobilePane && (
+          <div className="absolute inset-0 z-20 flex flex-col bg-background lg:hidden">
             <div className="flex h-11 shrink-0 items-center justify-between border-b border-border px-4">
               <span className="text-sm font-semibold text-foreground">
                 {mobilePane === "source" ? "Choose a source" : "Episode preview"}

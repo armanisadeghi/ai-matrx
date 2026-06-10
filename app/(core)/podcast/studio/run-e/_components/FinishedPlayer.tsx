@@ -164,14 +164,15 @@ export function FinishedPlayer({ state }: { state: PodcastRunState }) {
         </section>
       )}
 
-      {/* Script */}
+      {/* Script — self-managed disclosure (no hydration-gated wrapper). */}
       {state.script && (
-        <Collapsible
-          open={scriptOpen}
-          onOpenChange={setScriptOpen}
-          className="mt-7"
-        >
-          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent/50">
+        <div className="mt-7">
+          <button
+            type="button"
+            onClick={() => setScriptOpen((o) => !o)}
+            aria-expanded={scriptOpen}
+            className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent/50"
+          >
             <span className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-muted-foreground" />
               Full script
@@ -182,13 +183,15 @@ export function FinishedPlayer({ state }: { state: PodcastRunState }) {
                 scriptOpen && "rotate-180",
               )}
             />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-2 rounded-xl border border-border bg-card p-4">
-            <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
-              {state.script}
-            </pre>
-          </CollapsibleContent>
-        </Collapsible>
+          </button>
+          {scriptOpen && (
+            <div className="mt-2 rounded-xl border border-border bg-card p-4">
+              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+                {state.script}
+              </pre>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
