@@ -1,10 +1,10 @@
 // lib/redux/slices/voicePadSlice.ts
 //
-// Per-instance voice-pad state. One slice serves all overlays that share
+// Per-instance voice-pad state. One slice serves all surfaces that share
 // the voice-pad slice machinery ("voicePad" | "voicePadAdvanced" |
-// "transcriptionCleanup"), keyed by `${overlayId}:${instanceId}` so
-// multiple overlays AND multiple instances of each can coexist without
-// collision.
+// "transcriptionCleanup" overlays + the "transcriptionCleanupPage" route),
+// keyed by `${overlayId}:${instanceId}` so multiple surfaces AND multiple
+// instances of each can coexist without collision.
 
 import {
   createSelector,
@@ -15,7 +15,18 @@ import {
 export type VoicePadVariant =
   | "voicePad"
   | "voicePadAdvanced"
-  | "transcriptionCleanup";
+  | "transcriptionCleanup"
+  | "transcriptionCleanupPage";
+
+/**
+ * The subset of variants that are real OVERLAYS (registered overlay ids).
+ * "transcriptionCleanupPage" is a route, not an overlay — overlay helpers
+ * (useVoicePad / open-voice-pad) must use this narrower union.
+ */
+export type VoicePadOverlayVariant = Exclude<
+  VoicePadVariant,
+  "transcriptionCleanupPage"
+>;
 
 interface TranscriptEntry {
   id: string;

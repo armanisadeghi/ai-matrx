@@ -9,9 +9,9 @@ import {
   selectIsOverlayOpen,
   DEFAULT_INSTANCE_ID,
 } from "@/lib/redux/slices/overlaySlice";
-import type { VoicePadVariant } from "@/lib/redux/slices/voicePadSlice";
+import type { VoicePadOverlayVariant } from "@/lib/redux/slices/voicePadSlice";
 
-function makeHook(overlayId: VoicePadVariant) {
+function makeHook(overlayId: VoicePadOverlayVariant) {
   return function useVariant(instanceId: string = DEFAULT_INSTANCE_ID) {
     const dispatch = useAppDispatch();
     const isOpen = useAppSelector((state) =>

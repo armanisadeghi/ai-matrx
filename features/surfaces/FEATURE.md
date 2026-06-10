@@ -118,6 +118,17 @@ After the user-requested "go all in" pass, the page picks up:
 
 ## Change Log
 
+- **2026-06-10** — Registered `matrx-user/transcripts-cleanup` (the
+  `/transcripts/cleanup` page): baseline `selection`/`content`/`context` +
+  `session_id`, `session_title`, `raw_transcript_text`,
+  `cleaned_transcript_text`, `custom_output_text`. Route prefix added ABOVE
+  `/transcripts` in `route-to-surface.ts`. DB rows synced directly
+  (`ui_surface` + 8 `ui_surface_value` rows). First consumer of bindings at
+  launch-time outside the context menu: the cleanup page's
+  `useAiPostProcess` resolves `agx_agent_surface.value_mappings` (most
+  specific scope wins) via `resolveValueMappings` before falling back to
+  name heuristics / `user_input` — so binding any agent to this surface
+  controls exactly which variable/slot receives the transcript.
 - **2026-05-15 (bulk push)** — Registered 11 more surface manifests +
   made agent-builder fully functional. New: `matrx-user/documents`,
   `research`, `tasks`, `data-tables`, `files`, `projects`, `messages`,

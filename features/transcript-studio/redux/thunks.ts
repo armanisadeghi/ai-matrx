@@ -104,7 +104,9 @@ export const fetchSessionsThunk = createAsyncThunk<
   async (filter, { dispatch, rejectWithValue }) => {
     dispatch(sessionsListLoading());
     try {
-      const sessions = await listSessions(filter ?? undefined);
+      const sessions = await listSessions(
+        typeof filter === "object" && filter !== null ? filter : undefined,
+      );
       dispatch(sessionsListLoaded(sessions));
       return sessions;
     } catch (err) {

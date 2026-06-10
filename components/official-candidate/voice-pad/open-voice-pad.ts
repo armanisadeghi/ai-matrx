@@ -4,7 +4,7 @@ import {
   toggleOverlay,
   DEFAULT_INSTANCE_ID,
 } from "@/lib/redux/slices/overlaySlice";
-import type { VoicePadVariant } from "@/lib/redux/slices/voicePadSlice";
+import type { VoicePadOverlayVariant } from "@/lib/redux/slices/voicePadSlice";
 
 /**
  * Per-instance voice-pad opener helpers.
@@ -48,6 +48,6 @@ export const openNewVoicePadAdvanced = () =>
   openOverlay({ overlayId: "voicePadAdvanced", instanceId: newId() });
 
 export const closeVoicePadInstance = (
-  overlayId: VoicePadVariant,
+  overlayId: VoicePadOverlayVariant,
   instanceId: string,
 ) => closeOverlay({ overlayId, instanceId });
