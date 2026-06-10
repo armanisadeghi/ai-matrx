@@ -36,6 +36,12 @@ import {
   CornerDownRight,
   Ban,
   ArrowRight,
+  Wand2,
+  GitBranch,
+  ShieldCheck,
+  ShieldAlert,
+  Bell,
+  Database,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -51,8 +57,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectActiveOrganizationId,
+  selectActiveOrganizationName,
+  selectActiveProjectId,
+  selectActiveScopeSelections,
+} from "@/features/scopes/redux/selectors/active-context";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
@@ -61,7 +78,7 @@ import { listFiles } from "@/features/files/api/files";
 import { getUserProjects } from "@/features/projects/service";
 import { getUserTasks } from "@/features/tasks/services/taskService";
 import { scopesService } from "@/features/scopes/service/scopesService";
-import type { OrgNode, ScopeTypeNode, ContextItemRow } from "@/features/scopes/types";
+import type { OrgNode, ScopeTypeNode, ContextItemRow, ContextItemValue } from "@/features/scopes/types";
 
 interface DemoFile { id: string; file_name: string; mime_type?: string | null }
 interface FlatProject { id: string; name: string; orgId: string | null; isPersonal: boolean }
@@ -146,12 +163,16 @@ function InlineAdd({
 
 interface Subject { icon: LucideIcon; title: string; sub: string; entity?: { type: string; id: string } }
 
+export interface LiveRow { table: string; cols: string }
+
 function ContextField({
-  mode, subject, org, orgs, onChangeOrg, allProjects, allTasks,
+  mode, subject, org, orgs, onChangeOrg, allProjects, allTasks, onRowsChange,
 }: {
   mode: "assignment" | "active"; subject: Subject;
   org: OrgNode; orgs: OrgNode[]; onChangeOrg: (id: string) => void;
   allProjects: FlatProject[]; allTasks: FlatTask[];
+  /** Reports the exact rows the current selection would write (for the live data panel). */
+  onRowsChange?: (rows: LiveRow[]) => void;
 }) {
   const [query, setQuery] = useState("");
   const [selScopes, setSelScopes] = useState<Set<string>>(new Set());
@@ -193,7 +214,65 @@ function ContextField({
 
   const derivedTypeIds = useMemo(() => { const s = new Set<string>(); selScopes.forEach((id) => { const t = typeOfScope(id); if (t) s.add(t.id); }); return s; }, [selScopes, org, addedScopes]);
 
+  // Lateral suggestions (REAL links via ctx_scope_assignments → ProjectNode.scope_ids):
+  //  - a selected scope sits in a project → suggest attaching the project too
+  //  - a selected project has linked scopes → suggest the scope ("looks scope-wide")
+  // Suggest-don't-force: one click to accept, never auto-written (arch §4).
+  const suggestions = useMemo(() => {
+    if (mode === "active") return [] as { id: string; label: string; kind: "project" | "scope" }[];
+    const out: { id: string; label: string; kind: "project" | "scope" }[] = [];
+    const seen = new Set<string>();
+    selScopes.forEach((sid) => {
+      org.projects.forEach((p) => {
+        if (p.scope_ids.includes(sid) && !selProjects.has(p.id) && !seen.has(p.id)) {
+          seen.add(p.id);
+          out.push({ id: p.id, label: p.name, kind: "project" });
+        }
+      });
+    });
+    selProjects.forEach((pid) => {
+      const p = org.projects.find((x) => x.id === pid);
+      p?.scope_ids.forEach((sid) => {
+        if (selScopes.has(sid) || seen.has(sid)) return;
+        const sc = org.scope_types.flatMap((t) => t.scopes).find((s) => s.id === sid);
+        if (sc) { seen.add(sid); out.push({ id: sid, label: sc.name, kind: "scope" }); }
+      });
+    });
+    return out.slice(0, 4);
+  }, [mode, selScopes, selProjects, org]);
+
   const toggle = (set: React.Dispatch<React.SetStateAction<Set<string>>>, id: string) => set((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  // Active context resolves to ONE scope per type and one project/task — picking
+  // replaces within the group instead of accumulating (assignment stays multi).
+  function toggleScope(id: string) {
+    if (mode === "assignment") return toggle(setSelScopes, id);
+    const typeId = typeOfScope(id)?.id;
+    setSelScopes((p) => {
+      const n = new Set(p);
+      if (n.has(id)) { n.delete(id); return n; }
+      n.forEach((other) => { if (typeOfScope(other)?.id === typeId) n.delete(other); });
+      n.add(id);
+      return n;
+    });
+  }
+  const toggleSingle = (set: React.Dispatch<React.SetStateAction<Set<string>>>) => (id: string) =>
+    set((p) => (p.has(id) ? new Set<string>() : new Set([id])));
+  const toggleProject = mode === "active" ? toggleSingle(setSelProjects) : (id: string) => toggle(setSelProjects, id);
+  const toggleTask = mode === "active" ? toggleSingle(setSelTasks) : (id: string) => toggle(setSelTasks, id);
+
+  // Report the exact rows this selection would write (live data panel).
+  useEffect(() => {
+    if (!onRowsChange) return;
+    if (mode === "active") return;
+    const eShort = (subject.entity?.id ?? "").slice(0, 8) || "?";
+    const rows: LiveRow[] = [
+      ...[...selScopes].map((id) => ({ table: "ctx_associations", cols: `(source='${subject.entity?.type}':${eShort}, target='scope':${[...org.scope_types.flatMap((t) => t.scopes), ...addedScopes].find((s) => s.id === id)?.name ?? id})` })),
+      ...[...selProjects].map((id) => ({ table: "ctx_associations", cols: `(source='${subject.entity?.type}':${eShort}, target='project':${projName(id)})` })),
+      ...[...selTasks].map((id) => ({ table: "ctx_associations", cols: `(source='${subject.entity?.type}':${eShort}, target='task':${[...allTasks, ...addedTasks].find((t) => t.id === id)?.title ?? id})` })),
+    ];
+    onRowsChange(rows);
+  }, [selScopes, selProjects, selTasks, mode]);
 
   function addScope(typeId: string, name: string) {
     const v = name.trim(); if (!v) return;
@@ -294,7 +373,7 @@ function ContextField({
                 {adding === type.id && <InlineAdd placeholder={`New ${type.label_singular.toLowerCase()} name`} onCommit={(v) => addScope(type.id, v)} onCancel={() => setAdding(null)} />}
                 {scopes.length === 0 ? (
                   <div className="px-2.5 py-1.5 text-xs text-muted-foreground">{q ? "No matches." : `No ${type.label_plural.toLowerCase()} yet.`}</div>
-                ) : scopes.map((s) => <CheckRow key={s.id} on={selScopes.has(s.id)} label={s.name} textClass={c.fg} onClick={() => toggle(setSelScopes, s.id)} />)}
+                ) : scopes.map((s) => <CheckRow key={s.id} on={selScopes.has(s.id)} label={s.name} textClass={c.fg} onClick={() => toggleScope(s.id)} />)}
               </SectionShell>
             );
           })}
@@ -304,7 +383,7 @@ function ContextField({
             headerExtra={hiddenProjects > 0 || showAllProjects ? <MiniToggle on={showAllProjects} onChange={setShowAllProjects} label={showAllProjects ? "All orgs" : `Show all (${hiddenProjects})`} /> : undefined}>
             {adding === "project" && <InlineAdd placeholder="New project name" onCommit={addProject} onCancel={() => setAdding(null)} />}
             {projects.length === 0 ? <div className="px-2.5 py-1.5 text-xs text-muted-foreground">{q ? "No matches." : "No projects yet."}</div>
-              : projects.map((p) => <CheckRow key={p.id} on={selProjects.has(p.id)} label={p.name} right={<span className="max-w-[45%] shrink-0 truncate text-[11px] text-muted-foreground">{orgLabel(p.orgId)}</span>} onClick={() => toggle(setSelProjects, p.id)} />)}
+              : projects.map((p) => <CheckRow key={p.id} on={selProjects.has(p.id)} label={p.name} right={<span className="max-w-[45%] shrink-0 truncate text-[11px] text-muted-foreground">{orgLabel(p.orgId)}</span>} onClick={() => toggleProject(p.id)} />)}
           </SectionShell>
 
           {/* tasks — independent of projects; same this-org+unassigned default */}
@@ -312,7 +391,7 @@ function ContextField({
             headerExtra={hiddenTasks > 0 || showAllTasks ? <MiniToggle on={showAllTasks} onChange={setShowAllTasks} label={showAllTasks ? "All orgs" : `Show all (${hiddenTasks})`} /> : undefined}>
             {adding === "task" && <InlineAdd placeholder="New task title" onCommit={addTask} onCancel={() => setAdding(null)} />}
             {tasks.length === 0 ? <div className="px-2.5 py-1.5 text-xs text-muted-foreground">{q ? "No matches." : "No tasks yet."}</div>
-              : tasks.map((t) => <CheckRow key={t.id} on={selTasks.has(t.id)} label={t.title} right={<span className="flex max-w-[45%] shrink items-center gap-1 text-[11px] text-muted-foreground">{t.status === "completed" ? <CheckCircle2 className="h-3 w-3 shrink-0" /> : <Circle className="h-3 w-3 shrink-0" />}<span className="truncate">{t.projectId ? projName(t.projectId) : "No project"}</span></span>} onClick={() => toggle(setSelTasks, t.id)} />)}
+              : tasks.map((t) => <CheckRow key={t.id} on={selTasks.has(t.id)} label={t.title} right={<span className="flex max-w-[45%] shrink items-center gap-1 text-[11px] text-muted-foreground">{t.status === "completed" ? <CheckCircle2 className="h-3 w-3 shrink-0" /> : <Circle className="h-3 w-3 shrink-0" />}<span className="truncate">{t.projectId ? projName(t.projectId) : "No project"}</span></span>} onClick={() => toggleTask(t.id)} />)}
           </SectionShell>
         </div>
 
@@ -328,6 +407,11 @@ function ContextField({
                 {[...selTasks].map((id) => <Chip key={id} label={[...allTasks, ...addedTasks].find((t) => t.id === id)?.title ?? id} onRemove={() => toggle(setSelTasks, id)} />)}
                 {[...derivedTypeIds].map((tid) => <span key={tid} className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">{typeById(tid)?.label_plural}<span className="text-[9px] uppercase opacity-70">auto</span></span>)}
                 <span className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">{org.name}<span className="text-[9px] uppercase opacity-70">auto</span></span>
+                {suggestions.map((s) => (
+                  <button key={s.id} onClick={() => (s.kind === "project" ? toggleProject(s.id) : toggleScope(s.id))} title={s.kind === "project" ? "This scope is in this project — attach there too?" : "This project is linked to this scope — file it scope-wide?"} className="inline-flex items-center gap-1 rounded-md border border-dashed border-amber-400/60 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/40">
+                    <Wand2 className="h-3 w-3" />{s.label}<Plus className="h-3 w-3" />
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -476,6 +560,382 @@ function AssignToItemPanel({ file, orgs }: { file: DemoFile; orgs: OrgNode[] }) 
   );
 }
 
+/* ───────────────────────── scope-as-value (relational graph, §3.5) ─────────── */
+
+interface ScopeRef { sourceScopeId: string; itemId: string; targetScopeId: string }
+
+function ScopeAsValuePanel({ orgs }: { orgs: OrgNode[] }) {
+  const [sourceId, setSourceId] = useState<string | null>(null);
+  const [itemsByType, setItemsByType] = useState<Record<string, ContextItemRow[]>>({});
+  const [itemId, setItemId] = useState<string | null>(null);
+  const [targetId, setTargetId] = useState<string | null>(null);
+  const [refs, setRefs] = useState<ScopeRef[]>([]);
+  const [reverseOf, setReverseOf] = useState<string | null>(null);
+
+  const allScopes = useMemo(() => orgs.flatMap((o) => o.scope_types.flatMap((t) => t.scopes.map((s) => ({ id: s.id, name: s.name, type: t, org: o })))), [orgs]);
+  const source = allScopes.find((s) => s.id === sourceId);
+  const type = source?.type;
+
+  useEffect(() => { setItemId(null); }, [sourceId]);
+  useEffect(() => {
+    if (!type || itemsByType[type.id]) return;
+    scopesService.listContextItems(type.id).then((r) => { if (r.ok) setItemsByType((p) => ({ ...p, [type.id]: r.data.items })); });
+  }, [type?.id]);
+
+  const items = type ? itemsByType[type.id] ?? [] : [];
+  const item = items.find((i) => i.id === itemId);
+  // targets: scopes in the SAME org (cross-org references are a sharing act, not a casual link)
+  const targets = useMemo(() => allScopes.filter((s) => source && s.org.id === source.org.id && s.id !== source.id), [allScopes, source]);
+  const target = allScopes.find((s) => s.id === targetId);
+  const scopeName = (id: string) => allScopes.find((s) => s.id === id)?.name ?? id;
+
+  function link() {
+    if (!source || !item || !target) return;
+    console.log("[context-lab] SCOPE → SCOPE reference (future) →", {
+      table: "ctx_context_item_values",
+      scope_id: source.id, context_item_id: item.id,
+      value_kind: "reference", ref_entity_type: "scope", ref_entity_id: target.id,
+    });
+    setRefs((p) => [...p.filter((r) => !(r.sourceScopeId === source.id && r.itemId === item.id && r.targetScopeId === target.id)), { sourceScopeId: source.id, itemId: item.id, targetScopeId: target.id }]);
+    setReverseOf(target.id);
+    toast.success(`${source.name}.${item.key} → ${target.name} (logged — no DB write)`);
+  }
+
+  const reverseHits = useMemo(() => (reverseOf ? refs.filter((r) => r.targetScopeId === reverseOf) : []), [refs, reverseOf]);
+
+  const pickerTrigger = (value: string | null, placeholder: string) => (
+    <div className="flex min-w-0 flex-1 items-center overflow-hidden"><span className="min-w-0 flex-1 truncate text-left">{value ?? <span className="text-muted-foreground">{placeholder}</span>}</span></div>
+  );
+
+  return (
+    <Card className="w-[680px] max-w-full overflow-hidden">
+      <div className="space-y-4 p-4">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Scope</label>
+            <Select value={sourceId ?? undefined} onValueChange={setSourceId}>
+              <SelectTrigger className="h-9 w-full">{pickerTrigger(source?.name ?? null, "Any scope…")}</SelectTrigger>
+              <SelectContent>
+                {orgs.map((o) => {
+                  const opts = o.scope_types.flatMap((t) => t.scopes.map((s) => ({ s, t })));
+                  if (opts.length === 0) return null;
+                  return <SelectGroup key={o.id}><SelectLabel>{o.name}{o.is_personal ? " (personal)" : ""}</SelectLabel>{opts.map(({ s, t }) => <SelectItem key={s.id} value={s.id}>{s.name} · {t.label_singular}</SelectItem>)}</SelectGroup>;
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Relationship (item)</label>
+            <Select value={itemId ?? undefined} onValueChange={setItemId} disabled={!type}>
+              <SelectTrigger className="h-9 w-full">{pickerTrigger(item?.display_name ?? null, type ? "Pick the role…" : "Scope first")}</SelectTrigger>
+              <SelectContent>
+                {items.length === 0 ? <div className="px-2 py-1.5 text-xs text-muted-foreground">{type ? `${type.label_singular} has no items.` : ""}</div>
+                  : items.map((i) => <SelectItem key={i.id} value={i.id}>{i.display_name} <span className="text-muted-foreground">· {String(i.value_type)}</span></SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Points to</label>
+            <Select value={targetId ?? undefined} onValueChange={setTargetId} disabled={!source}>
+              <SelectTrigger className="h-9 w-full">{pickerTrigger(target?.name ?? null, source ? "Another scope…" : "Scope first")}</SelectTrigger>
+              <SelectContent>
+                {targets.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} · {s.type.label_singular}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <Button size="sm" className="w-full" disabled={!source || !item || !target} onClick={link}>
+          <GitBranch className="mr-1.5 h-4 w-4" />
+          {source && item && target ? `Set ${source.name}'s ${item.display_name} = ${target.name}` : "Pick scope · relationship · target"}
+        </Button>
+
+        {/* fixed-height graph + reverse lookup */}
+        <div className="h-[190px] space-y-2 overflow-y-auto rounded-lg border border-border bg-card/40 p-3">
+          {refs.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-center text-xs text-muted-foreground">Link two scopes to start the graph.</div>
+          ) : (
+            <>
+              <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Relationships (stored once, on the source)</div>
+              {refs.map((r, i) => {
+                const s = allScopes.find((x) => x.id === r.sourceScopeId);
+                const it = (s ? itemsByType[s.type.id] ?? [] : []).find((x) => x.id === r.itemId);
+                const c = s ? resolveColor(s.type) : undefined;
+                return (
+                  <div key={i} className="flex flex-wrap items-center gap-1.5 text-xs">
+                    <span className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-1", c?.fg, c?.border)}>{s?.name}</span>
+                    <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400">.{it?.key ?? "?"}</span>
+                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                    <button onClick={() => setReverseOf(r.targetScopeId)} className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 hover:bg-muted">{scopeName(r.targetScopeId)}</button>
+                  </div>
+                );
+              })}
+              {reverseOf && (
+                <div className="border-t border-border pt-2">
+                  <div className="text-[11px] text-muted-foreground">Reverse lookup (derived from the <span className="font-mono">(ref_entity_type, ref_entity_id)</span> index — never stored):</div>
+                  <div className="mt-1 text-xs">“Who references <b>{scopeName(reverseOf)}</b>?” → {reverseHits.length === 0 ? <span className="text-muted-foreground">nobody yet</span> : reverseHits.map((r, i) => <span key={i} className="mr-1.5 font-medium">{scopeName(r.sourceScopeId)}</span>)}</div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/* ─────────────── required slots → surface-as-gaps (§3.4, REAL values) ──────── */
+
+function RequiredSlotsPanel({ orgs }: { orgs: OrgNode[] }) {
+  const [typeId, setTypeId] = useState<string | null>(null);
+  const [itemsByType, setItemsByType] = useState<Record<string, ContextItemRow[]>>({});
+  const [itemId, setItemId] = useState<string | null>(null);
+  const [valuesByScope, setValuesByScope] = useState<Record<string, ContextItemValue[]>>({});
+  const [loading, setLoading] = useState(false);
+
+  const allTypes = useMemo(() => orgs.flatMap((o) => o.scope_types.map((t) => ({ t, o }))), [orgs]);
+  const picked = allTypes.find((x) => x.t.id === typeId);
+  const type = picked?.t;
+
+  useEffect(() => { setItemId(null); }, [typeId]);
+  useEffect(() => {
+    if (!type) return;
+    if (!itemsByType[type.id]) {
+      scopesService.listContextItems(type.id).then((r) => { if (r.ok) setItemsByType((p) => ({ ...p, [type.id]: r.data.items })); });
+    }
+    // load REAL current values for every scope of this type (gap check)
+    const missing = type.scopes.filter((s) => !valuesByScope[s.id]);
+    if (missing.length === 0) return;
+    setLoading(true);
+    Promise.all(missing.map((s) => scopesService.listContextValues(s.id).then((r) => ({ id: s.id, values: r.ok ? r.data.values : [] }))))
+      .then((rs) => setValuesByScope((p) => { const n = { ...p }; rs.forEach((r) => { n[r.id] = r.values; }); return n; }))
+      .finally(() => setLoading(false));
+  }, [type?.id]);
+
+  const items = type ? itemsByType[type.id] ?? [] : [];
+  const item = items.find((i) => i.id === itemId);
+  const c = type ? resolveColor(type) : undefined;
+
+  const rows = useMemo(() => {
+    if (!type || !item) return [];
+    return type.scopes.map((s) => {
+      const vals = valuesByScope[s.id] ?? [];
+      const current = vals.find((v) => v.context_item_id === item.id && v.is_current);
+      const display = current ? (current.value_text ?? current.value_reference_id ?? current.value_document_url ?? (current.value_number != null ? String(current.value_number) : null) ?? "set") : null;
+      return { scope: s, filled: !!current, display };
+    });
+  }, [type, item, valuesByScope]);
+  const filled = rows.filter((r) => r.filled).length;
+
+  return (
+    <Card className="w-[680px] max-w-full overflow-hidden">
+      <div className="space-y-4 p-4">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Scope type</label>
+            <Select value={typeId ?? undefined} onValueChange={setTypeId}>
+              <SelectTrigger className="h-9 w-full"><div className="flex min-w-0 flex-1 items-center overflow-hidden"><span className="min-w-0 flex-1 truncate text-left">{type ? type.label_plural : <span className="text-muted-foreground">Pick a type…</span>}</span></div></SelectTrigger>
+              <SelectContent>
+                {orgs.map((o) => o.scope_types.length === 0 ? null : (
+                  <SelectGroup key={o.id}><SelectLabel>{o.name}{o.is_personal ? " (personal)" : ""}</SelectLabel>{o.scope_types.map((t) => <SelectItem key={t.id} value={t.id}>{t.label_plural} · {t.scopes.length} {t.scopes.length === 1 ? "scope" : "scopes"}</SelectItem>)}</SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Treat as required</label>
+            <Select value={itemId ?? undefined} onValueChange={setItemId} disabled={!type}>
+              <SelectTrigger className="h-9 w-full"><div className="flex min-w-0 flex-1 items-center overflow-hidden"><span className="min-w-0 flex-1 truncate text-left">{item ? item.display_name : <span className="text-muted-foreground">{type ? "Pick an item…" : "Type first"}</span>}</span></div></SelectTrigger>
+              <SelectContent>
+                {items.length === 0 ? <div className="px-2 py-1.5 text-xs text-muted-foreground">{type ? "No items on this type." : ""}</div>
+                  : items.map((i) => <SelectItem key={i.id} value={i.id}>{i.display_name} · {String(i.value_type)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="h-[230px] overflow-y-auto rounded-lg border border-border p-1.5">
+          {!type || !item ? (
+            <div className="flex h-full items-center justify-center text-center text-xs text-muted-foreground">Pick a type and the item every {type ? type.label_singular.toLowerCase() : "scope"} must have.</div>
+          ) : loading && rows.every((r) => !valuesByScope[r.scope.id]) ? (
+            <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" />Checking real values for {type.scopes.length} {type.label_plural.toLowerCase()}…</div>
+          ) : rows.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-xs text-muted-foreground">No {type.label_plural.toLowerCase()} exist yet.</div>
+          ) : rows.map((r) => (
+            <div key={r.scope.id} className={cn("flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm", !r.filled && "bg-amber-50/60 dark:bg-amber-950/30")}>
+              <span className={cn("min-w-0 flex-1 truncate", c?.fg)}>{r.scope.name}</span>
+              {r.filled ? (
+                <span className="flex min-w-0 max-w-[50%] items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400"><ShieldCheck className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{r.display}</span></span>
+              ) : (
+                <span className="flex shrink-0 items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300"><ShieldAlert className="h-3.5 w-3.5" />Gap<button className="underline" onClick={() => { console.log("[context-lab] fill gap →", { scope_id: r.scope.id, context_item_id: item!.id }); toast.info("Would open the value editor for this cell (logged)"); }}>fill</button></span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex h-5 items-center gap-2">
+          {type && item && rows.length > 0 ? (<>
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted"><div className="h-full bg-emerald-500 transition-all" style={{ width: `${(filled / rows.length) * 100}%` }} /></div>
+            <span className="shrink-0 text-xs text-muted-foreground">{filled}/{rows.length} compliant</span>
+          </>) : <span className="text-xs text-muted-foreground/60">Compliance shows here.</span>}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/* ─────────── context hints: Active seeds Durable, never auto-writes (§6) ───── */
+
+function ContextHintsPanel({ orgs }: { orgs: OrgNode[] }) {
+  const activeOrgId = useAppSelector(selectActiveOrganizationId);
+  const activeOrgName = useAppSelector(selectActiveOrganizationName);
+  const activeProjectId = useAppSelector(selectActiveProjectId);
+  const scopeSelections = useAppSelector(selectActiveScopeSelections);
+  const [decided, setDecided] = useState<null | "added" | "dismissed">(null);
+
+  const allScopes = useMemo(() => orgs.flatMap((o) => o.scope_types.flatMap((t) => t.scopes.map((s) => ({ id: s.id, name: s.name, type: t })))), [orgs]);
+  const activeScopes = Object.values(scopeSelections ?? {}).filter(Boolean).map((id) => allScopes.find((s) => s.id === id)).filter(Boolean) as { id: string; name: string; type: ScopeTypeNode }[];
+  const hasContext = !!activeOrgId || activeScopes.length > 0;
+  const firstScope = activeScopes[0];
+
+  return (
+    <Card className="w-[680px] max-w-full overflow-hidden">
+      <div className="space-y-3 p-4">
+        <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
+          <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Your REAL active context right now</div>
+          <div className="mt-1 flex min-h-[24px] flex-wrap items-center gap-1.5 text-sm">
+            {!hasContext ? <span className="text-xs text-muted-foreground">None set — pick something in the sidebar&apos;s context picker and revisit.</span> : (<>
+              {activeOrgName && <span className="font-medium">{activeOrgName}</span>}
+              {activeScopes.map((s) => { const c = resolveColor(s.type); return <span key={s.id} className={cn("inline-flex items-center rounded-md border px-2 py-0.5 text-xs", c.fg, c.border)}>{s.name}</span>; })}
+              {activeProjectId && <span className="text-xs text-muted-foreground">+ project</span>}
+            </>)}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-border bg-card p-3 text-sm">You just created an <b>agent</b>. It is <i>not</i> auto-filed anywhere.</div>
+
+        <div className="h-[120px]">
+          {decided === null ? (
+            <div className={cn("flex h-full flex-col justify-center gap-2 rounded-lg border-2 border-dashed p-3", hasContext ? "border-sky-300/70 bg-sky-50 dark:bg-sky-950/40" : "border-border bg-muted/20")}>
+              <div className={cn("flex items-center gap-2 text-sm font-medium", hasContext ? "text-sky-800 dark:text-sky-200" : "text-muted-foreground")}><Bell className="h-4 w-4" />A nudge — never an auto-write</div>
+              <div className={cn("text-xs", hasContext ? "text-sky-900/80 dark:text-sky-200/80" : "text-muted-foreground")}>
+                {hasContext ? <>You&apos;re working in {firstScope ? <b>{firstScope.name}</b> : <b>{activeOrgName}</b>}. Add this agent there?</> : "With no active context, there is nothing to seed — so no nudge appears. That is the correct behavior."}
+              </div>
+              {hasContext && (
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => { console.log("[context-lab] hint ACCEPTED → ctx_associations", { source_type: "agent", target_type: firstScope ? "scope" : "organization-share", target_id: firstScope?.id ?? activeOrgId }); setDecided("added"); }}><Plus className="mr-1 h-3.5 w-3.5" />Add it</Button>
+                  <Button size="sm" variant="outline" onClick={() => setDecided("dismissed")}>Not now</Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className={cn("flex h-full items-center rounded-lg border p-3 text-sm", decided === "added" ? "border-emerald-300/60 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200" : "border-border text-muted-foreground")}>
+              <span>{decided === "added" ? "One durable association written — by your explicit choice." : "Dismissed. Nothing was written; active context stayed ephemeral."}<button className="ml-2 text-xs underline" onClick={() => setDecided(null)}>reset</button></span>
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/* ───────── compact variation: the chat-composer context bar (active mode) ───── */
+
+function CompactContextBar({ orgs }: { orgs: OrgNode[] }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [scopeByType, setScopeByType] = useState<Record<string, string>>({});
+  const [orgId, setOrgIdLocal] = useState<string | null>(null);
+
+  const org = orgs.find((o) => o.id === orgId) ?? null;
+  const q = query.trim().toLowerCase();
+
+  function pickScope(o: OrgNode, typeId: string, scopeId: string) {
+    // Picking any scope adopts its org (org derives from the most specific pick).
+    setOrgIdLocal(o.id);
+    setScopeByType((p) => {
+      const sameOrg = orgId === o.id ? p : {}; // switching org resets other types
+      return sameOrg[typeId] === scopeId ? Object.fromEntries(Object.entries(sameOrg).filter(([k]) => k !== typeId)) : { ...sameOrg, [typeId]: scopeId };
+    });
+  }
+
+  const chips = useMemo(() => {
+    if (!org) return [];
+    return Object.entries(scopeByType).map(([typeId, scopeId]) => {
+      const t = org.scope_types.find((x) => x.id === typeId);
+      const s = t?.scopes.find((x) => x.id === scopeId);
+      return t && s ? { id: scopeId, name: s.name, type: t } : null;
+    }).filter(Boolean) as { id: string; name: string; type: ScopeTypeNode }[];
+  }, [org, scopeByType]);
+
+  function apply() {
+    console.log("[context-lab] composer bar → appContextSlice", { organization_id: org?.id ?? null, scope_selections: scopeByType });
+    toast.success("Active context set (logged — no real write)");
+    setOpen(false);
+  }
+
+  return (
+    <Card className="w-[680px] max-w-full overflow-hidden">
+      {/* a fake-but-faithful composer; the context bar is the real subject */}
+      <div className="space-y-2 p-3">
+        <div className="flex h-9 items-center gap-2 rounded-md border border-border bg-muted/30 px-3 text-sm text-muted-foreground">Ask anything…<span className="ml-auto text-[10px] uppercase tracking-wide opacity-60">composer (inert)</span></div>
+        <div className="flex h-10 items-center gap-1.5 overflow-hidden rounded-md border border-border px-2">
+          <span className="shrink-0 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Context</span>
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
+            {!org ? <span className="text-xs text-muted-foreground/70">none — the agent gets no scope context</span> : (<>
+              <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 text-xs font-medium">{org.name}</span>
+              {chips.map((ch) => { const c = resolveColor(ch.type); return <span key={ch.id} className={cn("inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-xs", c.fg, c.border)}>{ch.name}<button onClick={() => setScopeByType((p) => Object.fromEntries(Object.entries(p).filter(([, v]) => v !== ch.id)))}><X className="h-3 w-3" /></button></span>; })}
+            </>)}
+          </div>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <button className="inline-flex shrink-0 items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground"><Plus className="h-3.5 w-3.5" />Set</button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-[360px] p-2">
+              <div className="relative mb-2">
+                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search scopes…" className="h-8 pl-8" style={{ fontSize: "16px" }} />
+              </div>
+              <div className="h-[260px] space-y-2 overflow-y-auto">
+                {orgs.map((o) => {
+                  const groups = o.scope_types.map((t) => ({ t, scopes: t.scopes.filter((s) => !q || s.name.toLowerCase().includes(q)) })).filter((g) => g.scopes.length > 0);
+                  if (groups.length === 0) return null;
+                  return (
+                    <div key={o.id}>
+                      <div className="px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{o.name}</div>
+                      {groups.map(({ t, scopes }) => {
+                        const c = resolveColor(t);
+                        const TIcon = resolveIcon(t.icon);
+                        return (
+                          <div key={t.id} className="mb-1">
+                            <div className={cn("flex items-center gap-1.5 px-1.5 py-0.5 text-[11px] font-medium", c.fg)}><TIcon className="h-3 w-3" />{t.label_plural}<span className="font-normal text-muted-foreground">· one</span></div>
+                            {scopes.map((s) => {
+                              const on = scopeByType[t.id] === s.id && orgId === o.id;
+                              return (
+                                <button key={s.id} onClick={() => pickScope(o, t.id, s.id)} className={cn("flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-sm hover:bg-muted", on && "bg-accent")}>
+                                  <span className={cn("flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border", on ? "border-primary bg-primary text-primary-foreground" : "border-border")}>{on && <Check className="h-2.5 w-2.5" />}</span>
+                                  <span className="min-w-0 flex-1 truncate">{s.name}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-2 flex justify-end border-t border-border pt-2">
+                <Button size="sm" className="h-7" onClick={apply}>Apply</Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 /* ───────────────────────── frame: intro band + UI | notes ─────────────────── */
 
 function ConceptBlock({ icon: Icon, kicker, title, intro, ui, notes }: {
@@ -546,6 +1006,7 @@ export default function ContextLabPage() {
   const [fileId, setFileId] = useState<string | null>(null);
   const [projects, setProjects] = useState<FlatProject[]>([]);
   const [tasks, setTasks] = useState<FlatTask[]>([]);
+  const [liveRows, setLiveRows] = useState<LiveRow[]>([]);
   const requested = useRef(false);
 
   useEffect(() => { dispatch(ensureScopeTree({})); }, [dispatch]);
@@ -617,11 +1078,17 @@ export default function ContextLabPage() {
           kicker="Durable association"
           title="Organize a document (assignment)"
           intro={<>The same field used wherever a user files a resource — note save, file upload, agent edit. It writes durable <code>ctx_associations</code> rows: &quot;this file belongs to these.&quot;</>}
-          ui={renderField(fileSubject ? <ContextField mode="assignment" subject={fileSubject} org={org!} orgs={organizations} onChangeOrg={setOrgId} allProjects={projects} allTasks={tasks} /> : <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">No documents found. Upload a file, then revisit.</Card>)}
+          ui={renderField(fileSubject ? <ContextField mode="assignment" subject={fileSubject} org={org!} orgs={organizations} onChangeOrg={setOrgId} allProjects={projects} allTasks={tasks} onRowsChange={setLiveRows} /> : <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">No documents found. Upload a file, then revisit.</Card>)}
           notes={<>
             <Note tone="good"><b>Fixed size, no shift.</b> Fixed 680px width + 440px section height — toggling Show all, collapsing sections, or long task names never resize the box.</Note>
-            <Note><b>Scope type color + icon</b> come from your canonical <code>resolveColor</code> / <code>resolveIcon</code> — the type label, icon, border, and selected chips all read in the type&apos;s color (transparent bg, so it&apos;s legible).</Note>
-            <Note><b>Projects &amp; tasks default to this org + unassigned;</b> Show-all reveals other orgs&apos;. A task follows its parent project to decide its org. Inline <b>+ New</b> everywhere.</Note>
+            <Note><b>Amber wand chips = real lateral suggestions.</b> They come from actual <code>ctx_scope_assignments</code> links (a selected scope sits in a project → offer the project; a selected project links scopes → offer filing scope-wide). One click accepts; nothing is auto-written.</Note>
+            <Note><b>Projects &amp; tasks default to this org + unassigned;</b> Show-all reveals other orgs&apos;. A task follows its parent project. Inline <b>+ New</b> everywhere.</Note>
+            <div className="rounded-lg border border-border bg-card p-3">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"><Database className="h-3.5 w-3.5" />Rows this selection writes — live</div>
+              {liveRows.length === 0 ? <div className="font-mono text-[11px] text-muted-foreground/60">— none —</div>
+                : liveRows.map((r, i) => <div key={i} className="truncate font-mono text-[11px] leading-relaxed"><span className="text-emerald-600 dark:text-emerald-400">{r.table}</span><span className="text-muted-foreground">{r.cols}</span></div>)}
+              <div className="mt-1 text-[10px] text-muted-foreground/70">Ancestors (type, org) are derived on read — note they never appear as rows.</div>
+            </div>
             <Note tone="warn"><b>Your call:</b> lock org to the file&apos;s owner, or keep it changeable? Surface as a slide-over on the file row, a post-upload step, or both?</Note>
           </>}
         />
@@ -632,11 +1099,23 @@ export default function ContextLabPage() {
           kicker="Active Context (ephemeral)"
           title="Chat composer (active context)"
           intro={<>The exact same component, one prop flipped. Here it sets <code>appContextSlice</code> — &quot;the work I&apos;m doing right now is relevant to these&quot; — which is what feeds the agent. It writes nothing durable.</>}
-          ui={renderField(<ContextField mode="active" subject={{ icon: MessageSquare, title: "Current chat turn", sub: "What is this work about?" }} org={org!} orgs={organizations} onChangeOrg={setOrgId} allProjects={projects} allTasks={tasks} />)}
+          ui={renderField(
+            <div className="space-y-4">
+              <div>
+                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Variation A — full panel (settings / focus view)</div>
+                <ContextField mode="active" subject={{ icon: MessageSquare, title: "Current chat turn", sub: "What is this work about?" }} org={org!} orgs={organizations} onChangeOrg={setOrgId} allProjects={projects} allTasks={tasks} />
+              </div>
+              <div>
+                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Variation B — composer bar (what actually sits under the chat input)</div>
+                <CompactContextBar orgs={organizations} />
+              </div>
+            </div>,
+          )}
           notes={<>
-            <Note tone="good"><b>Identical UI, different contract.</b> &quot;Set context&quot; logs an <code>appContextSlice</code>-shaped payload, not a <code>ctx_associations</code> row. One <code>mode</code> prop is the whole difference — this is how surfaces stop &quot;doing stupid things&quot; by guessing.</Note>
-            <Note><b>Why it matters:</b> this is the entire reason the ctx system exists — the active org/scope/project/task is auto-assembled into the context the model receives.</Note>
-            <Note tone="warn"><b>Refinement:</b> active context resolves to <i>one scope per type</i> (and one project/task). The field still multi-selects here; a follow-up makes active-mode single-select per type to match the canonical resolution.</Note>
+            <Note tone="good"><b>Identical engine, different contract.</b> &quot;Set context&quot; / &quot;Apply&quot; logs an <code>appContextSlice</code>-shaped payload, not a <code>ctx_associations</code> row. One <code>mode</code> prop is the whole difference.</Note>
+            <Note><b>Active mode is single-select per type</b> now — picking a second Client replaces the first (matches the canonical one-scope-per-type resolution); project and task are single too.</Note>
+            <Note><b>Variation B</b> is my recommended chat-composer form: a one-line bar with the org + scope chips and a popover picker. Picking any scope <i>adopts its org</i> — the user never picks an org first.</Note>
+            <Note tone="warn"><b>Your pick:</b> A, B, or both (B in the composer, A behind a &quot;manage context&quot; affordance)?</Note>
           </>}
         />
 
@@ -654,10 +1133,51 @@ export default function ContextLabPage() {
           </>}
         />
 
+        {/* Block 4 — scope-as-value (§3.5, the relational graph) */}
+        <ConceptBlock
+          icon={GitBranch}
+          kicker="Typed slot · scope → scope (§3.5)"
+          title="Scopes reference scopes — the relational graph"
+          intro={<>A scope can be the value of another scope&apos;s item: <code>Case.opposing_counsel → «Dewey»</code>. The item key IS the relationship role — no separate relationship table. The reverse direction is derived, never stored twice.</>}
+          ui={renderField(<ScopeAsValuePanel orgs={organizations} />)}
+          notes={<>
+            <Note tone="good"><b>Real scopes on both ends; real items as the roles.</b> The relationship dropdown loads the source scope&apos;s type&apos;s actual context items live. Only the write is faked (logs the <code>value_kind=&apos;reference&apos;, ref_entity_type=&apos;scope&apos;</code> row).</Note>
+            <Note><b>Click a target chip</b> in the graph to run the reverse lookup — &quot;who references this scope?&quot; — computed from the <code>(ref_entity_type, ref_entity_id)</code> index.</Note>
+            <Note tone="warn"><b>Targets are same-org only</b> — cross-org references are a sharing act, not a casual link (tenancy guardrail). And note your DB already has <code>value_reference_id/type</code> columns on <code>ctx_context_item_values</code>; the migration mainly formalizes <code>value_kind</code>.</Note>
+          </>}
+        />
+
+        {/* Block 5 — required slots → gaps (§3.4) on REAL values */}
+        <ConceptBlock
+          icon={ShieldCheck}
+          kicker="Enforceable structure (§3.4)"
+          title="Required slots — surfaced as gaps, computed from your real values"
+          intro={<>Mark an item as required (&quot;every Client must have an Operating Agreement&quot;) and the system shows compliance instead of blocking writes. The filled/gap states below are computed from your <b>actual</b> <code>ctx_context_item_values</code> rows.</>}
+          ui={renderField(<RequiredSlotsPanel orgs={organizations} />)}
+          notes={<>
+            <Note tone="good"><b>Fully real reads.</b> Pick a type → it loads every scope&apos;s real current values and checks the picked item. Green = a value exists today; amber = a real gap in your data right now.</Note>
+            <Note><b>Surface-as-gaps, never block-on-write</b> (my strong §7.3 vote): hard-blocking creates dead-ends; a compliance list gives admins something to chase.</Note>
+            <Note tone="warn"><b>Missing primitive:</b> a <code>required</code> flag on <code>ctx_context_items</code> — the only schema bit this panel pretends exists.</Note>
+          </>}
+        />
+
+        {/* Block 6 — context hints (§6) reading the REAL active context */}
+        <ConceptBlock
+          icon={Bell}
+          kicker="The sanctioned bridge (§6)"
+          title="Context Hints — Active seeds Durable, never auto-writes"
+          intro={<>The one allowed crossover: your current Active Context may <b>suggest</b> a durable association when you create something — a nudge with an explicit Add, never a silent write. This panel reads your <b>real</b> active context from <code>appContextSlice</code>.</>}
+          ui={renderField(<ContextHintsPanel orgs={organizations} />)}
+          notes={<>
+            <Note tone="good"><b>Live off your real picker.</b> Change the sidebar&apos;s active context and revisit — the banner and the nudge change with it. No active context → no nudge, honestly shown.</Note>
+            <Note tone="warn"><b>The forbidden move</b> this kills: a surface silently converting your chat selection into a permanent tag. Accept writes one explicit row; dismiss writes nothing.</Note>
+          </>}
+        />
+
         <Card className="bg-muted/30 p-4">
           <div className="flex gap-2 text-sm text-muted-foreground">
             <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <div>Next from the gap analysis: scope-as-value, required-slots/gaps, context hints, the live &quot;data rows written&quot; panel, and lateral/promotion suggestions — each into this same frame on real data.</div>
+            <div>Gap list status: assignment field ✓ · active mode (A + composer bar B) ✓ · assign-to-item + cascade ✓ · lateral/promotion suggestions ✓ · live rows panel ✓ · scope-as-value ✓ · required-slots/gaps ✓ · context hints ✓. Open decisions for Arman: org changeable vs locked · where the field surfaces · variation A/B for chat · §7.2 cardinality + §7.3 enforcement.</div>
           </div>
         </Card>
       </div>
