@@ -1,0 +1,190 @@
+/* app/(core)/podcast/studio/run-a/_components/loaders.css
+ *
+ * Per-kind running-state animations for the studio run loaders. Each kind gets
+ * a motion that matches what the step is DOING — research scans, the script
+ * writes, audio pulses like a waveform, images shimmer in, video reels. Done
+ * and failed states are static (handled in JSX). Colors come from the kind
+ * tokens via inline style / Tailwind text classes; these keyframes only move.
+ */
+
+/* Generic ambient halo behind a running icon. */
+@keyframes runa-halo {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+.runa-halo {
+  animation: runa-halo 1.8s ease-out infinite;
+}
+
+/* RESEARCH — a sweeping radar/scan. */
+@keyframes runa-scan {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.runa-scan {
+  animation: runa-scan 2.4s linear infinite;
+  transform-origin: center;
+}
+
+/* PREPARE — gentle settling bob (sorting/preparing). */
+@keyframes runa-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+.runa-bob {
+  animation: runa-bob 1.4s ease-in-out infinite;
+}
+
+/* SCRIPT — a typing caret blink + slight nib wiggle. */
+@keyframes runa-write {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+.runa-write {
+  animation: runa-write 0.9s ease-in-out infinite;
+  transform-origin: bottom left;
+}
+@keyframes runa-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.runa-caret {
+  animation: runa-caret 0.8s step-end infinite;
+}
+
+/* METADATA — tiles popping into a grid. */
+@keyframes runa-pop {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+.runa-pop {
+  animation: runa-pop 1.1s ease-in-out infinite;
+}
+.runa-pop-1 {
+  animation-delay: 0s;
+}
+.runa-pop-2 {
+  animation-delay: 0.15s;
+}
+.runa-pop-3 {
+  animation-delay: 0.3s;
+}
+.runa-pop-4 {
+  animation-delay: 0.45s;
+}
+
+/* AUDIO — equalizer bars pulsing like a waveform. */
+@keyframes runa-eq {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.runa-eq {
+  transform-origin: bottom;
+  animation: runa-eq 0.9s ease-in-out infinite;
+}
+.runa-eq-1 {
+  animation-delay: 0s;
+}
+.runa-eq-2 {
+  animation-delay: 0.18s;
+}
+.runa-eq-3 {
+  animation-delay: 0.36s;
+}
+.runa-eq-4 {
+  animation-delay: 0.12s;
+}
+
+/* IMAGE — a developing/shimmer sweep across the frame. */
+@keyframes runa-develop {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+.runa-develop {
+  animation: runa-develop 1.6s ease-in-out infinite;
+}
+
+/* VIDEO — film reel spinning. */
+@keyframes runa-reel {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.runa-reel {
+  animation: runa-reel 2s linear infinite;
+  transform-origin: center;
+}
+
+/* POST / OTHER — slow rotating ring. */
+@keyframes runa-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.runa-spin {
+  animation: runa-spin 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .runa-halo,
+  .runa-scan,
+  .runa-bob,
+  .runa-write,
+  .runa-caret,
+  .runa-pop,
+  .runa-eq,
+  .runa-develop,
+  .runa-reel,
+  .runa-spin {
+    animation: none;
+  }
+}

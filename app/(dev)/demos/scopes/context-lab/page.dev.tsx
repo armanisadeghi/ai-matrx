@@ -28,6 +28,15 @@ import {
   AlertTriangle,
   Circle,
   CheckCircle2,
+  MessageSquare,
+  Layers,
+  Network,
+  Lock,
+  ListChecks,
+  CornerDownRight,
+  Ban,
+  ArrowRight,
+  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
@@ -36,7 +45,9 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -49,7 +60,8 @@ import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import { listFiles } from "@/features/files/api/files";
 import { getUserProjects } from "@/features/projects/service";
 import { getUserTasks } from "@/features/tasks/services/taskService";
-import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
+import { scopesService } from "@/features/scopes/service/scopesService";
+import type { OrgNode, ScopeTypeNode, ContextItemRow } from "@/features/scopes/types";
 
 interface DemoFile { id: string; file_name: string; mime_type?: string | null }
 interface FlatProject { id: string; name: string; orgId: string | null; isPersonal: boolean }
@@ -132,10 +144,13 @@ function InlineAdd({
 
 /* ───────────────────────── the component (user UI) ────────────────────────── */
 
-function OrganizeDocumentPanel({
-  file, org, orgs, onChangeOrg, allProjects, allTasks,
+interface Subject { icon: LucideIcon; title: string; sub: string; entity?: { type: string; id: string } }
+
+function ContextField({
+  mode, subject, org, orgs, onChangeOrg, allProjects, allTasks,
 }: {
-  file: DemoFile; org: OrgNode; orgs: OrgNode[]; onChangeOrg: (id: string) => void;
+  mode: "assignment" | "active"; subject: Subject;
+  org: OrgNode; orgs: OrgNode[]; onChangeOrg: (id: string) => void;
   allProjects: FlatProject[]; allTasks: FlatTask[];
 }) {
   const [query, setQuery] = useState("");
@@ -150,7 +165,7 @@ function OrganizeDocumentPanel({
   const [addedTasks, setAddedTasks] = useState<FlatTask[]>([]);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { setSelScopes(new Set()); setSelProjects(new Set()); setSelTasks(new Set()); setAddedScopes([]); setAddedProjects([]); setAddedTasks([]); setQuery(""); }, [org.id, file.id]);
+  useEffect(() => { setSelScopes(new Set()); setSelProjects(new Set()); setSelTasks(new Set()); setAddedScopes([]); setAddedProjects([]); setAddedTasks([]); setQuery(""); }, [org.id, subject.title]);
 
   const q = query.trim().toLowerCase();
   const match = (s: string) => !q || s.toLowerCase().includes(q);
@@ -202,13 +217,27 @@ function OrganizeDocumentPanel({
 
   function save() {
     setBusy(true);
+    if (mode === "active") {
+      // Active context = ephemeral "what I'm working on now" → appContextSlice
+      // (one scope per type is the canonical resolution; we log the raw picks).
+      const payload = {
+        kind: "active_context",
+        organization_id: org.id,
+        scope_selections: [...selScopes],
+        project_id: [...selProjects][0] ?? null,
+        task_id: [...selTasks][0] ?? null,
+      };
+      console.log("[context-lab] SET ACTIVE CONTEXT (appContextSlice) →", payload);
+      setTimeout(() => { setBusy(false); toast.success("Active context set (logged — no real write)"); }, 350);
+      return;
+    }
     const explicit: Target[] = [
       ...[...selScopes].map((id): Target => ({ kind: "scope", id, label: "", typeId: typeOfScope(id)?.id ?? "" })),
       ...[...selProjects].map((id): Target => ({ kind: "project", id, label: projName(id) })),
       ...[...selTasks].map((id): Target => ({ kind: "task", id, label: "" })),
     ];
     const payload = {
-      entity: { entity_type: "user_file", entity_id: file.id, name: file.file_name },
+      entity: { entity_type: subject.entity?.type ?? "unknown", entity_id: subject.entity?.id ?? "", name: subject.title },
       organization_id: org.id,
       explicit_associations: explicit.map((t) => ({ target_type: t.kind, target_id: t.id })),
       derived_spine: [...derivedTypeIds].map((id) => typeById(id)?.label_plural).filter(Boolean).concat(org.name),
@@ -219,14 +248,15 @@ function OrganizeDocumentPanel({
 
   const totalSelected = selScopes.size + selProjects.size + selTasks.size;
 
+  const SubIcon = subject.icon;
   return (
     <Card className="w-[680px] max-w-full overflow-hidden">
-      {/* file */}
+      {/* subject */}
       <div className="flex items-center gap-3 border-b border-border p-4">
-        <div className="rounded-lg bg-muted p-2 text-muted-foreground"><FileText className="h-5 w-5" /></div>
+        <div className="rounded-lg bg-muted p-2 text-muted-foreground"><SubIcon className="h-5 w-5" /></div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold">{file.file_name}</div>
-          <div className="text-xs text-muted-foreground">{file.mime_type || "file"}</div>
+          <div className="truncate text-sm font-semibold">{subject.title}</div>
+          <div className="text-xs text-muted-foreground">{subject.sub}</div>
         </div>
       </div>
 
@@ -290,7 +320,7 @@ function OrganizeDocumentPanel({
         <div className="flex items-start justify-between gap-3 border-t border-border pt-3">
           <div className="max-h-16 min-w-0 flex-1 overflow-y-auto">
             {totalSelected === 0 ? (
-              <span className="text-xs text-muted-foreground">Nothing selected — saving with no associations is fine.</span>
+              <span className="text-xs text-muted-foreground">{mode === "active" ? "No active context set — the agent gets none." : "Nothing selected — saving with no associations is fine."}</span>
             ) : (
               <div className="flex flex-wrap items-center gap-1.5">
                 {[...selScopes].map((id) => { const name = [...org.scope_types.flatMap((x) => x.scopes), ...addedScopes].find((s) => s.id === id)?.name ?? id; const t = typeOfScope(id); const c = t ? resolveColor(t) : undefined; return <Chip key={id} label={name} fg={c?.fg} border={c?.border} onRemove={() => toggle(setSelScopes, id)} />; })}
@@ -301,7 +331,7 @@ function OrganizeDocumentPanel({
               </div>
             )}
           </div>
-          <Button size="sm" onClick={save} disabled={busy} className="shrink-0">{busy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}Save</Button>
+          <Button size="sm" onClick={save} disabled={busy} className="shrink-0">{busy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}{mode === "active" ? "Set context" : "Save"}</Button>
         </div>
       </div>
     </Card>
@@ -317,7 +347,194 @@ function Chip({ label, onRemove, fg, border }: { label: string; onRemove: () => 
   );
 }
 
-/* ───────────────────────── page (harness + boundary) ─────────────────────── */
+/* ───────────────────────── assign-to-context-item (the cascade flagship) ───── */
+
+const FILE_FIT = new Set(["document", "reference", "file"]);
+
+function AssignToItemPanel({ file, orgs }: { file: DemoFile; orgs: OrgNode[] }) {
+  const [scopeId, setScopeId] = useState<string | null>(null);
+  const [itemsByType, setItemsByType] = useState<Record<string, ContextItemRow[]>>({});
+  const [loadingType, setLoadingType] = useState<string | null>(null);
+  const [itemId, setItemId] = useState<string | null>(null);
+  const [assigned, setAssigned] = useState(false);
+
+  // Scope-FIRST: every scope across every org. Picking one DERIVES its org —
+  // the user never has to pick an org (they usually don't have one set).
+  const scopeOptions = useMemo(() => orgs.flatMap((o) => o.scope_types.flatMap((t) => t.scopes.map((s) => ({ id: s.id, name: s.name, type: t, org: o })))), [orgs]);
+  const scope = scopeOptions.find((s) => s.id === scopeId);
+  const type = scope?.type;
+  const org = scope?.org;
+
+  // reset item + result when the scope changes
+  useEffect(() => { setItemId(null); setAssigned(false); }, [scopeId]);
+
+  // load the selected scope's TYPE's real context items (cached per type)
+  useEffect(() => {
+    if (!type || itemsByType[type.id]) return;
+    setLoadingType(type.id);
+    scopesService.listContextItems(type.id)
+      .then((r) => { if (r.ok) setItemsByType((p) => ({ ...p, [type.id]: r.data.items })); })
+      .finally(() => setLoadingType(null));
+  }, [type?.id]);
+
+  const items = type ? itemsByType[type.id] ?? [] : [];
+  const item = items.find((i) => i.id === itemId);
+  const fits = item ? FILE_FIT.has(String(item.value_type)) : false;
+  const c = type ? resolveColor(type) : undefined;
+
+  function assign() {
+    if (!scope || !item || !type) return;
+    // The future write: ONE ctx_context_item_values row, value_kind='reference'.
+    console.log("[context-lab] ASSIGN file → context item (future reference value) →", {
+      table: "ctx_context_item_values",
+      scope_id: scope.id, context_item_id: item.id,
+      value_kind: "reference", ref_entity_type: "user_file", ref_entity_id: file.id,
+    });
+    setAssigned(true);
+    toast.success(`Set as ${scope.name}'s ${item.display_name} (logged — no DB write)`);
+  }
+
+  return (
+    <Card className="w-[680px] max-w-full overflow-hidden">
+      <div className="flex items-center gap-3 border-b border-border p-4">
+        <div className="rounded-lg bg-muted p-2 text-muted-foreground"><FileText className="h-5 w-5" /></div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold">{file.file_name}</div>
+          <div className="text-xs text-muted-foreground">{file.mime_type || "file"}</div>
+        </div>
+      </div>
+
+      <div className="space-y-4 p-4">
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground">1 · Which scope is this for? <span className="font-normal text-muted-foreground/70">(any org — the org is derived)</span></label>
+          <Select value={scopeId ?? undefined} onValueChange={setScopeId}>
+            <SelectTrigger className="h-9 w-full"><div className="flex min-w-0 flex-1 items-center overflow-hidden"><span className="min-w-0 flex-1 truncate text-left"><SelectValue placeholder="Pick a scope from any org…" /></span></div></SelectTrigger>
+            <SelectContent>
+              {scopeOptions.length === 0 ? <div className="px-2 py-1.5 text-xs text-muted-foreground">No scopes in any of your organizations yet.</div>
+                : orgs.map((o) => {
+                    const opts = o.scope_types.flatMap((t) => t.scopes.map((s) => ({ s, t })));
+                    if (opts.length === 0) return null;
+                    return (
+                      <SelectGroup key={o.id}>
+                        <SelectLabel>{o.name}{o.is_personal ? " (personal)" : ""}</SelectLabel>
+                        {opts.map(({ s, t }) => <SelectItem key={s.id} value={s.id}>{s.name} · {t.label_singular}</SelectItem>)}
+                      </SelectGroup>
+                    );
+                  })}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground">2 · Which slot does it fill?</label>
+          <div className="h-[176px] overflow-y-auto rounded-lg border border-border p-1.5">
+            {!type ? <div className="px-2.5 py-2 text-xs text-muted-foreground">Pick a scope first.</div>
+              : loadingType === type.id && !itemsByType[type.id] ? <div className="flex items-center gap-2 px-2.5 py-2 text-xs text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin" />Loading {type.label_plural}&apos; context items…</div>
+              : items.length === 0 ? <div className="px-2.5 py-2 text-xs text-muted-foreground">{type.label_singular} has no context items defined yet.</div>
+              : items.map((it) => {
+                  const on = itemId === it.id;
+                  const itemFits = FILE_FIT.has(String(it.value_type));
+                  return (
+                    <button key={it.id} onClick={() => { setItemId(it.id); setAssigned(false); }} className={cn("flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted", on && "bg-accent")}>
+                      <span className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded-full border", on ? "border-primary bg-primary text-primary-foreground" : "border-border")}>{on && <Check className="h-3 w-3" />}</span>
+                      <span className="min-w-0 flex-1 truncate">{it.display_name}</span>
+                      <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[10px]", itemFits ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" : "bg-muted text-muted-foreground")}>{String(it.value_type)}</span>
+                    </button>
+                  );
+                })}
+          </div>
+        </div>
+
+        <Button size="sm" className="w-full" disabled={!scope || !item} onClick={assign}>
+          <FileText className="mr-1.5 h-4 w-4" />
+          {scope && item ? `Set this file as ${scope.name}'s ${item.display_name}` : "Pick a scope and a slot"}
+        </Button>
+
+        {/* fixed-height result area so the card never resizes */}
+        <div className="h-[150px] rounded-lg border border-border bg-card/40 p-3">
+          {!assigned ? (
+            <div className="flex h-full items-center justify-center text-center text-xs text-muted-foreground">The cascade will show here once you assign.</div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300"><Check className="h-4 w-4" />The file <b>is</b> {scope!.name}&apos;s {item!.display_name}.</div>
+              {!fits && <div className="flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-300"><Ban className="h-3 w-3" />This slot is currently <b>{String(item!.value_type)}</b> — assigning a file converts it to a reference value.</div>}
+              <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Derived spine (stored once, computed up)</div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/40 px-2 py-1 text-xs text-emerald-600 dark:text-emerald-400"><ListChecks className="h-3 w-3" />{item!.display_name}</span>
+                <CornerDownRight className="h-3 w-3 text-muted-foreground" />
+                <span className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs", c?.fg, c?.border)}>{scope!.name}</span>
+                <CornerDownRight className="h-3 w-3 text-muted-foreground" />
+                <span className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs", c?.fg, c?.border)}>{type!.label_plural}</span>
+                <CornerDownRight className="h-3 w-3 text-muted-foreground" />
+                <span className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">{org?.name}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+/* ───────────────────────── frame: intro band + UI | notes ─────────────────── */
+
+function ConceptBlock({ icon: Icon, kicker, title, intro, ui, notes }: {
+  icon: LucideIcon; kicker: string; title: string; intro: React.ReactNode; ui: React.ReactNode; notes: React.ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl border-2 border-border bg-background">
+      <div className="border-b-2 border-border bg-muted/40 px-5 py-4">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 shrink-0 rounded-lg bg-primary/10 p-2 text-primary"><Icon className="h-5 w-5" /></div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{kicker}</div>
+            <h2 className="text-lg font-bold leading-tight">{title}</h2>
+            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{intro}</p>
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 divide-y-2 divide-border lg:grid-cols-[auto_1fr] lg:divide-x-2 lg:divide-y-0">
+        <div className="p-5">
+          <div className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">Exactly what the user sees</div>
+          {ui}
+        </div>
+        <div className="bg-card/40 p-5">
+          <div className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Notes — not shown to the user</div>
+          <div className="space-y-3">{notes}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const MECHANISMS: { icon: LucideIcon; name: string; expresses: string; storage: string; tone: string }[] = [
+  { icon: Lock, name: "Ownership / containment", expresses: "“you live inside”", storage: "hard FK (the spine)", tone: "text-slate-600 dark:text-slate-300" },
+  { icon: Network, name: "Loose membership", expresses: "“filed under / tagged to”", storage: "ctx_associations", tone: "text-emerald-600 dark:text-emerald-400" },
+  { icon: ListChecks, name: "Typed slot", expresses: "“X’s «role» IS Y”", storage: "ctx_context_item_values", tone: "text-violet-600 dark:text-violet-400" },
+];
+
+function TaxonomyLegend() {
+  return (
+    <div className="overflow-hidden rounded-xl border-2 border-border">
+      <div className="border-b-2 border-border bg-muted/40 px-5 py-3">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Every relationship is exactly one of these three</h2>
+      </div>
+      <div className="grid grid-cols-1 divide-y divide-border md:grid-cols-3 md:divide-x md:divide-y-0">
+        {MECHANISMS.map((m) => { const I = m.icon; return (
+          <div key={m.name} className="space-y-1 p-4">
+            <div className={cn("flex items-center gap-2 text-sm font-semibold", m.tone)}><I className="h-4 w-4" />{m.name}</div>
+            <div className="text-xs text-foreground">{m.expresses}</div>
+            <div className="font-mono text-[11px] text-muted-foreground">{m.storage}</div>
+          </div>
+        ); })}
+      </div>
+      <div className="border-t-2 border-border bg-card/40 px-5 py-2 text-[11px] text-muted-foreground">Orthogonal to all three: <b>tenancy</b> (one owning org) and <b>Active Context</b> (runtime, feeds the agent). Store explicit, derive the rest.</div>
+    </div>
+  );
+}
+
+/* ───────────────────────── page ─────────────────── */
+
 
 export default function ContextLabPage() {
   const dispatch = useAppDispatch();
@@ -356,18 +573,29 @@ export default function ContextLabPage() {
   const org = organizations.find((o) => o.id === orgId) ?? organizations[0];
   const file = files.find((f) => f.id === fileId) ?? files[0];
 
+  const loadingOrgs = status === "loading" && organizations.length === 0;
+  const fileSubject: Subject | null = file ? { icon: FileText, title: file.file_name, sub: file.mime_type || "file", entity: { type: "user_file", id: file.id } } : null;
+
+  function renderField(node: React.ReactNode) {
+    if (loadingOrgs) return <Card className="flex w-[680px] max-w-full items-center justify-center p-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></Card>;
+    if (!org) return <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">No organizations found for your account.</Card>;
+    return node;
+  }
+
   return (
     <div className="min-h-dvh bg-textured">
       <div className="mx-auto max-w-[1400px] space-y-6 p-5 lg:p-8">
         <div className="space-y-1.5">
           <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">Context Lab · real data · saves to console</div>
-          <h1 className="text-2xl font-bold">Organize a document — the real ContextAssignmentField</h1>
-          <p className="max-w-3xl text-sm text-muted-foreground">Your actual orgs, scopes, projects, tasks and files — live. Only the write is faked. The boxed component on the left is exactly what a user sees; everything else is commentary.</p>
+          <h1 className="text-2xl font-bold">The ctx system — one field, every surface</h1>
+          <p className="max-w-3xl text-sm text-muted-foreground">Your actual orgs, scopes, projects, tasks and files — live. Only the write is faked. Each boxed component is exactly what a user sees; everything else is commentary.</p>
         </div>
 
-        {/* harness */}
+        <TaxonomyLegend />
+
+        {/* harness — picks the real file for the assignment block */}
         <div className="rounded-lg border border-dashed border-border bg-muted/30 p-3">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Demo harness — picks which real document the component receives (not part of the UI)</div>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Demo harness — picks which real document the assignment field receives (not part of the UI)</div>
           {filesErr ? <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300"><AlertTriangle className="h-4 w-4" />{filesErr}</div>
             : filesLoading ? <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading your files…</div>
             : files.length === 0 ? <div className="text-xs text-muted-foreground">No files on your account.</div>
@@ -375,38 +603,63 @@ export default function ContextLabPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-muted-foreground">Document:</span>
                 <Select value={fileId ?? undefined} onValueChange={setFileId}>
-                  <SelectTrigger className="h-8 w-[340px]"><span className="min-w-0 truncate"><SelectValue /></span></SelectTrigger>
+                  <SelectTrigger className="h-8 w-[340px]"><div className="flex min-w-0 flex-1 items-center overflow-hidden"><span className="min-w-0 flex-1 truncate text-left"><SelectValue /></span></div></SelectTrigger>
                   <SelectContent>{files.map((f) => <SelectItem key={f.id} value={f.id}>{f.file_name}</SelectItem>)}</SelectContent>
                 </Select>
-                <span className="text-xs text-muted-foreground">{files.length} real files · {projects.length} projects · {tasks.length} tasks loaded</span>
+                <span className="text-xs text-muted-foreground">{files.length} files · {projects.length} projects · {tasks.length} tasks loaded</span>
               </div>
             )}
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[auto_1fr]">
-          <div className="space-y-2">
-            <div className="text-[11px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Exactly what the user sees</div>
-            {status === "loading" && organizations.length === 0 ? (
-              <Card className="flex w-[680px] max-w-full items-center justify-center p-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></Card>
-            ) : !org ? (
-              <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">No organizations found for your account.</Card>
-            ) : !file ? (
-              <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">No documents found. Upload a file, then revisit.</Card>
-            ) : (
-              <OrganizeDocumentPanel file={file} org={org} orgs={organizations} onChangeOrg={setOrgId} allProjects={projects} allTasks={tasks} />
-            )}
-          </div>
+        {/* Block 1 — assignment (a Source resource) */}
+        <ConceptBlock
+          icon={Layers}
+          kicker="Durable association"
+          title="Organize a document (assignment)"
+          intro={<>The same field used wherever a user files a resource — note save, file upload, agent edit. It writes durable <code>ctx_associations</code> rows: &quot;this file belongs to these.&quot;</>}
+          ui={renderField(fileSubject ? <ContextField mode="assignment" subject={fileSubject} org={org!} orgs={organizations} onChangeOrg={setOrgId} allProjects={projects} allTasks={tasks} /> : <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">No documents found. Upload a file, then revisit.</Card>)}
+          notes={<>
+            <Note tone="good"><b>Fixed size, no shift.</b> Fixed 680px width + 440px section height — toggling Show all, collapsing sections, or long task names never resize the box.</Note>
+            <Note><b>Scope type color + icon</b> come from your canonical <code>resolveColor</code> / <code>resolveIcon</code> — the type label, icon, border, and selected chips all read in the type&apos;s color (transparent bg, so it&apos;s legible).</Note>
+            <Note><b>Projects &amp; tasks default to this org + unassigned;</b> Show-all reveals other orgs&apos;. A task follows its parent project to decide its org. Inline <b>+ New</b> everywhere.</Note>
+            <Note tone="warn"><b>Your call:</b> lock org to the file&apos;s owner, or keep it changeable? Surface as a slide-over on the file row, a post-upload step, or both?</Note>
+          </>}
+        />
 
-          <div className="space-y-3">
-            <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Notes (not shown to the user)</div>
-            <Note tone="good"><b>No layout shift.</b> Rows have a fixed checkbox on the left — selecting toggles only the inner check, so nothing resizes. Replaced the pill toggles you didn&apos;t like; this is Linear&apos;s property-picker pattern.</Note>
-            <Note><b>Projects are now all of yours, not just this org&apos;s.</b> Each row tags its home — &quot;this org&quot;, another org&apos;s name, or <b>Unassigned</b>. Unassigned/cross-org projects are exactly the ones you said matter.</Note>
-            <Note><b>Tasks are independent.</b> Loaded from all your tasks via <code>getUserTasks()</code> — not assumed to live under a project. Each shows its project (or &quot;No project&quot;) and status. New task + select-from-all, same as projects.</Note>
-            <Note><b>Org dropdown</b> is single-line + truncated now (no wrap), and changeable — switch it and the scope sections change; projects/tasks stay (they&apos;re global) but re-tag relative to the new org.</Note>
-            <Note><b>Dashed &quot;auto&quot; chips</b> = derived vertical spine (scope → its type → org), computed, not stored. Save logs the exact <code>ctx_associations</code> payload.</Note>
-            <Note tone="warn"><b>Still your call:</b> lock org to the file&apos;s owner or keep it changeable? And where does this surface — slide-over on the file row, a step after upload, or both? I can also spin alternate picker variations (flat table, command-palette) if you want to compare.</Note>
+        {/* Block 2 — active context (chat) — SAME field, different contract */}
+        <ConceptBlock
+          icon={MessageSquare}
+          kicker="Active Context (ephemeral)"
+          title="Chat composer (active context)"
+          intro={<>The exact same component, one prop flipped. Here it sets <code>appContextSlice</code> — &quot;the work I&apos;m doing right now is relevant to these&quot; — which is what feeds the agent. It writes nothing durable.</>}
+          ui={renderField(<ContextField mode="active" subject={{ icon: MessageSquare, title: "Current chat turn", sub: "What is this work about?" }} org={org!} orgs={organizations} onChangeOrg={setOrgId} allProjects={projects} allTasks={tasks} />)}
+          notes={<>
+            <Note tone="good"><b>Identical UI, different contract.</b> &quot;Set context&quot; logs an <code>appContextSlice</code>-shaped payload, not a <code>ctx_associations</code> row. One <code>mode</code> prop is the whole difference — this is how surfaces stop &quot;doing stupid things&quot; by guessing.</Note>
+            <Note><b>Why it matters:</b> this is the entire reason the ctx system exists — the active org/scope/project/task is auto-assembled into the context the model receives.</Note>
+            <Note tone="warn"><b>Refinement:</b> active context resolves to <i>one scope per type</i> (and one project/task). The field still multi-selects here; a follow-up makes active-mode single-select per type to match the canonical resolution.</Note>
+          </>}
+        />
+
+        {/* Block 3 — assign to a context item (the cascade flagship) */}
+        <ConceptBlock
+          icon={ArrowRight}
+          kicker="Typed slot (the flagship)"
+          title="Assign the file to a context item"
+          intro={<>A context item like <code>Operating Agreement</code> (a file slot on a scope type) is a <b>typed, named slot</b>. Dropping the file into it for a specific scope fills the value <i>and</i> cascades up the spine. This is the new <code>value_kind=&apos;reference&apos;</code> — written as one row, the rest derived.</>}
+          ui={renderField(fileSubject ? <AssignToItemPanel file={file!} orgs={organizations} /> : <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">No documents found. Upload a file, then revisit.</Card>)}
+          notes={<>
+            <Note tone="good"><b>Real scopes + real context items.</b> The slot list loads live via <code>scopesService.listContextItems()</code> for the picked scope&apos;s type. Only the write is faked (it logs the future <code>ctx_context_item_values</code> reference row).</Note>
+            <Note><b>One act, two effects.</b> The file becomes the scope&apos;s value (structured data) <i>and</i> the most-specific association — so it cascades the furthest: item → scope → type → org, computed on read.</Note>
+            <Note tone="warn"><b>Type guard:</b> file-compatible slots (document / reference / file) are marked green; assigning to a text/number slot would convert it to a reference value (noted at assign time).</Note>
+          </>}
+        />
+
+        <Card className="bg-muted/30 p-4">
+          <div className="flex gap-2 text-sm text-muted-foreground">
+            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div>Next from the gap analysis: scope-as-value, required-slots/gaps, context hints, the live &quot;data rows written&quot; panel, and lateral/promotion suggestions — each into this same frame on real data.</div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

@@ -59,11 +59,18 @@ import {
   selectFetchStatus,
 } from "@/features/transcript-studio/redux/selectors";
 import type {
+  CleanupCustomSlot,
   SessionContextItem,
   StudioSession,
 } from "@/features/transcript-studio/types";
 
 export const CLEANUP_DOC_KIND = "cleanup_custom";
+export const CLEANUP_DOC_KIND_PREFIX = "cleanup_custom";
+
+/** docKind for a new slot — first slot keeps the legacy kind. */
+export function makeSlotDocKind(slotId: string, isFirst: boolean): string {
+  return isFirst ? CLEANUP_DOC_KIND : `${CLEANUP_DOC_KIND_PREFIX}_${slotId.slice(0, 8)}`;
+}
 const NEW_CLEANUP_TITLE = "New Cleanup";
 const RAW_SAVE_DEBOUNCE_MS = 1500;
 const TEXT_SAVE_DEBOUNCE_MS = 1200;
@@ -75,9 +82,11 @@ export interface LoadedSessionContent {
   rawText: string;
   rawSegmentCount: number;
   cleanText: string;
-  customText: string;
+  /** Slot outputs keyed by docKind. */
+  customTexts: Record<string, string>;
   cleanAgentId: string | null;
-  customAgentId: string | null;
+  /** Persisted slot list (legacy module_shortcut_id migrated to one slot). */
+  customSlots: CleanupCustomSlot[];
   contextItems: SessionContextItem[];
   /** Display names for the persisted agent ids (best-effort). */
   agentNames: Record<string, string>;
@@ -85,7 +94,7 @@ export interface LoadedSessionContent {
 
 interface AgentSelections {
   cleanAgentId: string;
-  customAgentId: string | null;
+  customSlots: CleanupCustomSlot[];
 }
 
 function deriveTitle(text: string): string {
@@ -240,15 +249,35 @@ export function useCleanupSession() {
               passIndex: Math.max(...cleaned.map((c) => c.passIndex)),
             }
           : null;
-        const customDoc =
-          docs.find((d) => d.kind === CLEANUP_DOC_KIND) ?? null;
+        const customTexts: Record<string, string> = {};
+        for (const d of docs) {
+          if (d.kind.startsWith(CLEANUP_DOC_KIND_PREFIX)) {
+            customTexts[d.kind] = d.content;
+          }
+        }
 
         const cleanAgentId = settings?.cleaningShortcutId ?? null;
-        const customAgentId = settings?.moduleShortcutId ?? null;
+        // Slots: persisted list, else migrate the legacy single agent column.
+        const customSlots: CleanupCustomSlot[] =
+          settings?.customSlots && settings.customSlots.length > 0
+            ? settings.customSlots
+            : settings?.moduleShortcutId
+              ? [
+                  {
+                    id: crypto.randomUUID(),
+                    agentId: settings.moduleShortcutId,
+                    source: "clean",
+                    autoRun: false,
+                    docKind: CLEANUP_DOC_KIND,
+                  },
+                ]
+              : [];
         const contextItems = settings?.contextItems ?? [];
         contextItemsRef.current = contextItems;
         const agentNames = await fetchAgentNames(
-          [cleanAgentId, customAgentId].filter(Boolean) as string[],
+          [cleanAgentId, ...customSlots.map((sl) => sl.agentId)].filter(
+            Boolean,
+          ) as string[],
         );
         if (seq !== loadSeqRef.current) return;
 
@@ -257,9 +286,9 @@ export function useCleanupSession() {
           rawText: raw.map((s) => s.text).join("\n\n"),
           rawSegmentCount: raw.length,
           cleanText: cleaned.map((c) => c.text).join("\n\n"),
-          customText: customDoc?.content ?? "",
+          customTexts,
           cleanAgentId,
-          customAgentId,
+          customSlots,
           contextItems,
           agentNames,
         });
@@ -325,7 +354,8 @@ export function useCleanupSession() {
       await upsertSessionSettings({
         sessionId: session.id,
         cleaningShortcutId: agents?.cleanAgentId ?? null,
-        moduleShortcutId: agents?.customAgentId ?? null,
+        moduleShortcutId: agents?.customSlots?.[0]?.agentId ?? null,
+        customSlots: agents?.customSlots ?? null,
         contextItems: contextItemsRef.current,
       });
       return session.id;
@@ -506,11 +536,11 @@ export function useCleanupSession() {
   // ── Custom output persistence ──────────────────────────────────────────────
 
   const writeCustomDoc = useCallback(
-    async (content: string) => {
+    async (content: string, docKind: string) => {
       const sessionId = await ensureSession();
       if (!sessionId) return;
       try {
-        await upsertStudioDocument(sessionId, CLEANUP_DOC_KIND, {
+        await upsertStudioDocument(sessionId, docKind, {
           content,
           title: "Custom Output",
         });
@@ -524,7 +554,12 @@ export function useCleanupSession() {
 
   /** Agent pass completed → save immediately. */
   const persistCustomRun = useCallback(
-    async (text: string, agentId: string, conversationId: string | null) => {
+    async (
+      text: string,
+      agentId: string,
+      conversationId: string | null,
+      docKind: string,
+    ) => {
       const sessionId = await ensureSession();
       if (!sessionId || !text.trim()) return;
       try {
@@ -534,7 +569,7 @@ export function useCleanupSession() {
           shortcutId: agentId,
           triggerCause: "manual",
         });
-        await writeCustomDoc(text);
+        await writeCustomDoc(text, docKind);
         await finalizeAgentRun({
           id: run.id,
           status: "complete",
@@ -550,10 +585,10 @@ export function useCleanupSession() {
 
   /** User edit → debounced doc upsert. */
   const persistCustomEdit = useCallback(
-    (text: string) => {
+    (text: string, docKind: string) => {
       if (customTimerRef.current) clearTimeout(customTimerRef.current);
       customTimerRef.current = setTimeout(() => {
-        void writeCustomDoc(text);
+        void writeCustomDoc(text, docKind);
       }, TEXT_SAVE_DEBOUNCE_MS);
     },
     [writeCustomDoc],
@@ -565,17 +600,17 @@ export function useCleanupSession() {
   const persistSettings = useCallback(
     (patch: {
       cleanAgentId?: string;
-      customAgentId?: string | null;
+      customSlots?: CleanupCustomSlot[];
       contextItems?: SessionContextItem[];
     }) => {
-      if (patch.cleanAgentId !== undefined || patch.customAgentId !== undefined) {
+      if (patch.cleanAgentId !== undefined || patch.customSlots !== undefined) {
         agentsRef.current = {
           cleanAgentId:
             patch.cleanAgentId ?? agentsRef.current?.cleanAgentId ?? "",
-          customAgentId:
-            patch.customAgentId !== undefined
-              ? patch.customAgentId
-              : (agentsRef.current?.customAgentId ?? null),
+          customSlots:
+            patch.customSlots !== undefined
+              ? patch.customSlots
+              : (agentsRef.current?.customSlots ?? []),
         };
       }
       if (patch.contextItems !== undefined) {
@@ -591,7 +626,9 @@ export function useCleanupSession() {
             ...(agentsRef.current
               ? {
                   cleaningShortcutId: agentsRef.current.cleanAgentId || null,
-                  moduleShortcutId: agentsRef.current.customAgentId,
+                  moduleShortcutId:
+                    agentsRef.current.customSlots[0]?.agentId ?? null,
+                  customSlots: agentsRef.current.customSlots,
                 }
               : {}),
             contextItems: contextItemsRef.current,

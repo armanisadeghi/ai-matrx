@@ -121,6 +121,14 @@ standard chat surface and embedded agent apps.
 
 ---
 
+## Custom function tools (client-side) — supported, not yet wired
+
+xAI's realtime agent **supports custom client-side `function` tools** (and `file_search` / `web_search` / `x_search` / `mcp`), confirmed against the [Voice Agent docs](https://docs.x.ai/developers/model-capabilities/audio/voice-agent). Today the codebase only sends server-side `web_search` / `x_search` (`ToolName`), executed by xAI with no client handling. To add a client function (e.g. the Scribe Live tab reading/writing the working document — Phase 2):
+
+- Declare in `session.update` `tools: [{ type: "function", name, description, parameters: <JSON schema> }]`.
+- On `response.function_call_arguments.done` (`{ name, arguments, call_id }`) → run it locally, then send `conversation.item.create` with `{ type: "function_call_output", call_id, output }`, then `response.create`. **Parallel calls:** resolve every `call_id` before one `response.create`.
+- Protocol is OpenAI-Realtime-compatible. `xaiClient.ts`'s event dispatch must learn `response.function_call_arguments.delta/done`; `types.ts` `ToolName` widens beyond the two server tools.
+
 ## Invariants & gotchas
 
 - **AudioContext must be created/resumed inside the click event handler — BEFORE any `await`.** Safari permanently suspends contexts created in async callbacks.
@@ -179,6 +187,7 @@ Implementation tracked in
 
 ## Change log
 
+- `2026-06-10` — First **embedded** consumer of the voice primitives: `features/transcript-studio/components/scribe/ScribeLiveScreen.tsx` (the Scribe "Live" tab). It composes the hooks (`useVoiceAgentInstance` `playground` preset + `persist:false`, `useXaiVoiceSession`, `usePersistVoiceTranscript`) and the inner components (`VoiceAmbientGlow` / `VoiceTranscriptStream` / `VoiceStatusPill` / `VoiceListenHalo` / `VoiceMicButton` / `VoiceErrorBanner`) into an embedded layout (no full-page back-header, `h-full` not `h-dvh`) and injects a per-session working document into `instructions` via `updateConfig` on every doc change. Confirms the components/hooks are embeddable as-is; `VoiceAgentSurface` remains the full-page layout. If a third embedded surface appears, extract a shared inner `<VoiceConversationSurface>` rather than copying the compose-block again.
 - `2026-05-28` — Voice agents become first-class members of the agent system. Four-step migration delivered in one branch:
   - **Step 1 — Canonical `ai_model.capabilities` shape.** New module at `features/ai-models/capabilities/` defines `{input, output, features, interaction}` as the single source of truth. Tolerant parser accepts every legacy shape (null / "" / flat array / Google booleans / OpenAI I/O / hyphenated labels / literal "[transcription]"). The audit system's flat `CapabilitiesRecord` becomes a derived projection via `toAuditRecord`. All 189 `ai_model` rows backfilled via the parser; `capabilities_pre_canonical` JSONB snapshot column kept for one release as a revert safety net.
   - **Step 2 — `ui_surface.execution_mode` + `pickRuntime` resolver.** New column on `ui_surface` (`python-stream | nextjs-stream | browser-realtime | local-runtime`, default `python-stream`). New pure resolver at `features/agents/runtime/pickRuntime.ts` decides where an agent runs given the model's interaction mode and the surface's execution mode. The launcher (`launch-agent-execution.thunk.ts`) gained an early branch that calls `resolveAgentRuntime` and hands off to `launchRealtimeSession` when the runtime resolves to `browser-realtime`. Inert by default — no surface uses `browser-realtime` until Step 4's seed lands.

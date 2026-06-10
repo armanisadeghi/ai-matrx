@@ -12,6 +12,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { NEW_SESSION_DEFAULT_TITLE, DEFAULT_MODULE_ID } from "../constants";
 import type {
+  CleanupCustomSlot,
   CreateSessionInput,
   SessionContextItem,
   SessionSource,
@@ -1251,6 +1252,7 @@ interface SessionSettingsRow {
   column_widths: number[] | null;
   show_prior_modules: boolean;
   context_items: SessionContextItem[] | null;
+  custom_slots: CleanupCustomSlot[] | null;
 }
 
 function rowToSessionSettings(
@@ -1268,6 +1270,7 @@ function rowToSessionSettings(
     columnWidths: row.column_widths,
     showPriorModules: row.show_prior_modules,
     contextItems: Array.isArray(row.context_items) ? row.context_items : null,
+    customSlots: Array.isArray(row.custom_slots) ? row.custom_slots : null,
   };
 }
 
@@ -1299,6 +1302,7 @@ export interface UpsertSessionSettingsInput {
   columnWidths?: number[] | null;
   showPriorModules?: boolean;
   contextItems?: SessionContextItem[] | null;
+  customSlots?: CleanupCustomSlot[] | null;
 }
 
 /**
@@ -1335,6 +1339,8 @@ export async function upsertSessionSettings(
     update.show_prior_modules = input.showPriorModules;
   if (input.contextItems !== undefined)
     update.context_items = input.contextItems;
+  if (input.customSlots !== undefined)
+    update.custom_slots = input.customSlots;
 
   const { data, error } = await db
     .from("studio_session_settings")

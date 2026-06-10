@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,
   Mic,
   MoreVertical,
   Pencil,
-  Sparkles,
+  Radio,
+  Square,
   Trash2,
   Wand2,
+  Webhook,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
@@ -29,14 +32,31 @@ import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
 import { CleanupSheet } from "./CleanupSheet";
 import { ScribeCaptureScreen } from "./ScribeCaptureScreen";
 import { AssistantScreen } from "./AssistantScreen";
+import { ScribeLiveScreen } from "./ScribeLiveScreen";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
+import { useStudioSession } from "../../hooks/useStudioSession";
 
-type Screen = "capture" | "assistant";
+type Screen = "capture" | "agent" | "live";
+
+const REVIEW_MESSAGE =
+  "A new recording was just added to this session. Please review the latest transcript and update the working document accordingly.";
 
 interface ScribeScreenProps {
   sessionId: string;
   onBack?: () => void;
 }
+
+interface ModeTab {
+  key: Screen;
+  label: string;
+  icon: typeof Mic;
+}
+
+const MODE_TABS: ModeTab[] = [
+  { key: "capture", label: "Record", icon: Mic },
+  { key: "agent", label: "Agent", icon: Webhook },
+  { key: "live", label: "Live", icon: Radio },
+];
 
 export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   const dispatch = useAppDispatch();
@@ -47,9 +67,34 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   const [cleanupOpen, setCleanupOpen] = useState(false);
 
   // The assistant hook is mounted at the screen level so a cleanup run that
-  // completes BEFORE the user switches to the Assistant tab still gets the
-  // refreshed `cleaned_transcripts` named context on the next turn.
-  const { refreshContext } = useStudioAssistant(sessionId);
+  // completes BEFORE the user switches to the Agent tab still gets the
+  // refreshed `cleaned_transcripts` named context on the next turn. We also
+  // use its `send` to fire the post-recording review turn from the toast.
+  const { refreshContext, send } = useStudioAssistant(sessionId);
+
+  // Recording is a session-global concern (capturable from any mode), so the
+  // control lives in the header and its state is read here. The capture
+  // screen keeps its own full-size transport.
+  const recorder = useStudioSession({ sessionId });
+
+  // Offer to send a just-finished recording to the agent for review — as a
+  // toast (no dedicated header/strip row), available from any mode.
+  const wasRecording = useRef(false);
+  useEffect(() => {
+    if (wasRecording.current && !recorder.isOwnedRecording) {
+      toast("Recording added", {
+        description: "Send it to the agent to update the working document?",
+        action: {
+          label: "Send",
+          onClick: () => void send(REVIEW_MESSAGE),
+        },
+      });
+    }
+    wasRecording.current = recorder.isOwnedRecording;
+  }, [recorder.isOwnedRecording, send]);
+
+  const recordingBlocked =
+    recorder.isAnyRecording && !recorder.isOwnedRecording;
 
   const menuItems: ActionSheetItem[] = [
     {
@@ -112,7 +157,7 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
               <ChevronLeft className="h-5 w-5" />
             </button>
           )}
-          <div className="min-w-0 flex-1">
+          <div className="hidden min-w-0 flex-1 sm:block">
             {session ? (
               <EditableSessionTitle
                 sessionId={sessionId}
@@ -125,35 +170,64 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
               </span>
             )}
           </div>
-          {/* Segmented toggle */}
-          <div className="flex shrink-0 rounded-full bg-muted p-0.5">
-            <button
-              type="button"
-              onClick={() => setScreen("capture")}
-              className={cn(
-                "flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                screen === "capture"
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground",
-              )}
-            >
-              <Mic className="h-3.5 w-3.5" />
-              Record
-            </button>
-            <button
-              type="button"
-              onClick={() => setScreen("assistant")}
-              className={cn(
-                "flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                screen === "assistant"
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground",
-              )}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              Assistant
-            </button>
+          {/* Mode tabs — Record / Agent / Live. Centered on small screens
+              (where the title is hidden to reclaim width), inline otherwise. */}
+          <div className="flex flex-1 justify-center sm:flex-none sm:justify-start">
+            <div className="flex shrink-0 rounded-full bg-muted p-0.5">
+              {MODE_TABS.map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setScreen(key)}
+                  className={cn(
+                    "flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors",
+                    screen === key
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
+          {/* Recording control — inline, session-global. Tap to start; while
+              recording it pulses red and stops. */}
+          <button
+            type="button"
+            onClick={
+              recorder.isOwnedRecording
+                ? recorder.stop
+                : () => void recorder.start()
+            }
+            disabled={recordingBlocked}
+            aria-label={
+              recorder.isOwnedRecording ? "Stop recording" : "Add recording"
+            }
+            className={cn(
+              "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors",
+              recorder.isOwnedRecording
+                ? "bg-red-500 text-white active:scale-95"
+                : recordingBlocked
+                  ? "cursor-not-allowed text-muted-foreground"
+                  : "text-foreground active:bg-accent",
+            )}
+          >
+            {recorder.isOwnedRecording ? (
+              <>
+                {!recorder.isPaused && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 animate-ping rounded-full bg-red-500/40"
+                  />
+                )}
+                <Square className="relative h-4 w-4 fill-current" />
+              </>
+            ) : (
+              <Mic className="h-5 w-5" />
+            )}
+          </button>
           {/* Session menu */}
           <button
             type="button"
@@ -168,11 +242,9 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
 
       {/* Body */}
       <main className="min-h-0 flex-1">
-        {screen === "capture" ? (
-          <ScribeCaptureScreen sessionId={sessionId} />
-        ) : (
-          <AssistantScreen sessionId={sessionId} />
-        )}
+        {screen === "capture" && <ScribeCaptureScreen sessionId={sessionId} />}
+        {screen === "agent" && <AssistantScreen sessionId={sessionId} />}
+        {screen === "live" && <ScribeLiveScreen sessionId={sessionId} />}
       </main>
 
       <ActionSheet

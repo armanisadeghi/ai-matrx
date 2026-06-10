@@ -18601,6 +18601,7 @@ export type Database = {
           concept_shortcut_id: string | null
           context_items: Json | null
           created_at: string
+          custom_slots: Json | null
           module_id: string
           module_interval_ms: number | null
           module_shortcut_id: string | null
@@ -18616,6 +18617,7 @@ export type Database = {
           concept_shortcut_id?: string | null
           context_items?: Json | null
           created_at?: string
+          custom_slots?: Json | null
           module_id?: string
           module_interval_ms?: number | null
           module_shortcut_id?: string | null
@@ -18631,6 +18633,7 @@ export type Database = {
           concept_shortcut_id?: string | null
           context_items?: Json | null
           created_at?: string
+          custom_slots?: Json | null
           module_id?: string
           module_interval_ms?: number | null
           module_shortcut_id?: string | null

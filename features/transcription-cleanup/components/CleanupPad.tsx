@@ -2,21 +2,27 @@
 
 /**
  * CleanupPad — the standalone Transcription Cleanup page, on the STUDIO data
- * model. Record → auto-clean → optionally refine with ANY agent.
+ * model. Record → auto-clean → refine with ANY number of custom agents.
  *
  * Layout (desktop, 3 resizable panels):
- *   sidebar   — sessions (recents + New), Clean agent dropdown, context items,
- *               Clean Up button
- *   main      — central record control; transcript over Clean (resizable)
- *   custom    — full-height right container: any-agent dropdown + input
- *               source + Run, output textarea
- * Mobile: single scroll column (record, transcript, clean, custom) with the
- * sidebar in a slide-over drawer.
+ *   sidebar   — sessions (Mine|All scope + New), Clean agent dropdown,
+ *               context items, Clean Up button
+ *   main      — central record pill in a tall band spanning the (transparent)
+ *               shell-header zone; transcript over Clean (resizable)
+ *   custom    — full-height right container with up to MAX_CUSTOM_SLOTS
+ *               slots (tab pills, one visible at a time). Each slot: its own
+ *               agent, input source (raw|clean), auto-run, and output doc.
+ * Mobile: single scroll column with the sidebar in a drawer.
  *
- * Persistence (see useCleanupSession): sessions are studio_sessions rows with
- * source='cleanup'; raw → studio_raw_segments, clean → studio_cleaned_segments,
- * custom → studio_documents, agents + context items → studio_session_settings.
- * A session materializes lazily on first content.
+ * Custom slots — outputs live in studio_documents (one row per slot docKind);
+ * the slot list (agent/source/autorun per slot) persists in
+ * studio_session_settings.custom_slots. Auto-run: source=raw slots fire
+ * alongside Clean; source=clean slots fire when the cleaned result lands.
+ *
+ * Context menu — every pane is wrapped in UnifiedAgentContextMenu with
+ * surfaceName "matrx-user/transcripts-cleanup", so internal + user shortcuts
+ * work over selections (textarea selection is captured by the menu itself)
+ * and surface value-mappings drive variable resolution.
  *
  * Invariant carried from the original tool: what is sent to the AI MUST equal
  * what the user sees in the transcript textarea (`baseTextRef`).
@@ -35,6 +41,7 @@ import {
   Loader2,
   PanelLeftOpen,
   Play,
+  Plus,
   Stars,
   Wand2,
   X,
@@ -61,9 +68,13 @@ import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIcon
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { FilesTapButton } from "@/components/icons/tap-buttons";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { UnifiedAgentContextMenu } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
 import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
 import { createTranscriptsCleanupScope } from "@/features/surfaces/manifests/transcripts-cleanup.manifest";
-import type { SessionContextItem } from "@/features/transcript-studio/types";
+import type {
+  CleanupCustomSlot,
+  SessionContextItem,
+} from "@/features/transcript-studio/types";
 import { CleanupContextPanel } from "./CleanupContextPanel";
 import { CleanupSessionList } from "./CleanupSessionList";
 import { DEFAULT_CLEAN_AGENT_ID, SYSTEM_AGENT_NAMES } from "../ai-agents";
@@ -71,14 +82,20 @@ import {
   useAiPostProcess,
   type InputMappingInfo,
 } from "../hooks/useAiPostProcess";
-import { useCleanupSession } from "../hooks/useCleanupSession";
+import {
+  useCleanupSession,
+  CLEANUP_DOC_KIND,
+  makeSlotDocKind,
+} from "../hooks/useCleanupSession";
 
 const OVERLAY_ID = "transcriptionCleanupPage" as const;
 const INSTANCE_ID = "main" as const;
 
 const H_COOKIE = "panels:cleanup-h3";
 const V_COOKIE = "panels:cleanup-v";
-const AUTORUN_LS_KEY = "cleanup:custom-autorun";
+
+/** Fixed hook pool size — raise here when more parallel slots are needed. */
+const MAX_CUSTOM_SLOTS = 3;
 
 function writeLayoutCookie(name: string, layout: Record<string, number>) {
   document.cookie =
@@ -90,6 +107,17 @@ function mappingCaption(mapping: InputMappingInfo | null): string | null {
   if (!mapping) return null;
   if (mapping.mode === "user_input") return "input → user message";
   return `input → ${mapping.target}`;
+}
+
+/** Stable initial slot (fixed id — SSR-safe; new slots mint uuids on click). */
+function initialSlot(): CleanupCustomSlot {
+  return {
+    id: "slot-1",
+    agentId: null,
+    source: "clean",
+    autoRun: false,
+    docKind: CLEANUP_DOC_KIND,
+  };
 }
 
 interface CleanupPadProps {
@@ -114,30 +142,30 @@ export default function CleanupPad({
   const [liveTranscript, setLiveTranscript] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Agents — Clean defaults to the system cleaner; Custom starts unset.
+  // Agents — Clean defaults to the system cleaner.
   const [cleanAgentId, setCleanAgentId] = useState(DEFAULT_CLEAN_AGENT_ID);
-  const [customAgentId, setCustomAgentId] = useState<string | null>(null);
   const [agentNames, setAgentNames] =
     useState<Record<string, string>>(SYSTEM_AGENT_NAMES);
-  const [customSource, setCustomSource] = useState<"clean" | "raw">("clean");
-  // Auto-run the Custom agent: source=raw → fires alongside Clean;
-  // source=clean → fires when the Clean result lands. UI preference, not
-  // session data — persisted in localStorage.
-  const [customAutoRun, setCustomAutoRun] = useState(false);
-  useEffect(() => {
-    setCustomAutoRun(localStorage.getItem(AUTORUN_LS_KEY) === "1");
-  }, []);
-  const handleAutoRunChange = useCallback((on: boolean) => {
-    setCustomAutoRun(on);
-    localStorage.setItem(AUTORUN_LS_KEY, on ? "1" : "0");
-  }, []);
+
+  // Custom slots — one visible at a time, each with its own agent/source/autorun.
+  const [slots, setSlots] = useState<CleanupCustomSlot[]>([initialSlot()]);
+  const [activeSlotIdx, setActiveSlotIdx] = useState(0);
+  const slotsRef = useRef(slots);
+  slotsRef.current = slots;
+  const activeSlot = slots[Math.min(activeSlotIdx, slots.length - 1)];
 
   // null = show the live stream / nothing; string = loaded-from-DB or user edit.
   const [editedResponse, setEditedResponse] = useState<string | null>(null);
-  const [editedCustom, setEditedCustom] = useState<string | null>(null);
+  const [editedBySlot, setEditedBySlot] = useState<
+    Record<string, string | null>
+  >({});
 
   const cleanAi = useAiPostProcess();
-  const customAi = useAiPostProcess();
+  // Fixed pool — one streaming runtime per slot index (hooks can't be dynamic).
+  const slotAi0 = useAiPostProcess();
+  const slotAi1 = useAiPostProcess();
+  const slotAi2 = useAiPostProcess();
+  const slotAis = [slotAi0, slotAi1, slotAi2];
 
   useEffect(() => {
     if (!isMobile) setDrawerOpen(false);
@@ -146,14 +174,15 @@ export default function CleanupPad({
   // ── Latest-value refs (async flows must never read stale closures) ────────
   const cleanAgentIdRef = useRef(cleanAgentId);
   cleanAgentIdRef.current = cleanAgentId;
-  const customAutoRunRef = useRef(customAutoRun);
-  customAutoRunRef.current = customAutoRun;
-  const customSourceRef = useRef(customSource);
-  customSourceRef.current = customSource;
   const contextItemsRef = useRef<SessionContextItem[]>([]);
   const responseRef = useRef<string>("");
   const customRef = useRef<string>("");
   const transcriptDisplayRef = useRef<string>("");
+
+  // Pane textarea refs — the context menu reads selection through these.
+  const transcriptTaRef = useRef<HTMLTextAreaElement | null>(null);
+  const cleanTaRef = useRef<HTMLTextAreaElement | null>(null);
+  const customTaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const allText = useMemo(
     () => entries.map((e) => e.text).join("\n\n"),
@@ -179,14 +208,20 @@ export default function CleanupPad({
     () => stripThinkingStreaming(cleanAi.accumulatedText),
     [cleanAi.accumulatedText],
   );
-  const { visible: strippedCustom, isThinking: customThinking } = useMemo(
-    () => stripThinkingStreaming(customAi.accumulatedText),
-    [customAi.accumulatedText],
-  );
   const responseValue = editedResponse ?? strippedClean;
   responseRef.current = responseValue;
-  const customValue = editedCustom ?? strippedCustom;
-  customRef.current = customValue;
+
+  /** Display value for a slot: user edit / loaded text, else its live stream. */
+  const slotValue = (idx: number): string => {
+    const slot = slots[idx];
+    if (!slot) return "";
+    const edited = editedBySlot[slot.id];
+    if (edited !== null && edited !== undefined) return edited;
+    return stripThinkingStreaming(slotAis[idx].accumulatedText).visible;
+  };
+  const activeSlotValue = activeSlot ? slotValue(activeSlotIdx) : "";
+  customRef.current = activeSlotValue;
+  const activeAi = slotAis[Math.min(activeSlotIdx, MAX_CUSTOM_SLOTS - 1)];
 
   // ── Surface scope (live values for agent variable/slot mapping) ────────────
   const buildScope = useCallback(() => {
@@ -199,6 +234,17 @@ export default function CleanupPad({
       session_title: sessionRefs.current.activeSession?.title,
     });
   }, []);
+
+  /** contextData for the context menu — pane-specific content over the scope.
+   * (`context` is omitted: the menu types it as a string; our scope's named
+   * values carry everything the mappings need.) */
+  const menuContextData = useCallback(
+    (paneText: string) => {
+      const { context: _omitted, ...scope } = buildScope();
+      return { ...scope, content: paneText };
+    },
+    [buildScope],
+  );
 
   // ── Session content loading: reset local state from the DB snapshot ───────
   useEffect(() => {
@@ -213,10 +259,9 @@ export default function CleanupPad({
       }),
     );
     setEditedResponse(loaded.cleanText || null);
-    setEditedCustom(loaded.customText || null);
-    // Guard: studio-origin sessions store SHORTCUT ids in these settings
-    // columns; if the id didn't resolve to a real agent name, it isn't a
-    // runnable agent id here — fall back to the default, loudly.
+
+    // Guard: ids that didn't resolve to a real agent name (studio shortcut
+    // ids on foreign sessions) aren't runnable here — fall back, loudly.
     const validClean =
       loaded.cleanAgentId &&
       (loaded.agentNames[loaded.cleanAgentId] ||
@@ -227,19 +272,33 @@ export default function CleanupPad({
       );
     }
     setCleanAgentId(validClean ? loaded.cleanAgentId! : DEFAULT_CLEAN_AGENT_ID);
-    const validCustom =
-      loaded.customAgentId && loaded.agentNames[loaded.customAgentId];
-    if (loaded.customAgentId && !validCustom) {
-      console.warn(
-        `[cleanup] persisted custom agent ${loaded.customAgentId} did not resolve to an agent — clearing`,
-      );
+
+    const loadedSlots = (
+      loaded.customSlots.length > 0 ? loaded.customSlots : [initialSlot()]
+    )
+      .slice(0, MAX_CUSTOM_SLOTS)
+      .map((slot) => {
+        if (slot.agentId && !loaded.agentNames[slot.agentId]) {
+          console.warn(
+            `[cleanup] persisted slot agent ${slot.agentId} did not resolve to an agent — clearing`,
+          );
+          return { ...slot, agentId: null };
+        }
+        return slot;
+      });
+    setSlots(loadedSlots);
+    setActiveSlotIdx(0);
+    const edited: Record<string, string | null> = {};
+    for (const slot of loadedSlots) {
+      edited[slot.id] = loaded.customTexts[slot.docKind] || null;
     }
-    setCustomAgentId(validCustom ? loaded.customAgentId : null);
+    setEditedBySlot(edited);
+
     contextItemsRef.current = loaded.contextItems;
     setAgentNames((prev) => ({ ...prev, ...loaded.agentNames }));
     setLiveTranscript("");
     cleanAi.reset();
-    customAi.reset();
+    for (const ai of slotAis) ai.reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.loaded, dispatch]);
 
@@ -249,11 +308,12 @@ export default function CleanupPad({
       setDraftText({ overlayId: OVERLAY_ID, instanceId: INSTANCE_ID, text: "" }),
     );
     setEditedResponse(null);
-    setEditedCustom(null);
+    setEditedBySlot({});
     setLiveTranscript("");
     cleanAi.reset();
-    customAi.reset();
-  }, [dispatch, cleanAi, customAi]);
+    for (const ai of slotAis) ai.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, cleanAi]);
 
   // ── Agent name resolution for dropdown labels ──────────────────────────────
   const resolveAgentName = useCallback(
@@ -263,6 +323,49 @@ export default function CleanupPad({
       if (names[id]) setAgentNames((prev) => ({ ...prev, ...names }));
     },
     [agentNames, session],
+  );
+
+  // ── Slot mutations (persisted via custom_slots) ────────────────────────────
+  const updateSlots = useCallback(
+    (next: CleanupCustomSlot[]) => {
+      setSlots(next);
+      slotsRef.current = next;
+      session.persistSettings({ customSlots: next });
+    },
+    [session],
+  );
+
+  const patchSlot = useCallback(
+    (slotId: string, patch: Partial<CleanupCustomSlot>) => {
+      updateSlots(
+        slotsRef.current.map((s) => (s.id === slotId ? { ...s, ...patch } : s)),
+      );
+    },
+    [updateSlots],
+  );
+
+  const addSlot = useCallback(() => {
+    if (slotsRef.current.length >= MAX_CUSTOM_SLOTS) return;
+    const id = crypto.randomUUID();
+    const slot: CleanupCustomSlot = {
+      id,
+      agentId: null,
+      source: "clean",
+      autoRun: false,
+      docKind: makeSlotDocKind(id, false),
+    };
+    updateSlots([...slotsRef.current, slot]);
+    setActiveSlotIdx(slotsRef.current.length - 1);
+  }, [updateSlots]);
+
+  const removeSlot = useCallback(
+    (slotId: string) => {
+      if (slotsRef.current.length <= 1) return;
+      const next = slotsRef.current.filter((s) => s.id !== slotId);
+      updateSlots(next);
+      setActiveSlotIdx((idx) => Math.min(idx, next.length - 1));
+    },
+    [updateSlots],
   );
 
   // ── Run: Clean ─────────────────────────────────────────────────────────────
@@ -279,17 +382,13 @@ export default function CleanupPad({
     [cleanAi, buildScope],
   );
 
-  // ── Run: Custom ────────────────────────────────────────────────────────────
-  const persistedCustomCidRef = useRef<string | null>(null);
-  const customAgentIdRef = useRef(customAgentId);
-  customAgentIdRef.current = customAgentId;
-
-  /** Run the custom agent over an explicit input (manual + autorun paths). */
-  const runCustomWith = useCallback(
-    (input: string, opts?: { silent?: boolean }) => {
-      if (!customAgentIdRef.current) {
+  // ── Run: Custom slots ──────────────────────────────────────────────────────
+  const runSlot = useCallback(
+    (idx: number, input: string, opts?: { silent?: boolean }) => {
+      const slot = slotsRef.current[idx];
+      if (!slot?.agentId) {
         if (!opts?.silent)
-          toast.info("Choose an agent for the custom container first");
+          toast.info("Choose an agent for this slot first");
         return;
       }
       if (!input.trim()) {
@@ -297,40 +396,43 @@ export default function CleanupPad({
           toast.info("Nothing to process yet — record or type a transcript");
         return;
       }
-      setEditedCustom(null);
-      void customAi.process({
-        agentId: customAgentIdRef.current,
+      setEditedBySlot((prev) => ({ ...prev, [slot.id]: null }));
+      void slotAis[idx].process({
+        agentId: slot.agentId,
         text: input,
         contextItems: contextItemsRef.current,
         scope: buildScope(),
       });
     },
-    [customAi, buildScope],
+    // slotAis identities are stable per render position
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [buildScope],
   );
 
-  const runCustom = useCallback(() => {
+  const runActiveSlot = useCallback(() => {
+    const slot = slotsRef.current[activeSlotIdx];
+    if (!slot) return;
     const input =
-      customSourceRef.current === "clean" && responseRef.current.trim()
+      slot.source === "clean" && responseRef.current.trim()
         ? responseRef.current
         : baseTextRef.current;
-    runCustomWith(input);
-  }, [runCustomWith]);
+    runSlot(activeSlotIdx, input);
+  }, [activeSlotIdx, runSlot]);
 
-  /** Autorun hook for the raw path — fires alongside Clean. */
-  const maybeAutoRunCustomRaw = useCallback(
+  /** Autorun, raw path — every autoRun slot with source=raw fires with Clean. */
+  const autoRunRawSlots = useCallback(
     (rawText: string) => {
-      if (
-        customAutoRunRef.current &&
-        customSourceRef.current === "raw" &&
-        customAgentIdRef.current
-      ) {
-        runCustomWith(rawText, { silent: true });
-      }
+      slotsRef.current.forEach((slot, idx) => {
+        if (slot.autoRun && slot.source === "raw" && slot.agentId) {
+          runSlot(idx, rawText, { silent: true });
+        }
+      });
     },
-    [runCustomWith],
+    [runSlot],
   );
 
-  // Persist the cleaned output exactly once per completed conversation.
+  // Persist the cleaned output exactly once per completed conversation, and
+  // fire autorun slots that wait on the cleaned result.
   const persistedCleanCidRef = useRef<string | null>(null);
   useEffect(() => {
     if (
@@ -345,34 +447,49 @@ export default function CleanupPad({
         cleanAgentIdRef.current,
         cleanAi.conversationId,
       );
-      // Autorun (source = clean): fire the Custom agent the moment the
-      // cleaned result lands.
-      if (
-        customAutoRunRef.current &&
-        customSourceRef.current === "clean" &&
-        customAgentIdRef.current &&
-        text.trim()
-      ) {
-        runCustomWith(text, { silent: true });
+      if (text.trim()) {
+        slotsRef.current.forEach((slot, idx) => {
+          if (slot.autoRun && slot.source === "clean" && slot.agentId) {
+            runSlot(idx, text, { silent: true });
+          }
+        });
       }
     }
-  }, [cleanAi.phase, cleanAi.conversationId, cleanAi.accumulatedText, runCustomWith]);
+  }, [cleanAi.phase, cleanAi.conversationId, cleanAi.accumulatedText, runSlot]);
+
+  // Persist each slot's output exactly once per completed conversation.
+  const persistedSlotCidsRef = useRef<Record<string, string>>({});
   useEffect(() => {
-    if (
-      customAi.phase === "complete" &&
-      customAi.conversationId &&
-      customAgentIdRef.current &&
-      persistedCustomCidRef.current !== customAi.conversationId
-    ) {
-      persistedCustomCidRef.current = customAi.conversationId;
-      const text = stripThinkingStreaming(customAi.accumulatedText).visible;
-      void sessionRefs.current.persistCustomRun(
-        text,
-        customAgentIdRef.current,
-        customAi.conversationId,
-      );
-    }
-  }, [customAi.phase, customAi.conversationId, customAi.accumulatedText]);
+    slotAis.forEach((ai, idx) => {
+      const slot = slotsRef.current[idx];
+      if (
+        slot?.agentId &&
+        ai.phase === "complete" &&
+        ai.conversationId &&
+        persistedSlotCidsRef.current[slot.id] !== ai.conversationId
+      ) {
+        persistedSlotCidsRef.current[slot.id] = ai.conversationId;
+        const text = stripThinkingStreaming(ai.accumulatedText).visible;
+        void sessionRefs.current.persistCustomRun(
+          text,
+          slot.agentId,
+          ai.conversationId,
+          slot.docKind,
+        );
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    slotAi0.phase,
+    slotAi0.conversationId,
+    slotAi0.accumulatedText,
+    slotAi1.phase,
+    slotAi1.conversationId,
+    slotAi1.accumulatedText,
+    slotAi2.phase,
+    slotAi2.conversationId,
+    slotAi2.accumulatedText,
+  ]);
 
   // ── Mic ────────────────────────────────────────────────────────────────────
   const handleTranscriptionComplete = useCallback(
@@ -404,10 +521,10 @@ export default function CleanupPad({
 
       void sessionRefs.current.persistRawAppend(trimmed);
       runClean(combined);
-      // Autorun (source = raw): Clean and Custom run simultaneously.
-      maybeAutoRunCustomRaw(combined);
+      // Autorun (source = raw): Clean and these slots run simultaneously.
+      autoRunRawSlots(combined);
     },
-    [dispatch, runClean, maybeAutoRunCustomRaw],
+    [dispatch, runClean, autoRunRawSlots],
   );
 
   const handleLiveTranscript = useCallback((text: string) => {
@@ -439,10 +556,12 @@ export default function CleanupPad({
 
   const handleCustomChange = useCallback(
     (value: string) => {
-      setEditedCustom(value);
-      session.persistCustomEdit(value);
+      const slot = slotsRef.current[activeSlotIdx];
+      if (!slot) return;
+      setEditedBySlot((prev) => ({ ...prev, [slot.id]: value }));
+      session.persistCustomEdit(value, slot.docKind);
     },
-    [session],
+    [activeSlotIdx, session],
   );
 
   const handleClearAll = useCallback(() => {
@@ -468,13 +587,14 @@ export default function CleanupPad({
     [resolveAgentName, session],
   );
 
-  const handleCustomAgentSelect = useCallback(
+  const handleSlotAgentSelect = useCallback(
     (agentId: string) => {
-      setCustomAgentId(agentId);
+      const slot = slotsRef.current[activeSlotIdx];
+      if (!slot) return;
       void resolveAgentName(agentId);
-      session.persistSettings({ customAgentId: agentId });
+      patchSlot(slot.id, { agentId });
     },
-    [resolveAgentName, session],
+    [activeSlotIdx, patchSlot, resolveAgentName],
   );
 
   // ── Manual Clean Up ────────────────────────────────────────────────────────
@@ -485,10 +605,10 @@ export default function CleanupPad({
       return;
     }
     runClean(transcript);
-    // Autorun (source = raw): Clean and Custom run simultaneously.
-    maybeAutoRunCustomRaw(transcript);
+    // Autorun (source = raw): Clean and these slots run simultaneously.
+    autoRunRawSlots(transcript);
     setDrawerOpen(false);
-  }, [runClean, maybeAutoRunCustomRaw]);
+  }, [runClean, autoRunRawSlots]);
 
   const handleCopyJoined = useCallback(async () => {
     const transcript = transcriptDisplayRef.current.trim();
@@ -521,9 +641,58 @@ export default function CleanupPad({
   const handleNewSession = useCallback(async () => {
     clearLocalContent();
     contextItemsRef.current = [];
+    setSlots([initialSlot()]);
+    setActiveSlotIdx(0);
     await session.createNew();
     setDrawerOpen(false);
   }, [clearLocalContent, session]);
+
+  // ── Textarea replace/insert handlers for the context menu ─────────────────
+  const makeTextHandlers = useCallback(
+    (
+      taRef: React.RefObject<HTMLTextAreaElement | null>,
+      getValue: () => string,
+      setValue: (v: string) => void,
+    ) => ({
+      onTextReplace: (newText: string) => {
+        const ta = taRef.current;
+        if (!ta) return;
+        const value = getValue();
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        setValue(value.substring(0, start) + newText + value.substring(end));
+        setTimeout(() => {
+          ta.focus();
+          ta.setSelectionRange(start, start + newText.length);
+        }, 0);
+      },
+      onTextInsertBefore: (text: string) => {
+        const ta = taRef.current;
+        if (!ta) return;
+        const value = getValue();
+        const start = ta.selectionStart;
+        const insert = text + "\n\n";
+        setValue(value.substring(0, start) + insert + value.substring(start));
+        setTimeout(() => {
+          ta.focus();
+          ta.setSelectionRange(start + insert.length, start + insert.length);
+        }, 0);
+      },
+      onTextInsertAfter: (text: string) => {
+        const ta = taRef.current;
+        if (!ta) return;
+        const value = getValue();
+        const end = ta.selectionEnd;
+        const insert = "\n\n" + text;
+        setValue(value.substring(0, end) + insert + value.substring(end));
+        setTimeout(() => {
+          ta.focus();
+          ta.setSelectionRange(end + insert.length, end + insert.length);
+        }, 0);
+      },
+    }),
+    [],
+  );
 
   // ── Status helpers ─────────────────────────────────────────────────────────
   const cleanBusyEarly =
@@ -538,19 +707,24 @@ export default function CleanupPad({
         : cleanAi.phase === "error"
           ? (cleanAi.error ?? "Something went wrong. Please try again.")
           : "Preparing your response...";
-  const customBusyEarly =
-    customAi.phase === "launching" ||
-    customAi.phase === "pending" ||
-    customAi.phase === "connecting";
+
+  const activeThinking = useMemo(
+    () => stripThinkingStreaming(activeAi.accumulatedText).isThinking,
+    [activeAi.accumulatedText],
+  );
+  const activeBusyEarly =
+    activeAi.phase === "launching" ||
+    activeAi.phase === "pending" ||
+    activeAi.phase === "connecting";
   const customPlaceholder =
-    customAi.phase === "idle"
-      ? customAgentId
-        ? "Run your agent to fill this container — or just type here..."
+    activeAi.phase === "idle"
+      ? activeSlot?.agentId
+        ? "Run your agent to fill this slot — or just type here..."
         : "Pick any agent above, then run it over the transcript or the cleaned text..."
-      : (customBusyEarly || customThinking) && customValue.length === 0
+      : (activeBusyEarly || activeThinking) && activeSlotValue.length === 0
         ? "Processing..."
-        : customAi.phase === "error"
-          ? (customAi.error ?? "Something went wrong. Please try again.")
+        : activeAi.phase === "error"
+          ? (activeAi.error ?? "Something went wrong. Please try again.")
           : "Preparing your response...";
 
   const recordStatus = liveTranscript
@@ -563,7 +737,6 @@ export default function CleanupPad({
 
   // ── Shared UI fragments ────────────────────────────────────────────────────
 
-  // The pill itself — shared between the desktop band and the mobile row.
   const recordPill = (
     <div
       className={cn(
@@ -598,15 +771,12 @@ export default function CleanupPad({
     </div>
   );
 
-  // Desktop: a tall band that includes the (transparent) shell-header zone —
-  // with the page title gone, the pill rises and centers in the full band.
   const recordBand = (
     <div className="flex h-[calc(var(--shell-header-h)+3.5rem)] shrink-0 items-center justify-center border-b border-border px-4">
       {recordPill}
     </div>
   );
 
-  // Mobile: compact row (the wrapper already clears the shell header).
   const recordControl = (
     <div className="flex shrink-0 items-center justify-center border-b border-border px-4 py-3">
       {recordPill}
@@ -660,7 +830,7 @@ export default function CleanupPad({
             "inline-flex w-full items-center justify-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
             cleanAi.isBusy
               ? "cursor-not-allowed bg-muted text-muted-foreground"
-              : "bg-primary text-primary-foreground hover:bg-primary/90",
+              : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
           )}
         >
           {cleanAi.isBusy ? (
@@ -677,6 +847,11 @@ export default function CleanupPad({
     </div>
   );
 
+  const transcriptHandlers = makeTextHandlers(
+    transcriptTaRef,
+    () => transcriptDisplayRef.current,
+    handleDraftChange,
+  );
   const transcriptPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/30 px-3 py-2">
@@ -698,19 +873,36 @@ export default function CleanupPad({
           />
         )}
       </div>
-      <textarea
-        value={transcriptDisplay}
-        onChange={(e) => handleDraftChange(e.target.value)}
-        placeholder="Tap the mic above to record. Transcribed text appears here and is processed automatically..."
-        className={cn(
-          "min-h-0 w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
-          "text-base md:text-sm",
-          "focus:outline-none focus:ring-0",
-        )}
-      />
+      <UnifiedAgentContextMenu
+        sourceFeature="transcription-cleanup"
+        surfaceName="matrx-user/transcripts-cleanup"
+        getTextarea={() => transcriptTaRef.current}
+        isEditable
+        contextData={menuContextData(transcriptDisplay)}
+        placementMode={{ "content-block": "hide" }}
+        className="flex min-h-0 flex-1 flex-col"
+        {...transcriptHandlers}
+      >
+        <textarea
+          ref={transcriptTaRef}
+          value={transcriptDisplay}
+          onChange={(e) => handleDraftChange(e.target.value)}
+          placeholder="Tap the mic above to record. Transcribed text appears here and is processed automatically..."
+          className={cn(
+            "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
+            "text-base md:text-sm",
+            "focus:outline-none focus:ring-0",
+          )}
+        />
+      </UnifiedAgentContextMenu>
     </div>
   );
 
+  const cleanHandlers = makeTextHandlers(
+    cleanTaRef,
+    () => responseRef.current,
+    handleResponseChange,
+  );
   const cleanPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/30 px-3 py-2">
@@ -765,20 +957,37 @@ export default function CleanupPad({
           )}
         </div>
       </div>
-      <textarea
-        value={responseValue}
-        onChange={(e) => handleResponseChange(e.target.value)}
-        placeholder={responsePlaceholder}
-        className={cn(
-          "min-h-0 w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
-          "text-base md:text-sm",
-          "focus:outline-none focus:ring-0",
-          cleanAi.phase === "error" && "text-destructive",
-        )}
-      />
+      <UnifiedAgentContextMenu
+        sourceFeature="transcription-cleanup"
+        surfaceName="matrx-user/transcripts-cleanup"
+        getTextarea={() => cleanTaRef.current}
+        isEditable
+        contextData={menuContextData(responseValue)}
+        placementMode={{ "content-block": "hide" }}
+        className="flex min-h-0 flex-1 flex-col"
+        {...cleanHandlers}
+      >
+        <textarea
+          ref={cleanTaRef}
+          value={responseValue}
+          onChange={(e) => handleResponseChange(e.target.value)}
+          placeholder={responsePlaceholder}
+          className={cn(
+            "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
+            "text-base md:text-sm",
+            "focus:outline-none focus:ring-0",
+            cleanAi.phase === "error" && "text-destructive",
+          )}
+        />
+      </UnifiedAgentContextMenu>
     </div>
   );
 
+  const customHandlers = makeTextHandlers(
+    customTaRef,
+    () => customRef.current,
+    handleCustomChange,
+  );
   const customControls = (
     <div className="flex shrink-0 flex-col gap-2 border-b border-border bg-muted/30 px-3 py-2">
       <div className="flex items-center justify-between">
@@ -787,12 +996,12 @@ export default function CleanupPad({
             <Wand2 className="h-3 w-3 text-primary" />
           </span>
           Custom
-          {customThinking && (
+          {activeThinking && (
             <span className="rounded-full bg-primary/10 px-1.5 py-px font-normal normal-case text-primary">
               Thinking
             </span>
           )}
-          {customAi.phase === "complete" && customValue.trim() && (
+          {activeAi.phase === "complete" && activeSlotValue.trim() && (
             <span className="rounded-full bg-green-500/10 px-1.5 py-px font-normal normal-case text-green-600 dark:text-green-400">
               Ready
             </span>
@@ -802,31 +1011,81 @@ export default function CleanupPad({
           <Loader2
             className={cn(
               "h-4 w-4 text-muted-foreground",
-              customBusyEarly || customThinking ? "animate-spin" : "invisible",
+              activeBusyEarly || activeThinking ? "animate-spin" : "invisible",
             )}
           />
-          {customValue.trim().length > 0 && (
+          {activeSlotValue.trim().length > 0 && (
             <ContentActionBar
-              content={customValue}
-              title={`Custom: ${customAgentId ? (agentNames[customAgentId] ?? "agent") : "output"}`}
+              content={activeSlotValue}
+              title={`Custom: ${activeSlot?.agentId ? (agentNames[activeSlot.agentId] ?? "agent") : "output"}`}
               metadata={{
-                agent_id: customAgentId ?? "",
+                agent_id: activeSlot?.agentId ?? "",
                 source: "transcription-cleanup-page-custom",
               }}
-              instanceKey={`transcription-cleanup-page-custom-${INSTANCE_ID}`}
+              instanceKey={`transcription-cleanup-page-custom-${activeSlot?.id ?? INSTANCE_ID}`}
               hideSpeaker
               hidePencil
             />
           )}
         </div>
       </div>
+
+      {/* Slot tabs — one visible at a time; each runs its own agent. */}
+      <div className="flex items-center gap-1">
+        {slots.map((slot, idx) => {
+          const active = idx === activeSlotIdx;
+          const busy = slotAis[idx]?.isBusy;
+          const label =
+            slot.label ||
+            (slot.agentId ? (agentNames[slot.agentId] ?? `Slot ${idx + 1}`) : `Slot ${idx + 1}`);
+          return (
+            <span key={slot.id} className="group/tab relative inline-flex">
+              <button
+                type="button"
+                onClick={() => setActiveSlotIdx(idx)}
+                className={cn(
+                  "inline-flex max-w-36 items-center gap-1 truncate rounded-md border px-2 py-1 text-[11px] font-medium transition-colors",
+                  active
+                    ? "border-primary/50 bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                  slots.length > 1 && "pr-5",
+                )}
+              >
+                {busy && <Loader2 className="h-3 w-3 shrink-0 animate-spin" />}
+                <span className="truncate">{label}</span>
+              </button>
+              {slots.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeSlot(slot.id)}
+                  aria-label={`Remove ${label}`}
+                  className="absolute right-0.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground/50 opacity-0 transition-opacity hover:text-destructive group-hover/tab:opacity-100"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </span>
+          );
+        })}
+        {slots.length < MAX_CUSTOM_SLOTS && (
+          <button
+            type="button"
+            onClick={addSlot}
+            aria-label="Add custom slot"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-dashed border-border text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
       <div className="flex items-center gap-1.5">
         <div className="min-w-0 flex-1">
           <AgentListDropdown
-            onSelect={handleCustomAgentSelect}
+            onSelect={handleSlotAgentSelect}
             label={
-              customAgentId
-                ? (agentNames[customAgentId] ?? "Agent…")
+              activeSlot?.agentId
+                ? (agentNames[activeSlot.agentId] ?? "Agent…")
                 : "Choose any agent…"
             }
             className="w-full"
@@ -834,9 +1093,14 @@ export default function CleanupPad({
         </div>
         <div className="relative shrink-0">
           <select
-            value={customSource}
-            onChange={(e) => setCustomSource(e.target.value as "clean" | "raw")}
-            aria-label="Input source for the custom agent"
+            value={activeSlot?.source ?? "clean"}
+            onChange={(e) =>
+              activeSlot &&
+              patchSlot(activeSlot.id, {
+                source: e.target.value as "clean" | "raw",
+              })
+            }
+            aria-label="Input source for this slot"
             className="h-7 appearance-none rounded-md border border-border bg-background pl-2 pr-6 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           >
             <option value="clean">Clean</option>
@@ -846,16 +1110,16 @@ export default function CleanupPad({
         </div>
         <button
           type="button"
-          onClick={runCustom}
-          disabled={customAi.isBusy}
+          onClick={runActiveSlot}
+          disabled={activeAi.isBusy}
           className={cn(
             "inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-md px-2.5 text-xs font-medium transition-colors",
-            customAi.isBusy
+            activeAi.isBusy
               ? "cursor-not-allowed bg-muted text-muted-foreground"
               : "bg-primary text-primary-foreground hover:bg-primary/90",
           )}
         >
-          {customAi.isBusy ? (
+          {activeAi.isBusy ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
             <Play className="h-3.5 w-3.5" />
@@ -863,25 +1127,26 @@ export default function CleanupPad({
           Run
         </button>
       </div>
+
       <div className="flex items-center justify-between">
-        {/* Autorun: source=raw → fires with Clean; source=clean → fires when
-            the cleaned result lands. */}
         <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
           <Switch
-            checked={customAutoRun}
-            onCheckedChange={handleAutoRunChange}
-            disabled={!customAgentId}
+            checked={activeSlot?.autoRun ?? false}
+            onCheckedChange={(on) =>
+              activeSlot && patchSlot(activeSlot.id, { autoRun: on })
+            }
+            disabled={!activeSlot?.agentId}
             className="scale-75"
-            aria-label="Auto-run the custom agent"
+            aria-label="Auto-run this slot"
           />
           Auto-run
           <span className="text-muted-foreground/60">
-            {customSource === "raw" ? "(with Clean)" : "(after Clean)"}
+            {activeSlot?.source === "raw" ? "(with Clean)" : "(after Clean)"}
           </span>
         </label>
-        {customAi.mapping && (
+        {activeAi.mapping && (
           <span className="text-[10px] text-muted-foreground/70">
-            {mappingCaption(customAi.mapping)}
+            {mappingCaption(activeAi.mapping)}
           </span>
         )}
       </div>
@@ -891,23 +1156,34 @@ export default function CleanupPad({
   const customPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
       {customControls}
-      <textarea
-        value={customValue}
-        onChange={(e) => handleCustomChange(e.target.value)}
-        placeholder={customPlaceholder}
-        className={cn(
-          "min-h-0 w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
-          "text-base md:text-sm",
-          "focus:outline-none focus:ring-0",
-          customAi.phase === "error" && "text-destructive",
-        )}
-      />
+      <UnifiedAgentContextMenu
+        sourceFeature="transcription-cleanup"
+        surfaceName="matrx-user/transcripts-cleanup"
+        getTextarea={() => customTaRef.current}
+        isEditable
+        contextData={menuContextData(activeSlotValue)}
+        placementMode={{ "content-block": "hide" }}
+        className="flex min-h-0 flex-1 flex-col"
+        {...customHandlers}
+      >
+        <textarea
+          ref={customTaRef}
+          value={activeSlotValue}
+          onChange={(e) => handleCustomChange(e.target.value)}
+          placeholder={customPlaceholder}
+          className={cn(
+            "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
+            "text-base md:text-sm",
+            "focus:outline-none focus:ring-0",
+            activeAi.phase === "error" && "text-destructive",
+          )}
+        />
+      </UnifiedAgentContextMenu>
     </div>
   );
 
   // No page title — the record pill is the focal point. Desktop portals
-  // nothing into the shell header (the pill band rises into that zone);
-  // mobile still needs the drawer toggle there.
+  // nothing into the shell header; mobile still needs the drawer toggle.
   const header = isMobile ? (
     <PageHeader>
       <div className="flex w-full items-center gap-2 px-1">
@@ -941,7 +1217,7 @@ export default function CleanupPad({
           <div className="flex h-[34dvh] shrink-0 flex-col border-b border-border">
             {cleanPane}
           </div>
-          <div className="flex h-[42dvh] shrink-0 flex-col pb-4">
+          <div className="flex h-[48dvh] shrink-0 flex-col pb-4">
             {customPane}
           </div>
         </div>

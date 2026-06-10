@@ -207,6 +207,23 @@ export interface SessionContextItem {
   noteLabel?: string | null;
 }
 
+/**
+ * One "custom" output slot on the cleanup page. The output text lives in
+ * `studio_documents` under `docKind` (UNIQUE(session_id, kind)); this record
+ * tracks WHICH agent fills it and how it auto-runs.
+ *   - source "raw"   → autorun fires alongside the cleaning pass
+ *   - source "clean" → autorun fires when the cleaned result lands
+ */
+export interface CleanupCustomSlot {
+  id: string;
+  agentId: string | null;
+  label?: string;
+  source: "raw" | "clean";
+  autoRun: boolean;
+  /** studio_documents.kind for this slot ('cleanup_custom' for the first). */
+  docKind: string;
+}
+
 export interface SessionSettings {
   sessionId: string;
   cleaningShortcutId: string | null;
@@ -222,6 +239,8 @@ export interface SessionSettings {
   showPriorModules: boolean;
   /** Per-session user context items, passed to agents as context entries. */
   contextItems: SessionContextItem[] | null;
+  /** Cleanup-page custom output slots. Null = single legacy slot. */
+  customSlots: CleanupCustomSlot[] | null;
 }
 
 // ── Inputs for service layer ──────────────────────────────────────────
