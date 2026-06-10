@@ -79,7 +79,8 @@ export interface ProjectNode {
   scope_ids: string[];
 }
 
-export type OrgRole = "owner" | "admin" | "member" | "viewer";
+/** Mirrors the `public.org_role` enum exactly — there is no read-only role. */
+export type OrgRole = "owner" | "admin" | "member";
 
 export interface OrgNode {
   id: string;
@@ -149,13 +150,16 @@ export interface EntityScopesEntry {
 
 // ─── Context item values (high-churn sidecar slice) ───────────────────
 
+/** Mirrors the `public.context_value_type` enum exactly. */
 export type ContextItemValueType =
-  | "text"
+  | "string"
   | "number"
   | "boolean"
-  | "json"
+  | "object"
+  | "array"
   | "document"
-  | "reference";
+  | "reference"
+  | "date";
 
 export interface ContextItemValue {
   context_item_id: string;
@@ -165,6 +169,7 @@ export interface ContextItemValue {
   value_text: string | null;
   value_number: number | null;
   value_boolean: boolean | null;
+  value_date: string | null;
   value_json: Json | null;
   value_document_url: string | null;
   value_document_size_bytes: number | null;

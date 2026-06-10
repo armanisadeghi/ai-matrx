@@ -748,6 +748,14 @@ export interface AssembledAgentStartRequest {
   organization_id?: string;
   project_id?: string;
   task_id?: string;
+  /**
+   * Active scope selections (ctx_scopes ids) from appContextSlice at send
+   * time. The server unions them with the conversation's tags inside
+   * resolve_full_context so the selected scopes' context cells reach the
+   * agent. Membership-validated server-side; ignored by pre-scope_ids
+   * backend deploys (pydantic extra='ignore').
+   */
+  scope_ids?: string[];
   source_app?: string;
   source_feature?: string;
   stream?: boolean;
@@ -798,6 +806,8 @@ export interface AssembledConversationRequest {
   organization_id?: string;
   project_id?: string;
   task_id?: string;
+  /** See `AssembledAgentStartRequest.scope_ids` — re-sent each turn so the latest selection applies. */
+  scope_ids?: string[];
   stream?: boolean;
   debug?: boolean;
   /** Admin: render every assistant turn as a single block instead of a streaming thread. */

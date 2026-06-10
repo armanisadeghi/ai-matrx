@@ -88,7 +88,7 @@ The boot fetch. One round-trip. ~20 KB for a typical user.
     name: string;
     slug: string;
     is_personal: boolean;        // true for the Personal pseudo-org synthesised server-side
-    role: 'owner' | 'admin' | 'member' | 'viewer';
+    role: 'owner' | 'admin' | 'member';   // mirrors public.org_role exactly — no read-only role exists
     scope_types: Array<{
       id: string;
       organization_id: string;

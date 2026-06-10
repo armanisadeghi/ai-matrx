@@ -59,6 +59,12 @@ function ok<T>(data: T): { ok: true; data: T } {
 }
 
 function mapPgError(e: unknown): ScopesRpcError {
+  // Loud before lossy: the friendly mapping below discards the PG error
+  // code / constraint / hint that production debugging needs. Log the raw
+  // error with full context HERE — the single funnel every ctx_* failure
+  // passes through — so "my scope didn't save" is diagnosable from the
+  // console instead of vanishing into a generic message.
+  console.error("[scopesService] supabase error", e);
   if (e && typeof e === "object" && "code" in e) {
     const code = String((e as { code: string }).code);
     if (code === "PGRST116") return { code: "not_found", message: "Not found" };
@@ -206,7 +212,8 @@ export const scopesService = {
         name: row.organizations.name,
         slug: row.organizations.slug,
         is_personal: !!row.organizations.is_personal,
-        role: (row.role as OrgNode["role"]) ?? "viewer",
+        // organization_members.role is NOT NULL — no fallback needed.
+        role: row.role as OrgNode["role"],
         scope_types: scopeTypesByOrg.get(row.organizations.id) ?? [],
         projects: projectsByOrg.get(row.organizations.id) ?? [],
       }));
@@ -367,7 +374,7 @@ export const scopesService = {
         .from("ctx_context_item_values")
         .select(
           `context_item_id, id, version, is_current,
-           value_text, value_number, value_boolean, value_json,
+           value_text, value_number, value_boolean, value_date, value_json,
            value_document_url, value_document_size_bytes,
            value_reference_id, value_reference_type,
            source_type, authored_by, created_at`,
@@ -666,9 +673,13 @@ export const scopesService = {
   // ──────────────────────────────────────────────────────────────────
   //  WRITE — ENTITY ASSIGNMENTS (M2M tagging)
   //
-  //  This is the ONE mutation Phase 1 wires up because every entity-tagging
-  //  consumer in Phases 2-5 depends on it. Set-semantics: replaces the
-  //  entity's assignment list atomically with the input.
+  //  Set-semantics via the `set_entity_scopes` SECURITY DEFINER RPC: one
+  //  transaction that validates `max_assignments_per_entity`, checks the
+  //  caller's org membership (migration ctx_set_entity_scopes_auth),
+  //  delete-alls, inserts, and returns the authoritative final state.
+  //  Replaced the previous client-side read→insert→delete (3 round-trips,
+  //  no transaction): partial failures stranded a union of old+new tags,
+  //  two tabs could interleave to a wrong set, and the cap was unenforced.
   // ──────────────────────────────────────────────────────────────────
 
   async setEntityScopes(
@@ -677,48 +688,27 @@ export const scopesService = {
     scopeIds: string[],
   ): Promise<ScopesRpcResult<{ scope_ids: string[] }>> {
     try {
-      const userId = requireUserId();
+      requireUserId();
       const target = Array.from(new Set(scopeIds));
 
-      const { data: existingRows, error: readErr } = await supabase
-        .from("ctx_scope_assignments")
-        .select("scope_id")
-        .eq("entity_type", entityType)
-        .eq("entity_id", entityId);
-      if (readErr) return err(...mapPgErrorPair(readErr));
+      const { data, error } = await supabase.rpc("set_entity_scopes", {
+        p_entity_type: entityType,
+        p_entity_id: entityId,
+        p_scope_ids: target,
+      });
+      if (error) return err(...mapPgErrorPair(error));
 
-      const existing = new Set((existingRows ?? []).map((r) => r.scope_id));
-      const targetSet = new Set(target);
-      const toAdd = target.filter((s) => !existing.has(s));
-      const toRemove = (existingRows ?? [])
+      // The RPC returns the final DB state as
+      // [{ scope_id, scope_name, type_label, type_icon, type_color }] — use
+      // it as the authoritative result rather than echoing the input.
+      const rows = (Array.isArray(data) ? data : []) as Array<{
+        scope_id?: string;
+      }>;
+      const scope_ids = rows
         .map((r) => r.scope_id)
-        .filter((s) => !targetSet.has(s));
+        .filter((id): id is string => !!id);
 
-      if (toAdd.length > 0) {
-        const { error: insErr } = await supabase
-          .from("ctx_scope_assignments")
-          .insert(
-            toAdd.map((scope_id) => ({
-              entity_type: entityType,
-              entity_id: entityId,
-              scope_id,
-              created_by: userId,
-            })),
-          );
-        if (insErr) return err(...mapPgErrorPair(insErr));
-      }
-
-      if (toRemove.length > 0) {
-        const { error: delErr } = await supabase
-          .from("ctx_scope_assignments")
-          .delete()
-          .eq("entity_type", entityType)
-          .eq("entity_id", entityId)
-          .in("scope_id", toRemove);
-        if (delErr) return err(...mapPgErrorPair(delErr));
-      }
-
-      return ok({ scope_ids: target });
+      return ok({ scope_ids });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }

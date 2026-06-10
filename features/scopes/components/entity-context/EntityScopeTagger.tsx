@@ -20,6 +20,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   ChevronDown,
   ChevronRight,
@@ -143,38 +144,63 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
   const uncontrolledEntityType = isControlled
     ? null
     : ((props as UncontrolledProps).entityType ?? null);
-  const [scopeableAllowed, setScopeableAllowed] = useState(true);
+  // Derived default (allowed) + async-fetched per-(org, kind) results keyed
+  // so the effect only ever calls setState from the subscription callback —
+  // never synchronously (react-hooks/set-state-in-effect).
+  const gateKey =
+    !isControlled && orgId && uncontrolledEntityType && getEntry(uncontrolledEntityType)
+      ? `${orgId}:${uncontrolledEntityType}`
+      : null;
+  const [scopeableByKey, setScopeableByKey] = useState<Record<string, boolean>>(
+    {},
+  );
   useEffect(() => {
-    let cancelled = false;
-    if (isControlled || !orgId || !uncontrolledEntityType) {
-      setScopeableAllowed(true);
-      return;
-    }
+    if (!gateKey || !orgId || !uncontrolledEntityType) return;
     const entry = getEntry(uncontrolledEntityType);
-    if (!entry) {
-      setScopeableAllowed(true);
-      return;
-    }
+    if (!entry) return;
+    let cancelled = false;
     (async () => {
       const setting = await getOrgModuleSetting(orgId, moduleKey(entry));
-      if (!cancelled) setScopeableAllowed(setting.isScopeable);
+      if (!cancelled) {
+        setScopeableByKey((prev) => ({
+          ...prev,
+          [gateKey]: setting.isScopeable,
+        }));
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [isControlled, orgId, uncontrolledEntityType]);
+  }, [gateKey, orgId, uncontrolledEntityType]);
+  const scopeableAllowed = gateKey ? (scopeableByKey[gateKey] ?? true) : true;
 
   // ─── Toggle handler with the cardinality rule ──────────────────────────
+  // In-flight guard: the write is an atomic replace of the FULL selection,
+  // so a second click computed from a stale baseline would silently undo
+  // the first. Clicks while saving are dropped (not queued).
+  const [saving, setSaving] = useState(false);
   const applyNext = (next: string[]) => {
     if (isControlled) {
       (props as ControlledProps).onChange(next);
       return;
     }
     if (!scopeableAllowed) return; // gated off for this kind in this org
-    void uncontrolledHook.setScopes(next).then((res) => {
-      const uProps = props as UncontrolledProps;
-      if (res.ok && uProps.onAfterSave) uProps.onAfterSave(next);
-    });
+    if (saving) return;
+    setSaving(true);
+    void uncontrolledHook
+      .setScopes(next)
+      .then((res) => {
+        const uProps = props as UncontrolledProps;
+        if (res.ok) {
+          if (uProps.onAfterSave) uProps.onAfterSave(next);
+        } else {
+          // The Redux cache was not updated on failure, so the chips revert
+          // to the persisted state on their own — but the user must hear
+          // about it, loudly.
+          toast.error(res.error || "Could not update scopes");
+        }
+      })
+      .finally(() => setSaving(false));
   };
 
   const handleToggle = (scopeId: string, scopeTypeId: string) => {

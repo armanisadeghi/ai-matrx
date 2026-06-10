@@ -84,7 +84,17 @@ export function setEntityScopes(
         args.entityId,
         res.data.scope_ids,
       );
-      if (!isScopesRpcErr(adopt)) adoptedOrganizationId = adopt.data.organization_id;
+      if (isScopesRpcErr(adopt)) {
+        // Loud, not fatal: the tags landed; only the org adoption failed.
+        // The entity stays org-less and will retry on its next tag write.
+        console.error("[scopes] adoptEntityOrgFromScopes failed", {
+          entityType: args.entityType,
+          entityId: args.entityId,
+          error: adopt.error,
+        });
+      } else {
+        adoptedOrganizationId = adopt.data.organization_id;
+      }
     }
 
     return { ok: true, scope_ids: res.data.scope_ids, adoptedOrganizationId };

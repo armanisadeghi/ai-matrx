@@ -87,6 +87,24 @@ URLs and work fine; the new pipeline regressed.
 
 ---
 
+### D2 — Org/scope authorization boundary is open (deferred to the pre-launch security overhaul)
+**Severity: critical — full multi-tenant compromise via raw supabase-js. Deferred by explicit decision (2026-06-10): app is not live; features first, dedicated security overhaul next week. Build anything NEW with proper auth anyway.**
+
+**What.** The browser talks to Supabase directly with the user's JWT, so RLS + RPC bodies are the only write-authorization boundary — and they are open in five independent ways (all live-verified against `txzxabzwovsujtloxrus`):
+1. **Org takeover.** `organization_members` INSERT policy is `WITH CHECK (true)` — any authenticated user can insert themselves as `owner` of ANY org, then passes every `EXISTS(member where role in owner/admin)` check repo-wide. No guarding trigger.
+2. **Role self-escalation.** `organization_members` UPDATE has `with_check = null` with `qual: user_id = auth.uid() OR admin` — a plain member can set their own row to `owner`.
+3. **Unauthenticated DEFINER RPCs.** `create_scope`, `update_scope`, `delete_scope`, `create_scope_type` perform **zero** caller checks and EXECUTE is granted to PUBLIC/anon — cross-org write/delete needing only a target UUID. `delete_scope_type` CASCADEs items → every cell + every scope of the type (irrecoverable data loss, blast radius reported only *after* deletion). (`set_entity_scopes` was fixed 2026-06-10 — `migrations/ctx_set_entity_scopes_auth.sql` is the membership-check + `REVOKE FROM anon` pattern to replicate.)
+4. **Membership-graph disclosure.** `organization_members` SELECT is `qual = true` for `public` — full user↔org↔role enumeration across all orgs.
+5. **Spoofable identity in `set_context_value`.** `acting_user_id` payload fallback applies when `auth.uid()` is NULL (anon path). `set_scope_context_value` (the live cell-write RPC) has NO in-function check at all.
+
+**Why it happened.** Policies were widened to make direct client inserts work (e.g. invitation accept used to insert `organization_members` directly), and the DEFINER RPC family shipped without auth preambles.
+
+**The fence (to build in the overhaul).** Apply the `protected-resources` doctrine to org membership + ctx mutations: deny direct writes at RLS, one DEFINER RPC family with `is_org_member`/`is_org_admin` preambles + `REVOKE FROM anon` (model: `accept_organization_invitation`, `set_context_value`'s membership check, and `ctx_set_entity_scopes_auth.sql`), DB-enforced ≥1-owner invariant, and a role-change guard trigger.
+
+**What's still open.** All of items 1–5 except the `set_entity_scopes` fix. Also from the same audit, lower-tier: org create is non-atomic (orphan org row if the owner-member insert fails — burned slug, invisible org), last-owner removal is a client-only TOCTOU (org can reach zero owners), `transfer_organization_ownership` RPC exists but is never called, and the invite/resend API routes rely solely on RLS instead of checking `auth_is_org_admin` in code. Full prioritized audit: `~/.claude/plans/you-are-conducting-an-polymorphic-dragonfly.md`.
+
+---
+
 ## RESOLVED
 
 _(none yet — move D-entries here as their fences fully land.)_

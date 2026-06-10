@@ -9,6 +9,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -20,6 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useContextValues } from "@/features/scopes/hooks/useContextValues";
+import { scopesService } from "@/features/scopes/service/scopesService";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import type {
   ContextItemValue,
@@ -53,6 +56,27 @@ export function ScopeDetailView({ scopeId }: ScopeDetailViewProps) {
   const { values, status: valuesStatus } = useContextValues(
     found.scope ? found.scope.id : null,
   );
+
+  // Item catalog for the owning type — values rows only carry
+  // context_item_id; without this join the list showed raw UUID prefixes
+  // instead of the items' display names.
+  const typeId = found.type?.id ?? null;
+  const [itemNames, setItemNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (!typeId) return;
+    let cancelled = false;
+    void scopesService.listContextItems(typeId).then((res) => {
+      if (cancelled || isScopesRpcErr(res)) return;
+      setItemNames(
+        Object.fromEntries(
+          res.data.items.map((it) => [it.id, it.display_name]),
+        ),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [typeId]);
 
   if (status === "loading" && organizations.length === 0) {
     return (
@@ -172,7 +196,11 @@ export function ScopeDetailView({ scopeId }: ScopeDetailViewProps) {
           ) : (
             <ul className="divide-y divide-border/40">
               {Object.values(values).map((v) => (
-                <ContextValueRow key={v.context_item_id} value={v} />
+                <ContextValueRow
+                  key={v.context_item_id}
+                  value={v}
+                  label={itemNames[v.context_item_id]}
+                />
               ))}
             </ul>
           )}
@@ -201,13 +229,20 @@ export function ScopeDetailView({ scopeId }: ScopeDetailViewProps) {
   );
 }
 
-function ContextValueRow({ value }: { value: ContextItemValue }) {
+function ContextValueRow({
+  value,
+  label,
+}: {
+  value: ContextItemValue;
+  label?: string;
+}) {
   // React Compiler auto-memoizes — no manual `useMemo` (CLAUDE.md).
   const display: string = (() => {
     if (value.value_text != null) return value.value_text;
     if (value.value_number != null) return String(value.value_number);
     if (value.value_boolean != null)
       return value.value_boolean ? "true" : "false";
+    if (value.value_date != null) return value.value_date;
     if (value.value_document_url) return value.value_document_url;
     if (value.value_reference_id) return `→ ${value.value_reference_id}`;
     if (value.value_json) return JSON.stringify(value.value_json);
@@ -216,8 +251,8 @@ function ContextValueRow({ value }: { value: ContextItemValue }) {
 
   return (
     <li className="px-4 py-2.5 flex items-start gap-3 text-xs">
-      <div className="font-mono text-muted-foreground shrink-0 w-1/3 truncate">
-        {value.context_item_id.slice(0, 8)}
+      <div className="text-muted-foreground shrink-0 w-1/3 truncate">
+        {label ?? value.context_item_id.slice(0, 8)}
       </div>
       <div className="flex-1 break-words text-foreground">{display}</div>
       <div className="text-muted-foreground/60 shrink-0">v{value.version}</div>

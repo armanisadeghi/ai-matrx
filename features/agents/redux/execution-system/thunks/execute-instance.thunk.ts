@@ -41,6 +41,7 @@ import {
 import {
   selectOrganizationId,
   selectProjectId,
+  selectScopeSelectionsContext,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
 import { resolveBackendForConversation } from "./resolve-base-url";
@@ -154,6 +155,13 @@ export function assembleRequest(
   const organization_id = selectOrganizationId(state) ?? undefined;
   const project_id = selectProjectId(state) ?? undefined;
   const task_id = selectTaskId(state) ?? undefined;
+  // Active scope selections (scope_type_id → scope_id). Shipped as a flat
+  // id list; the server unions them with the conversation's tags inside
+  // resolve_full_context so the selected scopes' context cells reach the
+  // agent. Pre-deploy backends ignore the field (pydantic extra='ignore').
+  const scope_ids = Object.values(
+    selectScopeSelectionsContext(state) ?? {},
+  ).filter((id): id is string => !!id);
 
   // Source tracking
   const { sourceApp, sourceFeature } = instance;
@@ -186,6 +194,7 @@ export function assembleRequest(
   if (organization_id) request.organization_id = organization_id;
   if (project_id) request.project_id = project_id;
   if (task_id) request.task_id = task_id;
+  if (scope_ids.length > 0) request.scope_ids = scope_ids;
   if (sourceApp) request.source_app = sourceApp;
   if (sourceFeature) request.source_feature = sourceFeature;
   if (block_mode) request.block_mode = true;
@@ -479,6 +488,9 @@ export const executeInstance = createAsyncThunk<
           }),
           ...(payload.client && { client: payload.client }),
           ...(payload.sandbox && { sandbox: payload.sandbox }),
+          // Latest active scope selections — re-sent every turn so a
+          // mid-conversation scope switch applies immediately.
+          ...(payload.scope_ids?.length && { scope_ids: payload.scope_ids }),
           ...(debug && { debug: true }),
           ...(payload.block_mode && { block_mode: true }),
           ...(payload.snapshot && { snapshot: true }),
@@ -512,6 +524,21 @@ export const executeInstance = createAsyncThunk<
           ...(isEphemeral && { store: false }),
           ...(pendingBypass && { cache_bypass: pendingBypass }),
         } as Record<string, unknown>;
+      }
+
+      // Stamp the active scope selections onto the conversation's tags
+      // (union, never replace) so resolve_full_context delivers their
+      // context cells. Fire-and-forget: ctx_scope_assignments.entity_id has
+      // no FK, so tagging works even before the server creates the
+      // cx_conversation row on turn 1. The request-body `scope_ids` covers
+      // the current turn once the backend deploy lands; the tags cover turn
+      // 2+ today and persist which scopes the conversation ran under.
+      // Skipped for ephemeral conversations (no persisted rows by design).
+      if (!isEphemeral && payload.scope_ids?.length) {
+        const { syncConversationScopes } = await import(
+          "@/features/scopes/redux/thunks/syncConversationScopes"
+        );
+        void dispatch(syncConversationScopes(conversationId));
       }
 
       // Record the true submit moment — this is t=0 for all client timing.
