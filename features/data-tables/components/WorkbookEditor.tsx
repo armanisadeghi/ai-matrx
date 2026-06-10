@@ -46,6 +46,7 @@ import { toast } from "@/components/ui/use-toast";
 
 import { useWorkbookRealtime } from "../hooks/useWorkbookRealtime";
 import { RemoteCursorsLayer } from "./RemoteCursorsLayer";
+import { WorkbookCursorOverlay } from "./WorkbookCursorOverlay";
 import {
   getLatestSnapshot,
   saveSnapshot,
@@ -88,6 +89,9 @@ export default function WorkbookEditor({
   // See `../collab/FEATURE.md` for the full architecture; this ref is the
   // sole live connection between Univer's command service and Yjs.
   const collabSessionRef = useRef<import("../collab/WorkbookCollabSession").WorkbookCollabSession | null>(null);
+  // Univer selection-listener disposer, kept ref-side so the unmount path can
+  // reach it regardless of which render registered it.
+  const collabSelectionDisposerRef = useRef<{ dispose: () => void } | null>(null);
   const [remoteAwareness, setRemoteAwareness] = useState<
     Map<number, import("../collab/types").AwarenessState>
   >(new Map());
@@ -105,6 +109,14 @@ export default function WorkbookEditor({
   // every render.
   const onRemoteSnapshot = useCallback(
     (evt: { snapshotId: string; createdBy: string | null }) => {
+      // V2 (collab=true): the CRDT is the source of truth for live edits,
+      // and the elected host writes snapshots as periodic checkpoints. A
+      // remote-snapshot hot-swap here would overwrite the local Yjs doc and
+      // momentarily desync peers. Suppress unless the local doc is genuinely
+      // far behind (a disaster-recovery path tracked separately). For v1
+      // (collab=false) the old behavior is preserved: refetch on any remote
+      // snapshot from another user.
+      if (collab) return;
       if (
         evt.createdBy &&
         lastSaveByUserRef.current &&
@@ -118,10 +130,14 @@ export default function WorkbookEditor({
     },
     // reloadFromLatest is stable via useCallback below; including it would
     // create a cycle. Captured by ref via apiRef.
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [collab],
   );
 
-  useWorkbookRealtime(workbookId, onRemoteSnapshot);
+  // V2 disables the snapshot-driven hot-swap (CRDT handles live state);
+  // gating the hook call keeps the realtime subscription off entirely when
+  // collab is on. Zero overhead, zero redundant refetches.
+  useWorkbookRealtime(workbookId, onRemoteSnapshot, { enabled: !collab });
 
   const reloadFromLatest = useCallback(async () => {
     if (!apiRef.current) return;
@@ -208,6 +224,8 @@ export default function WorkbookEditor({
     return () => {
       cancelled = true;
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      collabSelectionDisposerRef.current?.dispose();
+      collabSelectionDisposerRef.current = null;
       collabSessionRef.current?.stop();
       collabSessionRef.current = null;
       univerRef.current?.dispose();
@@ -276,6 +294,34 @@ export default function WorkbookEditor({
 
     collabSessionRef.current = session;
     await session.start();
+
+    // Stream local selection changes into Awareness so remote peers can
+    // render this user's cell ring. The facade's onSelectionChange fires on
+    // both keyboard and mouse selection; we update at every fire (the
+    // provider throttles outbound at 50ms, so the broadcast rate is bounded
+    // regardless of how fast the user moves).
+    const fb = (apiRef.current as unknown as {
+      getActiveWorkbook: () => {
+        getActiveSheet: () => { getSheetId: () => string } | null;
+        onSelectionChange: (
+          cb: (selections: Array<{ startRow: number; startColumn: number }>) => void,
+        ) => { dispose: () => void };
+      } | undefined;
+    } | null)?.getActiveWorkbook();
+    if (fb) {
+      const disposer = fb.onSelectionChange((selections) => {
+        if (!collabSessionRef.current) return;
+        const first = selections?.[0];
+        if (!first) return;
+        const sheetId = fb.getActiveSheet()?.getSheetId() ?? null;
+        collabSessionRef.current.setCursor({
+          sheetId,
+          row: first.startRow,
+          col: first.startColumn,
+        });
+      });
+      collabSelectionDisposerRef.current = disposer;
+    }
   }, [workbookId]);
 
   // Stable save fn — pulled out so the timer callback and the manual-save
@@ -406,7 +452,20 @@ export default function WorkbookEditor({
           </Button>
         </div>
       </div>
-      <div ref={containerRef} className="min-h-0 flex-1" />
+      {/* Relative wrapper so the absolute cursor overlay layers inside it
+          (not over the whole viewport) and the Univer canvas keeps its own
+          flex sizing. */}
+      <div className="relative min-h-0 flex-1">
+        <div ref={containerRef} className="absolute inset-0" />
+        {collab && bootState === "ready" && (
+          <WorkbookCursorOverlay
+            univerAPI={apiRef.current}
+            containerRef={containerRef}
+            states={remoteAwareness}
+            selfUid={collabSelfUid}
+          />
+        )}
+      </div>
 
       <Sheet
         open={historyOpen}

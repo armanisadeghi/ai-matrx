@@ -1,6 +1,6 @@
 # `features/data-tables/collab` — Workbook CRDT v2
 
-**Status:** `live` — verified by `verify-collab.ts` (10/10 incl. real-Broadcast e2e); `collab` flag ON at `/workbooks/[id]`
+**Status:** `live` — verified by `verify-collab.ts` (10/10 incl. real-Broadcast e2e); `collab` flag ON at `/workbooks/[id]`; v2.1 (pixel cursors + realtime gating) complete
 **Tier:** `2` (extension of the Tier 1 data-tables / workbook surface)
 **Last updated:** `2026-06-12`
 
@@ -147,29 +147,39 @@ workbook routes pay zero bundle cost.
 
 ## Implementation checklist (3-5 day estimate)
 
-- [ ] Install yjs + y-protocols (pnpm).
-- [ ] `SupabaseYjsProvider.ts` (~150 LoC): open channel `yjs:workbook:<id>`;
+- [x] Install yjs + y-protocols (pnpm).
+- [x] `SupabaseYjsProvider.ts` (~150 LoC): open channel `yjs:workbook:<id>`;
       send y-update on local `doc.on('updateV2', ...)`; apply on receive;
       handle 256 KB payload limit via chunked `(seq, total)` frames.
-- [ ] `WorkbookCollabSession.ts` (~200 LoC): subscribe to
+- [x] `WorkbookCollabSession.ts` (~200 LoC): subscribe to
       `commandService.onMutationExecutedForCollab`; emit to Yjs; observe Yjs;
       apply via `commandService.syncExecuteCommand(... {onlyLocal:true, fromCollab:true})`;
       short-circuit the outbound listener when `params.trigger === 'remote-collab'`.
 - [x] Awareness wiring + outbound throttle (50 ms).
-- [x] `RemoteCursorsLayer.tsx` — shipped as a toolbar presence strip
-      (color + name + cell coords). Pixel-positioned overlay rings over the
-      actual cell remain a v2.1 polish item (scroll + freeze translation).
+- [x] `RemoteCursorsLayer.tsx` — toolbar presence strip (color + name + cell
+      coords) for the "who's here right now" signal.
+- [x] `WorkbookCursorOverlay.tsx` — pixel-positioned colored rings + name tags
+      over the actual cell each peer has selected. Queries each peer's
+      `FRange.getCellRect()` and translates the viewport-relative DOMRect into
+      container-local pixels. Invalidates on `worksheet.onScroll`, window
+      `resize`, and a 750ms active-sheet watchdog (Univer's facade does not
+      expose `onActiveSheetChanged` at this version). Local selection is
+      streamed into Awareness on every `onSelectionChange` fire; provider
+      throttles outbound at 50ms.
 - [x] `WorkbookEditor.tsx` wired behind the `collab` prop; host-election
-      gated autosave; awareness → cursor strip.
+      gated autosave; awareness → cursor strip + overlay.
+- [x] **`useWorkbookRealtime` redundancy resolved.** The
+      snapshot-realtime subscription is now gated by `enabled: !collab` —
+      when CRDT is on, we don't subscribe at all. The CRDT path is the source
+      of truth for live state; periodic host-written snapshots are
+      checkpoints, not hot-swap triggers. v1 (`collab=false`) keeps the old
+      behavior.
 - [x] ~~PROBE FIRST~~ → **superseded by a structural guard.**
       `handleLocalMutation` JSON-round-trips params before pushing into Yjs;
       non-encodable mutations are skipped with a loud console warning instead
       of corrupting the shared doc. Corruption is now structurally impossible;
       the residual failure mode is one skipped (logged) edit. Verified by
       harness test A4 with a circular-reference payload.
-- [ ] (v2.1) Repurpose `useWorkbookRealtime`: log-only, lazy hot-swap on
-      doc-lag > 100 ops. Currently it still hot-swaps on remote snapshot —
-      harmless overlap with CRDT (host is the only writer) but redundant.
 
 ---
 
@@ -194,12 +204,22 @@ workbook routes pay zero bundle cost.
 | `SupabaseYjsProvider.ts` | ✅ | Broadcast transport: chunked V2 y-updates, throttled awareness, state-sync on join, subscribe timeout → solo degrade. Accepts an injected `SupabaseClient` (defaults to app singleton) |
 | `WorkbookCollabSession.ts` | ✅ | Univer ↔ Yjs adapter: `Y.Array<MutationOp>` causal log, `__matrxRemote` sentinel, local-transaction guard, JSON-normalize guard, deterministic host election. Transport-agnostic via `CollabProviderLike` |
 | `verify-collab.ts` | ✅ | **The verification gate.** Stage A: loopback bridge contract (5 assertions, offline). Stage B: real two-socket Broadcast e2e (3 assertions). Run before any change here |
-| `../components/RemoteCursorsLayer.tsx` | ✅ | Toolbar presence strip (peer color/name/cell). Pixel overlay = v2.1 |
+| `../components/RemoteCursorsLayer.tsx` | ✅ | Toolbar presence strip (peer color/name/cell coords) |
+| `../components/WorkbookCursorOverlay.tsx` | ✅ | Pixel-positioned colored rings over each peer's selected cell; scroll/resize/sheet-switch invalidation |
 
 ---
 
 ## Change log
 
+- `2026-06-12` — claude: **v2.1 polish.** Added `WorkbookCursorOverlay.tsx`
+  — colored rings + name tags pinned to each remote peer's selected cell,
+  via `FRange.getCellRect()` translated container-local. Re-querying is
+  event-driven (scroll, resize, 750ms active-sheet watchdog), so idle CPU
+  is zero. Local selection is now streamed into Awareness on every
+  `onSelectionChange` fire. Also: `useWorkbookRealtime` is gated by
+  `enabled: !collab` so when CRDT is on we don't subscribe at all — the
+  snapshot-driven hot-swap path was only ever a v1 mechanism; CRDT is the
+  source of truth for live state. v1 (`collab=false`) keeps the old behavior.
 - `2026-06-12` — claude: **verified + flag flipped ON.** Built `verify-collab.ts`
   (loopback + real-Broadcast e2e, 10/10 passing). The gate caught three real bugs,
   all fixed: (1) Y.Array observer applied the originator's own pushes → every local
