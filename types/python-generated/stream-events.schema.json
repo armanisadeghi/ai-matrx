@@ -1631,6 +1631,174 @@
     "title": "PartialImageData",
     "type": "object"
   },
+  "AudioStreamChunkData": {
+    "additionalProperties": false,
+    "description": "A live segment of streaming TTS audio, emitted as it arrives from the provider.\n\nProviders that stream audio (Gemini TTS via ``generate_content_stream``) yield\nthe audio as a sequence of RAW PCM segments — NOT a self-contained file per\nchunk. Each chunk here carries one such segment so the client can buffer and\nprogressively play it (e.g. via the Web Audio API) while the full render is\nstill in flight. The authoritative, persisted file arrives at the end via\n``AudioStreamEndData`` (and the usual ``MediaBlockData``); these chunks are a\npreview/low-latency-playback aid and are NOT individually renderable as files.\n\n``audio_base64`` is base64 of the raw segment bytes in the format described by\n``encoding`` / ``sample_rate`` / ``bits_per_sample`` / ``channels`` (Gemini:\nsigned 16-bit little-endian PCM, 24 kHz, mono). ``stream_id`` groups every\nchunk + the end marker for one audio render; ``seq`` is monotonic from 0.",
+    "properties": {
+      "type": {
+        "const": "audio_stream_chunk",
+        "default": "audio_stream_chunk",
+        "title": "Type",
+        "type": "string"
+      },
+      "stream_id": {
+        "title": "Stream Id",
+        "type": "string"
+      },
+      "seq": {
+        "title": "Seq",
+        "type": "integer"
+      },
+      "audio_base64": {
+        "title": "Audio Base64",
+        "type": "string"
+      },
+      "mime_type": {
+        "default": "audio/L16",
+        "title": "Mime Type",
+        "type": "string"
+      },
+      "encoding": {
+        "const": "pcm_s16le",
+        "default": "pcm_s16le",
+        "title": "Encoding",
+        "type": "string"
+      },
+      "sample_rate": {
+        "default": 24000,
+        "title": "Sample Rate",
+        "type": "integer"
+      },
+      "bits_per_sample": {
+        "default": 16,
+        "title": "Bits Per Sample",
+        "type": "integer"
+      },
+      "channels": {
+        "default": 1,
+        "title": "Channels",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "stream_id",
+      "seq",
+      "audio_base64"
+    ],
+    "title": "AudioStreamChunkData",
+    "type": "object"
+  },
+  "AudioStreamEndData": {
+    "additionalProperties": false,
+    "description": "Marks the end of a streaming TTS render — the canonical file is now ready.\n\nEmitted once per ``stream_id`` after all ``AudioStreamChunkData`` chunks.\nCarries the persisted file's renderable URL(s) so the client can swap its\nprogressively-built buffer for the authoritative file (or just bind ``url``\nto an ``<audio>`` element). ``total_chunks`` equals the count of streamed\nchunks (the highest ``seq`` + 1) so the client can confirm it received them all.",
+    "properties": {
+      "type": {
+        "const": "audio_stream_end",
+        "default": "audio_stream_end",
+        "title": "Type",
+        "type": "string"
+      },
+      "stream_id": {
+        "title": "Stream Id",
+        "type": "string"
+      },
+      "total_chunks": {
+        "title": "Total Chunks",
+        "type": "integer"
+      },
+      "url": {
+        "default": "",
+        "title": "Url",
+        "type": "string"
+      },
+      "mime_type": {
+        "default": "audio/wav",
+        "title": "Mime Type",
+        "type": "string"
+      },
+      "file_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "File Id"
+      },
+      "cdn_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Cdn Url"
+      },
+      "signed_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Signed Url"
+      },
+      "download_url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Download Url"
+      },
+      "duration_ms": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Duration Ms"
+      },
+      "sample_rate": {
+        "default": 24000,
+        "title": "Sample Rate",
+        "type": "integer"
+      },
+      "bits_per_sample": {
+        "default": 16,
+        "title": "Bits Per Sample",
+        "type": "integer"
+      },
+      "channels": {
+        "default": 1,
+        "title": "Channels",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "stream_id",
+      "total_chunks"
+    ],
+    "title": "AudioStreamEndData",
+    "type": "object"
+  },
   "MediaBlockData": {
     "$defs": {
       "AudioBlock": {

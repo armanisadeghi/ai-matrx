@@ -1716,7 +1716,7 @@
           "AI"
         ],
         "summary": "Submit Tool Results",
-        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nThere are two paths:\n\n1. **Live fast path:** the originating SSE task is still running and holds\n   an in-memory asyncio.Future for the call_id. We update the cx_tool_call\n   row to status='completed'/'error' AND wake the future (resolution_source\n   = 'inline_waiter'). The existing loop continues streaming on its SSE.\n\n2. **Recovery path:** the originating loop is gone (SSE disconnected, server\n   restarted, etc.). The in-memory waiter has no future — that's fine; the\n   cx_tool_call row is still status='delegated' from log_delegated(). We\n   update the row to status='completed'/'error' (resolution_source =\n   'client_post') and return continuation_needed=true so the caller knows\n   to open a /resume stream to continue the loop.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
+        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nProtocol (suspend-on-delegate — see ``_execute_delegated`` /\n``_suspend_for_delegation``): a delegated tool call HARD-SUSPENDS the\nloop after durably committing the assistant message and the\nstatus='delegated' cx_tool_call row. This endpoint flips the row to\n'completed'/'error' (resolution_source='client_post'); when the last\noutstanding delegated row for the user_request resolves,\n``continuation_needed=true`` tells the caller to open POST /resume,\nwhich reconstructs the conversation (tool results included) and\ncontinues the loop.\n\nThe old in-memory ``ClientToolWaiter`` \"live fast path\" is GONE — no\ncode creates waiter futures anymore (it was the source of the runaway\ntool-call loop; docs/tool_delegation/DELEGATION_LOOP_BUGS.md). The row\nis guaranteed to be on disk before the client ever sees the\n``tool_delegated`` event (pre-suspend finalize), so the durable path is\nthe only path.\n\nNOTE: ``continuation_needed`` is intentionally best-effort — concurrent\nPOSTs for parallel tool calls can BOTH observe \"no remaining delegated\nrows\" and both return true. That is safe: /resume takes an atomic\nper-user_request run claim and the losing resume gets a 409.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
         "operationId": "submit_tool_results_ai_conversation__conversation_id__tool_results_post",
         "parameters": [
           {
@@ -1769,7 +1769,7 @@
           "AI"
         ],
         "summary": "Submit Tool Results",
-        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nThere are two paths:\n\n1. **Live fast path:** the originating SSE task is still running and holds\n   an in-memory asyncio.Future for the call_id. We update the cx_tool_call\n   row to status='completed'/'error' AND wake the future (resolution_source\n   = 'inline_waiter'). The existing loop continues streaming on its SSE.\n\n2. **Recovery path:** the originating loop is gone (SSE disconnected, server\n   restarted, etc.). The in-memory waiter has no future — that's fine; the\n   cx_tool_call row is still status='delegated' from log_delegated(). We\n   update the row to status='completed'/'error' (resolution_source =\n   'client_post') and return continuation_needed=true so the caller knows\n   to open a /resume stream to continue the loop.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
+        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nProtocol (suspend-on-delegate — see ``_execute_delegated`` /\n``_suspend_for_delegation``): a delegated tool call HARD-SUSPENDS the\nloop after durably committing the assistant message and the\nstatus='delegated' cx_tool_call row. This endpoint flips the row to\n'completed'/'error' (resolution_source='client_post'); when the last\noutstanding delegated row for the user_request resolves,\n``continuation_needed=true`` tells the caller to open POST /resume,\nwhich reconstructs the conversation (tool results included) and\ncontinues the loop.\n\nThe old in-memory ``ClientToolWaiter`` \"live fast path\" is GONE — no\ncode creates waiter futures anymore (it was the source of the runaway\ntool-call loop; docs/tool_delegation/DELEGATION_LOOP_BUGS.md). The row\nis guaranteed to be on disk before the client ever sees the\n``tool_delegated`` event (pre-suspend finalize), so the durable path is\nthe only path.\n\nNOTE: ``continuation_needed`` is intentionally best-effort — concurrent\nPOSTs for parallel tool calls can BOTH observe \"no remaining delegated\nrows\" and both return true. That is safe: /resume takes an atomic\nper-user_request run claim and the losing resume gets a 409.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
         "operationId": "submit_tool_results_ai_conversations__conversation_id__tool_results_post",
         "parameters": [
           {
@@ -28372,6 +28372,153 @@
         }
       }
     },
+    "/podcast/resume/{run_id}": {
+      "post": {
+        "tags": [
+          "Podcast"
+        ],
+        "summary": "Resume Podcast Endpoint",
+        "description": "Resume a previously-failed generation from its last good stage.\n\nReplays the original request stored on the ``agent_run`` row; every\ncompleted stage (research, script, metadata, already-rendered paid\nimages/videos, audio) is reused from its checkpoint, so only the missing\ntail re-runs. The stream is identical to ``/generate`` — same events — but\nthe early ``podcast_run`` event echoes the same ``run_id``.",
+        "operationId": "resume_podcast_endpoint_podcast_resume__run_id__post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/podcast/runs/{run_id}/assets/regenerate": {
+      "post": {
+        "tags": [
+          "Podcast"
+        ],
+        "summary": "Regenerate Asset",
+        "description": "Re-render one image/video in place with a chosen model (or custom prompt).",
+        "operationId": "regenerate_asset_podcast_runs__run_id__assets_regenerate_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegenerateAssetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunAsset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/podcast/runs/{run_id}/assets/add": {
+      "post": {
+        "tags": [
+          "Podcast"
+        ],
+        "summary": "Add Asset",
+        "description": "Add a brand-new asset from the user's own description (also how you go\nbeyond the default 5 images / 2 videos).",
+        "operationId": "add_asset_podcast_runs__run_id__assets_add_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAssetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunAsset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tests/examples": {
       "get": {
         "tags": [
@@ -33714,6 +33861,48 @@
           }
         }
       }
+    },
+    "/content-label": {
+      "post": {
+        "tags": [
+          "Content Labeling (GLiNER2)"
+        ],
+        "summary": "Label content with GLiNER2",
+        "description": "Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id.",
+        "operationId": "label_content_label_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -33738,6 +33927,39 @@
           "page_ids"
         ],
         "title": "ActivePageIdsResponse"
+      },
+      "AddAssetRequest": {
+        "properties": {
+          "asset_kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Asset Kind"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "model_alias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Alias"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset_kind",
+          "description"
+        ],
+        "title": "AddAssetRequest"
       },
       "AddFieldResponse": {
         "properties": {
@@ -41701,6 +41923,17 @@
               }
             ],
             "title": "Error Message"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
           }
         },
         "type": "object",
@@ -42774,6 +43007,16 @@
           "content"
         ],
         "title": "ContentSaveRequest"
+      },
+      "ContentType": {
+        "type": "string",
+        "enum": [
+          "generic",
+          "transcript",
+          "conversation",
+          "document"
+        ],
+        "title": "ContentType"
       },
       "ContextStateResponse": {
         "properties": {
@@ -48912,7 +49155,8 @@
               "partial",
               "complete",
               "failed",
-              "not_applicable"
+              "not_applicable",
+              "abandoned"
             ],
             "title": "Status"
           },
@@ -53506,6 +53750,24 @@
         ],
         "title": "KeyFindingsResponse"
       },
+      "Keyword": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "count"
+        ],
+        "title": "Keyword"
+      },
       "KeywordCreate": {
         "properties": {
           "keywords": {
@@ -54440,6 +54702,117 @@
           "labels"
         ],
         "title": "LabelCatalogResponse"
+      },
+      "LabelMetadata": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "keywords": {
+            "items": {
+              "$ref": "#/components/schemas/Keyword"
+            },
+            "type": "array",
+            "title": "Keywords"
+          },
+          "content_type": {
+            "$ref": "#/components/schemas/ContentType"
+          },
+          "char_count": {
+            "type": "integer",
+            "title": "Char Count"
+          },
+          "token_count": {
+            "type": "integer",
+            "title": "Token Count"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "keywords",
+          "content_type",
+          "char_count",
+          "token_count",
+          "cost_usd"
+        ],
+        "title": "LabelMetadata"
+      },
+      "LabelRequest": {
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "transcript_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "content_type": {
+            "$ref": "#/components/schemas/ContentType",
+            "default": "generic"
+          },
+          "max_chars": {
+            "type": "integer",
+            "title": "Max Chars",
+            "default": 8000
+          },
+          "label_max_chars": {
+            "type": "integer",
+            "title": "Label Max Chars",
+            "default": 50
+          },
+          "top_n": {
+            "type": "integer",
+            "title": "Top N",
+            "default": 5
+          },
+          "forbidden_words": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true,
+            "title": "Forbidden Words"
+          },
+          "debug": {
+            "type": "boolean",
+            "title": "Debug",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "LabelRequest"
       },
       "LayoutClassificationReport": {
         "properties": {
@@ -59966,7 +60339,14 @@
       "PodcastGenerateRequest": {
         "properties": {
           "show_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Show Id"
           },
           "input_data_type": {
@@ -60048,7 +60428,6 @@
         },
         "type": "object",
         "required": [
-          "show_id",
           "input_data_type",
           "podcast_type"
         ],
@@ -61837,6 +62216,50 @@
         ],
         "title": "RefreshNodeTypesResponse"
       },
+      "RegenerateAssetRequest": {
+        "properties": {
+          "asset_kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Asset Kind"
+          },
+          "slot": {
+            "type": "integer",
+            "title": "Slot"
+          },
+          "model_alias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Alias"
+          },
+          "custom_prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Prompt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset_kind",
+          "slot"
+        ],
+        "title": "RegenerateAssetRequest"
+      },
       "RegionBbox": {
         "properties": {
           "x0": {
@@ -63268,6 +63691,25 @@
                 "type": "null"
               }
             ]
+          },
+          "context": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Context",
+            "default": {}
+          },
+          "writable_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Writable Variables",
+            "default": []
+          },
+          "allow_context_create": {
+            "type": "boolean",
+            "title": "Allow Context Create",
+            "default": false
           }
         },
         "type": "object",
@@ -63747,6 +64189,82 @@
           "data"
         ],
         "title": "RowUpdate"
+      },
+      "RunAsset": {
+        "properties": {
+          "asset_kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Asset Kind"
+          },
+          "slot": {
+            "type": "integer",
+            "title": "Slot"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt"
+          },
+          "model_alias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Alias"
+          },
+          "is_manual": {
+            "type": "boolean",
+            "title": "Is Manual",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset_kind",
+          "slot",
+          "status"
+        ],
+        "title": "RunAsset"
       },
       "RunBatchDeleteRequest": {
         "properties": {

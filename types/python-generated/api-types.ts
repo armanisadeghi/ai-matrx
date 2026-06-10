@@ -915,19 +915,27 @@ export interface paths {
          * Submit Tool Results
          * @description Submit client-side tool execution results back to the AI loop — durable.
          *
-         *     There are two paths:
+         *     Protocol (suspend-on-delegate — see ``_execute_delegated`` /
+         *     ``_suspend_for_delegation``): a delegated tool call HARD-SUSPENDS the
+         *     loop after durably committing the assistant message and the
+         *     status='delegated' cx_tool_call row. This endpoint flips the row to
+         *     'completed'/'error' (resolution_source='client_post'); when the last
+         *     outstanding delegated row for the user_request resolves,
+         *     ``continuation_needed=true`` tells the caller to open POST /resume,
+         *     which reconstructs the conversation (tool results included) and
+         *     continues the loop.
          *
-         *     1. **Live fast path:** the originating SSE task is still running and holds
-         *        an in-memory asyncio.Future for the call_id. We update the cx_tool_call
-         *        row to status='completed'/'error' AND wake the future (resolution_source
-         *        = 'inline_waiter'). The existing loop continues streaming on its SSE.
+         *     The old in-memory ``ClientToolWaiter`` "live fast path" is GONE — no
+         *     code creates waiter futures anymore (it was the source of the runaway
+         *     tool-call loop; docs/tool_delegation/DELEGATION_LOOP_BUGS.md). The row
+         *     is guaranteed to be on disk before the client ever sees the
+         *     ``tool_delegated`` event (pre-suspend finalize), so the durable path is
+         *     the only path.
          *
-         *     2. **Recovery path:** the originating loop is gone (SSE disconnected, server
-         *        restarted, etc.). The in-memory waiter has no future — that's fine; the
-         *        cx_tool_call row is still status='delegated' from log_delegated(). We
-         *        update the row to status='completed'/'error' (resolution_source =
-         *        'client_post') and return continuation_needed=true so the caller knows
-         *        to open a /resume stream to continue the loop.
+         *     NOTE: ``continuation_needed`` is intentionally best-effort — concurrent
+         *     POSTs for parallel tool calls can BOTH observe "no remaining delegated
+         *     rows" and both return true. That is safe: /resume takes an atomic
+         *     per-user_request run claim and the losing resume gets a 409.
          *
          *     Idempotent: duplicate POSTs for an already-resolved call return 200 with
          *     the call_id in ``already_resolved`` and no side effects.
@@ -952,19 +960,27 @@ export interface paths {
          * Submit Tool Results
          * @description Submit client-side tool execution results back to the AI loop — durable.
          *
-         *     There are two paths:
+         *     Protocol (suspend-on-delegate — see ``_execute_delegated`` /
+         *     ``_suspend_for_delegation``): a delegated tool call HARD-SUSPENDS the
+         *     loop after durably committing the assistant message and the
+         *     status='delegated' cx_tool_call row. This endpoint flips the row to
+         *     'completed'/'error' (resolution_source='client_post'); when the last
+         *     outstanding delegated row for the user_request resolves,
+         *     ``continuation_needed=true`` tells the caller to open POST /resume,
+         *     which reconstructs the conversation (tool results included) and
+         *     continues the loop.
          *
-         *     1. **Live fast path:** the originating SSE task is still running and holds
-         *        an in-memory asyncio.Future for the call_id. We update the cx_tool_call
-         *        row to status='completed'/'error' AND wake the future (resolution_source
-         *        = 'inline_waiter'). The existing loop continues streaming on its SSE.
+         *     The old in-memory ``ClientToolWaiter`` "live fast path" is GONE — no
+         *     code creates waiter futures anymore (it was the source of the runaway
+         *     tool-call loop; docs/tool_delegation/DELEGATION_LOOP_BUGS.md). The row
+         *     is guaranteed to be on disk before the client ever sees the
+         *     ``tool_delegated`` event (pre-suspend finalize), so the durable path is
+         *     the only path.
          *
-         *     2. **Recovery path:** the originating loop is gone (SSE disconnected, server
-         *        restarted, etc.). The in-memory waiter has no future — that's fine; the
-         *        cx_tool_call row is still status='delegated' from log_delegated(). We
-         *        update the row to status='completed'/'error' (resolution_source =
-         *        'client_post') and return continuation_needed=true so the caller knows
-         *        to open a /resume stream to continue the loop.
+         *     NOTE: ``continuation_needed`` is intentionally best-effort — concurrent
+         *     POSTs for parallel tool calls can BOTH observe "no remaining delegated
+         *     rows" and both return true. That is safe: /resume takes an atomic
+         *     per-user_request run claim and the losing resume gets a 409.
          *
          *     Idempotent: duplicate POSTs for an already-resolved call return 200 with
          *     the call_id in ``already_resolved`` and no side effects.
@@ -10287,6 +10303,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/podcast/resume/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume Podcast Endpoint
+         * @description Resume a previously-failed generation from its last good stage.
+         *
+         *     Replays the original request stored on the ``agent_run`` row; every
+         *     completed stage (research, script, metadata, already-rendered paid
+         *     images/videos, audio) is reused from its checkpoint, so only the missing
+         *     tail re-runs. The stream is identical to ``/generate`` — same events — but
+         *     the early ``podcast_run`` event echoes the same ``run_id``.
+         */
+        post: operations["resume_podcast_endpoint_podcast_resume__run_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/podcast/runs/{run_id}/assets/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate Asset
+         * @description Re-render one image/video in place with a chosen model (or custom prompt).
+         */
+        post: operations["regenerate_asset_podcast_runs__run_id__assets_regenerate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/podcast/runs/{run_id}/assets/add": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Asset
+         * @description Add a brand-new asset from the user's own description (also how you go
+         *     beyond the default 5 images / 2 videos).
+         */
+        post: operations["add_asset_podcast_runs__run_id__assets_add_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tests/examples": {
         parameters: {
             query?: never;
@@ -12017,6 +12100,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/content-label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Label content with GLiNER2
+         * @description Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id.
+         */
+        post: operations["label_content_label_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -12027,6 +12130,18 @@ export interface components {
             file_id: string;
             /** Page Ids */
             page_ids: string[];
+        };
+        /** AddAssetRequest */
+        AddAssetRequest: {
+            /**
+             * Asset Kind
+             * @enum {string}
+             */
+            asset_kind: "image" | "video";
+            /** Description */
+            description: string;
+            /** Model Alias */
+            model_alias?: string | null;
         };
         /** AddFieldResponse */
         AddFieldResponse: {
@@ -14784,6 +14899,8 @@ export interface components {
             is_error: boolean;
             /** Error Message */
             error_message?: string | null;
+            /** Duration Ms */
+            duration_ms?: number | null;
         };
         /** CloneTemplateResponse */
         CloneTemplateResponse: {
@@ -15158,6 +15275,11 @@ export interface components {
              */
             char_count: number;
         };
+        /**
+         * ContentType
+         * @enum {string}
+         */
+        ContentType: "generic" | "transcript" | "conversation" | "document";
         /**
          * ContextStateResponse
          * @description Same shape as the CONTEXT_STATE stream event payload.
@@ -17399,7 +17521,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "pending" | "running" | "partial" | "complete" | "failed" | "not_applicable";
+            status: "pending" | "running" | "partial" | "complete" | "failed" | "not_applicable" | "abandoned";
             /** Analyzer Version */
             analyzer_version: string;
             /**
@@ -19150,6 +19272,13 @@ export interface components {
                 [key: string]: components["schemas"]["KeyFindingEntry"][];
             };
         };
+        /** Keyword */
+        Keyword: {
+            /** Text */
+            text: string;
+            /** Count */
+            count: number;
+        };
         /** KeywordCreate */
         KeywordCreate: {
             /** Keywords */
@@ -19353,6 +19482,53 @@ export interface components {
             };
             /** Labels */
             labels: components["schemas"]["LabelCatalogEntry"][];
+        };
+        /** LabelMetadata */
+        LabelMetadata: {
+            /** Label */
+            label: string;
+            /** Keywords */
+            keywords: components["schemas"]["Keyword"][];
+            content_type: components["schemas"]["ContentType"];
+            /** Char Count */
+            char_count: number;
+            /** Token Count */
+            token_count: number;
+            /** Cost Usd */
+            cost_usd: number;
+        };
+        /** LabelRequest */
+        LabelRequest: {
+            /** Text */
+            text?: string | null;
+            /** Transcript Id */
+            transcript_id?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** @default generic */
+            content_type: components["schemas"]["ContentType"];
+            /**
+             * Max Chars
+             * @default 8000
+             */
+            max_chars: number;
+            /**
+             * Label Max Chars
+             * @default 50
+             */
+            label_max_chars: number;
+            /**
+             * Top N
+             * @default 5
+             */
+            top_n: number;
+            /** Forbidden Words */
+            forbidden_words?: string[];
+            /**
+             * Debug
+             * @default false
+             */
+            debug: boolean;
         };
         /** LayoutClassificationReport */
         LayoutClassificationReport: {
@@ -21302,7 +21478,7 @@ export interface components {
         /** PodcastGenerateRequest */
         PodcastGenerateRequest: {
             /** Show Id */
-            show_id: string;
+            show_id?: string | null;
             input_data_type: components["schemas"]["InputDataType"];
             /**
              * Input Data
@@ -22062,6 +22238,20 @@ export interface components {
             /** Node Type Count */
             node_type_count: number;
         };
+        /** RegenerateAssetRequest */
+        RegenerateAssetRequest: {
+            /**
+             * Asset Kind
+             * @enum {string}
+             */
+            asset_kind: "image" | "video";
+            /** Slot */
+            slot: number;
+            /** Model Alias */
+            model_alias?: string | null;
+            /** Custom Prompt */
+            custom_prompt?: string | null;
+        };
         /** RegionBbox */
         RegionBbox: {
             /** X0 */
@@ -22610,6 +22800,23 @@ export interface components {
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
             user?: components["schemas"]["UserOverrides"] | null;
+            /**
+             * Context
+             * @default {}
+             */
+            context: {
+                [key: string]: unknown;
+            };
+            /**
+             * Writable Variables
+             * @default []
+             */
+            writable_variables: string[];
+            /**
+             * Allow Context Create
+             * @default false
+             */
+            allow_context_create: boolean;
         };
         /** ResumeRunRequest */
         ResumeRunRequest: {
@@ -22795,6 +23002,31 @@ export interface components {
             data: {
                 [key: string]: unknown;
             };
+        };
+        /** RunAsset */
+        RunAsset: {
+            /**
+             * Asset Kind
+             * @enum {string}
+             */
+            asset_kind: "image" | "video";
+            /** Slot */
+            slot: number;
+            /** Status */
+            status: string;
+            /** Url */
+            url?: string | null;
+            /** File Id */
+            file_id?: string | null;
+            /** Prompt */
+            prompt?: string | null;
+            /** Model Alias */
+            model_alias?: string | null;
+            /**
+             * Is Manual
+             * @default false
+             */
+            is_manual: boolean;
         };
         /** RunBatchDeleteRequest */
         RunBatchDeleteRequest: {
@@ -45504,6 +45736,107 @@ export interface operations {
             };
         };
     };
+    resume_podcast_endpoint_podcast_resume__run_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    regenerate_asset_podcast_runs__run_id__assets_regenerate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegenerateAssetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunAsset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_asset_podcast_runs__run_id__assets_add_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddAssetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunAsset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_examples_tests_examples_get: {
         parameters: {
             query?: never;
@@ -49012,6 +49345,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FindSimilarResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    label_content_label_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabelMetadata"];
                 };
             };
             /** @description Validation Error */
