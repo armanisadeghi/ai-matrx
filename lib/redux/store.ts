@@ -16,6 +16,7 @@ import { cloudFilesRealtimeMiddleware, cloudFilesMutationToastMiddleware } from 
 import { transcriptStudioRealtimeMiddleware } from "@/features/transcript-studio/redux/realtimeMiddleware";
 import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/persistence";
 import { agentCacheBustMiddleware } from "@/features/agents/redux/agent-definition/cache-bust-middleware";
+import { scopeTreeInvalidationMiddleware } from "@/features/scopes/redux/scopeTreeInvalidationMiddleware";
 import {
   createSyncMiddleware,
   type SyncEngineApi,
@@ -202,6 +203,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         transcriptStudioRealtimeMiddleware,
         pdfStudioPersistenceMiddleware,
         agentCacheBustMiddleware,
+        scopeTreeInvalidationMiddleware,
       ),
     devTools: process.env.NODE_ENV !== "production",
   });
