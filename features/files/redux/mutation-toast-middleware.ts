@@ -97,11 +97,25 @@ interface RejectedAction {
   payload?: unknown;
 }
 
-function parseRejected(type: string): string | null {
+function parseThunk(type: string, phase: "rejected" | "fulfilled"): string | null {
   // `cloudFiles/renameFile/rejected` → `renameFile`
-  const m = /^cloudFiles\/([^/]+)\/rejected$/.exec(type);
+  const m = new RegExp(`^cloudFiles/([^/]+)/${phase}$`).exec(type);
   return m ? m[1] : null;
 }
+
+/**
+ * P3-11: success toasts ONLY for actions whose result the user can't see
+ * directly (a link/permission/version change has no visible row update).
+ * Visible actions (rename shows the new name, move/delete change the list)
+ * stay silent — a toast for those is noise.
+ */
+const SUCCESS_TITLE: Record<string, string> = {
+  createShareLink: "Share link created",
+  deactivateShareLink: "Share link revoked",
+  grantPermission: "Sharing updated",
+  revokePermission: "Sharing updated",
+  restoreVersion: "Version restored",
+};
 
 function messageFrom(action: RejectedAction): string {
   // Prefer a rejectWithValue string payload, then the serialized error.
@@ -118,20 +132,29 @@ export const cloudFilesMutationToastMiddleware: Middleware =
     const result = next(action);
 
     const a = action as RejectedAction;
-    if (typeof a?.type !== "string" || !a.type.endsWith("/rejected")) {
+    if (typeof a?.type !== "string") return result;
+
+    if (a.type.endsWith("/rejected")) {
+      const name = parseThunk(a.type, "rejected");
+      if (!name || !MUTATION_THUNK_NAMES.has(name)) return result;
+      // Skip superseded / conditioned dispatches — not real failures.
+      if (a.meta?.aborted || a.meta?.condition) return result;
+      if (a.error?.name === "AbortError" || a.error?.name === "ConditionError") {
+        return result;
+      }
+      toast.error(TITLE[name] ?? "Something went wrong", {
+        description: messageFrom(a),
+      });
       return result;
     }
-    const name = parseRejected(a.type);
-    if (!name || !MUTATION_THUNK_NAMES.has(name)) return result;
 
-    // Skip superseded / conditioned dispatches — not real failures.
-    if (a.meta?.aborted || a.meta?.condition) return result;
-    if (a.error?.name === "AbortError" || a.error?.name === "ConditionError") {
+    if (a.type.endsWith("/fulfilled")) {
+      const name = parseThunk(a.type, "fulfilled");
+      if (name && SUCCESS_TITLE[name]) {
+        toast.success(SUCCESS_TITLE[name]);
+      }
       return result;
     }
-
-    const title = TITLE[name] ?? "Something went wrong";
-    toast.error(title, { description: messageFrom(a) });
 
     return result;
   };
