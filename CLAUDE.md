@@ -237,6 +237,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Universal file handler | `features/files/handler/FEATURE.md` |
 | Scheduling | `features/scheduling/FEATURE.md` |
 | Podcasts (studio + generation) | `features/podcasts/FEATURE.md` (+ `features/podcasts/docs/`) |
+| Transcription (transcripts + studio + scribe + cleanup) | `features/transcripts/FEATURE.md` (**core-storage contract** for every `/transcripts` route) + `features/transcript-studio/FEATURE.md` + `features/transcription-cleanup/FEATURE.md` |
 
 ### Tier 2 — secondary features
 

@@ -22,8 +22,8 @@ export interface Transcript {
         speakers?: string[];
         [key: string]: any;
     };
-    audio_file_path?: string | null; // Supabase storage path
-    video_file_path?: string | null; // Supabase storage path
+    audio_file_path?: string | null; // cld_files UUID (universal file handler)
+    video_file_path?: string | null; // cld_files UUID (universal file handler)
     source_type: 'audio' | 'video' | 'meeting' | 'interview' | 'other';
     tags: string[];
     folder_name: string;

@@ -1,0 +1,121 @@
+# FEATURE.md — `transcripts`
+
+**Status:** `stable`
+**Tier:** `1`
+**Last updated:** `2026-06-10`
+
+---
+
+## Purpose
+
+The canonical store for finished transcripts (one row, one JSONB `segments` blob) plus the processor workspace that records, uploads, transcribes, and edits them. This doc is also the **core-storage contract** for the whole `/transcripts` ecosystem — read it before building or modifying any transcription surface.
+
+---
+
+## The core-storage contract
+
+Every route under `app/(core)/transcripts/` stores through exactly **two record stores and one audio store**. No third store, ever.
+
+| Store | What lives there | Single access path |
+|---|---|---|
+| `transcripts` table | Finished, one-shot transcripts (JSONB `segments` blob per row) | `features/transcripts/service/transcriptsService.ts` |
+| `studio_*` tables | Live session data — per-segment rows, recordings, cleaned passes, documents, settings | `features/transcript-studio/service/studioService.ts` |
+| `cld_files` (universal file handler) | ALL audio/video bytes | `features/transcripts/service/audioStorageService.ts` → `fileHandler` |
+
+**Route → store map:**
+
+| Route | Record store |
+|---|---|
+| `/transcripts` (list), `/transcripts/processor` | `transcripts` |
+| `/transcripts/studio` | `studio_sessions` (`source <> 'cleanup'` by default) |
+| `/transcripts/scribe`, `/transcripts/scribe/[sessionId]`, `/transcripts/scribe/unsorted` | `studio_sessions` |
+| `/transcripts/cleanup` | `studio_sessions` with `source='cleanup'` |
+
+**Rules:**
+
+- **Conversion between the two record stores goes ONLY through** `features/transcript-studio/service/transcriptBridge.ts` (`promoteTranscriptToStudio` / `saveStudioAsTranscript`). Both directions live in one file so the rules can't drift; sessions and transcripts cross-reference via `studio_sessions.transcript_id`.
+- **`audio_file_path` / `video_file_path` / `studio_recording_segments.audio_path` hold `cld_files` UUIDs, NOT bucket paths.** Upload via `saveAudioToStorage`, play via `useFileSrc` / `getSignedUrl`, delete via `deleteAudioFromStorage`. No `supabase.storage` anywhere (ESLint enforces repo-wide).
+- **A new transcription surface consumes one of the two record stores.** Need session-shaped data → `studio_sessions` with a new `source` value (see `features/transcription-cleanup/FEATURE.md` for the pattern). Need a finished document → `transcripts`. Inventing a third store is the failure class this contract exists to kill.
+- Transcription compute (Groq Whisper) runs via `/api/audio/transcribe` + `/api/audio/transcribe-url` and the `features/audio` hooks (`useRecordAndTranscribe`, `useChunkedRecordAndTranscribe`) — never a parallel pipeline.
+
+---
+
+## Entry points
+
+**Routes**
+- `app/(core)/transcripts/page.tsx` — list "savior" entry. Server-fetches `transcripts` summaries (no `segments` blob), renders `TranscriptsListPage`; guests get `TranscriptsLanding`.
+- `app/(core)/transcripts/processor/page.tsx` — the processor workspace (`TranscriptsLayout`): record / upload / browse / edit a single transcript.
+- `app/(core)/transcripts/new/page.tsx` — server-rendered "how do you want to create one?" picker; hands off to processor / studio / cleanup.
+- Studio / scribe / cleanup routes are owned by `features/transcript-studio/` and `features/transcription-cleanup/` — see their FEATURE.md files.
+
+**Services**
+- `service/transcriptsService.ts` — ALL `transcripts` CRUD: fetch (list / paginated / by-id / search / folder / tag), create, update, soft + hard delete, drafts (`saveDraftTranscript` / `finalizeDraft` / `getDraftTranscripts`), copy, `getSignedUrl` (mints playback URL from a `cld_files` UUID via the handler).
+- `service/audioStorageService.ts` — audio bytes in/out of `cld_files`: `saveAudioToStorage` (retrying upload → `Transcripts/Recordings`), `getAudioUrl`, `downloadAudioBlob`, `deleteAudioFromStorage` (hard delete via `fileHandler.remove`).
+
+**Context / hooks**
+- `context/TranscriptsContext.tsx` — provider with optimistic updates + realtime; wraps the processor.
+- `hooks/useTranscriptsSurfaceScope.ts` — surface scope wiring.
+
+**Components** — `components/`: `TranscriptsListPage` (list island), `TranscriptsLayout` / `TranscriptsHeader` / `TranscriptsSidebar` (processor shell), `TranscriptViewer`, `CreateTranscriptModal` (upload / upload+transcribe), `ImportTranscriptModal`, `RecordingInterface` / `RecordingPreview` / `DraftIndicator`, `DeleteTranscriptDialog`.
+
+---
+
+## Admin map
+
+The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`app/(core)/transcripts/admin/page.tsx`). Add any new transcript-related route / panel / component to that config — drift warnings catch misses.
+
+---
+
+## Data model
+
+**`transcripts` table** — `id`, `user_id`, `title`, `description`, `segments jsonb` (`TranscriptSegment[]`), `metadata jsonb` (duration / wordCount / segmentCount / speakers), `audio_file_path` + `video_file_path` (**`cld_files` UUIDs**), `source_type` (`audio|video|meeting|interview|other`), `tags text[]`, `folder_name`, `is_deleted` (soft delete), `is_draft` + `draft_saved_at`, timestamps. Migration: `migrations/create_transcripts_table.sql` (applied live; the DB is the source of truth).
+
+**Key types** — `Transcript`, `TranscriptSegment`, `CreateTranscriptInput`, `UpdateTranscriptInput` (`types.ts`).
+
+---
+
+## Key flows
+
+**Record → draft → finalize (processor):** `RecordingInterface` records → `saveAudioToStorage` uploads to `cld_files` → transcription via `features/audio` hooks → `saveDraftTranscript` (`is_draft=true`) → user reviews in `RecordingPreview` → `finalizeDraft`.
+
+**Upload & transcribe:** `CreateTranscriptModal` → `saveAudioToStorage` → `getAudioUrl` (signed URL) → `/api/audio/transcribe-url` (Groq Whisper) → `createTranscript` with segments + `audio_file_path = fileId`.
+
+**Delete:** `DeleteTranscriptDialog` → `deleteTranscript` → hard-deletes audio/video from `cld_files` via the handler, then soft-deletes the row (`is_deleted=true`).
+
+**Promote / save-as (bridge):** list row or studio action → `transcriptBridge.ts` — see The core-storage contract above.
+
+---
+
+## Invariants & gotchas
+
+- **`audio_file_path` is a `cld_files` UUID.** Treating it as a bucket path (or minting URLs outside the handler) produces URLs that expire and break — the exact defect class the universal handler exists to kill.
+- `deleteTranscript` destroys audio bytes (hard delete) but only soft-deletes the row. `permanentlyDeleteTranscript` removes the row.
+- The list page projects WITHOUT `segments` — never widen that select; the blob is heavy.
+- Segment `seconds` is the seek coordinate; `timecode` is display-only. Keep both in sync when editing segments.
+
+---
+
+## Related features
+
+- `features/transcript-studio/` — live-session sibling store + the bridge (read its FEATURE.md "Coexistence" section).
+- `features/transcription-cleanup/` — cleanup page on studio storage (`source='cleanup'`).
+- `features/audio/` — recording + transcription hooks and the transcribe API routes.
+- `features/files/handler/` — the universal file handler all audio goes through.
+
+---
+
+## Doctrine compliance
+
+**Primitives reused** — `fileHandler` / `useFileSrc` (`features/files`), `useRecordAndTranscribe` / `useChunkedRecordAndTranscribe` (`features/audio`), Supabase clients (`@/utils/supabase/client|server`), `ConfirmDialog`, official UI components.
+
+**Primitives introduced** — `transcripts` table + `transcriptsService` (the canonical finished-transcript store; predates the studio) and `audioStorageService` (thin retry/validation wrapper over `fileHandler` — the handler itself stays generic).
+
+---
+
+## Change log
+
+- `2026-06-10` — claude: Created as the canonical core-storage contract for all `/transcripts` routes (two record stores + `cld_files` audio, bridge-only conversion). Corrected README's stale Supabase-Storage-bucket claims; fixed stale `types.ts` comments.
+
+---
+
+> **Keep-docs-live rule (CLAUDE.md):** after any substantive change to this feature, update this file's status, add flows you introduced/removed, and append to the Change log.
