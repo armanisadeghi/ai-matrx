@@ -52,7 +52,7 @@ import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
 
 interface DemoFile { id: string; file_name: string; mime_type?: string | null }
 interface FlatProject { id: string; name: string; orgId: string | null; isPersonal: boolean }
-interface FlatTask { id: string; title: string; projectId: string | null; status: string | null }
+interface FlatTask { id: string; title: string; projectId: string | null; orgId: string | null; status: string | null }
 
 type Target =
   | { kind: "scope"; id: string; label: string; typeId: string }
@@ -78,23 +78,35 @@ function CheckRow({
   );
 }
 
+function MiniToggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button type="button" onClick={() => onChange(!on)} className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground">
+      <span className={cn("relative inline-flex h-3.5 w-6 shrink-0 items-center rounded-full transition-colors", on ? "bg-primary" : "bg-muted-foreground/30")}>
+        <span className={cn("inline-block h-2.5 w-2.5 rounded-full bg-white transition-transform", on ? "translate-x-3" : "translate-x-0.5")} />
+      </span>
+      {label}
+    </button>
+  );
+}
+
 function SectionShell({
-  icon: Icon, title, count, onAdd, addLabel, children, collapsible = true,
+  icon: Icon, title, count, onAdd, addLabel, children, headerExtra, collapsible = true,
 }: {
   icon: React.ComponentType<{ className?: string }>; title: string; count: number;
-  onAdd: () => void; addLabel: string; children: React.ReactNode; collapsible?: boolean;
+  onAdd: () => void; addLabel: string; children: React.ReactNode; headerExtra?: React.ReactNode; collapsible?: boolean;
 }) {
   const [open, setOpen] = useState(true);
   return (
     <div className="rounded-lg border border-border">
-      <div className="flex items-center justify-between px-3 py-2">
-        <button onClick={() => collapsible && setOpen((o) => !o)} className="flex items-center gap-2 text-sm font-medium">
-          {collapsible ? (open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />) : <span className="w-4" />}
-          <Icon className="h-4 w-4 text-muted-foreground" />
-          {title}
-          <span className="text-xs text-muted-foreground">{count}</span>
+      <div className="flex items-center gap-2 px-3 py-2">
+        <button onClick={() => collapsible && setOpen((o) => !o)} className="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium">
+          {collapsible ? (open ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />) : <span className="w-4" />}
+          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="truncate">{title}</span>
+          <span className="shrink-0 text-xs text-muted-foreground">{count}</span>
         </button>
-        <button onClick={onAdd} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground">
+        {headerExtra}
+        <button onClick={onAdd} className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground">
           <Plus className="h-3.5 w-3.5" /> {addLabel}
         </button>
       </div>
@@ -129,6 +141,8 @@ function OrganizeDocumentPanel({
   const [selProjects, setSelProjects] = useState<Set<string>>(new Set());
   const [selTasks, setSelTasks] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState<string | null>(null); // typeId | 'project' | 'task'
+  const [showAllProjects, setShowAllProjects] = useState(false);
+  const [showAllTasks, setShowAllTasks] = useState(false);
   const [addedScopes, setAddedScopes] = useState<{ id: string; name: string; typeId: string }[]>([]);
   const [addedProjects, setAddedProjects] = useState<FlatProject[]>([]);
   const [addedTasks, setAddedTasks] = useState<FlatTask[]>([]);
@@ -145,8 +159,12 @@ function OrganizeDocumentPanel({
     return { type: t, scopes: all.filter((s) => match(s.name)), total: all.length };
   }), [org, addedScopes, q]);
 
-  const projects = useMemo(() => [...allProjects, ...addedProjects].filter((p) => match(p.name)), [allProjects, addedProjects, q]);
-  const tasks = useMemo(() => [...allTasks, ...addedTasks].filter((t) => match(t.title)), [allTasks, addedTasks, q]);
+  // Default: only this-org + unassigned (no org). "Show all" reveals other orgs'.
+  const inScope = (oid: string | null) => oid === org.id || oid == null;
+  const projects = useMemo(() => [...allProjects, ...addedProjects].filter((p) => match(p.name) && (showAllProjects || inScope(p.orgId))), [allProjects, addedProjects, q, showAllProjects, org.id]);
+  const tasks = useMemo(() => [...allTasks, ...addedTasks].filter((t) => match(t.title) && (showAllTasks || inScope(t.orgId))), [allTasks, addedTasks, q, showAllTasks, org.id]);
+  const hiddenProjects = useMemo(() => [...allProjects].filter((p) => !inScope(p.orgId)).length, [allProjects, org.id]);
+  const hiddenTasks = useMemo(() => [...allTasks].filter((t) => !inScope(t.orgId)).length, [allTasks, org.id]);
 
   const typeById = (id: string): ScopeTypeNode | undefined => org.scope_types.find((t) => t.id === id);
   const typeOfScope = (id: string): ScopeTypeNode | undefined => org.scope_types.find((t) => t.scopes.some((s) => s.id === id)) ?? typeById(addedScopes.find((a) => a.id === id)?.typeId ?? "");
@@ -173,7 +191,7 @@ function OrganizeDocumentPanel({
   function addTask(title: string) {
     const v = title.trim(); if (!v) return; const id = `new:task:${v}`;
     console.log("[context-lab] create task →", { title: v });
-    setAddedTasks((p) => [...p, { id, title: v, projectId: null, status: "incomplete" }]); setSelTasks((p) => new Set(p).add(id)); setAdding(null);
+    setAddedTasks((p) => [...p, { id, title: v, projectId: null, orgId: org.id, status: "incomplete" }]); setSelTasks((p) => new Set(p).add(id)); setAdding(null);
     toast.success(`Added task "${v}" (logged — no DB write)`);
   }
 
@@ -212,10 +230,12 @@ function OrganizeDocumentPanel({
         <div className="flex items-center gap-2">
           <Select value={org.id} onValueChange={onChangeOrg}>
             <SelectTrigger className="h-9 w-[260px] shrink-0">
-              <span className="flex min-w-0 items-center gap-2">
+              {/* div (not span) so the trigger's [&>span]:line-clamp-1 — which forces
+                  display:-webkit-box and breaks flex — never lands on our row */}
+              <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
                 <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate"><SelectValue /></span>
-              </span>
+                <span className="min-w-0 flex-1 truncate text-left"><SelectValue /></span>
+              </div>
             </SelectTrigger>
             <SelectContent>
               {orgs.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}{o.is_personal ? " (personal)" : ""}</SelectItem>)}
@@ -243,29 +263,31 @@ function OrganizeDocumentPanel({
             );
           })}
 
-          {/* projects — ALL of the user's, incl. unassigned */}
-          <SectionShell icon={Briefcase} title="Projects" count={projects.length} addLabel="New project" onAdd={() => setAdding("project")}>
+          {/* projects — this org + unassigned by default; "Show all" reveals other orgs' */}
+          <SectionShell icon={Briefcase} title="Projects" count={projects.length} addLabel="New project" onAdd={() => setAdding("project")}
+            headerExtra={hiddenProjects > 0 || showAllProjects ? <MiniToggle on={showAllProjects} onChange={setShowAllProjects} label={showAllProjects ? "All orgs" : `Show all (${hiddenProjects})`} /> : undefined}>
             {adding === "project" && <InlineAdd placeholder="New project name" onCommit={addProject} onCancel={() => setAdding(null)} />}
             {projects.length === 0 ? <div className="px-2.5 py-1.5 text-xs text-muted-foreground">{q ? "No matches." : "No projects yet."}</div>
               : projects.map((p) => <CheckRow key={p.id} on={selProjects.has(p.id)} label={p.name} right={<span className="shrink-0 text-[11px] text-muted-foreground">{orgLabel(p.orgId)}</span>} onClick={() => toggle(setSelProjects, p.id)} />)}
           </SectionShell>
 
-          {/* tasks — independent of projects */}
-          <SectionShell icon={FolderOpen} title="Tasks" count={tasks.length} addLabel="New task" onAdd={() => setAdding("task")}>
+          {/* tasks — independent of projects; same this-org+unassigned default */}
+          <SectionShell icon={FolderOpen} title="Tasks" count={tasks.length} addLabel="New task" onAdd={() => setAdding("task")}
+            headerExtra={hiddenTasks > 0 || showAllTasks ? <MiniToggle on={showAllTasks} onChange={setShowAllTasks} label={showAllTasks ? "All orgs" : `Show all (${hiddenTasks})`} /> : undefined}>
             {adding === "task" && <InlineAdd placeholder="New task title" onCommit={addTask} onCancel={() => setAdding(null)} />}
             {tasks.length === 0 ? <div className="px-2.5 py-1.5 text-xs text-muted-foreground">{q ? "No matches." : "No tasks yet."}</div>
               : tasks.map((t) => <CheckRow key={t.id} on={selTasks.has(t.id)} label={t.title} right={<span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">{t.status === "completed" ? <CheckCircle2 className="h-3 w-3" /> : <Circle className="h-3 w-3" />}{t.projectId ? projName(t.projectId) : "No project"}</span>} onClick={() => toggle(setSelTasks, t.id)} />)}
           </SectionShell>
         </div>
 
-        {/* footer: stable-height summary + save */}
-        <div className="space-y-2 border-t border-border pt-3">
-          <div className="min-h-[28px]">
+        {/* footer: one tight row — selection summary left, Save right */}
+        <div className="flex items-start justify-between gap-3 border-t border-border pt-3">
+          <div className="min-w-0 flex-1">
             {totalSelected === 0 ? (
-              <span className="text-xs text-muted-foreground">Not filed anywhere yet — that&apos;s allowed.</span>
+              <span className="text-xs text-muted-foreground">Nothing selected — saving with no associations is fine.</span>
             ) : (
               <div className="flex flex-wrap items-center gap-1.5">
-                {[...selScopes].map((id) => { const t = typeOfScope(id); const name = [...org.scope_types.flatMap((x) => x.scopes), ...addedScopes].find((s) => s.id === id)?.name ?? id; return <Chip key={id} label={name} onRemove={() => toggle(setSelScopes, id)} />; })}
+                {[...selScopes].map((id) => { const name = [...org.scope_types.flatMap((x) => x.scopes), ...addedScopes].find((s) => s.id === id)?.name ?? id; return <Chip key={id} label={name} onRemove={() => toggle(setSelScopes, id)} />; })}
                 {[...selProjects].map((id) => <Chip key={id} label={projName(id)} onRemove={() => toggle(setSelProjects, id)} />)}
                 {[...selTasks].map((id) => <Chip key={id} label={[...allTasks, ...addedTasks].find((t) => t.id === id)?.title ?? id} onRemove={() => toggle(setSelTasks, id)} />)}
                 {[...derivedTypeIds].map((tid) => <span key={tid} className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">{typeById(tid)?.label_plural}<span className="text-[9px] uppercase opacity-70">auto</span></span>)}
@@ -273,9 +295,7 @@ function OrganizeDocumentPanel({
               </div>
             )}
           </div>
-          <div className="flex justify-end">
-            <Button size="sm" onClick={save} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}Save</Button>
-          </div>
+          <Button size="sm" onClick={save} disabled={busy} className="shrink-0">{busy ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}Save</Button>
         </div>
       </div>
     </Card>
@@ -315,7 +335,7 @@ export default function ContextLabPage() {
       .catch((e) => setFilesErr(e instanceof Error ? e.message : "Could not load your files"))
       .finally(() => setFilesLoading(false));
     getUserProjects().then((ps) => setProjects(ps.map((p) => ({ id: p.id, name: p.name, orgId: p.organizationId, isPersonal: p.isPersonal })))).catch(() => {});
-    getUserTasks().then((ts) => setTasks(ts.map((t) => ({ id: t.id, title: (t as { title?: string }).title ?? "Untitled task", projectId: (t as { project_id?: string | null }).project_id ?? null, status: (t as { status?: string | null }).status ?? null })))).catch(() => {});
+    getUserTasks().then((ts) => setTasks(ts.map((t) => ({ id: t.id, title: (t as { title?: string }).title ?? "Untitled task", projectId: (t as { project_id?: string | null }).project_id ?? null, orgId: (t as { organization_id?: string | null }).organization_id ?? null, status: (t as { status?: string | null }).status ?? null })))).catch(() => {});
   }, []);
 
   useEffect(() => {

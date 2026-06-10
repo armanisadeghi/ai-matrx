@@ -44,6 +44,7 @@ export interface SessionRow {
   total_duration_ms: number;
   audio_storage_path: string | null;
   is_deleted: boolean;
+  assistant_conversation_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -64,6 +65,7 @@ export function rowToSession(row: SessionRow): StudioSession {
     totalDurationMs: row.total_duration_ms,
     audioStoragePath: row.audio_storage_path,
     isDeleted: row.is_deleted,
+    assistantConversationId: row.assistant_conversation_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -141,6 +143,8 @@ export async function updateSession(
   if (patch.transcriptId !== undefined)
     update.transcript_id = patch.transcriptId;
   if (patch.isDeleted !== undefined) update.is_deleted = patch.isDeleted;
+  if (patch.assistantConversationId !== undefined)
+    update.assistant_conversation_id = patch.assistantConversationId;
 
   const { data, error } = await db
     .from("studio_sessions")

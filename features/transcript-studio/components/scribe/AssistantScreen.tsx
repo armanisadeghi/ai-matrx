@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Group, Panel, Separator } from "react-resizable-panels";
 import {
   Loader2,
   Maximize2,
-  Mic,
   Pause,
   Play,
   Send,
@@ -16,9 +16,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { MicTapButton } from "@/components/icons/tap-buttons";
 import { AgentConversationDisplay } from "@/features/agents/components/messages-display/AgentConversationDisplay";
-import { AgentMicrophoneButton } from "@/features/agents/components/inputs/smart-input/AgentMicrophoneButton";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
@@ -45,9 +45,6 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
   const conversationId = assistant.conversationId;
   const recorder = useStudioSession({ sessionId });
 
-  const inputText = useAppSelector(
-    conversationId ? selectUserInputText(conversationId) : () => "",
-  );
   const liveTranscript = useAppSelector((s) => s.recordings.liveTranscript);
   const [sending, setSending] = useState(false);
   const [focusOpen, setFocusOpen] = useState(false);
@@ -69,29 +66,6 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
     }
     wasRecording.current = recorder.isOwnedRecording;
   }, [recorder.isOwnedRecording]);
-
-  const handleSend = async () => {
-    if (!conversationId || !inputText.trim() || sending) return;
-    setSending(true);
-    try {
-      await assistant.send();
-      dispatch(setUserInputText({ conversationId, text: "" }));
-    } finally {
-      setSending(false);
-    }
-  };
-
-  // Audio-first: speaking auto-sends on speech end (no extra tap).
-  const handleSpoken = (text: string) => {
-    if (!conversationId || !text.trim() || sending) return;
-    setSending(true);
-    void assistant
-      .send(text)
-      .finally(() => {
-        dispatch(setUserInputText({ conversationId, text: "" }));
-        setSending(false);
-      });
-  };
 
   const handleSendForReview = () => {
     setReviewOffer(false);
@@ -122,72 +96,13 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Working document panel */}
-      <div className="shrink-0 border-b border-border bg-muted/30">
-        <div className="flex items-center justify-between px-4 py-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Working document
-          </span>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={handleReadAloud}
-              disabled={!docContent.trim()}
-              className={cn(
-                "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium",
-                docContent.trim()
-                  ? "bg-accent text-accent-foreground active:bg-accent/70"
-                  : "bg-muted text-muted-foreground",
-              )}
-            >
-              {reading ? (
-                <VolumeX className="h-3.5 w-3.5" />
-              ) : (
-                <Volume2 className="h-3.5 w-3.5" />
-              )}
-              {reading ? "Stop" : "Read aloud"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setFocusOpen(true)}
-              disabled={!workingDoc}
-              aria-label="Open focused editor"
-              className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium",
-                workingDoc
-                  ? "bg-accent text-accent-foreground active:bg-accent/70"
-                  : "bg-muted text-muted-foreground",
-              )}
-            >
-              <Maximize2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-        <div className="max-h-[28dvh] overflow-y-auto px-4 pb-3">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-            {docContent || (
-              <span className="italic text-muted-foreground">
-                Empty. Ask the assistant to draft, splice, or rework your
-                recordings — it builds the document here.
-              </span>
-            )}
-          </p>
-        </div>
-      </div>
-
-      {/* Conversation */}
-      <div className="flex-1 overflow-y-auto">
-        <AgentConversationDisplay
-          conversationId={conversationId}
-          surfaceKey={`studio-assistant:${sessionId}`}
-          compact
-        />
-      </div>
-
-      {/* Add-recording strip — capture without leaving the assistant */}
-      <div className="shrink-0 border-t border-border bg-card/60 px-3 py-2">
+      {/* Compact capture bar — a small tap-target up top replaces the old
+          full-width "Add recording" button. It also hosts the live
+          recording state and the post-recording review offer so they never
+          shove the conversation around at the bottom. */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card/40 px-2 py-1">
         {recorder.isOwnedRecording ? (
-          <div className="flex items-center gap-2">
+          <>
             <span className="flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400">
               <span className="relative flex h-2 w-2">
                 {!recorder.isPaused && (
@@ -222,9 +137,9 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
             >
               <Square className="h-3.5 w-3.5 fill-current" />
             </button>
-          </div>
+          </>
         ) : reviewOffer ? (
-          <div className="flex items-center gap-2">
+          <>
             <Sparkles className="h-4 w-4 shrink-0 text-primary" />
             <span className="min-w-0 flex-1 truncate text-xs text-foreground">
               Recording added. Send it to the assistant for review?
@@ -245,67 +160,126 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
             >
               <X className="h-4 w-4" />
             </button>
-          </div>
+          </>
         ) : (
-          <button
-            type="button"
-            onClick={() => void recorder.start()}
-            disabled={recorder.isAnyRecording}
-            className={cn(
-              "flex w-full items-center justify-center gap-2 rounded-full border border-dashed border-border py-2 text-sm font-medium transition-colors",
-              recorder.isAnyRecording
-                ? "cursor-not-allowed text-muted-foreground"
-                : "text-foreground active:bg-accent",
-            )}
-          >
-            <Mic className="h-4 w-4" />
-            Add recording
-          </button>
+          <>
+            <span className="flex-1 truncate text-xs text-muted-foreground">
+              Add a recording without leaving the assistant
+            </span>
+            <MicTapButton
+              onClick={() => void recorder.start()}
+              disabled={recorder.isAnyRecording}
+              ariaLabel="Add recording"
+              tooltip="Add recording"
+            />
+          </>
         )}
       </div>
 
-      {/* Audio-first input — mic, field, and send share one container */}
-      <div className="shrink-0 border-t border-border bg-card/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur">
-        <div className="flex items-end gap-1.5 rounded-3xl border border-border bg-background py-1.5 pl-1.5 pr-1.5 focus-within:border-primary">
-          <AgentMicrophoneButton
-            conversationId={conversationId}
-            size="md"
-            variant="icon-only"
-            onTranscribed={handleSpoken}
-          />
-          <textarea
-            value={inputText}
-            onChange={(e) =>
-              dispatch(
-                setUserInputText({ conversationId, text: e.target.value }),
-              )
-            }
-            placeholder="Speak or type…"
-            rows={1}
-            className="max-h-32 min-h-[36px] flex-1 resize-none border-0 bg-transparent px-1 py-2 text-base text-foreground outline-none placeholder:text-muted-foreground"
-          />
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={!inputText.trim() || sending}
-            aria-label="Send"
-            className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors",
-              inputText.trim() && !sending
-                ? "bg-primary text-primary-foreground active:bg-primary/90"
-                : "bg-muted text-muted-foreground",
-            )}
-          >
-            {sending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </button>
-        </div>
-        <p className="mt-1 px-2 text-center text-[11px] text-muted-foreground">
-          Tap the mic and speak — it sends automatically.
-        </p>
+      {/* Resizable vertical split: working document (top) ↔ conversation
+          (bottom). Drag the handle to give either side more room; the
+          document can be dragged all the way closed. Full-screen editing
+          stays available via the expand button. */}
+      <Group
+        id={`scribe-assistant-split:${sessionId}`}
+        orientation="vertical"
+        className="min-h-0 flex-1"
+        resizeTargetMinimumSize={{ coarse: 24, fine: 10 }}
+      >
+        {/* Working document panel */}
+        <Panel
+          id="doc"
+          defaultSize="30%"
+          minSize="8%"
+          collapsible
+          collapsedSize="0%"
+        >
+          <div className="flex h-full flex-col bg-muted/30">
+            <div className="flex shrink-0 items-center justify-between px-4 py-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Working document
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleReadAloud}
+                  disabled={!docContent.trim()}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium",
+                    docContent.trim()
+                      ? "bg-accent text-accent-foreground active:bg-accent/70"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {reading ? (
+                    <VolumeX className="h-3.5 w-3.5" />
+                  ) : (
+                    <Volume2 className="h-3.5 w-3.5" />
+                  )}
+                  {reading ? "Stop" : "Read aloud"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFocusOpen(true)}
+                  disabled={!workingDoc}
+                  aria-label="Open focused editor"
+                  className={cn(
+                    "flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium",
+                    workingDoc
+                      ? "bg-accent text-accent-foreground active:bg-accent/70"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  <Maximize2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {docContent || (
+                  <span className="italic text-muted-foreground">
+                    Empty. Ask the assistant to draft, splice, or rework your
+                    recordings — it builds the document here.
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+        </Panel>
+
+        {/* Drag handle — a grabbable bar with a centered grip. */}
+        <Separator
+          className={cn(
+            "relative bg-border transition-colors touch-none focus:outline-none",
+            "h-2.5 cursor-row-resize",
+            "data-[separator=hover]:bg-primary/60",
+            "data-[separator=active]:bg-primary",
+            "data-[separator=dragging]:bg-primary",
+            "after:absolute after:left-1/2 after:top-1/2 after:h-1 after:w-10",
+            "after:-translate-x-1/2 after:-translate-y-1/2 after:rounded-full",
+            "after:bg-muted-foreground/40 after:content-['']",
+          )}
+        />
+
+        {/* Conversation */}
+        <Panel id="convo" minSize="20%">
+          <div className="h-full overflow-y-auto px-1 pb-6 pt-2">
+            <AgentConversationDisplay
+              conversationId={conversationId}
+              surfaceKey={`studio-assistant:${sessionId}`}
+              compact
+            />
+          </div>
+        </Panel>
+      </Group>
+
+      {/* Input — the same composer used on the Chat page, pinned to the
+          bottom (never a centered landing state). */}
+      <div className="shrink-0 border-t border-border bg-card/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur">
+        <SmartAgentInput
+          conversationId={conversationId}
+          surfaceKey={`studio-assistant:${sessionId}`}
+        />
       </div>
 
       {focusOpen && workingDoc && (

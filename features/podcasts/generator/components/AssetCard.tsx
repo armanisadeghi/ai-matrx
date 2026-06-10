@@ -8,7 +8,14 @@
 // images fade in, videos auto-play (muted, looped). Per-asset failure is
 // non-fatal: a failed slot keeps its prompt and shows a quiet badge.
 
-import { Loader2, ImageOff, Maximize2, Check, Star, RotateCcw } from "lucide-react";
+import {
+  Loader2,
+  ImageOff,
+  Maximize2,
+  Check,
+  Star,
+  RotateCcw,
+} from "lucide-react";
 import { InlineMediaRef } from "@/features/files";
 import { cn } from "@/lib/utils";
 import { podcastMediaRef } from "../media";
@@ -45,7 +52,9 @@ export function AssetCard({
   const aspect = slot.kind === "video" ? "aspect-video" : "aspect-square";
   const isDone = slot.status === "done" && !!slot.url;
   const defaultAlias =
-    modelCount > 0 && slot.index < modelCount ? `model_${slot.index + 1}` : "model_1";
+    modelCount > 0 && slot.index < modelCount
+      ? `model_${slot.index + 1}`
+      : "model_1";
 
   return (
     <div
@@ -150,47 +159,53 @@ export function AssetCard({
                 alt={label}
                 fallback="skeleton"
               />
-              {/* Hover overlay */}
-              <div className="pointer-events-none absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100">
-                <div className="flex justify-end p-2">
-                  {onEnlarge && (
-                    <button
-                      type="button"
-                      onClick={() => onEnlarge(slot)}
-                      className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-colors hover:bg-black/70"
-                      aria-label="Enlarge"
-                    >
-                      <Maximize2 className="h-3.5 w-3.5" />
-                    </button>
+              {/* Enlarge — revealed on hover (top row, offset clear of the "…" menu). */}
+              {onEnlarge && (
+                <div
+                  className={cn(
+                    "pointer-events-none absolute inset-x-0 top-0 flex justify-end bg-gradient-to-b from-black/60 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100",
+                    onRegenerate && "pr-11",
                   )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onEnlarge(slot)}
+                    className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-colors hover:bg-black/70"
+                    aria-label="Enlarge"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-                {selectable && (
-                  <div className="p-2">
-                    <button
-                      type="button"
-                      onClick={() => onSelectCover?.(slot.url!)}
-                      className={cn(
-                        "pointer-events-auto flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium backdrop-blur transition-colors",
-                        selected
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-white/90 text-zinc-900 hover:bg-white",
-                      )}
-                    >
-                      {selected ? (
-                        <>
-                          <Check className="h-3.5 w-3.5" />
-                          Cover
-                        </>
-                      ) : (
-                        <>
-                          <Star className="h-3.5 w-3.5" />
-                          Use as cover
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
+              )}
+
+              {/* Cover promotion — always visible (not hover-gated) so it's
+                  discoverable. Selected reads as a solid primary bar. */}
+              {selectable && (
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                  <button
+                    type="button"
+                    onClick={() => onSelectCover?.(slot.url!)}
+                    className={cn(
+                      "flex w-full items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium backdrop-blur transition-colors",
+                      selected
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-white/90 text-zinc-900 hover:bg-white",
+                    )}
+                  >
+                    {selected ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        Cover
+                      </>
+                    ) : (
+                      <>
+                        <Star className="h-3.5 w-3.5" />
+                        Use as cover
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <InlineMediaRef
@@ -211,9 +226,10 @@ export function AssetCard({
             />
           ))}
 
-        {/* Selected indicator (image) — bottom-left so it never collides with
-            the top-right "…" menu. The primary ring also signals selection. */}
-        {selected && isDone && (
+        {/* Selected indicator (image) — bottom-left, only when there's no
+            always-visible cover bar (which already says "Cover"). The primary
+            ring also signals selection. */}
+        {selected && isDone && !selectable && (
           <span className="absolute bottom-2 left-2 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Check className="h-3 w-3" />
           </span>

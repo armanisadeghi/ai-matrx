@@ -21,7 +21,11 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import type { AiModelFilters, TabState } from "../hooks/useTabUrlState";
+import {
+  isDeprecatedFilterNonDefault,
+  type AiModelFilters,
+  type TabState,
+} from "../hooks/useTabUrlState";
 import type { AiModel } from "../types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { aiModelSummary, AI_MODELS_LOCATION } from "../format";
@@ -156,7 +160,7 @@ export default function AiModelFilterBar({
 
   const activeFilterCount = [
     filters.provider,
-    filters.is_deprecated !== undefined,
+    isDeprecatedFilterNonDefault(filters),
     filters.is_primary !== undefined,
     filters.is_premium !== undefined,
     filters.api_class,
@@ -291,12 +295,12 @@ export default function AiModelFilterBar({
           More
           {activeFilterCount >
             (filters.provider ? 1 : 0) +
-              (filters.is_deprecated !== undefined ? 1 : 0) +
+              (isDeprecatedFilterNonDefault(filters) ? 1 : 0) +
               (filters.model_class ? 1 : 0) && (
             <Badge variant="secondary" className="h-4 px-1 text-xs">
               {activeFilterCount -
                 (filters.provider ? 1 : 0) -
-                (filters.is_deprecated !== undefined ? 1 : 0) -
+                (isDeprecatedFilterNonDefault(filters) ? 1 : 0) -
                 (filters.model_class ? 1 : 0)}
             </Badge>
           )}

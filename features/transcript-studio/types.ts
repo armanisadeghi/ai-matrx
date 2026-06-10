@@ -51,6 +51,12 @@ export interface StudioSession {
   totalDurationMs: number;
   audioStoragePath: string | null;
   isDeleted: boolean;
+  /**
+   * The audio-first assistant's persisted conversation id (cx_conversation.id).
+   * Durable so the Assistant screen reuses one conversation across refreshes
+   * and rehydrates its history instead of starting fresh each mount.
+   */
+  assistantConversationId: string | null;
 
   createdAt: string;
   updatedAt: string;
@@ -208,6 +214,7 @@ export interface UpdateSessionInput {
   audioStoragePath?: string | null;
   transcriptId?: string | null;
   isDeleted?: boolean;
+  assistantConversationId?: string | null;
 }
 
 export interface CreateRecordingSegmentInput {

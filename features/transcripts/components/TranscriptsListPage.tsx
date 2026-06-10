@@ -48,7 +48,10 @@ interface TranscriptsListPageProps {
 
 type SortKey = "updated" | "created" | "title" | "duration" | "words";
 
-const SOURCE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
+const SOURCE_ICON: Record<
+  string,
+  React.ComponentType<{ className?: string }>
+> = {
   audio: FileAudio,
   video: FileVideo,
   meeting: Headphones,
@@ -167,17 +170,23 @@ export function TranscriptsListPage({ rows }: TranscriptsListPageProps) {
         list.sort((a, b) => a.title.localeCompare(b.title));
         break;
       case "created":
-        list.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+        list.sort((a, b) =>
+          (b.createdAt || "").localeCompare(a.createdAt || ""),
+        );
         break;
       case "duration":
-        list.sort((a, b) => (b.durationSeconds ?? 0) - (a.durationSeconds ?? 0));
+        list.sort(
+          (a, b) => (b.durationSeconds ?? 0) - (a.durationSeconds ?? 0),
+        );
         break;
       case "words":
         list.sort((a, b) => (b.wordCount ?? 0) - (a.wordCount ?? 0));
         break;
       case "updated":
       default:
-        list.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+        list.sort((a, b) =>
+          (b.updatedAt || "").localeCompare(a.updatedAt || ""),
+        );
     }
     return list;
   }, [rows, query, sortKey]);
@@ -195,7 +204,7 @@ export function TranscriptsListPage({ rows }: TranscriptsListPageProps) {
       </PageHeader>
 
       {/* Body — mirrors AgentsGrid container shape exactly. */}
-      <div className="w-full">
+      <div className="w-full pt-8">
         <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-4 sm:py-6 max-w-[1800px]">
           {/* Search pill — matches AgentsGrid styling. */}
           <div className="mb-4 flex items-center gap-3 p-1 rounded-full matrx-glass-thin-border hover:shadow-xl transition-shadow">
@@ -279,11 +288,17 @@ function TranscriptCard({ row }: { row: TranscriptListRow }) {
           <span title="Source type">
             {SOURCE_LABEL[row.sourceType] ?? "Other"}
           </span>
-          <span aria-hidden className="text-muted-foreground/40">·</span>
+          <span aria-hidden className="text-muted-foreground/40">
+            ·
+          </span>
           <span title="Duration">{formatDuration(row.durationSeconds)}</span>
-          <span aria-hidden className="text-muted-foreground/40">·</span>
+          <span aria-hidden className="text-muted-foreground/40">
+            ·
+          </span>
           <span title="Word count">{formatNumber(row.wordCount)} words</span>
-          <span aria-hidden className="text-muted-foreground/40">·</span>
+          <span aria-hidden className="text-muted-foreground/40">
+            ·
+          </span>
           <span title={row.updatedAt}>{formatRelative(row.updatedAt)}</span>
         </div>
         {row.folderName && row.folderName !== "Transcripts" && (

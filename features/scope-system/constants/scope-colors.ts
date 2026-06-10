@@ -20,6 +20,8 @@ export interface ScopeColor {
   bg: string;
   fg: string;
   ring: string;
+  /** Tinted border (stronger than `ring`) for outlining a card by scope type. */
+  border: string;
 }
 
 export const SCOPE_COLORS: ScopeColor[] = [
@@ -30,6 +32,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-blue-50 dark:bg-blue-950/40",
     fg: "text-blue-600 dark:text-blue-400",
     ring: "ring-blue-500/20",
+    border: "border-blue-500/40",
   },
   {
     key: "sky",
@@ -38,6 +41,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-sky-50 dark:bg-sky-950/40",
     fg: "text-sky-600 dark:text-sky-400",
     ring: "ring-sky-500/20",
+    border: "border-sky-500/40",
   },
   {
     key: "cyan",
@@ -46,6 +50,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-cyan-50 dark:bg-cyan-950/40",
     fg: "text-cyan-600 dark:text-cyan-400",
     ring: "ring-cyan-500/20",
+    border: "border-cyan-500/40",
   },
   {
     key: "teal",
@@ -54,6 +59,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-teal-50 dark:bg-teal-950/40",
     fg: "text-teal-600 dark:text-teal-400",
     ring: "ring-teal-500/20",
+    border: "border-teal-500/40",
   },
   {
     key: "emerald",
@@ -62,6 +68,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-emerald-50 dark:bg-emerald-950/40",
     fg: "text-emerald-600 dark:text-emerald-400",
     ring: "ring-emerald-500/20",
+    border: "border-emerald-500/40",
   },
   {
     key: "green",
@@ -70,6 +77,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-green-50 dark:bg-green-950/40",
     fg: "text-green-600 dark:text-green-400",
     ring: "ring-green-500/20",
+    border: "border-green-500/40",
   },
   {
     key: "lime",
@@ -78,6 +86,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-lime-50 dark:bg-lime-950/40",
     fg: "text-lime-600 dark:text-lime-400",
     ring: "ring-lime-500/20",
+    border: "border-lime-500/40",
   },
   {
     key: "amber",
@@ -86,6 +95,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-amber-50 dark:bg-amber-950/40",
     fg: "text-amber-600 dark:text-amber-400",
     ring: "ring-amber-500/20",
+    border: "border-amber-500/40",
   },
   {
     key: "orange",
@@ -94,6 +104,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-orange-50 dark:bg-orange-950/40",
     fg: "text-orange-600 dark:text-orange-400",
     ring: "ring-orange-500/20",
+    border: "border-orange-500/40",
   },
   {
     key: "red",
@@ -102,6 +113,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-red-50 dark:bg-red-950/40",
     fg: "text-red-600 dark:text-red-400",
     ring: "ring-red-500/20",
+    border: "border-red-500/40",
   },
   {
     key: "rose",
@@ -110,6 +122,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-rose-50 dark:bg-rose-950/40",
     fg: "text-rose-600 dark:text-rose-400",
     ring: "ring-rose-500/20",
+    border: "border-rose-500/40",
   },
   {
     key: "pink",
@@ -126,6 +139,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-fuchsia-50 dark:bg-fuchsia-950/40",
     fg: "text-fuchsia-600 dark:text-fuchsia-400",
     ring: "ring-fuchsia-500/20",
+    border: "border-fuchsia-500/40",
   },
   {
     key: "violet",
@@ -134,6 +148,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-violet-50 dark:bg-violet-950/40",
     fg: "text-violet-600 dark:text-violet-400",
     ring: "ring-violet-500/20",
+    border: "border-violet-500/40",
   },
   {
     key: "purple",
@@ -142,6 +157,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-purple-50 dark:bg-purple-950/40",
     fg: "text-purple-600 dark:text-purple-400",
     ring: "ring-purple-500/20",
+    border: "border-purple-500/40",
   },
   {
     key: "indigo",
@@ -150,6 +166,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-indigo-50 dark:bg-indigo-950/40",
     fg: "text-indigo-600 dark:text-indigo-400",
     ring: "ring-indigo-500/20",
+    border: "border-indigo-500/40",
   },
   {
     key: "slate",
@@ -158,6 +175,7 @@ export const SCOPE_COLORS: ScopeColor[] = [
     bg: "bg-slate-100 dark:bg-slate-800/50",
     fg: "text-slate-600 dark:text-slate-300",
     ring: "ring-slate-500/20",
+    border: "border-slate-500/40",
   },
 ];
 

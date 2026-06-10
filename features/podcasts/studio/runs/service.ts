@@ -59,17 +59,24 @@ export const studioRunsService = {
   },
 
   async fetchRunById(id: string): Promise<PcStudioRun | null> {
+    // .maybeSingle (not .single) — the URL id is often a backend_run_id, not a
+    // pc_studio_runs row id, so "zero rows" is an expected miss (we then fall back
+    // to the durable agent_run detail). .single() turns that into a noisy 406;
+    // .maybeSingle() returns null cleanly.
     const { data, error } = await supabase
       .from("pc_studio_runs")
       .select("*")
       .eq("id", id)
-      .single();
+      .maybeSingle();
     if (error) return null;
     return data as PcStudioRun;
   },
 
   async deleteRun(id: string): Promise<void> {
-    const { error } = await supabase.from("pc_studio_runs").delete().eq("id", id);
+    const { error } = await supabase
+      .from("pc_studio_runs")
+      .delete()
+      .eq("id", id);
     if (error) throw error;
   },
 };

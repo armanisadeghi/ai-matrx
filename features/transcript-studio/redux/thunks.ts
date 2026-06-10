@@ -259,6 +259,7 @@ export const fetchCleanedSegmentsThunk = createAsyncThunk<
 // Re-export per-column pipelines so callers don't have to know which file
 // each thunk lives in. The implementations live in dedicated files to keep
 // this file focused on session + raw CRUD.
+export { ensureAssistantConversationThunk } from "./ensureAssistantConversation.thunk";
 export { runCleaningPassThunk } from "./runCleaningPass.thunk";
 export type { RunCleaningPassResult } from "./runCleaningPass.thunk";
 export { runConceptPassThunk } from "./runConceptPass.thunk";

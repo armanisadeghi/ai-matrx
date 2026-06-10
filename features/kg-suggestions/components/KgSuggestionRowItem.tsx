@@ -51,6 +51,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKgRowMutation } from "@/lib/redux/slices/kgSuggestionsSlice";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ScopeGlyph } from "@/features/scope-system/components/ScopeGlyph";
+import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import {
   scopeHref,
   scopeItemHref,
@@ -237,108 +238,143 @@ export function KgSuggestionRowItem({
         openNoteInWindow({ noteId: source.id, title: source.title ?? "Note" });
       }
     };
+    const scopeTypeLabel = target?.scope_type?.label_singular ?? null;
+    const scopeName = target?.scope.name ?? null;
+    const acceptVerb = scopeTypeLabel
+      ? `Attach to ${scopeTypeLabel}`
+      : "Attach to scope";
+    // The scope type carries its own brand color + icon — lead with those, not
+    // a generic blue link icon.
+    const typeColor = target ? resolveColor(target.scope_type) : null;
+    const sourceTitle =
+      source?.title ??
+      (enriching ? "Resolving source…" : `Untitled ${linkSourceLabel}`);
     return (
       <div
         className={cn(
-          "rounded-lg border border-border bg-card text-sm overflow-hidden",
+          "rounded-lg border bg-card text-sm overflow-hidden",
+          typeColor?.border ?? "border-border",
           className,
         )}
       >
-        <div className="flex items-start gap-2 px-3 pt-2.5 pb-2 border-b border-border/60 bg-muted/30">
-          <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-          <div className="min-w-0 flex-1">
-            <div className="text-[11px] text-muted-foreground">
-              Found in {linkSourceLabel}
-            </div>
-            <div className="font-medium text-foreground truncate">
-              {source?.title ??
-                (enriching
-                  ? "Resolving source…"
-                  : `Untitled ${linkSourceLabel}`)}
-            </div>
-          </div>
-          {source?.openableAs === "note" ? (
-            <button
-              type="button"
-              onClick={openLinkSource}
-              className="shrink-0 inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-1 text-[11px] text-foreground hover:bg-accent transition-colors"
+        <div className="px-3 py-2.5 space-y-3">
+          {/* ── Lead: WHAT we identified — "{Type} Found!" in the type color ── */}
+          <div className="space-y-1">
+            <div
+              className={cn(
+                "flex items-center gap-1.5 text-[13px] font-semibold",
+                typeColor?.fg ?? "text-primary",
+              )}
             >
-              <ExternalLink className="h-3 w-3" />
-              Open
-            </button>
-          ) : null}
-        </div>
-
-        <div className="px-3 py-2.5 space-y-2.5">
-          <div className="flex items-start gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-2 py-1.5 text-[11px] text-foreground">
-            <Link2 className="h-3.5 w-3.5 shrink-0 mt-px text-primary" />
-            <span>
-              Tag this {linkSourceLabel} to{" "}
-              <b className="break-words">{target?.scope.name ?? "a scope"}</b>
-              {target?.scope_type
-                ? ` (${target.scope_type.label_singular})`
-                : ""}
-              .
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
-            {target ? (
-              <>
-                <span className="text-muted-foreground">{target.org.name}</span>
-                <ArrowRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-                <span className="inline-flex items-center gap-1 text-muted-foreground">
-                  {target.scope_type.icon ? (
-                    <ScopeGlyph
-                      icon={target.scope_type.icon}
-                      className="h-3 w-3"
-                    />
-                  ) : null}
-                  {target.scope_type.label_singular}
+              {target?.scope_type.icon ? (
+                <ScopeGlyph
+                  icon={target.scope_type.icon}
+                  className="h-4 w-4 shrink-0"
+                />
+              ) : (
+                <Link2 className="h-4 w-4 shrink-0" />
+              )}
+              {scopeTypeLabel ? `${scopeTypeLabel} found!` : "Scope link"}
+            </div>
+            <div className="text-[15px] font-semibold leading-snug break-words">
+              {scopeName ? (
+                <span className={typeColor?.fg ?? "text-primary"}>
+                  {scopeName}
                 </span>
-                <ArrowRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-                <span className="font-semibold text-foreground min-w-0 break-words">
-                  {target.scope.name}
+              ) : enriching ? (
+                <span className="font-normal text-muted-foreground">
+                  Resolving scope…
+                </span>
+              ) : (
+                <span className="text-muted-foreground">
+                  Suggested scope link
+                </span>
+              )}
+            </div>
+            {target ? (
+              <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                <span className="text-muted-foreground">Org:</span>
+                <span className="font-medium text-foreground">
+                  {target.org.name}
                 </span>
                 {linkScopeHref ? (
                   <Link
                     href={linkScopeHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-0.5 text-primary hover:underline ml-1"
+                    className="inline-flex items-center gap-0.5 text-primary hover:underline"
                   >
-                    View
+                    View {scopeTypeLabel?.toLowerCase() ?? "scope"}
                     <ExternalLink className="h-2.5 w-2.5" />
                   </Link>
                 ) : null}
-              </>
-            ) : enriching ? (
-              <span className="text-muted-foreground italic">
-                Resolving scope…
-              </span>
+              </div>
             ) : null}
           </div>
 
-          {row.context_snippet ? (
-            <div className="text-[11px] text-muted-foreground/80 line-clamp-2 border-l-2 border-border pl-2">
-              “{row.context_snippet}”
+          {row.decision_note ? (
+            <div className="flex items-start gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1.5 text-[11px] text-foreground/80">
+              <StickyNote className="h-3.5 w-3.5 shrink-0 mt-px text-amber-500" />
+              <span className="min-w-0 break-words">{row.decision_note}</span>
             </div>
           ) : null}
 
-          <div className="flex items-center gap-2 flex-wrap pt-0.5">
-            <ConfidenceBar pct={confidencePct} />
-            <span className="text-[10px] text-muted-foreground tabular-nums">
-              {confidencePct}%
-            </span>
-            <Badge variant="outline" className="h-4 text-[10px] px-1.5">
-              {matchLabel(row.match_kind)}
-            </Badge>
-            <span className="text-[10px] text-muted-foreground">
-              Detected {formatRelative(row.created_at)}
-            </span>
+          {/* ── Source (where it came from) ── */}
+          <div className="space-y-2 border-t border-border/60 pt-2.5">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="w-[5rem] shrink-0 text-muted-foreground">
+                Item type
+              </span>
+              <span className="inline-flex items-center gap-1 text-foreground/90">
+                {row.source_kind === "note" ? (
+                  <StickyNote className="h-3.5 w-3.5 text-muted-foreground" />
+                ) : (
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+                {capitalize(linkSourceLabel)}
+              </span>
+            </div>
+            <div className="flex items-start gap-2 text-xs">
+              <span className="w-[5rem] shrink-0 pt-0.5 text-muted-foreground">
+                Item name
+              </span>
+              <span className="min-w-0 flex-1 pt-0.5 text-foreground/90 truncate">
+                {sourceTitle}
+              </span>
+              {source?.openableAs === "note" ? (
+                <button
+                  type="button"
+                  onClick={openLinkSource}
+                  className="shrink-0 inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-1 text-[11px] text-foreground hover:bg-accent transition-colors"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Open {linkSourceLabel}
+                </button>
+              ) : null}
+            </div>
+
+            {row.context_snippet ? (
+              <div className="text-[11px] text-foreground/70 line-clamp-2 border-l-2 border-border pl-2">
+                “{row.context_snippet}”
+              </div>
+            ) : null}
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <ConfidenceBar pct={confidencePct} />
+              <span className="text-[10px] text-muted-foreground tabular-nums">
+                {confidencePct}%
+              </span>
+              <Badge variant="outline" className="h-4 text-[10px] px-1.5">
+                {matchLabel(row.match_kind)}
+              </Badge>
+              <span className="text-[10px] text-muted-foreground">
+                Detected {formatRelative(row.created_at)}
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center justify-end gap-1.5 pt-1">
+          {/* ── Actions (bottom) ── */}
+          <div className="flex items-center justify-end gap-1.5 border-t border-border/60 pt-2.5">
             <DeferControl
               busy={busy}
               onDefer={(note) =>
@@ -366,13 +402,13 @@ export function KgSuggestionRowItem({
                 void run(
                   "accept",
                   () => accept(row.id),
-                  `Tagged to ${target?.scope.name ?? "scope"}`,
+                  `Tagged to ${scopeName ?? "scope"}`,
                 )
               }
-              className="inline-flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded border border-primary bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               <Link2 className="h-3 w-3" />
-              Tag to scope
+              {acceptVerb}
             </button>
           </div>
         </div>
@@ -831,12 +867,13 @@ function DeferControl({
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
   return (
-    <div className="inline-flex items-center rounded border border-transparent hover:border-border">
+    <>
       <button
         type="button"
         disabled={busy}
         onClick={() => onDefer(null)}
-        className="inline-flex items-center gap-1 rounded-l px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+        title="Defer for 7 days"
+        className="inline-flex items-center gap-1 rounded border border-border bg-background px-2.5 py-1 text-[11px] text-foreground/80 hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
       >
         <Clock className="h-3 w-3" />
         Defer
@@ -846,10 +883,11 @@ function DeferControl({
           <button
             type="button"
             disabled={busy}
-            aria-label="Defer with a note"
-            className="inline-flex items-center rounded-r border-l border-border/60 px-1 py-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+            title="Defer and leave yourself a note"
+            className="inline-flex items-center gap-1 rounded border border-border bg-background px-2.5 py-1 text-[11px] text-foreground/80 hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
           >
             <StickyNote className="h-3 w-3" />
+            Defer + note
           </button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-64 p-2 space-y-2">
@@ -888,7 +926,7 @@ function DeferControl({
           </div>
         </PopoverContent>
       </Popover>
-    </div>
+    </>
   );
 }
 
@@ -904,7 +942,7 @@ function RejectButton({
       type="button"
       disabled={busy}
       onClick={onClick}
-      className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+      className="inline-flex items-center gap-1 rounded border border-border bg-background px-2.5 py-1 text-[11px] text-foreground/80 hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
     >
       <X className="h-3 w-3" />
       Reject
@@ -913,6 +951,10 @@ function RejectButton({
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
+
+function capitalize(s: string): string {
+  return s.length ? s[0].toUpperCase() + s.slice(1) : s;
+}
 
 function formatCurrentValue(v: ResolvedSuggestionValue | null): string | null {
   if (!v) return null;

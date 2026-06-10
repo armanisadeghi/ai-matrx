@@ -19,22 +19,22 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { setShowMicrophone } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import type { StudioDocument } from "../types";
-import { AUDIO_ASSISTANT_AGENT_ID } from "../constants";
 import {
   selectAssistantConversationId,
+  selectCleanedSegments,
+  selectRecordingSegmentCount,
+  selectScribeCleanupDocument,
   selectWorkingDocument,
 } from "../redux/selectors";
+import { studioDocumentUpserted } from "../redux/slice";
 import {
-  assistantConversationIdSet,
-  studioDocumentUpserted,
-} from "../redux/slice";
-import { ensureWorkingDocumentThunk } from "../redux/thunks";
+  ensureAssistantConversationThunk,
+  ensureWorkingDocumentThunk,
+} from "../redux/thunks";
 import { buildAssistantContextEntries } from "../service/assistantContextBuilder";
 
 interface UseStudioAssistantReturn {
@@ -60,14 +60,14 @@ export function useStudioAssistant(
   const workingDocIdRef = useRef<string | null>(workingDocument?.id ?? null);
   if (workingDocument?.id) workingDocIdRef.current = workingDocument.id;
 
-  // One-time setup per session: ensure the working document + a conversation
-  // instance. Guarded against double-run in StrictMode by the slice values.
-  const settingUpRef = useRef(false);
+  // One-time setup per session: ensure the working document, then resolve the
+  // durable assistant conversation (reuse the persisted id + rehydrate history,
+  // or mint + persist a new one). The ensure thunk is itself de-duplicated by
+  // sessionId, so the two mounts of this hook (ScribeScreen + AssistantScreen)
+  // can never create two conversations.
   useEffect(() => {
     if (!sessionId) return;
     if (conversationId) return;
-    if (settingUpRef.current) return;
-    settingUpRef.current = true;
     let cancelled = false;
     void (async () => {
       try {
@@ -80,56 +80,47 @@ export function useStudioAssistant(
         // working_document context object is simply omitted until it lands.
       }
       if (cancelled) return;
-      // A concurrent mount may have created the conversation already.
-      const existing =
-        store.getState().transcriptStudio.assistantConversationIdBySession[
-          sessionId
-        ];
-      if (existing) {
-        settingUpRef.current = false;
-        return;
-      }
-      try {
-        const newConversationId = await dispatch(
-          createManualInstance({
-            agentId: AUDIO_ASSISTANT_AGENT_ID,
-            apiEndpointMode: "agent",
-            sourceFeature: "transcript-studio",
-            allowChat: true,
-            autoRun: false,
-            displayMode: "chat-assistant",
-          }),
-        ).unwrap();
-        if (cancelled) return;
-        dispatch(
-          assistantConversationIdSet({
-            sessionId,
-            conversationId: newConversationId,
-          }),
-        );
-        dispatch(
-          setShowMicrophone({ conversationId: newConversationId, value: true }),
-        );
-      } finally {
-        settingUpRef.current = false;
-      }
+      await dispatch(ensureAssistantConversationThunk({ sessionId }));
     })();
     return () => {
       cancelled = true;
     };
-  }, [sessionId, conversationId, dispatch, store]);
+  }, [sessionId, conversationId, dispatch]);
 
-  // Keep the in-Redux working_document context value fresh after each realtime
-  // patch so the next turn ships the latest content (not a stale snapshot).
+  // Keep the in-Redux named context objects fresh whenever the underlying
+  // studio data changes — realtime working-document patches, new recordings,
+  // or a cleanup run. The standard chat input (SmartAgentInput → smartExecute)
+  // does NOT call refreshContext on submit, so the only way a typed turn ships
+  // current content is by having it already pushed into the instance context
+  // here. (The strip's spoken/review sends still go through `send`, which also
+  // refreshes — this just covers the typed-input path.)
+  const recordingCount = useAppSelector(selectRecordingSegmentCount(sessionId));
+  const cleanedCount = useAppSelector(
+    (s) => selectCleanedSegments(sessionId)(s).length,
+  );
+  const cleanupContent = useAppSelector(
+    (s) => selectScribeCleanupDocument(sessionId)(s)?.content ?? "",
+  );
+  const workingDocContent = workingDocument?.content ?? "";
+
   useEffect(() => {
-    if (!sessionId || !conversationId || !workingDocument) return;
+    if (!sessionId || !conversationId) return;
     const entries = buildAssistantContextEntries(
       store.getState(),
       sessionId,
       workingDocIdRef.current,
     );
     dispatch(setContextEntries({ conversationId, entries }));
-  }, [sessionId, conversationId, workingDocument, dispatch, store]);
+  }, [
+    sessionId,
+    conversationId,
+    workingDocContent,
+    recordingCount,
+    cleanedCount,
+    cleanupContent,
+    dispatch,
+    store,
+  ]);
 
   const refreshContext = useCallback(() => {
     if (!sessionId || !conversationId) return;

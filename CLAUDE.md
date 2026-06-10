@@ -8,23 +8,13 @@ Large-scale Next.js no-code AI app builder and admin dashboard. Desktop-first, m
 
 ## Operating Principle: Build the platform, not the artifact.
 
-> **The artifact is disposable. The class of failure goes extinct.**
+> **The artifact is disposable. The class of failure goes extinct. Friction is the spec for your next primitive.**
 
-Every task — feature, bug, or refactor — is a probe that exposes what the platform is missing. Your real job is to build (or extend) the missing capability and complete the task by consuming it. **Friction is the spec for your next primitive.**
+Every task is a probe exposing what the platform is missing. Build (or extend) the missing generic, named, documented primitive, then complete the task by consuming it. **Forbidden:** code that only serves this one artifact. **Required:** reusable primitives.
 
-- **Forbidden:** code that only serves this one artifact and could not be reused.
-- **Required:** generic, named, documented platform primitives.
+**Acceptance tests** — *Feature:* could you rebuild it in minutes from existing capabilities? *Bug:* is this whole class of failure now structurally impossible, not just patched here? *Adding a type/component/slice/hook:* did you prove (grep / read / `Explore` subagent) no existing primitive could be extended? If no, the remainder is your next infrastructure ticket — extract it.
 
-**Three acceptance tests:**
-- *Feature:* "If I deleted what I just built, could I rebuild it in minutes using only existing platform capabilities?"
-- *Bug:* "Is this entire class of failure now structurally impossible — not just patched here?"
-- *Any change that adds a type / component / slice / hook:* "Did I prove (grep, file read, or `Explore` subagent) that no existing primitive could be extended instead?"
-
-If yes — done. If no — the remainder is your next infrastructure ticket. Extract it.
-
-The five frontend anti-patterns that violate this doctrine — local types, recreated components, parallel Redux slices, duplicated hook logic, the agent-mindset trap — each with concrete "look here first" anchors and a search algorithm scaled by feature size, are catalogued in **[PRINCIPLES.md](./PRINCIPLES.md)**. Read it once, internalize it, return when you hit friction.
-
-Enforcement: ESLint rules in [`eslint.config.mjs`](./eslint.config.mjs), the `pnpm check:doctrine` script ([`scripts/check-doctrine.ts`](./scripts/check-doctrine.ts)), and the pre-commit hook configured in `package.json`. Every `FEATURE.md` includes a Doctrine compliance section ([template](./features/_FEATURE_TEMPLATE.md)).
+The five anti-patterns this kills (local types, recreated components, parallel Redux slices, duplicated hook logic, the agent-mindset trap) with "look here first" anchors: **[PRINCIPLES.md](./PRINCIPLES.md)**. Enforced by ESLint ([`eslint.config.mjs`](./eslint.config.mjs)), `pnpm check:doctrine` ([script](./scripts/check-doctrine.ts)), and the pre-commit hook. Every `FEATURE.md` has a Doctrine section ([template](./features/_FEATURE_TEMPLATE.md)).
 
 ---
 
@@ -62,6 +52,11 @@ Always use the latest stable release of every package — no deprecated APIs.
 - **Realtime:** Supabase Broadcast for ephemeral messaging/presence; Postgres Changes only when RLS-driven authorization is required.
 - **Errors:** every async op has structured error handling. Never swallow.
 
+### Development Rules
+
+- Build Protective & Recovery Layers, but ensure Loud recovery. Every recovery/fixer layer screams when it fires, because a recovery firing means a real bug got past the proactive layer.
+
+
 ### Supabase
 
 - **Project:** `txzxabzwovsujtloxrus` (Matrx Main, `us-west-1`, Postgres 17). The only DB this repo talks to. `NEXT_PUBLIC_SUPABASE_URL` → `db.matrxserver.com`. Always pass `project_id: "txzxabzwovsujtloxrus"` to Supabase MCP tools — do not guess between Matrx Main / My Matrx / Matrx Flow / Matrx DM / Matrx Games.
@@ -69,15 +64,14 @@ Always use the latest stable release of every package — no deprecated APIs.
 
 ### Database migrations — the DB is the source of truth, NOT the files
 
-> A `.sql` file in `migrations/` has changed **nothing** until it is applied to Supabase. Writing one and reporting the task "done" is the single most damaging mistake here. A migration is not done until it is **applied AND verified live AND `pnpm db-types` regenerated.**
+> A `.sql` file in `migrations/` changes **nothing** until applied to Supabase — writing one and reporting "done" is the single most damaging mistake here. A migration is done only when **applied AND verified live AND `pnpm db-types` regenerated.**
 
-This repo has **no Postgres connection** (Supabase JS / PostgREST only — it cannot run DDL). So the cross-repo migration system works like this:
-
-- **One shared ledger:** `public._schema_migrations` (composite key `(source, filename)`) records every applied migration across aidream, matrx-frontend, and matrx-extend — they all share the same DB.
-- **Verify (loud):** `pnpm check:migrations` diffs `migrations/*.sql` against the ledger (rows where `source='matrx-frontend'`) and screams in a red box about anything never applied. Runs on every commit via the pre-commit hook (non-blocking); `pnpm check:migrations:strict` exits non-zero for CI.
-- **Apply + record:** from the **aidream** repo (the one box with DB write creds), run `python db/apply_migrations.py --source matrx-frontend` — it applies pending files in a transaction, regenerates models, and records them in the ledger. For a one-off, apply via the Supabase MCP `apply_migration`, then re-run aidream's applier (or `db/detect_applied.py`) so the ledger records it — otherwise `check:migrations` keeps flagging it.
-- **After applying:** run `pnpm db-types` to regenerate `types/database.types.ts`.
-- A migration that must never apply (superseded / destructive / already live) gets `-- migrate: skip: <reason>` in its first 25 lines.
+This repo has **no Postgres connection** (Supabase JS / PostgREST only — no DDL). Cross-repo system:
+- **Shared ledger** `public._schema_migrations` (key `(source, filename)`) records every applied migration across aidream / matrx-frontend / matrx-extend (one shared DB).
+- **Verify (loud):** `pnpm check:migrations` diffs `migrations/*.sql` vs the ledger (`source='matrx-frontend'`) and screams in a red box about anything unapplied — runs on every commit (non-blocking); `:strict` exits non-zero for CI.
+- **Apply:** from **aidream** (the only box with write creds) run `python db/apply_migrations.py --source matrx-frontend` (applies in a transaction, regenerates models, records in ledger). One-off: MCP `apply_migration`, then re-run aidream's applier (or `db/detect_applied.py`) to record it, else `check:migrations` keeps flagging it.
+- After applying: `pnpm db-types` → `types/database.types.ts`.
+- A migration that must never apply gets `-- migrate: skip: <reason>` in its first 25 lines.
 
 ---
 
@@ -91,36 +85,30 @@ This repo has **no Postgres connection** (Supabase JS / PostgREST only — it ca
 
 **Do not invent new top-level features.** A feature is a big, distinct piece of app functionality, usually with multiple routes. Introducing one is the user's call, not yours. Default to extending an existing feature; if a new feature seems genuinely warranted, ask first.
 
-### Route groups — the four buckets (2026-05-26 reorganization)
+### Route groups (2026-05-26 reorg)
 
-The `app/` tree is split into clearly-purposed route groups. **Agents working on the core product should default to ignoring `(transitional)`, `(legacy)`, `(dev)`, `(ssr)`, and `(public-demos)` unless the task explicitly involves them.** When in doubt, work in `(core)` and ask before touching the others.
+The `app/` tree splits into purpose-named route groups. **Working on core product? Default to ignoring `(transitional)`, `(legacy)`, `(dev)`, `(ssr)`, `(public-demos)` unless the task names them.** When in doubt, work in `(core)` and ask before touching others.
 
-| Group | Purpose | URL prefix | Build profile |
+| Group | Purpose | URL | Build |
 |---|---|---|---|
-| `app/(core)/` | **Production main app.** Slim modern shell, no entity system. Where new core work goes. | various (`/chat`, `/agents`, `/files`, `/notes`, etc.) | always |
-| `app/(admin)/` | **Production admin.** Super-admin gated at the layout level. | `/administration/*` | always |
-| `app/(transitional)/` | **On the way in or on the way out.** Routes that have been (or will be) replaced by surfaces in `(core)` but aren't ready to delete. Ships in production, lower priority for new work. | `/apps`, `/dashboard`, `/settings`, `/flash-cards`, `/prompt-apps`, `/news`, `/scraper`, `/projects`, `/applets`, `/ai`, `/admin` (old), `/agent-lists`, `/registered-results`, `/local`, `/flashcard` | always |
-| `app/(legacy)/` | **Entity-bound legacy.** Top-level group with its own `EntityProviders` store (full entity system). Sibling of `(transitional)`. | `/legacy/*` | always |
-| `app/(ssr)/` | **SSR shell experiment.** Top-level group with its own `LiteStoreProvider` + glass shell. Holds demos that need the lite-store shell. | `/demos/ssr/*` | always |
-| `app/(dev)/` | **All internal demos / tests / experimental surfaces.** Auth-required. Consolidated under one URL prefix. Excluded from the prod-core build in Phase 2 via `MATRX_PROFILE`. | `/demos/*` (everything: tests, general, settings-*, layout-tests, dynamic-imports, lists-junk, lists-explorer, preview, google-auth) | `full` only (Phase 2) |
-| `app/(public-demos)/` | **Public showcase demos.** Same `/demos/*` URL space as `(dev)`, but no auth. Routes that used to live at `(public)/demos/*`. | `/demos/public/*` | always |
-| `app/(public)/` | Production marketing / legal / share / education / canvas. | various (`/legal`, `/share`, `/p`, `/education`, etc.) | always |
-| `app/(auth-pages)/` | Login / signup / forgot-password / etc. | `/login`, `/sign-up`, etc. | always |
-| `app/(popup)/` | OAuth popup chrome. | `/popup-window/*` | always |
+| `(core)` | **Production main app.** Slim modern shell, no entity system. New core work goes here. | `/chat`, `/agents`, `/files`, `/notes`… | always |
+| `(admin)` | **Production admin.** Super-admin gated at layout level. | `/administration/*` | always |
+| `(transitional)` | **On the way in/out.** Being (or to be) replaced by `(core)`; not ready to delete. Lower priority. | `/apps`, `/dashboard`, `/settings`, `/scraper`, `/projects`, `/ai`, `/applets`, `/news`… | always |
+| `(legacy)` | **Entity-bound legacy.** Own `EntityProviders` store (full entity system). | `/legacy/*` | always |
+| `(ssr)` | **SSR shell.** Own `LiteStoreProvider` + glass shell; demos needing it. | `/demos/ssr/*` | always |
+| `(dev)` | **Internal demos / tests / experiments.** Auth-required. | `/demos/*` | `full` only |
+| `(public-demos)` | **Public showcase demos.** No auth. | `/demos/public/*` | always |
+| `(public)` | Marketing / legal / share / education / canvas. | `/legal`, `/share`, `/p`… | always |
+| `(auth-pages)` | Login / signup / etc. | `/login`, `/sign-up`… | always |
+| `(popup)` | OAuth popup chrome. | `/popup-window/*` | always |
 
-**The "transitional family"** is `(transitional)` + `(legacy)`. Conceptually one bucket (routes on their way in or out); two groups only because each boots a different Redux store. Agents can treat them as one logical area when scoping work. `(ssr)` is no longer transitional — its routes now exclusively serve demos under `/demos/ssr/*`.
+**"Transitional family"** = `(transitional)` + `(legacy)` — one logical bucket (routes in/out), two groups only because each boots a different Redux store. `(ssr)` is no longer transitional (it serves `/demos/ssr/*`).
 
-**The unified `/demos` index:** there is one landing page at `/demos` (`app/(dev)/demos/page.dev.tsx`) that auto-discovers and lists every demo/test/experimental route across all three demo groups — `(dev)`, `(ssr)`, `(public-demos)` — plus links to the entity-bound demos under `(legacy)`. Adding a new demo anywhere under those trees automatically shows up on the landing. To add a demo:
-- Standard auth shell (default) → `app/(dev)/demos/<category>/<name>/page.dev.tsx`
-- Needs SSR + glass shell → `app/(ssr)/demos/ssr/<name>/page.tsx`
-- Public (no auth) → `app/(public-demos)/demos/public/<name>/page.tsx`
-- Needs entity slice → `app/(legacy)/legacy/<area>/<name>/page.tsx`
+**Unified `/demos` index** (`app/(dev)/demos/page.dev.tsx`) auto-discovers every demo across `(dev)`, `(ssr)`, `(public-demos)` + links `(legacy)` demos. Add one by location: auth shell → `(dev)/demos/<cat>/<name>/page.dev.tsx`; SSR+glass → `(ssr)/demos/ssr/<name>/page.tsx`; public → `(public-demos)/demos/public/<name>/page.tsx`; needs entity slice → `(legacy)/legacy/<area>/<name>/page.tsx`.
 
-**Build gate (active):** `next.config.js` reads `MATRX_PROFILE=core|full`. Default is **`full` in development** (so `/demos/*` works locally without per-developer env setup) and **`core` in production**. When `core`, `pageExtensions = ['tsx', 'ts', 'jsx', 'js']` and the 172 route leaves under `(dev)/` — renamed `*.dev.tsx` / `*.dev.ts` — are invisible to the build. When `full`, `pageExtensions` also matches `dev.tsx` / `dev.ts` so the same repo compiles every route. The redirects pointing at `(dev)`-only URLs (`/tests/*`, `/demo/*`, `/settings-*-demo`, etc.) are also gated on `full` so the core build returns a clean 404 instead of 307→404. Production deploys to `aimatrx.com` (default `core`); the internal demos run on a separate Vercel project with `MATRX_PROFILE=full`. To preview the production-core build locally, run `MATRX_PROFILE=core pnpm dev`. Public demos under `(public-demos)` use plain `*.tsx` and ship in every build.
+**Build gate:** `next.config.js` reads `MATRX_PROFILE=core|full` — default **`full` in dev**, **`core` in prod**. In `core`, `(dev)` leaves (renamed `*.dev.tsx`/`*.dev.ts`) and the `/demos/*` redirects are invisible (clean 404, not 307→404); in `full` both compile. Prod (`aimatrx.com`) is `core`; internal demos run on a separate Vercel project with `full`. Preview core locally: `MATRX_PROFILE=core pnpm dev`. `(public-demos)` use plain `*.tsx`, ship everywhere.
 
-**Adding a new route under `(dev)/`:** name route leaves `page.dev.tsx`, `layout.dev.tsx`, `loading.dev.tsx`, `route.dev.ts`. Helper components (`components/`, `hooks/`, `utils/`) keep plain `.tsx` / `.ts`. Test the URL works locally (Next dev uses both extensions). Helper components imported by production code still compile into the core build — those are tracked as "fake demos" tech debt; relocate to `components/` over time.
-
-**URL redirects** for the `/demos/*` consolidation are in `next.config.js` (`/tests/* → /demos/tests/*`, `/demo/* → /demos/general/*`, `/settings-*-demo → /demos/settings-*`, etc.) so existing bookmarks and external links continue to resolve.
+**Adding a `(dev)` route:** name leaves `page.dev.tsx` / `layout.dev.tsx` / `loading.dev.tsx` / `route.dev.ts`; helpers (`components/`, `hooks/`, `utils/`) keep plain `.tsx`/`.ts`. Helpers imported by prod code still compile into core ("fake demos" tech debt — relocate to `components/` over time). `/demos/*` redirects live in `next.config.js`.
 
 ---
 
@@ -195,12 +183,11 @@ New input shape → extend `FileSource` in `features/files/handler/types.ts` and
 
 ### Media durability — public/owned media is NEVER a raw signed URL
 
-A signed S3 URL (`…?X-Amz-Signature=…&Expires=…`) expires and breaks days later — and an anonymous public page can't re-mint it. This bit us hard (see [KNOWN_DEFECTS.md](./KNOWN_DEFECTS.md) D1). Rules:
-
-- **Render media ONLY through `<InlineMediaRef>` (`@/features/files`).** Never a raw `<img>`/`<video>` `src` for our own media — `<InlineMediaRef>` re-mints from a `file_id` for authed owners and serves CDN/public URLs. Raw tags can't self-heal and silently rot.
-- **Persist DURABLE references**, not expiring URLs: a public/CDN URL, or a `file_id` (let the handler resolve it). If you receive a signed URL from a stream, recover the `file_id` (`lib/media/durability.ts#fileIdFromUserFilesUrl`) before storing/rendering.
-- **A column the public web reads MUST hold a public URL.** Register it with the DB-edge guard (`migrations/mtx_public_media_url_guard.sql`): `insert into mtx_public_url_guard(table_name,column_name)…` + attach `mtx_public_url_guard_trigger`. The guard loudly logs + queues any non-durable write to `mtx_media_heal_queue`.
-- **Surface violations loudly, don't paper over them.** `lib/media/durability.ts#reportMediaDurabilityViolation()` screams in the console when an expiring URL reaches a render/store path — that's a server-side defect, not something to silently fix.
+A signed S3 URL (`?X-Amz-Signature=…&Expires=…`) expires and breaks days later; an anonymous public page can't re-mint it (see [KNOWN_DEFECTS.md](./KNOWN_DEFECTS.md) D1).
+- **Render only via `<InlineMediaRef>` (`@/features/files`)** — never a raw `<img>`/`<video>` `src` for our media; it re-mints from `file_id` for authed owners and serves CDN/public URLs. Raw tags can't self-heal.
+- **Persist durable refs** (public/CDN URL or `file_id`), never expiring URLs. Got a signed URL from a stream? Recover the `file_id` (`lib/media/durability.ts#fileIdFromUserFilesUrl`) first.
+- **A column the public web reads MUST hold a public URL.** Register it with the DB-edge guard (`migrations/mtx_public_media_url_guard.sql`): `insert into mtx_public_url_guard(table_name,column_name)…` + `mtx_public_url_guard_trigger`. Non-durable writes get logged + queued to `mtx_media_heal_queue`.
+- **Surface violations loudly** — `reportMediaDurabilityViolation()` (same file) screams when an expiring URL hits a render/store path. That's a defect, not something to silently fix.
 
 ## Known defects
 
@@ -214,32 +201,17 @@ Every Tier 1/2 feature has a `FEATURE.md` — the single source of truth for tha
 
 **Non-negotiable:** after any substantive change, update the matching `FEATURE.md` (status, flows, entry points, invariants) and append to its Change Log (date + one-line summary). Cross-feature changes update every doc affected. Stale docs corrupt every future agent's mental model — treat doc updates with the same weight as code changes in the same PR.
 
+**Editing this file, any `FEATURE.md`, `PRINCIPLES.md`, or a `SKILL.md`?** Invoke the `context-docs` skill first — every doc edit is a full-document review (place it right, merge don't stack, lose no rule, max punch per word).
+
 ### Feature entry pages are LIST views, not forced workspaces
 
-`/[feature]` is the user's first stop. Treat it like `/agents`: a list of everything they can do, with options to create / open / fork. **Never shove the user into a single record's UI as if it were the home page.** A user landing on `/transcripts` should see "every transcript I have / shared with me, sorted recent-first, with filters, a New button, and a row of UI choices per record (view / edit / studio / scribe / run / etc.)" — not a forced detail page on whatever the last opened item was.
-
-The `/agents` route is the gold standard for this pattern. From it: list everything → click an item → choose the UI you want (view, build, run, versions) → from inside any UI, back out to the list or jump to a different UI for the same item via the header row. Replicate this shape for every feature with multiple items + multiple UIs.
-
-If today you find a feature where the entry page traps the user in one detail UI, the fix is **not** to redesign that UI — it's to introduce the missing list-view "savior" page and demote the current page to an internal detail route. Cheap; high value.
+`/[feature]` is the user's first stop — a list of everything they can do (create / open / fork), like `/agents` (the gold standard): list → click an item → pick a UI (view / build / run / versions) → back out or jump UIs via the header row. **Never trap the user in a single record's detail UI as if it were the home page** (`/transcripts` shows all my/shared transcripts, recent-first, filters, New button, per-row UI choices — not a forced detail page). If a feature does this today, the fix is the missing list "savior" page demoting the detail page — cheap, high value, not a redesign.
 
 ### Per-feature admin map — `/[feature]/admin`
 
-Every Tier 1 feature also ships an **admin-gated** map page (any admin level — `requireAdmin`, not super-admin) at `/[feature]/admin` (e.g. `/transcripts/admin`, `/knowledge/admin`). The map is utilitarian by design — never pretty, never fails to connect every resource. It lists, in one place, every URL, window panel, modal, component, API route, Redux slice, and demo route the feature owns. Authors fill in a `FeatureAdminMap` config (`features/admin/types/featureAdminMap.ts`) and render `<FeatureAdminPage map={...} />` (`features/admin/components/FeatureAdminPage.tsx`).
+Every Tier 1 feature ships an **admin-gated** (`requireAdmin`, any level) map at `/[feature]/admin` listing every URL, window panel, modal, component, API route, Redux slice, and demo route it owns — utilitarian, never pretty, never failing to connect a resource. Fill a `FeatureAdminMap` config (`features/admin/types/featureAdminMap.ts`) and render `<FeatureAdminPage map={...} />` (`features/admin/components/FeatureAdminPage.tsx`). It exists because features sprawl across `window-panels/windows/`, `components/official-candidate/`, `(dev)/demos/`, sibling folders — without one index, half the surface is invisible.
 
-**Why it exists:** features sprawl. Window panels live in `features/window-panels/windows/`, official-candidate components in `components/official-candidate/`, demos under `(dev)/demos/general/<topic>/`, related modules in sibling feature folders. Without a central index per feature, half the surface becomes invisible. The admin page is the one place an agent or admin can land to see everything that belongs to the feature, including the pieces nothing else surfaces.
-
-**Design rules for the admin map** (the primitive enforces these — don't fight them):
-- **Admin already knows what "Routes" / "Window Panels" / "Components" are.** Zero section descriptions, zero hero paragraph at the top — just the data.
-- **Full viewport width.** No `max-w-6xl` centered column wasting the admin's screen real estate.
-- **Every link opens in a new tab.** The admin map stays as a workspace.
-- **Resource rows are single-line + compact.** No novel-length card descriptions. Use the `notes?: string[]` field for a 1-4 bullet expand on the rare row that needs it.
-- **Window-panel cards have an "Open" button** that dispatches the overlay live (via the generic `OverlayLaunchButton` client island).
-- **Components are tiered:** `official` (registered in the official-components registry — links there), `candidate` (under `components/official-candidate/`), `internal` (feature-local — just a path readout). Three distinct visual treatments so admins can tell at a glance which is which.
-- **`.md` doc links route through `/admin/docs/<repo-relative-path>`** (admin-gated, renders inline via `BasicMarkdownContent`) — clicking a FEATURE.md link opens the rendered markdown in a new tab.
-
-**Auto-surfaces drift.** The primitive scans the feature's route directory and the window-panels registry; any route or window panel whose slug matches the feature but isn't declared on the map appears as a yellow warning. Adding a new resource without listing it on the admin map is structurally caught. The page also self-links to its own config file so admins can jump straight to where the map is edited.
-
-**When adding a route / window panel / overlay / component to a feature**, append it to that feature's admin map config. CI doctrine checks (`pnpm check:doctrine:staged`) flag missing entries. The pre-commit hook is the enforcement seam.
+Design rules (the primitive enforces them): no section descriptions / hero text; full viewport width; every link opens a new tab; rows single-line + compact (`notes?: string[]` for a rare 1-4 bullet expand); window-panel cards get a live "Open" button (`OverlayLaunchButton`); components tiered `official` / `candidate` / `internal` with distinct treatments; `.md` links route through `/admin/docs/<path>` (inline `BasicMarkdownContent`). Auto-surfaces drift — any matching route or panel not declared shows as a yellow warning. **When you add a route / panel / overlay / component, add it to the map config** (`pnpm check:doctrine:staged` + pre-commit flag misses).
 
 ### Tier 1 — core features
 

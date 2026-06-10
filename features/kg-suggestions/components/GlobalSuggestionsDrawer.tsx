@@ -179,7 +179,7 @@ export function GlobalSuggestionsDrawer({
         className="flex w-full flex-col gap-0 p-0 sm:max-w-xl"
       >
         <SheetHeader className="border-b border-border px-4 py-3 space-y-0.5">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 pr-8">
             <SheetTitle className="flex items-center gap-2 text-base">
               <Lightbulb className="h-4 w-4 text-primary" />
               Suggestions {count > 0 ? `(${count})` : ""}

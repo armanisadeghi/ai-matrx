@@ -49,11 +49,15 @@ export function TranscriptPanel({ script, rtl }: TranscriptPanelProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
       <Collapsible open={open} onOpenChange={setOpen}>
-        <div className="flex items-center justify-between px-4 py-3">
-          <CollapsibleTrigger className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <FileText className="h-4 w-4 text-primary" />
-            Transcript
-            <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
+        {/* Two rows so the narrow column never wraps: title on top, the
+            duration · word-count beneath it; copy (icon-only) + chevron right. */}
+        <div className="flex items-center gap-2 px-4 py-3">
+          <CollapsibleTrigger className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
+            <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <FileText className="h-4 w-4 shrink-0 text-primary" />
+              Transcript
+            </span>
+            <span className="flex items-center gap-2 pl-6 text-xs font-normal text-muted-foreground">
               {parsed.duration && (
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
@@ -62,25 +66,28 @@ export function TranscriptPanel({ script, rtl }: TranscriptPanelProps) {
               )}
               <span>{wordCount.toLocaleString()} words</span>
             </span>
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 text-muted-foreground transition-transform",
-                open && "rotate-180",
-              )}
-            />
           </CollapsibleTrigger>
           <button
             type="button"
             onClick={copy}
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            aria-label="Copy transcript"
+            title="Copy transcript"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             {copied ? (
-              <Check className="h-3.5 w-3.5 text-emerald-500" />
+              <Check className="h-4 w-4 text-emerald-500" />
             ) : (
-              <Copy className="h-3.5 w-3.5" />
+              <Copy className="h-4 w-4" />
             )}
-            Copy
           </button>
+          <CollapsibleTrigger
+            aria-label={open ? "Collapse transcript" : "Expand transcript"}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <ChevronDown
+              className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
+            />
+          </CollapsibleTrigger>
         </div>
         <CollapsibleContent>
           <div

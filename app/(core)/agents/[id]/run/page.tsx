@@ -15,7 +15,7 @@ export default async function AgentRunRoute({
   const sourceFeature = "agent-runner";
   const surfaceKey = `${sourceFeature}:${id}`;
   const agentName = agent.name;
-  const backHref = "/agents";
+  const backHref = "/agents/all";
   const basePath = "/agents";
   const currentPath = "/agents/[id]/run";
 

@@ -48,7 +48,12 @@ import {
 import type { AiModel, AiProvider } from "../types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { aiModelSummary, AI_MODELS_LOCATION } from "../format";
-import type { TabState, AiModelFilters } from "../hooks/useTabUrlState";
+import {
+  DEFAULT_AI_MODEL_FILTERS,
+  isDeprecatedFilterNonDefault,
+  type TabState,
+  type AiModelFilters,
+} from "../hooks/useTabUrlState";
 import AiModelFilterBar from "./AiModelFilterBar";
 
 // ─── Provider Colors ──────────────────────────────────────────────────────────
@@ -699,7 +704,7 @@ function isFilterActive(
     case "api_class":
       return !!filters.api_class;
     case "is_deprecated":
-      return filters.is_deprecated !== undefined;
+      return isDeprecatedFilterNonDefault(filters);
     case "is_primary":
       return filters.is_primary !== undefined;
     case "is_premium":
@@ -1136,7 +1141,11 @@ export default function AiModelTable({
   };
 
   const handleClearAll = () => {
-    onUpdateTabState({ q: "", filters: {}, page: 1 });
+    onUpdateTabState({
+      q: "",
+      filters: { ...DEFAULT_AI_MODEL_FILTERS },
+      page: 1,
+    });
   };
 
   return (
