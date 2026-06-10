@@ -21787,6 +21787,42 @@ export type Database = {
           },
         ]
       }
+      wbx_guidance: {
+        Row: {
+          caption: string | null
+          created_at: string
+          data: Json
+          domain: string
+          id: string
+          kind: string
+          origin_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          data?: Json
+          domain: string
+          id: string
+          kind: string
+          origin_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          data?: Json
+          domain?: string
+          id?: string
+          kind?: string
+          origin_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wbx_highlight: {
         Row: {
           anchor: Json
@@ -21899,6 +21935,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wbx_recipe: {
+        Row: {
+          config: Json
+          created_at: string
+          description: string
+          hosts: string[]
+          id: string
+          is_active: boolean
+          kind: string
+          label: string
+          last_verified_at: string | null
+          routes: string[] | null
+          updated_at: string | null
+          yields_rows: boolean
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          description?: string
+          hosts: string[]
+          id: string
+          is_active?: boolean
+          kind: string
+          label: string
+          last_verified_at?: string | null
+          routes?: string[] | null
+          updated_at?: string | null
+          yields_rows?: boolean
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          description?: string
+          hosts?: string[]
+          id?: string
+          is_active?: boolean
+          kind?: string
+          label?: string
+          last_verified_at?: string | null
+          routes?: string[] | null
+          updated_at?: string | null
+          yields_rows?: boolean
+        }
+        Relationships: []
       }
       wbx_screenshot: {
         Row: {
@@ -25926,27 +26007,48 @@ export type Database = {
         }
         Returns: Json
       }
-      create_agent_task: {
-        Args: {
-          p_agent_id?: string
-          p_auth_mode?: string
-          p_description?: string
-          p_expires_at?: string
-          p_max_concurrent?: number
-          p_max_runtime_seconds?: number
-          p_next_due_at?: string
-          p_persistent_conversation_id?: string
-          p_prompt: string
-          p_queue?: string
-          p_surfaces?: string[]
-          p_tags?: string[]
-          p_title: string
-          p_trigger_config: Json
-          p_trigger_type: string
-          p_variables?: Json
-        }
-        Returns: string
-      }
+      create_agent_task:
+        | {
+            Args: {
+              p_agent_id?: string
+              p_auth_mode?: string
+              p_description?: string
+              p_expires_at?: string
+              p_max_concurrent?: number
+              p_max_runtime_seconds?: number
+              p_next_due_at?: string
+              p_persistent_conversation_id?: string
+              p_prompt: string
+              p_surfaces?: string[]
+              p_tags?: string[]
+              p_title: string
+              p_trigger_config: Json
+              p_trigger_type: string
+              p_variables?: Json
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_agent_id?: string
+              p_auth_mode?: string
+              p_description?: string
+              p_expires_at?: string
+              p_max_concurrent?: number
+              p_max_runtime_seconds?: number
+              p_next_due_at?: string
+              p_persistent_conversation_id?: string
+              p_prompt: string
+              p_queue?: string
+              p_surfaces?: string[]
+              p_tags?: string[]
+              p_title: string
+              p_trigger_config: Json
+              p_trigger_type: string
+              p_variables?: Json
+            }
+            Returns: string
+          }
       create_arg: {
         Args: {
           p_data_type: Database["public"]["Enums"]["data_type"]

@@ -19,7 +19,7 @@
  *     manual `refresh()` retries.
  */
 
-import type { Middleware } from "@reduxjs/toolkit";
+import type { Middleware, ThunkDispatch, UnknownAction } from "@reduxjs/toolkit";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 
 const STRUCTURAL_MUTATIONS = new Set<string>([
@@ -39,23 +39,26 @@ const STRUCTURAL_MUTATIONS = new Set<string>([
 const DEBOUNCE_MS = 400;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
-export const scopeTreeInvalidationMiddleware: Middleware =
-  (store) => (next) => (action) => {
-    const result = next(action);
-    const type = (action as { type?: string })?.type;
-    if (type && STRUCTURAL_MUTATIONS.has(type)) {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        timer = null;
-        void (
-          store.dispatch(
-            ensureScopeTree({ refresh: true }) as never,
-          ) as unknown as Promise<unknown>
-        )?.catch?.((e: unknown) => {
-          // Loud — a stale tree after a structural write is a real bug.
-          console.error("[scopes] tree refresh after mutation failed", e);
-        });
-      }, DEBOUNCE_MS);
-    }
-    return result;
-  };
+// Typed against a thunk-capable dispatch (the store always has thunks via
+// RTK's defaults) so dispatching ensureScopeTree needs no coercion.
+export const scopeTreeInvalidationMiddleware: Middleware<
+  Record<string, never>,
+  unknown,
+  ThunkDispatch<unknown, unknown, UnknownAction>
+> = (store) => (next) => (action) => {
+  const result = next(action);
+  const type = (action as { type?: string })?.type;
+  if (type && STRUCTURAL_MUTATIONS.has(type)) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      void Promise.resolve(
+        store.dispatch(ensureScopeTree({ refresh: true })),
+      ).catch((e: unknown) => {
+        // Loud — a stale tree after a structural write is a real bug.
+        console.error("[scopes] tree refresh after mutation failed", e);
+      });
+    }, DEBOUNCE_MS);
+  }
+  return result;
+};

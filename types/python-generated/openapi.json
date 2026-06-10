@@ -34682,6 +34682,20 @@
             ],
             "title": "Task Id"
           },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
+          },
           "source_app": {
             "anyOf": [
               {
@@ -40411,6 +40425,20 @@
             ],
             "title": "Task Id"
           },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
+          },
           "source_app": {
             "anyOf": [
               {
@@ -43133,6 +43161,20 @@
               }
             ],
             "title": "Task Id"
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
           },
           "source_app": {
             "anyOf": [
@@ -50787,6 +50829,20 @@
             ],
             "title": "Task Id"
           },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
+          },
           "source_app": {
             "anyOf": [
               {
@@ -52363,6 +52419,11 @@
             "type": "integer",
             "title": "Chunks Written"
           },
+          "chunks_reused": {
+            "type": "integer",
+            "title": "Chunks Reused",
+            "default": 0
+          },
           "embeddings_written": {
             "type": "integer",
             "title": "Embeddings Written"
@@ -52374,6 +52435,17 @@
           "embedding_model": {
             "type": "string",
             "title": "Embedding Model"
+          },
+          "skipped_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Reason"
           },
           "error": {
             "anyOf": [
@@ -61123,6 +61195,20 @@
               }
             ],
             "title": "Task Id"
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
           },
           "source_app": {
             "anyOf": [
@@ -75380,7 +75466,8 @@
               "repository",
               "library_doc",
               "task",
-              "project"
+              "project",
+              "cx_message"
             ],
             "title": "Source Kind"
           },

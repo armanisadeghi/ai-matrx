@@ -12417,6 +12417,8 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -14425,6 +14427,8 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -15342,6 +15346,8 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -18119,6 +18125,8 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -18771,12 +18779,19 @@ export interface components {
             field_id: string | null;
             /** Chunks Written */
             chunks_written: number;
+            /**
+             * Chunks Reused
+             * @default 0
+             */
+            chunks_reused: number;
             /** Embeddings Written */
             embeddings_written: number;
             /** Skipped Unchanged */
             skipped_unchanged: boolean;
             /** Embedding Model */
             embedding_model: string;
+            /** Skipped Reason */
+            skipped_reason?: string | null;
             /** Error */
             error?: string | null;
         };
@@ -21806,6 +21821,8 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -26920,7 +26937,7 @@ export interface components {
              * Source Kind
              * @enum {string}
              */
-            source_kind: "note" | "code_file" | "cld_file" | "transcript" | "scraped" | "repository" | "library_doc" | "task" | "project";
+            source_kind: "note" | "code_file" | "cld_file" | "transcript" | "scraped" | "repository" | "library_doc" | "task" | "project" | "cx_message";
             /** Source Id */
             source_id: string;
             /** Field Id */

@@ -363,7 +363,7 @@ export function ContextAssignmentField({
     if (writeMode === "live") {
       try {
         const { createScope } = await import("@/features/agent-context/redux/scope/scopesSlice");
-        const created = await (dispatch(createScope({ org_id: org.id, type_id: typeId, name: v }) as never) as unknown as { unwrap: () => Promise<{ id: string }> }).unwrap();
+        const created = await dispatch(createScope({ org_id: org.id, type_id: typeId, name: v })).unwrap();
         setSelScopes((p) => new Set(p).add(created.id));
         setAdding(null);
         toast.success(`Created "${v}"`);
