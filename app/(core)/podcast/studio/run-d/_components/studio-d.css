@@ -1,0 +1,112 @@
+/* app/(core)/podcast/studio/run-d/_components/studio-d.css
+ *
+ * Scoped animations for the Studio D run view. Pure CSS keyframes (React
+ * Compiler-safe, no JS rAF loops). All colors come from currentColor / the
+ * design tokens applied at the callsite — nothing hardcoded here.
+ */
+
+/* The slow vertical sweep that runs down the active phase connector. */
+@keyframes sd-flow {
+  0% {
+    background-position: 0 -200%;
+  }
+  100% {
+    background-position: 0 200%;
+  }
+}
+
+.sd-connector-active {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    currentColor 45%,
+    currentColor 55%,
+    transparent 100%
+  );
+  background-size: 100% 60%;
+  background-repeat: no-repeat;
+  animation: sd-flow 1.6s ease-in-out infinite;
+}
+
+/* Breathing halo around the active phase node. */
+@keyframes sd-halo {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 currentColor;
+    opacity: 0.55;
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent;
+    opacity: 0;
+  }
+}
+
+.sd-halo {
+  animation: sd-halo 2s ease-out infinite;
+}
+
+/* Soft shimmer for asset slots that are still rendering. */
+@keyframes sd-shimmer {
+  0% {
+    background-position: -150% 0;
+  }
+  100% {
+    background-position: 150% 0;
+  }
+}
+
+.sd-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in oklab, currentColor 18%, transparent) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: sd-shimmer 1.8s linear infinite;
+}
+
+/* Asset card pop-in when it lands. */
+@keyframes sd-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  60% {
+    transform: scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.sd-pop {
+  animation: sd-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Equalizer bars for the "voicing" state. */
+@keyframes sd-eq {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.sd-eq-bar {
+  transform-origin: bottom;
+  animation: sd-eq 0.9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-connector-active,
+  .sd-halo,
+  .sd-shimmer,
+  .sd-pop,
+  .sd-eq-bar {
+    animation: none;
+  }
+}
