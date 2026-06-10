@@ -350,9 +350,10 @@ export function AgentConversationDisplay({
         }
 
         if (group.kind === "assistant-failed") {
-          // Rendered directly (not via AssistantTurnGroup): AgentAssistantMessage
-          // short-circuits to the error bubble for a failed turn, so there is
-          // no body or action bar for a turn group to coordinate.
+          // Rendered directly (not via AssistantTurnGroup): a failed turn
+          // renders whatever content already streamed with the error line
+          // appended BELOW it (error-only when nothing streamed), and never
+          // mounts an action bar — nothing for a turn group to coordinate.
           return (
             <AgentAssistantMessage
               key={group.key}

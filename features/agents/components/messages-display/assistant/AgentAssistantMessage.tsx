@@ -37,6 +37,7 @@ import { useDebugContext } from "@/hooks/useDebugContext";
 import {
   selectErrorIsFatal,
   selectRequestError,
+  selectRenderBlockCount,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectBufferStream } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectStreamPhase } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
@@ -205,38 +206,61 @@ export function AgentAssistantMessage({
   // A turn is failed when the live request errored (in-session) OR the
   // persisted record is `status='failed'` / `metadata.failed` (reloaded from
   // the DB, or stamped mid-stream via record_update). Both render the same
-  // error bubble so a live failure and a reloaded one look identical. The
+  // error treatment so a live failure and a reloaded one look identical. The
   // failed turn stays in history; retry (when offered) re-runs it without
   // deleting anything. See CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md.
   const failed = isFatalError || isFailedRecord(record);
 
-  if (failed) {
-    const recordError = extractRecordError(record);
-    const friendly =
-      streamError?.user_message ??
-      streamError?.message ??
-      recordError ??
-      "The response failed.";
-    const technical = streamError?.message;
-    const detail = technical && technical !== friendly ? technical : undefined;
-    const code =
-      streamError?.code ??
-      (streamError?.details &&
-      typeof streamError.details === "object" &&
-      "status_code" in streamError.details
-        ? (streamError.details as { status_code?: string | number })
-            .status_code
-        : undefined);
+  // Did anything actually stream/persist for this turn? Drives the failed
+  // layout: a turn that already produced content renders that content WITH
+  // the error appended BELOW it — an error must NEVER wipe what the user
+  // already received (heartbeat timeouts routinely kill streams that are
+  // 90% delivered, and the server usually finishes the turn anyway). Only
+  // a turn that died before producing anything renders error-only.
+  const streamedBlockCount = useAppSelector(
+    requestId ? selectRenderBlockCount(requestId) : () => 0,
+  );
+  const hasBody =
+    flatText.length > 0 ||
+    (serverProcessedBlocks?.length ?? 0) > 0 ||
+    streamedBlockCount > 0;
+
+  const failedError = failed
+    ? (() => {
+        const recordError = extractRecordError(record);
+        const friendly =
+          streamError?.user_message ??
+          streamError?.message ??
+          recordError ??
+          "The response failed.";
+        const technical = streamError?.message;
+        const detail =
+          technical && technical !== friendly ? technical : undefined;
+        const code =
+          streamError?.code ??
+          (streamError?.details &&
+          typeof streamError.details === "object" &&
+          "status_code" in streamError.details
+            ? (streamError.details as { status_code?: string | number })
+                .status_code
+            : undefined);
+        return (
+          <AssistantError
+            message={friendly}
+            detail={detail}
+            errorType={streamError?.error_type}
+            code={code}
+            onRetry={canRetry ? handleRetry : undefined}
+            retrying={retrying}
+          />
+        );
+      })()
+    : null;
+
+  if (failed && !hasBody) {
     return (
       <div className="mt-1" data-message-id={messageId ?? undefined}>
-        <AssistantError
-          message={friendly}
-          detail={detail}
-          errorType={streamError?.error_type}
-          code={code}
-          onRetry={canRetry ? handleRetry : undefined}
-          retrying={retrying}
-        />
+        {failedError}
       </div>
     );
   }
@@ -277,7 +301,7 @@ export function AgentAssistantMessage({
       // assistant turn reveals the bar; non-compact mode keeps it visible.
       className="group/assistant-msg rounded transition-shadow"
     >
-      {bufferStream && isStreamActive ? (
+      {bufferStream && isStreamActive && !failed ? (
         <div className="flex items-center justify-center py-12">
           <BreathingOrb size={32} />
         </div>
@@ -289,7 +313,7 @@ export function AgentAssistantMessage({
             conversationId={conversationId}
             messageId={messageId ?? undefined}
             content={flatText}
-            isStreamActive={isStreamActive}
+            isStreamActive={isStreamActive && !failed}
             hideCopyButton={true}
             allowFullScreenEditor={false}
             serverProcessedBlocks={serverProcessedBlocks}
@@ -302,18 +326,22 @@ export function AgentAssistantMessage({
               ("Processing…"), so the orb deliberately stays out of the
               connecting / pre_token window — no two indicators at once. */}
           {isStreamActive &&
+            !failed &&
             (phase === "text_streaming" || phase === "interstitial") && (
               <BreathingOrb className="mt-1.5" size={24} />
             )}
         </>
       )}
+      {/* Failed turn WITH content: the error renders BELOW everything that
+          already streamed — never instead of it. */}
+      {failedError}
       {messageId && (
         <MessageFilesStrip
           conversationId={conversationId}
           messageId={messageId}
         />
       )}
-      {!hideActionBar && !isStreamActive && messageId && (
+      {!hideActionBar && !isStreamActive && !failed && messageId && (
         <AssistantActionBar
           messageId={messageId}
           conversationId={conversationId}

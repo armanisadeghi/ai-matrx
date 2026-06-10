@@ -393,1208 +393,1227 @@ export async function processStream({
     }
   };
 
-  for await (const event of events) {
-    totalEvents++;
-    const now = performance.now();
-    if (onEvent) {
-      try {
-        onEvent(event);
-      } catch {
-        /* heartbeat observer must never break the stream */
-      }
-    }
+  // Captured stream-phase failure (heartbeat timeout, abort, network drop,
+  // parse error). The loop body's throw is deliberately NOT allowed to skip
+  // the commit path below: everything streamed so far MUST be flushed and
+  // committed to messages.byId before the error propagates, otherwise the
+  // whole turn (text, tool cards, every reserved iteration) vanishes from the
+  // transcript the moment the error UI renders. The error is re-thrown after
+  // the commit so runAiStream's canonical error path runs unchanged.
+  let streamFailure: Error | null = null;
 
-    // Chunk and reasoning_chunk are the hot path (thousands per stream).
-    // They skip appendRawEvent — their data lives in textChunks/reasoningChunks.
-    // Using the type guards directly preserves TypeScript narrowing on event.data.
-
-    if (isChunkEvent(event)) {
-      StreamProfiler.getInstance().trackChunk();
-      chunkEvents++;
-      if (clientFirstChunkAt === null) clientFirstChunkAt = now;
-      const text = event.data.text;
-
-      if (isInReasoningRun) {
-        dispatchBatch();
-        isInReasoningRun = false;
-        dispatch(closeReasoningRun({ requestId, timestamp: now }));
-      }
-
-      if (!isInTextRun) {
-        isInTextRun = true;
-        dispatch(markTextStreamStart({ requestId, timestamp: now }));
-      }
-
-      textBuffer += text;
-
-      if (jsonTracker) {
-        const jsonState = jsonTracker.append(text);
-        if (jsonState.revision !== lastJsonRevision) {
-          lastJsonRevision = jsonState.revision;
-          pendingJsonState = {
-            results: jsonState.results.map(toSnapshot),
-            revision: jsonState.revision,
-          };
+  try {
+    for await (const event of events) {
+      totalEvents++;
+      const now = performance.now();
+      if (onEvent) {
+        try {
+          onEvent(event);
+        } catch {
+          /* heartbeat observer must never break the stream */
         }
       }
 
-      scheduleBatchEvent();
-      continue;
-    }
+      // Chunk and reasoning_chunk are the hot path (thousands per stream).
+      // They skip appendRawEvent — their data lives in textChunks/reasoningChunks.
+      // Using the type guards directly preserves TypeScript narrowing on event.data.
 
-    if (isReasoningChunkEvent(event)) {
-      reasoningChunkEvents++;
-      const text = event.data.text;
+      if (isChunkEvent(event)) {
+        StreamProfiler.getInstance().trackChunk();
+        chunkEvents++;
+        if (clientFirstChunkAt === null) clientFirstChunkAt = now;
+        const text = event.data.text;
 
-      if (isInTextRun) {
-        dispatchBatch();
-        isInTextRun = false;
+        if (isInReasoningRun) {
+          dispatchBatch();
+          isInReasoningRun = false;
+          dispatch(closeReasoningRun({ requestId, timestamp: now }));
+        }
+
+        if (!isInTextRun) {
+          isInTextRun = true;
+          dispatch(markTextStreamStart({ requestId, timestamp: now }));
+        }
+
+        textBuffer += text;
+
+        if (jsonTracker) {
+          const jsonState = jsonTracker.append(text);
+          if (jsonState.revision !== lastJsonRevision) {
+            lastJsonRevision = jsonState.revision;
+            pendingJsonState = {
+              results: jsonState.results.map(toSnapshot),
+              revision: jsonState.revision,
+            };
+          }
+        }
+
+        scheduleBatchEvent();
+        continue;
       }
 
-      if (!isInReasoningRun) {
-        isInReasoningRun = true;
-        dispatch(markReasoningStreamStart({ requestId, timestamp: now }));
+      if (isReasoningChunkEvent(event)) {
+        reasoningChunkEvents++;
+        const text = event.data.text;
+
+        if (isInTextRun) {
+          dispatchBatch();
+          isInTextRun = false;
+        }
+
+        if (!isInReasoningRun) {
+          isInReasoningRun = true;
+          dispatch(markReasoningStreamStart({ requestId, timestamp: now }));
+        }
+
+        reasoningBuffer += text;
+        scheduleBatchEvent();
+        continue;
       }
 
-      reasoningBuffer += text;
-      scheduleBatchEvent();
-      continue;
-    }
+      // All non-chunk events: flush pending text first to preserve chronological order
+      dispatchBatch();
 
-    // All non-chunk events: flush pending text first to preserve chronological order
-    dispatchBatch();
-
-    dispatch(
-      appendRawEvent({
-        requestId,
-        event: {
-          idx: totalEvents,
-          timestamp: now,
-          eventType: event.event,
-          data: event.data,
-        },
-      }),
-    );
-
-    if (isInTextRun) {
-      isInTextRun = false;
-    }
-    if (isInReasoningRun) {
-      isInReasoningRun = false;
-      dispatch(closeReasoningRun({ requestId, timestamp: now }));
-    }
-
-    if (isPhaseEvent(event)) {
-      phaseEvents++;
-      dispatch(setCurrentPhase({ requestId, phase: event.data.phase }));
       dispatch(
-        appendTimeline({
+        appendRawEvent({
           requestId,
-          entry: {
-            kind: "phase",
-            seq: 0,
+          event: {
+            idx: totalEvents,
             timestamp: now,
+            eventType: event.event,
             data: event.data,
           },
         }),
       );
-    } else if (isInitEvent(event)) {
-      initEvents++;
-      const d = event.data;
-      dispatch(
-        trackOperationInit({
-          requestId,
-          operationId: d.operation_id,
-          operation: d.operation,
-          parentOperationId: d.parent_operation_id,
-          timestamp: now,
-        }),
-      );
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "init",
-            seq: 0,
-            timestamp: now,
-            data: d,
-          },
-        }),
-      );
-    } else if (isCompletionEvent(event)) {
-      completionEvents++;
-      const d = event.data;
-      const result = (d.result ?? {}) as Record<string, unknown>;
 
-      dispatch(
-        trackOperationCompletion({
-          requestId,
-          operationId: d.operation_id,
-          operation: d.operation,
-          status: d.status,
-          result,
-          timestamp: now,
-        }),
-      );
-
-      if (d.operation === "user_request") {
-        dispatch(setCompletion({ requestId, data: d }));
-
-        completionStats = result as CompletionStats;
-
-        const totals = completionStats.total_usage?.total;
-        if (totals) {
-          tokenUsage = {
-            input: totals.input_tokens ?? 0,
-            output: totals.output_tokens ?? 0,
-            total: totals.total_tokens ?? 0,
-          };
-        }
-        finishReason = completionStats.finish_reason ?? undefined;
+      if (isInTextRun) {
+        isInTextRun = false;
+      }
+      if (isInReasoningRun) {
+        isInReasoningRun = false;
+        dispatch(closeReasoningRun({ requestId, timestamp: now }));
       }
 
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "completion",
-            seq: 0,
+      if (isPhaseEvent(event)) {
+        phaseEvents++;
+        dispatch(setCurrentPhase({ requestId, phase: event.data.phase }));
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "phase",
+              seq: 0,
+              timestamp: now,
+              data: event.data,
+            },
+          }),
+        );
+      } else if (isInitEvent(event)) {
+        initEvents++;
+        const d = event.data;
+        dispatch(
+          trackOperationInit({
+            requestId,
+            operationId: d.operation_id,
+            operation: d.operation,
+            parentOperationId: d.parent_operation_id,
             timestamp: now,
-            data: d,
-          },
-        }),
-      );
-    } else if (isTypedDataEvent(event)) {
-      dataEvents++;
-      const d = event.data;
-      const dataType = d.type ?? "unknown";
-
-      dispatch(appendDataPayload({ requestId, data: d }));
-
-      if (d.type === "conversation_id") {
-        const convData = d as ConversationIdData;
-        // Manual mode mints a fresh wire conv_id per call; the assertion
-        // does not apply (the IDs are intentionally different).
-        if (!forceLocalConversationId) {
-          assertConversationIdMatches(
-            conversationId,
-            convData.conversation_id,
-            "conversation_id-data-event",
-          );
-        }
-      } else if (d.type === "conversation_labeled") {
-        const labeled = d as ConversationLabeledData;
-        dispatch(
-          setConversationLabel({
-            conversationId,
-            title: labeled.title,
-            description: labeled.description ?? null,
-            keywords: labeled.keywords ?? null,
           }),
         );
         dispatch(
-          patchAgentConversationMetadata({
-            conversationId: labeled.conversation_id,
-            title: labeled.title,
-            description: labeled.description ?? "",
-          }),
-        );
-      } else if (d.type === "memory_context_injected") {
-        // Observational Memory: the Observer's distilled context was injected
-        // into the prompt prior to this turn. Record for the live activity
-        // panel + counter aggregation.
-        dispatch(
-          recordContextInjected({
-            conversationId,
+          appendTimeline({
             requestId,
-            data: d as MemoryContextInjectedData,
-          }),
-        );
-      } else if (d.type === "memory_observer_completed") {
-        dispatch(
-          recordObserverCompleted({
-            conversationId,
-            requestId,
-            data: d as MemoryObserverCompletedData,
-          }),
-        );
-      } else if (d.type === "memory_reflector_completed") {
-        dispatch(
-          recordReflectorCompleted({
-            conversationId,
-            requestId,
-            data: d as MemoryReflectorCompletedData,
-          }),
-        );
-      } else if (d.type === "memory_buffer_spawned") {
-        dispatch(
-          recordBufferSpawned({
-            conversationId,
-            requestId,
-            data: d as MemoryBufferSpawnedData,
-          }),
-        );
-      } else if (d.type === "memory_error") {
-        // Non-fatal: memory failures must never break the assistant turn.
-        // Flag `degraded` on the slice so the UI can show a subtle badge
-        // without interrupting the conversation.
-        dispatch(
-          recordMemoryError({
-            conversationId,
-            requestId,
-            data: d as MemoryErrorData,
-          }),
-        );
-      } else if (isMediaBlockData(d)) {
-        // ── Phase 0 canonical path ─────────────────────────────────────────
-        // Python's new `media_block` event carries the full
-        // `UnifiedMediaBlock` shape on `data.block`. Lift to our domain
-        // shape via the single canonical adapter and route by `kind`.
-        //
-        // Each kind maps to the same legacy render-block type the FE
-        // already consumed (`image_output` / `audio_output` / `video_output`)
-        // so existing renderers and selectors keep working without churn.
-        // When `kind: "document"` or `kind: "youtube"` arrives we use the
-        // generic `media_block` type and rely on the renderer to dispatch
-        // on `block.data.kind`.
-        //
-        // See docs/PYTHON_UPDATES.md §2 for the wire contract.
-        const unified: UnifiedMediaBlock = fromMediaBlock(d.block);
-        const isStreamingPartial = unified.status === "streaming";
-
-        const renderBlockType =
-          unified.kind === "image"
-            ? "image_output"
-            : unified.kind === "audio"
-              ? "audio_output"
-              : unified.kind === "video"
-                ? "video_output"
-                : "media_block";
-
-        // Partials + finals collapse onto one render block per stream
-        // so the renderer never sees flicker. Image keeps the legacy
-        // `image_block_current` key so it shares state with the
-        // `image_output` / `partial_image` legacy adapters during the
-        // transition window. Other kinds use a kind-keyed stable id so
-        // multiple in-flight audio/video clips can stream side by side.
-        const stableKey =
-          unified.kind === "image"
-            ? "image_block_current"
-            : `media_block_${unified.kind}_current`;
-
-        dispatch(
-          upsertRenderBlock({
-            requestId,
-            block: {
-              blockId: stableKey,
-              blockIndex: renderBlockEvents,
-              type: renderBlockType,
-              status: isStreamingPartial ? "streaming" : "complete",
-              content: null,
-              data: unified as unknown as Record<string, unknown>,
+            entry: {
+              kind: "init",
+              seq: 0,
+              timestamp: now,
+              data: d,
             },
           }),
         );
-
-        // Open the image peek overlay on a FINAL image arrival. Skip on
-        // streaming partials (would flash too early) and on non-image kinds
-        // (the peek host is image-only today).
-        if (unified.kind === "image" && !isStreamingPartial) {
-          dispatch(openOverlay({ overlayId: "imagePeekHost" }));
-        }
-      } else {
-        const blockType = [
-          "audio_output",
-          "image_output",
-          "video_output",
-          "search_results",
-          "search_error",
-          "function_result",
-          "workflow_step",
-          "categorization_result",
-          "fetch_results",
-          "podcast_complete",
-          "podcast_stage",
-          "scrape_batch_complete",
-          "structured_input_warning",
-          "display_questionnaire",
-        ].includes(dataType)
-          ? dataType
-          : "unknown_data_event";
-
-        // ── Legacy fallback path ──────────────────────────────────────────
-        // Backed by `image_output` / `partial_image` / `audio_output` /
-        // `video_output` events from un-redeployed services. Will retire
-        // once Python's `media_block` rollout completes (~one release
-        // cycle after deploy).
-        let blockData: Record<string, unknown>;
-        if (dataType === "image_output") {
-          const unified: UnifiedImageBlock = fromImageOutputData(
-            d as ImageOutputData,
-            ((d as unknown as Record<string, unknown>).metadata as
-              | Record<string, unknown>
-              | undefined) ?? null,
-          );
-          blockData = unified as unknown as Record<string, unknown>;
-        } else if (dataType === "partial_image") {
-          const unified: UnifiedImageBlock = fromPartialImageData(
-            d as PartialImageData,
-          );
-          blockData = unified as unknown as Record<string, unknown>;
-        } else if (blockType === "unknown_data_event") {
-          blockData = { ...(d as UntypedDataPayload), _dataType: dataType };
-        } else {
-          blockData = d as unknown as Record<string, unknown>;
-        }
-
-        // Partial images share the blockId with the eventual final image_output
-        // so the upsert collapses partial + complete into one entry. The final
-        // event lands with status "complete" and the URL fields populated; the
-        // partial leaves only base64 + status "streaming".
-        const partialKey =
-          dataType === "partial_image" || dataType === "image_output"
-            ? "image_block_current"
-            : undefined;
-        const blockId = partialKey ?? `data_${dataType}_${totalEvents}`;
-        const finalBlockType =
-          dataType === "partial_image" ? "image_output" : blockType;
+      } else if (isCompletionEvent(event)) {
+        completionEvents++;
+        const d = event.data;
+        const result = (d.result ?? {}) as Record<string, unknown>;
 
         dispatch(
-          upsertRenderBlock({
+          trackOperationCompletion({
             requestId,
-            block: {
-              blockId,
-              blockIndex: renderBlockEvents,
-              type: finalBlockType,
-              status: dataType === "partial_image" ? "streaming" : "complete",
-              content: null,
-              data: blockData,
-            },
-          }),
-        );
-
-        // Open the image peek notification overlay when a FINAL image arrives.
-        // Skip on partials — the overlay would flash too early.
-        if (dataType === "image_output") {
-          dispatch(openOverlay({ overlayId: "imagePeekHost" }));
-        }
-      }
-
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "data",
-            seq: 0,
+            operationId: d.operation_id,
+            operation: d.operation,
+            status: d.status,
+            result,
             timestamp: now,
-            data: d,
-          },
-        }),
-      );
-    } else if (isToolEventEvent(event)) {
-      toolEvents++;
-      const toolData = event.data;
+          }),
+        );
 
-      if (toolData.event === "tool_delegated") {
+        if (d.operation === "user_request") {
+          dispatch(setCompletion({ requestId, data: d }));
+
+          completionStats = result as CompletionStats;
+
+          const totals = completionStats.total_usage?.total;
+          if (totals) {
+            tokenUsage = {
+              input: totals.input_tokens ?? 0,
+              output: totals.output_tokens ?? 0,
+              total: totals.total_tokens ?? 0,
+            };
+          }
+          finishReason = completionStats.finish_reason ?? undefined;
+        }
+
         dispatch(
-          addPendingToolCall({
+          appendTimeline({
             requestId,
-            toolCall: {
-              callId: toolData.call_id,
-              toolName: toolData.tool_name,
-              arguments: (toolData.data as Record<string, unknown>) ?? {},
+            entry: {
+              kind: "completion",
+              seq: 0,
+              timestamp: now,
+              data: d,
             },
           }),
         );
-        dispatch(
-          upsertToolLifecycle({
-            requestId,
-            callId: toolData.call_id,
-            toolName: toolData.tool_name,
-            status: "started",
-            arguments: (toolData.data as Record<string, unknown>) ?? {},
-            isDelegated: true,
-            event: toolData,
-          }),
-        );
+      } else if (isTypedDataEvent(event)) {
+        dataEvents++;
+        const d = event.data;
+        const dataType = d.type ?? "unknown";
 
-        if (isWidgetActionName(toolData.tool_name)) {
-          // Widget actions resolve fast and fire-and-forget from the stream's
-          // POV — the microtask batcher posts results back so the server can
-          // resume without us having to flip the instance to "paused".
-          dispatch(
-            dispatchWidgetAction({
+        dispatch(appendDataPayload({ requestId, data: d }));
+
+        if (d.type === "conversation_id") {
+          const convData = d as ConversationIdData;
+          // Manual mode mints a fresh wire conv_id per call; the assertion
+          // does not apply (the IDs are intentionally different).
+          if (!forceLocalConversationId) {
+            assertConversationIdMatches(
               conversationId,
-              requestId,
-              callId: toolData.call_id,
-              toolName: toolData.tool_name as WidgetActionName,
-              args:
-                ((toolData.data as Record<string, unknown>)
-                  ?.arguments as Record<string, unknown>) ?? {},
+              convData.conversation_id,
+              "conversation_id-data-event",
+            );
+          }
+        } else if (d.type === "conversation_labeled") {
+          const labeled = d as ConversationLabeledData;
+          dispatch(
+            setConversationLabel({
+              conversationId,
+              title: labeled.title,
+              description: labeled.description ?? null,
+              keywords: labeled.keywords ?? null,
             }),
           );
-        } else if (isUiFirstToolName(toolData.tool_name)) {
-          // UI-first tools (user / update_plan / tasks / user_todos /
-          // request_user_takeover / memory / storage). The dispatcher
-          // validates args via Zod, runs the handler (which may await user
-          // input for ask-user-tier tools), and POSTs the result. We don't
-          // pause the instance — the server simply waits for tool_results
-          // before emitting more chunks.
           dispatch(
-            dispatchUiFirstTool({
-              conversationId,
-              requestId,
-              callId: toolData.call_id,
-              toolName: toolData.tool_name,
-              args:
-                ((toolData.data as Record<string, unknown>)
-                  ?.arguments as Record<string, unknown>) ?? {},
+            patchAgentConversationMetadata({
+              conversationId: labeled.conversation_id,
+              title: labeled.title,
+              description: labeled.description ?? "",
             }),
           );
+        } else if (d.type === "memory_context_injected") {
+          // Observational Memory: the Observer's distilled context was injected
+          // into the prompt prior to this turn. Record for the live activity
+          // panel + counter aggregation.
+          dispatch(
+            recordContextInjected({
+              conversationId,
+              requestId,
+              data: d as MemoryContextInjectedData,
+            }),
+          );
+        } else if (d.type === "memory_observer_completed") {
+          dispatch(
+            recordObserverCompleted({
+              conversationId,
+              requestId,
+              data: d as MemoryObserverCompletedData,
+            }),
+          );
+        } else if (d.type === "memory_reflector_completed") {
+          dispatch(
+            recordReflectorCompleted({
+              conversationId,
+              requestId,
+              data: d as MemoryReflectorCompletedData,
+            }),
+          );
+        } else if (d.type === "memory_buffer_spawned") {
+          dispatch(
+            recordBufferSpawned({
+              conversationId,
+              requestId,
+              data: d as MemoryBufferSpawnedData,
+            }),
+          );
+        } else if (d.type === "memory_error") {
+          // Non-fatal: memory failures must never break the assistant turn.
+          // Flag `degraded` on the slice so the UI can show a subtle badge
+          // without interrupting the conversation.
+          dispatch(
+            recordMemoryError({
+              conversationId,
+              requestId,
+              data: d as MemoryErrorData,
+            }),
+          );
+        } else if (isMediaBlockData(d)) {
+          // ── Phase 0 canonical path ─────────────────────────────────────────
+          // Python's new `media_block` event carries the full
+          // `UnifiedMediaBlock` shape on `data.block`. Lift to our domain
+          // shape via the single canonical adapter and route by `kind`.
+          //
+          // Each kind maps to the same legacy render-block type the FE
+          // already consumed (`image_output` / `audio_output` / `video_output`)
+          // so existing renderers and selectors keep working without churn.
+          // When `kind: "document"` or `kind: "youtube"` arrives we use the
+          // generic `media_block` type and rely on the renderer to dispatch
+          // on `block.data.kind`.
+          //
+          // See docs/PYTHON_UPDATES.md §2 for the wire contract.
+          const unified: UnifiedMediaBlock = fromMediaBlock(d.block);
+          const isStreamingPartial = unified.status === "streaming";
+
+          const renderBlockType =
+            unified.kind === "image"
+              ? "image_output"
+              : unified.kind === "audio"
+                ? "audio_output"
+                : unified.kind === "video"
+                  ? "video_output"
+                  : "media_block";
+
+          // Partials + finals collapse onto one render block per stream
+          // so the renderer never sees flicker. Image keeps the legacy
+          // `image_block_current` key so it shares state with the
+          // `image_output` / `partial_image` legacy adapters during the
+          // transition window. Other kinds use a kind-keyed stable id so
+          // multiple in-flight audio/video clips can stream side by side.
+          const stableKey =
+            unified.kind === "image"
+              ? "image_block_current"
+              : `media_block_${unified.kind}_current`;
+
+          dispatch(
+            upsertRenderBlock({
+              requestId,
+              block: {
+                blockId: stableKey,
+                blockIndex: renderBlockEvents,
+                type: renderBlockType,
+                status: isStreamingPartial ? "streaming" : "complete",
+                content: null,
+                data: unified as unknown as Record<string, unknown>,
+              },
+            }),
+          );
+
+          // Open the image peek overlay on a FINAL image arrival. Skip on
+          // streaming partials (would flash too early) and on non-image kinds
+          // (the peek host is image-only today).
+          if (unified.kind === "image" && !isStreamingPartial) {
+            dispatch(openOverlay({ overlayId: "imagePeekHost" }));
+          }
         } else {
-          // Unknown delegated tool — neither a widget nor a ui-first tool.
-          // The aidream backend has hard-suspended the loop awaiting a
-          // result; if we just sit on `paused` we're silently stuck. POST
-          // an error result through the funnel so the server can either
-          // recover or surface the failure rather than leaving the agent
-          // wedged forever. Set status to `paused` first so the UI shows
-          // a truthful "waiting on a tool answer" state during the
-          // microtask window before the error POST is dispatched.
-          dispatch(setInstanceStatus({ conversationId, status: "paused" }));
+          const blockType = [
+            "audio_output",
+            "image_output",
+            "video_output",
+            "search_results",
+            "search_error",
+            "function_result",
+            "workflow_step",
+            "categorization_result",
+            "fetch_results",
+            "podcast_complete",
+            "podcast_stage",
+            "scrape_batch_complete",
+            "structured_input_warning",
+            "display_questionnaire",
+          ].includes(dataType)
+            ? dataType
+            : "unknown_data_event";
+
+          // ── Legacy fallback path ──────────────────────────────────────────
+          // Backed by `image_output` / `partial_image` / `audio_output` /
+          // `video_output` events from un-redeployed services. Will retire
+          // once Python's `media_block` rollout completes (~one release
+          // cycle after deploy).
+          let blockData: Record<string, unknown>;
+          if (dataType === "image_output") {
+            const unified: UnifiedImageBlock = fromImageOutputData(
+              d as ImageOutputData,
+              ((d as unknown as Record<string, unknown>).metadata as
+                | Record<string, unknown>
+                | undefined) ?? null,
+            );
+            blockData = unified as unknown as Record<string, unknown>;
+          } else if (dataType === "partial_image") {
+            const unified: UnifiedImageBlock = fromPartialImageData(
+              d as PartialImageData,
+            );
+            blockData = unified as unknown as Record<string, unknown>;
+          } else if (blockType === "unknown_data_event") {
+            blockData = { ...(d as UntypedDataPayload), _dataType: dataType };
+          } else {
+            blockData = d as unknown as Record<string, unknown>;
+          }
+
+          // Partial images share the blockId with the eventual final image_output
+          // so the upsert collapses partial + complete into one entry. The final
+          // event lands with status "complete" and the URL fields populated; the
+          // partial leaves only base64 + status "streaming".
+          const partialKey =
+            dataType === "partial_image" || dataType === "image_output"
+              ? "image_block_current"
+              : undefined;
+          const blockId = partialKey ?? `data_${dataType}_${totalEvents}`;
+          const finalBlockType =
+            dataType === "partial_image" ? "image_output" : blockType;
+
+          dispatch(
+            upsertRenderBlock({
+              requestId,
+              block: {
+                blockId,
+                blockIndex: renderBlockEvents,
+                type: finalBlockType,
+                status: dataType === "partial_image" ? "streaming" : "complete",
+                content: null,
+                data: blockData,
+              },
+            }),
+          );
+
+          // Open the image peek notification overlay when a FINAL image arrives.
+          // Skip on partials — the overlay would flash too early.
+          if (dataType === "image_output") {
+            dispatch(openOverlay({ overlayId: "imagePeekHost" }));
+          }
+        }
+
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "data",
+              seq: 0,
+              timestamp: now,
+              data: d,
+            },
+          }),
+        );
+      } else if (isToolEventEvent(event)) {
+        toolEvents++;
+        const toolData = event.data;
+
+        if (toolData.event === "tool_delegated") {
+          dispatch(
+            addPendingToolCall({
+              requestId,
+              toolCall: {
+                callId: toolData.call_id,
+                toolName: toolData.tool_name,
+                arguments: (toolData.data as Record<string, unknown>) ?? {},
+              },
+            }),
+          );
           dispatch(
             upsertToolLifecycle({
               requestId,
               callId: toolData.call_id,
               toolName: toolData.tool_name,
-              status: "error",
+              status: "started",
+              arguments: (toolData.data as Record<string, unknown>) ?? {},
               isDelegated: true,
-              errorType: "unsupported_client_tool",
-              errorMessage: `Client has no handler for tool '${toolData.tool_name}'.`,
+              event: toolData,
             }),
           );
-          // Dynamic import — submitToolResult lives in features/agents/api/
-          // which imports stream-events types that route back here.
-          void import("@/features/agents/api/submit-tool-results").then(
-            ({ submitToolResult }) => {
-              dispatch(
-                submitToolResult({
-                  conversationId,
-                  call_id: toolData.call_id,
-                  tool_name: toolData.tool_name,
-                  is_error: true,
-                  output: {
-                    ok: false,
-                    reason: "unsupported_client_tool",
-                    message: `Client has no handler for tool '${toolData.tool_name}'.`,
-                  },
-                  error_message: `Client has no handler for tool '${toolData.tool_name}'.`,
-                }),
-              );
-            },
-          );
-        }
-      } else {
-        const lifecycleStatus = toolData.event.replace(
-          "tool_",
-          "",
-        ) as ToolLifecycleStatus;
 
-        dispatch(
-          upsertToolLifecycle({
-            requestId,
-            callId: toolData.call_id,
-            toolName: toolData.tool_name,
-            status: lifecycleStatus,
-            message: toolData.message,
-            data: toolData.data as Record<string, unknown> | null,
-            event: toolData,
-            ...(toolData.event === "tool_completed" && {
-              result: (toolData.data as Record<string, unknown>)?.result,
-            }),
-            ...(toolData.event === "tool_result_preview" && {
-              resultPreview: (toolData.data as Record<string, unknown>)
-                ?.preview as string | undefined,
-            }),
-            ...(toolData.event === "tool_error" && {
-              errorType: (toolData.data as Record<string, unknown>)
-                ?.error_type as string | undefined,
-              errorMessage: toolData.message,
-            }),
-          }),
-        );
-      }
-
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "tool_event",
-            seq: 0,
-            timestamp: now,
-            data: toolData,
-          },
-        }),
-      );
-    } else if (isRenderBlockEvent(event)) {
-      renderBlockEvents++;
-      // Image render_blocks (markdown-parsed `![alt](url)`) flow through the
-      // canonical UnifiedImageBlock adapter so the rest of the system sees
-      // the same shape as data-event image_output blocks. The adapter takes
-      // the loose `RenderBlockPayload` directly and validates internally —
-      // no force-cast to `ImageRenderBlock` needed.
-      let block = event.data;
-      if (block.type === "image") {
-        const unified = fromRenderBlock(block);
-        block = {
-          ...block,
-          type: "image_output",
-          data: unified as unknown as Record<string, unknown>,
-        };
-      }
-
-      // ── Render-time capability guard (warn-only, Step 3d) ──
-      // Surfaces data bugs: a model that claims it doesn't produce
-      // images but somehow emitted an image block. Doesn't suppress
-      // the block — the user still sees what the model sent.
-      const _caps = getCapabilitiesForConversation(getState(), conversationId);
-      if (_caps) {
-        const _ct = renderBlockToContentType(block.type);
-        if (_ct && !_caps.output.includes(_ct)) {
-          console.warn(
-            `[process-stream] capability mismatch: model produced ${block.type} but capabilities.output is [${_caps.output.join(", ")}]`,
-            { requestId, conversationId, blockType: block.type },
-          );
-        }
-      }
-
-      dispatch(
-        upsertRenderBlock({
-          requestId,
-          block,
-        }),
-      );
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "render_block",
-            seq: 0,
-            timestamp: now,
-            data: event.data,
-          },
-        }),
-      );
-    } else if (isWarningEvent(event)) {
-      warningEvents++;
-      dispatch(addWarning({ requestId, warning: event.data }));
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "warning",
-            seq: 0,
-            timestamp: now,
-            data: event.data,
-          },
-        }),
-      );
-    } else if (isInfoEvent(event)) {
-      infoEvents++;
-      dispatch(addInfoEvent({ requestId, info: event.data }));
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "info",
-            seq: 0,
-            timestamp: now,
-            data: event.data,
-          },
-        }),
-      );
-    } else if (isRecordReservedEvent(event)) {
-      recordReservedEvents++;
-      const d = event.data;
-      dispatch(
-        upsertReservation({
-          requestId,
-          recordId: d.record_id,
-          dbProject: d.db_project,
-          table: d.table,
-          status: "pending",
-          parentRefs: d.parent_refs,
-          metadata: d.metadata,
-        }),
-      );
-
-      // ── Per-table dispatch into the DB-faithful slices ─────────────────
-      //
-      // record_reserved arrives BEFORE any content lands. We seed:
-      //   • messages.byId[record_id]     with status "reserved" (empty content)
-      //   • observability.userRequests   (cx_user_request)
-      //   • observability.requests       (cx_request)
-      //   • observability.toolCalls      (cx_tool_call)
-      //
-      // The content of an assistant message is committed later in the
-      // `completion` / `end` path via `updateMessageRecord`, which writes
-      // the final `CxContentBlock[]` into the same `byId` slot. Live
-      // stream writes here are metadata-only — no re-render storm on the
-      // message body.
-      if (isCxMessageReservation(d)) {
-        // Tool-role cx_message rows are stubs that pair an assistant tool_call
-        // with its tool_result; the actual tool data lives in cx_tool_call
-        // (observability.toolCalls). Reserving them in messages.byId pollutes
-        // the transcript with empty assistant bubbles once record_update flips
-        // their status off "reserved" — skip the reservation entirely. The
-        // observability.toolCalls path is the canonical home for tool data.
-        if (d.metadata.role !== "tool") {
-          const { position, role } = d.metadata;
-          const owningConversationId = owningConvId(
-            d.parent_refs.conversation_id,
-          );
-
-          if (role === "user" && userMessageClientTempId) {
-            // Promote the optimistic user record to the server id. The record
-            // already carries the user's content, so no further patch needed
-            // here — the stream just swaps the key.
+          if (isWidgetActionName(toolData.tool_name)) {
+            // Widget actions resolve fast and fire-and-forget from the stream's
+            // POV — the microtask batcher posts results back so the server can
+            // resume without us having to flip the instance to "paused".
             dispatch(
-              promoteMessageId({
-                conversationId: owningConversationId,
-                oldId: userMessageClientTempId,
-                newId: d.record_id,
-                position,
+              dispatchWidgetAction({
+                conversationId,
+                requestId,
+                callId: toolData.call_id,
+                toolName: toolData.tool_name as WidgetActionName,
+                args:
+                  ((toolData.data as Record<string, unknown>)
+                    ?.arguments as Record<string, unknown>) ?? {},
+              }),
+            );
+          } else if (isUiFirstToolName(toolData.tool_name)) {
+            // UI-first tools (user / update_plan / tasks / user_todos /
+            // request_user_takeover / memory / storage). The dispatcher
+            // validates args via Zod, runs the handler (which may await user
+            // input for ask-user-tier tools), and POSTs the result. We don't
+            // pause the instance — the server simply waits for tool_results
+            // before emitting more chunks.
+            dispatch(
+              dispatchUiFirstTool({
+                conversationId,
+                requestId,
+                callId: toolData.call_id,
+                toolName: toolData.tool_name,
+                args:
+                  ((toolData.data as Record<string, unknown>)
+                    ?.arguments as Record<string, unknown>) ?? {},
               }),
             );
           } else {
-            // Stash the live requestId on the reserved record so the
-            // renderer keeps reading from `activeRequests.byRequestId[reqId]`
-            // for the entire conversation lifetime — even AFTER this stream
-            // completes. Without this anchor, AgentAssistantMessage would
-            // flip to the DB-content path the moment the stream ended,
-            // causing a full re-render of the response column.
+            // Unknown delegated tool — neither a widget nor a ui-first tool.
+            // The aidream backend has hard-suspended the loop awaiting a
+            // result; if we just sit on `paused` we're silently stuck. POST
+            // an error result through the funnel so the server can either
+            // recover or surface the failure rather than leaving the agent
+            // wedged forever. Set status to `paused` first so the UI shows
+            // a truthful "waiting on a tool answer" state during the
+            // microtask window before the error POST is dispatched.
+            dispatch(setInstanceStatus({ conversationId, status: "paused" }));
             dispatch(
-              reserveMessage({
-                conversationId: owningConversationId,
-                messageId: d.record_id,
-                role,
-                position,
+              upsertToolLifecycle({
                 requestId,
+                callId: toolData.call_id,
+                toolName: toolData.tool_name,
+                status: "error",
+                isDelegated: true,
+                errorType: "unsupported_client_tool",
+                errorMessage: `Client has no handler for tool '${toolData.tool_name}'.`,
               }),
             );
-          }
-
-          if (role === "assistant") {
-            reservedAssistantTurns.push({
-              messageId: d.record_id,
-              position,
-            });
-          }
-        }
-      } else if (d.table === "cx_user_request") {
-        reservedUserRequestId = d.record_id;
-        const parents = d.parent_refs as
-          | { conversation_id?: string }
-          | undefined;
-        const nowIso = new Date().toISOString();
-        // Phase 2 — server has persisted the user's request. Safe to visually
-        // clear the input field; lastSubmittedText is retained in the slice.
-        dispatch(markInputPersisted(conversationId));
-        dispatch(
-          upsertUserRequest({
-            id: d.record_id,
-            conversationId: owningConvId(parents?.conversation_id),
-            // Fields unknown at reservation time; server fills them in on
-            // record_update / completion. Sensible zeros keep selectors safe.
-            userId: "",
-            agentId: null,
-            agentVersionId: null,
-            status: "pending",
-            iterations: 0,
-            finishReason: null,
-            error: null,
-            triggerMessagePosition: null,
-            resultStartPosition: null,
-            resultEndPosition: null,
-            totalInputTokens: 0,
-            totalOutputTokens: 0,
-            totalCachedTokens: 0,
-            totalTokens: 0,
-            totalToolCalls: 0,
-            totalCost: null,
-            totalDurationMs: null,
-            apiDurationMs: null,
-            toolDurationMs: null,
-            sourceApp: "",
-            sourceFeature: "",
-            metadata: (d.metadata ?? {}) as CxUserRequestRecord["metadata"],
-            createdAt: nowIso,
-            completedAt: null,
-            deletedAt: null,
-          }),
-        );
-      } else if (isCxRequestReservation(d)) {
-        const { iteration } = d.metadata;
-        const { conversation_id, user_request_id } = d.parent_refs;
-        const nowIso = new Date().toISOString();
-        dispatch(
-          upsertRequest({
-            id: d.record_id,
-            conversationId: owningConvId(conversation_id),
-            userRequestId: user_request_id,
-            aiModelId: "",
-            apiClass: null,
-            iteration,
-            responseId: null,
-            finishReason: null,
-            inputTokens: null,
-            cachedTokens: null,
-            outputTokens: null,
-            totalTokens: null,
-            cost: null,
-            totalDurationMs: null,
-            apiDurationMs: null,
-            toolDurationMs: null,
-            toolCallsCount: null,
-            toolCallsDetails: null,
-            metadata: (d.metadata ?? {}) as CxRequestRecord["metadata"],
-            createdAt: nowIso,
-            deletedAt: null,
-          }),
-        );
-      } else if (isCxToolCallReservation(d)) {
-        const { tool_name, call_id, iteration } = d.metadata;
-        const {
-          conversation_id,
-          user_request_id,
-          call_id: parentCallId,
-        } = d.parent_refs;
-        const nowIso = new Date().toISOString();
-        // Record the call_id → DB id mapping so tool_event patches land on
-        // the correct observability row.
-        const providerCallId = call_id ?? parentCallId;
-        if (providerCallId) {
-          toolCallIdByProviderCallId.set(providerCallId, d.record_id);
-        }
-        dispatch(
-          upsertToolCall({
-            id: d.record_id,
-            conversationId: owningConvId(conversation_id),
-            userRequestId: user_request_id,
-            messageId: null,
-            userId: "",
-            callId: call_id ?? parentCallId,
-            toolName: tool_name,
-            // Streamed events carry the canonical name; the as-called value is
-            // backfilled on conversation reload from cx_tool_call.tool_name_as_called.
-            toolNameAsCalled: null,
-            toolType: "",
-            iteration,
-            status: "pending",
-            success: false,
-            isError: null,
-            errorType: null,
-            errorMessage: null,
-            arguments: {} as CxToolCallRecord["arguments"],
-            output: null,
-            outputChars: 0,
-            outputPreview: null,
-            outputType: null,
-            inputTokens: null,
-            outputTokens: null,
-            totalTokens: null,
-            costUsd: null,
-            durationMs: 0,
-            startedAt: nowIso,
-            completedAt: nowIso,
-            parentCallId: null,
-            retryCount: null,
-            persistKey: null,
-            filePath: null,
-            executionEvents: null,
-            metadata: (d.metadata ?? {}) as CxToolCallRecord["metadata"],
-            createdAt: nowIso,
-            deletedAt: null,
-          }),
-        );
-      } else if (d.table === "cx_conversation") {
-        // Manual mode: wire convId ≠ local Redux convId by design. The
-        // server-side cx_conversation row is keyed by a different id than
-        // our local Redux conversationId, so the local id is NOT a valid
-        // list-row id and must never be written into the per-agent
-        // conversation list cache. Doing so pollutes the cache with rows
-        // whose ids don't exist server-side (loadConversation fails) AND
-        // flips the cache status to "succeeded", which suppresses the
-        // real `get_agent_conversations` RPC on the run page's sidebar.
-        // Both the assertion and the list-cache upsert are therefore
-        // gated on agent mode.
-        if (!forceLocalConversationId) {
-          assertConversationIdMatches(
-            conversationId,
-            d.record_id,
-            "record_reserved-cx_conversation",
-          );
-          if (!cxConversationConfirmed) {
-            cxConversationConfirmed = true;
-            dispatch(confirmServerSync(conversationId));
-            const syncListCx = upsertAgentConversationFromExecutionAction(
-              getState(),
-              conversationId,
-              conversationId,
+            // Dynamic import — submitToolResult lives in features/agents/api/
+            // which imports stream-events types that route back here.
+            void import("@/features/agents/api/submit-tool-results").then(
+              ({ submitToolResult }) => {
+                dispatch(
+                  submitToolResult({
+                    conversationId,
+                    call_id: toolData.call_id,
+                    tool_name: toolData.tool_name,
+                    is_error: true,
+                    output: {
+                      ok: false,
+                      reason: "unsupported_client_tool",
+                      message: `Client has no handler for tool '${toolData.tool_name}'.`,
+                    },
+                    error_message: `Client has no handler for tool '${toolData.tool_name}'.`,
+                  }),
+                );
+              },
             );
-            if (syncListCx) dispatch(syncListCx);
           }
+        } else {
+          const lifecycleStatus = toolData.event.replace(
+            "tool_",
+            "",
+          ) as ToolLifecycleStatus;
+
+          dispatch(
+            upsertToolLifecycle({
+              requestId,
+              callId: toolData.call_id,
+              toolName: toolData.tool_name,
+              status: lifecycleStatus,
+              message: toolData.message,
+              data: toolData.data as Record<string, unknown> | null,
+              event: toolData,
+              ...(toolData.event === "tool_completed" && {
+                result: (toolData.data as Record<string, unknown>)?.result,
+              }),
+              ...(toolData.event === "tool_result_preview" && {
+                resultPreview: (toolData.data as Record<string, unknown>)
+                  ?.preview as string | undefined,
+              }),
+              ...(toolData.event === "tool_error" && {
+                errorType: (toolData.data as Record<string, unknown>)
+                  ?.error_type as string | undefined,
+                errorMessage: toolData.message,
+              }),
+            }),
+          );
         }
-      }
 
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "record_reserved",
-            seq: 0,
-            timestamp: now,
-            data: d,
-          },
-        }),
-      );
-    } else if (isRecordUpdateEvent(event)) {
-      recordUpdateEvents++;
-      const d = event.data;
-      dispatch(
-        upsertReservation({
-          requestId,
-          recordId: d.record_id,
-          dbProject: d.db_project,
-          table: d.table,
-          status: d.status,
-          metadata: d.metadata,
-        }),
-      );
-
-      // Per-table status patch into the DB-faithful slices. These updates
-      // deliberately ONLY touch the `status` field — never content —
-      // so subscribers rendering message bodies don't re-render on
-      // bookkeeping status changes. (See Phase 5.3 re-render audit.)
-      if (d.table === "cx_message") {
         dispatch(
-          updateMessageRecord({
-            conversationId,
-            messageId: d.record_id,
-            // On a failed transition, carry the metadata through too so the
-            // in-session record reflects { failed:true, error } exactly as
-            // the DB serves it back on reload — the failed-turn renderer
-            // reads `metadata.error`. Non-failed transitions stay status-only
-            // to avoid re-rendering message bodies on bookkeeping changes.
-            patch:
-              d.status === "failed" && d.metadata
-                ? {
-                    status: d.status,
-                    metadata: d.metadata as MessageRecord["metadata"],
-                  }
-                : { status: d.status },
-          }),
-        );
-      } else if (d.table === "cx_user_request") {
-        dispatch(
-          patchUserRequest({
-            id: d.record_id,
-            patch: {
-              status: d.status,
-              completedAt:
-                d.status === "completed" || d.status === "failed"
-                  ? new Date().toISOString()
-                  : null,
-            },
-          }),
-        );
-      } else if (d.table === "cx_tool_call") {
-        // Stamp `completedAt` whenever the tool-call record transitions —
-        // "active" / "completed" / "failed" all mark the row as no longer
-        // reserved and give us the server's timestamp.
-        dispatch(
-          patchToolCall({
-            id: d.record_id,
-            patch: {
-              status: d.status,
-              completedAt: new Date().toISOString(),
-            },
-          }),
-        );
-      }
-
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "record_update",
-            seq: 0,
-            timestamp: now,
-            data: d,
-          },
-        }),
-      );
-    } else if (isResourceChangedEvent(event)) {
-      // Generic "this resource just changed" primitive. Today it's emitted
-      // by matrx-ai's `fs_write` / `fs_patch` / `fs_mkdir` tools (kind
-      // `fs.file` / `fs.directory`) and by the orchestrator when the
-      // active tool set mutates mid-loop (kind `active_tools` — fired by
-      // tools that load other tools, e.g. the Chrome-extension discovery
-      // tool). Future kinds (`cld_files`, `sandbox.cwd`, `cache.*`) will
-      // land on the same wire shape. The fs slice swallows ALL kinds;
-      // downstream consumers branch on `kind` and ignore unknown ones —
-      // see `features/code/SANDBOX_PROXY_AND_FS_EVENTS_FE_INTEGRATION.md` §2.
-      resourceChangedEvents++;
-      const d = event.data;
-      if (d.kind === "active_tools") {
-        // Tool set was invalidated by a mid-loop injection. Bump the
-        // per-conversation revision so any toolbar / capability-display UI
-        // bound to the active set refetches. `metadata.added/removed` carry
-        // the deltas — surfaced for UX hints (toast, badge, etc.).
-        const added =
-          typeof d.metadata?.added === "number" ? d.metadata.added : 0;
-        const removed =
-          typeof d.metadata?.removed === "number" ? d.metadata.removed : 0;
-        dispatch(invalidateActiveTools({ conversationId, added, removed }));
-      } else if (isSkillStreamEvent(d.kind)) {
-        // `skills.ingested` (sandbox auto-discovery completing) and
-        // future `skill.created` / `skill.modified` / `skill.deleted`
-        // events bump the skills slice's `lastIngestAt`, which the
-        // `useSkills` hook subscribes to (reload + toast). The pump
-        // does NOT refetch directly — keeps the side effect colocated
-        // with the consumer that needs it.
-        applySkillStreamEvent(dispatch, {
-          kind: d.kind,
-          action: d.action,
-          resource_id: d.resource_id,
-          metadata: d.metadata ?? {},
-        });
-      } else {
-        dispatch(
-          receivedFsChange({
-            kind: d.kind,
-            action: d.action,
-            resourceId: d.resource_id,
-            sandboxId: d.sandbox_id ?? null,
-            userId: d.user_id ?? null,
-            metadata: d.metadata ?? {},
-            receivedAt: Date.now(),
+          appendTimeline({
             requestId,
-            conversationId,
+            entry: {
+              kind: "tool_event",
+              seq: 0,
+              timestamp: now,
+              data: toolData,
+            },
           }),
         );
-      }
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "resource_changed",
-            seq: 0,
-            timestamp: now,
-            data: d,
-          },
-        }),
-      );
-    } else if (isErrorEvent(event)) {
-      otherEvents++;
-      // Pass the backend ErrorPayload through verbatim — both
-      // `message` (system / technical) and `user_message` (optional
-      // human-friendly) survive intact. Consumers decide which one to
-      // surface; we never collapse them into a single field here. There
-      // is no `is_fatal` field on the wire — error events ARE fatal by
-      // definition (the stream is killed); the client tracks that solely
-      // through `request.status === "error"`.
-      dispatch(
-        setRequestStatus({
-          requestId,
-          status: "error",
-          error: event.data,
-        }),
-      );
-      dispatch(setInstanceStatus({ conversationId, status: "error" }));
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "error",
-            seq: 0,
-            timestamp: now,
-            data: event.data,
-          },
-        }),
-      );
-
-      // Widget handle lifecycle: fire onError at stream-level errors too,
-      // not only for widget_* tool failures (dispatcher fires those already).
-      const errWidgetHandleId = selectWidgetHandleIdFor(
-        getState(),
-        conversationId,
-      );
-      if (errWidgetHandleId) {
-        const handle = callbackManager.get<WidgetHandle>(errWidgetHandleId);
-        handle?.onError?.({
-          reason: event.data.error_type ?? "stream_error",
-          message: event.data.user_message ?? event.data.message,
-        });
-      }
-    } else if (isEndEvent(event)) {
-      otherEvents++;
-      const currentState = getState();
-      const currentRequest = currentState.activeRequests.byRequestId[requestId];
-      if (currentRequest?.status !== "error") {
-        dispatch(setRequestStatus({ requestId, status: "complete" }));
-        // Don't overwrite a `paused` instance — the backend hard-suspends and
-        // ends the stream when a client-tool is pending, but the instance is
-        // genuinely still waiting on the user. The /tool_results POST →
-        // resumeInstance handoff flips it back to "running". Keeping the
-        // REQUEST at "complete" is correct (this stream did end); the INSTANCE
-        // tracks the conversation lifecycle, which is still mid-flight.
-        const instStatus =
-          currentState.conversations.byConversationId[conversationId]?.status;
-        if (instStatus !== "paused") {
-          dispatch(setInstanceStatus({ conversationId, status: "complete" }));
+      } else if (isRenderBlockEvent(event)) {
+        renderBlockEvents++;
+        // Image render_blocks (markdown-parsed `![alt](url)`) flow through the
+        // canonical UnifiedImageBlock adapter so the rest of the system sees
+        // the same shape as data-event image_output blocks. The adapter takes
+        // the loose `RenderBlockPayload` directly and validates internally —
+        // no force-cast to `ImageRenderBlock` needed.
+        let block = event.data;
+        if (block.type === "image") {
+          const unified = fromRenderBlock(block);
+          block = {
+            ...block,
+            type: "image_output",
+            data: unified as unknown as Record<string, unknown>,
+          };
         }
 
-        // Widget handle lifecycle: fire onComplete at stream end (success
-        // path only). Fires for EVERY display mode — the previous call site
-        // in launch-agent-execution.thunk.ts:439 only fired in the narrow
-        // autoRun + direct/background/inline branch.
-        const endWidgetHandleId = selectWidgetHandleIdFor(
+        // ── Render-time capability guard (warn-only, Step 3d) ──
+        // Surfaces data bugs: a model that claims it doesn't produce
+        // images but somehow emitted an image block. Doesn't suppress
+        // the block — the user still sees what the model sent.
+        const _caps = getCapabilitiesForConversation(
           getState(),
           conversationId,
         );
-        if (endWidgetHandleId) {
-          const handle = callbackManager.get<WidgetHandle>(endWidgetHandleId);
-          if (handle?.onComplete) {
-            const responseText =
-              currentRequest?.renderBlockOrder
-                .map((id) => currentRequest.renderBlocks[id]?.content ?? "")
-                .join("\n") || "";
-            handle.onComplete({
-              conversationId,
-              requestId,
-              responseText,
-            });
+        if (_caps) {
+          const _ct = renderBlockToContentType(block.type);
+          if (_ct && !_caps.output.includes(_ct)) {
+            console.warn(
+              `[process-stream] capability mismatch: model produced ${block.type} but capabilities.output is [${_caps.output.join(", ")}]`,
+              { requestId, conversationId, blockType: block.type },
+            );
           }
         }
+
+        dispatch(
+          upsertRenderBlock({
+            requestId,
+            block,
+          }),
+        );
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "render_block",
+              seq: 0,
+              timestamp: now,
+              data: event.data,
+            },
+          }),
+        );
+      } else if (isWarningEvent(event)) {
+        warningEvents++;
+        dispatch(addWarning({ requestId, warning: event.data }));
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "warning",
+              seq: 0,
+              timestamp: now,
+              data: event.data,
+            },
+          }),
+        );
+      } else if (isInfoEvent(event)) {
+        infoEvents++;
+        dispatch(addInfoEvent({ requestId, info: event.data }));
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "info",
+              seq: 0,
+              timestamp: now,
+              data: event.data,
+            },
+          }),
+        );
+      } else if (isRecordReservedEvent(event)) {
+        recordReservedEvents++;
+        const d = event.data;
+        dispatch(
+          upsertReservation({
+            requestId,
+            recordId: d.record_id,
+            dbProject: d.db_project,
+            table: d.table,
+            status: "pending",
+            parentRefs: d.parent_refs,
+            metadata: d.metadata,
+          }),
+        );
+
+        // ── Per-table dispatch into the DB-faithful slices ─────────────────
+        //
+        // record_reserved arrives BEFORE any content lands. We seed:
+        //   • messages.byId[record_id]     with status "reserved" (empty content)
+        //   • observability.userRequests   (cx_user_request)
+        //   • observability.requests       (cx_request)
+        //   • observability.toolCalls      (cx_tool_call)
+        //
+        // The content of an assistant message is committed later in the
+        // `completion` / `end` path via `updateMessageRecord`, which writes
+        // the final `CxContentBlock[]` into the same `byId` slot. Live
+        // stream writes here are metadata-only — no re-render storm on the
+        // message body.
+        if (isCxMessageReservation(d)) {
+          // Tool-role cx_message rows are stubs that pair an assistant tool_call
+          // with its tool_result; the actual tool data lives in cx_tool_call
+          // (observability.toolCalls). Reserving them in messages.byId pollutes
+          // the transcript with empty assistant bubbles once record_update flips
+          // their status off "reserved" — skip the reservation entirely. The
+          // observability.toolCalls path is the canonical home for tool data.
+          if (d.metadata.role !== "tool") {
+            const { position, role } = d.metadata;
+            const owningConversationId = owningConvId(
+              d.parent_refs.conversation_id,
+            );
+
+            if (role === "user" && userMessageClientTempId) {
+              // Promote the optimistic user record to the server id. The record
+              // already carries the user's content, so no further patch needed
+              // here — the stream just swaps the key.
+              dispatch(
+                promoteMessageId({
+                  conversationId: owningConversationId,
+                  oldId: userMessageClientTempId,
+                  newId: d.record_id,
+                  position,
+                }),
+              );
+            } else {
+              // Stash the live requestId on the reserved record so the
+              // renderer keeps reading from `activeRequests.byRequestId[reqId]`
+              // for the entire conversation lifetime — even AFTER this stream
+              // completes. Without this anchor, AgentAssistantMessage would
+              // flip to the DB-content path the moment the stream ended,
+              // causing a full re-render of the response column.
+              dispatch(
+                reserveMessage({
+                  conversationId: owningConversationId,
+                  messageId: d.record_id,
+                  role,
+                  position,
+                  requestId,
+                }),
+              );
+            }
+
+            if (role === "assistant") {
+              reservedAssistantTurns.push({
+                messageId: d.record_id,
+                position,
+              });
+            }
+          }
+        } else if (d.table === "cx_user_request") {
+          reservedUserRequestId = d.record_id;
+          const parents = d.parent_refs as
+            | { conversation_id?: string }
+            | undefined;
+          const nowIso = new Date().toISOString();
+          // Phase 2 — server has persisted the user's request. Safe to visually
+          // clear the input field; lastSubmittedText is retained in the slice.
+          dispatch(markInputPersisted(conversationId));
+          dispatch(
+            upsertUserRequest({
+              id: d.record_id,
+              conversationId: owningConvId(parents?.conversation_id),
+              // Fields unknown at reservation time; server fills them in on
+              // record_update / completion. Sensible zeros keep selectors safe.
+              userId: "",
+              agentId: null,
+              agentVersionId: null,
+              status: "pending",
+              iterations: 0,
+              finishReason: null,
+              error: null,
+              triggerMessagePosition: null,
+              resultStartPosition: null,
+              resultEndPosition: null,
+              totalInputTokens: 0,
+              totalOutputTokens: 0,
+              totalCachedTokens: 0,
+              totalTokens: 0,
+              totalToolCalls: 0,
+              totalCost: null,
+              totalDurationMs: null,
+              apiDurationMs: null,
+              toolDurationMs: null,
+              sourceApp: "",
+              sourceFeature: "",
+              metadata: (d.metadata ?? {}) as CxUserRequestRecord["metadata"],
+              createdAt: nowIso,
+              completedAt: null,
+              deletedAt: null,
+            }),
+          );
+        } else if (isCxRequestReservation(d)) {
+          const { iteration } = d.metadata;
+          const { conversation_id, user_request_id } = d.parent_refs;
+          const nowIso = new Date().toISOString();
+          dispatch(
+            upsertRequest({
+              id: d.record_id,
+              conversationId: owningConvId(conversation_id),
+              userRequestId: user_request_id,
+              aiModelId: "",
+              apiClass: null,
+              iteration,
+              responseId: null,
+              finishReason: null,
+              inputTokens: null,
+              cachedTokens: null,
+              outputTokens: null,
+              totalTokens: null,
+              cost: null,
+              totalDurationMs: null,
+              apiDurationMs: null,
+              toolDurationMs: null,
+              toolCallsCount: null,
+              toolCallsDetails: null,
+              metadata: (d.metadata ?? {}) as CxRequestRecord["metadata"],
+              createdAt: nowIso,
+              deletedAt: null,
+            }),
+          );
+        } else if (isCxToolCallReservation(d)) {
+          const { tool_name, call_id, iteration } = d.metadata;
+          const {
+            conversation_id,
+            user_request_id,
+            call_id: parentCallId,
+          } = d.parent_refs;
+          const nowIso = new Date().toISOString();
+          // Record the call_id → DB id mapping so tool_event patches land on
+          // the correct observability row.
+          const providerCallId = call_id ?? parentCallId;
+          if (providerCallId) {
+            toolCallIdByProviderCallId.set(providerCallId, d.record_id);
+          }
+          dispatch(
+            upsertToolCall({
+              id: d.record_id,
+              conversationId: owningConvId(conversation_id),
+              userRequestId: user_request_id,
+              messageId: null,
+              userId: "",
+              callId: call_id ?? parentCallId,
+              toolName: tool_name,
+              // Streamed events carry the canonical name; the as-called value is
+              // backfilled on conversation reload from cx_tool_call.tool_name_as_called.
+              toolNameAsCalled: null,
+              toolType: "",
+              iteration,
+              status: "pending",
+              success: false,
+              isError: null,
+              errorType: null,
+              errorMessage: null,
+              arguments: {} as CxToolCallRecord["arguments"],
+              output: null,
+              outputChars: 0,
+              outputPreview: null,
+              outputType: null,
+              inputTokens: null,
+              outputTokens: null,
+              totalTokens: null,
+              costUsd: null,
+              durationMs: 0,
+              startedAt: nowIso,
+              completedAt: nowIso,
+              parentCallId: null,
+              retryCount: null,
+              persistKey: null,
+              filePath: null,
+              executionEvents: null,
+              metadata: (d.metadata ?? {}) as CxToolCallRecord["metadata"],
+              createdAt: nowIso,
+              deletedAt: null,
+            }),
+          );
+        } else if (d.table === "cx_conversation") {
+          // Manual mode: wire convId ≠ local Redux convId by design. The
+          // server-side cx_conversation row is keyed by a different id than
+          // our local Redux conversationId, so the local id is NOT a valid
+          // list-row id and must never be written into the per-agent
+          // conversation list cache. Doing so pollutes the cache with rows
+          // whose ids don't exist server-side (loadConversation fails) AND
+          // flips the cache status to "succeeded", which suppresses the
+          // real `get_agent_conversations` RPC on the run page's sidebar.
+          // Both the assertion and the list-cache upsert are therefore
+          // gated on agent mode.
+          if (!forceLocalConversationId) {
+            assertConversationIdMatches(
+              conversationId,
+              d.record_id,
+              "record_reserved-cx_conversation",
+            );
+            if (!cxConversationConfirmed) {
+              cxConversationConfirmed = true;
+              dispatch(confirmServerSync(conversationId));
+              const syncListCx = upsertAgentConversationFromExecutionAction(
+                getState(),
+                conversationId,
+                conversationId,
+              );
+              if (syncListCx) dispatch(syncListCx);
+            }
+          }
+        }
+
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "record_reserved",
+              seq: 0,
+              timestamp: now,
+              data: d,
+            },
+          }),
+        );
+      } else if (isRecordUpdateEvent(event)) {
+        recordUpdateEvents++;
+        const d = event.data;
+        dispatch(
+          upsertReservation({
+            requestId,
+            recordId: d.record_id,
+            dbProject: d.db_project,
+            table: d.table,
+            status: d.status,
+            metadata: d.metadata,
+          }),
+        );
+
+        // Per-table status patch into the DB-faithful slices. These updates
+        // deliberately ONLY touch the `status` field — never content —
+        // so subscribers rendering message bodies don't re-render on
+        // bookkeeping status changes. (See Phase 5.3 re-render audit.)
+        if (d.table === "cx_message") {
+          dispatch(
+            updateMessageRecord({
+              conversationId,
+              messageId: d.record_id,
+              // On a failed transition, carry the metadata through too so the
+              // in-session record reflects { failed:true, error } exactly as
+              // the DB serves it back on reload — the failed-turn renderer
+              // reads `metadata.error`. Non-failed transitions stay status-only
+              // to avoid re-rendering message bodies on bookkeeping changes.
+              patch:
+                d.status === "failed" && d.metadata
+                  ? {
+                      status: d.status,
+                      metadata: d.metadata as MessageRecord["metadata"],
+                    }
+                  : { status: d.status },
+            }),
+          );
+        } else if (d.table === "cx_user_request") {
+          dispatch(
+            patchUserRequest({
+              id: d.record_id,
+              patch: {
+                status: d.status,
+                completedAt:
+                  d.status === "completed" || d.status === "failed"
+                    ? new Date().toISOString()
+                    : null,
+              },
+            }),
+          );
+        } else if (d.table === "cx_tool_call") {
+          // Stamp `completedAt` whenever the tool-call record transitions —
+          // "active" / "completed" / "failed" all mark the row as no longer
+          // reserved and give us the server's timestamp.
+          dispatch(
+            patchToolCall({
+              id: d.record_id,
+              patch: {
+                status: d.status,
+                completedAt: new Date().toISOString(),
+              },
+            }),
+          );
+        }
+
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "record_update",
+              seq: 0,
+              timestamp: now,
+              data: d,
+            },
+          }),
+        );
+      } else if (isResourceChangedEvent(event)) {
+        // Generic "this resource just changed" primitive. Today it's emitted
+        // by matrx-ai's `fs_write` / `fs_patch` / `fs_mkdir` tools (kind
+        // `fs.file` / `fs.directory`) and by the orchestrator when the
+        // active tool set mutates mid-loop (kind `active_tools` — fired by
+        // tools that load other tools, e.g. the Chrome-extension discovery
+        // tool). Future kinds (`cld_files`, `sandbox.cwd`, `cache.*`) will
+        // land on the same wire shape. The fs slice swallows ALL kinds;
+        // downstream consumers branch on `kind` and ignore unknown ones —
+        // see `features/code/SANDBOX_PROXY_AND_FS_EVENTS_FE_INTEGRATION.md` §2.
+        resourceChangedEvents++;
+        const d = event.data;
+        if (d.kind === "active_tools") {
+          // Tool set was invalidated by a mid-loop injection. Bump the
+          // per-conversation revision so any toolbar / capability-display UI
+          // bound to the active set refetches. `metadata.added/removed` carry
+          // the deltas — surfaced for UX hints (toast, badge, etc.).
+          const added =
+            typeof d.metadata?.added === "number" ? d.metadata.added : 0;
+          const removed =
+            typeof d.metadata?.removed === "number" ? d.metadata.removed : 0;
+          dispatch(invalidateActiveTools({ conversationId, added, removed }));
+        } else if (isSkillStreamEvent(d.kind)) {
+          // `skills.ingested` (sandbox auto-discovery completing) and
+          // future `skill.created` / `skill.modified` / `skill.deleted`
+          // events bump the skills slice's `lastIngestAt`, which the
+          // `useSkills` hook subscribes to (reload + toast). The pump
+          // does NOT refetch directly — keeps the side effect colocated
+          // with the consumer that needs it.
+          applySkillStreamEvent(dispatch, {
+            kind: d.kind,
+            action: d.action,
+            resource_id: d.resource_id,
+            metadata: d.metadata ?? {},
+          });
+        } else {
+          dispatch(
+            receivedFsChange({
+              kind: d.kind,
+              action: d.action,
+              resourceId: d.resource_id,
+              sandboxId: d.sandbox_id ?? null,
+              userId: d.user_id ?? null,
+              metadata: d.metadata ?? {},
+              receivedAt: Date.now(),
+              requestId,
+              conversationId,
+            }),
+          );
+        }
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "resource_changed",
+              seq: 0,
+              timestamp: now,
+              data: d,
+            },
+          }),
+        );
+      } else if (isErrorEvent(event)) {
+        otherEvents++;
+        // Pass the backend ErrorPayload through verbatim — both
+        // `message` (system / technical) and `user_message` (optional
+        // human-friendly) survive intact. Consumers decide which one to
+        // surface; we never collapse them into a single field here. There
+        // is no `is_fatal` field on the wire — error events ARE fatal by
+        // definition (the stream is killed); the client tracks that solely
+        // through `request.status === "error"`.
+        dispatch(
+          setRequestStatus({
+            requestId,
+            status: "error",
+            error: event.data,
+          }),
+        );
+        dispatch(setInstanceStatus({ conversationId, status: "error" }));
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "error",
+              seq: 0,
+              timestamp: now,
+              data: event.data,
+            },
+          }),
+        );
+
+        // Widget handle lifecycle: fire onError at stream-level errors too,
+        // not only for widget_* tool failures (dispatcher fires those already).
+        const errWidgetHandleId = selectWidgetHandleIdFor(
+          getState(),
+          conversationId,
+        );
+        if (errWidgetHandleId) {
+          const handle = callbackManager.get<WidgetHandle>(errWidgetHandleId);
+          handle?.onError?.({
+            reason: event.data.error_type ?? "stream_error",
+            message: event.data.user_message ?? event.data.message,
+          });
+        }
+      } else if (isEndEvent(event)) {
+        otherEvents++;
+        const currentState = getState();
+        const currentRequest =
+          currentState.activeRequests.byRequestId[requestId];
+        if (currentRequest?.status !== "error") {
+          dispatch(setRequestStatus({ requestId, status: "complete" }));
+          // Don't overwrite a `paused` instance — the backend hard-suspends and
+          // ends the stream when a client-tool is pending, but the instance is
+          // genuinely still waiting on the user. The /tool_results POST →
+          // resumeInstance handoff flips it back to "running". Keeping the
+          // REQUEST at "complete" is correct (this stream did end); the INSTANCE
+          // tracks the conversation lifecycle, which is still mid-flight.
+          const instStatus =
+            currentState.conversations.byConversationId[conversationId]?.status;
+          if (instStatus !== "paused") {
+            dispatch(setInstanceStatus({ conversationId, status: "complete" }));
+          }
+
+          // Widget handle lifecycle: fire onComplete at stream end (success
+          // path only). Fires for EVERY display mode — the previous call site
+          // in launch-agent-execution.thunk.ts:439 only fired in the narrow
+          // autoRun + direct/background/inline branch.
+          const endWidgetHandleId = selectWidgetHandleIdFor(
+            getState(),
+            conversationId,
+          );
+          if (endWidgetHandleId) {
+            const handle = callbackManager.get<WidgetHandle>(endWidgetHandleId);
+            if (handle?.onComplete) {
+              const responseText =
+                currentRequest?.renderBlockOrder
+                  .map((id) => currentRequest.renderBlocks[id]?.content ?? "")
+                  .join("\n") || "";
+              handle.onComplete({
+                conversationId,
+                requestId,
+                responseText,
+              });
+            }
+          }
+        }
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "end",
+              seq: 0,
+              timestamp: now,
+              data: event.data,
+            },
+          }),
+        );
+      } else if (isBrokerEvent(event)) {
+        otherEvents++;
+        dispatch(
+          appendDataPayload({
+            requestId,
+            data: { type: "broker", broker: event.data } as UntypedDataPayload,
+          }),
+        );
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "broker",
+              seq: 0,
+              timestamp: now,
+              data: event.data,
+            },
+          }),
+        );
+      } else if (isHeartbeatEvent(event)) {
+        otherEvents++;
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "heartbeat",
+              seq: 0,
+              timestamp: now,
+              data: event.data,
+            },
+          }),
+        );
+      } else if (isContextAnalysisEvent(event)) {
+        otherEvents++;
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "unknown",
+              seq: 0,
+              timestamp: now,
+              originalEvent: "context_analysis",
+              rawData: event.data,
+            },
+          }),
+        );
+      } else if (isStructuredOutputEvent(event)) {
+        otherEvents++;
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "structured_output",
+              seq: 0,
+              timestamp: now,
+              data: event.data,
+            },
+          }),
+        );
+      } else if (isContextStateEvent(event)) {
+        otherEvents++;
+        // Wire payload is snake_case + uses Record<string, unknown> for
+        // JSONB-shaped fields (matches generated stream-events.ts). The
+        // slice's ContextStateWirePayload accepts that shape directly and
+        // narrows to typed fields inside the reducer — no cast needed here.
+        dispatch(applyContextState(event.data));
+      } else if (isContextTrimmedEvent(event)) {
+        otherEvents++;
+        dispatch(applyContextTrimmed(event.data));
+      } else if (isInjectionConsumedEvent(event)) {
+        otherEvents++;
+        // Inbox delivery ack — full queued→delivered UI lands with turn-boundary
+        // inbox work; preserve the payload on the timeline until then.
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "unknown",
+              seq: 0,
+              timestamp: now,
+              originalEvent: "injection_consumed",
+              rawData: event.data,
+            },
+          }),
+        );
+      } else {
+        const _exhaustive: never = event;
+        const unhandled = _exhaustive as { event?: string; data?: unknown };
+        unknownEvents++;
+        otherEvents++;
+        console.warn(
+          `[stream:${requestId.slice(0, 8)}] Unrecognized event type: "${unhandled.event}"`,
+          unhandled,
+        );
+        dispatch(
+          appendTimeline({
+            requestId,
+            entry: {
+              kind: "unknown",
+              seq: 0,
+              timestamp: now,
+              originalEvent: String(unhandled.event ?? "undefined"),
+              rawData: unhandled.data,
+            },
+          }),
+        );
       }
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "end",
-            seq: 0,
-            timestamp: now,
-            data: event.data,
-          },
-        }),
-      );
-    } else if (isBrokerEvent(event)) {
-      otherEvents++;
-      dispatch(
-        appendDataPayload({
-          requestId,
-          data: { type: "broker", broker: event.data } as UntypedDataPayload,
-        }),
-      );
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "broker",
-            seq: 0,
-            timestamp: now,
-            data: event.data,
-          },
-        }),
-      );
-    } else if (isHeartbeatEvent(event)) {
-      otherEvents++;
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "heartbeat",
-            seq: 0,
-            timestamp: now,
-            data: event.data,
-          },
-        }),
-      );
-    } else if (isContextAnalysisEvent(event)) {
-      otherEvents++;
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "unknown",
-            seq: 0,
-            timestamp: now,
-            originalEvent: "context_analysis",
-            rawData: event.data,
-          },
-        }),
-      );
-    } else if (isStructuredOutputEvent(event)) {
-      otherEvents++;
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "structured_output",
-            seq: 0,
-            timestamp: now,
-            data: event.data,
-          },
-        }),
-      );
-    } else if (isContextStateEvent(event)) {
-      otherEvents++;
-      // Wire payload is snake_case + uses Record<string, unknown> for
-      // JSONB-shaped fields (matches generated stream-events.ts). The
-      // slice's ContextStateWirePayload accepts that shape directly and
-      // narrows to typed fields inside the reducer — no cast needed here.
-      dispatch(applyContextState(event.data));
-    } else if (isContextTrimmedEvent(event)) {
-      otherEvents++;
-      dispatch(applyContextTrimmed(event.data));
-    } else if (isInjectionConsumedEvent(event)) {
-      otherEvents++;
-      // Inbox delivery ack — full queued→delivered UI lands with turn-boundary
-      // inbox work; preserve the payload on the timeline until then.
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "unknown",
-            seq: 0,
-            timestamp: now,
-            originalEvent: "injection_consumed",
-            rawData: event.data,
-          },
-        }),
-      );
-    } else {
-      const _exhaustive: never = event;
-      const unhandled = _exhaustive as { event?: string; data?: unknown };
-      unknownEvents++;
-      otherEvents++;
-      console.warn(
-        `[stream:${requestId.slice(0, 8)}] Unrecognized event type: "${unhandled.event}"`,
-        unhandled,
-      );
-      dispatch(
-        appendTimeline({
-          requestId,
-          entry: {
-            kind: "unknown",
-            seq: 0,
-            timestamp: now,
-            originalEvent: String(unhandled.event ?? "undefined"),
-            rawData: unhandled.data,
-          },
-        }),
-      );
     }
+  } catch (err) {
+    // Stream died mid-flight. Capture and fall through to the commit path —
+    // partial content preservation is non-negotiable. Re-thrown below.
+    streamFailure = err instanceof Error ? err : new Error(String(err));
   }
 
   if (unknownEvents > 0) {
@@ -1622,6 +1641,7 @@ export async function processStream({
   const postLoopState = getState();
   const postLoopRequest = postLoopState.activeRequests.byRequestId[requestId];
   if (
+    streamFailure === null &&
     postLoopRequest &&
     postLoopRequest.status !== "complete" &&
     postLoopRequest.status !== "error"
@@ -1658,10 +1678,16 @@ export async function processStream({
   // For DB persistence we want the human-friendly summary (`user_message` if
   // the backend sent one, otherwise the technical `message`). The full
   // `ErrorPayload` lives on `finalRequest.error` for in-memory consumers.
+  //
+  // `streamFailure` is folded in because on a client-detected failure
+  // (heartbeat timeout, abort) the request status is set to "error" by
+  // runAiStream AFTER this commit runs — the local flag is the only truthful
+  // signal at this point in time.
   const finalErrorMessage =
-    finalRequest?.status === "error" && finalRequest.error
+    streamFailure?.message ??
+    (finalRequest?.status === "error" && finalRequest.error
       ? (finalRequest.error.user_message ?? finalRequest.error.message ?? null)
-      : null;
+      : null);
 
   // Assemble the DB-compatible CxContentBlock[] from the completed request.
   // This is the single source of truth for the persisted assistant content —
@@ -1772,7 +1798,13 @@ export async function processStream({
               iter,
             ) as unknown as import("@/types/database.types").Json,
             status: "active",
-            _clientStatus: finalErrorMessage ? "error" : "complete",
+            // Only the FINAL iteration carries the error marker — earlier
+            // iterations completed before the stream died and must render
+            // as the normal turns they are.
+            _clientStatus:
+              finalErrorMessage && i === sortedIters.length - 1
+                ? "error"
+                : "complete",
             position: turn.position,
           },
         }),
@@ -1825,9 +1857,15 @@ export async function processStream({
     }
   }
 
-  dispatch(clearUserInput(conversationId));
-  dispatch(clearAllResources(conversationId));
-  dispatch(resetUserVariableValues(conversationId));
+  // Input / resource cleanup is a SUCCESS-path concern. On a stream failure
+  // runAiStream owns input handling (`clearInputOnError` — initial sends clear,
+  // retries keep the draft), and resources/variables must survive for the
+  // retry to resend them.
+  if (streamFailure === null) {
+    dispatch(clearUserInput(conversationId));
+    dispatch(clearAllResources(conversationId));
+    dispatch(resetUserVariableValues(conversationId));
+  }
 
   const renderCompleteAt = performance.now();
 
@@ -1890,6 +1928,13 @@ export async function processStream({
   };
 
   dispatch(finalizeClientMetrics({ requestId, metrics: clientMetrics }));
+
+  // Everything streamed before the failure is now flushed + committed —
+  // propagate so runAiStream's canonical error path (statuses,
+  // failPendingToolLifecycle, recovery) runs.
+  if (streamFailure !== null) {
+    throw streamFailure;
+  }
 
   return {
     conversationId,

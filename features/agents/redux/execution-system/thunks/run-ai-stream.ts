@@ -426,10 +426,33 @@ export async function runAiStream(
       setRequestStatus({
         requestId,
         status: "error",
-        error: { error_type: errorType, message },
+        error: {
+          error_type: errorType,
+          message,
+          // Heartbeat loss means the CONNECTION died — the server detaches
+          // and finishes the turn regardless (detach_on_disconnect). Say so,
+          // instead of implying the response itself failed.
+          ...(isHeartbeat && {
+            user_message:
+              "Connection to the stream was lost. The server is still finishing the response — recovering it automatically.",
+          }),
+        },
       }),
     );
     dispatch(setInstanceStatus({ conversationId, status: "error" }));
+
+    // Self-heal: the server runs detached and persists the turn even though
+    // our connection died. Poll for the terminal status and rehydrate from
+    // the DB — for the common case (server finished fine) the user gets the
+    // full response without touching anything. Fire-and-forget; the thunk
+    // stands down by itself if the user retries or sends a new message.
+    if (isHeartbeat) {
+      void import("./recover-dropped-stream.thunk").then(
+        ({ recoverDroppedStream }) => {
+          dispatch(recoverDroppedStream({ conversationId, requestId }));
+        },
+      );
+    }
     // Force-terminal any tool that the stream left mid-flight. Without this,
     // LiveToolCallCard keeps shimmering "Using tool …" forever because the
     // toolLifecycle entry never receives its terminal event.
