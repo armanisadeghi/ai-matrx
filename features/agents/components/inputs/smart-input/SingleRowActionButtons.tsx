@@ -24,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { SmartAgentResourcePickerButton } from "../resources/SmartAgentResourcePickerButton";
-import { InputControlsMenu } from "./InputControlsMenu";
+import { RunControlsMenu } from "./RunControlsMenu";
 import { InputButton } from "./InputActionButtons";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import {
@@ -119,7 +119,7 @@ export function SingleRowActionButtons({
         />
       )}
 
-      <InputControlsMenu conversationId={conversationId} />
+      <RunControlsMenu conversationId={conversationId} />
 
       {isAdmin && isDebugMode && (
         <InputButton

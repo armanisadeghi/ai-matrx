@@ -39,6 +39,7 @@ import {
   upsertSessionSettings,
   upsertStudioDocument,
   type ConceptItemPatch,
+  type SessionListFilter,
   type UpsertSessionSettingsInput,
 } from "../service/studioService";
 import type {
@@ -95,12 +96,15 @@ interface CreateSessionThunkArg extends CreateSessionInput {
   activate?: boolean;
 }
 
-export const fetchSessionsThunk = createAsyncThunk<StudioSession[], void>(
+export const fetchSessionsThunk = createAsyncThunk<
+  StudioSession[],
+  SessionListFilter | void
+>(
   "transcriptStudio/fetchSessions",
-  async (_, { dispatch, rejectWithValue }) => {
+  async (filter, { dispatch, rejectWithValue }) => {
     dispatch(sessionsListLoading());
     try {
-      const sessions = await listSessions();
+      const sessions = await listSessions(filter ?? undefined);
       dispatch(sessionsListLoaded(sessions));
       return sessions;
     } catch (err) {

@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { SmartAgentResourcePickerButton } from "../resources/SmartAgentResourcePickerButton";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
-import { InputControlsMenu } from "./InputControlsMenu";
+import { RunControlsMenu } from "./RunControlsMenu";
 import {
   selectSubmitOnEnter,
   selectShowVariablePanel,
@@ -171,7 +171,7 @@ export function InputActionButtons({
         {/* Consolidated run controls — Model (per-conversation model override),
             Tools (add tools to this run), Sandbox binding, and run Settings
             (disable injection, Surface Simulator, …) in one tabbed popover. */}
-        <InputControlsMenu conversationId={conversationId} />
+        <RunControlsMenu conversationId={conversationId} />
 
         {isAdmin && isDebugMode && (
           <InputButton

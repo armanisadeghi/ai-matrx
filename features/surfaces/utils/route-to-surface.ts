@@ -59,6 +59,7 @@ const SURFACE_BY_ROUTE_PREFIX: readonly RouteMapping[] = [
   { prefix: "/ai-results", surface: "matrx-user/ai-results" },
   { prefix: "/research", surface: "matrx-user/research" },
   { prefix: "/sandboxes", surface: "matrx-user/sandboxes" },
+  { prefix: "/transcripts/cleanup", surface: "matrx-user/transcripts-cleanup" },
   { prefix: "/transcripts", surface: "matrx-user/transcripts" },
   { prefix: "/transcript-studio", surface: "matrx-user/transcript-studio" },
   { prefix: "/dashboard", surface: "matrx-user/dashboard" },

@@ -45,6 +45,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import { listFiles } from "@/features/files/api/files";
 import { getUserProjects } from "@/features/projects/service";
 import { getUserTasks } from "@/features/tasks/services/taskService";
@@ -62,8 +63,8 @@ type Target =
 /* ───────────────────────── reusable row (zero layout shift) ───────────────── */
 
 function CheckRow({
-  on, label, right, onClick,
-}: { on: boolean; label: string; right?: React.ReactNode; onClick: () => void }) {
+  on, label, right, onClick, textClass,
+}: { on: boolean; label: string; right?: React.ReactNode; onClick: () => void; textClass?: string }) {
   return (
     <button
       onClick={onClick}
@@ -72,7 +73,7 @@ function CheckRow({
       <span className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded border", on ? "border-primary bg-primary text-primary-foreground" : "border-border")}>
         {on && <Check className="h-3 w-3" />}
       </span>
-      <span className="min-w-0 flex-1 truncate">{label}</span>
+      <span className={cn("min-w-0 flex-1 truncate", textClass)}>{label}</span>
       {right}
     </button>
   );
@@ -90,19 +91,20 @@ function MiniToggle({ on, onChange, label }: { on: boolean; onChange: (v: boolea
 }
 
 function SectionShell({
-  icon: Icon, title, count, onAdd, addLabel, children, headerExtra, collapsible = true,
+  icon: Icon, title, count, onAdd, addLabel, children, headerExtra, iconClass, borderClass, collapsible = true,
 }: {
   icon: React.ComponentType<{ className?: string }>; title: string; count: number;
-  onAdd: () => void; addLabel: string; children: React.ReactNode; headerExtra?: React.ReactNode; collapsible?: boolean;
+  onAdd: () => void; addLabel: string; children: React.ReactNode; headerExtra?: React.ReactNode;
+  iconClass?: string; borderClass?: string; collapsible?: boolean;
 }) {
   const [open, setOpen] = useState(true);
   return (
-    <div className="rounded-lg border border-border">
+    <div className={cn("rounded-lg border", borderClass ?? "border-border")}>
       <div className="flex items-center gap-2 px-3 py-2">
         <button onClick={() => collapsible && setOpen((o) => !o)} className="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium">
           {collapsible ? (open ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />) : <span className="w-4" />}
-          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="truncate">{title}</span>
+          <Icon className={cn("h-4 w-4 shrink-0", iconClass ?? "text-muted-foreground")} />
+          <span className={cn("truncate", iconClass)}>{title}</span>
           <span className="shrink-0 text-xs text-muted-foreground">{count}</span>
         </button>
         {headerExtra}
@@ -161,10 +163,13 @@ function OrganizeDocumentPanel({
 
   // Default: only this-org + unassigned (no org). "Show all" reveals other orgs'.
   const inScope = (oid: string | null) => oid === org.id || oid == null;
+  // A task follows its parent: its org is its own, else its project's org.
+  const projOrgOf = (pid: string | null) => (pid ? [...allProjects, ...addedProjects].find((p) => p.id === pid)?.orgId ?? null : null);
+  const taskOrg = (t: FlatTask) => t.orgId ?? projOrgOf(t.projectId);
   const projects = useMemo(() => [...allProjects, ...addedProjects].filter((p) => match(p.name) && (showAllProjects || inScope(p.orgId))), [allProjects, addedProjects, q, showAllProjects, org.id]);
-  const tasks = useMemo(() => [...allTasks, ...addedTasks].filter((t) => match(t.title) && (showAllTasks || inScope(t.orgId))), [allTasks, addedTasks, q, showAllTasks, org.id]);
+  const tasks = useMemo(() => [...allTasks, ...addedTasks].filter((t) => match(t.title) && (showAllTasks || inScope(taskOrg(t)))), [allTasks, addedTasks, allProjects, addedProjects, q, showAllTasks, org.id]);
   const hiddenProjects = useMemo(() => [...allProjects].filter((p) => !inScope(p.orgId)).length, [allProjects, org.id]);
-  const hiddenTasks = useMemo(() => [...allTasks].filter((t) => !inScope(t.orgId)).length, [allTasks, org.id]);
+  const hiddenTasks = useMemo(() => [...allTasks].filter((t) => !inScope(taskOrg(t))).length, [allTasks, allProjects, addedProjects, org.id]);
 
   const typeById = (id: string): ScopeTypeNode | undefined => org.scope_types.find((t) => t.id === id);
   const typeOfScope = (id: string): ScopeTypeNode | undefined => org.scope_types.find((t) => t.scopes.some((s) => s.id === id)) ?? typeById(addedScopes.find((a) => a.id === id)?.typeId ?? "");
@@ -215,7 +220,7 @@ function OrganizeDocumentPanel({
   const totalSelected = selScopes.size + selProjects.size + selTasks.size;
 
   return (
-    <Card className="w-full max-w-2xl overflow-hidden">
+    <Card className="w-[680px] max-w-full overflow-hidden">
       {/* file */}
       <div className="flex items-center gap-3 border-b border-border p-4">
         <div className="rounded-lg bg-muted p-2 text-muted-foreground"><FileText className="h-5 w-5" /></div>
@@ -247,18 +252,19 @@ function OrganizeDocumentPanel({
           </div>
         </div>
 
-        {/* sections */}
-        <div className="max-h-[440px] space-y-2 overflow-y-auto pr-1">
+        {/* sections — FIXED height so showing/hiding/expanding never resizes the card */}
+        <div className="h-[440px] space-y-2 overflow-y-auto pr-1">
           {scopeTypes.length === 0 && <div className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">This organization has no scopes yet.</div>}
 
           {scopeTypes.map(({ type, scopes, total }) => {
             const Icon = resolveIcon(type.icon);
+            const c = resolveColor(type);
             return (
-              <SectionShell key={type.id} icon={Icon} title={type.label_plural} count={total} addLabel={`New ${type.label_singular}`} onAdd={() => setAdding(type.id)}>
+              <SectionShell key={type.id} icon={Icon} iconClass={c.fg} borderClass={c.border} title={type.label_plural} count={total} addLabel={`New ${type.label_singular}`} onAdd={() => setAdding(type.id)}>
                 {adding === type.id && <InlineAdd placeholder={`New ${type.label_singular.toLowerCase()} name`} onCommit={(v) => addScope(type.id, v)} onCancel={() => setAdding(null)} />}
                 {scopes.length === 0 ? (
                   <div className="px-2.5 py-1.5 text-xs text-muted-foreground">{q ? "No matches." : `No ${type.label_plural.toLowerCase()} yet.`}</div>
-                ) : scopes.map((s) => <CheckRow key={s.id} on={selScopes.has(s.id)} label={s.name} onClick={() => toggle(setSelScopes, s.id)} />)}
+                ) : scopes.map((s) => <CheckRow key={s.id} on={selScopes.has(s.id)} label={s.name} textClass={c.fg} onClick={() => toggle(setSelScopes, s.id)} />)}
               </SectionShell>
             );
           })}
@@ -268,7 +274,7 @@ function OrganizeDocumentPanel({
             headerExtra={hiddenProjects > 0 || showAllProjects ? <MiniToggle on={showAllProjects} onChange={setShowAllProjects} label={showAllProjects ? "All orgs" : `Show all (${hiddenProjects})`} /> : undefined}>
             {adding === "project" && <InlineAdd placeholder="New project name" onCommit={addProject} onCancel={() => setAdding(null)} />}
             {projects.length === 0 ? <div className="px-2.5 py-1.5 text-xs text-muted-foreground">{q ? "No matches." : "No projects yet."}</div>
-              : projects.map((p) => <CheckRow key={p.id} on={selProjects.has(p.id)} label={p.name} right={<span className="shrink-0 text-[11px] text-muted-foreground">{orgLabel(p.orgId)}</span>} onClick={() => toggle(setSelProjects, p.id)} />)}
+              : projects.map((p) => <CheckRow key={p.id} on={selProjects.has(p.id)} label={p.name} right={<span className="max-w-[45%] shrink-0 truncate text-[11px] text-muted-foreground">{orgLabel(p.orgId)}</span>} onClick={() => toggle(setSelProjects, p.id)} />)}
           </SectionShell>
 
           {/* tasks — independent of projects; same this-org+unassigned default */}
@@ -276,18 +282,18 @@ function OrganizeDocumentPanel({
             headerExtra={hiddenTasks > 0 || showAllTasks ? <MiniToggle on={showAllTasks} onChange={setShowAllTasks} label={showAllTasks ? "All orgs" : `Show all (${hiddenTasks})`} /> : undefined}>
             {adding === "task" && <InlineAdd placeholder="New task title" onCommit={addTask} onCancel={() => setAdding(null)} />}
             {tasks.length === 0 ? <div className="px-2.5 py-1.5 text-xs text-muted-foreground">{q ? "No matches." : "No tasks yet."}</div>
-              : tasks.map((t) => <CheckRow key={t.id} on={selTasks.has(t.id)} label={t.title} right={<span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">{t.status === "completed" ? <CheckCircle2 className="h-3 w-3" /> : <Circle className="h-3 w-3" />}{t.projectId ? projName(t.projectId) : "No project"}</span>} onClick={() => toggle(setSelTasks, t.id)} />)}
+              : tasks.map((t) => <CheckRow key={t.id} on={selTasks.has(t.id)} label={t.title} right={<span className="flex max-w-[45%] shrink items-center gap-1 text-[11px] text-muted-foreground">{t.status === "completed" ? <CheckCircle2 className="h-3 w-3 shrink-0" /> : <Circle className="h-3 w-3 shrink-0" />}<span className="truncate">{t.projectId ? projName(t.projectId) : "No project"}</span></span>} onClick={() => toggle(setSelTasks, t.id)} />)}
           </SectionShell>
         </div>
 
         {/* footer: one tight row — selection summary left, Save right */}
         <div className="flex items-start justify-between gap-3 border-t border-border pt-3">
-          <div className="min-w-0 flex-1">
+          <div className="max-h-16 min-w-0 flex-1 overflow-y-auto">
             {totalSelected === 0 ? (
               <span className="text-xs text-muted-foreground">Nothing selected — saving with no associations is fine.</span>
             ) : (
               <div className="flex flex-wrap items-center gap-1.5">
-                {[...selScopes].map((id) => { const name = [...org.scope_types.flatMap((x) => x.scopes), ...addedScopes].find((s) => s.id === id)?.name ?? id; return <Chip key={id} label={name} onRemove={() => toggle(setSelScopes, id)} />; })}
+                {[...selScopes].map((id) => { const name = [...org.scope_types.flatMap((x) => x.scopes), ...addedScopes].find((s) => s.id === id)?.name ?? id; const t = typeOfScope(id); const c = t ? resolveColor(t) : undefined; return <Chip key={id} label={name} fg={c?.fg} border={c?.border} onRemove={() => toggle(setSelScopes, id)} />; })}
                 {[...selProjects].map((id) => <Chip key={id} label={projName(id)} onRemove={() => toggle(setSelProjects, id)} />)}
                 {[...selTasks].map((id) => <Chip key={id} label={[...allTasks, ...addedTasks].find((t) => t.id === id)?.title ?? id} onRemove={() => toggle(setSelTasks, id)} />)}
                 {[...derivedTypeIds].map((tid) => <span key={tid} className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">{typeById(tid)?.label_plural}<span className="text-[9px] uppercase opacity-70">auto</span></span>)}
@@ -302,11 +308,11 @@ function OrganizeDocumentPanel({
   );
 }
 
-function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
+function Chip({ label, onRemove, fg, border }: { label: string; onRemove: () => void; fg?: string; border?: string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+    <span className={cn("inline-flex items-center gap-1 rounded-md border bg-transparent px-2 py-1 text-xs font-medium", fg ?? "text-foreground", border ?? "border-border")}>
       <span className="max-w-[160px] truncate">{label}</span>
-      <button onClick={onRemove} className="rounded p-0.5 hover:bg-primary/20"><X className="h-3 w-3" /></button>
+      <button onClick={onRemove} className="rounded p-0.5 hover:bg-muted"><X className="h-3 w-3" /></button>
     </span>
   );
 }
@@ -340,7 +346,10 @@ export default function ContextLabPage() {
 
   useEffect(() => {
     if (orgId || organizations.length === 0) return;
-    const best = [...organizations].sort((a, b) => b.scope_types.length - a.scope_types.length)[0];
+    // Prefer the org whose types actually have custom icons/colors (so the demo
+    // shows the feature), then fall back to the one with the most types.
+    const richness = (o: OrgNode) => o.scope_types.reduce((n, t) => n + ((t.icon && t.icon.toLowerCase() !== "folder") ? 1 : 0) + (t.color ? 1 : 0), 0);
+    const best = [...organizations].sort((a, b) => richness(b) - richness(a) || b.scope_types.length - a.scope_types.length)[0];
     setOrgId(best.id);
   }, [organizations, orgId]);
 
@@ -378,11 +387,11 @@ export default function ContextLabPage() {
           <div className="space-y-2">
             <div className="text-[11px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">Exactly what the user sees</div>
             {status === "loading" && organizations.length === 0 ? (
-              <Card className="flex w-full max-w-2xl items-center justify-center p-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></Card>
+              <Card className="flex w-[680px] max-w-full items-center justify-center p-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></Card>
             ) : !org ? (
-              <Card className="w-full max-w-2xl p-6 text-sm text-muted-foreground">No organizations found for your account.</Card>
+              <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">No organizations found for your account.</Card>
             ) : !file ? (
-              <Card className="w-full max-w-2xl p-6 text-sm text-muted-foreground">No documents found. Upload a file, then revisit.</Card>
+              <Card className="w-[680px] max-w-full p-6 text-sm text-muted-foreground">No documents found. Upload a file, then revisit.</Card>
             ) : (
               <OrganizeDocumentPanel file={file} org={org} orgs={organizations} onChangeOrg={setOrgId} allProjects={projects} allTasks={tasks} />
             )}

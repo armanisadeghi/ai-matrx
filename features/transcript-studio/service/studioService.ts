@@ -13,6 +13,8 @@ import { supabase } from "@/utils/supabase/client";
 import { NEW_SESSION_DEFAULT_TITLE, DEFAULT_MODULE_ID } from "../constants";
 import type {
   CreateSessionInput,
+  SessionContextItem,
+  SessionSource,
   StudioSession,
   UpdateSessionInput,
 } from "../types";
@@ -39,6 +41,7 @@ export interface SessionRow {
   title: string;
   status: StudioSession["status"];
   module_id: string;
+  source: SessionSource;
   started_at: string;
   ended_at: string | null;
   total_duration_ms: number;
@@ -60,6 +63,7 @@ export function rowToSession(row: SessionRow): StudioSession {
     title: row.title,
     status: row.status,
     moduleId: row.module_id,
+    source: row.source ?? "studio",
     startedAt: row.started_at,
     endedAt: row.ended_at,
     totalDurationMs: row.total_duration_ms,
@@ -73,18 +77,43 @@ export function rowToSession(row: SessionRow): StudioSession {
 
 // ── studio_sessions ───────────────────────────────────────────────────
 
-export async function listSessions(): Promise<StudioSession[]> {
-  const { data, error } = await db
-    .from("studio_sessions")
-    .select("*")
-    .eq("is_deleted", false)
+/**
+ * Source scoping for session lists. Each surface lists its own sessions by
+ * default — the studio hides the high-volume cleanup sessions and vice versa.
+ *   - omitted / "studio" → everything EXCEPT cleanup (`source <> 'cleanup'`,
+ *     so future sources surface in the studio rather than vanish)
+ *   - "cleanup"          → only cleanup sessions
+ *   - "all"              → no source filter (either surface's "show all")
+ */
+export interface SessionListFilter {
+  source?: SessionSource | "all";
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applySourceFilter(query: any, filter?: SessionListFilter) {
+  const source = filter?.source ?? "studio";
+  if (source === "all") return query;
+  if (source === "studio") return query.neq("source", "cleanup");
+  return query.eq("source", source);
+}
+
+export async function listSessions(
+  filter?: SessionListFilter,
+): Promise<StudioSession[]> {
+  const { data, error } = await applySourceFilter(
+    db
+      .from("studio_sessions")
+      .select("*")
+      .eq("is_deleted", false),
+    filter,
+  )
     .order("updated_at", { ascending: false })
     .limit(200);
 
   if (error) {
     throw new Error(`[studio] listSessions failed: ${error.message}`);
   }
-  return (data ?? []).map((row) => rowToSession(row as SessionRow));
+  return (data ?? []).map((row: SessionRow) => rowToSession(row));
 }
 
 export async function getSession(id: string): Promise<StudioSession | null> {
@@ -111,6 +140,7 @@ export async function createSession(
     transcript_id: input.transcriptId ?? null,
     title: input.title?.trim() || NEW_SESSION_DEFAULT_TITLE,
     module_id: input.moduleId ?? DEFAULT_MODULE_ID,
+    source: input.source ?? "studio",
   };
 
   const { data, error } = await db
@@ -176,14 +206,20 @@ export async function softDeleteSession(id: string): Promise<void> {
 
 // Server-side fetch for SSR hydration. Pass a server Supabase client built
 // via utils/supabase/server.ts.
-export async function listSessionsServer(serverClient: {
-  from: (table: string) => unknown;
-}): Promise<StudioSession[]> {
+export async function listSessionsServer(
+  serverClient: {
+    from: (table: string) => unknown;
+  },
+  filter?: SessionListFilter,
+): Promise<StudioSession[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
-  const { data, error } = await looseClient
-    .from("studio_sessions")
-    .select("*")
-    .eq("is_deleted", false)
+  const { data, error } = await applySourceFilter(
+    looseClient
+      .from("studio_sessions")
+      .select("*")
+      .eq("is_deleted", false),
+    filter,
+  )
     .order("updated_at", { ascending: false })
     .limit(200);
   if (error) {
@@ -1214,6 +1250,7 @@ interface SessionSettingsRow {
   module_interval_ms: number | null;
   column_widths: number[] | null;
   show_prior_modules: boolean;
+  context_items: SessionContextItem[] | null;
 }
 
 function rowToSessionSettings(
@@ -1230,6 +1267,7 @@ function rowToSessionSettings(
     moduleIntervalMs: row.module_interval_ms,
     columnWidths: row.column_widths,
     showPriorModules: row.show_prior_modules,
+    contextItems: Array.isArray(row.context_items) ? row.context_items : null,
   };
 }
 
@@ -1260,6 +1298,7 @@ export interface UpsertSessionSettingsInput {
   moduleIntervalMs?: number | null;
   columnWidths?: number[] | null;
   showPriorModules?: boolean;
+  contextItems?: SessionContextItem[] | null;
 }
 
 /**
@@ -1294,6 +1333,8 @@ export async function upsertSessionSettings(
     update.column_widths = input.columnWidths;
   if (input.showPriorModules !== undefined)
     update.show_prior_modules = input.showPriorModules;
+  if (input.contextItems !== undefined)
+    update.context_items = input.contextItems;
 
   const { data, error } = await db
     .from("studio_session_settings")

@@ -24,6 +24,15 @@ export type TriggerCause =
 
 export type ModuleId = "tasks" | "flashcards" | "decisions" | "quiz" | string;
 
+/**
+ * Which surface created (and primarily owns) a session. Both surfaces share
+ * the same tables — `source` only scopes each surface's DEFAULT session list.
+ * Either view may opt into showing all sources; nothing else keys off it.
+ *   - "studio"  — the 4-column transcript studio (sophisticated sessions)
+ *   - "cleanup" — the high-volume transcription cleanup page
+ */
+export type SessionSource = "studio" | "cleanup" | (string & {});
+
 export type RawSegmentSource = "chunk" | "fallback" | "imported" | "manual";
 
 export type ConceptKind =
@@ -46,6 +55,8 @@ export interface StudioSession {
   title: string;
   status: SessionStatus;
   moduleId: ModuleId;
+  /** Origin surface — scopes each surface's default session list. */
+  source: SessionSource;
   startedAt: string;
   endedAt: string | null;
   totalDurationMs: number;
@@ -180,6 +191,22 @@ export interface StudioDocument {
   updatedAt: string;
 }
 
+/**
+ * One user-authored context item for a session. Items are passed to agents as
+ * proper context entries at invocation time (key → context slot when the key
+ * matches an agent-declared slot; ad-hoc otherwise). `key` is derived from
+ * `label` (slugified) unless the user names it explicitly.
+ */
+export interface SessionContextItem {
+  id: string;
+  key: string;
+  label: string;
+  value: string;
+  /** Optional link back to a Note (the cleanup page's notes-backed blocks). */
+  noteId?: string | null;
+  noteLabel?: string | null;
+}
+
 export interface SessionSettings {
   sessionId: string;
   cleaningShortcutId: string | null;
@@ -193,6 +220,8 @@ export interface SessionSettings {
   /** Column 4 history visibility — when true, shows prior module segments
    * in addition to the active module's segments. */
   showPriorModules: boolean;
+  /** Per-session user context items, passed to agents as context entries. */
+  contextItems: SessionContextItem[] | null;
 }
 
 // ── Inputs for service layer ──────────────────────────────────────────
@@ -203,6 +232,8 @@ export interface CreateSessionInput {
   projectId?: string | null;
   transcriptId?: string | null;
   moduleId?: ModuleId;
+  /** Origin surface. Defaults to "studio" (DB default). */
+  source?: SessionSource;
 }
 
 export interface UpdateSessionInput {
