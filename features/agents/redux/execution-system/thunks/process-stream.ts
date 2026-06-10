@@ -1780,29 +1780,47 @@ export async function processStream({
     }
 
     const sortedIters = [...blocksByIter.keys()].sort((a, b) => a - b);
+
+    // Accumulate blocks per reservation index. If the model produced MORE
+    // iterations than the server reserved cx_message rows for, the overflow
+    // iterations fold into the LAST reservation instead of being dropped —
+    // losing content from the committed transcript is never acceptable (a
+    // dropped iteration silently erases text, tool cards, and any artifact in
+    // it). When iters === turns this is identical to the old 1:1 mapping.
+    const contentByTurnIndex = new Map<
+      number,
+      Array<(typeof assistantBlocks)[number]>
+    >();
     for (let i = 0; i < sortedIters.length; i++) {
       const iter = sortedIters[i];
-      const turn = sortedTurns[i];
-      if (!turn) {
+      const turnIndex = Math.min(i, sortedTurns.length - 1);
+      if (turnIndex !== i) {
         console.warn(
-          `[stream:${requestId.slice(0, 8)}] iteration ${iter} has no matching reservation; ${blocksByIter.get(iter)?.length ?? 0} block(s) dropped`,
+          `[stream:${requestId.slice(0, 8)}] iteration ${iter} has no matching reservation; folding ${blocksByIter.get(iter)?.length ?? 0} block(s) into the last reserved message instead of dropping`,
         );
-        continue;
       }
+      const list = contentByTurnIndex.get(turnIndex) ?? [];
+      list.push(...(blocksByIter.get(iter) ?? []));
+      contentByTurnIndex.set(turnIndex, list);
+    }
+
+    for (let ti = 0; ti < sortedTurns.length; ti++) {
+      const turn = sortedTurns[ti];
+      const content = contentByTurnIndex.get(ti);
+      if (!content || content.length === 0) continue;
       dispatch(
         updateMessageRecord({
           conversationId,
           messageId: turn.messageId,
           patch: {
-            content: blocksByIter.get(
-              iter,
-            ) as unknown as import("@/types/database.types").Json,
+            content:
+              content as unknown as import("@/types/database.types").Json,
             status: "active",
-            // Only the FINAL iteration carries the error marker — earlier
+            // Only the FINAL reservation carries the error marker — earlier
             // iterations completed before the stream died and must render
             // as the normal turns they are.
             _clientStatus:
-              finalErrorMessage && i === sortedIters.length - 1
+              finalErrorMessage && ti === sortedTurns.length - 1
                 ? "error"
                 : "complete",
             position: turn.position,
@@ -1810,6 +1828,44 @@ export async function processStream({
         }),
       );
     }
+  } else if (assistantBlocks.length > 0) {
+    // sortedTurns.length === 0 but content was produced: the stream died before
+    // any assistant cx_message reservation arrived. NEVER lose the turn —
+    // commit to a client-temp record so it stays in the transcript for this
+    // session. On reload, DB hydration replaces it with the server-persisted
+    // row (if the server got far enough to persist one); the client-temp id is
+    // Redux-only, so it can never duplicate a real DB row.
+    console.error(
+      `[stream:${requestId.slice(0, 8)}] no assistant reservation arrived but ${assistantBlocks.length} content block(s) were produced — committing to a client-temp message to avoid transcript loss`,
+    );
+    const tempId = `client-assistant-${requestId}`;
+    const existingById =
+      finalState.messages.byConversationId[conversationId]?.byId ?? {};
+    const maxPos = Object.values(existingById).reduce<number>(
+      (m, r) => Math.max(m, (r as MessageRecord).position ?? 0),
+      0,
+    );
+    dispatch(
+      reserveMessage({
+        conversationId,
+        messageId: tempId,
+        role: "assistant",
+        position: maxPos + 1,
+      }),
+    );
+    dispatch(
+      updateMessageRecord({
+        conversationId,
+        messageId: tempId,
+        patch: {
+          content:
+            assistantBlocks as unknown as import("@/types/database.types").Json,
+          status: "active",
+          _clientStatus: finalErrorMessage ? "error" : "complete",
+          position: maxPos + 1,
+        },
+      }),
+    );
   }
 
   // Flush live tool lifecycle state into the observability slice. Each tool
