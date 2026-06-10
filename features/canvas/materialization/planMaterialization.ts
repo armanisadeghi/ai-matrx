@@ -71,7 +71,18 @@ export function planMaterialization(
 ): MaterializationPlan {
   const rewritten: CxContentBlock[] = [];
   const artifacts: PlannedArtifact[] = [];
-  let index = 0; // running materializable counter → artifact_index (1-based)
+  // Running materializable counter → artifact_index (1-based). Start ABOVE any
+  // artifact_index already present so a message that somehow mixes existing
+  // artifact_ref blocks with new raw artifacts never reissues a colliding index
+  // — the (source_message_id, artifact_index) upsert would otherwise overwrite
+  // the earlier artifact's row.
+  let index = content.reduce<number>((max, b) => {
+    if ((b as { type?: string }).type === "artifact_ref") {
+      const ai = (b as { artifact_index?: number }).artifact_index ?? 0;
+      return Math.max(max, ai);
+    }
+    return max;
+  }, 0);
 
   // Accumulates faithful markdown for consecutive non-materializable splitter
   // blocks so they collapse back into a single text block between refs.

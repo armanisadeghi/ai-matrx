@@ -85,7 +85,13 @@ export function useCanvasItem(
   }, [artifactId, nonce]);
 
   const refetch = useCallback(() => {
-    if (artifactId) cache.delete(artifactId);
+    if (artifactId) {
+      cache.delete(artifactId);
+      // Also drop any pending request — otherwise loadCanvasItem returns the
+      // stale in-flight promise and the refetch is silently ignored (e.g. after
+      // the artifact is updated to a new version on the server).
+      inflight.delete(artifactId);
+    }
     setNonce((n) => n + 1);
   }, [artifactId]);
 
