@@ -121,7 +121,10 @@ export async function materializeMessageArtifacts(
     return b;
   });
 
-  const { error } = await supabase.rpc("cx_message_edit", {
+  // Status-preserving rewrite (NOT cx_message_edit, which marks the message
+  // 'edited' — materialization is a system rewrite, not a user edit). Archives
+  // the original into content_history so it's fully reversible.
+  const { error } = await supabase.rpc("cx_message_set_content", {
     p_message_id: messageId,
     p_new_content: rewritten as unknown as Json,
   });

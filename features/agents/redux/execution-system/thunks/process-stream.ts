@@ -159,6 +159,8 @@ import { patchAgentConversationMetadata } from "@/features/agents/redux/conversa
 import { upsertAgentConversationFromExecutionAction } from "@/features/agents/redux/conversation-list/record-conversation-from-execution";
 import { StreamProfiler } from "@/utils/stream-profiler";
 import { assembleMessageParts } from "../utils/assemble-cx-content-blocks";
+import { materializeMessageArtifacts } from "@/features/canvas/materialization/materializeMessageArtifacts";
+import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
 import { callbackManager } from "@/utils/callbackManager";
 import {
   isWidgetActionName,
@@ -1713,6 +1715,13 @@ export async function processStream({
     (a, b) => a.position - b.position,
   );
 
+  // Assistant turns committed this stream, captured for the post-commit
+  // artifact materialization pass (real DB ids only).
+  const materializeTargets: Array<{
+    messageId: string;
+    content: CxContentBlock[];
+  }> = [];
+
   if (sortedTurns.length === 1) {
     // Single reservation — all assistant content lands here. Common path
     // when the server collapses a multi-iteration turn into one cx_message.
@@ -1730,6 +1739,10 @@ export async function processStream({
         },
       }),
     );
+    materializeTargets.push({
+      messageId: turn.messageId,
+      content: assistantBlocks as unknown as CxContentBlock[],
+    });
   } else if (sortedTurns.length > 1) {
     // Multi-reservation — partition assembled blocks by iteration. Each
     // tool_call carries an iteration on its observability record (looked up
@@ -1827,6 +1840,10 @@ export async function processStream({
           },
         }),
       );
+      materializeTargets.push({
+        messageId: turn.messageId,
+        content: content as unknown as CxContentBlock[],
+      });
     }
   } else if (assistantBlocks.length > 0) {
     // sortedTurns.length === 0 but content was produced: the stream died before
@@ -1921,6 +1938,52 @@ export async function processStream({
     dispatch(clearUserInput(conversationId));
     dispatch(clearAllResources(conversationId));
     dispatch(resetUserVariableValues(conversationId));
+
+    // ── Artifact materialization ───────────────────────────────────────────
+    // Push every render-block in the just-committed assistant turn(s) into
+    // canvas_items immediately, stamp each with a UUID, and rewrite the message
+    // content to reference it (cx_artifact_ref). Fire-and-forget: the raw
+    // content is already committed (Redux + server), the upserts are idempotent
+    // on (source_message_id, artifact_index), and the reconcile-on-load pass
+    // retries anything that doesn't finish — so a tab close mid-materialization
+    // never loses or duplicates an artifact. Loud on failure, never silent.
+    if (materializeTargets.length > 0) {
+      void Promise.all(
+        materializeTargets.map((target) =>
+          materializeMessageArtifacts({
+            messageId: target.messageId,
+            conversationId,
+            content: target.content,
+          })
+            .then((res) => {
+              if (res.rewrittenContent) {
+                dispatch(
+                  updateMessageRecord({
+                    conversationId,
+                    messageId: target.messageId,
+                    patch: {
+                      content:
+                        res.rewrittenContent as unknown as import("@/types/database.types").Json,
+                    },
+                  }),
+                );
+              }
+              if (res.errors.length > 0) {
+                console.error(
+                  `[stream:${requestId.slice(0, 8)}] artifact materialization issues for ${target.messageId}:`,
+                  res.errors,
+                );
+              }
+            })
+            .catch((err) => {
+              console.error(
+                `[stream:${requestId.slice(0, 8)}] artifact materialization threw for ${target.messageId}:`,
+                err,
+              );
+            }),
+        ),
+      );
+    }
   }
 
   const renderCompleteAt = performance.now();

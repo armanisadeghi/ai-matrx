@@ -24343,9 +24343,17 @@ export type Database = {
     }
     Functions: {
       _count_super_admins: { Args: never; Returns: number }
+      accept_context_item_suggestion: {
+        Args: { p_suggestion_id: string }
+        Returns: Json
+      }
       accept_organization_invitation: {
         Args: { accepting_user_id: string; invitation_token: string }
         Returns: string
+      }
+      accept_scope_suggestion: {
+        Args: { p_organization_id?: string; p_suggestion_id: string }
+        Returns: Json
       }
       add_column_to_user_table: {
         Args: {
@@ -26486,6 +26494,34 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cx_message_set_content: {
+        Args: { p_message_id: string; p_new_content: Json }
+        Returns: {
+          agent_id: string | null
+          content: Json
+          content_chars: number
+          content_history: Json | null
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_visible_to_model: boolean
+          is_visible_to_user: boolean
+          metadata: Json
+          position: number
+          role: string
+          source: string
+          status: string
+          tool_results_chars: number
+          user_content: Json | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cx_message"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cx_soft_delete_conversation: {
         Args: { p_conversation_id: string }
         Returns: boolean
@@ -28506,6 +28542,10 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }
+      kg_caller_can_target_scope: {
+        Args: { p_scope_id: string }
+        Returns: boolean
+      }
       kg_heavy_hitter_accept_plan: {
         Args: { p_suggestion_id: string }
         Returns: Json
@@ -28770,7 +28810,12 @@ export type Database = {
         }
       }
       resolve_full_context: {
-        Args: { p_entity_id: string; p_entity_type: string; p_user_id: string }
+        Args: {
+          p_entity_id: string
+          p_entity_type: string
+          p_scope_ids?: string[]
+          p_user_id: string
+        }
         Returns: Json
       }
       resolve_shareable_resource: {
