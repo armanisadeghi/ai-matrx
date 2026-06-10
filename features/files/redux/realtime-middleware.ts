@@ -44,7 +44,7 @@ import {
   dbRowToCloudFolder,
   dbRowToCloudShareLink,
 } from "./converters";
-import { isOwnEcho } from "./request-ledger";
+import { isOwnEcho, ledgerSize } from "./request-ledger";
 import { reconcileTree } from "./thunks";
 import { isSystemPath } from "@/features/files/utils/folder-conventions";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
@@ -138,6 +138,13 @@ function extractRequestId(
 // types are derived from configureStore's middleware list — which includes
 // this middleware. Local casts inside the body give us the strong typing
 // where it actually matters.
+// P1-10: debounce reconcile-on-(re)subscribe. A flapping connection fires
+// SUBSCRIBED repeatedly; without this each one re-runs the full-tree RPC and can
+// clobber in-flight optimistic edits. We skip a reconcile if one ran within the
+// cooldown OR if any mutation is currently in flight (the ledger is non-empty).
+const RECONCILE_COOLDOWN_MS = 10_000;
+let lastReconcileAt = 0;
+
 export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
   let channel: RealtimeChannel | null = null;
   let subscribedUserId: string | null = null;
@@ -234,8 +241,14 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
               userId: subscribedUserId,
             }),
           );
-          // On every (re)subscribe, reconcile. Cheap safety net.
-          void dispatch(reconcileTree({ userId }));
+          // On (re)subscribe, reconcile — but debounced (P1-10): skip if we
+          // reconciled recently or a mutation is in flight, so a flapping
+          // connection can't storm the RPC or revert optimistic edits.
+          const now = Date.now();
+          if (now - lastReconcileAt >= RECONCILE_COOLDOWN_MS && ledgerSize() === 0) {
+            lastReconcileAt = now;
+            void dispatch(reconcileTree({ userId }));
+          }
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           dispatch(
             setRealtimeStatus({
