@@ -24,9 +24,9 @@ breaks cross-surface — see `features/transcript-studio/FEATURE.md`).
 |---|---|
 | Raw transcript | `studio_raw_segments` — one `chunk` row per mic completion; a manual blob edit collapses all rows into ONE `source='manual'` row (debounced) |
 | Clean | `studio_cleaned_segments` — full-range pass per run via `applyCleanupRun` (supersedes prior), `studio_runs` audit row (column 2); user edits update in place |
-| Custom | `studio_documents` `kind='cleanup_custom'` (+ `studio_runs` column 4 audit) |
+| Custom slots (outputs) | `studio_documents` — one row per slot `docKind` (`cleanup_custom` for the first slot, `cleanup_custom_<id8>` after; + `studio_runs` column 4 audit) |
 | Clean agent | `studio_session_settings.cleaning_shortcut_id` (stores an AGENT id) |
-| Custom agent | `studio_session_settings.module_shortcut_id` (stores an AGENT id) |
+| Custom slots (config) | `studio_session_settings.custom_slots` (`CleanupCustomSlot[]`: `{id, agentId, label, source, autoRun, docKind}`); `module_shortcut_id` mirrors slot 1's agent for studio back-compat. Null = legacy single slot migrated on load |
 | Context items | `studio_session_settings.context_items` (`SessionContextItem[]`) |
 
 A session materializes LAZILY on first content (`ensureSession`) or via the
@@ -81,8 +81,36 @@ Voice-pad + agent-execution Redux, `MicrophoneIconButton`, `ContentActionBar`,
 - Persist clean/custom output exactly once per completed conversation
   (`persisted*CidRef`).
 
+## Surfaces + context menu
+
+Every pane (Transcript / Clean / each Custom slot) is wrapped in
+`UnifiedAgentContextMenu` with `sourceFeature="transcription-cleanup"` and
+`surfaceName="matrx-user/transcripts-cleanup"` — right-click or select text
+and internal + user shortcuts work over the selection (textarea selection is
+captured by the menu), with replace/insert-before/insert-after writing back
+through the pane's change handler (and therefore persisting). Surface
+value-mappings (`agx_agent_surface`) drive variable resolution end-to-end.
+`content-block` placement is hidden (plain-text panes).
+
+## Custom slots
+
+Up to `MAX_CUSTOM_SLOTS` (3) custom outputs, one visible at a time (tab
+pills + add/remove in the Custom header). Each slot: its own any-agent
+dropdown, Raw|Clean input source, Auto-run toggle, and its own
+`studio_documents` row. The streaming runtimes are a FIXED hook pool
+(`slotAi0..2`) — raise `MAX_CUSTOM_SLOTS` and add a hook instance together.
+Auto-run: raw-source slots fire simultaneously with Clean (mic completion +
+manual Clean Up); clean-source slots fire when the cleaned result lands.
+
 ## Change Log
 
+- 2026-06-10 (eve) — Multi-slot Custom container (tabs, per-slot agent /
+  source / autorun / output doc; `custom_slots` jsonb migration
+  `studio_session_settings_custom_slots.sql`, applied live; legacy
+  `module_shortcut_id` migrated to slot 1 on load) + `UnifiedAgentContextMenu`
+  wrapped around all three panes with the registered surface. Type-clean;
+  SSR-verified; live click-test on the user's browser (local preview
+  hydration unreliable).
 - 2026-06-10 (pm) — Refinement pass: page title removed (desktop portals
   nothing; the record pill rises into a tall centered band spanning the
   shell-header zone — mobile keeps the drawer toggle in the header). Sessions
