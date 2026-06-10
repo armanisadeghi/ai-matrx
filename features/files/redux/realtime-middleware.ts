@@ -169,27 +169,29 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
 
     channel = supabase
       .channel(`cloud-files:${userId}`)
-      // Files — owner_id filter. Files shared with the user show up via
-      // RLS on separate events; to keep the subscription broad yet bounded,
-      // we rely on RLS-filtered unscoped subscriptions elsewhere.
+      // Files — NO owner filter. We rely on Realtime RLS authorization (same
+      // pattern as cld_file_versions / cld_share_links below) so the user
+      // receives changes to every file they can SELECT: their own AND files
+      // shared WITH them. A column filter on owner_id would silently drop
+      // shared-with-me updates (the row's owner_id is someone else's id).
+      // handleFilePayload upserts/dedups by id and honors the request ledger,
+      // so receiving a shared file's change is safe and idempotent.
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "cld_files",
-          filter: `owner_id=eq.${userId}`,
         },
         (payload) => handleFilePayload(payload),
       )
-      // Folders.
+      // Folders — NO owner filter, same RLS-bounded rationale as files.
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "cld_folders",
-          filter: `owner_id=eq.${userId}`,
         },
         (payload) => handleFolderPayload(payload),
       )

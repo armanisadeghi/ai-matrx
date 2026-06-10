@@ -222,6 +222,7 @@ export { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
 // the redux/* ESLint ban can flip to error with no allowlist.
 export { cloudFilesReducer } from "@/features/files/redux/slice";
 export { cloudFilesRealtimeMiddleware } from "@/features/files/redux/realtime-middleware";
+export { cloudFilesMutationToastMiddleware } from "@/features/files/redux/mutation-toast-middleware";
 
 // Explorer-side state — driven by the cloud-files side panel in the code
 // workspace and the `/files` selection model. These slice actions / selector
