@@ -26,7 +26,7 @@ import {
   applyAwarenessUpdate,
   encodeAwarenessUpdate,
 } from "y-protocols/awareness";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 
 import { supabase } from "@/utils/supabase/client";
 
@@ -38,11 +38,22 @@ export type SupabaseYjsProviderOptions = {
   awareness: Awareness;
   /** Cap base64-encoded payload size. Default 200_000 (under Broadcast's 256KB limit, accounting for envelope overhead). */
   chunkSize?: number;
+  /**
+   * Override the Supabase client. Defaults to the app singleton — correct
+   * for every browser tab. Only the verification harness passes its own
+   * clients (two providers in ONE process need two sockets, because
+   * supabase-js returns the existing channel object for a duplicate topic
+   * and a second subscribe on it fails).
+   */
+  client?: SupabaseClient;
 };
 
 const REMOTE_DOC_ORIGIN = "remote";
 const REMOTE_AWARENESS_ORIGIN = "remote-awareness";
 const READY_TIMEOUT_MS = 1500;
+/** Hard cap on channel subscription — a blocked WebSocket degrades to solo
+ *  mode instead of hanging the session start. */
+const SUBSCRIBE_TIMEOUT_MS = 8000;
 const AWARENESS_THROTTLE_MS = 50;
 const CHUNK_BATCH_TTL_MS = 5000;
 const DEFAULT_CHUNK_SIZE = 200_000;
@@ -94,6 +105,7 @@ export class SupabaseYjsProvider {
   private readonly awareness: Awareness;
   private readonly chunkSize: number;
   private readonly channelName: string;
+  private readonly client: SupabaseClient;
 
   private channel: RealtimeChannel | null = null;
   private _disposed = false;
@@ -135,6 +147,7 @@ export class SupabaseYjsProvider {
     this.doc = options.doc;
     this.awareness = options.awareness;
     this.chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;
+    this.client = options.client ?? (supabase as SupabaseClient);
     this.channelName = `yjs:workbook:${this.workbookId}`;
     this.readyPromise = new Promise<void>((resolve) => {
       this.resolveReady = resolve;
@@ -145,7 +158,7 @@ export class SupabaseYjsProvider {
     if (this._disposed || this.connected) return;
     this.connected = true;
 
-    const channel = supabase.channel(this.channelName, {
+    const channel = this.client.channel(this.channelName, {
       config: {
         broadcast: { self: false, ack: false },
         presence: { key: this.clientId },
@@ -172,13 +185,42 @@ export class SupabaseYjsProvider {
     this.doc.on("updateV2", this.onDocUpdate);
     this.awareness.on("update", this.onAwarenessUpdate);
 
-    await new Promise<void>((resolve) => {
-      channel.subscribe((status) => {
-        if (status === "SUBSCRIBED") resolve();
+    // Resolve on success OR terminal failure OR hard timeout — a blocked
+    // WebSocket must never hang the caller. On failure we degrade to solo
+    // mode: the editor keeps working, just without live peers, and ready()
+    // resolves so nothing upstream awaits forever.
+    const subscribed = await new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => resolve(false), SUBSCRIBE_TIMEOUT_MS);
+      channel.subscribe((status, err) => {
+        if (typeof process !== "undefined" && process.env?.COLLAB_DEBUG) {
+          console.debug(
+            `[collab:debug] ${this.channelName} status=${status}${err ? ` err=${String(err)}` : ""}`,
+          );
+        }
+        if (status === "SUBSCRIBED") {
+          clearTimeout(timer);
+          resolve(true);
+        } else if (
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT" ||
+          status === "CLOSED"
+        ) {
+          clearTimeout(timer);
+          resolve(false);
+        }
       });
     });
 
     if (this._disposed) return;
+
+    if (!subscribed) {
+      console.warn(
+        `[collab] could not subscribe to ${this.channelName} — continuing solo (no live peers)`,
+      );
+      this.hasInitialState = true;
+      this.resolveReady?.();
+      return;
+    }
 
     // Ask existing peers for the current doc; resolve solo if nobody answers.
     const req: RequestStateFrame = { clientId: this.clientId };
@@ -217,7 +259,7 @@ export class SupabaseYjsProvider {
     this.pendingStateBatches.clear();
 
     if (this.channel) {
-      void supabase.removeChannel(this.channel);
+      void this.client.removeChannel(this.channel);
       this.channel = null;
     }
 
@@ -266,7 +308,9 @@ export class SupabaseYjsProvider {
     const assembled = this.assemble(this.pendingDocBatches, frame);
     if (!assembled) return;
     const update = fromBase64(assembled);
-    Y.applyUpdate(this.doc, update, REMOTE_DOC_ORIGIN);
+    // V2 decoder — outbound updates come from doc.on('updateV2'). Mixing V1
+    // apply with V2 frames silently corrupts the doc.
+    Y.applyUpdateV2(this.doc, update, REMOTE_DOC_ORIGIN);
   }
 
   private handleAwarenessFrame(frame: AwarenessFrame): void {
@@ -289,7 +333,8 @@ export class SupabaseYjsProvider {
     const assembled = this.assemble(this.pendingStateBatches, frame);
     if (!assembled) return;
     const update = fromBase64(assembled);
-    Y.applyUpdate(this.doc, update, REMOTE_DOC_ORIGIN);
+    // V2 decoder — state snapshots are encoded with encodeStateAsUpdateV2.
+    Y.applyUpdateV2(this.doc, update, REMOTE_DOC_ORIGIN);
     this.hasInitialState = true;
     if (this.aloneTimer) {
       clearTimeout(this.aloneTimer);

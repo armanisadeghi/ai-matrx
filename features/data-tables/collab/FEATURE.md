@@ -1,8 +1,14 @@
 # `features/data-tables/collab` — Workbook CRDT v2
 
-**Status:** `implemented` (behind opt-in `collab` flag — needs e2e verification)
+**Status:** `live` — verified by `verify-collab.ts` (10/10 incl. real-Broadcast e2e); `collab` flag ON at `/workbooks/[id]`
 **Tier:** `2` (extension of the Tier 1 data-tables / workbook surface)
-**Last updated:** `2026-06-07`
+**Last updated:** `2026-06-12`
+
+> **Before changing the provider or session, run the gate:**
+> `npx tsx features/data-tables/collab/verify-collab.ts`
+> (needs `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+> for Stage B; Stage A runs offline). It caught three shipped-silent bugs on
+> first run — treat it as mandatory, not optional.
 
 ---
 
@@ -149,19 +155,21 @@ workbook routes pay zero bundle cost.
       `commandService.onMutationExecutedForCollab`; emit to Yjs; observe Yjs;
       apply via `commandService.syncExecuteCommand(... {onlyLocal:true, fromCollab:true})`;
       short-circuit the outbound listener when `params.trigger === 'remote-collab'`.
-- [ ] Awareness wiring + outbound throttle (50 ms).
-- [ ] `RemoteCursorsLayer.tsx` (~120 LoC): absolute-positioned colored ring
-      per peer; translates `(sheetId, row, col)` via Univer's facade.
-- [ ] Update `WorkbookEditor.tsx`: replace the 2.5 s debounced save with the
-      collab session; host-election gated save path; awareness state setup.
-- [ ] Repurpose `useWorkbookRealtime`: log-only, lazy hot-swap on
-      doc-lag > 100 ops.
-- [ ] **PROBE FIRST**: ~30 min probe that boots Univer and verifies every
-      mutation's `params` survives `JSON.stringify → JSON.parse` cleanly.
-      `params` is typed as serializable but JS objects can carry `Date`,
-      `Map`, etc. through "serializable" promises. If anything fails, fall
-      back to `structuredClone` (perf cost acceptable for sheet edits) or a
-      Univer fork that enforces serializability at mutation registration.
+- [x] Awareness wiring + outbound throttle (50 ms).
+- [x] `RemoteCursorsLayer.tsx` — shipped as a toolbar presence strip
+      (color + name + cell coords). Pixel-positioned overlay rings over the
+      actual cell remain a v2.1 polish item (scroll + freeze translation).
+- [x] `WorkbookEditor.tsx` wired behind the `collab` prop; host-election
+      gated autosave; awareness → cursor strip.
+- [x] ~~PROBE FIRST~~ → **superseded by a structural guard.**
+      `handleLocalMutation` JSON-round-trips params before pushing into Yjs;
+      non-encodable mutations are skipped with a loud console warning instead
+      of corrupting the shared doc. Corruption is now structurally impossible;
+      the residual failure mode is one skipped (logged) edit. Verified by
+      harness test A4 with a circular-reference payload.
+- [ ] (v2.1) Repurpose `useWorkbookRealtime`: log-only, lazy hot-swap on
+      doc-lag > 100 ops. Currently it still hot-swaps on remote snapshot —
+      harmless overlap with CRDT (host is the only writer) but redundant.
 
 ---
 
@@ -177,20 +185,35 @@ workbook routes pay zero bundle cost.
 
 ---
 
-## Files in this directory (current vs planned)
+## Files in this directory
 
 | File | Status | Purpose |
 |---|---|---|
-| `types.ts` | ✅ (scaffolded) | Wire-protocol shapes for Yjs + Awareness over Broadcast |
+| `types.ts` | ✅ | Wire-protocol shapes for Yjs + Awareness over Broadcast |
 | `FEATURE.md` | ✅ | This document |
-| `SupabaseYjsProvider.ts` | ⏳ | y-supabase provider (~150 LoC) |
-| `WorkbookCollabSession.ts` | ⏳ | Univer ↔ Yjs adapter (~200 LoC) |
-| `../components/RemoteCursorsLayer.tsx` | ⏳ | Cursor overlay (~120 LoC) |
+| `SupabaseYjsProvider.ts` | ✅ | Broadcast transport: chunked V2 y-updates, throttled awareness, state-sync on join, subscribe timeout → solo degrade. Accepts an injected `SupabaseClient` (defaults to app singleton) |
+| `WorkbookCollabSession.ts` | ✅ | Univer ↔ Yjs adapter: `Y.Array<MutationOp>` causal log, `__matrxRemote` sentinel, local-transaction guard, JSON-normalize guard, deterministic host election. Transport-agnostic via `CollabProviderLike` |
+| `verify-collab.ts` | ✅ | **The verification gate.** Stage A: loopback bridge contract (5 assertions, offline). Stage B: real two-socket Broadcast e2e (3 assertions). Run before any change here |
+| `../components/RemoteCursorsLayer.tsx` | ✅ | Toolbar presence strip (peer color/name/cell). Pixel overlay = v2.1 |
 
 ---
 
 ## Change log
 
+- `2026-06-12` — claude: **verified + flag flipped ON.** Built `verify-collab.ts`
+  (loopback + real-Broadcast e2e, 10/10 passing). The gate caught three real bugs,
+  all fixed: (1) Y.Array observer applied the originator's own pushes → every local
+  edit double-applied; fixed with `event.transaction.local` guard. (2) `connect()`
+  hung forever on a blocked WebSocket; fixed with terminal-status handling +
+  8s timeout → solo-mode degrade. (3) outbound updates were V2-encoded
+  (`updateV2` / `encodeStateAsUpdateV2`) but applied with the V1 decoder
+  (`Y.applyUpdate`) → transport silently dead; fixed with `Y.applyUpdateV2` at
+  both apply sites. Also: JSON-normalize guard at the mutation push site
+  (supersedes the planned browser probe — corruption now structurally
+  impossible), `CollabProviderLike` structural transport seam, injectable
+  `SupabaseClient`. `collab` prop enabled on `/workbooks/[id]`.
+- `2026-06-06` — claude: full implementation pass (provider, session, cursor
+  strip, WorkbookEditor wiring behind the `collab` flag).
 - `2026-06-06` — claude: scaffold `types.ts` + this FEATURE.md from the
   research pass. Captures the full plan and the "do NOT use the Pro preset"
   decision so the next implementer can start without re-deriving.

@@ -25,7 +25,17 @@
 import * as Y from "yjs";
 import { Awareness } from "y-protocols/awareness";
 
-import type { SupabaseYjsProvider } from "./SupabaseYjsProvider";
+/**
+ * Structural transport contract. `SupabaseYjsProvider` satisfies it in
+ * production; the verification harness injects an in-memory loopback
+ * transport through the same seam. Keeping this structural (not the concrete
+ * class) is what makes the session testable without network.
+ */
+export type CollabProviderLike = {
+  connect(): Promise<void>;
+  disconnect(): void;
+  ready(): Promise<void>;
+};
 
 // Univer types are loose at the public hook boundary; we narrow with a
 // structural interface so we don't have to import the full Univer surface.
@@ -67,7 +77,7 @@ export type WorkbookCollabSessionOptions = {
     clientId: string;
     doc: Y.Doc;
     awareness: Awareness;
-  }) => SupabaseYjsProvider;
+  }) => CollabProviderLike;
   /** Called when the awareness set changes (peers join / leave / move cursor). */
   onAwarenessChange?: (awareness: Awareness) => void;
 };
@@ -79,7 +89,7 @@ export class WorkbookCollabSession {
   private readonly options: WorkbookCollabSessionOptions;
   private doc: Y.Doc | null = null;
   private awareness: Awareness | null = null;
-  private provider: SupabaseYjsProvider | null = null;
+  private provider: CollabProviderLike | null = null;
   private commandDisposer: { dispose: () => void } | null = null;
   private yArrayObserver: ((event: Y.YArrayEvent<unknown>) => void) | null =
     null;
@@ -121,6 +131,11 @@ export class WorkbookCollabSession {
     // so the initial-state replay (if any) hits our observer.
     const yArray = this.doc.getArray<CollabMutationInfo>(MUTATIONS_ARRAY_KEY);
     this.yArrayObserver = (event) => {
+      // Local transactions are OUR OWN pushes from handleLocalMutation —
+      // Univer already executed those mutations. Re-applying them here would
+      // double-apply every local edit on the originator. Only act on
+      // transactions that arrived via Y.applyUpdate (origin 'remote').
+      if (event.transaction.local) return;
       for (const change of event.changes.delta) {
         if (!change.insert || !Array.isArray(change.insert)) continue;
         for (const op of change.insert as CollabMutationInfo[]) {
@@ -230,8 +245,31 @@ export class WorkbookCollabSession {
       return;
     }
     if (!this.doc) return;
+
+    // Normalize params through a JSON round-trip BEFORE pushing into Yjs.
+    // Yjs (and the Broadcast transport) only carry JSON-encodable values;
+    // Univer types its mutation params as "serializable" but JS objects can
+    // smuggle Date / Map / class instances through that promise. The
+    // round-trip makes the failure mode deterministic: a non-encodable
+    // mutation is skipped with a warning instead of corrupting the shared
+    // doc or desyncing peers mid-session. What we push here is byte-for-byte
+    // what remote peers will apply, so local-apply == remote-apply.
+    let safeParams: MutationParams;
+    try {
+      safeParams =
+        info.params === undefined || info.params === null
+          ? null
+          : (JSON.parse(JSON.stringify(info.params)) as MutationParams);
+    } catch (err) {
+      console.warn(
+        `[collab] skipping non-serializable mutation "${info.id}" — peers will not receive it`,
+        err,
+      );
+      return;
+    }
+
     const yArray = this.doc.getArray<CollabMutationInfo>(MUTATIONS_ARRAY_KEY);
-    yArray.push([{ id: info.id, type: info.type, params: info.params }]);
+    yArray.push([{ id: info.id, type: info.type, params: safeParams }]);
   }
 
   private applyRemoteMutation(op: CollabMutationInfo): void {
