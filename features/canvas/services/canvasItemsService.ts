@@ -1,4 +1,7 @@
-import { CanvasContent } from "@/features/canvas/redux/canvasSlice";
+import {
+  CanvasContent,
+  isPersistableCanvasType,
+} from "@/features/canvas/redux/canvasSlice";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { buildSearchOr } from "@/utils/supabase-search";
@@ -144,6 +147,20 @@ export const canvasItemsService = {
     input: CreateCanvasItemInput,
   ): Promise<{ data: CanvasItemRow | null; isDuplicate: boolean; error: any }> {
     try {
+      // Hard chokepoint: refuse render-only types (their data holds live
+      // callbacks that serialize to null → corrupt, dead row). The UI also
+      // hides the save affordance, but this guard makes the corruption
+      // structurally impossible regardless of caller.
+      if (!isPersistableCanvasType(input.content.type)) {
+        return {
+          data: null,
+          isDuplicate: false,
+          error: new Error(
+            `Canvas type "${input.content.type}" is interactive-only and cannot be saved.`,
+          ),
+        };
+      }
+
       const userId = requireUserId();
       const contentHash = await generateContentHash(input.content);
 

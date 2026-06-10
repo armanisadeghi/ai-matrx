@@ -306,15 +306,28 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // Owner-scoped: htmlDb uses the secret key (bypasses RLS), so we MUST
+        // constrain by user_id ourselves. Without it any authenticated user
+        // could read any page (incl. unpublished drafts + internal source ids)
+        // by guessing/enumerating UUIDs. Published pages are served publicly by
+        // the mymatrx site itself — this authoring endpoint is owner-only.
         const { data, error } = await htmlDb
           .from("html_pages")
           .select("*")
           .eq("id", pageId)
-          .single();
+          .eq("user_id", user.id)
+          .maybeSingle();
 
         if (error) {
           console.error("[html-pages API] get error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        if (!data) {
+          return NextResponse.json(
+            { error: "Page not found or access denied" },
+            { status: 404 },
+          );
         }
 
         return NextResponse.json({
