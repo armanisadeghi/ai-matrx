@@ -83,6 +83,18 @@ Voice-pad + agent-execution Redux, `MicrophoneIconButton`, `ContentActionBar`,
 
 ## Change Log
 
+- 2026-06-10 (pm) — Refinement pass: page title removed (desktop portals
+  nothing; the record pill rises into a tall centered band spanning the
+  shell-header zone — mobile keeps the drawer toggle in the header). Sessions
+  rail gained a **Mine | All** scope toggle (`useCleanupSession.scope`;
+  "All" = every session RLS permits — studio + shared/org/public — with an
+  origin badge per row; bogus persisted agent ids from studio sessions fall
+  back to the default, loudly). Custom container gained **Auto-run**
+  (localStorage pref): source=raw → fires alongside Clean (mic + manual);
+  source=clean → fires when the cleaned result lands. Liveliness: icon chips
+  on pane headers (AudioLines/Stars/Wand2), tinted header strips, Ready/
+  Thinking pills, primary ring + pulse on the record pill, accent bar on the
+  active session row. Verified rendered + hydrated + scope toggle live.
 - 2026-06-10 — Merged onto the studio DB (sessions list + New, lazy create,
   full persistence of all 3 containers + agents + context). Radios → any-agent
   dropdowns; new full-height right-hand Custom container (own agent dropdown,

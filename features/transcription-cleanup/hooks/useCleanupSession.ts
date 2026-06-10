@@ -118,9 +118,19 @@ export function useCleanupSession() {
 
   const fetchStatus = useAppSelector(selectFetchStatus);
   const allSessions = useAppSelector(selectAllSessions);
+  /**
+   * Session list scope. "cleanup" (default) = this surface's own sessions;
+   * "all" = every session RLS lets the user see — studio sessions, shared /
+   * org / public sessions from other users included. Cross-surface access is
+   * deliberate: a cleanup session is a real studio session and vice versa.
+   */
+  const [scope, setScope] = useState<"cleanup" | "all">("cleanup");
   const sessions = useMemo(
-    () => allSessions.filter((s) => s.source === "cleanup"),
-    [allSessions],
+    () =>
+      scope === "all"
+        ? allSessions
+        : allSessions.filter((s) => s.source === "cleanup"),
+    [allSessions, scope],
   );
 
   const [activeSessionId, setActiveSessionId] = useState<string | null>(
@@ -170,10 +180,12 @@ export function useCleanupSession() {
     return Math.max(0, (Date.now() - startedAt) / 1000);
   }, []);
 
-  // ── Session list ───────────────────────────────────────────────────────────
+  // ── Session list (refetches when the scope toggles) ───────────────────────
   useEffect(() => {
-    dispatch(fetchSessionsThunk({ source: "cleanup" }));
-  }, [dispatch]);
+    dispatch(
+      fetchSessionsThunk({ source: scope === "all" ? "all" : "cleanup" }),
+    );
+  }, [dispatch, scope]);
 
   // ── URL-driven selection (no RSC roundtrip) ───────────────────────────────
   const setUrlSession = useCallback((id: string | null) => {
@@ -611,6 +623,8 @@ export function useCleanupSession() {
     // list
     sessions,
     fetchStatus,
+    scope,
+    setScope,
     // selection
     activeSessionId,
     activeSession,

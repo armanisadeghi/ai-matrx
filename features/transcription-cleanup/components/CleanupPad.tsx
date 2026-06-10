@@ -29,7 +29,16 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ChevronDown, Loader2, PanelLeftOpen, Play, Stars, X } from "lucide-react";
+import {
+  AudioLines,
+  ChevronDown,
+  Loader2,
+  PanelLeftOpen,
+  Play,
+  Stars,
+  Wand2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -47,6 +56,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import { Switch } from "@/components/ui/switch";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { FilesTapButton } from "@/components/icons/tap-buttons";
@@ -68,6 +78,7 @@ const INSTANCE_ID = "main" as const;
 
 const H_COOKIE = "panels:cleanup-h3";
 const V_COOKIE = "panels:cleanup-v";
+const AUTORUN_LS_KEY = "cleanup:custom-autorun";
 
 function writeLayoutCookie(name: string, layout: Record<string, number>) {
   document.cookie =
@@ -109,6 +120,17 @@ export default function CleanupPad({
   const [agentNames, setAgentNames] =
     useState<Record<string, string>>(SYSTEM_AGENT_NAMES);
   const [customSource, setCustomSource] = useState<"clean" | "raw">("clean");
+  // Auto-run the Custom agent: source=raw → fires alongside Clean;
+  // source=clean → fires when the Clean result lands. UI preference, not
+  // session data — persisted in localStorage.
+  const [customAutoRun, setCustomAutoRun] = useState(false);
+  useEffect(() => {
+    setCustomAutoRun(localStorage.getItem(AUTORUN_LS_KEY) === "1");
+  }, []);
+  const handleAutoRunChange = useCallback((on: boolean) => {
+    setCustomAutoRun(on);
+    localStorage.setItem(AUTORUN_LS_KEY, on ? "1" : "0");
+  }, []);
 
   // null = show the live stream / nothing; string = loaded-from-DB or user edit.
   const [editedResponse, setEditedResponse] = useState<string | null>(null);
@@ -124,6 +146,10 @@ export default function CleanupPad({
   // ── Latest-value refs (async flows must never read stale closures) ────────
   const cleanAgentIdRef = useRef(cleanAgentId);
   cleanAgentIdRef.current = cleanAgentId;
+  const customAutoRunRef = useRef(customAutoRun);
+  customAutoRunRef.current = customAutoRun;
+  const customSourceRef = useRef(customSource);
+  customSourceRef.current = customSource;
   const contextItemsRef = useRef<SessionContextItem[]>([]);
   const responseRef = useRef<string>("");
   const customRef = useRef<string>("");
@@ -188,8 +214,27 @@ export default function CleanupPad({
     );
     setEditedResponse(loaded.cleanText || null);
     setEditedCustom(loaded.customText || null);
-    setCleanAgentId(loaded.cleanAgentId ?? DEFAULT_CLEAN_AGENT_ID);
-    setCustomAgentId(loaded.customAgentId);
+    // Guard: studio-origin sessions store SHORTCUT ids in these settings
+    // columns; if the id didn't resolve to a real agent name, it isn't a
+    // runnable agent id here — fall back to the default, loudly.
+    const validClean =
+      loaded.cleanAgentId &&
+      (loaded.agentNames[loaded.cleanAgentId] ||
+        SYSTEM_AGENT_NAMES[loaded.cleanAgentId]);
+    if (loaded.cleanAgentId && !validClean) {
+      console.warn(
+        `[cleanup] persisted clean agent ${loaded.cleanAgentId} did not resolve to an agent (studio shortcut id?) — using default`,
+      );
+    }
+    setCleanAgentId(validClean ? loaded.cleanAgentId! : DEFAULT_CLEAN_AGENT_ID);
+    const validCustom =
+      loaded.customAgentId && loaded.agentNames[loaded.customAgentId];
+    if (loaded.customAgentId && !validCustom) {
+      console.warn(
+        `[cleanup] persisted custom agent ${loaded.customAgentId} did not resolve to an agent — clearing`,
+      );
+    }
+    setCustomAgentId(validCustom ? loaded.customAgentId : null);
     contextItemsRef.current = loaded.contextItems;
     setAgentNames((prev) => ({ ...prev, ...loaded.agentNames }));
     setLiveTranscript("");
@@ -234,6 +279,57 @@ export default function CleanupPad({
     [cleanAi, buildScope],
   );
 
+  // ── Run: Custom ────────────────────────────────────────────────────────────
+  const persistedCustomCidRef = useRef<string | null>(null);
+  const customAgentIdRef = useRef(customAgentId);
+  customAgentIdRef.current = customAgentId;
+
+  /** Run the custom agent over an explicit input (manual + autorun paths). */
+  const runCustomWith = useCallback(
+    (input: string, opts?: { silent?: boolean }) => {
+      if (!customAgentIdRef.current) {
+        if (!opts?.silent)
+          toast.info("Choose an agent for the custom container first");
+        return;
+      }
+      if (!input.trim()) {
+        if (!opts?.silent)
+          toast.info("Nothing to process yet — record or type a transcript");
+        return;
+      }
+      setEditedCustom(null);
+      void customAi.process({
+        agentId: customAgentIdRef.current,
+        text: input,
+        contextItems: contextItemsRef.current,
+        scope: buildScope(),
+      });
+    },
+    [customAi, buildScope],
+  );
+
+  const runCustom = useCallback(() => {
+    const input =
+      customSourceRef.current === "clean" && responseRef.current.trim()
+        ? responseRef.current
+        : baseTextRef.current;
+    runCustomWith(input);
+  }, [runCustomWith]);
+
+  /** Autorun hook for the raw path — fires alongside Clean. */
+  const maybeAutoRunCustomRaw = useCallback(
+    (rawText: string) => {
+      if (
+        customAutoRunRef.current &&
+        customSourceRef.current === "raw" &&
+        customAgentIdRef.current
+      ) {
+        runCustomWith(rawText, { silent: true });
+      }
+    },
+    [runCustomWith],
+  );
+
   // Persist the cleaned output exactly once per completed conversation.
   const persistedCleanCidRef = useRef<string | null>(null);
   useEffect(() => {
@@ -249,35 +345,18 @@ export default function CleanupPad({
         cleanAgentIdRef.current,
         cleanAi.conversationId,
       );
+      // Autorun (source = clean): fire the Custom agent the moment the
+      // cleaned result lands.
+      if (
+        customAutoRunRef.current &&
+        customSourceRef.current === "clean" &&
+        customAgentIdRef.current &&
+        text.trim()
+      ) {
+        runCustomWith(text, { silent: true });
+      }
     }
-  }, [cleanAi.phase, cleanAi.conversationId, cleanAi.accumulatedText]);
-
-  // ── Run: Custom ────────────────────────────────────────────────────────────
-  const runCustom = useCallback(() => {
-    if (!customAgentId) {
-      toast.info("Choose an agent for the custom container first");
-      return;
-    }
-    const input =
-      customSource === "clean" && responseRef.current.trim()
-        ? responseRef.current
-        : baseTextRef.current;
-    if (!input.trim()) {
-      toast.info("Nothing to process yet — record or type a transcript");
-      return;
-    }
-    setEditedCustom(null);
-    void customAi.process({
-      agentId: customAgentId,
-      text: input,
-      contextItems: contextItemsRef.current,
-      scope: buildScope(),
-    });
-  }, [customAgentId, customSource, customAi, buildScope]);
-
-  const persistedCustomCidRef = useRef<string | null>(null);
-  const customAgentIdRef = useRef(customAgentId);
-  customAgentIdRef.current = customAgentId;
+  }, [cleanAi.phase, cleanAi.conversationId, cleanAi.accumulatedText, runCustomWith]);
   useEffect(() => {
     if (
       customAi.phase === "complete" &&
@@ -325,8 +404,10 @@ export default function CleanupPad({
 
       void sessionRefs.current.persistRawAppend(trimmed);
       runClean(combined);
+      // Autorun (source = raw): Clean and Custom run simultaneously.
+      maybeAutoRunCustomRaw(combined);
     },
-    [dispatch, runClean],
+    [dispatch, runClean, maybeAutoRunCustomRaw],
   );
 
   const handleLiveTranscript = useCallback((text: string) => {
@@ -404,8 +485,10 @@ export default function CleanupPad({
       return;
     }
     runClean(transcript);
+    // Autorun (source = raw): Clean and Custom run simultaneously.
+    maybeAutoRunCustomRaw(transcript);
     setDrawerOpen(false);
-  }, [runClean]);
+  }, [runClean, maybeAutoRunCustomRaw]);
 
   const handleCopyJoined = useCallback(async () => {
     const transcript = transcriptDisplayRef.current.trim();
@@ -480,29 +563,53 @@ export default function CleanupPad({
 
   // ── Shared UI fragments ────────────────────────────────────────────────────
 
+  // The pill itself — shared between the desktop band and the mobile row.
+  const recordPill = (
+    <div
+      className={cn(
+        "flex items-center gap-2.5 rounded-full border bg-card py-1 pl-1 pr-4 shadow-sm transition-all",
+        liveTranscript
+          ? "border-red-500/40 ring-2 ring-red-500/15"
+          : "border-border ring-1 ring-primary/10 hover:ring-primary/25 hover:shadow-md",
+      )}
+    >
+      <span
+        className={cn(
+          "inline-flex items-center justify-center rounded-full p-1 transition-colors",
+          liveTranscript
+            ? "bg-red-500/15 text-red-500"
+            : "bg-primary/10 text-primary",
+        )}
+      >
+        <MicrophoneIconButton
+          id={micId}
+          onTranscriptionComplete={handleTranscriptionComplete}
+          onLiveTranscript={handleLiveTranscript}
+          variant="icon-only"
+          size="lg"
+        />
+      </span>
+      <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+        {liveTranscript && (
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
+        )}
+        {recordStatus}
+      </span>
+    </div>
+  );
+
+  // Desktop: a tall band that includes the (transparent) shell-header zone —
+  // with the page title gone, the pill rises and centers in the full band.
+  const recordBand = (
+    <div className="flex h-[calc(var(--shell-header-h)+3.5rem)] shrink-0 items-center justify-center border-b border-border px-4">
+      {recordPill}
+    </div>
+  );
+
+  // Mobile: compact row (the wrapper already clears the shell header).
   const recordControl = (
-    <div className="flex shrink-0 items-center justify-center gap-3 border-b border-border px-4 py-3">
-      <div className="flex items-center gap-2.5 rounded-full border border-border bg-card py-1 pl-1 pr-4 shadow-sm">
-        <span
-          className={cn(
-            "inline-flex items-center justify-center rounded-full p-1 transition-colors",
-            liveTranscript
-              ? "bg-red-500/15 text-red-500"
-              : "bg-primary/10 text-primary",
-          )}
-        >
-          <MicrophoneIconButton
-            id={micId}
-            onTranscriptionComplete={handleTranscriptionComplete}
-            onLiveTranscript={handleLiveTranscript}
-            variant="icon-only"
-            size="lg"
-          />
-        </span>
-        <span className="text-sm font-medium text-foreground">
-          {recordStatus}
-        </span>
-      </div>
+    <div className="flex shrink-0 items-center justify-center border-b border-border px-4 py-3">
+      {recordPill}
     </div>
   );
 
@@ -513,6 +620,8 @@ export default function CleanupPad({
           sessions={session.sessions}
           fetchStatus={session.fetchStatus}
           activeSessionId={session.activeSessionId}
+          scope={session.scope}
+          onScopeChange={session.setScope}
           onSelect={handleSelectSession}
           onCreate={() => void handleNewSession()}
           onDelete={(id) => void session.deleteSession(id)}
@@ -570,8 +679,11 @@ export default function CleanupPad({
 
   const transcriptPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/30 px-3 py-2">
+        <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-muted">
+            <AudioLines className="h-3 w-3 text-muted-foreground" />
+          </span>
           Transcript
         </span>
         {(transcriptDisplay.trim().length > 0 || entries.length > 0) && (
@@ -601,13 +713,15 @@ export default function CleanupPad({
 
   const cleanPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/30 px-3 py-2">
         <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <Stars className="h-3.5 w-3.5 text-primary/80" />
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-primary/10">
+            <Stars className="h-3 w-3 text-primary" />
+          </span>
           Clean
           {cleanThinking && (
-            <span className="inline-flex items-center gap-1 font-normal normal-case text-primary/80">
-              · Thinking
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-px font-normal normal-case text-primary">
+              Thinking
               <span className="inline-flex gap-0.5">
                 <span className="h-1 w-1 animate-bounce rounded-full bg-primary/70 [animation-delay:-0.3s]" />
                 <span className="h-1 w-1 animate-bounce rounded-full bg-primary/70 [animation-delay:-0.15s]" />
@@ -616,8 +730,8 @@ export default function CleanupPad({
             </span>
           )}
           {cleanAi.phase === "complete" && responseValue.trim() && (
-            <span className="font-normal normal-case text-green-600 dark:text-green-400">
-              · Ready
+            <span className="rounded-full bg-green-500/10 px-1.5 py-px font-normal normal-case text-green-600 dark:text-green-400">
+              Ready
             </span>
           )}
         </span>
@@ -666,18 +780,21 @@ export default function CleanupPad({
   );
 
   const customControls = (
-    <div className="flex shrink-0 flex-col gap-2 border-b border-border px-3 py-2">
+    <div className="flex shrink-0 flex-col gap-2 border-b border-border bg-muted/30 px-3 py-2">
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-primary/10">
+            <Wand2 className="h-3 w-3 text-primary" />
+          </span>
           Custom
           {customThinking && (
-            <span className="inline-flex items-center gap-1 font-normal normal-case text-primary/80">
-              · Thinking
+            <span className="rounded-full bg-primary/10 px-1.5 py-px font-normal normal-case text-primary">
+              Thinking
             </span>
           )}
           {customAi.phase === "complete" && customValue.trim() && (
-            <span className="font-normal normal-case text-green-600 dark:text-green-400">
-              · Ready
+            <span className="rounded-full bg-green-500/10 px-1.5 py-px font-normal normal-case text-green-600 dark:text-green-400">
+              Ready
             </span>
           )}
         </span>
@@ -746,11 +863,28 @@ export default function CleanupPad({
           Run
         </button>
       </div>
-      {customAi.mapping && (
-        <div className="text-[10px] text-muted-foreground/70">
-          {mappingCaption(customAi.mapping)}
-        </div>
-      )}
+      <div className="flex items-center justify-between">
+        {/* Autorun: source=raw → fires with Clean; source=clean → fires when
+            the cleaned result lands. */}
+        <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
+          <Switch
+            checked={customAutoRun}
+            onCheckedChange={handleAutoRunChange}
+            disabled={!customAgentId}
+            className="scale-75"
+            aria-label="Auto-run the custom agent"
+          />
+          Auto-run
+          <span className="text-muted-foreground/60">
+            {customSource === "raw" ? "(with Clean)" : "(after Clean)"}
+          </span>
+        </label>
+        {customAi.mapping && (
+          <span className="text-[10px] text-muted-foreground/70">
+            {mappingCaption(customAi.mapping)}
+          </span>
+        )}
+      </div>
     </div>
   );
 
@@ -771,31 +905,28 @@ export default function CleanupPad({
     </div>
   );
 
-  const header = (
+  // No page title — the record pill is the focal point. Desktop portals
+  // nothing into the shell header (the pill band rises into that zone);
+  // mobile still needs the drawer toggle there.
+  const header = isMobile ? (
     <PageHeader>
-      <div className="flex w-full items-center justify-center gap-2 px-1">
-        {isMobile && (
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Open options"
-            className="-ml-1 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            <PanelLeftOpen className="h-4 w-4" />
-          </button>
-        )}
-        <Stars className="h-4 w-4 shrink-0 text-primary/80" />
-        <span className="text-sm font-semibold text-foreground">
-          Transcription Cleanup
-        </span>
+      <div className="flex w-full items-center gap-2 px-1">
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Open options"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <PanelLeftOpen className="h-4 w-4" />
+        </button>
         {session.activeSession && (
-          <span className="hidden max-w-56 truncate text-xs text-muted-foreground sm:inline">
-            · {session.activeSession.title}
+          <span className="max-w-48 truncate text-xs text-muted-foreground">
+            {session.activeSession.title}
           </span>
         )}
       </div>
     </PageHeader>
-  );
+  ) : null;
 
   // ── Mobile: single scroll column + drawer ──────────────────────────────────
   if (isMobile) {
@@ -862,8 +993,8 @@ export default function CleanupPad({
           <ResizableHandle withHandle />
 
           <ResizablePanel id="main" minSize="30%">
-            <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
-              {recordControl}
+            <div className="flex h-full min-h-0 flex-col">
+              {recordBand}
               <ResizablePanelGroup
                 id="cleanup-v"
                 orientation="vertical"
