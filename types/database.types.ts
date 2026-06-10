@@ -18599,6 +18599,7 @@ export type Database = {
           column_widths: Json | null
           concept_interval_ms: number
           concept_shortcut_id: string | null
+          context_items: Json | null
           created_at: string
           module_id: string
           module_interval_ms: number | null
@@ -18613,6 +18614,7 @@ export type Database = {
           column_widths?: Json | null
           concept_interval_ms?: number
           concept_shortcut_id?: string | null
+          context_items?: Json | null
           created_at?: string
           module_id?: string
           module_interval_ms?: number | null
@@ -18627,6 +18629,7 @@ export type Database = {
           column_widths?: Json | null
           concept_interval_ms?: number
           concept_shortcut_id?: string | null
+          context_items?: Json | null
           created_at?: string
           module_id?: string
           module_interval_ms?: number | null
@@ -18647,6 +18650,7 @@ export type Database = {
       }
       studio_sessions: {
         Row: {
+          assistant_conversation_id: string | null
           audio_storage_path: string | null
           created_at: string
           ended_at: string | null
@@ -18656,6 +18660,7 @@ export type Database = {
           module_id: string
           organization_id: string | null
           project_id: string | null
+          source: string
           started_at: string
           status: string
           title: string
@@ -18665,6 +18670,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assistant_conversation_id?: string | null
           audio_storage_path?: string | null
           created_at?: string
           ended_at?: string | null
@@ -18674,6 +18680,7 @@ export type Database = {
           module_id?: string
           organization_id?: string | null
           project_id?: string | null
+          source?: string
           started_at?: string
           status?: string
           title?: string
@@ -18683,6 +18690,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assistant_conversation_id?: string | null
           audio_storage_path?: string | null
           created_at?: string
           ended_at?: string | null
@@ -18692,6 +18700,7 @@ export type Database = {
           module_id?: string
           organization_id?: string | null
           project_id?: string | null
+          source?: string
           started_at?: string
           status?: string
           title?: string
