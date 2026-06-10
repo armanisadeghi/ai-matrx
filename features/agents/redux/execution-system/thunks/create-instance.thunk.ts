@@ -24,6 +24,7 @@ import type {
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
+import { hasField } from "@/features/agents/redux/shared/field-flags";
 import { executeInstance } from "./execute-instance.thunk";
 
 import { generateConversationId } from "../utils/ids";
@@ -83,6 +84,18 @@ function readAgentSnapshot(
   isCreator: boolean;
 } {
   const agent = state.agentDefinition.agents?.[agentId];
+  // Loud recovery signal: snapshotting before the agent's model/settings are
+  // loaded seeds an instance with an empty base model, which silently breaks
+  // the model picker and the override delta guard. The launch orchestrator
+  // (Step 0.5, fetchAgentExecutionFull) guarantees these fields on the
+  // direct-agent path — if this fires, a creation path skipped that guarantee.
+  if (agent && !hasField(agent._loadedFields, "modelId")) {
+    console.warn(
+      `[readAgentSnapshot] Agent ${agentId} snapshotted before modelId loaded — ` +
+        "instance baseSettings.model will be empty. Ensure the full execution " +
+        "payload is fetched before instance creation (launch-agent-execution Step 0.5).",
+    );
+  }
   return {
     agentType: agent?.agentType ?? "user",
     variableDefinitions: agent?.variableDefinitions ?? [],
