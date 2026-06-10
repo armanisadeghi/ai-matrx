@@ -1359,8 +1359,10 @@ export const grantPermission = createAsyncThunk<
         permissions: [dbRowToCloudFilePermission(data)],
       }),
     );
-    // Full refresh to keep the list authoritative.
-    await dispatch(loadPermissions({ resourceId: arg.resourceId })).unwrap();
+    // P1-6: the returned row already makes the UI correct. Reconcile the full
+    // list in the BACKGROUND (don't await) so the dialog doesn't stall on a
+    // second round-trip after every grant.
+    void dispatch(loadPermissions({ resourceId: arg.resourceId }));
   } finally {
     releaseRequest(requestId);
   }
