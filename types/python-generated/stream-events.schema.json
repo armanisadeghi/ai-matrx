@@ -396,6 +396,30 @@
       "timestamp": {
         "title": "Timestamp",
         "type": "number"
+      },
+      "seq": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Seq"
+      },
+      "late_by_seconds": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Late By Seconds"
       }
     },
     "title": "HeartbeatPayload",

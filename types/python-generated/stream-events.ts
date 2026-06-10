@@ -140,6 +140,8 @@ export interface BrokerPayload {
 
 export interface HeartbeatPayload {
   timestamp?: number;
+  seq?: number | null;
+  late_by_seconds?: number | null;
 }
 
 export interface EndPayload {

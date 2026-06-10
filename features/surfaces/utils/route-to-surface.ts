@@ -60,10 +60,14 @@ const SURFACE_BY_ROUTE_PREFIX: readonly RouteMapping[] = [
   { prefix: "/research", surface: "matrx-user/research" },
   { prefix: "/sandboxes", surface: "matrx-user/sandboxes" },
   { prefix: "/transcripts/cleanup", surface: "matrx-user/transcripts-cleanup" },
+  { prefix: "/transcripts/scribe", surface: "matrx-user/transcript-scribe" },
   { prefix: "/transcripts", surface: "matrx-user/transcripts" },
   { prefix: "/transcript-studio", surface: "matrx-user/transcript-studio" },
   { prefix: "/dashboard", surface: "matrx-user/dashboard" },
-  { prefix: "/observational-memory", surface: "matrx-user/observational-memory" },
+  {
+    prefix: "/observational-memory",
+    surface: "matrx-user/observational-memory",
+  },
   { prefix: "/scraper", surface: "matrx-user/scraper" },
   { prefix: "/gallery", surface: "matrx-user/gallery" },
   { prefix: "/feedback", surface: "matrx-user/feedback" },
@@ -83,13 +87,19 @@ const SURFACE_BY_ROUTE_PREFIX: readonly RouteMapping[] = [
  * mapping matches — callers omit `client.surface` in that case and the
  * server resolves tools without DB surface inheritance.
  */
-export function surfaceFromPathname(pathname: string | null | undefined): string | null {
+export function surfaceFromPathname(
+  pathname: string | null | undefined,
+): string | null {
   if (!pathname) return null;
   // Strip the (authenticated) route group prefix Next.js doesn't include in the
   // URL but TS App Router sometimes reports.
   const stripped = pathname.replace(/^\/?\(authenticated\)/, "");
   for (const { prefix, surface } of SURFACE_BY_ROUTE_PREFIX) {
-    if (stripped === prefix || stripped.startsWith(prefix + "/") || stripped === prefix.replace(/\/$/, "")) {
+    if (
+      stripped === prefix ||
+      stripped.startsWith(prefix + "/") ||
+      stripped === prefix.replace(/\/$/, "")
+    ) {
       return surface;
     }
   }

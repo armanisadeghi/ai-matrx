@@ -47,6 +47,8 @@ import { cn } from "@/lib/utils";
 const MIN_WIDTH = 480;
 const MAX_WIDTH = 1400;
 const DEFAULT_WIDTH = 768;
+const CANVAS_TOP_PANEL_ID = "canvas-top";
+const CANVAS_BOTTOM_PANEL_ID = "canvas-bottom";
 
 export function CanvasSideSheetInner() {
   const dispatch = useAppDispatch();
@@ -118,7 +120,10 @@ export function CanvasSideSheetInner() {
       ? currentItem.content.metadata.title
       : "Canvas";
 
-  const width = Math.min(Math.max(storedWidth || DEFAULT_WIDTH, MIN_WIDTH), MAX_WIDTH);
+  const width = Math.min(
+    Math.max(storedWidth || DEFAULT_WIDTH, MIN_WIDTH),
+    MAX_WIDTH,
+  );
   const showSplit = !!secondaryItem && !isMobile;
 
   return (
@@ -179,12 +184,7 @@ export function CanvasSideSheetInner() {
         {/* Visual card. Padding outside the card so the rounded corners feel
             inset from the viewport edge — matches the floating chat header
             language. Mobile: edge-to-edge (no padding, no rounding). */}
-        <div
-          className={cn(
-            "h-full",
-            isMobile ? "" : "p-1.5 pl-1",
-          )}
-        >
+        <div className={cn("h-full", isMobile ? "" : "p-1.5 pl-1")}>
           <div
             className={cn(
               "h-full w-full flex flex-col overflow-hidden",
@@ -202,15 +202,15 @@ export function CanvasSideSheetInner() {
                 // percentage so the stored ratio is stable regardless of how
                 // flexGrow values are scaled.
                 onLayoutChanged={(layout) => {
-                  const top = layout["canvas-top"];
-                  const bottom = layout["canvas-bottom"];
+                  const top = layout[CANVAS_TOP_PANEL_ID];
+                  const bottom = layout[CANVAS_BOTTOM_PANEL_ID];
                   if (Number.isFinite(top) && Number.isFinite(bottom) && top + bottom > 0) {
                     dispatch(setCanvasSplitRatio(Math.round((top / (top + bottom)) * 100)));
                   }
                 }}
               >
                 <ResizablePanel
-                  id="canvas-top"
+                  id={CANVAS_TOP_PANEL_ID}
                   defaultSize={splitRatio}
                   minSize={20}
                   style={{ overflow: "hidden", height: "100%" }}
@@ -222,7 +222,7 @@ export function CanvasSideSheetInner() {
                     horizontally so the user expects row-resize. */}
                 <ResizableHandle style={{ cursor: "row-resize" }} />
                 <ResizablePanel
-                  id="canvas-bottom"
+                  id={CANVAS_BOTTOM_PANEL_ID}
                   defaultSize={100 - splitRatio}
                   minSize={20}
                   style={{ overflow: "hidden", height: "100%" }}
