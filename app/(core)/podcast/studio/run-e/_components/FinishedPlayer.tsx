@@ -21,11 +21,6 @@ import {
   CircleCheck,
   type LucideIcon,
 } from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { episodeHref } from "@/features/podcasts/generator/constants";
