@@ -69,8 +69,8 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
   - `POST /utilities/pdf/clean-content/{doc_id}` — AI cleanup, NDJSON stream
 
 **Data model**
-- DB rows owned by the Python backend; read model is the `PdfDocument` type in `usePdfExtractor.ts` (`id`, `name`, `content`, `clean_content`, `source` Supabase Storage URL, timestamps).
-- Raw files land in Supabase Storage asynchronously — `source` may be `null` briefly after extraction; re-fetch resolves it.
+- DB rows owned by the Python backend; read model is the `PdfDocument` type in `usePdfExtractor.ts` (`id`, `name`, `content`, `clean_content`, `source` cld_files signed URL, timestamps).
+- Raw files land in `cld_files` (AWS S3) asynchronously via the Python backend — `source` may be `null` briefly after extraction; re-fetch resolves it.
 
 **Python microservice:** extraction runs on the Python backend (OCR + parsing is out of TypeScript's capability per CLAUDE.md). The Next.js app never talks to OCR libs directly.
 
@@ -103,7 +103,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 
 **Entry points**
 - Route: `app/(a)/transcripts/` — public URL `/transcripts` (legacy `/transcripts` → permanent redirect in `next.config.js`).
-- Service: `features/transcripts/service/transcriptsService.ts` (CRUD + storage-file deletion), `service/audioStorageService.ts` (Supabase Storage uploads).
+- Service: `features/transcripts/service/transcriptsService.ts` (CRUD + cld_files deletion), `service/audioStorageService.ts` (audio uploads via the universal file handler).
 - Context: `features/transcripts/context/TranscriptsContext.tsx` — optimistic updates, real-time subscription, `createTranscript`, `updateTranscript`, `deleteTranscript`, `copyTranscript`, `refreshTranscripts`.
 - Hooks: `useFileSrc` (resolves a renderable URL; signed-URL refresh handled centrally by the handler's expiry-wheel).
 - Components: `TranscriptsLayout`, `TranscriptsHeader` (portal-injected), `TranscriptsSidebar`, `TranscriptViewer`, `CreateTranscriptModal` (Upload Only / Upload & Transcribe), `ImportTranscriptModal`, `RecordingInterface`, `RecordingPreview`, `DeleteTranscriptDialog`, `DraftIndicator`.
@@ -111,7 +111,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 **Data model (Supabase)**
 - Table `transcripts` (see `features/transcripts/migrations/create_transcripts_table.sql`): `id`, `user_id`, `title`, `description`, `segments` (JSONB), `metadata` (JSONB), `audio_file_path`, `video_file_path`, `source_type` (`audio`|`video`|`meeting`|`interview`|`other`), `tags[]`, `folder_name`, `is_deleted`, `is_draft`, `draft_saved_at`, timestamps.
 - Segment shape: `{ id, timecode, seconds, text, speaker? }`.
-- Storage: audio/video files in Supabase Storage; `audio_file_path` / `video_file_path` reference them.
+- Storage: audio/video files in `cld_files` (AWS S3); `audio_file_path` / `video_file_path` are cld_files UUIDs referencing them.
 - RLS on `user_id`; soft-delete via `is_deleted`.
 - GIN indexes on `tags` and FTS over `title + description`.
 
@@ -123,7 +123,7 @@ They are grouped here because they share invariants (NDJSON streaming, Python-ba
 
 ### 1. Trigger a scrape / extract / research / transcribe job
 
-Every pipeline starts with an authenticated `POST` (Supabase JWT via `useBackendApi` / `useApiAuth`) to a Python-backend endpoint. Scraper and PDF go through `ENDPOINTS.scraper.*` / `ENDPOINTS.pdf.*`; research goes through `research-endpoints.ts`; transcripts uploads audio to Supabase Storage first, then calls the transcription endpoint with the storage key.
+Every pipeline starts with an authenticated `POST` (Supabase JWT via `useBackendApi` / `useApiAuth`) to a Python-backend endpoint. Scraper and PDF go through `ENDPOINTS.scraper.*` / `ENDPOINTS.pdf.*`; research goes through `research-endpoints.ts`; transcripts uploads audio to `cld_files` via the universal file handler first, then calls the transcription endpoint with the cld_files UUID.
 
 ### 2. Stream progress via NDJSON
 
@@ -138,7 +138,7 @@ Per-pipeline `data` payloads:
 ### 3. Persist + retrieve
 
 - **Scraper:** no automatic DB persistence — callers hold the result or forward it (e.g., save to `rs_source` when running inside research).
-- **PDF:** Python backend writes the extracted doc row; raw file uploaded to Supabase Storage async. Retrieve via `GET /utilities/pdf/documents` or `{doc_id}`. AI cleanup writes back to `clean_content`.
+- **PDF:** Python backend writes the extracted doc row; raw file uploaded to `cld_files` (AWS S3) async. Retrieve via `GET /utilities/pdf/documents` or `{doc_id}`. AI cleanup writes back to `clean_content`.
 - **Research:** Python writes to `rs_*` tables; the frontend reads directly via Supabase (client + server layout), then refreshes counts via the `get_topic_overview` RPC.
 - **Transcripts:** frontend writes directly to `public.transcripts` via `transcriptsService.ts`; Whisper output is assembled into segments client-side before the insert.
 

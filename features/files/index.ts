@@ -99,6 +99,10 @@ export { fileHandler } from "@/features/files/handler/handler";
 export { normalize } from "@/features/files/handler/input/normalize";
 export { preferIdentityLocator } from "@/features/files/handler/utils/prefer-locator";
 export { toMediaRef } from "@/features/files/handler/output/target";
+export {
+  mapLegacyBucket,
+  composeLegacyFolderPath,
+} from "@/features/files/handler/utils/legacy-bucket-map";
 
 // ---------------------------------------------------------------------------
 // 3. Components — the canonical render / upload / pick surface

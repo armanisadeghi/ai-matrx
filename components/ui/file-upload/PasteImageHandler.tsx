@@ -16,8 +16,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useFileUpload } from "@/features/files";
-import { CloudFolders } from "@/features/files";
+import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
 import type { Visibility } from "@/features/files";
 
 type SaveToOption = "public" | "private";
@@ -54,36 +53,6 @@ type PasteImageHandlerProps = {
   onError?: (message: string) => void;
 };
 
-function mapLegacyBucket(bucket: string): string {
-  switch (bucket) {
-    case "user-public-assets":
-      return "Shared Assets";
-    case "user-private-assets":
-      return "Private Assets";
-    case "images":
-    case "Images":
-      return CloudFolders.IMAGES;
-    case "audio":
-    case "Audio":
-      return CloudFolders.AUDIO;
-    case "audio-recordings":
-      return CloudFolders.AUDIO_RECORDINGS;
-    case "documents":
-    case "Documents":
-      return CloudFolders.DOCUMENTS;
-    case "code":
-    case "Code":
-      return CloudFolders.CODE;
-    case "userContent":
-      return "My Files";
-    case "any-file":
-      return "Uploads";
-    case "attachments":
-      return CloudFolders.CHAT_ATTACHMENTS;
-    default:
-      return bucket;
-  }
-}
 
 function classifyFileType(mimeType: string): string {
   if (!mimeType) return "unknown";
@@ -136,9 +105,7 @@ export const PasteImageHandler: React.FC<PasteImageHandlerProps> = ({
       const items = event.clipboardData?.items;
       if (!items) return;
 
-      const top = mapLegacyBucket(bucket);
-      const sub = (path ?? "").replace(/^\/+|\/+$/g, "");
-      const folderPath = sub ? `${top}/${sub}` : top;
+      const folderPath = composeLegacyFolderPath(bucket, path);
       const visibility: Visibility =
         saveTo === "public"
           ? "public"

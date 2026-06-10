@@ -12,7 +12,8 @@
  *     chunk so the UI shows text as the user speaks.
  *   - All audio chunks + text are persisted to IndexedDB via audioSafetyStore.
  *   - Failed chunks are tracked; on stop, if any failed, the full audio blob is
- *     uploaded to Supabase Storage and transcribed via the URL-based fallback.
+ *     uploaded to cld_files via the universal file handler and transcribed via
+ *     the URL-based fallback (Groq fetches the cld_files signed URL).
  *   - On clean completion, the IndexedDB entry is marked 'complete'.
  *   - On crash, the AudioRecoveryProvider detects orphaned entries on next load.
  */

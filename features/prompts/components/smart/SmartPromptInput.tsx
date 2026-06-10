@@ -31,7 +31,7 @@ import { ResourceChips } from "../resource-display/ResourceChips";
 import type { Resource } from "../../types/resources";
 import ResourcePreviewSheet from "../resource-display/ResourcePreviewSheet";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { fileHandler } from "@/features/files";
+import { fileHandler, composeLegacyFolderPath } from "@/features/files";
 import type { NormalizedFile } from "@/features/files";
 import {
   selectIsDebugMode,
@@ -184,9 +184,7 @@ export function SmartPromptInput({
   // the prompt-execution `uploadAndAddFileResource` thunk.
   const uploadAdapter = useCallback(
     async (files: File[]): Promise<Array<{ fileId?: string; url: string }>> => {
-      const folderPath = uploadPath
-        ? `${uploadBucket}/${uploadPath}`
-        : uploadBucket;
+      const folderPath = composeLegacyFolderPath(uploadBucket, uploadPath);
       const out: Array<{ fileId?: string; url: string }> = [];
       for (const file of files) {
         const normalized: NormalizedFile = await fileHandler.upload(

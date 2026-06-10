@@ -75,7 +75,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ResourceChips } from "@/features/prompts/components/resource-display/ResourceChips";
 import { ResourcePickerMenu } from "@/features/resource-manager/resource-picker/ResourcePickerMenu";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { useFileUpload } from "@/features/files";
+import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
 import { ModelSettingsDialog } from "@/features/prompts/components/configuration/ModelSettingsDialog";
 import { toast } from "sonner";
 import type { PromptSettings } from "@/features/prompts/types/core";
@@ -322,9 +322,7 @@ export function ConversationInput({
   const handleFilesSelected = useCallback(
     async (files: FileList | File[]) => {
       const filesArray = Array.from(files);
-      const folderPath = uploadPath
-        ? `${uploadBucket}/${uploadPath}`
-        : uploadBucket;
+      const folderPath = composeLegacyFolderPath(uploadBucket, uploadPath);
       for (const file of filesArray) {
         try {
           const normalized = await upload(

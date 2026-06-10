@@ -74,7 +74,7 @@ All transcription surfaces (window panels above, all 4 Transcript Studio columns
 
 ## Data model
 
-- Audio assets — Supabase Storage + row references
+- Audio assets — `cld_files` (AWS S3 backed via Python `/files/*`) + row references
 - TTS jobs — may or may not persist (streaming often ephemeral)
 - Podcasts — `pc_episodes` with metadata, audio asset references, and nullable `user_id` (creator ownership)
 
@@ -116,7 +116,7 @@ Verify exact schemas in Supabase before extending.
 
 - **LiveKit is not Expo Go compatible.** Requires `npx expo prebuild`. Mobile builds need the native modules.
 - **TTS providers are swappable.** Always go through the service layer; never pin a provider in a component.
-- **Audio assets follow Supabase Storage patterns.** Do not invent a parallel storage scheme.
+- **Audio assets go through the universal file handler** (`fileHandler.upload(...)` / `useFileUpload` from `@/features/files`). Do not invent a parallel storage scheme. The legacy `audioStorageService.ts` is a thin wrapper that funnels through the handler.
 - **Playback state is transient.** Do not persist per-message play state in the DB.
 - **TTS integration with chat flows through the Conversation System's shared TTS feature** — don't wire TTS directly in a new chat surface; consume the shared hook.
 - **Podcasts use the same audio asset path** as individual audio files — same Storage bucket, same ACL pattern.
@@ -125,7 +125,7 @@ Verify exact schemas in Supabase before extending.
 
 ## Related features
 
-- **Depends on:** `features/conversation/` (TTS integration point), Supabase Storage
+- **Depends on:** `features/conversation/` (TTS integration point), `features/files` (universal file handler — single entry point for every file flow)
 - **Depended on by:** `features/transcripts/` (audio → transcripts), `features/conversation/` (TTS/voice), agent surfaces that consume audio
 - **Cross-links:** [`../scraper/FEATURE.md`](../scraper/FEATURE.md) (transcripts sibling), [`../conversation/FEATURE.md`](../conversation/FEATURE.md)
 

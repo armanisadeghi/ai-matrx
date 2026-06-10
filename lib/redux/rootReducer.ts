@@ -246,7 +246,9 @@ export const slimReducerMap = {
   codePatches: codePatchesReducer,
   codeEditHistory: codeEditHistoryReducer,
   fsChanges: fsChangesReducer,
-  // New cloud-files system (migration from Supabase Storage buckets).
+  // cld_files — the single file system. Backed by the Python `/files/*`
+  // API (AWS S3 storage). All file flows funnel through `features/files`
+  // (the universal file handler).
   cloudFiles: cloudFilesReducer,
   // SMS integration
   sms: smsReducer,

@@ -39,7 +39,7 @@ This endpoint does **not** save anything to the database or storage. It is a sta
 
 **`POST /utilities/pdf/batch-extract`**
 
-Upload multiple files at once. Results stream back one-by-one as each file finishes — you do not wait for the entire batch. Each completed file is saved to the database and its raw file is uploaded to Supabase Storage in the background.
+Upload multiple files at once. Results stream back one-by-one as each file finishes — you do not wait for the entire batch. Each completed file is saved to the database and its raw file is uploaded to `cld_files` (AWS S3 via the Python backend) in the background.
 
 **Request**
 
@@ -93,7 +93,7 @@ Save each `doc_id` as you receive it. You can immediately use it to:
 - Fetch the full document: `GET /utilities/pdf/documents/{doc_id}`
 - Trigger AI cleaning: `POST /utilities/pdf/clean-content/{doc_id}`
 
-The `source` field (Supabase Storage URL) on the document may be `null` for a few seconds after extraction while the file uploads in the background. A follow-up `GET` a moment later will have it populated.
+The `source` field (a cld_files signed URL) on the document may be `null` for a few seconds after extraction while the file uploads in the background. A follow-up `GET` a moment later will have it populated.
 
 ---
 
@@ -224,7 +224,7 @@ GET /utilities/pdf/documents?limit=50&offset=0
 | `name`          | string            | Original filename                                   |
 | `content`       | string or null    | Raw extracted text                                  |
 | `clean_content` | string or null    | AI-cleaned version; null until cleaning is run      |
-| `source`        | string or null    | Supabase Storage public URL; may be null briefly after upload |
+| `source`        | string or null    | cld_files signed URL (AWS S3); may be null briefly after upload |
 | `created_at`    | ISO 8601 string   | UTC timestamp                                       |
 | `updated_at`    | ISO 8601 string   | UTC timestamp; updated whenever clean_content changes |
 

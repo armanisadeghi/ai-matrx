@@ -108,7 +108,7 @@
 - [ ] **Capture thumbnail/preview images**
   - Add `thumbnail_url` field to database schema
   - Generate screenshot of canvas content (use html2canvas or similar)
-  - Upload to Supabase Storage
+  - Upload to `cld_files` via the universal file handler (`fileHandler.upload`)
   - Display in library grid for visual browsing
 
 ---

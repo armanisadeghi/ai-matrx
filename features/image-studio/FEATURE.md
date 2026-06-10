@@ -95,8 +95,8 @@ features/image-studio/
     └── slugify-filename.ts
 
 app/api/images/studio/
-├── process/route.ts         multi-variant Sharp batch processor (runtime: nodejs)
-└── save/route.ts            persists selected variants to Supabase Storage
+└── process/route.ts         multi-variant Sharp batch processor (runtime: nodejs)
+  (the legacy `save/route.ts` was deleted; saves go through `fileHandler.upload` directly)
 ```
 
 ## Data flow

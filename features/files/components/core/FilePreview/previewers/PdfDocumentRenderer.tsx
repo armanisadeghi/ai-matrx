@@ -112,8 +112,9 @@ export interface PdfDocumentRendererProps {
   /**
    * HTTP headers applied to every pdfjs byte fetch (typically
    * `Authorization: Bearer …` for the Python download endpoint). Pass
-   * an empty object for unauthenticated URLs (Supabase Storage public,
-   * external mirrors). Only consulted when `remoteUrl` is set.
+   * an empty object for unauthenticated URLs (cld_files signed S3 URLs
+   * carry their SigV4 signature in the query string; external mirrors
+   * vary). Only consulted when `remoteUrl` is set.
    */
   remoteHeaders?: Record<string, string>;
 

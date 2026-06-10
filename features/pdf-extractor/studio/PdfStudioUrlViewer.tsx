@@ -28,7 +28,8 @@
  * header rather than query string, or a private bucket fronted by our
  * Python proxy), thread an `authHeader` prop through and pass it as
  * `remoteHeaders={{ Authorization: authHeader }}`. The current
- * Supabase Storage public-bucket URLs don't need auth.
+ * cld_files signed S3 URLs work without an Authorization header (the
+ * SigV4 signature is in the query string).
  */
 
 import dynamic from "next/dynamic";
