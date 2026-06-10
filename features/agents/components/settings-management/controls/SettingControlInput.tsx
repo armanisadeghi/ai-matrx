@@ -239,7 +239,6 @@ function JsonValueInput({
   useEffect(() => {
     setDraft(toText(value));
     setJsonError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(value)]);
 
   return (
