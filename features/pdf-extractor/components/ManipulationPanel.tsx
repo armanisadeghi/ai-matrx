@@ -309,6 +309,8 @@ function VisualToolCard({
   activeLabel,
   hint,
   children,
+  available = true,
+  unavailableNote,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -320,6 +322,11 @@ function VisualToolCard({
   activeLabel: string;
   hint?: string;
   children?: React.ReactNode;
+  /** False when the host surface can't run this visual tool (no PDF pane
+   *  — mobile shell, floating workspace). Button disables with a note
+   *  instead of silently doing nothing. */
+  available?: boolean;
+  unavailableNote?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -388,11 +395,18 @@ function VisualToolCard({
               variant="secondary"
               className="h-7 text-[10px] px-2.5 w-full"
               onClick={onLaunch}
+              disabled={!available}
             >
               {launchLabel}
             </Button>
           )}
 
+          {!available && (
+            <p className="text-[9px] text-amber-600 dark:text-amber-400 leading-snug">
+              {unavailableNote ??
+                "This visual tool needs the PDF reading pane — open the document in the desktop studio."}
+            </p>
+          )}
           {hint && (
             <p className="text-[9px] text-muted-foreground/60 leading-snug">
               {hint}
@@ -828,6 +842,7 @@ export function ManipulationPanel({
         description="Drag page tiles to rearrange the document order"
         isActive={pdfPaneEditMode === "reorder"}
         onLaunch={() => onStartReorder?.()}
+        available={!!onStartReorder}
         onCancel={() => onEditModeCancel?.()}
         launchLabel="Reorder in PDF pane →"
         activeLabel="Reordering — drag tiles in the PDF pane"
@@ -874,6 +889,7 @@ export function ManipulationPanel({
         description="Draw a selection on the PDF to trim content"
         isActive={pdfPaneEditMode === "crop"}
         onLaunch={() => onStartCrop?.(cropPages)}
+        available={!!onStartCrop}
         onCancel={() => onEditModeCancel?.()}
         launchLabel="Draw crop area in PDF →"
         activeLabel="Crop mode — drag to select area in PDF pane"
