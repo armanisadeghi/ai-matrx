@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.3.496",
+  "version": "0.3.497",
   "private": true,
   "scripts": {
     "dev": "set NODE_OPTIONS=--dns-result-order=ipv4first && next dev",
