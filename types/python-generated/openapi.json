@@ -10583,6 +10583,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -16642,6 +16702,61 @@
         }
       }
     },
+    "/rag/conversations/{conversation_id}/ingest": {
+      "post": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "Rag Ingest Conversation",
+        "description": "Ingest a conversation into the knowledge graph by conversation id.\n\nThin wrapper around ``POST /rag/ingest`` so callers can ingest a whole\nconversation without knowing the ``source_kind='cx_message'`` plumbing.\nThe resolver is fail-closed on ownership: a conversation the caller\ndoes not own resolves to nothing and returns a clean \"source_not_found\"\nresponse rather than an error or a cross-tenant leak.\n\nThe effective org is resolved (personal-org fallback) before the ingest\ncall so the written kg_chunks are always org-scoped (non-NULL invariant).",
+        "operationId": "rag_ingest_conversation_rag_conversations__conversation_id__ingest_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationIngestRequest",
+                "default": {
+                  "force": false
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/rag/ingest/stream": {
       "post": {
         "tags": [
@@ -21354,7 +21469,7 @@
           "Workflow"
         ],
         "summary": "Resume Errored Run",
-        "description": "Resume an errored run as-is — retries the failed node with the same\ninputs (attempt bumped so the prior failure stays as history).\n\nConvenience entry point when the user knows the failure was transient\nand just wants to re-run from where it stopped without modifying\nanything. Equivalent to calling /retry on every failed node, but\ntoday only the first failing node per super-step is captured.",
+        "description": "Resume an errored run as-is — retries the failed node with the same\ninputs (attempt bumped so the prior failure stays as history).\n\nConvenience entry point when the user knows the failure was transient\nand just wants to re-run from where it stopped without modifying\nanything. Retries EVERY failed node in the parked super-step\n(audit P1-19) — parallel sibling failures no longer stay silently\nstuck behind the first one.",
         "operationId": "resume_errored_run_runs__run_id__resume_errored_post",
         "parameters": [
           {
@@ -21395,7 +21510,7 @@
           "Workflow"
         ],
         "summary": "Stream Run Events",
-        "description": "Server-Sent Events feed of wf_node_events for one run (Phase 4.3).\n\nPowers the canvas's push-based delivery path. On connect we replay any\nevents newer than ``Last-Event-ID`` (an ISO-8601 ts on reconnect), then\nsubscribe to the LISTEN/NOTIFY fan-out and forward each notification\nas a fresh SSE event with the event_ts as the SSE id (for resume).\n\nCloses the stream when the run reaches a terminal status so the FE\ncleanly stops the EventSource without retrying.",
+        "description": "Server-Sent Events feed of wf_node_events for one run (Phase 4.3).\n\nPowers the canvas's push-based delivery path. On connect we replay any\nevents newer than ``Last-Event-ID``, then subscribe to the\nLISTEN/NOTIFY fan-out and forward each notification as a fresh SSE\nevent.\n\nThe SSE ``id`` is the per-run ``seq`` (audit P1-5) — an integer\ncursor that can never skip a row (seq assignment serializes on the\nwf_run row lock). A legacy ISO-8601 ``Last-Event-ID`` from an old\nclient is still honored as a timestamp cursor for one release.\n\nCloses the stream when the run reaches a terminal status so the FE\ncleanly stops the EventSource without retrying.",
         "operationId": "stream_run_events_runs__run_id__events_stream_get",
         "parameters": [
           {
@@ -21520,6 +21635,25 @@
               "title": "Event Type"
             },
             "description": "Restrict to one or more event_type values (repeat the query param to add multiple). e.g. ?event_type=node_failed&event_type=run_errored"
+          },
+          {
+            "name": "after_seq",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Per-run sequence cursor — only events with seq strictly greater are returned. PREFER this over after_event_ts: seq assignment serializes on the wf_run row lock, so the cursor can never skip a row (millisecond timestamps could).",
+              "title": "After Seq"
+            },
+            "description": "Per-run sequence cursor — only events with seq strictly greater are returned. PREFER this over after_event_ts: seq assignment serializes on the wf_run row lock, so the cursor can never skip a row (millisecond timestamps could)."
           }
         ],
         "responses": {
@@ -36436,6 +36570,65 @@
               }
             ],
             "title": "Signed Url"
+          },
+          "expires_in": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires In",
+            "description": "Seconds until signed_url expires (signed_url mode only)."
+          },
+          "level_requested": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level Requested"
+          },
+          "level_used": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level Used",
+            "description": "Compression tier that produced the output (may exceed the requested tier when a size cap forces escalation)."
+          },
+          "cap_satisfied": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cap Satisfied",
+            "description": "True when max_size_bytes was met (or no cap given); False when even the max tier exceeded it."
+          },
+          "strategy_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strategy Used",
+            "description": "\"inplace\" or \"raster\" — which compression path produced the output."
           }
         },
         "type": "object",
@@ -43414,6 +43607,17 @@
         "type": "object",
         "title": "ConversationContinueRequest"
       },
+      "ConversationIngestRequest": {
+        "properties": {
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ConversationIngestRequest"
+      },
       "ConversationRecord": {
         "properties": {
           "id": {
@@ -45532,6 +45736,18 @@
               }
             ],
             "title": "Task Id"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
           }
         },
         "additionalProperties": true,
@@ -45999,6 +46215,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -46972,6 +47243,8 @@
           },
           "count": {
             "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
             "title": "Count",
             "default": 1
           }
@@ -56246,6 +56519,35 @@
         ],
         "title": "LineageTree"
       },
+      "LinkedEntityOut": {
+        "properties": {
+          "entity_id": {
+            "type": "string",
+            "title": "Entity Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entity_id",
+          "name",
+          "kind",
+          "weight"
+        ],
+        "title": "LinkedEntityOut"
+      },
       "ListConversationsResponse": {
         "properties": {
           "conversations": {
@@ -60449,6 +60751,42 @@
             "title": "Number Of Speakers",
             "default": 2
           },
+          "host_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 20,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Count"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format",
+            "default": ""
+          },
+          "theme": {
+            "type": "string",
+            "title": "Theme",
+            "default": ""
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": ""
+          },
+          "speakers": {
+            "items": {
+              "$ref": "#/components/schemas/SpeakerSpec"
+            },
+            "type": "array",
+            "title": "Speakers",
+            "default": []
+          },
           "first_show_info_text": {
             "anyOf": [
               {
@@ -62648,6 +62986,8 @@
           },
           "dpi": {
             "type": "integer",
+            "maximum": 300,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -62665,6 +63005,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -62734,11 +63076,14 @@
           },
           "page": {
             "type": "integer",
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "dpi": {
             "type": "integer",
+            "maximum": 600,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -62756,6 +63101,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -62918,11 +63265,14 @@
           },
           "page": {
             "type": "integer",
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "max_side": {
             "type": "integer",
+            "maximum": 2048,
+            "minimum": 16,
             "title": "Max Side",
             "default": 256
           },
@@ -62939,6 +63289,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 80
           }
@@ -64555,6 +64907,17 @@
           },
           "event_ts": {
             "title": "Event Ts"
+          },
+          "seq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq"
           }
         },
         "additionalProperties": true,
@@ -65156,6 +65519,20 @@
             "title": "Max Steps",
             "default": 1000
           },
+          "step_concurrency": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 256,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Concurrency",
+            "description": "Max node invocations of one super-step executing at once (BS-6 bounded fan-out). A 50-item map with step_concurrency=3 runs 3 at a time instead of all 50 — the declarative form of rate-limited fan-out (analysis semaphores, TTS quotas, scrape politeness). None = unbounded. Persisted on the run so resume/queued execution honors it too."
+          },
           "mode": {
             "type": "string",
             "enum": [
@@ -65395,6 +65772,18 @@
               }
             ],
             "title": "Description"
+          },
+          "expected_updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Updated At"
           }
         },
         "type": "object",
@@ -65915,6 +66304,82 @@
         ],
         "title": "SearchBboxOut"
       },
+      "SearchEntityOut": {
+        "properties": {
+          "entity_id": {
+            "type": "string",
+            "title": "Entity Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "mention_count": {
+            "type": "integer",
+            "title": "Mention Count"
+          },
+          "artifact_count": {
+            "type": "integer",
+            "title": "Artifact Count"
+          },
+          "source_kind_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Source Kind Counts"
+          },
+          "top_chunk_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Chunk Id"
+          },
+          "importance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Importance"
+          },
+          "is_concept": {
+            "type": "boolean",
+            "title": "Is Concept",
+            "default": false
+          },
+          "linked": {
+            "items": {
+              "$ref": "#/components/schemas/LinkedEntityOut"
+            },
+            "type": "array",
+            "title": "Linked"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entity_id",
+          "name",
+          "kind",
+          "mention_count",
+          "artifact_count",
+          "source_kind_counts"
+        ],
+        "title": "SearchEntityOut"
+      },
       "SearchExamplesResponse": {
         "properties": {
           "query": {
@@ -66032,6 +66497,21 @@
             ],
             "title": "Organization Id",
             "description": "Override the active org for this query — only honored for admins. Non-admin callers always retrieve in their AppContext.organization_id scope."
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids",
+            "description": "Restrict hits to sources tagged to these scope ids — structural filter; combines with the semantic query."
           }
         },
         "type": "object",
@@ -66113,6 +66593,20 @@
           "latency_ms": {
             "type": "integer",
             "title": "Latency Ms"
+          },
+          "entity_map": {
+            "items": {
+              "$ref": "#/components/schemas/SearchEntityOut"
+            },
+            "type": "array",
+            "title": "Entity Map"
+          },
+          "matched_entities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Matched Entities"
           }
         },
         "additionalProperties": false,
@@ -67549,6 +68043,25 @@
         },
         "type": "object",
         "title": "SourceUpdate"
+      },
+      "SpeakerSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "voice": {
+            "type": "string",
+            "title": "Voice",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "SpeakerSpec",
+        "description": "One requested speaker. `voice` is provider-appropriate: a Gemini\nprebuilt voice name for 1–2 hosts (Google TTS), an ElevenLabs voice_id for\n3+ hosts (dialogue TTS). Empty voice → filled from the default palette."
       },
       "SplitPartRequest": {
         "properties": {
@@ -75596,6 +76109,24 @@
               }
             ],
             "title": "Source Ref"
+          },
+          "entities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Entities"
+          },
+          "entity_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Rank"
           }
         },
         "type": "object",
@@ -75716,6 +76247,21 @@
             "title": "Use Mmr",
             "description": "Drop near-duplicate hits from the result set.",
             "default": true
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids",
+            "description": "Restrict hits to sources tagged to these scope ids — structural filter; combines with the semantic query."
           }
         },
         "type": "object",

@@ -240,9 +240,8 @@ const nextConfig = {
             // (no auth). Originals lived in (authenticated)/tests, (authenticated)/demo,
             // (authenticated)/settings-*-demo, (authenticated)/layout-tests,
             // (authenticated)/dynamic-imports, (authenticated)/lists-junk,
-            // (authenticated)/lists-explorer, (authenticated)/preview,
-            // (public)/google-auth-demo. 307 for now so we can
-            // promote to 308 once internal links are audited.
+            // (authenticated)/lists-explorer, (authenticated)/preview.
+            // 307 for now so we can promote to 308 once internal links are audited.
             //
             // IMPORTANT: these are ordered AFTER the entity-isolation redirects
             // above so the more-specific /tests/advanced-data-table → /legacy/...
@@ -268,7 +267,6 @@ const nextConfig = {
                 { source: '/lists-junk', destination: '/demos/lists-junk', permanent: false },
                 { source: '/lists-explorer', destination: '/demos/lists-explorer', permanent: false },
                 { source: '/preview', destination: '/demos/preview', permanent: false },
-                { source: '/google-auth-demo', destination: '/demos/google-auth', permanent: false },
             ] : []),
             // Public demos that used to live at /demos/* (under (public)/demos)
             // shifted one segment deeper to /demos/public/* so the internal

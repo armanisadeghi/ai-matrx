@@ -4145,6 +4145,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -6235,6 +6259,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rag/conversations/{conversation_id}/ingest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rag Ingest Conversation
+         * @description Ingest a conversation into the knowledge graph by conversation id.
+         *
+         *     Thin wrapper around ``POST /rag/ingest`` so callers can ingest a whole
+         *     conversation without knowing the ``source_kind='cx_message'`` plumbing.
+         *     The resolver is fail-closed on ownership: a conversation the caller
+         *     does not own resolves to nothing and returns a clean "source_not_found"
+         *     response rather than an error or a cross-tenant leak.
+         *
+         *     The effective org is resolved (personal-org fallback) before the ingest
+         *     call so the written kg_chunks are always org-scoped (non-NULL invariant).
+         */
+        post: operations["rag_ingest_conversation_rag_conversations__conversation_id__ingest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rag/ingest/stream": {
         parameters: {
             query?: never;
@@ -7856,8 +7909,9 @@ export interface paths {
          *
          *     Convenience entry point when the user knows the failure was transient
          *     and just wants to re-run from where it stopped without modifying
-         *     anything. Equivalent to calling /retry on every failed node, but
-         *     today only the first failing node per super-step is captured.
+         *     anything. Retries EVERY failed node in the parked super-step
+         *     (audit P1-19) — parallel sibling failures no longer stay silently
+         *     stuck behind the first one.
          */
         post: operations["resume_errored_run_runs__run_id__resume_errored_post"];
         delete?: never;
@@ -7878,9 +7932,14 @@ export interface paths {
          * @description Server-Sent Events feed of wf_node_events for one run (Phase 4.3).
          *
          *     Powers the canvas's push-based delivery path. On connect we replay any
-         *     events newer than ``Last-Event-ID`` (an ISO-8601 ts on reconnect), then
-         *     subscribe to the LISTEN/NOTIFY fan-out and forward each notification
-         *     as a fresh SSE event with the event_ts as the SSE id (for resume).
+         *     events newer than ``Last-Event-ID``, then subscribe to the
+         *     LISTEN/NOTIFY fan-out and forward each notification as a fresh SSE
+         *     event.
+         *
+         *     The SSE ``id`` is the per-run ``seq`` (audit P1-5) — an integer
+         *     cursor that can never skip a row (seq assignment serializes on the
+         *     wf_run row lock). A legacy ISO-8601 ``Last-Event-ID`` from an old
+         *     client is still honored as a timestamp cursor for one release.
          *
          *     Closes the stream when the run reaches a terminal status so the FE
          *     cleanly stops the EventSource without retrying.
@@ -13074,6 +13133,28 @@ export interface components {
             data_url?: string | null;
             /** Signed Url */
             signed_url?: string | null;
+            /**
+             * Expires In
+             * @description Seconds until signed_url expires (signed_url mode only).
+             */
+            expires_in?: number | null;
+            /** Level Requested */
+            level_requested?: number | null;
+            /**
+             * Level Used
+             * @description Compression tier that produced the output (may exceed the requested tier when a size cap forces escalation).
+             */
+            level_used?: number | null;
+            /**
+             * Cap Satisfied
+             * @description True when max_size_bytes was met (or no cap given); False when even the max tier exceeded it.
+             */
+            cap_satisfied?: boolean | null;
+            /**
+             * Strategy Used
+             * @description "inplace" or "raster" — which compression path produced the output.
+             */
+            strategy_used?: string | null;
         };
         /**
          * AssetPreviewRequest
@@ -15426,6 +15507,14 @@ export interface components {
             memory_scope: string;
             cache_bypass?: components["schemas"]["CacheBypass"] | null;
         };
+        /** ConversationIngestRequest */
+        ConversationIngestRequest: {
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
+        };
         /**
          * ConversationRecord
          * @description Conversation row as returned by ``CxConversation.to_dict()``.
@@ -16225,6 +16314,8 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -16375,6 +16466,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -19964,6 +20082,17 @@ export interface components {
              */
             processing_descendants: components["schemas"]["LineageNode"][];
         };
+        /** LinkedEntityOut */
+        LinkedEntityOut: {
+            /** Entity Id */
+            entity_id: string;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /** Weight */
+            weight: number;
+        };
         /** ListConversationsResponse */
         ListConversationsResponse: {
             /** Conversations */
@@ -21513,6 +21642,28 @@ export interface components {
              * @default 2
              */
             number_of_speakers: number;
+            /** Host Count */
+            host_count?: number | null;
+            /**
+             * Format
+             * @default
+             */
+            format: string;
+            /**
+             * Theme
+             * @default
+             */
+            theme: string;
+            /**
+             * Language
+             * @default
+             */
+            language: string;
+            /**
+             * Speakers
+             * @default []
+             */
+            speakers: components["schemas"]["SpeakerSpec"][];
             /** First Show Info Text */
             first_show_info_text?: string | null;
             audio_style?: components["schemas"]["AudioStyle"] | null;
@@ -23134,6 +23285,8 @@ export interface components {
             };
             /** Event Ts */
             event_ts: unknown;
+            /** Seq */
+            seq?: number | null;
         } & {
             [key: string]: unknown;
         };
@@ -23323,6 +23476,11 @@ export interface components {
              */
             max_steps: number;
             /**
+             * Step Concurrency
+             * @description Max node invocations of one super-step executing at once (BS-6 bounded fan-out). A 50-item map with step_concurrency=3 runs 3 at a time instead of all 50 — the declarative form of rate-limited fan-out (analysis semaphores, TTS quotas, scrape politeness). None = unbounded. Persisted on the run so resume/queued execution honors it too.
+             */
+            step_concurrency?: number | null;
+            /**
              * Mode
              * @description 'inline' streams the run through this HTTP response as NDJSON. 'queued' enqueues a wf_job row and returns immediately with the run_id — a worker process picks it up. Use queued for anything expected to run longer than a typical HTTP request, for long scrape+LLM chains, or when the caller doesn't need streaming.
              * @default inline
@@ -23427,6 +23585,8 @@ export interface components {
             name?: string | null;
             /** Description */
             description?: string | null;
+            /** Expected Updated At */
+            expected_updated_at?: string | null;
         };
         /** SavedViewCreate */
         SavedViewCreate: {
@@ -23722,6 +23882,34 @@ export interface components {
             /** Y1 */
             y1: number;
         };
+        /** SearchEntityOut */
+        SearchEntityOut: {
+            /** Entity Id */
+            entity_id: string;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /** Mention Count */
+            mention_count: number;
+            /** Artifact Count */
+            artifact_count: number;
+            /** Source Kind Counts */
+            source_kind_counts: {
+                [key: string]: number;
+            };
+            /** Top Chunk Id */
+            top_chunk_id?: string | null;
+            /** Importance */
+            importance?: number | null;
+            /**
+             * Is Concept
+             * @default false
+             */
+            is_concept: boolean;
+            /** Linked */
+            linked?: components["schemas"]["LinkedEntityOut"][];
+        };
         /** SearchExamplesResponse */
         SearchExamplesResponse: {
             /** Query */
@@ -23771,6 +23959,11 @@ export interface components {
              * @description Override the active org for this query — only honored for admins. Non-admin callers always retrieve in their AppContext.organization_id scope.
              */
             organization_id?: string | null;
+            /**
+             * Scope Ids
+             * @description Restrict hits to sources tagged to these scope ids — structural filter; combines with the semantic query.
+             */
+            scope_ids?: string[] | null;
         };
         /** SearchResponse */
         SearchResponse: {
@@ -23801,6 +23994,10 @@ export interface components {
             reranker_model: string | null;
             /** Latency Ms */
             latency_ms: number;
+            /** Entity Map */
+            entity_map?: components["schemas"]["SearchEntityOut"][];
+            /** Matched Entities */
+            matched_entities?: string[];
         };
         /** SearchSourceRef */
         SearchSourceRef: {
@@ -24250,6 +24447,21 @@ export interface components {
             is_stale?: boolean | null;
             /** Scrape Status */
             scrape_status?: ("pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated") | null;
+        };
+        /**
+         * SpeakerSpec
+         * @description One requested speaker. `voice` is provider-appropriate: a Gemini
+         *     prebuilt voice name for 1–2 hosts (Google TTS), an ElevenLabs voice_id for
+         *     3+ hosts (dialogue TTS). Empty voice → filled from the default palette.
+         */
+        SpeakerSpec: {
+            /** Name */
+            name: string;
+            /**
+             * Voice
+             * @default
+             */
+            voice: string;
         };
         /** SplitPartRequest */
         SplitPartRequest: {
@@ -26980,6 +27192,10 @@ export interface components {
             source_ref?: {
                 [key: string]: unknown;
             } | null;
+            /** Entities */
+            entities?: string[];
+            /** Entity Rank */
+            entity_rank?: number | null;
         };
         /** SearchRequest */
         aidream__api__routers__rag__SearchRequest: {
@@ -27040,6 +27256,11 @@ export interface components {
              * @default true
              */
             use_mmr: boolean;
+            /**
+             * Scope Ids
+             * @description Restrict hits to sources tagged to these scope ids — structural filter; combines with the semantic query.
+             */
+            scope_ids?: string[] | null;
         };
         /** ScannerStatusResponse */
         aidream__api__routers__scheduling__ScannerStatusResponse: {
@@ -34314,6 +34535,41 @@ export interface operations {
             };
         };
     };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -38453,6 +38709,41 @@ export interface operations {
             };
         };
     };
+    rag_ingest_conversation_rag_conversations__conversation_id__ingest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConversationIngestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     rag_ingest_stream_rag_ingest_stream_post: {
         parameters: {
             query?: never;
@@ -41406,6 +41697,8 @@ export interface operations {
                 after_event_ts?: string | null;
                 /** @description Restrict to one or more event_type values (repeat the query param to add multiple). e.g. ?event_type=node_failed&event_type=run_errored */
                 event_type?: string[] | null;
+                /** @description Per-run sequence cursor — only events with seq strictly greater are returned. PREFER this over after_event_ts: seq assignment serializes on the wf_run row lock, so the cursor can never skip a row (millisecond timestamps could). */
+                after_seq?: number | null;
             };
             header?: never;
             path: {

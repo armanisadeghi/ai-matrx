@@ -59,6 +59,13 @@ const C = {
   cyan: "\x1b[36m",
 };
 
+// Match the release.sh log vocabulary: [INFO] cyan, [WARN] yellow, [FAIL] red.
+const TAG = {
+  info: `${C.cyan}[INFO]${C.reset} `,
+  warn: `${C.yellow}[WARN]${C.reset} `,
+  fail: `${C.red}[FAIL]${C.reset} `,
+};
+
 const SKIP_MARKER = /^\s*--\s*migrate\s*:\s*skip(?:\s*:\s*(.+))?\s*$/i;
 
 function skipReason(sql: string): string | null {
@@ -78,7 +85,8 @@ function sha256(s: string): string {
  *  RLS-guarded against anon. Falls back to publishable so a read still works if RLS
  *  is open. Reads .env* like the other gate scripts (scripts/check-tool-db-drift.ts). */
 function loadEnv(): { url: string; key: string } | null {
-  let url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
+  let url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
   let key =
     process.env.SUPABASE_SECRET_KEY ??
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
@@ -86,7 +94,12 @@ function loadEnv(): { url: string; key: string } | null {
     "";
 
   if (!url || !key) {
-    for (const f of [".env.local", ".env.production.local", ".env.production", ".env"]) {
+    for (const f of [
+      ".env.local",
+      ".env.production.local",
+      ".env.production",
+      ".env",
+    ]) {
       const p = resolve(ROOT, f);
       if (!existsSync(p)) continue;
       for (const line of readFileSync(p, "utf8").split("\n")) {
@@ -94,7 +107,8 @@ function loadEnv(): { url: string; key: string } | null {
         if (!m) continue;
         const [, k, raw] = m;
         const v = (raw ?? "").replace(/^['"]|['"]$/g, "");
-        if (!url && (k === "NEXT_PUBLIC_SUPABASE_URL" || k === "SUPABASE_URL")) url = v;
+        if (!url && (k === "NEXT_PUBLIC_SUPABASE_URL" || k === "SUPABASE_URL"))
+          url = v;
         if (
           !key &&
           (k === "SUPABASE_SECRET_KEY" ||
@@ -115,7 +129,10 @@ interface LedgerRow {
 }
 
 /** Returns null on fetch failure (caller decides whether that blocks). */
-async function fetchLedger(url: string, key: string): Promise<LedgerRow[] | null> {
+async function fetchLedger(
+  url: string,
+  key: string,
+): Promise<LedgerRow[] | null> {
   const endpoint =
     `${url.replace(/\/$/, "")}/rest/v1/_schema_migrations` +
     `?source=eq.${encodeURIComponent(SOURCE)}&select=filename,checksum`;
@@ -131,11 +148,15 @@ async function fetchLedger(url: string, key: string): Promise<LedgerRow[] | null
       },
     });
   } catch (err) {
-    console.error(`${C.yellow}check:migrations — could not reach Supabase: ${String(err)}${C.reset}`);
+    console.error(
+      `${TAG.warn}Migrations: could not reach Supabase — ledger check skipped (${String(err)})`,
+    );
     return null;
   }
   if (!res.ok) {
-    console.error(`${C.yellow}check:migrations — Supabase fetch failed (${res.status}): ${await res.text()}${C.reset}`);
+    console.error(
+      `${TAG.warn}Migrations: Supabase fetch failed (${res.status}) — ledger check skipped`,
+    );
     return null;
   }
   return (await res.json()) as LedgerRow[];
@@ -148,21 +169,11 @@ function listSql(dir: string): string[] {
     .sort();
 }
 
-function loudBox(title: string): void {
-  const bar = "═".repeat(70);
-  console.log(`${C.bold}${C.red}╔${bar}╗${C.reset}`);
-  console.log(`${C.bold}${C.red}║  ${title.padEnd(66)}  ║${C.reset}`);
-  console.log(`${C.bold}${C.red}╚${bar}╝${C.reset}`);
-}
-
 async function main(): Promise<number> {
   const strict = process.argv.includes("--strict");
 
   const files = listSql(MIGRATIONS_DIR);
-  if (files.length === 0) {
-    console.log(`${C.yellow}check:migrations — no .sql files in migrations/ — nothing to check${C.reset}`);
-    return 0;
-  }
+  if (files.length === 0) return 0; // nothing to check — stay quiet
 
   // Classify local files: skip-marked vs trackable, with checksums.
   const skipped: string[] = [];
@@ -179,7 +190,7 @@ async function main(): Promise<number> {
   const env = loadEnv();
   if (!env) {
     console.log(
-      `${C.yellow}check:migrations — Supabase creds absent (set NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY) — ledger check skipped${C.reset}`,
+      `${TAG.warn}Migrations: Supabase creds absent — ledger check skipped`,
     );
     return 0; // never block on missing local creds
   }
@@ -197,62 +208,65 @@ async function main(): Promise<number> {
     if (!ledger.has(f)) pending.push(f);
     else if (ledger.get(f) !== sum) drifted.push(f);
   }
-  const orphans = ledgerRows.filter((r) => !local.has(r.filename) && !skipped.includes(r.filename)).map((r) => r.filename);
 
-  const host = env.url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  console.log(`${C.bold}━━━ migration ledger check (source='${SOURCE}') ━━━${C.reset}`);
-  console.log(`  target: ${C.dim}${host}${C.reset}`);
-  console.log(`  local:  ${files.length} file(s) in migrations/ (${skipped.length} skip-marked)`);
-  console.log(`  ledger: ${ledgerRows.length} row(s) recorded for this source`);
-  console.log(
-    `  state:  ${C.green}${local.size - pending.length - drifted.length} applied${C.reset}, ` +
-      `${pending.length ? C.red : C.dim}${pending.length} unapplied${C.reset}, ` +
-      `${drifted.length ? C.yellow : C.dim}${drifted.length} drifted${C.reset}`,
-  );
+  // Clean: every tracked migration is recorded and unchanged. Stay quiet —
+  // success is the silent default. (Stray-dir notes are housekeeping, not drift;
+  // they only surface alongside a real finding below.)
+  if (pending.length === 0 && drifted.length === 0) return 0;
 
-  // Warn (don't track) about stray migration dirs.
-  for (const d of STRAY_DIRS) {
-    const n = listSql(resolve(ROOT, d)).length;
-    if (n > 0) {
-      console.log(
-        `${C.yellow}  note: ${n} stray .sql in ${d} — not tracked; consider consolidating into migrations/${C.reset}`,
-      );
-    }
-  }
+  const apply = `${C.dim}aidream:${C.reset} python db/apply_migrations.py --source ${SOURCE}`;
 
-  if (pending.length || drifted.length) {
-    console.log();
-    loudBox("!!  UNAPPLIED MIGRATIONS - THE DB DOES NOT MATCH THIS REPO  !!");
-    console.log(`${C.red}  A migration file on disk changed NOTHING until it is applied + recorded.${C.reset}`);
-    console.log(`${C.red}  Apply from the aidream repo:  python db/apply_migrations.py --source ${SOURCE}${C.reset}`);
-    console.log(`${C.red}  (or apply via the Supabase MCP, then re-run that to record it)${C.reset}`);
-    if (pending.length) {
-      console.log(`${C.bold}${C.red}  Never recorded (${pending.length}):${C.reset}`);
-      for (const f of pending) console.log(`${C.red}    ✗ ${f}${C.reset}`);
-    }
-    if (drifted.length) {
-      console.log(`${C.bold}${C.yellow}  Recorded but file changed since — re-apply or re-record (${drifted.length}):${C.reset}`);
-      for (const f of drifted) console.log(`${C.yellow}    ~ ${f}${C.reset}`);
-    }
-    if (orphans.length) {
-      console.log(`${C.dim}  (${orphans.length} ledger row(s) with no matching file — harmless; deleted/renamed migrations)${C.reset}`);
-    }
+  // Unapplied is the real emergency (a file never ran) → [FAIL] red.
+  // Drift-only is recorded-but-edited → [WARN] yellow. Never scream "unapplied"
+  // when nothing is unapplied.
+  if (pending.length) {
     console.log(
-      strict
-        ? `${C.bold}${C.red}  --strict: failing.${C.reset}`
-        : `${C.dim}  (non-blocking — exit 0 — but DO NOT ignore this)${C.reset}`,
+      `${TAG.fail}Migrations: ${pending.length} unapplied — the DB does not match this repo. ` +
+        `${strict ? "(--strict: blocking)" : "(non-blocking)"}`,
     );
-    return strict ? 1 : 0;
+    console.log();
+    for (const f of pending) console.log(`  ${C.red}✗ ${f}${C.reset}`);
+    if (drifted.length)
+      for (const f of drifted)
+        console.log(
+          `  ${C.yellow}~ ${f}${C.reset} ${C.dim}(drifted)${C.reset}`,
+        );
+    console.log();
+    console.log(
+      `  ${C.dim}A file on disk runs nothing until applied + recorded. Apply from${C.reset} ${apply}`,
+    );
+  } else {
+    console.log(
+      `${TAG.warn}Migrations: ${drifted.length} drifted — recorded, but the file changed since. (non-blocking)`,
+    );
+    console.log();
+    for (const f of drifted) console.log(`  ${C.yellow}~ ${f}${C.reset}`);
+    console.log();
+    console.log(`  ${C.dim}Re-apply or re-record from${C.reset} ${apply}`);
   }
 
-  console.log(`${C.green}━━━ clean — every tracked migration is recorded in the ledger ━━━${C.reset}`);
-  return 0;
+  const strayNotes = STRAY_DIRS.map((d) => ({
+    d,
+    n: listSql(resolve(ROOT, d)).length,
+  })).filter((x) => x.n > 0);
+  if (strayNotes.length) {
+    const total = strayNotes.reduce((s, x) => s + x.n, 0);
+    console.log();
+    console.log(
+      `  ${C.dim}note: ${total} stray .sql outside migrations/ (${strayNotes.map((x) => x.d).join(", ")}) — consider consolidating${C.reset}`,
+    );
+  }
+
+  return pending.length && strict ? 1 : 0;
 }
 
 main().then(
   (code) => process.exit(code),
   (err) => {
-    console.error(`${C.red}check:migrations — unexpected error:${C.reset}`, err);
+    console.error(
+      `${C.red}check:migrations — unexpected error:${C.reset}`,
+      err,
+    );
     process.exit(2);
   },
 );
