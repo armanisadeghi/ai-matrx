@@ -1071,8 +1071,13 @@ export function ManipulationPanel({
                     : "__custom__"
                 }
                 onChange={(e) => {
-                  if (e.target.value !== "__custom__")
-                    setRedactPattern(e.target.value);
+                  // Selecting "Custom regex…" clears the field so the select
+                  // stays on Custom and the user types their pattern —
+                  // previously this was a no-op that snapped back to the
+                  // prior preset while users believed Custom was active.
+                  setRedactPattern(
+                    e.target.value === "__custom__" ? "" : e.target.value,
+                  );
                 }}
                 className="w-full rounded border border-border bg-background px-2 py-0.5 text-[11px]"
               >

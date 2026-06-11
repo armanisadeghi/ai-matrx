@@ -85,6 +85,46 @@ export function usePdfDemoApi(): PdfDemoApi {
     return { "Content-Type": "application/json", ...headers };
   }
 
+  /**
+   * Turn a non-OK response into a readable Error. Understands both the
+   * aidream error envelope ({error, message, user_message, details}) and
+   * FastAPI 422 validation bodies ({detail: [{loc, msg}, …]}) — the
+   * previous flat `.text().slice(0, 600)` truncated exactly the part of a
+   * 422 that says which field was wrong.
+   */
+  async function errorFromResponse(
+    label: string,
+    response: Response,
+  ): Promise<Error> {
+    const raw = await response.text().catch(() => response.statusText);
+    let detail = raw;
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        const obj = parsed as Record<string, unknown>;
+        if (Array.isArray(obj.detail)) {
+          detail = obj.detail
+            .map((d) => {
+              const item = d as { loc?: unknown[]; msg?: string };
+              const loc = Array.isArray(item.loc) ? item.loc.join(".") : "";
+              return loc ? `${loc}: ${item.msg ?? ""}` : (item.msg ?? "");
+            })
+            .filter(Boolean)
+            .join("; ");
+        } else {
+          detail = String(
+            obj.user_message ?? obj.message ?? obj.detail ?? raw,
+          );
+        }
+      }
+    } catch {
+      // not JSON — keep raw text
+    }
+    return new Error(
+      `${label} → ${response.status}: ${detail.slice(0, 2000)}`,
+    );
+  }
+
   async function postJson<T = unknown>(
     endpoint: PdfEndpointKey,
     body: unknown,
@@ -96,10 +136,7 @@ export function usePdfDemoApi(): PdfDemoApi {
       body: JSON.stringify(body),
     });
     if (!response.ok) {
-      const detail = await response.text().catch(() => response.statusText);
-      throw new Error(
-        `POST ${endpoint} → ${response.status}: ${detail.slice(0, 600)}`,
-      );
+      throw await errorFromResponse(`POST ${endpoint}`, response);
     }
     return (await response.json()) as T;
   }
@@ -115,14 +152,20 @@ export function usePdfDemoApi(): PdfDemoApi {
       body: JSON.stringify(body),
     });
     if (!response.ok) {
-      const detail = await response.text().catch(() => response.statusText);
+      throw await errorFromResponse(`POST ${endpoint}`, response);
+    }
+    const contentType =
+      response.headers.get("content-type") || "application/octet-stream";
+    // A JSON body on a binary endpoint is an envelope/error, not a file —
+    // previously it was silently wrapped in a Blob and "downloaded" as a
+    // corrupt PDF.
+    if (contentType.includes("application/json")) {
+      const text = await response.text().catch(() => "");
       throw new Error(
-        `POST ${endpoint} → ${response.status}: ${detail.slice(0, 600)}`,
+        `POST ${endpoint} → expected binary, got JSON: ${text.slice(0, 2000)}`,
       );
     }
     const blob = await response.blob();
-    const contentType =
-      response.headers.get("content-type") || "application/octet-stream";
     const filename = parseFilename(
       response.headers.get("content-disposition"),
       String(endpoint).replace(/[^a-z0-9]/gi, "_"),
@@ -140,10 +183,7 @@ export function usePdfDemoApi(): PdfDemoApi {
       headers,
     });
     if (!response.ok) {
-      const detail = await response.text().catch(() => response.statusText);
-      throw new Error(
-        `GET ${endpoint} → ${response.status}: ${detail.slice(0, 600)}`,
-      );
+      throw await errorFromResponse(`GET ${endpoint}`, response);
     }
     return (await response.json()) as T;
   }

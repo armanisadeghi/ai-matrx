@@ -70,18 +70,17 @@ export function usePdfOptimize(): UsePdfOptimizeReturn {
             const blob = await materializeAssetResult(data);
             const optimizedFile = new File([blob], file.name, { type: 'application/pdf' });
 
-            // The new endpoint does not return per-tier breakdown headers.
-            // `levelRequested` is the input; `levelUsed` and `capSatisfied`
-            // are no longer signaled and surface as null. Callers that
-            // displayed them now show the requested level only.
+            // Tier metadata rides on the envelope (level_used may exceed the
+            // requested tier when a size cap forces escalation; cap_satisfied
+            // is null when no cap was sent).
             return {
                 optimizedFile,
                 originalSize: data.original_size || file.size,
                 compressedSize: data.compressed_size || blob.size,
                 compressionRatio: data.reduction_ratio,
                 levelRequested: level,
-                levelUsed: null,
-                capSatisfied: null,
+                levelUsed: data.level_used ?? null,
+                capSatisfied: data.cap_satisfied ?? null,
             };
         } catch (err) {
             const message = err instanceof Error ? err.message : 'PDF optimization failed';

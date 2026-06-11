@@ -14,14 +14,22 @@ interface PdfOptimizePromptProps {
     file: File;
     onOptimized: (optimizedFile: File) => void;
     onDismiss: () => void;
+    /** Size ceiling the caller enforces, in MB. The server escalates
+     *  compression tiers until the output fits (or the max tier is hit). */
+    maxSizeMB?: number;
 }
 
-export default function PdfOptimizePrompt({ file, onOptimized, onDismiss }: PdfOptimizePromptProps) {
+export default function PdfOptimizePrompt({
+    file,
+    onOptimized,
+    onDismiss,
+    maxSizeMB = 10,
+}: PdfOptimizePromptProps) {
     const { optimizePdf, isOptimizing, error } = usePdfOptimize();
     const [result, setResult] = useState<PdfOptimizeResult | null>(null);
 
     const handleOptimize = async () => {
-        const optimizeResult = await optimizePdf(file);
+        const optimizeResult = await optimizePdf(file, { maxSizeMB });
         if (optimizeResult) {
             setResult(optimizeResult);
         }
@@ -36,7 +44,11 @@ export default function PdfOptimizePrompt({ file, onOptimized, onDismiss }: PdfO
     // After optimization — show before/after comparison
     if (result) {
         const reductionPct = Math.round(result.compressionRatio * 100);
-        const stillOverLimit = result.compressedSize > 10 * 1024 * 1024;
+        // capSatisfied is the server's authoritative verdict (it knows
+        // whether even the max tier fit); fall back to a size compare.
+        const stillOverLimit =
+            result.capSatisfied === false ||
+            result.compressedSize > maxSizeMB * 1024 * 1024;
 
         return (
             <div className="flex flex-col gap-2 px-4 py-3 bg-muted/50 rounded-lg border border-border">
@@ -51,7 +63,7 @@ export default function PdfOptimizePrompt({ file, onOptimized, onDismiss }: PdfO
                 </div>
                 {stillOverLimit ? (
                     <div className="text-sm text-amber-500">
-                        Still over 10MB after optimization. Try a smaller file.
+                        Still over {maxSizeMB}MB after optimization. Try a smaller file.
                         <button onClick={onDismiss} className="ml-2 underline text-muted-foreground hover:text-foreground">
                             Dismiss
                         </button>
