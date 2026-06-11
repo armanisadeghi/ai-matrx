@@ -10,10 +10,14 @@ import {
 } from "../../redux/selectors";
 import { deleteRecordingSegmentThunk } from "../../redux/thunks";
 import { RecordingCard } from "./RecordingCard";
+import type { TranscriptSection } from "./FullTranscriptDrawer";
 
 interface RecordingCardListProps {
   sessionId: string;
-  onOpenTranscript: (recordingSegmentId: string) => void;
+  onOpenTranscript: (
+    recordingSegmentId: string,
+    section?: TranscriptSection,
+  ) => void;
 }
 
 export function RecordingCardList({

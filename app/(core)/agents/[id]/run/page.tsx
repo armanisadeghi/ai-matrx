@@ -3,7 +3,6 @@ import { AgentRunnerPage } from "@/features/agents/components/run/AgentRunnerPag
 import { AgentRunHeader } from "@/features/agents/components/run/AgentRunHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 
-export const metadata = { title: "Agent Runner | AI Matrx" };
 
 export default async function AgentRunRoute({
   params,

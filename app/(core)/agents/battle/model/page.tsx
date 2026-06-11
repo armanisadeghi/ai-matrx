@@ -1,7 +1,6 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ModelBattlePage } from "@/features/agent-comparison/modes/model/components/ModelBattlePage";
 
-export const metadata = { title: "Model Battle | AI Matrx" };
 
 export default function ModelBattleRoute() {
   return (

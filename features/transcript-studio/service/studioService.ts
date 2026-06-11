@@ -819,6 +819,8 @@ export interface CleanedSegmentRow {
   text: string;
   trigger_cause: import("../types").TriggerCause;
   superseded_at: string | null;
+  recording_segment_id: string | null;
+  processor_key?: string | null;
 }
 
 export function rowToCleanedSegment(
@@ -834,6 +836,8 @@ export function rowToCleanedSegment(
     text: row.text,
     triggerCause: row.trigger_cause,
     supersededAt: row.superseded_at,
+    recordingSegmentId: row.recording_segment_id ?? null,
+    processorKey: row.processor_key ?? "clean",
   };
 }
 
@@ -891,20 +895,45 @@ export interface ApplyCleanupRunInput {
   tEnd: number;
   text: string;
   triggerCause: import("../types").TriggerCause;
+  /**
+   * Recording-aligned cleaning: anchor this clean to its source recording.
+   * When set, supersession is scoped to the SAME recording (re-running a
+   * recording's clean replaces only that recording's prior clean) instead of
+   * the time-based `t_start >=` window used by the Studio's interval cleaner.
+   */
+  recordingSegmentId?: string | null;
+  /**
+   * Per-segment processor key. Defaults to 'clean' (built-in cleaning). Custom
+   * per-segment processors pass their own key; supersession and the row are
+   * scoped to that key so processors never overwrite each other or the clean.
+   */
+  processorKey?: string;
 }
 
 export async function applyCleanupRun(
   input: ApplyCleanupRunInput,
 ): Promise<import("../types").CleanedSegment> {
   const supersedeAt = new Date().toISOString();
+  const recordingAligned =
+    input.recordingSegmentId !== undefined && input.recordingSegmentId !== null;
+  const processorKey = input.processorKey ?? "clean";
 
-  // Step 1: stamp prior overlapping rows as superseded.
-  const { error: supersedeError } = await db
+  // Step 1: stamp prior rows as superseded — always scoped to this processor key.
+  //  - Recording-aligned: only this recording's prior output for this processor.
+  //  - Time-windowed (Studio): any active row at/after this window's start.
+  let supersedeQuery = db
     .from("studio_cleaned_segments")
     .update({ superseded_at: supersedeAt })
     .eq("session_id", input.sessionId)
-    .is("superseded_at", null)
-    .gte("t_start", input.tStart);
+    .eq("processor_key", processorKey)
+    .is("superseded_at", null);
+  supersedeQuery = recordingAligned
+    ? supersedeQuery.eq(
+        "recording_segment_id",
+        input.recordingSegmentId as string,
+      )
+    : supersedeQuery.gte("t_start", input.tStart);
+  const { error: supersedeError } = await supersedeQuery;
   if (supersedeError) {
     throw new Error(
       `[studio] applyCleanupRun supersede failed: ${supersedeError.message}`,
@@ -912,17 +941,21 @@ export async function applyCleanupRun(
   }
 
   // Step 2: insert the new active row.
+  const insertRow: Record<string, unknown> = {
+    session_id: input.sessionId,
+    run_id: input.runId,
+    pass_index: input.passIndex,
+    t_start: input.tStart,
+    t_end: input.tEnd,
+    text: input.text,
+    trigger_cause: input.triggerCause,
+    processor_key: processorKey,
+  };
+  if (recordingAligned)
+    insertRow.recording_segment_id = input.recordingSegmentId;
   const { data, error: insertError } = await db
     .from("studio_cleaned_segments")
-    .insert({
-      session_id: input.sessionId,
-      run_id: input.runId,
-      pass_index: input.passIndex,
-      t_start: input.tStart,
-      t_end: input.tEnd,
-      text: input.text,
-      trigger_cause: input.triggerCause,
-    })
+    .insert(insertRow)
     .select("*")
     .single();
   if (insertError || !data) {

@@ -1,7 +1,6 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { SettingsBattlePage } from "@/features/agent-comparison/modes/settings/components/SettingsBattlePage";
 
-export const metadata = { title: "Settings Battle | AI Matrx" };
 
 export default function SettingsBattleRoute() {
   return (

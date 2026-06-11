@@ -7,11 +7,6 @@ interface ScopeGraphPageProps {
   params: Promise<{ scopeId: string }>;
 }
 
-export const metadata = {
-  title: "Scope graph",
-  description:
-    "The knowledge-graph neighborhood for this scope — entities tagged to its sources and how they connect.",
-};
 
 export default async function ScopeGraphPage({ params }: ScopeGraphPageProps) {
   const { scopeId } = await params;

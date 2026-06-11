@@ -16,10 +16,8 @@ import React, { useCallback } from "react";
 import {
   ArrowUp,
   CornerDownLeft,
-  Crown,
   RefreshCcw,
   Braces,
-  Bug,
   CircleStop,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,7 +27,6 @@ import { RunControlsMenu } from "./RunControlsMenu";
 import {
   selectSubmitOnEnter,
   selectShowVariablePanel,
-  selectIsCreator,
   selectShowAttachments,
   selectShowMicrophone,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
@@ -39,18 +36,11 @@ import {
   toggleVariablePanel,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
-  selectShowCreatorPanel,
-  toggleShowCreatorPanel,
-} from "@/lib/redux/preferences/creatorDebugSlice";
-import {
   selectIsExecuting,
   selectShouldShowVariables,
   selectAutoClearWithConversationHistory,
   selectShouldShowAutoClearToggle,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   smartExecute,
   cancelExecution,
@@ -121,8 +111,6 @@ export function InputActionButtons({
   const showVariablePanel = useAppSelector(
     selectShowVariablePanel(conversationId),
   );
-  const isCreator = useAppSelector(selectIsCreator(conversationId));
-  const showCreatorPanel = useAppSelector(selectShowCreatorPanel);
   const shouldShowVariables = useAppSelector(
     selectShouldShowVariables(conversationId),
   );
@@ -134,8 +122,6 @@ export function InputActionButtons({
   );
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
   const showMicrophone = useAppSelector(selectShowMicrophone(conversationId));
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
-  const isDebugMode = useAppSelector(selectIsDebugMode);
 
   const isSendDisabled = disableSend;
 
@@ -167,34 +153,6 @@ export function InputActionButtons({
           variant="plus"
           includeAttach={showAttachments}
         />
-
-        {isAdmin && isDebugMode && (
-          <InputButton
-            icon={Bug}
-            tooltip="Debug instance state"
-            onClick={() =>
-              dispatch(
-                openOverlay({
-                  overlayId: "chatDebugWindow",
-                  data: { sessionId: conversationId },
-                }),
-              )
-            }
-            className="text-orange-500"
-          />
-        )}
-
-        {isCreator && (
-          <InputButton
-            icon={Crown}
-            tooltip={
-              showCreatorPanel ? "Hide creator panel" : "Show creator panel"
-            }
-            onClick={() => dispatch(toggleShowCreatorPanel())}
-            active={showCreatorPanel}
-            className="text-amber-500"
-          />
-        )}
 
         {shouldShowVariables && showVariableIcon && (
           <InputButton

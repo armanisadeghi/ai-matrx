@@ -1,13 +1,7 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PresentValueCalculator } from "@/features/legal/wc/pd-ratings/components/PresentValueCalculator";
 
-export const metadata: Metadata = {
-  title: "Present Value · CA WC utilities",
-  description:
-    "Discount future PD payments to today's dollars at a specified annual rate.",
-};
 
 export default function PresentValueUtilityPage() {
   return (

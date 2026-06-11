@@ -3,7 +3,6 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentAppHeader } from "@/features/agent-apps/components/route-header/AgentAppHeader";
 import { AgentAppSettingsContent } from "@/features/agent-apps/route/AgentAppSettingsContent";
 
-export const metadata = { title: "Settings" };
 
 interface SettingsPageProps {
   params: Promise<{ id: string }>;

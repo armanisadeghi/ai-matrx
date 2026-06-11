@@ -1,13 +1,7 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { LifeExpectancyCalculator } from "@/features/legal/wc/pd-ratings/components/LifeExpectancyCalculator";
 
-export const metadata: Metadata = {
-  title: "Life Expectancy · CA WC utilities",
-  description:
-    "Actuarial life expectancy at MMI for life-pension projections at 70%+ ratings.",
-};
 
 export default function LifeExpectancyUtilityPage() {
   return (

@@ -160,113 +160,131 @@ const selectBuiltinTypeAgents = createSelector(selectLiveAgents, (agents) =>
   agents.filter((a) => a.agentType === "builtin"),
 );
 
-// ── Filtered / sorted user agents (main list + "mine" and "shared" tabs) ──────
+// ── Pure filter pipelines (shared by selector factories) ─────────────────────
+
+function sortFilteredAgents(
+  filtered: AgentDefinitionRecord[],
+  consumer: AgentConsumerState,
+): AgentDefinitionRecord[] {
+  const { searchTerm, sortBy, favFilter, favoritesFirst } = consumer;
+
+  if (searchTerm) {
+    const scores = new Map<string, number>();
+    filtered.forEach((a) => {
+      scores.set(a.id, computeAgentSearchScore(a, searchTerm));
+    });
+    return [...filtered].sort((a, b) => {
+      const sa = scores.get(a.id) ?? 0;
+      const sb = scores.get(b.id) ?? 0;
+      if (sb !== sa) return sb - sa;
+      return applyAgentSortComparator(a, b, sortBy);
+    });
+  }
+
+  return [...filtered].sort((a, b) => {
+    if (favoritesFirst && favFilter === "all") {
+      const aFav = a.isFavorite ? 1 : 0;
+      const bFav = b.isFavorite ? 1 : 0;
+      if (bFav !== aFav) return bFav - aFav;
+    }
+    return applyAgentSortComparator(a, b, sortBy);
+  });
+}
+
+/** User-type agents — mine / shared / all tabs with full consumer filters. */
+export function filterUserTypeAgents(
+  agents: AgentDefinitionRecord[],
+  consumer: AgentConsumerState,
+): AgentDefinitionRecord[] {
+  const {
+    searchTerm,
+    includedCats,
+    includedTags,
+    favFilter,
+    archFilter,
+    accessFilter,
+    tab,
+  } = consumer;
+
+  const filtered = agents.filter((agent) => {
+    if (tab === "mine" && agent.isOwner !== true) return false;
+    if (
+      tab === "shared" &&
+      !(agent.isOwner === false && agent.accessLevel != null)
+    )
+      return false;
+
+    if (archFilter === "active" && agent.isArchived) return false;
+    if (archFilter === "archived" && !agent.isArchived) return false;
+
+    if (favFilter === "yes" && !agent.isFavorite) return false;
+    if (favFilter === "no" && agent.isFavorite) return false;
+
+    if (accessFilter === "owned" && agent.isOwner !== true) return false;
+    if (accessFilter === "shared" && agent.isOwner !== false) return false;
+    if (
+      accessFilter === "editable" &&
+      agent.accessLevel !== "owner" &&
+      agent.accessLevel !== "admin" &&
+      agent.accessLevel !== "editor"
+    )
+      return false;
+
+    if (includedCats.length > 0) {
+      const isUncategorized = !agent.category;
+      if (isUncategorized) {
+        if (!includedCats.includes(AGENT_NONE_SENTINEL)) return false;
+      } else if (!includedCats.includes(agent.category!)) {
+        return false;
+      }
+    }
+
+    if (includedTags.length > 0) {
+      const isUntagged = !agent.tags?.length;
+      if (isUntagged) {
+        if (!includedTags.includes(AGENT_NONE_SENTINEL)) return false;
+      } else if (!agent.tags?.some((t) => includedTags.includes(t))) {
+        return false;
+      }
+    }
+
+    if (searchTerm && !agentMatchesSearch(agent, searchTerm)) return false;
+
+    return true;
+  });
+
+  return sortFilteredAgents(filtered, consumer);
+}
+
+/** Builtin/system agents — search + sort only (tab === "system"). */
+export function filterBuiltinTypeAgents(
+  agents: AgentDefinitionRecord[],
+  consumer: AgentConsumerState,
+): AgentDefinitionRecord[] {
+  const { searchTerm } = consumer;
+  const filtered = searchTerm
+    ? agents.filter((a) => agentMatchesSearch(a, searchTerm))
+    : agents;
+  return sortFilteredAgents(filtered, consumer);
+}
+
+// ── Filtered agents (user + system tabs) ──────────────────────────────────────
 
 /**
- * Factory: returns a memoized selector that filters and sorts user-type agents
- * (owned + shared, never builtins) according to the given consumer's state.
- *
- * @example
- * const selectFiltered = useMemo(() => makeSelectFilteredAgents("agents-main"), []);
- * const filtered = useAppSelector(selectFiltered);
+ * Factory: returns a memoized selector that filters and sorts agents for a
+ * consumer. User tabs (mine / shared / all) draw from user-type agents;
+ * the system tab draws from builtins.
  */
 export const makeSelectFilteredAgents = (consumerId: string) =>
   createSelector(
     selectUserTypeAgents,
+    selectBuiltinTypeAgents,
     makeSelectAgentConsumerState(consumerId),
-    (agents, consumer): AgentDefinitionRecord[] => {
-      const {
-        searchTerm,
-        sortBy,
-        includedCats,
-        includedTags,
-        favFilter,
-        archFilter,
-        accessFilter,
-        favoritesFirst,
-        tab,
-      } = consumer;
-
-      let filtered = agents.filter((agent) => {
-        // ── Tab filtering ──
-        if (tab === "mine" && agent.isOwner !== true) return false;
-        if (
-          tab === "shared" &&
-          !(agent.isOwner === false && agent.accessLevel != null)
-        )
-          return false;
-        // tab === "all" includes both
-
-        // ── Archive filter ──
-        if (archFilter === "active" && agent.isArchived) return false;
-        if (archFilter === "archived" && !agent.isArchived) return false;
-
-        // ── Favorite filter ──
-        if (favFilter === "yes" && !agent.isFavorite) return false;
-        if (favFilter === "no" && agent.isFavorite) return false;
-
-        // ── Access filter ──
-        if (accessFilter === "owned" && agent.isOwner !== true) return false;
-        if (accessFilter === "shared" && agent.isOwner !== false) return false;
-        if (
-          accessFilter === "editable" &&
-          agent.accessLevel !== "owner" &&
-          agent.accessLevel !== "admin" &&
-          agent.accessLevel !== "editor"
-        )
-          return false;
-
-        // ── Category inclusion ──
-        if (includedCats.length > 0) {
-          const isUncategorized = !agent.category;
-          if (isUncategorized) {
-            if (!includedCats.includes(AGENT_NONE_SENTINEL)) return false;
-          } else {
-            if (!includedCats.includes(agent.category!)) return false;
-          }
-        }
-
-        // ── Tag inclusion ──
-        if (includedTags.length > 0) {
-          const isUntagged = !agent.tags?.length;
-          if (isUntagged) {
-            if (!includedTags.includes(AGENT_NONE_SENTINEL)) return false;
-          } else {
-            if (!agent.tags?.some((t) => includedTags.includes(t)))
-              return false;
-          }
-        }
-
-        // ── Search ──
-        if (searchTerm && !agentMatchesSearch(agent, searchTerm)) return false;
-
-        return true;
-      });
-
-      // ── Sort ──
-      if (searchTerm) {
-        const scores = new Map<string, number>();
-        filtered.forEach((a) => {
-          scores.set(a.id, computeAgentSearchScore(a, searchTerm));
-        });
-        filtered.sort((a, b) => {
-          const sa = scores.get(a.id) ?? 0;
-          const sb = scores.get(b.id) ?? 0;
-          if (sb !== sa) return sb - sa;
-          return applyAgentSortComparator(a, b, sortBy);
-        });
-      } else {
-        filtered.sort((a, b) => {
-          if (favoritesFirst && favFilter === "all") {
-            const aFav = a.isFavorite ? 1 : 0;
-            const bFav = b.isFavorite ? 1 : 0;
-            if (bFav !== aFav) return bFav - aFav;
-          }
-          return applyAgentSortComparator(a, b, sortBy);
-        });
+    (userAgents, builtinAgents, consumer): AgentDefinitionRecord[] => {
+      if (consumer.tab === "system") {
+        return filterBuiltinTypeAgents(builtinAgents, consumer);
       }
-
-      return filtered;
+      return filterUserTypeAgents(userAgents, consumer);
     },
   );
 
@@ -281,31 +299,8 @@ export const makeSelectFilteredBuiltinAgents = (consumerId: string) =>
   createSelector(
     selectBuiltinTypeAgents,
     makeSelectAgentConsumerState(consumerId),
-    (agents, consumer): AgentDefinitionRecord[] => {
-      const { searchTerm, sortBy } = consumer;
-
-      let filtered = agents;
-
-      if (searchTerm) {
-        filtered = agents.filter((a) => agentMatchesSearch(a, searchTerm));
-        const scores = new Map<string, number>();
-        filtered.forEach((a) => {
-          scores.set(a.id, computeAgentSearchScore(a, searchTerm));
-        });
-        filtered.sort((a, b) => {
-          const sa = scores.get(a.id) ?? 0;
-          const sb = scores.get(b.id) ?? 0;
-          if (sb !== sa) return sb - sa;
-          return applyAgentSortComparator(a, b, sortBy);
-        });
-      } else {
-        filtered = [...agents].sort((a, b) =>
-          applyAgentSortComparator(a, b, sortBy),
-        );
-      }
-
-      return filtered;
-    },
+    (agents, consumer): AgentDefinitionRecord[] =>
+      filterBuiltinTypeAgents(agents, consumer),
   );
 
 // ── Card / list split ─────────────────────────────────────────────────────────

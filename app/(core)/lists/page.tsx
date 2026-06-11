@@ -1,11 +1,5 @@
-import type { Metadata } from "next";
 import PicklistLanding from "@/features/udt-picklist/PicklistLanding";
 
-export const metadata: Metadata = {
-  title: "Picklists",
-  description:
-    "Create and manage reusable option sets (udt_picklists) for dropdowns, dependent pickers, and forms.",
-};
 
 export default function PicklistsLandingPage() {
   return (

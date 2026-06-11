@@ -7,8 +7,8 @@
  * Layout (desktop, 3 resizable panels):
  *   sidebar   — sessions (Mine|All scope + New), Clean agent dropdown,
  *               context items, Clean Up button
- *   main      — central record pill in a tall band spanning the (transparent)
- *               shell-header zone; transcript over Clean (resizable)
+ *   main      — New session + central record pill in a tall band spanning the
+ *               (transparent) shell-header zone; transcript over Clean (resizable)
  *   custom    — full-height right container with up to MAX_CUSTOM_SLOTS
  *               slots (tab pills, one visible at a time). Each slot: its own
  *               agent, input source (raw|clean), auto-run, and output doc.
@@ -38,6 +38,7 @@ import React, {
 import {
   AudioLines,
   ChevronDown,
+  CircleStop,
   Loader2,
   PanelLeftOpen,
   Play,
@@ -58,13 +59,17 @@ import {
   setDraftText,
 } from "@/lib/redux/slices/voicePadSlice";
 import PageHeader from "@/features/shell/components/header/PageHeader";
+import { TranscriptsListHeader } from "@/features/transcripts/components/TranscriptsListHeader";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { Switch } from "@/components/ui/switch";
-import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
+import {
+  MicrophoneIconButton,
+  type MicrophoneIconButtonHandle,
+} from "@/features/audio/components/MicrophoneIconButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { FilesTapButton } from "@/components/icons/tap-buttons";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
@@ -140,7 +145,10 @@ export default function CleanupPad({
     selectVoicePadDraftText(s, OVERLAY_ID, INSTANCE_ID),
   );
   const [liveTranscript, setLiveTranscript] = useState("");
+  const [isMicRecording, setIsMicRecording] = useState(false);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const micRef = useRef<MicrophoneIconButtonHandle>(null);
 
   // Agents — Clean defaults to the system cleaner.
   const [cleanAgentId, setCleanAgentId] = useState(DEFAULT_CLEAN_AGENT_ID);
@@ -500,11 +508,11 @@ export default function CleanupPad({
   ]);
 
   // ── Mic ────────────────────────────────────────────────────────────────────
-  const handleTranscriptionComplete = useCallback(
+  const commitTranscript = useCallback(
     (text: string) => {
       setLiveTranscript("");
       const trimmed = text.trim();
-      if (!trimmed) return;
+      if (!trimmed) return null;
 
       const previous = baseTextRef.current;
       const combined = previous ? previous + "\n\n" + trimmed : trimmed;
@@ -516,8 +524,6 @@ export default function CleanupPad({
           text,
         }),
       );
-      // Lock draftText to `combined` so the textarea renders exactly what we
-      // just sent to the AI.
       dispatch(
         setDraftText({
           overlayId: OVERLAY_ID,
@@ -526,17 +532,43 @@ export default function CleanupPad({
         }),
       );
       baseTextRef.current = combined;
-
       void sessionRefs.current.persistRawAppend(trimmed);
+      return combined;
+    },
+    [dispatch],
+  );
+
+  const handleTranscriptionComplete = useCallback(
+    (text: string) => {
+      const combined = commitTranscript(text);
+      if (!combined) return;
       runClean(combined);
-      // Autorun (source = raw): Clean and these slots run simultaneously.
       autoRunRawSlots(combined);
     },
-    [dispatch, runClean, autoRunRawSlots],
+    [commitTranscript, runClean, autoRunRawSlots],
+  );
+
+  /** Stop recording and persist raw transcript only — no Clean / autorun / label. */
+  const handleTranscriptOnlyComplete = useCallback(
+    (text: string) => {
+      commitTranscript(text);
+    },
+    [commitTranscript],
   );
 
   const handleLiveTranscript = useCallback((text: string) => {
     setLiveTranscript(text);
+  }, []);
+
+  const handleRecordingStateChange = useCallback(
+    ({ isRecording }: { isRecording: boolean; isTranscribing: boolean }) => {
+      setIsMicRecording(isRecording);
+    },
+    [],
+  );
+
+  const handleSoftStop = useCallback(() => {
+    micRef.current?.stopForTranscriptOnly();
   }, []);
 
   // ── Edits ──────────────────────────────────────────────────────────────────
@@ -647,13 +679,19 @@ export default function CleanupPad({
   );
 
   const handleNewSession = useCallback(async () => {
-    clearLocalContent();
-    contextItemsRef.current = [];
-    setSlots([initialSlot()]);
-    setActiveSlotIdx(0);
-    await session.createNew();
-    setDrawerOpen(false);
-  }, [clearLocalContent, session]);
+    if (isCreatingSession) return;
+    setIsCreatingSession(true);
+    try {
+      clearLocalContent();
+      contextItemsRef.current = [];
+      setSlots([initialSlot()]);
+      setActiveSlotIdx(0);
+      await session.createNew();
+      setDrawerOpen(false);
+    } finally {
+      setIsCreatingSession(false);
+    }
+  }, [clearLocalContent, isCreatingSession, session]);
 
   // ── Textarea replace/insert handlers for the context menu ─────────────────
   const makeTextHandlers = useCallback(
@@ -735,11 +773,14 @@ export default function CleanupPad({
           ? (activeAi.error ?? "Something went wrong. Please try again.")
           : "Preparing your response...";
 
-  const recordStatus = liveTranscript
-    ? "Listening…"
-    : cleanAi.isBusy
-      ? "Processing…"
-      : "Tap to record";
+  const isRecordingActive = isMicRecording || Boolean(liveTranscript);
+
+  const recordStatus =
+    liveTranscript || isMicRecording
+      ? "Listening…"
+      : cleanAi.isBusy
+        ? "Processing…"
+        : "Tap to record";
 
   const micId = `transcription-cleanup-page-mic-${INSTANCE_ID}`;
   const recordPillRef = useRef<HTMLDivElement>(null);
@@ -762,6 +803,9 @@ export default function CleanupPad({
   );
 
   // ── Shared UI fragments ────────────────────────────────────────────────────
+  /** Mid-size pill — shared by New session and Save only (record pill stays larger). */
+  const secondaryPillClass =
+    "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border bg-card px-3.5 shadow-sm text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   const recordPill = (
     <div
@@ -773,7 +817,7 @@ export default function CleanupPad({
       onKeyDown={handleRecordPillKeyDown}
       className={cn(
         "flex cursor-pointer items-center gap-2.5 rounded-full border bg-card py-1 pl-1 pr-4 shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        liveTranscript
+        isRecordingActive
           ? "border-red-500/40 ring-2 ring-red-500/15"
           : "border-border ring-1 ring-primary/10 hover:ring-primary/25 hover:shadow-md",
       )}
@@ -781,21 +825,24 @@ export default function CleanupPad({
       <span
         className={cn(
           "inline-flex items-center justify-center rounded-full p-1 transition-colors",
-          liveTranscript
+          isRecordingActive
             ? "bg-red-500/15 text-red-500"
             : "bg-primary/10 text-primary",
         )}
       >
         <MicrophoneIconButton
+          ref={micRef}
           id={micId}
           onTranscriptionComplete={handleTranscriptionComplete}
+          onTranscriptOnlyComplete={handleTranscriptOnlyComplete}
           onLiveTranscript={handleLiveTranscript}
+          onRecordingStateChange={handleRecordingStateChange}
           variant="icon-only"
           size="lg"
         />
       </span>
       <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-        {liveTranscript && (
+        {isRecordingActive && (
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
         )}
         {recordStatus}
@@ -803,15 +850,80 @@ export default function CleanupPad({
     </div>
   );
 
-  const recordBand = (
-    <div className="flex h-[calc(var(--shell-header-h)+3.5rem)] shrink-0 items-center justify-center border-b border-border px-4">
+  const softStopButton = (
+    <button
+      type="button"
+      onClick={handleSoftStop}
+      disabled={!isMicRecording}
+      title={
+        isMicRecording
+          ? "Stop and save transcript without cleaning"
+          : "Available while recording"
+      }
+      aria-label="Stop and save transcript without cleaning"
+      className={cn(
+        secondaryPillClass,
+        isMicRecording
+          ? "border-border/80 text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
+          : "cursor-not-allowed border-border/50 bg-muted/20 text-muted-foreground/45",
+      )}
+    >
+      <CircleStop className="h-3.5 w-3.5 shrink-0" />
+      <span>Save only</span>
+    </button>
+  );
+
+  const newSessionButton = (
+    <button
+      type="button"
+      onClick={() => void handleNewSession()}
+      disabled={isCreatingSession}
+      title="Start a fresh session — nothing is deleted"
+      aria-label="Start a new session"
+      className={cn(
+        secondaryPillClass,
+        "border-primary/30 text-foreground ring-1 ring-primary/15 hover:ring-primary/30 hover:shadow-md",
+        isCreatingSession && "cursor-not-allowed opacity-60",
+      )}
+    >
+      {isCreatingSession ? (
+        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+      ) : (
+        <Plus className="h-3.5 w-3.5 shrink-0 text-primary" />
+      )}
+      <span>New session</span>
+    </button>
+  );
+
+  const recordArea = (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      {newSessionButton}
       {recordPill}
+      {softStopButton}
     </div>
   );
 
+  const recordBand = (
+    <div className="flex h-[calc(var(--shell-header-h)+3.5rem)] shrink-0 items-center justify-center border-b border-border px-4">
+      {recordArea}
+    </div>
+  );
+
+  const mobileDrawerToggle = isMobile ? (
+    <button
+      type="button"
+      onClick={() => setDrawerOpen(true)}
+      aria-label="Open options"
+      className="absolute left-3 top-3 z-10 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+    >
+      <PanelLeftOpen className="h-4 w-4" />
+    </button>
+  ) : null;
+
   const recordControl = (
-    <div className="flex shrink-0 items-center justify-center border-b border-border px-4 py-3">
-      {recordPill}
+    <div className="relative flex shrink-0 items-center justify-center border-b border-border px-4 py-3">
+      {mobileDrawerToggle}
+      {recordArea}
     </div>
   );
 
@@ -1216,33 +1328,17 @@ export default function CleanupPad({
     </div>
   );
 
-  // No page title — the record pill is the focal point. Desktop portals
-  // nothing into the shell header; mobile still needs the drawer toggle.
-  const header = isMobile ? (
+  const shellHeader = (
     <PageHeader>
-      <div className="flex w-full items-center gap-2 px-1">
-        <button
-          type="button"
-          onClick={() => setDrawerOpen(true)}
-          aria-label="Open options"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          <PanelLeftOpen className="h-4 w-4" />
-        </button>
-        {session.activeSession && (
-          <span className="max-w-48 truncate text-xs text-muted-foreground">
-            {session.activeSession.title}
-          </span>
-        )}
-      </div>
+      <TranscriptsListHeader />
     </PageHeader>
-  ) : null;
+  );
 
   // ── Mobile: single scroll column + drawer ──────────────────────────────────
   if (isMobile) {
     return (
       <>
-        {header}
+        {shellHeader}
         <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-background pt-[var(--shell-header-h)]">
           {recordControl}
           <div className="flex h-[34dvh] shrink-0 flex-col border-b border-border">
@@ -1287,7 +1383,7 @@ export default function CleanupPad({
   // ── Desktop: 3 resizable panels ────────────────────────────────────────────
   return (
     <>
-      {header}
+      {shellHeader}
       <div className="h-full overflow-hidden">
         <ResizablePanelGroup
           id="cleanup-h3"

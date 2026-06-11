@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
 import { RunView } from "./_components/RunView";
 
-export const metadata: Metadata = {
-  title: "Generating Episode — Podcast Studio",
-  description: "Live podcast generation — bake-off variation C demo.",
-};
 
 // Bake-off variation C — redesigned run / generation page.
 // Static demo: on mount it auto-plays a mocked generation through the real

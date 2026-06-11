@@ -1,7 +1,6 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ToolsBattlePage } from "@/features/agent-comparison/modes/tools/components/ToolsBattlePage";
 
-export const metadata = { title: "Tools Battle | AI Matrx" };
 
 export default function ToolsBattleRoute() {
   return (

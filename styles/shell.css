@@ -55,8 +55,9 @@
 
   --shell-nav-text: rgba(0, 0, 0, 0.82);
   --shell-nav-text-hover: rgba(0, 0, 0, 1);
-  --shell-nav-icon: rgba(0, 0, 0, 0.68);
-  --shell-nav-icon-hover: rgba(0, 0, 0, 0.9);
+  /* Match label brightness — dimmer icons read as disabled (esp. route-menu chrome). */
+  --shell-nav-icon: rgba(0, 0, 0, 0.82);
+  --shell-nav-icon-hover: rgba(0, 0, 0, 1);
 
   --shell-auth-text: rgba(0, 0, 0, 0.7);
 }
@@ -83,8 +84,8 @@
 
   --shell-nav-text: rgba(255, 255, 255, 0.55);
   --shell-nav-text-hover: rgba(255, 255, 255, 0.9);
-  --shell-nav-icon: rgba(255, 255, 255, 0.45);
-  --shell-nav-icon-hover: rgba(255, 255, 255, 0.8);
+  --shell-nav-icon: rgba(255, 255, 255, 0.55);
+  --shell-nav-icon-hover: rgba(255, 255, 255, 0.9);
 
   --shell-auth-text: rgba(255, 255, 255, 0.75);
 }
@@ -528,6 +529,22 @@
     background var(--shell-duration-fast) var(--shell-ease-smooth),
     color var(--shell-duration-fast) var(--shell-ease-smooth);
   position: relative;
+}
+
+/* Route-menu chrome rows (New chat, Search chats, …) are <button>s — reset
+   UA styles so icon/label colors match Link-based nav items. */
+button.shell-nav-item {
+  appearance: none;
+  background: transparent;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.shell-nav-icon svg {
+  color: inherit;
 }
 
 .shell-nav-item:hover {

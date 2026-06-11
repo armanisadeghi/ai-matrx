@@ -1,7 +1,6 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { TuningBattlePage } from "@/features/agent-comparison/modes/tuning/components/TuningBattlePage";
 
-export const metadata = { title: "Tuning Battle | AI Matrx" };
 
 export default function TuningBattleRoute() {
   return (

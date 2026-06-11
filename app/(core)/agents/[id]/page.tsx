@@ -3,7 +3,6 @@ import { AgentViewContent } from "@/features/agents/route/AgentViewContent";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
 
-export const metadata = { title: "View" };
 
 export default async function AgentViewPage({
   params,

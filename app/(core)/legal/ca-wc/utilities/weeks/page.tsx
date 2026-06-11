@@ -1,13 +1,7 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { WeeksCalculator } from "@/features/legal/wc/pd-ratings/components/WeeksCalculator";
 
-export const metadata: Metadata = {
-  title: "Number of Weeks · CA WC utilities",
-  description:
-    "Calculate weeks between two dates, or determine an end date from a start date and number of weeks.",
-};
 
 export default function WeeksUtilityPage() {
   return (

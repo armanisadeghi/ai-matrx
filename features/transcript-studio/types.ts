@@ -112,6 +112,17 @@ export interface CleanedSegment {
   text: string;
   triggerCause: TriggerCause;
   supersededAt: string | null;
+  /**
+   * Source recording this clean was derived from (recording-aligned cleaning).
+   * NULL for Studio time-windowed passes not tied to a single recording.
+   */
+  recordingSegmentId: string | null;
+  /**
+   * Which per-segment processor produced this row. 'clean' = built-in cleaning
+   * (the default, and the only key that feeds the canonical session clean).
+   * Custom per-segment processors use their own slot key.
+   */
+  processorKey: string;
 }
 
 export interface ConceptItem {

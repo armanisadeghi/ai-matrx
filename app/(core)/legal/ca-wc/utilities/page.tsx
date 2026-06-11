@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import {
   TrendingUp,
@@ -8,11 +7,6 @@ import {
   Calculator,
 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Settlement utilities · CA WC",
-  description:
-    "Settlement projection tools — present value, number of weeks, and life expectancy.",
-};
 
 const UTILITIES = [
   {

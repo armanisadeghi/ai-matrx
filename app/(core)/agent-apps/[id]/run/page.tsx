@@ -3,7 +3,6 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentAppHeader } from "@/features/agent-apps/components/route-header/AgentAppHeader";
 import { AgentAppRunWithHistory } from "@/features/agent-apps/components/run/AgentAppRunWithHistory";
 
-export const metadata = { title: "Run" };
 
 interface RunPageProps {
   params: Promise<{ id: string }>;

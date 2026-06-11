@@ -11,11 +11,6 @@ import { KnowledgeGraphClient } from "./KnowledgeGraphClient";
 import KnowledgeGraphLanding from "@/features/auth/components/module-landing/landings/KnowledgeGraphLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
-export const metadata = {
-  title: "Knowledge graph",
-  description:
-    "Explore the entities and relationships extracted across your organization's content — spot clusters, gaps, and weaknesses in your data.",
-};
 
 export default async function KnowledgeGraphPage({
   searchParams,

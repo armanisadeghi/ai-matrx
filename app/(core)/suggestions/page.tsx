@@ -3,11 +3,6 @@ import { Lightbulb } from "lucide-react";
 import { SuggestionsManager } from "@/features/kg-suggestions/components/manager/SuggestionsManager";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
-export const metadata = {
-  title: "Suggestions",
-  description:
-    "Review and decide on AI-found suggestions for your scopes — proposed field values and scope links from your notes, tasks, and files.",
-};
 
 export default async function SuggestionsPage() {
   const { isAuthenticated } = await getServerAuth();

@@ -13,10 +13,7 @@
  * variable lands on an agent we add a builder here, not inside the thunk.
  */
 
-import {
-  CLEANING_CONTEXT_CHAR_BUDGET,
-  RESUME_MARKER,
-} from "../constants";
+import { CLEANING_CONTEXT_CHAR_BUDGET, RESUME_MARKER } from "../constants";
 import type {
   CleanedSegment,
   ConceptItem,
@@ -78,8 +75,7 @@ export function buildCleaningWindow({
 
   const rawWindow = windowSegments.map((s) => s.text).join("\n");
   const replaceFromTime = windowSegments[0]?.tStart ?? null;
-  const replaceToTime =
-    windowSegments[windowSegments.length - 1]?.tEnd ?? null;
+  const replaceToTime = windowSegments[windowSegments.length - 1]?.tEnd ?? null;
 
   // Char range of the window within the full session raw text. Useful for
   // audit / debugging; persisted on the run row.
@@ -103,6 +99,70 @@ export function buildCleaningWindow({
     replaceFromTime,
     replaceToTime,
     inputCharRange,
+    scope: {
+      prior_cleaned_suffix: priorCleanedSuffix,
+      raw_window: rawWindow,
+      session_title: session.title ?? "",
+      module_id: session.moduleId ?? "",
+    },
+  };
+}
+
+// ── Recording-aligned cleaning (Scribe) ─────────────────────────────
+//
+// Unlike the time-windowed `buildCleaningWindow` (Studio's interval cleaner),
+// Scribe cleans one *recording* at a time: when a recording closes (manual
+// stop, or a periodic auto-rotation during continuous capture), exactly that
+// recording's raw text is cleaned into ONE cleaned segment anchored to its
+// `recording_segment_id`. The full-session clean is the ordered concatenation
+// of those rows — there is no separate monolithic clean document.
+
+export interface RecordingCleaningInputs {
+  /** This recording's raw segments, ordered by tStart. */
+  recordingRaws: RawSegment[];
+  /**
+   * Active cleaned segments for recordings that precede this one (ordered by
+   * tStart). Their suffix feeds `prior_cleaned_suffix` for cross-recording
+   * continuity (style/terminology carry-over + `[[RESUME]]` anchor).
+   */
+  priorCleaned: CleanedSegment[];
+  session: StudioSession;
+}
+
+export interface RecordingCleaningWindow {
+  /** Concatenated raw text of this recording. Empty when nothing to clean. */
+  rawWindow: string;
+  priorCleanedSuffix: string;
+  /** tStart of this recording's first raw, or null when empty. */
+  tStart: number | null;
+  /** tEnd of this recording's last raw, or null when empty. */
+  tEnd: number | null;
+  scope: {
+    prior_cleaned_suffix: string;
+    raw_window: string;
+    session_title: string;
+    module_id: string;
+  };
+}
+
+export function buildRecordingCleaningWindow({
+  recordingRaws,
+  priorCleaned,
+  session,
+}: RecordingCleaningInputs): RecordingCleaningWindow {
+  const rawWindow = recordingRaws
+    .map((s) => s.text)
+    .join("\n")
+    .trim();
+  const tStart = recordingRaws[0]?.tStart ?? null;
+  const tEnd = recordingRaws[recordingRaws.length - 1]?.tEnd ?? null;
+  const priorCleanedSuffix = buildPriorCleanedSuffix(priorCleaned);
+
+  return {
+    rawWindow,
+    priorCleanedSuffix,
+    tStart,
+    tEnd,
     scope: {
       prior_cleaned_suffix: priorCleanedSuffix,
       raw_window: rawWindow,
@@ -215,8 +275,7 @@ export function buildConceptWindow({
   // the window and substitute them in. Fallback to raw when no cleaning has
   // covered the time range yet.
   const windowStartTime = windowSegments[0]?.tStart ?? null;
-  const windowEndTime =
-    windowSegments[windowSegments.length - 1]?.tEnd ?? null;
+  const windowEndTime = windowSegments[windowSegments.length - 1]?.tEnd ?? null;
 
   let rawWindow: string;
   if (windowStartTime !== null && windowEndTime !== null) {
@@ -322,8 +381,7 @@ export function parseConceptResponse(response: string): ParsedConcept[] {
         : null;
     if (!kind) continue;
 
-    const label =
-      typeof it.label === "string" ? it.label.trim() : null;
+    const label = typeof it.label === "string" ? it.label.trim() : null;
     if (!label) continue;
 
     const description =

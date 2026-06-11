@@ -10,92 +10,140 @@
  *   modal-controls — fixed icon footprint; all recording interaction happens in a modal
  */
 
-'use client';
+"use client";
 
-import React, { useEffect, useRef, useCallback, useState } from 'react';
-import { Mic } from 'lucide-react';
+import React, {
+  useEffect,
+  useRef,
+  useCallback,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import { Mic } from "lucide-react";
 import { useChunkedRecordAndTranscribe } from "@/features/audio/hooks/useChunkedRecordAndTranscribe";
-import { cn } from '@/lib/utils';
-import { TranscriptionResult } from '@/features/audio/types';
-import { RecordingIndicator } from './RecordingIndicator';
-import { TranscriptionLoader } from './TranscriptionLoader';
-import { VoiceTroubleshootingModal } from './VoiceTroubleshootingModal';
-import { MicrophoneRecordingModal } from './MicrophoneRecordingModal';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { cn } from "@/lib/utils";
+import { TranscriptionResult } from "@/features/audio/types";
+import { RecordingIndicator } from "./RecordingIndicator";
+import { TranscriptionLoader } from "./TranscriptionLoader";
+import { VoiceTroubleshootingModal } from "./VoiceTroubleshootingModal";
+import { MicrophoneRecordingModal } from "./MicrophoneRecordingModal";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
-export type MicVariant = 'icon-only' | 'inline-expand' | 'modal-controls';
+export type MicVariant = "icon-only" | "inline-expand" | "modal-controls";
+
+export interface MicrophoneIconButtonCoreHandle {
+  stopForTranscriptOnly: () => void;
+}
 
 export interface MicrophoneIconButtonCoreProps {
   id?: string;
   onTranscriptionComplete: (text: string) => void;
+  onTranscriptOnlyComplete?: (text: string) => void;
   onLiveTranscript?: (text: string) => void;
+  onRecordingStateChange?: (state: {
+    isRecording: boolean;
+    isTranscribing: boolean;
+  }) => void;
   onError?: (error: string, code?: string) => void;
   variant?: MicVariant;
   /** When true the component starts recording as soon as it mounts. */
   autoStart?: boolean;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: "xs" | "sm" | "md" | "lg";
   className?: string;
   disabled?: boolean;
 }
 
 // ── Size maps ───────────────────────────────────────────────────────────────
-const buttonSizeMap = { xs: 'h-6 w-6', sm: 'h-7 w-7', md: 'h-8 w-8', lg: 'h-9 w-9' } as const;
-const iconSizeMap   = { xs: 'h-3.5 w-3.5', sm: 'h-3 w-3', md: 'h-4 w-4', lg: 'h-5 w-5' } as const;
+const buttonSizeMap = {
+  xs: "h-6 w-6",
+  sm: "h-7 w-7",
+  md: "h-8 w-8",
+  lg: "h-9 w-9",
+} as const;
+const iconSizeMap = {
+  xs: "h-3.5 w-3.5",
+  sm: "h-3 w-3",
+  md: "h-4 w-4",
+  lg: "h-5 w-5",
+} as const;
 
 // Default export required by React.lazy()
-export default function MicrophoneIconButtonCore({
-  id,
-  onTranscriptionComplete,
-  onLiveTranscript,
-  onError,
-  variant = 'icon-only',
-  autoStart = false,
-  size = 'md',
-  className,
-  disabled = false,
-}: MicrophoneIconButtonCoreProps) {
+const MicrophoneIconButtonCore = forwardRef<
+  MicrophoneIconButtonCoreHandle,
+  MicrophoneIconButtonCoreProps
+>(function MicrophoneIconButtonCore(
+  {
+    id,
+    onTranscriptionComplete,
+    onTranscriptOnlyComplete,
+    onLiveTranscript,
+    onRecordingStateChange,
+    onError,
+    variant = "icon-only",
+    autoStart = false,
+    size = "md",
+    className,
+    disabled = false,
+  },
+  ref,
+) {
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
-  const [lastError, setLastError] = useState<{ message: string; code: string } | null>(null);
+  const [lastError, setLastError] = useState<{
+    message: string;
+    code: string;
+  } | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [transcribedText, setTranscribedText] = useState<string | null>(null);
 
   // Guard against React StrictMode double-mount firing autoStart twice
   const autoStartFired = useRef(false);
+  /** Routes the next stop completion to transcript-only vs full pipeline. */
+  const stopModeRef = useRef<"full" | "transcript-only">("full");
 
   // ── Transcription success handler ────────────────────────────────────────
   const handleTranscriptionComplete = useCallback(
     (result: TranscriptionResult) => {
       if (!result.success || !result.text) return;
 
-      if (variant === 'modal-controls') {
+      if (variant === "modal-controls") {
         // APPEND each session's result so Add More doesn't overwrite
-        setTranscribedText(prev => prev ? prev + ' ' + result.text : result.text);
+        setTranscribedText((prev) =>
+          prev ? prev + " " + result.text : result.text,
+        );
+        return;
+      }
+
+      const mode = stopModeRef.current;
+      stopModeRef.current = "full";
+      if (mode === "transcript-only" && onTranscriptOnlyComplete) {
+        onTranscriptOnlyComplete(result.text);
       } else {
         onTranscriptionComplete(result.text);
       }
     },
-    [variant, onTranscriptionComplete],
+    [variant, onTranscriptionComplete, onTranscriptOnlyComplete],
   );
 
   // ── Error handler ────────────────────────────────────────────────────────
   const handleError = useCallback(
     (error: string, errorCode?: string) => {
-      const code = errorCode ?? 'UNKNOWN_ERROR';
+      const code = errorCode ?? "UNKNOWN_ERROR";
       setLastError({ message: error, code });
 
-      toast.error('Voice input failed', {
+      toast.error("Voice input failed", {
         description: error,
         duration: 10000,
         action: {
-          label: 'Get Help',
+          label: "Get Help",
           onClick: () => setShowTroubleshooting(true),
         },
       });
 
       onError?.(error, code);
 
-      if (variant === 'modal-controls') {
+      if (variant === "modal-controls") {
         setModalOpen(false);
       }
     },
@@ -123,13 +171,29 @@ export default function MicrophoneIconButtonCore({
     onError: handleError,
   });
 
+  useEffect(() => {
+    onRecordingStateChange?.({ isRecording, isTranscribing });
+  }, [isRecording, isTranscribing, onRecordingStateChange]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      stopForTranscriptOnly: () => {
+        if (!isRecording || disabled) return;
+        stopModeRef.current = "transcript-only";
+        stopRecording();
+      },
+    }),
+    [disabled, isRecording, stopRecording],
+  );
+
   // ── Auto-start on first mount ────────────────────────────────────────────
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!autoStart || autoStartFired.current) return;
     autoStartFired.current = true;
 
-    if (variant === 'modal-controls') {
+    if (variant === "modal-controls") {
       setModalOpen(true);
     }
     startRecording();
@@ -140,18 +204,26 @@ export default function MicrophoneIconButtonCore({
     if (disabled) return;
     if (isTranscribing && !isRecording) return;
 
-    if (variant === 'modal-controls') {
+    if (variant === "modal-controls") {
       setModalOpen(true);
       if (!isRecording) await startRecording();
       return;
     }
 
     if (isRecording) {
+      stopModeRef.current = "full";
       stopRecording();
     } else {
       await startRecording();
     }
-  }, [disabled, isTranscribing, variant, isRecording, startRecording, stopRecording]);
+  }, [
+    disabled,
+    isTranscribing,
+    variant,
+    isRecording,
+    startRecording,
+    stopRecording,
+  ]);
 
   // ── Modal: keep liveTranscript synced — APPEND to edited text ─────────────
   // liveTranscript is passed to modal as a live preview only (not accumulated here).
@@ -190,11 +262,11 @@ export default function MicrophoneIconButtonCore({
 
   // ── Shared base button classes ───────────────────────────────────────────
   const baseBtn = cn(
-    'inline-flex items-center justify-center rounded-full',
-    'transition-all duration-200',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+    "inline-flex items-center justify-center rounded-full",
+    "transition-all duration-200",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
     buttonSizeMap[size],
-    disabled && 'opacity-50 cursor-not-allowed',
+    disabled && "opacity-50 cursor-not-allowed",
   );
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -206,7 +278,7 @@ export default function MicrophoneIconButtonCore({
   // Audio-reactive rings are rendered outside the glass layer so they can
   // breathe past the glass edge without being clipped.
   // ══════════════════════════════════════════════════════════════════════════
-  if (variant === 'icon-only') {
+  if (variant === "icon-only") {
     const isActive = isRecording || isTranscribing;
 
     return (
@@ -217,17 +289,19 @@ export default function MicrophoneIconButtonCore({
           onClick={handleClick}
           disabled={disabled || (isTranscribing && !isRecording)}
           title={
-            isRecording ? 'Tap to stop recording'
-            : isTranscribing ? 'Processing…'
-            : 'Start recording'
+            isRecording
+              ? "Tap to stop recording"
+              : isTranscribing
+                ? "Processing…"
+                : "Start recording"
           }
           className={cn(
-            'relative inline-flex items-center justify-center rounded-full',
+            "relative inline-flex items-center justify-center rounded-full",
             buttonSizeMap[size],
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-            disabled && 'cursor-not-allowed opacity-50',
-            isActive && 'cursor-pointer',
-            !isActive && !disabled && 'cursor-pointer',
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+            disabled && "cursor-not-allowed opacity-50",
+            isActive && "cursor-pointer",
+            !isActive && !disabled && "cursor-pointer",
             className,
           )}
         >
@@ -240,24 +314,24 @@ export default function MicrophoneIconButtonCore({
           {isRecording && (
             <span
               className="absolute inset-0 rounded-full bg-primary/20 animate-ping"
-              style={{ animationDuration: '1.5s' }}
+              style={{ animationDuration: "1.5s" }}
             />
           )}
 
           <span
             className={cn(
-              'relative z-10 inline-flex items-center justify-center rounded-full',
-              'h-full w-full transition-all duration-200',
+              "relative z-10 inline-flex items-center justify-center rounded-full",
+              "h-full w-full transition-all duration-200",
               isActive
-                ? 'bg-primary/15 dark:bg-primary/10 backdrop-blur-md shadow-md hover:bg-primary/25'
-                : 'bg-white/10 dark:bg-white/5 backdrop-blur-md shadow-sm hover:bg-accent',
-              'hover:scale-105 active:scale-95',
+                ? "bg-primary/15 dark:bg-primary/10 backdrop-blur-md shadow-md hover:bg-primary/25"
+                : "bg-white/10 dark:bg-white/5 backdrop-blur-md shadow-sm hover:bg-accent",
+              "hover:scale-105 active:scale-95",
             )}
           >
             <Mic
               className={cn(
-                'h-3.5 w-3.5',
-                isActive ? 'text-primary' : 'text-foreground/70',
+                "h-3.5 w-3.5",
+                isActive ? "text-primary" : "text-foreground/70",
               )}
             />
           </span>
@@ -277,7 +351,7 @@ export default function MicrophoneIconButtonCore({
   // VARIANT: inline-expand
   // Expands to show recording indicator + stop button while active.
   // ══════════════════════════════════════════════════════════════════════════
-  if (variant === 'inline-expand') {
+  if (variant === "inline-expand") {
     if (isTranscribing && !isRecording) {
       return (
         <>
@@ -295,7 +369,7 @@ export default function MicrophoneIconButtonCore({
     if (isRecording) {
       return (
         <>
-          <div className={cn('flex flex-col gap-1', className)}>
+          <div className={cn("flex flex-col gap-1", className)}>
             <div className="flex items-center gap-1.5">
               <RecordingIndicator
                 duration={duration}
@@ -307,7 +381,10 @@ export default function MicrophoneIconButtonCore({
                 type="button"
                 size="sm"
                 variant="ghost"
-                onClick={stopRecording}
+                onClick={() => {
+                  stopModeRef.current = "full";
+                  stopRecording();
+                }}
                 className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 h-7 px-2 text-xs"
               >
                 Stop
@@ -338,7 +415,11 @@ export default function MicrophoneIconButtonCore({
           onClick={handleClick}
           disabled={disabled}
           title="Start recording"
-          className={cn(baseBtn, 'hover:bg-accent text-muted-foreground', className)}
+          className={cn(
+            baseBtn,
+            "hover:bg-accent text-muted-foreground",
+            className,
+          )}
         >
           <Mic className={iconSizeMap[size]} />
         </button>
@@ -368,9 +449,9 @@ export default function MicrophoneIconButtonCore({
         title="Open voice recorder"
         className={cn(
           baseBtn,
-          'relative overflow-visible',
-          modalActive && 'text-primary',
-          !modalActive && 'hover:bg-accent text-muted-foreground',
+          "relative overflow-visible",
+          modalActive && "text-primary",
+          !modalActive && "hover:bg-accent text-muted-foreground",
           className,
         )}
       >
@@ -383,14 +464,14 @@ export default function MicrophoneIconButtonCore({
         {isRecording && (
           <span
             className="absolute inset-0 rounded-full bg-primary/25 animate-ping"
-            style={{ animationDuration: '1.5s' }}
+            style={{ animationDuration: "1.5s" }}
           />
         )}
         <Mic
           className={cn(
             iconSizeMap[size],
-            'relative',
-            modalActive ? 'text-primary' : '',
+            "relative",
+            modalActive ? "text-primary" : "",
           )}
         />
       </button>
@@ -422,4 +503,6 @@ export default function MicrophoneIconButtonCore({
       />
     </>
   );
-}
+});
+
+export default MicrophoneIconButtonCore;

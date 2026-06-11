@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  AlignLeft,
   ChevronLeft,
+  FileText,
   Loader2,
   Mic,
   MoreVertical,
@@ -10,7 +12,6 @@ import {
   Radio,
   Square,
   Trash2,
-  Wand2,
   Webhook,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -31,7 +32,10 @@ import {
 } from "../../redux/thunks";
 import { EditableSessionTitle } from "../EditableSessionTitle";
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
-import { CleanupSheet } from "./CleanupSheet";
+import {
+  SessionTranscriptViewer,
+  type SessionTranscriptMode,
+} from "./SessionTranscriptViewer";
 import { ScribeCaptureScreen } from "./ScribeCaptureScreen";
 import { AssistantScreen } from "./AssistantScreen";
 import { ScribeLiveScreen } from "./ScribeLiveScreen";
@@ -67,13 +71,14 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   const [screen, setScreen] = useState<Screen>("capture");
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
-  const [cleanupOpen, setCleanupOpen] = useState(false);
+  const [sessionViewer, setSessionViewer] =
+    useState<SessionTranscriptMode | null>(null);
 
-  // The assistant hook is mounted at the screen level so a cleanup run that
+  // The assistant hook is mounted at the screen level so a cleanup that
   // completes BEFORE the user switches to the Agent tab still gets the
-  // refreshed `cleaned_transcripts` named context on the next turn. We also
-  // use its `send` to fire the post-recording review turn from the toast.
-  const { refreshContext, send } = useStudioAssistant(sessionId);
+  // refreshed cleaned context on the next turn. We also use its `send` to fire
+  // the post-recording review turn from the toast.
+  const { send } = useStudioAssistant(sessionId);
 
   // Recording is a session-global concern (capturable from any mode), so the
   // control lives in the header and its state is read here. The capture
@@ -105,11 +110,18 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
 
   const menuItems: ActionSheetItem[] = [
     {
-      key: "cleanup",
-      label: "Clean up transcripts",
-      description: "AI cleanup of every recording in this session",
-      icon: <Wand2 className="h-4 w-4" />,
-      onSelect: () => setCleanupOpen(true),
+      key: "view-raw",
+      label: "View raw transcripts",
+      description: "Verbatim text of every recording",
+      icon: <FileText className="h-4 w-4" />,
+      onSelect: () => setSessionViewer("raw"),
+    },
+    {
+      key: "view-clean",
+      label: "View clean transcripts",
+      description: "AI-cleaned full session — refresh to re-run",
+      icon: <AlignLeft className="h-4 w-4" />,
+      onSelect: () => setSessionViewer("clean"),
     },
     {
       key: "rename",
@@ -274,13 +286,17 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
         onOpenChange={setMenuOpen}
         title={session?.title || "Session"}
         items={menuItems}
+        contentClassName="min-h-[50dvh]"
       />
-      <CleanupSheet
-        sessionId={sessionId}
-        open={cleanupOpen}
-        onOpenChange={setCleanupOpen}
-        onPersisted={refreshContext}
-      />
+      {sessionViewer && (
+        <SessionTranscriptViewer
+          sessionId={sessionId}
+          mode={sessionViewer}
+          open={sessionViewer !== null}
+          onClose={() => setSessionViewer(null)}
+          allowRefresh
+        />
+      )}
       <TextInputDialog
         open={renameOpen}
         onOpenChange={setRenameOpen}

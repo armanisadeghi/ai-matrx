@@ -1,7 +1,6 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentComparisonPage } from "@/features/agents/components/diff/AgentComparisonPage";
 
-export const metadata = { title: "Compare Agents | AI Matrx" };
 
 export default function CompareAgentsPage() {
   return (

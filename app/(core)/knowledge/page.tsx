@@ -1,17 +1,5 @@
-import type { Metadata } from "next";
 import KnowledgeShowcasePage from "@/features/knowledge/components/KnowledgeShowcasePage";
 
-export const metadata: Metadata = {
-  title: "The Knowledge System — AI Matrx",
-  description:
-    "Source → knowledge → answer, one continuous system. Raw sources flow through a seven-phase pipeline into a versioned, traceable knowledge hub — then agents turn it into cited, accurate answers.",
-  openGraph: {
-    title: "The Matrx Knowledge System",
-    description:
-      "A seven-phase pipeline from any source to a cited, traceable answer — with agents that attach at every stage.",
-    type: "website",
-  },
-};
 
 /**
  * `/knowledge` — informational showcase for the Matrx Knowledge System.

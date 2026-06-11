@@ -1,12 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Mic, Pause, Play, Square } from "lucide-react";
+import {
+  AlignLeft,
+  FileText,
+  Loader2,
+  Mic,
+  Pause,
+  Play,
+  Square,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useStudioSession } from "../../hooks/useStudioSession";
+import { selectRecordingSegmentCount } from "../../redux/selectors";
 import { RecordingCardList } from "./RecordingCardList";
-import { FullTranscriptDrawer } from "./FullTranscriptDrawer";
+import {
+  FullTranscriptDrawer,
+  type TranscriptSection,
+} from "./FullTranscriptDrawer";
+import {
+  SessionTranscriptViewer,
+  type SessionTranscriptMode,
+} from "./SessionTranscriptViewer";
 
 interface ScribeCaptureScreenProps {
   sessionId: string;
@@ -22,7 +38,14 @@ function formatClock(totalSec: number): string {
 export function ScribeCaptureScreen({ sessionId }: ScribeCaptureScreenProps) {
   const session = useStudioSession({ sessionId });
   const liveTranscript = useAppSelector((s) => s.recordings.liveTranscript);
-  const [openTranscriptId, setOpenTranscriptId] = useState<string | null>(null);
+  const [openTranscript, setOpenTranscript] = useState<{
+    id: string;
+    section: TranscriptSection;
+  } | null>(null);
+  const [sessionViewer, setSessionViewer] =
+    useState<SessionTranscriptMode | null>(null);
+  const recordingCount = useAppSelector(selectRecordingSegmentCount(sessionId));
+  const hasRecordings = recordingCount > 0;
 
   const isRecording = session.isOwnedRecording;
   const blockedByOther = session.isAnyRecording && !isRecording;
@@ -53,13 +76,38 @@ export function ScribeCaptureScreen({ sessionId }: ScribeCaptureScreenProps) {
 
         <RecordingCardList
           sessionId={sessionId}
-          onOpenTranscript={setOpenTranscriptId}
+          onOpenTranscript={(id, section = "raw") =>
+            setOpenTranscript({ id, section })
+          }
         />
         <div className="h-4" />
       </div>
 
       {/* Fixed record bar */}
       <div className="shrink-0 border-t border-border bg-card/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+        {/* Transcript shortcuts — ALWAYS available, including mid-recording, so
+            the user can refer back to earlier content without interrupting
+            capture. */}
+        {hasRecordings && (
+          <div className="mb-2 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSessionViewer("raw")}
+              className="flex h-8 items-center gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground active:bg-accent"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              All raw
+            </button>
+            <button
+              type="button"
+              onClick={() => setSessionViewer("clean")}
+              className="flex h-8 items-center gap-1.5 rounded-full bg-muted px-3 text-xs font-medium text-foreground active:bg-accent"
+            >
+              <AlignLeft className="h-3.5 w-3.5" />
+              All clean
+            </button>
+          </div>
+        )}
         {isRecording && (
           <div className="mb-2 flex items-center justify-center gap-2 text-xs">
             <span className="font-mono tabular-nums text-red-600 dark:text-red-400">
@@ -154,9 +202,20 @@ export function ScribeCaptureScreen({ sessionId }: ScribeCaptureScreenProps) {
 
       <FullTranscriptDrawer
         sessionId={sessionId}
-        recordingSegmentId={openTranscriptId}
-        onClose={() => setOpenTranscriptId(null)}
+        recordingSegmentId={openTranscript?.id ?? null}
+        initialSection={openTranscript?.section ?? "raw"}
+        onClose={() => setOpenTranscript(null)}
       />
+
+      {sessionViewer && (
+        <SessionTranscriptViewer
+          sessionId={sessionId}
+          mode={sessionViewer}
+          open={sessionViewer !== null}
+          onClose={() => setSessionViewer(null)}
+          allowRefresh
+        />
+      )}
     </div>
   );
 }

@@ -15510,6 +15510,21 @@ export type Database = {
           },
         ]
       }
+      schema_migrations: {
+        Row: {
+          applied_at: string
+          version: string
+        }
+        Insert: {
+          applied_at?: string
+          version: string
+        }
+        Update: {
+          applied_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
       schema_templates: {
         Row: {
           created_at: string | null
@@ -18225,6 +18240,8 @@ export type Database = {
           created_at: string
           id: string
           pass_index: number
+          processor_key: string
+          recording_segment_id: string | null
           run_id: string | null
           session_id: string
           superseded_at: string | null
@@ -18237,6 +18254,8 @@ export type Database = {
           created_at?: string
           id?: string
           pass_index: number
+          processor_key?: string
+          recording_segment_id?: string | null
           run_id?: string | null
           session_id: string
           superseded_at?: string | null
@@ -18249,6 +18268,8 @@ export type Database = {
           created_at?: string
           id?: string
           pass_index?: number
+          processor_key?: string
+          recording_segment_id?: string | null
           run_id?: string | null
           session_id?: string
           superseded_at?: string | null
@@ -18258,6 +18279,13 @@ export type Database = {
           trigger_cause?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "studio_cleaned_segments_recording_segment_id_fkey"
+            columns: ["recording_segment_id"]
+            isOneToOne: false
+            referencedRelation: "studio_recording_segments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "studio_cleaned_segments_run_id_fkey"
             columns: ["run_id"]

@@ -20,9 +20,9 @@ import {
   type StartRecordingArgs,
 } from "@/providers/GlobalRecordingProvider";
 import {
+  cleanRecordingThunk,
   finalizeRecordingSegmentThunk,
   ingestRawChunkThunk,
-  runCleaningPassThunk,
   startRecordingSegmentThunk,
   startSessionRecordingThunk,
   stopSessionRecordingThunk,
@@ -128,9 +128,10 @@ export function useStudioSession({
       onComplete: (_result, audioBlob) => {
         const recordingSegmentId = recordingSegmentIdRef.current;
         if (recordingSegmentId) {
-          // Finalize the row instantly (card leaves "processing"), then run the
-          // cleaning pass. The audio file uploads in the background so the user
-          // never waits on the network.
+          // Finalize the row instantly (card leaves "processing"), then clean
+          // THIS recording into one cleaned segment anchored to it
+          // (recording-aligned). The full-session clean is the concatenation of
+          // those rows. Audio uploads in the background so the user never waits.
           void dispatch(
             finalizeRecordingSegmentThunk({
               sessionId,
@@ -139,7 +140,11 @@ export function useStudioSession({
             }),
           ).finally(() => {
             void dispatch(
-              runCleaningPassThunk({ sessionId, triggerCause: "session-stop" }),
+              cleanRecordingThunk({
+                sessionId,
+                recordingSegmentId,
+                triggerCause: "session-stop",
+              }),
             );
           });
           void dispatch(

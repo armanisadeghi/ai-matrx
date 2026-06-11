@@ -2,7 +2,12 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
-import type { Note, CreateNoteInput, UpdateNoteInput } from "../types";
+import type {
+  Note,
+  CreateNoteInput,
+  UpdateNoteInput,
+  NoteListItem,
+} from "../types";
 import { generateLabelFromContent } from "../hooks/useAutoLabel";
 import { findEmptyNewNote } from "../utils/noteUtils";
 
@@ -26,6 +31,28 @@ export async function fetchNotes(): Promise<Note[]> {
   }
 
   return data || [];
+}
+
+/**
+ * Fetch lightweight note list items (no content) for pickers and sidebars.
+ */
+export async function fetchNoteListItems(): Promise<NoteListItem[]> {
+  const userId = requireUserId();
+  const { data, error } = await supabase
+    .from("notes")
+    .select(
+      "id, user_id, label, folder_name, folder_id, tags, updated_at, position, organization_id, project_id, task_id, is_public, version",
+    )
+    .eq("user_id", userId)
+    .eq("is_deleted", false)
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching note list items:", error);
+    throw error;
+  }
+
+  return (data ?? []) as NoteListItem[];
 }
 
 /**

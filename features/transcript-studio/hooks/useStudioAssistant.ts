@@ -25,9 +25,8 @@ import { setUserInputText } from "@/features/agents/redux/execution-system/insta
 import type { StudioDocument } from "../types";
 import {
   selectAssistantConversationId,
-  selectCleanedSegments,
   selectRecordingSegmentCount,
-  selectScribeCleanupDocument,
+  selectSessionCleanedText,
   selectWorkingDocument,
 } from "../redux/selectors";
 import { studioDocumentUpserted } from "../redux/slice";
@@ -95,12 +94,9 @@ export function useStudioAssistant(
   // here. (The strip's spoken/review sends still go through `send`, which also
   // refreshes — this just covers the typed-input path.)
   const recordingCount = useAppSelector(selectRecordingSegmentCount(sessionId));
-  const cleanedCount = useAppSelector(
-    (s) => selectCleanedSegments(sessionId)(s).length,
-  );
-  const cleanupContent = useAppSelector(
-    (s) => selectScribeCleanupDocument(sessionId)(s)?.content ?? "",
-  );
+  // Cleaned text (not just count) so re-cleans — which keep the row count
+  // steady — still refresh the context.
+  const cleanedText = useAppSelector(selectSessionCleanedText(sessionId));
   const workingDocContent = workingDocument?.content ?? "";
 
   useEffect(() => {
@@ -116,8 +112,7 @@ export function useStudioAssistant(
     conversationId,
     workingDocContent,
     recordingCount,
-    cleanedCount,
-    cleanupContent,
+    cleanedText,
     dispatch,
     store,
   ]);

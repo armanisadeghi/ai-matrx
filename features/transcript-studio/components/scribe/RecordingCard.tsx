@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import {
+  AlignLeft,
   Archive,
   ArchiveRestore,
   Check,
@@ -17,7 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
-import { selectRawSegmentsForRecording } from "../../redux/selectors";
+import {
+  selectCleanedSegmentForRecording,
+  selectRawSegmentsForRecording,
+} from "../../redux/selectors";
 import {
   archiveRecordingThunk,
   deleteRecordingSegmentThunk,
@@ -27,6 +31,7 @@ import {
 import type { RecordingSegment } from "../../types";
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
 import { SwipeableRow, type SwipeAction } from "./SwipeableRow";
+import type { TranscriptSection } from "./FullTranscriptDrawer";
 
 export type RecordingCardVariant = "active" | "archived" | "unsorted";
 
@@ -38,7 +43,7 @@ interface RecordingCardProps {
   selected?: boolean;
   selectionActive?: boolean;
   onToggleSelect?: (id: string) => void;
-  onOpenTranscript: (id: string) => void;
+  onOpenTranscript: (id: string, section?: TranscriptSection) => void;
 }
 
 function formatClock(totalSec: number): string {
@@ -66,6 +71,9 @@ export function RecordingCard({
     selectRawSegmentsForRecording(sessionId, recording.id),
   );
   const previewText = raws.map((r) => r.text).join(" ").trim();
+  const cleanedSeg = useAppSelector(
+    selectCleanedSegmentForRecording(sessionId, recording.id),
+  );
   const durationSec =
     raws.length > 0
       ? raws[raws.length - 1]!.tEnd - raws[0]!.tStart
@@ -84,6 +92,13 @@ export function RecordingCard({
   const finalizing = !recording.endedAt;
   const busy = finalizing || uploading;
   const canPlay = Boolean(audioSrc);
+  // Auto-clean runs in the background on stop and can silently miss (network,
+  // empty raw race, agent failure). Surface it so a miss is visible + fixable.
+  const needsCleaning =
+    variant === "active" &&
+    !busy &&
+    previewText.length > 0 &&
+    !(cleanedSeg?.text?.trim());
 
   // Long-press → open transcript. Cancelled by movement (so a horizontal swipe
   // never also triggers the press).
@@ -170,28 +185,44 @@ export function RecordingCard({
     className: "bg-muted text-foreground",
     onAction: () => setMenuOpen(true),
   };
+  // Swipe-right → view content. Raw and Clean land on the matching section of
+  // the recording's drawer.
+  const rawAction: SwipeAction = {
+    key: "raw",
+    label: "Raw",
+    icon: <FileText className="h-5 w-5" />,
+    className: "bg-muted-foreground/80 text-background",
+    onAction: () => onOpenTranscript(recording.id, "raw"),
+  };
+  const cleanAction: SwipeAction = {
+    key: "clean",
+    label: "Clean",
+    icon: <AlignLeft className="h-5 w-5" />,
+    className: "bg-primary text-primary-foreground",
+    onAction: () => onOpenTranscript(recording.id, "clean"),
+  };
 
   let leadingActions: SwipeAction[] = [];
   let trailingActions: SwipeAction[] = [];
   const sheetItems: ActionSheetItem[] = [
     {
-      key: "open",
-      label: "Open transcript",
+      key: "view-raw",
+      label: "View raw transcript",
       icon: <FileText className="h-4 w-4" />,
-      onSelect: () => onOpenTranscript(recording.id),
+      onSelect: () => onOpenTranscript(recording.id, "raw"),
+    },
+    {
+      key: "view-clean",
+      label: "View clean transcript",
+      icon: <AlignLeft className="h-4 w-4" />,
+      onSelect: () => onOpenTranscript(recording.id, "clean"),
     },
   ];
 
   if (variant === "active") {
-    leadingActions = [
-      {
-        key: "archive",
-        label: "Archive",
-        icon: <Archive className="h-5 w-5" />,
-        className: "bg-muted-foreground/80 text-background",
-        onAction: () => doArchive(true),
-      },
-    ];
+    // Swipe-right reveals Raw + Clean (view); swipe-left reveals More + Delete
+    // (manage — Archive/Unsort live in the More sheet).
+    leadingActions = [rawAction, cleanAction];
     trailingActions = [moreAction, deleteAction];
     sheetItems.push(
       {
@@ -309,6 +340,19 @@ export function RecordingCard({
                 <Loader2 className="h-3 w-3 animate-spin" />
                 Saving audio
               </span>
+            )}
+            {needsCleaning && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenTranscript(recording.id, "clean");
+                }}
+                className="flex items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 active:bg-amber-500/25 dark:text-amber-400"
+              >
+                <AlignLeft className="h-3 w-3" />
+                Needs cleaning
+              </button>
             )}
           </div>
           <p className="mt-1 line-clamp-2 text-sm text-foreground">

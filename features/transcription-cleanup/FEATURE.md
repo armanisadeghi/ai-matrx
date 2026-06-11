@@ -60,7 +60,7 @@ behavior); otherwise items ride as ad-hoc context entries.
 - `hooks/useAiPostProcess.ts` — any-agent launch + streaming state (one instance per output container).
 - `components/CleanupPad.tsx` — page shell: 3 resizable panels (sidebar │ transcript/clean │ custom), `<PageHeader>` portal title, mobile stacked + drawer. Layout cookies `panels:cleanup-h3` / `panels:cleanup-v` (server-read for first-paint sizes).
 - `components/CleanupSessionList.tsx` — recents rail (title + time-ago, hover delete with confirm).
-- `components/CleanupContextPanel.tsx` — structured context items, notes-backed (explicit save only, "Transcription Contexts" folder).
+- `components/CleanupContextPanel.tsx` — structured context items, notes-backed (explicit save only; `NotePickerPopover` lists **all** notes with folder grouping + search; full note fetched on select).
 - `ai-agents.ts` — just the default Clean agent id + system-agent display names.
 
 ## What is NOT duplicated (shared platform primitives)
@@ -104,13 +104,19 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-06-10 — Context block note picker: replaced folder-filtered `<select>` (Transcription Contexts only) with shared `NotePickerPopover` — lazy list fetch (names/metadata only on open), folder-grouped search, full note via `NotesAPI.getById` on select.
 - 2026-06-10 — Auto-label on first Clean pass: when the transcript is first sent
   for cleaning and the session title is still the default (`New Cleanup` /
   empty / untitled), one parallel `POST /api/content-label` call labels the
   session (same API + guard rails as Scribe/studio — one-shot per session,
   manual rename wins, local heuristic fallback). Removed the old
   first-chunk `deriveTitle` heuristic on mic save. Record pill: the full pill
-  (including “Tap to record”) now starts recording, not just the mic icon. (tabs, per-slot agent /
+  (including “Tap to record”) now starts recording, not just the mic icon.
+  Secondary **Save only** stop (smaller, beside the pill while recording):
+  stops + transcribes + persists raw transcript without Clean, autorun slots,
+  or auto-label — always visible, disabled until recording starts (no layout
+  shift). Prominent **New session** pill at the top of the listen/record band
+  (creates a fresh session; does not delete existing sessions). (tabs, per-slot agent /
   source / autorun / output doc; `custom_slots` jsonb migration
   `studio_session_settings_custom_slots.sql`, applied live; legacy
   `module_shortcut_id` migrated to slot 1 on load) + `UnifiedAgentContextMenu`

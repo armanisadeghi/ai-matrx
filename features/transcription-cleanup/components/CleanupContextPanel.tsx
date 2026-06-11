@@ -25,7 +25,10 @@ import { BookOpen, Loader2, Plus, Save, Unlink, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { NotesAPI } from "@/features/notes/service/notesApi";
-import type { Note } from "@/features/notes/types";
+import {
+  NotePickerPopover,
+  invalidateNotePickerCache,
+} from "@/features/notes/components/NotePickerPopover";
 import type { SessionContextItem } from "@/features/transcript-studio/types";
 import ActionFeedbackButton from "@/components/official/ActionFeedbackButton";
 
@@ -118,11 +121,8 @@ export function CleanupContextPanel({
   const [blocks, setBlocks] = useState<ContextBlock[]>(() =>
     itemsToBlocks(initialItems ?? []),
   );
-  /** null = not yet fetched; array = loaded (may be empty) */
-  const [contextNotes, setContextNotes] = useState<Note[] | null>(null);
-  const [loadingNotes, setLoadingNotes] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [loadingNoteId, setLoadingNoteId] = useState<string | null>(null);
 
   // ── Mutation helper: update blocks + fire onChange in one step ─────────────
   const updateAndNotify = useCallback(
@@ -187,94 +187,76 @@ export function CleanupContextPanel({
     [updateAndNotify],
   );
 
-  // ── Notes loading (lazy — only when dropdown opens) ───────────────────────
-
-  const loadContextNotes = useCallback(async (): Promise<Note[]> => {
-    if (contextNotes !== null) return contextNotes;
-    setLoadingNotes(true);
-    try {
-      const all = await NotesAPI.getAll();
-      const filtered = all.filter((n) => n.folder_name === CONTEXT_FOLDER);
-      setContextNotes(filtered);
-      return filtered;
-    } catch {
-      toast.error("Could not load context notes");
-      return [];
-    } finally {
-      setLoadingNotes(false);
-    }
-  }, [contextNotes]);
-
-  const handleOpenDropdown = useCallback(
-    async (id: string) => {
-      setOpenDropdownId(id);
-      await loadContextNotes();
-    },
-    [loadContextNotes],
-  );
-
   // ── Load / create note into a block ────────────────────────────────────────
 
-  const handleSelectNote = useCallback(
-    async (blockId: string, value: string) => {
-      setOpenDropdownId(null);
-
-      if (value === "__new__") {
-        // Save the current block text as a new note in the context folder
-        const block = blocks.find((b) => b.id === blockId);
-        if (!block) return;
-        if (!block.text.trim() && !block.title.trim()) {
-          toast.info("Add some text before saving as a note");
+  const handleLoadNote = useCallback(
+    async (blockId: string, noteId: string) => {
+      setLoadingNoteId(blockId);
+      try {
+        const note = await NotesAPI.getById(noteId);
+        if (!note) {
+          toast.error("Could not load note");
           return;
         }
-        setSavingId(blockId);
-        try {
-          const note = await NotesAPI.create({
-            label: block.title.trim() || "Transcription Context",
-            content: block.text,
-            folder_name: CONTEXT_FOLDER,
-          });
-          updateAndNotify((prev) =>
-            prev.map((b) =>
-              b.id === blockId
-                ? {
-                    ...b,
-                    noteId: note.id,
-                    noteLabel: note.label ?? "Transcription Context",
-                    isDirty: false,
-                  }
-                : b,
-            ),
-          );
-          setContextNotes((prev) => (prev ? [note, ...prev] : [note]));
-          toast.success("Saved as note in Transcription Contexts");
-        } catch {
-          toast.error("Could not create note");
-        } finally {
-          setSavingId(null);
-        }
+        updateAndNotify((prev) =>
+          prev.map((b) =>
+            b.id === blockId
+              ? {
+                  ...b,
+                  title: note.label ?? "",
+                  text: note.content ?? "",
+                  noteId: note.id,
+                  noteLabel: note.label ?? "Note",
+                  isDirty: false,
+                }
+              : b,
+          ),
+        );
+      } catch {
+        toast.error("Could not load note");
+      } finally {
+        setLoadingNoteId(null);
+      }
+    },
+    [updateAndNotify],
+  );
+
+  const handleCreateNoteFromBlock = useCallback(
+    async (blockId: string) => {
+      const block = blocks.find((b) => b.id === blockId);
+      if (!block) return;
+      if (!block.text.trim() && !block.title.trim()) {
+        toast.info("Add some text before saving as a note");
         return;
       }
-
-      // Load an existing note into the block
-      const note = contextNotes?.find((n) => n.id === value);
-      if (!note) return;
-      updateAndNotify((prev) =>
-        prev.map((b) =>
-          b.id === blockId
-            ? {
-                ...b,
-                title: note.label ?? "",
-                text: note.content ?? "",
-                noteId: note.id,
-                noteLabel: note.label ?? "Note",
-                isDirty: false,
-              }
-            : b,
-        ),
-      );
+      setSavingId(blockId);
+      try {
+        const note = await NotesAPI.create({
+          label: block.title.trim() || "Transcription Context",
+          content: block.text,
+          folder_name: CONTEXT_FOLDER,
+        });
+        updateAndNotify((prev) =>
+          prev.map((b) =>
+            b.id === blockId
+              ? {
+                  ...b,
+                  noteId: note.id,
+                  noteLabel: note.label ?? "Transcription Context",
+                  isDirty: false,
+                }
+              : b,
+          ),
+        );
+        invalidateNotePickerCache();
+        toast.success("Saved as note in Transcription Contexts");
+      } catch {
+        toast.error("Could not create note");
+      } finally {
+        setSavingId(null);
+      }
     },
-    [blocks, contextNotes, updateAndNotify],
+    [blocks, updateAndNotify],
   );
 
   // ── Save dirty note ────────────────────────────────────────────────────────
@@ -393,48 +375,32 @@ export function CleanupContextPanel({
 
             {/* ── Footer: notes picker ────────────────────────────────────── */}
             <div className="px-2 pb-1.5">
-              {openDropdownId === block.id ? (
-                <select
-                  autoFocus
-                  defaultValue=""
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      void handleSelectNote(block.id, e.target.value);
-                    }
-                  }}
-                  onBlur={() => setOpenDropdownId(null)}
-                  className="w-full rounded border border-border bg-background text-xs px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="" disabled>
-                    {loadingNotes
-                      ? "Loading notes…"
-                      : contextNotes?.length === 0
-                        ? "No notes in Transcription Contexts yet"
-                        : "Choose a note…"}
-                  </option>
-                  {contextNotes?.map((n) => (
-                    <option key={n.id} value={n.id}>
-                      {n.label}
-                    </option>
-                  ))}
-                  <option value="__new__">
-                    {block.text.trim()
-                      ? "＋ Save current text as new note"
-                      : "＋ Create new note in Transcription Contexts"}
-                  </option>
-                </select>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    void handleOpenDropdown(block.id);
-                  }}
-                  className="flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-                >
-                  <BookOpen className="h-3 w-3" />
-                  {block.noteId ? "Change note…" : "Load from notes…"}
-                </button>
-              )}
+              <NotePickerPopover
+                onSelectNote={(noteId) => handleLoadNote(block.id, noteId)}
+                extraActions={[
+                  {
+                    id: "create-context-note",
+                    label: block.text.trim()
+                      ? "Save current text as new note"
+                      : "Create new note in Transcription Contexts",
+                    onSelect: () => handleCreateNoteFromBlock(block.id),
+                  },
+                ]}
+                trigger={
+                  <button
+                    type="button"
+                    disabled={loadingNoteId === block.id}
+                    className="flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors disabled:opacity-50"
+                  >
+                    {loadingNoteId === block.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <BookOpen className="h-3 w-3" />
+                    )}
+                    {block.noteId ? "Change note…" : "Load from notes…"}
+                  </button>
+                }
+              />
             </div>
           </div>
         );

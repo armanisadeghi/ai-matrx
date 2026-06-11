@@ -1,13 +1,7 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Podcast } from "lucide-react";
 import { StudioComposer } from "./_components/StudioComposer";
 
-export const metadata: Metadata = {
-  title: "New episode — Podcast Studio",
-  description:
-    "Compose a fully produced podcast episode from any source, then watch it being made live.",
-};
 
 // Variation F · create surface (design bake-off). Two-pane composer with a live
 // episode brief. Generate routes to the self-contained run-f demo.

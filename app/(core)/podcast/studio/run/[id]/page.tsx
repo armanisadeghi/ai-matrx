@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
 import { StudioRunView } from "@/features/podcasts/studio/components/StudioRunView";
 
-export const metadata: Metadata = {
-  title: "Episode — Podcast Studio",
-  description: "Your podcast generation — live progress and the finished episode.",
-};
 
 export default async function StudioRunPage({
   params,

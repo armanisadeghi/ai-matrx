@@ -1,11 +1,5 @@
-import type { Metadata } from "next";
 import { CreateConsole } from "./_components/CreateConsole";
 
-export const metadata: Metadata = {
-  title: "Create Episode — Podcast Studio",
-  description:
-    "Configure your source and production options, then generate a fully produced two-host episode.",
-};
 
 // Variation E — the production console.
 //

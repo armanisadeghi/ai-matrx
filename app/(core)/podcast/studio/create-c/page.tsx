@@ -1,13 +1,7 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Podcast } from "lucide-react";
 import { CreateComposer } from "./_components/CreateComposer";
 
-export const metadata: Metadata = {
-  title: "Create Episode — Podcast Studio",
-  description:
-    "Generate a fully produced podcast episode from a topic, document, or notes.",
-};
 
 // Bake-off variation C — redesigned create surface.
 // Reachable at /podcast/studio/create-c.

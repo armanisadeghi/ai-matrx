@@ -268,6 +268,8 @@ export const fetchCleanedSegmentsThunk = createAsyncThunk<
 export { ensureAssistantConversationThunk } from "./ensureAssistantConversation.thunk";
 export { runCleaningPassThunk } from "./runCleaningPass.thunk";
 export type { RunCleaningPassResult } from "./runCleaningPass.thunk";
+export { cleanRecordingThunk } from "./cleanRecording.thunk";
+export type { CleanRecordingResult } from "./cleanRecording.thunk";
 export { runConceptPassThunk } from "./runConceptPass.thunk";
 export type { RunConceptPassResult } from "./runConceptPass.thunk";
 export { runModulePassThunk } from "./runModulePass.thunk";

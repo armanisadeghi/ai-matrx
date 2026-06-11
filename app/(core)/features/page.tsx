@@ -10,7 +10,6 @@
 // this page renders straight from that registry.
 
 import Link from "next/link";
-import type { Metadata } from "next";
 import { ArrowRight, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -19,17 +18,6 @@ import {
   MODULE_LANDING_GROUPS,
 } from "@/features/auth/components/module-landing/landings/directory";
 
-export const metadata: Metadata = {
-  title: "Features — Browse the AI Matrx platform",
-  description:
-    "Chat, agents, files, notes, tasks, knowledge bases, code workspaces, sandboxes — every surface of the AI Matrx platform, with one click to dive in.",
-  openGraph: {
-    title: "AI Matrx — Every surface, in one place",
-    description:
-      "Browse every module of the AI Matrx platform. Free to start, no credit card.",
-    type: "website",
-  },
-};
 
 export default function FeaturesIndexPage() {
   return (

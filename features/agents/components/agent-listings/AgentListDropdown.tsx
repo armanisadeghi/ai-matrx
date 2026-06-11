@@ -77,6 +77,7 @@ export function AgentListDropdown({
     allCategories,
     allTags,
     consumer,
+    tabCounts,
     activeFilterCount,
     hoveredAgent,
     ensureLoaded,
@@ -183,6 +184,7 @@ export function AgentListDropdown({
       onDetailPress={setMobileDetailAgent}
       onFilterChipClick={handleFilterChipClick}
       rightPanel={rightPanel}
+      tabCounts={tabCounts}
     />
   );
 

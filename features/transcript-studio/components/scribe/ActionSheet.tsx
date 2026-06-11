@@ -32,6 +32,8 @@ interface ActionSheetProps {
   onOpenChange: (open: boolean) => void;
   title?: string;
   items: ActionSheetItem[];
+  /** Extra classes for the drawer content (e.g. a min-height for tall menus). */
+  contentClassName?: string;
 }
 
 export function ActionSheet({
@@ -39,10 +41,11 @@ export function ActionSheet({
   onOpenChange,
   title,
   items,
+  contentClassName,
 }: ActionSheetProps) {
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto max-w-lg">
+      <DrawerContent className={cn("mx-auto max-w-lg", contentClassName)}>
         <DrawerHeader className="pb-2 text-left">
           <DrawerTitle className="text-base">{title ?? "Actions"}</DrawerTitle>
         </DrawerHeader>

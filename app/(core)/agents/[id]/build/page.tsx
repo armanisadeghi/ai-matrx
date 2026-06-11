@@ -3,7 +3,6 @@ import { AgentBuilderPage } from "@/features/agents/components/builder/AgentBuil
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
 
-export const metadata = { title: "Agent Builder | AI Matrx" };
 
 export default async function AgentEditPage({
   params,

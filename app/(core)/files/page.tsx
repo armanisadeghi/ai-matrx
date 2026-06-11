@@ -1,17 +1,5 @@
-import type { Metadata } from "next";
 import FilesLanding from "@/features/auth/components/module-landing/landings/FilesLanding";
 
-export const metadata: Metadata = {
-  title: "Files — AI Matrx",
-  description:
-    "A real-time synced file system with content search, fine-grained sharing, version history, and first-class integration with chat and agents.",
-  openGraph: {
-    title: "Files that are actually searchable — AI Matrx",
-    description:
-      "Content search, sharing, versions, AI-native — the file system your agents already understand.",
-    type: "website",
-  },
-};
 
 /**
  * `/files` is the public-facing marketing surface for the Files module.

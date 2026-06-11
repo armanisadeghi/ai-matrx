@@ -3,7 +3,6 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
 import { AgentShortcutsPanel } from "@/features/agents/components/shortcuts/AgentShortcutsPanel";
 
-export const metadata = { title: "Agent Shortcuts | AI Matrx" };
 
 export default async function AgentShortcutsRoute({
   params,
