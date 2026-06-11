@@ -39,6 +39,7 @@ import {
 import { cn } from "@/lib/utils";
 import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
 import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
+import { PdfPresetPicker } from "@/features/pdf/components/PdfPresetPicker";
 import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 
@@ -226,6 +227,8 @@ export function DocumentOpsPanel({ fileId }: Props) {
             {error}
           </div>
         ) : null}
+
+        <PdfPresetPicker fileId={fileId} className="pt-1" />
       </div>
     </div>
   );
