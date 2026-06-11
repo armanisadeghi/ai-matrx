@@ -19,7 +19,7 @@
  * or update extracted text against the new boundaries.
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ArrowDownToLine,
   ChevronDown,
@@ -43,6 +43,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
 import type { BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import {
+  buildPdfSource,
+  parsePdfSourceInput,
+  toInsertSourceWire,
+  type PdfSourceWire,
+} from "@/features/pdf/utils/source";
 import { cn } from "@/lib/utils";
 import { parsePagesInput } from "@/features/pdf-demo/utils/pages";
 import { fileHandler } from "@/features/files";
@@ -72,11 +78,16 @@ function useOpState() {
     savedDocId: null,
     error: null,
   });
+  // Same-tick double-submit guard: `running` state only disables the button
+  // after a re-render, so a fast double-click fires two requests. The ref
+  // flips synchronously.
+  const runningRef = useRef(false);
   return {
     running,
     result,
     error,
     save,
+    runningRef,
     setRunning,
     setResult,
     setError,
@@ -330,14 +341,8 @@ function Row({
   );
 }
 
-// ─── Second-source parser (merge / insert) ────────────────────────────────────
-
-function parseSecondSrc(v: string): Record<string, unknown> | null {
-  const t = v.trim();
-  if (!t) return null;
-  if (t.startsWith("http")) return { url: t };
-  return { cld_id: t };
-}
+// Second-source parsing (merge / insert) lives in the canonical builder:
+// `parsePdfSourceInput` from @/features/pdf/utils/source.
 
 // ─── Visual tool card ─────────────────────────────────────────────────────────
 //
@@ -474,13 +479,12 @@ export function ManipulationPanel({
   const api = usePdfDemoApi();
   const userId = useAppSelector(selectUserId) ?? "";
 
-  // ── Source payload ─────────────────────────────────────────────────────────
-  const src: Record<string, unknown> | null =
-    doc.sourceKind === "cld_file" && doc.sourceId
-      ? { cld_id: doc.sourceId }
-      : doc.source && !doc.source.startsWith("s3://")
-        ? { url: doc.source }
-        : null;
+  // ── Source payload (canonical wire — media.file_id / url / file_uri) ──────
+  const src: PdfSourceWire | null = buildPdfSource({
+    sourceKind: doc.sourceKind,
+    sourceId: doc.sourceId,
+    sourceUrl: doc.source,
+  });
 
   // ── Per-op state ───────────────────────────────────────────────────────────
   const scrub = useOpState();
@@ -540,6 +544,10 @@ export function ManipulationPanel({
     key: Parameters<typeof api.postPdfBlob>[0],
     body: Record<string, unknown>,
   ) {
+    // Synchronous double-submit guard — `disabled={op.running}` only takes
+    // effect after a re-render; the ref blocks the same-tick second click.
+    if (op.runningRef.current) return;
+    op.runningRef.current = true;
     op.setRunning(true);
     op.setResult(null);
     op.setError(null);
@@ -549,6 +557,7 @@ export function ManipulationPanel({
     } catch (err) {
       op.setError(err instanceof Error ? err.message : String(err));
     } finally {
+      op.runningRef.current = false;
       op.setRunning(false);
     }
   }
@@ -938,7 +947,7 @@ export function ManipulationPanel({
         description="Concatenate this doc with a second PDF"
         op={merge}
         onRun={async () => {
-          const src2 = parseSecondSrc(mergeSrc2);
+          const src2 = parsePdfSourceInput(mergeSrc2);
           if (!src2) {
             merge.setError("Enter a second PDF source (cld file ID or URL).");
             return;
@@ -975,7 +984,7 @@ export function ManipulationPanel({
         description="Splice pages from another PDF into this one"
         op={insert}
         onRun={async () => {
-          const src2 = parseSecondSrc(insertSrc);
+          const src2 = parsePdfSourceInput(insertSrc);
           if (!src2) {
             insert.setError("Enter a source PDF (cld file ID or URL).");
             return;
@@ -983,12 +992,9 @@ export function ManipulationPanel({
           const srcPages = insertSrcPages.trim()
             ? parsePagesInput(insertSrcPages)
             : undefined;
-          const sourceWire = src2.url
-            ? { source_url: src2.url }
-            : { source_cld_id: src2.cld_id };
           await run(insert, "insertPages", {
             ...src,
-            ...sourceWire,
+            ...toInsertSourceWire(src2),
             after_page: insertAt,
             ...(srcPages ? { source_pages: srcPages } : {}),
           });

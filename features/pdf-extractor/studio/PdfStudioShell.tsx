@@ -280,7 +280,6 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       const { success, childDocId } = await extractor.runFullPipeline(
         activeDoc.id,
         {
-          persist_output: true,
           onProgress: setLiveStatus,
           onTextDelta: setStreamingCleanText,
         },

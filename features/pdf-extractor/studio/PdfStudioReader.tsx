@@ -57,6 +57,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
 import type { BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { buildPdfSource } from "@/features/pdf/utils/source";
 import { parsePagesInput } from "@/features/pdf-demo/utils/pages";
 import { fileHandler } from "@/features/files";
 import { supabase } from "@/utils/supabase/client";
@@ -631,12 +632,11 @@ function CropOverlay({
     cropBoxRef.current = cropBox;
     pagesRef.current = pages;
 
-    const src: Record<string, unknown> | null =
-      doc.sourceKind === "cld_file" && doc.sourceId
-        ? { cld_id: doc.sourceId }
-        : doc.source && !doc.source.startsWith("s3://")
-          ? { url: doc.source }
-          : null;
+    const src = buildPdfSource({
+      sourceKind: doc.sourceKind,
+      sourceId: doc.sourceId,
+      sourceUrl: doc.source,
+    });
     if (!src) {
       setError("No source file linked.");
       return;
@@ -832,12 +832,11 @@ function PageReorderView({
   const [savedId, setSavedId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const src: Record<string, unknown> | null =
-    doc.sourceKind === "cld_file" && doc.sourceId
-      ? { cld_id: doc.sourceId }
-      : doc.source && !doc.source.startsWith("s3://")
-        ? { url: doc.source }
-        : null;
+  const src = buildPdfSource({
+    sourceKind: doc.sourceKind,
+    sourceId: doc.sourceId,
+    sourceUrl: doc.source,
+  });
 
   function onDragStart(idx: number) {
     setDragIdx(idx);

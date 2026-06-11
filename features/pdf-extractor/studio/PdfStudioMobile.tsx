@@ -159,7 +159,6 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
       const { success, childDocId } = await extractor.runFullPipeline(
         activeDoc.id,
         {
-          persist_output: true,
           onProgress: setLiveStatus,
           onTextDelta: setStreamingCleanText,
         },

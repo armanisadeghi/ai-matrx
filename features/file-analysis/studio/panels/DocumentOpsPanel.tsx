@@ -39,6 +39,7 @@ import {
 import { cn } from "@/lib/utils";
 import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
 import type { BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 
 interface Props {
   fileId: string;
@@ -69,7 +70,10 @@ export function DocumentOpsPanel({ fileId }: Props) {
     setError(null);
     setResult(null);
     try {
-      const r = await api.postPdfBlob(endpoint, { cld_id: fileId, ...body });
+      const r = await api.postPdfBlob(endpoint, {
+        ...buildPdfSourceFromFileId(fileId),
+        ...body,
+      });
       setResult({ op, result: r });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

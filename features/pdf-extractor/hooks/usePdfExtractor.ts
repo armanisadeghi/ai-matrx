@@ -6,6 +6,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ENDPOINTS } from "@/lib/api/endpoints";
+import { buildPdfSource } from "@/features/pdf/utils/source";
 import { supabase } from "@/utils/supabase/client";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import {
@@ -870,7 +871,6 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
   interface RunFullPipelineOptions {
     force_ocr?: boolean;
-    persist_output?: boolean;
     onProgress?: (message: string) => void;
     onTextDelta?: (accumulated: string) => void;
   }
@@ -909,27 +909,27 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
       try {
         const headers = await getAuthHeaders();
-        // Build a unified source. Prefer the cld_file id (the canonical
-        // pointer); fall back to a public URL if that's all we have.
+        // Canonical source wire — media.file_id / media.url / media.file_uri.
+        // The server's PdfRequest reads `options.force_ocr` (NOT top-level)
+        // and has no `persist_output` field (it always persists for signed-in
+        // users); both used to be sent at the top level and were silently
+        // dropped by Pydantic.
         const body: PdfFullPipelineBody = {
           options: {
             include_page_metadata: true,
             include_block_metadata: true,
             include_word_metadata: true,
             include_chunk_metadata: true,
+            force_ocr: options?.force_ocr ?? false,
           },
-          persist_output: options?.persist_output ?? true,
-          force_ocr: options?.force_ocr ?? false,
         };
-        if (sourceKind === "cld_file" && sourceId) {
-          body.media = { cld_id: sourceId };
-        } else if (sourceUrl) {
-          body.url = sourceUrl;
-        } else {
+        const wire = buildPdfSource({ sourceKind, sourceId, sourceUrl });
+        if (!wire) {
           throw new Error(
             "This document has no resolvable source — re-upload the PDF before re-processing.",
           );
         }
+        body.media = wire.media;
 
         const { childDocId } = await streamPdfFullPipeline({
           body,

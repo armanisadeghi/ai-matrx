@@ -47,6 +47,7 @@ import { usePageThumbnail } from "@/features/file-analysis/hooks/usePageThumbnai
 import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
 import type { BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
 import * as Api from "@/features/file-analysis/api/file-analysis";
+import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 
 interface Props {
   fileId: string;
@@ -92,7 +93,7 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
     setLastResult(null);
     try {
       const result = await pdfApi.postPdfBlob(endpoint, {
-        cld_id: fileId,
+        ...buildPdfSourceFromFileId(fileId),
         ...body,
       });
       setLastResult(result);

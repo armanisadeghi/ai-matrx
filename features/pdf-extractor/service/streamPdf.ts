@@ -183,8 +183,14 @@ export async function streamPdfClean(opts: {
 // ─── /pdf/full-pipeline ──────────────────────────────────────────────────────
 
 export interface PdfFullPipelineBody {
-  /** Either `media: { cld_id }` or `url` must be set; the hook owns this choice. */
-  media?: { cld_id: string };
+  /**
+   * Canonical MediaRef source — exactly one of `file_id` / `url` / `file_uri`
+   * inside `media`. Build it with `buildPdfSource` from
+   * `@/features/pdf/utils/source`; never hand-roll (the old `{ cld_id }`
+   * shape was silently dropped by the backend and 422'd every cloud doc).
+   */
+  media?: { file_id: string } | { url: string } | { file_uri: string };
+  /** Legacy top-level URL — still accepted, prefer `media`. */
   url?: string;
   /** Mirrors `PdfPipelineOptions` on the Python side. */
   options?: {
@@ -194,9 +200,9 @@ export interface PdfFullPipelineBody {
     include_chunk_metadata?: boolean;
     chunk_and_process_with_ai?: boolean;
     template_name?: string;
+    /** OCR override lives INSIDE options — the server reads `options.force_ocr`. */
+    force_ocr?: boolean;
   };
-  persist_output?: boolean;
-  force_ocr?: boolean;
 }
 
 export interface StreamPdfFullPipelineCallbacks {
