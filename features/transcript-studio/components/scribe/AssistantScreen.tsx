@@ -3,7 +3,6 @@
 import { Loader2 } from "lucide-react";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
-import { WorkingDocumentHeader } from "./WorkingDocumentHeader";
 
 interface AssistantScreenProps {
   sessionId: string;
@@ -23,14 +22,9 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Working document — shared collapsible accordion (identical on the Live
-          tab). Its bottom border is the single separator; the conversation
-          below flows seamlessly under the input. */}
-      <WorkingDocumentHeader sessionId={sessionId} />
-
       {/* Conversation + input — the same seamless column used by the chat and
-          agent-run routes. No background shift, no divider; content scrolls
-          under the input. */}
+          agent-run routes. The working document now lives at the ScribeScreen
+          level (shared across all tabs), so it's not rendered here. */}
       <div className="min-h-0 flex-1">
         <AgentConversationColumn
           conversationId={conversationId}

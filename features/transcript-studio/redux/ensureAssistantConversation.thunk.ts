@@ -154,7 +154,17 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
         const updated = await updateSession(sessionId, {
           assistantConversationId: newConversationId,
         });
-        dispatch(sessionUpserted(updated));
+        if (updated) {
+          dispatch(sessionUpserted(updated));
+        } else {
+          // Loud recovery: the session row is gone (deleted, or a local/optimistic
+          // session never persisted), so the conversation link can't be saved.
+          // eslint-disable-next-line no-console
+          console.warn(
+            "[studio] ensureAssistantConversation: session row missing — assistant_conversation_id not persisted (conversation will not survive refresh)",
+            { sessionId },
+          );
+        }
       } catch (err) {
         // Loud recovery: failing to persist means the next refresh orphans
         // this conversation again — surface it rather than swallow.

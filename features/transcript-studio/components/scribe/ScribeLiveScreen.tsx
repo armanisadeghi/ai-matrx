@@ -34,7 +34,6 @@ import { VoiceTranscriptStream } from "@/features/voice-agent/components/VoiceTr
 import { VoiceErrorBanner } from "@/features/voice-agent/components/VoiceErrorBanner";
 import { cn } from "@/lib/utils";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
-import { WorkingDocumentHeader } from "./WorkingDocumentHeader";
 
 interface ScribeLiveScreenProps {
   sessionId: string;
@@ -77,7 +76,11 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
   const instanceId = useVoiceAgentInstance({
     preset: "playground",
     instructions: buildLiveInstructions(docContent),
-    tools: [],
+    // Give the live voice agent the full set of realtime tools the platform
+    // supports (xAI Realtime built-ins: web + X search), matching what the
+    // normal agent can reach for live look-ups. Function/MCP tools (e.g. doc
+    // editing) require xAI function-calling — the deferred Phase 2.
+    tools: ["web_search", "x_search"],
     persist: false,
   });
 
@@ -130,12 +133,6 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
-      {/* Working document — identical accordion to the Agent tab, so the doc is
-          always visible/readable here too (the user's #1 ask for Live). */}
-      <div className="relative z-10">
-        <WorkingDocumentHeader sessionId={sessionId} />
-      </div>
-
       <VoiceAmbientGlow status={liveStatus} />
 
       {/* Transcript — fades older content so the eye is drawn to the mic. */}

@@ -158,7 +158,7 @@ export async function createSession(
 export async function updateSession(
   id: string,
   patch: UpdateSessionInput,
-): Promise<StudioSession> {
+): Promise<StudioSession | null> {
   const update: Record<string, unknown> = {};
   if (patch.title !== undefined) update.title = patch.title;
   if (patch.status !== undefined) update.status = patch.status;
@@ -174,18 +174,22 @@ export async function updateSession(
   if (patch.assistantConversationId !== undefined)
     update.assistant_conversation_id = patch.assistantConversationId;
 
+  // maybeSingle (not single): the session row may be gone (deleted, or a
+  // local/optimistic session never persisted) when a background update lands —
+  // e.g. persisting the assistant conversation id. A real error still throws;
+  // a missing row returns null so callers no-op instead of surfacing
+  // PostgREST's "Cannot coerce the result to a single JSON object".
   const { data, error } = await db
     .from("studio_sessions")
     .update(update)
     .eq("id", id)
     .select("*")
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
-    throw new Error(
-      `[studio] updateSession failed: ${error?.message ?? "no row returned"}`,
-    );
+  if (error) {
+    throw new Error(`[studio] updateSession failed: ${error.message}`);
   }
+  if (!data) return null;
   return rowToSession(data as SessionRow);
 }
 
@@ -415,21 +419,26 @@ export function rowToRecordingSegment(
 export async function setRecordingSegmentState(
   id: string,
   patch: { archivedAt?: string | null; detachedAt?: string | null },
-): Promise<import("../types").RecordingSegment> {
+): Promise<import("../types").RecordingSegment | null> {
   const update: Record<string, unknown> = {};
   if (patch.archivedAt !== undefined) update.archived_at = patch.archivedAt;
   if (patch.detachedAt !== undefined) update.detached_at = patch.detachedAt;
+  // maybeSingle (not single): the row may have been deleted out from under us
+  // (manual delete / discard race). A real error still throws; a gone row
+  // returns null so callers can no-op instead of surfacing PostgREST's cryptic
+  // "Cannot coerce the result to a single JSON object".
   const { data, error } = await db
     .from("studio_recording_segments")
     .update(update)
     .eq("id", id)
     .select("*")
-    .single();
-  if (error || !data) {
+    .maybeSingle();
+  if (error) {
     throw new Error(
-      `[studio] setRecordingSegmentState failed: ${error?.message ?? "no row"}`,
+      `[studio] setRecordingSegmentState failed: ${error.message}`,
     );
   }
+  if (!data) return null;
   return rowToRecordingSegment(data as RecordingSegmentRow);
 }
 
@@ -475,22 +484,25 @@ export async function insertRecordingSegment(
 export async function updateRecordingSegment(
   id: string,
   patch: import("../types").UpdateRecordingSegmentInput,
-): Promise<import("../types").RecordingSegment> {
+): Promise<import("../types").RecordingSegment | null> {
   const update: Record<string, unknown> = {};
   if (patch.audioPath !== undefined) update.audio_path = patch.audioPath;
   if (patch.tEnd !== undefined) update.t_end = patch.tEnd;
   if (patch.endedAt !== undefined) update.ended_at = patch.endedAt;
+  // maybeSingle (not single): a background finalize / audio-upload can land
+  // after the recording was deleted or discarded. A gone row returns null
+  // (callers no-op) rather than throwing PostgREST's "Cannot coerce the result
+  // to a single JSON object"; genuine errors still throw.
   const { data, error } = await db
     .from("studio_recording_segments")
     .update(update)
     .eq("id", id)
     .select("*")
-    .single();
-  if (error || !data) {
-    throw new Error(
-      `[studio] updateRecordingSegment failed: ${error?.message ?? "no row"}`,
-    );
+    .maybeSingle();
+  if (error) {
+    throw new Error(`[studio] updateRecordingSegment failed: ${error.message}`);
   }
+  if (!data) return null;
   return rowToRecordingSegment(data as RecordingSegmentRow);
 }
 

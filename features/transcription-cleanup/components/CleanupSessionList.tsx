@@ -104,6 +104,12 @@ export function CleanupSessionList({
   onDelete,
   showToolbar = true,
 }: CleanupSessionListProps) {
+  // Sessions hydrate from the persisted store on the client only; the server
+  // renders the empty/loading shell. Gate the list body on a post-mount flag
+  // so the first client render matches the server (no hydration mismatch).
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
   return (
     <div className="flex flex-col">
       {showToolbar && (
@@ -116,7 +122,7 @@ export function CleanupSessionList({
         </div>
       )}
 
-      {fetchStatus === "loading" && sessions.length === 0 ? (
+      {!mounted || (fetchStatus === "loading" && sessions.length === 0) ? (
         <div className="flex items-center gap-2 px-2 py-3 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           Loading sessions…

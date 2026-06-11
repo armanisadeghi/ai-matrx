@@ -5,6 +5,7 @@ import {
   AlignLeft,
   ChevronLeft,
   FileText,
+  FlaskConical,
   Loader2,
   Mic,
   MoreVertical,
@@ -38,12 +39,14 @@ import {
 } from "./SessionTranscriptViewer";
 import { ScribeCaptureScreen } from "./ScribeCaptureScreen";
 import { AssistantScreen } from "./AssistantScreen";
+import { ExperimentalAgentScreen } from "./ExperimentalAgentScreen";
 import { ScribeLiveScreen } from "./ScribeLiveScreen";
+import { WorkingDocumentHeader } from "./WorkingDocumentHeader";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { useStudioAutoLabel } from "../../hooks/useStudioAutoLabel";
 import { useStudioSession } from "../../hooks/useStudioSession";
 
-type Screen = "capture" | "agent" | "live";
+type Screen = "capture" | "agent" | "live" | "agent2";
 
 const REVIEW_MESSAGE =
   "A new recording was just added to this session. Please review the latest transcript and update the working document accordingly.";
@@ -63,6 +66,7 @@ const MODE_TABS: ModeTab[] = [
   { key: "capture", label: "Record", icon: Mic },
   { key: "agent", label: "Agent", icon: Webhook },
   { key: "live", label: "Live", icon: Radio },
+  { key: "agent2", label: "Agent+", icon: FlaskConical },
 ];
 
 export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
@@ -71,6 +75,12 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   const [screen, setScreen] = useState<Screen>("capture");
   const [menuOpen, setMenuOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
+  // Sessions hydrate from the persisted store on the client only, so the
+  // server renders the "Loading…" shell while the client would render the
+  // title — a hydration mismatch. Gate the title on a post-mount flag so the
+  // first client render matches the server.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [sessionViewer, setSessionViewer] =
     useState<SessionTranscriptMode | null>(null);
 
@@ -189,7 +199,7 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
             </button>
           )}
           <div className="hidden min-w-0 flex-1 sm:block">
-            {session ? (
+            {mounted && session ? (
               <EditableSessionTitle
                 sessionId={sessionId}
                 title={session.title}
@@ -218,7 +228,7 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
                   )}
                 >
                   <Icon className="h-3.5 w-3.5" />
-                  {label}
+                  <span className="hidden sm:inline">{label}</span>
                 </button>
               ))}
             </div>
@@ -279,6 +289,11 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
         </div>
       </header>
 
+      {/* Working document — rendered once here so it sits at the top of EVERY
+          tab identically (Record / Agent / Live / …). Single shared instance;
+          tabs below never duplicate it. */}
+      <WorkingDocumentHeader sessionId={sessionId} />
+
       {/* Body — all three modes stay mounted; switching tabs only flips
           visibility. This keeps one shared state across Record / Agent / Live:
           nothing unmounts, re-fetches, re-resolves the conversation, or flashes
@@ -292,6 +307,9 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
         </div>
         <div className={cn("h-full", screen !== "live" && "hidden")}>
           <ScribeLiveScreen sessionId={sessionId} />
+        </div>
+        <div className={cn("h-full", screen !== "agent2" && "hidden")}>
+          <ExperimentalAgentScreen sessionId={sessionId} />
         </div>
       </main>
 

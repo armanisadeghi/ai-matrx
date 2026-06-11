@@ -1,10 +1,10 @@
 import CaWcLanding from "@/features/legal/wc/components/landing/CaWcLanding";
+import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 
 export default function CaWcPage() {
   return (
-    <div className="h-dvh w-full overflow-y-auto bg-textured">
-      <div style={{ height: "var(--shell-header-h, 2.75rem)" }} />
+    <MarketingPageShell>
       <CaWcLanding />
-    </div>
+    </MarketingPageShell>
   );
 }

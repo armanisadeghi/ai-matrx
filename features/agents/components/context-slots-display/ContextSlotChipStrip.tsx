@@ -3,9 +3,8 @@
 /**
  * ContextSlotChipStrip
  *
- * Renders one row of `ContextSlotChip`s — one per live context entry on the
- * given conversation. Empty entries are filtered out. Pairs each entry with
- * its slot definition (if declared on the agent) for label / type metadata.
+ * Renders context slot chips for a conversation's live context entries.
+ * One entry → single chip. Multiple → collapsed "Context Items (N)" popover.
  *
  * Use this anywhere you want to show "what context is currently attached to
  * the next request" (e.g. above the chat input) or "what context this turn
@@ -19,6 +18,7 @@ import { selectInstanceContextEntries } from "@/features/agents/redux/execution-
 import { selectAgentContextSlots } from "@/features/agents/redux/agent-definition/selectors";
 import type { ContextSlot } from "@/features/agents/types/agent-api-types";
 import { ContextSlotChip } from "./ContextSlotChip";
+import { ContextSlotItemsPopover } from "./ContextSlotItemsPopover";
 import { cn } from "@/lib/utils";
 
 interface ContextSlotChipStripProps {
@@ -65,22 +65,36 @@ export function ContextSlotChipStrip({
 
   if (visibleEntries.length === 0) return null;
 
-  return (
-    <div className={cn("flex flex-wrap gap-1 items-center", className)}>
-      {showLabel && (
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">
-          Context
-        </span>
-      )}
-      {visibleEntries.map((entry) => (
+  const labelEl = showLabel ? (
+    <span className="text-[10px] uppercase tracking-wider text-muted-foreground mr-1">
+      Context
+    </span>
+  ) : null;
+
+  if (visibleEntries.length === 1) {
+    const entry = visibleEntries[0];
+    return (
+      <div className={cn("flex flex-wrap gap-1 items-center", className)}>
+        {labelEl}
         <ContextSlotChip
-          key={entry.key}
           conversationId={conversationId}
           agentId={agentId}
           entry={entry}
           slot={slotByKey.get(entry.key)}
         />
-      ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("flex flex-wrap gap-1 items-center", className)}>
+      {labelEl}
+      <ContextSlotItemsPopover
+        conversationId={conversationId}
+        agentId={agentId}
+        entries={visibleEntries}
+        slotByKey={slotByKey}
+      />
     </div>
   );
 }

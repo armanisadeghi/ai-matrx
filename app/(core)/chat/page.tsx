@@ -1,6 +1,5 @@
 import ChatLanding from "@/features/auth/components/module-landing/landings/ChatLanding";
 
-
 /**
  * `/chat` is the public-facing marketing surface for the Chat module. The
  * sidebar nav routes authenticated users straight to `/chat/new` (the
@@ -13,10 +12,5 @@ import ChatLanding from "@/features/auth/components/module-landing/landings/Chat
  * meaningful interaction.
  */
 export default function ChatPage() {
-  return (
-    <div className="h-dvh w-full overflow-y-auto bg-textured">
-      <div style={{ height: "var(--shell-header-h, 2.75rem)" }} />
-      <ChatLanding />
-    </div>
-  );
+  return <ChatLanding />;
 }

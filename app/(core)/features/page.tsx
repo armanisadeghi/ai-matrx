@@ -18,10 +18,9 @@ import {
   MODULE_LANDING_GROUPS,
 } from "@/features/auth/components/module-landing/landings/directory";
 
-
 export default function FeaturesIndexPage() {
   return (
-    <div className="min-h-dvh">
+    <div className="min-h-dvh pr-[var(--shell-marketing-pr)]">
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div
@@ -129,8 +128,8 @@ export default function FeaturesIndexPage() {
             Pick a surface, start building
           </h2>
           <p className="mt-4 text-muted-foreground text-lg mb-8">
-            Free to start, no credit card. Every surface above plays nicely
-            with the rest the moment you sign up.
+            Free to start, no credit card. Every surface above plays nicely with
+            the rest the moment you sign up.
           </p>
           <Button
             size="lg"

@@ -58,7 +58,18 @@ export interface TapButtonProps {
 const Wrap = forwardRef<
   HTMLButtonElement,
   TapButtonProps & { children: React.ReactNode }
->(function Wrap({ variant = "glass", children, ...props }, ref) {
+>(function Wrap(
+  {
+    variant = "glass",
+    children,
+    bgColor,
+    iconColor,
+    hoverBgColor,
+    activeBgColor,
+    ...props
+  },
+  ref,
+) {
   switch (variant) {
     case "transparent":
       return (
@@ -68,7 +79,14 @@ const Wrap = forwardRef<
       );
     case "solid":
       return (
-        <TapTargetButtonSolid ref={ref} {...props}>
+        <TapTargetButtonSolid
+          ref={ref}
+          bgColor={bgColor}
+          iconColor={iconColor}
+          hoverBgColor={hoverBgColor}
+          activeBgColor={activeBgColor}
+          {...props}
+        >
           {children}
         </TapTargetButtonSolid>
       );

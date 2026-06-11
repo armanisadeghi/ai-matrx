@@ -452,7 +452,7 @@ export function useCleanupSession() {
         if (!isCleanupPlaceholderTitle(liveTitle)) return;
         if (next.toLowerCase() === liveTitle.trim().toLowerCase()) return;
         void updateSession(sessionId, { title: next }).then((updated) => {
-          dispatch(sessionUpserted(updated));
+          if (updated) dispatch(sessionUpserted(updated));
         });
       };
 

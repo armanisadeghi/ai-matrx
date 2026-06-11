@@ -6,9 +6,14 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useState,
 } from "react";
 import { usePathname } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectChatIncognitoActive,
+  setChatIncognitoActive,
+  toggleChatIncognito,
+} from "./chat-incognito.slice";
 import { isNewChatRoute } from "./chat-incognito.routes";
 
 interface ChatIncognitoContextValue {
@@ -37,12 +42,13 @@ export function ChatIncognitoProvider({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const dispatch = useAppDispatch();
   const canUseIncognito = isNewChatRoute(pathname);
-  const [isIncognito, setIsIncognito] = useState(false);
+  const isIncognito = useAppSelector(selectChatIncognitoActive);
 
   useEffect(() => {
-    if (!canUseIncognito) setIsIncognito(false);
-  }, [canUseIncognito]);
+    if (!canUseIncognito) dispatch(setChatIncognitoActive(false));
+  }, [canUseIncognito, dispatch]);
 
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".shell-root");
@@ -60,11 +66,15 @@ export function ChatIncognitoProvider({
   }, [canUseIncognito, isIncognito]);
 
   const toggleIncognito = useCallback(() => {
-    setIsIncognito((value) => !value);
-  }, []);
+    dispatch(toggleChatIncognito());
+  }, [dispatch]);
 
   const value = useMemo(
-    () => ({ isIncognito, toggleIncognito, canUseIncognito }),
+    () => ({
+      isIncognito: canUseIncognito && isIncognito,
+      toggleIncognito,
+      canUseIncognito,
+    }),
     [isIncognito, toggleIncognito, canUseIncognito],
   );
 

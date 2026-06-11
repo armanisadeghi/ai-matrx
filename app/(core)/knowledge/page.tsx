@@ -1,5 +1,5 @@
 import KnowledgeShowcasePage from "@/features/knowledge/components/KnowledgeShowcasePage";
-
+import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 
 /**
  * `/knowledge` — informational showcase for the Matrx Knowledge System.
@@ -12,9 +12,8 @@ import KnowledgeShowcasePage from "@/features/knowledge/components/KnowledgeShow
  */
 export default function KnowledgePage() {
   return (
-    <div className="h-dvh w-full overflow-y-auto bg-textured">
-      <div style={{ height: "var(--shell-header-h, 2.75rem)" }} />
+    <MarketingPageShell>
       <KnowledgeShowcasePage />
-    </div>
+    </MarketingPageShell>
   );
 }

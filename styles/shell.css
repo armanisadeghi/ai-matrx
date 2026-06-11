@@ -11,6 +11,8 @@
 
 :root {
   --shell-header-h: 2.75rem;
+  /* Marketing pages: right inset so scroll content clears the header user avatar. */
+  --shell-marketing-pr: 3.5rem;
   --shell-sidebar-w: 2.75rem;
   --shell-sidebar-w-expanded: 13rem;
   --shell-dock-h: 3.75rem;

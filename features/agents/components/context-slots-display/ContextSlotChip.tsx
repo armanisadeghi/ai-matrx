@@ -22,37 +22,8 @@ import {
   FALLBACK_CONTEXT_ICON,
   CONTEXT_TYPE_CHIP_CLASS,
 } from "./contextSlotIcons";
+import { contextSlotValuePreview } from "./contextSlotPreview";
 import { ContextSlotDetailSheet } from "./ContextSlotDetailSheet";
-
-const PREVIEW_MAX = 32;
-
-function valuePreview(value: unknown, type: ContextObjectType): string {
-  if (value === undefined || value === null) return "";
-  if (type === "file_url" && typeof value === "string") {
-    try {
-      const url = new URL(value);
-      return url.pathname.split("/").pop() || url.hostname;
-    } catch {
-      return value.slice(0, PREVIEW_MAX);
-    }
-  }
-  if (typeof value === "string") {
-    const collapsed = value.replace(/\s+/g, " ").trim();
-    return collapsed.length > PREVIEW_MAX
-      ? collapsed.slice(0, PREVIEW_MAX) + "…"
-      : collapsed;
-  }
-  if (typeof value === "number" || typeof value === "boolean") {
-    return String(value);
-  }
-  // Objects / arrays — show a compact JSON shape.
-  try {
-    const json = JSON.stringify(value);
-    return json.length > PREVIEW_MAX ? json.slice(0, PREVIEW_MAX) + "…" : json;
-  } catch {
-    return "[object]";
-  }
-}
 
 interface ContextSlotChipProps {
   conversationId: string;
@@ -79,7 +50,7 @@ export function ContextSlotChip({
 
   const label = slot?.label?.trim() || entry.label?.trim() || entry.key;
   const preview = useMemo(
-    () => valuePreview(entry.value, type),
+    () => contextSlotValuePreview(entry.value, type),
     [entry.value, type],
   );
   const tooltip = preview ? `${entry.key} — ${preview}` : entry.key;

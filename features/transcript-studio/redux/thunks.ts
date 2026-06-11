@@ -140,13 +140,14 @@ export const createSessionThunk = createAsyncThunk<
 );
 
 export const updateSessionThunk = createAsyncThunk<
-  StudioSession,
+  StudioSession | null,
   { id: string; patch: UpdateSessionInput }
 >(
   "transcriptStudio/updateSession",
   async ({ id, patch }, { dispatch, rejectWithValue }) => {
     try {
       const session = await updateSession(id, patch);
+      if (!session) return null; // row gone — benign no-op
       dispatch(sessionUpserted(session));
       return session;
     } catch (err) {
@@ -177,7 +178,7 @@ export const deleteSessionThunk = createAsyncThunk<string, string>(
 // ── Recording lifecycle ──────────────────────────────────────────────
 
 export const startSessionRecordingThunk = createAsyncThunk<
-  StudioSession,
+  StudioSession | null,
   { id: string }
 >(
   "transcriptStudio/startSessionRecording",
@@ -186,6 +187,7 @@ export const startSessionRecordingThunk = createAsyncThunk<
       const session = await updateSession(id, {
         status: "recording",
       });
+      if (!session) return null; // row gone — benign no-op
       dispatch(sessionUpserted(session));
       return session;
     } catch (err) {
@@ -198,7 +200,7 @@ export const startSessionRecordingThunk = createAsyncThunk<
 );
 
 export const stopSessionRecordingThunk = createAsyncThunk<
-  StudioSession,
+  StudioSession | null,
   { id: string; totalDurationMs: number }
 >(
   "transcriptStudio/stopSessionRecording",
@@ -209,6 +211,7 @@ export const stopSessionRecordingThunk = createAsyncThunk<
         endedAt: new Date().toISOString(),
         totalDurationMs,
       });
+      if (!session) return null; // row gone — benign no-op
       dispatch(sessionUpserted(session));
       return session;
     } catch (err) {
@@ -491,6 +494,8 @@ export const finalizeRecordingSegmentThunk = createAsyncThunk<
         tEnd,
         endedAt: new Date().toISOString(),
       });
+      // Row removed mid-finalize (deleted / discarded) — benign no-op.
+      if (!segment) return null;
       dispatch(recordingSegmentUpserted({ sessionId, segment }));
       return segment;
     } catch (err) {
@@ -538,7 +543,8 @@ export const uploadRecordingAudioThunk = createAsyncThunk<
       const segment = await updateRecordingSegment(recordingSegmentId, {
         audioPath: upload.fileId,
       });
-      dispatch(recordingSegmentUpserted({ sessionId, segment }));
+      // Recording was deleted/discarded before the upload landed — drop it.
+      if (segment) dispatch(recordingSegmentUpserted({ sessionId, segment }));
     } catch (err) {
       // Audio is still safe in IndexedDB; surface quietly and continue.
       // eslint-disable-next-line no-console
@@ -625,6 +631,7 @@ export const reconcileStuckRecordingsThunk = createAsyncThunk<
           tEnd,
           endedAt: new Date().toISOString(),
         });
+        if (!updated) continue; // removed while reconciling — skip
         dispatch(recordingSegmentUpserted({ sessionId, segment: updated }));
         healed += 1;
       } catch (err) {
@@ -646,7 +653,7 @@ export const reconcileStuckRecordingsThunk = createAsyncThunk<
           status: "stopped",
           endedAt: session.endedAt ?? new Date().toISOString(),
         });
-        dispatch(sessionUpserted(fixedSession));
+        if (fixedSession) dispatch(sessionUpserted(fixedSession));
       } catch (err) {
         // eslint-disable-next-line no-console
         console.error("[studio] reconcile: failed to unstick session", err);
@@ -721,7 +728,7 @@ export const archiveRecordingThunk = createAsyncThunk<
       const segment = await setRecordingSegmentState(recordingSegmentId, {
         archivedAt: archived ? new Date().toISOString() : null,
       });
-      dispatch(recordingSegmentUpserted({ sessionId, segment }));
+      if (segment) dispatch(recordingSegmentUpserted({ sessionId, segment }));
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to archive recording";
@@ -742,7 +749,7 @@ export const detachRecordingThunk = createAsyncThunk<
       const segment = await setRecordingSegmentState(recordingSegmentId, {
         detachedAt: new Date().toISOString(),
       });
-      dispatch(recordingSegmentUpserted({ sessionId, segment }));
+      if (segment) dispatch(recordingSegmentUpserted({ sessionId, segment }));
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to remove recording";
@@ -763,6 +770,7 @@ export const restoreRecordingThunk = createAsyncThunk<
       const segment = await setRecordingSegmentState(recordingSegmentId, {
         detachedAt: null,
       });
+      if (!segment) return; // row gone — nothing to restore
       dispatch(
         recordingSegmentUpserted({ sessionId: segment.sessionId, segment }),
       );

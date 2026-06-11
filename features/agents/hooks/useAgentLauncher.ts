@@ -242,6 +242,7 @@ export function useAgentLauncher(
     apiEndpointMode,
     jsonExtraction,
     retainOnUnmount = false,
+    isEphemeral,
   } = options ?? {};
 
   useEffect(() => {
@@ -261,6 +262,7 @@ export function useAgentLauncher(
       showAutoClearToggle,
       autoClearConversation,
       jsonExtraction,
+      isEphemeral,
     })
       .then((result) => {
         createdId = result.conversationId;

@@ -69,6 +69,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectConversationSandboxOverride } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectChatIncognitoActive } from "@/features/agents/components/chat/chat-incognito.slice";
 import {
   selectShowCreatorPanel,
   toggleShowCreatorPanel,
@@ -135,6 +136,12 @@ export function RunControlsMenu({
   const sandboxOverride = useAppSelector(
     selectConversationSandboxOverride(conversationId),
   );
+  const sourceFeature = useAppSelector(
+    (s) =>
+      s.conversations.byConversationId[conversationId]?.sourceFeature ?? null,
+  );
+  const chatIncognito = useAppSelector(selectChatIncognitoActive);
+  const sandboxBlocked = chatIncognito && sourceFeature === "chat-route";
   // Surface-scoped binding: a box bound for THIS conversation's surface.
   const surfaceSandbox = useAppSelector((s) => {
     const sf = s.conversations.byConversationId[conversationId]?.sourceFeature;
@@ -168,11 +175,14 @@ export function RunControlsMenu({
   const hasModelOverride = !!(
     overrideState?.overrides && "model" in overrideState.overrides
   );
+  const BASE_TABS_FOR_RUN: TabDef[] = sandboxBlocked
+    ? BASE_TABS.filter((tab) => tab.id !== "sandbox")
+    : BASE_TABS;
   const tabs: TabDef[] = [
     ...(includeAttach ? [ATTACH_TAB] : []),
     CONTEXT_TAB,
     ...(hasOverrideLayer ? [MODEL_TAB] : []),
-    ...BASE_TABS,
+    ...BASE_TABS_FOR_RUN,
     ...(showCreatorTab ? [CREATOR_TAB] : []),
   ];
 
@@ -186,12 +196,13 @@ export function RunControlsMenu({
   const activeTab: Tab =
     (tab === "model" && !hasOverrideLayer) ||
     (tab === "attach" && !includeAttach) ||
-    (tab === "creator" && !showCreatorTab)
+    (tab === "creator" && !showCreatorTab) ||
+    (tab === "sandbox" && sandboxBlocked)
       ? "tools"
       : tab;
 
   const addedCount = settings?.addedTools?.length ?? 0;
-  const hasSandbox = !!(sandboxOverride ?? surfaceSandbox);
+  const hasSandbox = !sandboxBlocked && !!(sandboxOverride ?? surfaceSandbox);
   const isCustomized =
     addedCount > 0 ||
     hasSandbox ||

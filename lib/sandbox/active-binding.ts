@@ -42,7 +42,11 @@ import {
   selectActiveSandboxId,
   selectActiveSandboxProxyUrl,
 } from "@/features/code/redux/codeWorkspaceSlice";
-import { selectConversationSandboxOverride } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import {
+  selectConversationIsEphemeral,
+  selectConversationSandboxOverride,
+} from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
+import { selectChatIncognitoActive } from "@/features/agents/components/chat/chat-incognito.slice";
 
 /** Loud, greppable prefix. Every branch of the binding chain logs under this. */
 const LOG = "[sandbox-binding]";
@@ -104,15 +108,26 @@ export function resolveAgentSandboxRef(
   state: RootState,
   conversationId: string | null | undefined,
 ): ResolvedSandboxRef | null {
+  if (conversationId && selectConversationIsEphemeral(conversationId)(state)) {
+    return null;
+  }
+
+  const sourceFeature = conversationId
+    ? state.conversations?.byConversationId?.[conversationId]?.sourceFeature
+    : undefined;
+
+  // Chat incognito: never attach org/user sandboxes on the chat route, even
+  // when a surface-default box is configured in preferences.
+  if (sourceFeature === "chat-route" && selectChatIncognitoActive(state)) {
+    return null;
+  }
+
   // Level 1: explicit per-conversation override (applies on ANY surface — the
   // user pinned this specific conversation to a box).
   const override = conversationId
     ? selectConversationSandboxOverride(conversationId)(state)
     : null;
-  if (
-    override?.rowId &&
-    (override.proxyUrl || override.kind === "local-pc")
-  ) {
+  if (override?.rowId && (override.proxyUrl || override.kind === "local-pc")) {
     return { ...override, source: "conversation-override" };
   }
 
@@ -122,15 +137,13 @@ export function resolveAgentSandboxRef(
   // there's no visible/unbindable control). Route-based detection is unsafe
   // (a background transcription runs while the user sits on /chat), so we read
   // the conversation's OWN persisted sourceFeature.
-  const sourceFeature = conversationId
-    ? state.conversations?.byConversationId?.[conversationId]?.sourceFeature
-    : undefined;
   if (!sourceFeature) return null;
 
   // Level 2: the box bound for THIS surface, if any.
   const surfaceBound =
-    state.userPreferences?.coding?.activeAgentSandboxBySurface?.[sourceFeature] ??
-    null;
+    state.userPreferences?.coding?.activeAgentSandboxBySurface?.[
+      sourceFeature
+    ] ?? null;
   if (
     surfaceBound?.rowId &&
     (surfaceBound.proxyUrl || surfaceBound.kind === "local-pc")
@@ -161,7 +174,9 @@ export function resolveAgentSandboxRef(
  * Returns `null` (and the binding is omitted) when the box isn't running —
  * the mint route rejects non-running sandboxes.
  */
-async function fetchAccessToken(sandboxRowId: string): Promise<CachedToken | null> {
+async function fetchAccessToken(
+  sandboxRowId: string,
+): Promise<CachedToken | null> {
   const cached = TOKEN_CACHE.get(sandboxRowId);
   if (isStillValid(cached)) return cached;
 
@@ -189,9 +204,11 @@ async function fetchAccessToken(sandboxRowId: string): Promise<CachedToken | nul
     );
     return null;
   }
-  const json = (await resp.json().catch(() => null)) as
-    | { token?: string; exp?: number; expires_at?: string }
-    | null;
+  const json = (await resp.json().catch(() => null)) as {
+    token?: string;
+    exp?: number;
+    expires_at?: string;
+  } | null;
 
   // Expiry comes back as EITHER `exp` (unix seconds, legacy) OR `expires_at`
   // (ISO string — what the orchestrator actually returns:
@@ -233,9 +250,7 @@ export async function getActiveSandboxBinding(
   conversationId?: string | null,
 ): Promise<SandboxBindingPayload | null> {
   const state =
-    typeof stateOrGetState === "function"
-      ? stateOrGetState()
-      : stateOrGetState;
+    typeof stateOrGetState === "function" ? stateOrGetState() : stateOrGetState;
 
   const ref = resolveAgentSandboxRef(state, conversationId);
   if (!ref) return null;

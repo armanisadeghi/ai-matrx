@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { listSessionsServer } from "@/features/transcript-studio/service/studioService";
 import { StudioHydrator } from "@/features/transcript-studio/route/StudioHydrator";
+import { GlobalRecordingIndicator } from "@/features/transcript-studio/components/recording/GlobalRecordingIndicator";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/transcripts", {
@@ -43,6 +44,9 @@ export default async function ScribeLayout({
           <Suspense fallback={null}>{children}</Suspense>
         </div>
       </div>
+      {/* Persistent recording control — floats over every Scribe screen while a
+          recording is active, so navigating away never hides or risks it. */}
+      <GlobalRecordingIndicator />
     </>
   );
 }

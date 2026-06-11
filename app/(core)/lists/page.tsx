@@ -1,11 +1,10 @@
 import PicklistLanding from "@/features/udt-picklist/PicklistLanding";
-
+import { MarketingPageShell } from "@/features/shell/components/MarketingPageShell";
 
 export default function PicklistsLandingPage() {
   return (
-    <div className="h-dvh w-full overflow-y-auto bg-textured">
-      <div style={{ height: "var(--shell-header-h, 2.75rem)" }} />
+    <MarketingPageShell>
       <PicklistLanding />
-    </div>
+    </MarketingPageShell>
   );
 }

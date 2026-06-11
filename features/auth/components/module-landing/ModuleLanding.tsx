@@ -110,7 +110,7 @@ export function ModuleLanding({
     .map((href) => MODULE_LANDING_DIRECTORY.find((e) => e.href === href))
     .filter((entry): entry is NonNullable<typeof entry> => entry != null);
   return (
-    <div className="min-h-dvh">
+    <div className="min-h-dvh pr-[var(--shell-marketing-pr)]">
       <AuthedWorkspaceCTA
         workspaceHref={workspaceHref}
         workspaceLabel={workspaceLabel}
@@ -222,7 +222,9 @@ export function ModuleLanding({
                     {step.number}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-base mb-1">{step.title}</h3>
+                    <h3 className="font-semibold text-base mb-1">
+                      {step.title}
+                    </h3>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {step.description}
                     </p>
