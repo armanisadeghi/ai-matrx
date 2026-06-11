@@ -12018,6 +12018,7 @@ export type Database = {
           image_url: string | null
           is_published: boolean
           og_image_url: string | null
+          script: string | null
           show_id: string | null
           slug: string
           speakers: Json | null
@@ -12039,6 +12040,7 @@ export type Database = {
           image_url?: string | null
           is_published?: boolean
           og_image_url?: string | null
+          script?: string | null
           show_id?: string | null
           slug: string
           speakers?: Json | null
@@ -12060,6 +12062,7 @@ export type Database = {
           image_url?: string | null
           is_published?: boolean
           og_image_url?: string | null
+          script?: string | null
           show_id?: string | null
           slug?: string
           speakers?: Json | null
@@ -21897,6 +21900,7 @@ export type Database = {
           data: Json
           domain: string
           id: string
+          is_deleted: boolean
           kind: string
           origin_url: string | null
           updated_at: string
@@ -21908,6 +21912,7 @@ export type Database = {
           data?: Json
           domain: string
           id: string
+          is_deleted?: boolean
           kind: string
           origin_url?: string | null
           updated_at?: string
@@ -21919,6 +21924,7 @@ export type Database = {
           data?: Json
           domain?: string
           id?: string
+          is_deleted?: boolean
           kind?: string
           origin_url?: string | null
           updated_at?: string
@@ -22754,6 +22760,7 @@ export type Database = {
           node_id: string | null
           payload: Json
           run_id: string
+          seq: number | null
           spec_type: string | null
           step: number | null
         }
@@ -22770,6 +22777,7 @@ export type Database = {
           node_id?: string | null
           payload: Json
           run_id: string
+          seq?: number | null
           spec_type?: string | null
           step?: number | null
         }
@@ -22786,6 +22794,7 @@ export type Database = {
           node_id?: string | null
           payload?: Json
           run_id?: string
+          seq?: number | null
           spec_type?: string | null
           step?: number | null
         }
@@ -22923,6 +22932,7 @@ export type Database = {
           definition_id: string
           definition_version_id: string | null
           error: Json | null
+          event_seq: number
           id: string
           input: Json
           interrupt_payload: Json | null
@@ -22951,6 +22961,7 @@ export type Database = {
           definition_id: string
           definition_version_id?: string | null
           error?: Json | null
+          event_seq?: number
           id?: string
           input?: Json
           interrupt_payload?: Json | null
@@ -22979,6 +22990,7 @@ export type Database = {
           definition_id?: string
           definition_version_id?: string | null
           error?: Json | null
+          event_seq?: number
           id?: string
           input?: Json
           interrupt_payload?: Json | null
@@ -28840,6 +28852,10 @@ export type Database = {
         Returns: undefined
       }
       mtx_is_durable_media_url: { Args: { url: string }; Returns: boolean }
+      page_extraction_clear_job_results: {
+        Args: { p_job_id: string }
+        Returns: undefined
+      }
       pin_prompt_app_to_version: {
         Args: { p_app_id: string; p_version_id: string }
         Returns: Json
