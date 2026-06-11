@@ -292,6 +292,7 @@ const COLOR = {
   cyan: "\x1b[36m",
   green: "\x1b[32m",
   red: "\x1b[31m",
+  white: "\x1b[97m",
 };
 
 function hasAnyFindings(r: Report): boolean {
@@ -318,7 +319,7 @@ function section(label: string, findings: Finding[]) {
     const head =
       i === 0 ? `${COLOR.yellow}${pad}${COLOR.reset}` : " ".repeat(13);
     process.stdout.write(
-      `  ${head}${COLOR.cyan}${f.file}${loc}${COLOR.reset}  ${COLOR.dim}${f.detail}${COLOR.reset}\n`,
+      `  ${head}${COLOR.cyan}${f.file}${loc}${COLOR.reset}  ${COLOR.white}${f.detail}${COLOR.reset}\n`,
     );
   }
 }
@@ -341,7 +342,7 @@ function main() {
     report.frozenUrlCaptures.length;
 
   process.stdout.write(
-    `${WARN_TAG}Doctrine: ${total} new primitive(s)/flag(s) — confirm none duplicate an existing one.\n\n`,
+    `\n${WARN_TAG}Doctrine: ${total} new primitive(s)/flag(s) — confirm none duplicate an existing one.\n\n`,
   );
 
   section("Components", report.newComponents);
@@ -358,7 +359,7 @@ function main() {
     return 1;
   }
   process.stdout.write(
-    `\n  ${COLOR.dim}Extend before you create (PRINCIPLES.md, anti-patterns #1-#4). --strict to block.${COLOR.reset}\n`,
+    `\n  ${COLOR.white}Extend before you create (PRINCIPLES.md, anti-patterns #1-#4). --strict to block.${COLOR.reset}\n`,
   );
   return 0;
 }

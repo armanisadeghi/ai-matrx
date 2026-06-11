@@ -1,10 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, Maximize2, Volume2, VolumeX } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  Loader2,
+  Maximize2,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
+import { useWorkingDocumentDraft } from "../../hooks/useWorkingDocumentDraft";
 import { FocusedDocumentEditor } from "./FocusedDocumentEditor";
 
 interface WorkingDocumentHeaderProps {
@@ -32,6 +40,15 @@ export function WorkingDocumentHeader({
 
   const workingDoc = assistant.workingDocument;
   const docContent = workingDoc?.content ?? "";
+
+  // Inline editing — the document is collaborative: the agent updates it each
+  // round and the user edits it back. Shares the same draft/autosave/realtime-
+  // merge logic as the full-screen FocusedDocumentEditor.
+  const { draft, saving, onChange, flush } = useWorkingDocumentDraft(
+    sessionId,
+    workingDoc?.id,
+    docContent,
+  );
 
   const handleReadAloud = async () => {
     if (!docContent.trim()) return;
@@ -110,15 +127,27 @@ export function WorkingDocumentHeader({
         </button>
       </div>
       {docOpen && (
-        <div className="max-h-[40dvh] overflow-y-auto px-4 pb-3 pt-1">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-            {docContent || (
-              <span className="italic text-muted-foreground">
-                Empty. Ask the agent to draft, splice, or rework your recordings
-                — it builds the document here.
+        <div className="flex max-h-[40dvh] flex-col px-2 pb-2 pt-1">
+          <div className="mb-1 flex items-center justify-end px-2 text-[11px] text-muted-foreground">
+            {saving ? (
+              <span className="flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Saving
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                <Check className="h-3 w-3" />
+                Saved
               </span>
             )}
-          </p>
+          </div>
+          <textarea
+            value={draft}
+            onChange={(e) => onChange(e.target.value)}
+            onBlur={flush}
+            placeholder="Empty. Ask the agent to draft, splice, or rework your recordings — or type here. Your edits and the agent's stay in sync each round."
+            className="min-h-[8rem] flex-1 resize-none rounded-md bg-muted/40 px-3 py-2 text-base leading-relaxed text-foreground outline-none ring-1 ring-inset ring-transparent transition-shadow placeholder:text-muted-foreground focus:bg-background focus:ring-border"
+          />
         </div>
       )}
 

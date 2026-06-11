@@ -27,6 +27,7 @@ import {
 import { ContextSlotChipStrip } from "@/features/agents/components/context-slots-display/ContextSlotChipStrip";
 import { ContextSlotChip } from "@/features/agents/components/context-slots-display/ContextSlotChip";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
+import { ResourceAttachmentTile } from "./ResourceAttachmentTile";
 import {
   DEMO_CONV_MULTI,
   DEMO_CONV_SINGLE,
@@ -182,11 +183,11 @@ export function UserMessageChipsDemo() {
             User Message Chips
           </h1>
           <p className="text-sm text-muted-foreground">
-            Production attachment tiles in{" "}
-            <code className="text-xs">AgentUserMessage</code> and{" "}
-            <code className="text-xs">SmartAgentResourceChips</code>. Style
-            explorations below are kept for future tuning — visit{" "}
-            <code className="text-xs">/demos/agents/user-message-chips</code>.
+            Production tiles in{" "}
+            <code className="text-xs">AgentUserMessage</code>,{" "}
+            <code className="text-xs">SmartAgentResourceChips</code>, and{" "}
+            <code className="text-xs">ContextSlotChipStrip</code> (single +
+            group). Style explorations below are kept for future tuning.
           </p>
         </header>
 
@@ -322,10 +323,19 @@ export function UserMessageChipsDemo() {
               conversationId={DEMO_CONV_MULTI}
               agentId={null}
             />
-            <div className="flex flex-wrap gap-1">
-              <DemoAttachmentChip spec={DEMO_LEGACY_ATTACHMENTS[0]} />
-              <DemoAttachmentChip spec={DEMO_LEGACY_ATTACHMENTS[1]} />
-              <DemoAttachmentChip spec={DEMO_LEGACY_ATTACHMENTS[6]} />
+            <div className="flex flex-wrap gap-1.5">
+              {DEMO_LEGACY_ATTACHMENTS.slice(0, 3).map((spec) => {
+                const Icon = ATTACHMENT_ICONS[spec.id] ?? FileText;
+                return (
+                  <ResourceAttachmentTile
+                    key={spec.id}
+                    typeLabel={spec.label}
+                    title={spec.title}
+                    icon={Icon}
+                    themeKey={spec.id}
+                  />
+                );
+              })}
             </div>
             <p className="text-xs text-foreground whitespace-pre-wrap">
               Can you go ahead and get this working document ready with the

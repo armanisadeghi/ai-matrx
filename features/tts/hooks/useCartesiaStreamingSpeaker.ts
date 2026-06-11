@@ -33,30 +33,30 @@
  * already has to lazy-load, so there's no second roundtrip.
  */
 
-'use client';
+"use client";
 
-import { useEffect, useRef, useCallback, useState } from 'react';
-import { CartesiaClient, WebPlayer } from '@cartesia/cartesia-js';
-import { useAppSelector } from '@/lib/redux/hooks';
-import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
-import { toast } from 'sonner';
-import { chunkTextForSpeech } from '../utils/chunk-text-for-speech';
+import { useEffect, useRef, useCallback, useState } from "react";
+import { CartesiaClient, WebPlayer } from "@cartesia/cartesia-js";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
+import { toast } from "sonner";
+import { chunkTextForSpeech } from "../utils/chunk-text-for-speech";
 import {
   buildGenerationConfig,
   CARTESIA_API_VERSION,
   resolveVoiceId,
   TTS_MODEL_ID,
   TTS_STREAMING_BUFFER_SEC,
-} from '@/lib/cartesia/config';
+} from "@/lib/cartesia/config";
 
 export type SpeakerPhase =
-  | 'idle'
-  | 'fetching-token'
-  | 'connecting'
-  | 'sending'
-  | 'playing'
-  | 'paused'
-  | 'error';
+  | "idle"
+  | "fetching-token"
+  | "connecting"
+  | "sending"
+  | "playing"
+  | "paused"
+  | "error";
 
 export interface UseCartesiaStreamingSpeakerOptions {
   processMarkdown?: boolean;
@@ -70,18 +70,16 @@ export interface UseCartesiaStreamingSpeakerOptions {
   nextChunkMax?: number;
 }
 
-type CartesiaWs = ReturnType<CartesiaClient['tts']['websocket']>;
+type CartesiaWs = ReturnType<CartesiaClient["tts"]["websocket"]>;
 
-export function useCartesiaStreamingSpeaker(
-  {
-    processMarkdown = true,
-    initialLoading = false,
-    firstChunkMax,
-    nextChunkMax,
-  }: UseCartesiaStreamingSpeakerOptions = {},
-) {
+export function useCartesiaStreamingSpeaker({
+  processMarkdown = true,
+  initialLoading = false,
+  firstChunkMax,
+  nextChunkMax,
+}: UseCartesiaStreamingSpeakerOptions = {}) {
   const [phase, setPhase] = useState<SpeakerPhase>(
-    initialLoading ? 'fetching-token' : 'idle',
+    initialLoading ? "fetching-token" : "idle",
   );
 
   const websocketRef = useRef<CartesiaWs | null>(null);
@@ -91,13 +89,45 @@ export function useCartesiaStreamingSpeaker(
   /** AbortController for the current speak session. */
   const sessionRef = useRef<AbortController | null>(null);
 
+  // ── Incremental streaming session ──────────────────────────────────────
+  // For live TTS that is fed text as it arrives (token deltas), rather than the
+  // one-shot `speak(fullText)`. We open ONE Cartesia context and push completed
+  // sentence-scale chunks into it via ws.send (first) / ws.continue (rest) as
+  // they become available, so audio starts before the response is finished.
+  interface StreamSession {
+    session: AbortController;
+    contextId: string;
+    baseRequest: {
+      modelId: string;
+      voice: { mode: "id"; id: string };
+      language: string;
+      contextId: string;
+      generationConfig: ReturnType<typeof buildGenerationConfig>;
+    };
+    /** Chars of the RAW cumulative text already dispatched to TTS. */
+    sentLen: number;
+    /** Whether the first ws.send has happened (subsequent use ws.continue). */
+    started: boolean;
+    /** Whether player.play() has been kicked off for this session's source. */
+    playStarted: boolean;
+    /** Whether the context has been closed (continue:false sent). */
+    finished: boolean;
+  }
+  const streamRef = useRef<StreamSession | null>(null);
+  // Serializes begin → push* → finish so async sends never race or reorder.
+  const opQueueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const enqueueOp = useCallback((fn: () => Promise<void>): Promise<unknown> => {
+    opQueueRef.current = opQueueRef.current.then(fn, fn);
+    return opQueueRef.current;
+  }, []);
+
   // Primitive selectors — each returns a scalar so unrelated userPreferences
   // updates don't re-render the speaker.
   const voiceId = useAppSelector((s) =>
-    resolveVoiceId(s.userPreferences.voice?.voice, 'assistant'),
+    resolveVoiceId(s.userPreferences.voice?.voice, "assistant"),
   );
   const language = useAppSelector(
-    (s) => s.userPreferences.voice?.language || 'en',
+    (s) => s.userPreferences.voice?.language || "en",
   );
   const speed = useAppSelector((s) => s.userPreferences.voice?.speed ?? 0);
 
@@ -107,6 +137,8 @@ export function useCartesiaStreamingSpeaker(
       mountedRef.current = false;
       sessionRef.current?.abort();
       sessionRef.current = null;
+      streamRef.current?.session.abort();
+      streamRef.current = null;
       if (websocketRef.current) {
         try {
           websocketRef.current.disconnect();
@@ -132,40 +164,40 @@ export function useCartesiaStreamingSpeaker(
   const ensureConnection = useCallback(async () => {
     if (websocketRef.current) return;
 
-    setPhaseIfMounted('fetching-token');
+    setPhaseIfMounted("fetching-token");
     let tokenData: { token: string };
     try {
-      const res = await fetch('/api/cartesia');
+      const res = await fetch("/api/cartesia");
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `Token fetch failed: ${res.status}`);
       }
       tokenData = await res.json();
     } catch (err) {
-      setPhaseIfMounted('error');
+      setPhaseIfMounted("error");
       throw err;
     }
 
-    setPhaseIfMounted('connecting');
+    setPhaseIfMounted("connecting");
     try {
       const client = new CartesiaClient({
-        cartesiaVersion: CARTESIA_API_VERSION as unknown as '2024-06-10',
+        cartesiaVersion: CARTESIA_API_VERSION as unknown as "2024-06-10",
       });
       const ws = client.tts.websocket({
-        container: 'raw',
-        encoding: 'pcm_f32le',
+        container: "raw",
+        encoding: "pcm_f32le",
         sampleRate: 44100,
       });
 
       const ctx = await ws.connect({ accessToken: tokenData.token });
-      ctx.on('close', () => {
+      ctx.on("close", () => {
         websocketRef.current = null;
-        setPhaseIfMounted('idle');
+        setPhaseIfMounted("idle");
       });
 
       websocketRef.current = ws;
     } catch (err) {
-      setPhaseIfMounted('error');
+      setPhaseIfMounted("error");
       throw err;
     }
 
@@ -188,7 +220,7 @@ export function useCartesiaStreamingSpeaker(
         ? parseMarkdownToText(inputText)
         : inputText;
       if (!processed.trim()) {
-        toast.error('Nothing to speak');
+        toast.error("Nothing to speak");
         return;
       }
 
@@ -200,7 +232,7 @@ export function useCartesiaStreamingSpeaker(
         await ensureConnection();
         if (session.signal.aborted) return;
 
-        setPhaseIfMounted('sending');
+        setPhaseIfMounted("sending");
 
         const chunks = chunkTextForSpeech(processed, {
           lang: language,
@@ -208,14 +240,14 @@ export function useCartesiaStreamingSpeaker(
           nextChunkMax,
         });
         if (chunks.length === 0) {
-          setPhaseIfMounted('idle');
+          setPhaseIfMounted("idle");
           return;
         }
 
         const contextId = cryptoRandomId();
         const baseRequest = {
           modelId: TTS_MODEL_ID,
-          voice: { mode: 'id' as const, id: voiceId },
+          voice: { mode: "id" as const, id: voiceId },
           language,
           contextId,
           generationConfig: buildGenerationConfig({ speed }),
@@ -233,13 +265,15 @@ export function useCartesiaStreamingSpeaker(
         if (session.signal.aborted) return;
 
         hasPlayedRef.current = true;
-        setPhaseIfMounted('playing');
+        setPhaseIfMounted("playing");
 
-        const playPromise = player.play(firstResp.source).catch((err: unknown) => {
-          if (!session.signal.aborted) {
-            console.error('[useCartesiaStreamingSpeaker] play failed:', err);
-          }
-        });
+        const playPromise = player
+          .play(firstResp.source)
+          .catch((err: unknown) => {
+            if (!session.signal.aborted) {
+              console.error("[useCartesiaStreamingSpeaker] play failed:", err);
+            }
+          });
 
         for (let i = 1; i < chunks.length; i++) {
           if (session.signal.aborted) return;
@@ -252,13 +286,13 @@ export function useCartesiaStreamingSpeaker(
 
         await playPromise;
 
-        if (!session.signal.aborted) setPhaseIfMounted('idle');
+        if (!session.signal.aborted) setPhaseIfMounted("idle");
       } catch (err) {
         if (session.signal.aborted) return;
-        const msg = err instanceof Error ? err.message : 'Speech failed';
-        console.error('[useCartesiaStreamingSpeaker]', msg);
-        toast.error('Speech playback failed', { description: msg });
-        setPhaseIfMounted('error');
+        const msg = err instanceof Error ? err.message : "Speech failed";
+        console.error("[useCartesiaStreamingSpeaker]", msg);
+        toast.error("Speech playback failed", { description: msg });
+        setPhaseIfMounted("error");
       }
     },
     [
@@ -273,26 +307,200 @@ export function useCartesiaStreamingSpeaker(
     ],
   );
 
+  // Low-level: push one already-cleaned chunk into the live stream context.
+  const dispatchChunk = useCallback(
+    async (chunk: string, isLast: boolean) => {
+      const st = streamRef.current;
+      if (!st || st.session.signal.aborted) return;
+      const ws = websocketRef.current;
+      const player = playerRef.current;
+      if (!ws || !player) return;
+      const req = { ...st.baseRequest, transcript: chunk, continue: !isLast };
+      if (!st.started) {
+        st.started = true;
+        const resp = await ws.send(req);
+        if (st.session.signal.aborted) return;
+        if (!st.playStarted) {
+          st.playStarted = true;
+          hasPlayedRef.current = true;
+          setPhaseIfMounted("playing");
+          player.play(resp.source).catch((err: unknown) => {
+            if (!st.session.signal.aborted) {
+              console.error(
+                "[useCartesiaStreamingSpeaker] stream play failed:",
+                err,
+              );
+            }
+          });
+        }
+      } else {
+        await ws.continue(req);
+      }
+    },
+    [setPhaseIfMounted],
+  );
+
+  /**
+   * Open a fresh live-stream context. Cancels any prior speak/stream session.
+   * Resolves once the WebSocket is connected and the session is ready to
+   * receive `streamText` / `finishStream`.
+   */
+  const beginStream = useCallback(() => {
+    return enqueueOp(async () => {
+      sessionRef.current?.abort();
+      streamRef.current?.session.abort();
+      const session = new AbortController();
+      sessionRef.current = session;
+      await ensureConnection();
+      if (session.signal.aborted) return;
+      const contextId = cryptoRandomId();
+      streamRef.current = {
+        session,
+        contextId,
+        baseRequest: {
+          modelId: TTS_MODEL_ID,
+          voice: { mode: "id", id: voiceId },
+          language,
+          contextId,
+          generationConfig: buildGenerationConfig({ speed }),
+        },
+        sentLen: 0,
+        started: false,
+        playStarted: false,
+        finished: false,
+      };
+      setPhaseIfMounted("sending");
+    });
+  }, [
+    enqueueOp,
+    ensureConnection,
+    voiceId,
+    language,
+    speed,
+    setPhaseIfMounted,
+  ]);
+
+  /**
+   * Feed the cumulative response text so far. Only the newly-completed
+   * sentences (since the last call) are dispatched; an incomplete trailing
+   * sentence is buffered until it completes or grows past a soft cap.
+   */
+  const streamText = useCallback(
+    (fullText: string) => {
+      return enqueueOp(async () => {
+        const st = streamRef.current;
+        if (!st || st.finished || st.session.signal.aborted) return;
+
+        const unsent = fullText.slice(st.sentLen);
+        let cut = lastSentenceBoundary(unsent);
+        if (cut < 0) {
+          // No complete sentence yet — flush at a space once the buffer is big
+          // enough to keep latency bounded; otherwise wait for more text.
+          if (unsent.length <= 400) return;
+          const sp = unsent.lastIndexOf(" ", 400);
+          cut = sp > 40 ? sp : 400;
+        }
+        const ready = unsent.slice(0, cut);
+        st.sentLen += cut;
+
+        const cleaned = processMarkdown ? parseMarkdownToText(ready) : ready;
+        if (!cleaned.trim()) return;
+        const chunks = chunkTextForSpeech(cleaned, {
+          lang: language,
+          firstChunkMax,
+          nextChunkMax,
+        });
+        for (const c of chunks) {
+          if (st.session.signal.aborted) return;
+          await dispatchChunk(c, false);
+        }
+      });
+    },
+    [
+      enqueueOp,
+      processMarkdown,
+      language,
+      firstChunkMax,
+      nextChunkMax,
+      dispatchChunk,
+    ],
+  );
+
+  /**
+   * Flush any remaining buffered text as the final chunk and close the context.
+   * Pass the final cumulative text. Idempotent.
+   */
+  const finishStream = useCallback(
+    (fullText: string) => {
+      return enqueueOp(async () => {
+        const st = streamRef.current;
+        if (!st || st.finished || st.session.signal.aborted) return;
+        st.finished = true;
+
+        const remaining = fullText.slice(st.sentLen);
+        st.sentLen = fullText.length;
+        const cleaned = processMarkdown
+          ? parseMarkdownToText(remaining)
+          : remaining;
+        const chunks = cleaned.trim()
+          ? chunkTextForSpeech(cleaned, {
+              lang: language,
+              firstChunkMax,
+              nextChunkMax,
+            })
+          : [];
+
+        if (chunks.length === 0) {
+          // Nothing left to say — close the context if we ever opened it.
+          if (st.started && !st.session.signal.aborted) {
+            try {
+              await websocketRef.current?.continue({
+                ...st.baseRequest,
+                transcript: "",
+                continue: false,
+              });
+            } catch {
+              /* ignore close error */
+            }
+          }
+          return;
+        }
+        for (let i = 0; i < chunks.length; i++) {
+          if (st.session.signal.aborted) return;
+          await dispatchChunk(chunks[i], i === chunks.length - 1);
+        }
+      });
+    },
+    [
+      enqueueOp,
+      processMarkdown,
+      language,
+      firstChunkMax,
+      nextChunkMax,
+      dispatchChunk,
+    ],
+  );
+
   const pause = useCallback(async () => {
-    if (playerRef.current && phase === 'playing') {
+    if (playerRef.current && phase === "playing") {
       try {
         await playerRef.current.pause();
-        setPhaseIfMounted('paused');
+        setPhaseIfMounted("paused");
       } catch (err) {
-        console.error('[useCartesiaStreamingSpeaker] pause failed:', err);
-        setPhaseIfMounted('idle');
+        console.error("[useCartesiaStreamingSpeaker] pause failed:", err);
+        setPhaseIfMounted("idle");
       }
     }
   }, [phase, setPhaseIfMounted]);
 
   const resume = useCallback(async () => {
-    if (playerRef.current && phase === 'paused') {
+    if (playerRef.current && phase === "paused") {
       try {
         await playerRef.current.resume();
-        setPhaseIfMounted('playing');
+        setPhaseIfMounted("playing");
       } catch (err) {
-        console.error('[useCartesiaStreamingSpeaker] resume failed:', err);
-        setPhaseIfMounted('idle');
+        console.error("[useCartesiaStreamingSpeaker] resume failed:", err);
+        setPhaseIfMounted("idle");
       }
     }
   }, [phase, setPhaseIfMounted]);
@@ -300,20 +508,22 @@ export function useCartesiaStreamingSpeaker(
   const stop = useCallback(async () => {
     sessionRef.current?.abort();
     sessionRef.current = null;
+    streamRef.current?.session.abort();
+    streamRef.current = null;
     if (playerRef.current && hasPlayedRef.current) {
       try {
         await playerRef.current.stop();
       } catch (err) {
-        console.error('[useCartesiaStreamingSpeaker] stop failed:', err);
+        console.error("[useCartesiaStreamingSpeaker] stop failed:", err);
       }
     }
-    setPhaseIfMounted('idle');
+    setPhaseIfMounted("idle");
   }, [setPhaseIfMounted]);
 
   const isLoading =
-    phase === 'fetching-token' || phase === 'connecting' || phase === 'sending';
-  const isPlaying = phase === 'playing';
-  const isPaused = phase === 'paused';
+    phase === "fetching-token" || phase === "connecting" || phase === "sending";
+  const isPlaying = phase === "playing";
+  const isPaused = phase === "paused";
 
   return {
     phase,
@@ -321,14 +531,43 @@ export function useCartesiaStreamingSpeaker(
     isPlaying,
     isPaused,
     speak,
+    beginStream,
+    streamText,
+    finishStream,
     pause,
     resume,
     stop,
   };
 }
 
+/**
+ * Index just past the last COMPLETED sentence in `text`, or -1 if none. A
+ * sentence is "complete" only when its terminator is followed by whitespace
+ * (so we don't cut "3.14" or an in-progress sentence mid-stream). Newlines also
+ * count as a hard boundary.
+ */
+function lastSentenceBoundary(text: string): number {
+  let last = -1;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === "\n") {
+      last = i + 1;
+    } else if (
+      (c === "." || c === "!" || c === "?" || c === "…") &&
+      i + 1 < text.length &&
+      /\s/.test(text[i + 1])
+    ) {
+      last = i + 1;
+    }
+  }
+  return last;
+}
+
 function cryptoRandomId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
     return crypto.randomUUID();
   }
   return `cx_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;

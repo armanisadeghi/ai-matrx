@@ -74,7 +74,7 @@ export function ContextSlotChipStrip({
   if (visibleEntries.length === 1) {
     const entry = visibleEntries[0];
     return (
-      <div className={cn("flex flex-wrap gap-1 items-center", className)}>
+      <div className={cn("flex flex-wrap gap-1.5 items-center", className)}>
         {labelEl}
         <ContextSlotChip
           conversationId={conversationId}
@@ -87,7 +87,7 @@ export function ContextSlotChipStrip({
   }
 
   return (
-    <div className={cn("flex flex-wrap gap-1 items-center", className)}>
+    <div className={cn("flex flex-wrap gap-1.5 items-center", className)}>
       {labelEl}
       <ContextSlotItemsPopover
         conversationId={conversationId}

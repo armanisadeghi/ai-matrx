@@ -237,8 +237,7 @@ if $DRY_RUN; then
 fi
 
 # ── Update package.json (+ package-lock.json if present) ─────────────────────
-info "Bumping version in $VERSION_FILE..."
-npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version 2>/dev/null
+npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version >/dev/null 2>&1
 ok "$VERSION_FILE → $NEW_VERSION"
 
 # ── Commit ───────────────────────────────────────────────────────────────────

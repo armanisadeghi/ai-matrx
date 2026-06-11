@@ -57,6 +57,7 @@ const C = {
   green: "\x1b[32m",
   yellow: "\x1b[33m",
   cyan: "\x1b[36m",
+  white: "\x1b[97m",
 };
 
 // Match the release.sh log vocabulary: [INFO] cyan, [WARN] yellow, [FAIL] red.
@@ -214,35 +215,38 @@ async function main(): Promise<number> {
   // they only surface alongside a real finding below.)
   if (pending.length === 0 && drifted.length === 0) return 0;
 
-  const apply = `${C.dim}aidream:${C.reset} python db/apply_migrations.py --source ${SOURCE}`;
+  // The aidream applier is the fix for BOTH states below — it applies an
+  // unapplied file and re-records a drifted one's checksum. White, not dim,
+  // because it's an instruction the user acts on, not a footnote.
+  const fix = `${C.white}Fix — apply or re-record from the aidream repo:${C.reset} ${C.white}python db/apply_migrations.py --source ${SOURCE}${C.reset}`;
+
+  // Leading blank line separates our output from the command the user just typed.
+  console.log();
 
   // Unapplied is the real emergency (a file never ran) → [FAIL] red.
   // Drift-only is recorded-but-edited → [WARN] yellow. Never scream "unapplied"
   // when nothing is unapplied.
   if (pending.length) {
     console.log(
-      `${TAG.fail}Migrations: ${pending.length} unapplied — the DB does not match this repo. ` +
+      `${TAG.fail}Migrations: ${pending.length} unapplied — never ran on the DB. ` +
         `${strict ? "(--strict: blocking)" : "(non-blocking)"}`,
     );
-    console.log();
-    for (const f of pending) console.log(`  ${C.red}✗ ${f}${C.reset}`);
-    if (drifted.length)
-      for (const f of drifted)
-        console.log(
-          `  ${C.yellow}~ ${f}${C.reset} ${C.dim}(drifted)${C.reset}`,
-        );
-    console.log();
-    console.log(
-      `  ${C.dim}A file on disk runs nothing until applied + recorded. Apply from${C.reset} ${apply}`,
-    );
+    for (const f of pending)
+      console.log(`  ${C.white}- ${f}${C.reset} ${C.red}[UNAPPLIED]${C.reset}`);
+    for (const f of drifted)
+      console.log(
+        `  ${C.white}- ${f}${C.reset} ${C.yellow}[DRIFTED]${C.reset}`,
+      );
+    console.log(`  ${fix}`);
   } else {
     console.log(
-      `${TAG.warn}Migrations: ${drifted.length} drifted — recorded, but the file changed since. (non-blocking)`,
+      `${TAG.warn}Migrations: ${drifted.length} drifted — recorded as applied, but the file changed since. (non-blocking)`,
     );
-    console.log();
-    for (const f of drifted) console.log(`  ${C.yellow}~ ${f}${C.reset}`);
-    console.log();
-    console.log(`  ${C.dim}Re-apply or re-record from${C.reset} ${apply}`);
+    for (const f of drifted)
+      console.log(
+        `  ${C.white}- ${f}${C.reset} ${C.yellow}[DRIFTED]${C.reset}`,
+      );
+    console.log(`  ${fix}`);
   }
 
   const strayNotes = STRAY_DIRS.map((d) => ({
@@ -253,8 +257,12 @@ async function main(): Promise<number> {
     const total = strayNotes.reduce((s, x) => s + x.n, 0);
     console.log();
     console.log(
-      `  ${C.dim}note: ${total} stray .sql outside migrations/ (${strayNotes.map((x) => x.d).join(", ")}) — consider consolidating${C.reset}`,
+      `${TAG.warn}${total} stray .sql outside the migrations/ directory — consider consolidating`,
     );
+    for (const x of strayNotes)
+      console.log(
+        `  ${C.white}- ${x.d}${C.reset} ${C.yellow}(${x.n})${C.reset}`,
+      );
   }
 
   return pending.length && strict ? 1 : 0;

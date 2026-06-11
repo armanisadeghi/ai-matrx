@@ -3,27 +3,21 @@
 /**
  * ContextSlotChip
  *
- * Tiny pill representing one context slot value attached to a request.
- * Click → opens ContextSlotDetailSheet showing the full value + slot metadata.
- *
- * Visually matches the resource attachment chips on user messages
- * (AgentUserMessage), but driven by the context dict, not content blocks.
+ * One context slot value on a user message — tile layout matching
+ * ResourceAttachmentTile. Click → ContextSlotDetailSheet.
  */
 
 import { useMemo, useState } from "react";
-import { cn } from "@/lib/utils";
 import type {
   ContextObjectType,
   ContextSlot,
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import {
-  CONTEXT_TYPE_ICON,
-  FALLBACK_CONTEXT_ICON,
-  CONTEXT_TYPE_CHIP_CLASS,
-} from "./contextSlotIcons";
+import { CONTEXT_TYPE_ICON, FALLBACK_CONTEXT_ICON } from "./contextSlotIcons";
+import { CONTEXT_TYPE_TILE_LABEL } from "./contextSlotTile.theme";
 import { contextSlotValuePreview } from "./contextSlotPreview";
 import { ContextSlotDetailSheet } from "./ContextSlotDetailSheet";
+import { ContextSlotTile } from "./ContextSlotTile";
 
 interface ContextSlotChipProps {
   conversationId: string;
@@ -45,36 +39,26 @@ export function ContextSlotChip({
 
   const type: ContextObjectType = slot?.type ?? entry.type;
   const Icon = CONTEXT_TYPE_ICON[type] ?? FALLBACK_CONTEXT_ICON;
-  const chipClass =
-    CONTEXT_TYPE_CHIP_CLASS[type] ?? CONTEXT_TYPE_CHIP_CLASS.text;
+  const typeLabel = CONTEXT_TYPE_TILE_LABEL[type] ?? "Context";
 
   const label = slot?.label?.trim() || entry.label?.trim() || entry.key;
   const preview = useMemo(
     () => contextSlotValuePreview(entry.value, type),
     [entry.value, type],
   );
-  const tooltip = preview ? `${entry.key} — ${preview}` : entry.key;
+  const tooltip = preview ? `${label} — ${preview}` : label;
 
   return (
     <>
-      <button
-        type="button"
+      <ContextSlotTile
+        typeLabel={typeLabel}
+        title={label}
+        icon={Icon}
+        themeKey={type}
+        tooltip={tooltip}
         onClick={() => setOpen(true)}
-        title={tooltip}
-        className={cn(
-          "inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-medium leading-none cursor-pointer transition-colors hover:brightness-95 active:brightness-90 max-w-[200px]",
-          chipClass,
-          className,
-        )}
-      >
-        <Icon className="w-2.5 h-2.5 flex-shrink-0" />
-        <span className="truncate">{label}</span>
-        {preview && (
-          <span className="opacity-60 truncate">
-            <span className="opacity-50">·</span> {preview}
-          </span>
-        )}
-      </button>
+        className={className}
+      />
       <ContextSlotDetailSheet
         open={open}
         onOpenChange={setOpen}
