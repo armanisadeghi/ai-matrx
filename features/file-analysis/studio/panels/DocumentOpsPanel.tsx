@@ -37,8 +37,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
-import type { BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
+import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 
 interface Props {

@@ -41,8 +41,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
-import type { BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
+import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
 import {
   buildPdfSource,
   parsePdfSourceInput,

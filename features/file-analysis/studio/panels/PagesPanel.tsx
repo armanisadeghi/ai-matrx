@@ -44,8 +44,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { usePages } from "@/features/file-analysis/hooks/usePages";
 import { usePageThumbnail } from "@/features/file-analysis/hooks/usePageThumbnail";
-import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
-import type { BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
+import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 

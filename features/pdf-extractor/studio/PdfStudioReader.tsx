@@ -55,8 +55,8 @@ import {
   Copy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
-import type { BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
+import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
 import { buildPdfSource } from "@/features/pdf/utils/source";
 import { parsePagesInput } from "@/features/pdf-demo/utils/pages";
 import { fileHandler } from "@/features/files";
