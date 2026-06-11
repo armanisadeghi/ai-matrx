@@ -116,9 +116,14 @@ export default function ImportTableModal({
     const fileExt = file.name.toLowerCase();
     const isCSV = fileExt.endsWith(".csv");
     const isExcel = fileExt.endsWith(".xlsx") || fileExt.endsWith(".xls");
+    const isGoogleSheetsShortcut = fileExt.endsWith(".gsheet");
 
     if (!isCSV && !isExcel) {
-      setUploadError("Please upload a CSV or Excel file (.csv, .xlsx, .xls)");
+      setUploadError(
+        isGoogleSheetsShortcut
+          ? "Google Sheets shortcuts can't be imported directly. In Sheets choose File → Download → Microsoft Excel (.xlsx), then upload that."
+          : "Please upload a CSV or Excel file (.csv, .xlsx, .xls). If you're importing from Google Sheets, use File → Download → Microsoft Excel (.xlsx) first.",
+      );
       return;
     }
 
@@ -436,10 +441,16 @@ export default function ImportTableModal({
                       className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer"
                       onClick={() => fileInputRef.current?.click()}
                     >
+                      {/*
+                        No `accept` filter — Drive / Google Sheets pickers
+                        and many mobile pickers grey everything out when
+                        one is set. `handleFileSelect` validates by
+                        extension after pick and shows a clear error if
+                        it's not a CSV/XLSX.
+                      */}
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept=".csv,.xlsx,.xls"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) handleFileSelect(file);

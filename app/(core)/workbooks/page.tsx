@@ -33,6 +33,32 @@ import {
 import { ImportRouteDialog } from "@/features/data-tables/components/ImportRouteDialog";
 import { smartImportPickupSlot } from "@/features/data-tables/smart-import-pickup";
 
+/**
+ * Pre-flight import file check. We deliberately do NOT use the `accept`
+ * attribute on the picker (it greys out everything in Drive / Google
+ * Sheets pickers on iOS and many Android pickers), so we validate after
+ * pick. Returns null when the file is accepted, or a short user-facing
+ * reason string when it isn't.
+ */
+function unsupportedFileReason(file: File): string | null {
+  const name = file.name.toLowerCase();
+  // Native, parseable formats.
+  if (name.endsWith(".xlsx") || name.endsWith(".xls") || name.endsWith(".csv")) {
+    return null;
+  }
+  if (name.endsWith(".tsv") || name.endsWith(".txt")) return null; // SheetJS parses these too
+
+  // Drive's "Google Sheets" shortcut is a tiny JSON pointer file that
+  // browsers cannot resolve into the underlying sheet — Drive only exposes
+  // the real content via its API. The user has to "Download as .xlsx" from
+  // Sheets first.
+  if (name.endsWith(".gsheet")) {
+    return "Google Sheets shortcuts can't be imported directly. In Google Sheets choose File → Download → Microsoft Excel (.xlsx), then upload that.";
+  }
+  // Anything else.
+  return `"${file.name}" doesn't look like a spreadsheet. Supported: .xlsx, .xls, .csv. If you're importing from Google Sheets, use File → Download → Microsoft Excel (.xlsx) first.`;
+}
+
 export default function WorkbooksLandingPage() {
   const router = useRouter();
   const [workbooks, setWorkbooks] = useState<Workbook[]>([]);
@@ -85,6 +111,20 @@ export default function WorkbooksLandingPage() {
 
   const handleImportXlsx = useCallback(
     async (file: File) => {
+      // The file input has no `accept` filter (so Drive / Google Sheets
+      // pickers don't grey everything out) — validate here. Drive's
+      // ".gsheet" shortcuts and Google-only mime types can't be parsed
+      // client-side: give a clear, actionable error instead of a stack
+      // trace from SheetJS.
+      const reason = unsupportedFileReason(file);
+      if (reason) {
+        toast({
+          title: "Can't import that file",
+          description: reason,
+          variant: "destructive",
+        });
+        return;
+      }
       setImporting(true);
       try {
         // Parse first — if the file is malformed, we surface the error
@@ -159,6 +199,16 @@ export default function WorkbooksLandingPage() {
     // Reset the input so picking the same file again still fires onChange.
     if (smartFileInputRef.current) smartFileInputRef.current.value = "";
     setSmartCommitting(false);
+
+    const reason = unsupportedFileReason(file);
+    if (reason) {
+      toast({
+        title: "Can't analyze that file",
+        description: reason,
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const detection = await detectImportRoute(file);
@@ -239,10 +289,15 @@ export default function WorkbooksLandingPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:pr-10">
         <h1 className="text-2xl font-bold">Workbooks</h1>
         <div className="flex flex-wrap items-center gap-2">
+          {/*
+            No `accept` filter — Drive / Google Sheets shortcuts and many
+            mobile pickers grey out everything when an accept whitelist is
+            set. We validate by extension/parse after the user picks so the
+            error message is friendly + actionable.
+          */}
           <input
             ref={fileInputRef}
             type="file"
-            accept=".xlsx,.xls,.csv"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -252,7 +307,6 @@ export default function WorkbooksLandingPage() {
           <input
             ref={smartFileInputRef}
             type="file"
-            accept=".xlsx,.xls,.csv"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
