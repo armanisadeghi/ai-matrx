@@ -92,6 +92,23 @@ through the pane's change handler (and therefore persisting). Surface
 value-mappings (`agx_agent_surface`) drive variable resolution end-to-end.
 `content-block` placement is hidden (plain-text panes).
 
+**Scope emitter invariant:** `CleanupPad.buildScope()` MUST emit every value
+declared in the manifest (36 values: container texts, session identity,
+recording/mic state, agent + slot wiring, context items, derived counts)
+except the selection family (`selection` / `text_before` / `text_after`),
+which the menu captures at trigger time. Volatile render state reaches the
+builder via `scopeStateRef` (mirrored every render — no stale closures).
+`menuContextData(pane, paneText)` overlays `content` / `active_pane` /
+`active_pane_text` per pane. Add a manifest value → emit it in `buildScope`
+in the same change.
+
+**Reference binding:** agent `Cleanup Surface Demo Reporter`
+(`42971fe0-a05e-44ad-aa62-cfeab6bad160`, admin-owned) + its global
+`agx_agent_surface` binding map deliberately non-matching variable names
+(`working_text` ← `raw_transcript_text`, slots ← arrays) — the canonical
+proof that explicit mappings (not name-matching) deliver values. Shortcut
+`Surface Demo: Session Report` (Transcription / ai-action category).
+
 ## Custom slots
 
 Up to `MAX_CUSTOM_SLOTS` (3) custom outputs, one visible at a time (tab
@@ -104,6 +121,17 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-06-10 — Surface registration expanded to the "expose everything"
+  standard: manifest 8 → 36 values (active pane, session identity, all
+  container texts + `all_custom_outputs`, word/char counts, mic/recording
+  state, queued inserts, clean/slot agent wiring + run phases,
+  `custom_slots_summary`, `context_items`); `buildScope()` now emits all of
+  them via `scopeStateRef`; `menuContextData` gained pane identity. DB rows
+  synced (zero drift, verified by live diff). Added demo agent
+  `Cleanup Surface Demo Reporter` + global binding + `Surface Demo: Session
+  Report` shortcut as the reference mapping example. Live-verified: clean
+  pass applies context items (Matrix→Matrx test), session auto-label,
+  slot auto-run after Clean.
 - 2026-06-10 — Context block note picker: replaced folder-filtered `<select>` (Transcription Contexts only) with shared `NotePickerPopover` — lazy list fetch (names/metadata only on open), collapsible folder tree + search, full note via `NotesAPI.getById` on select.
 - 2026-06-10 — Auto-label on first Clean pass: when the transcript is first sent
   for cleaning and the session title is still the default (`New Cleanup` /
@@ -119,7 +147,10 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
   (creates a fresh session; does not delete existing sessions). Side columns
   use matched top bands (`Sessions` / `Custom` with icon chips) aligned to the
   center record band; sidebar subsections (`Cleaning Agent`, `Context`) share
-  the same labeled header pattern. (tabs, per-slot agent /
+  the same labeled header pattern. **Transcript insert queue:** while recording
+  or transcribing, the raw textarea is read-only; **At start** / **At end**
+  queue text that previews immediately and merges in `commitTranscript` before
+  Clean / persist (never mid-chunk). (tabs, per-slot agent /
   source / autorun / output doc; `custom_slots` jsonb migration
   `studio_session_settings_custom_slots.sql`, applied live; legacy
   `module_shortcut_id` migrated to slot 1 on load) + `UnifiedAgentContextMenu`

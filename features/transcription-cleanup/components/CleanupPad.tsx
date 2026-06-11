@@ -24,8 +24,10 @@
  * work over selections (textarea selection is captured by the menu itself)
  * and surface value-mappings drive variable resolution.
  *
- * Invariant carried from the original tool: what is sent to the AI MUST equal
- * what the user sees in the transcript textarea (`baseTextRef`).
+ * Invariant carried from the original tool: what is sent to the AI equals the
+ * fully committed transcript at stop time. During recording the textarea is
+ * read-only; optional prefix/suffix inserts are queued and merged in
+ * `commitTranscript` immediately before Clean / persist — never mid-chunk.
  */
 
 import React, {
@@ -37,6 +39,8 @@ import React, {
 } from "react";
 import {
   AudioLines,
+  ArrowDownToLine,
+  ArrowUpToLine,
   BookOpen,
   ChevronDown,
   CircleStop,
@@ -86,6 +90,15 @@ import {
   CleanupSessionList,
   CleanupSessionsToolbar,
 } from "./CleanupSessionList";
+import {
+  TranscriptInsertDialog,
+  type TranscriptInsertTarget,
+} from "./TranscriptInsertDialog";
+import {
+  composeCommittedTranscript,
+  composeTranscriptDisplay,
+  composeTranscriptParts,
+} from "../utils/transcriptCompose";
 import { DEFAULT_CLEAN_AGENT_ID, SYSTEM_AGENT_NAMES } from "../ai-agents";
 import {
   useAiPostProcess,
@@ -185,7 +198,12 @@ export default function CleanupPad({
     selectVoicePadDraftText(s, OVERLAY_ID, INSTANCE_ID),
   );
   const [liveTranscript, setLiveTranscript] = useState("");
+  const [pendingPrefix, setPendingPrefix] = useState("");
+  const [pendingSuffix, setPendingSuffix] = useState("");
+  const [insertDialogTarget, setInsertDialogTarget] =
+    useState<TranscriptInsertTarget | null>(null);
   const [isMicRecording, setIsMicRecording] = useState(false);
+  const [isMicTranscribing, setIsMicTranscribing] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const micRef = useRef<MicrophoneIconButtonHandle>(null);
@@ -226,6 +244,8 @@ export default function CleanupPad({
   const responseRef = useRef<string>("");
   const customRef = useRef<string>("");
   const transcriptDisplayRef = useRef<string>("");
+  const pendingPrefixRef = useRef("");
+  const pendingSuffixRef = useRef("");
 
   // Pane textarea refs — the context menu reads selection through these.
   const transcriptTaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -237,12 +257,21 @@ export default function CleanupPad({
     [entries],
   );
   const baseText = draftText !== null ? draftText : allText;
-  const transcriptDisplay = liveTranscript
-    ? baseText
-      ? baseText + "\n\n" + liveTranscript
-      : liveTranscript
-    : baseText;
+  const isTranscriptLocked = isMicRecording || isMicTranscribing;
+  const transcriptDisplay = composeTranscriptDisplay(
+    baseText,
+    liveTranscript,
+    pendingPrefix,
+    pendingSuffix,
+  );
   transcriptDisplayRef.current = transcriptDisplay;
+
+  useEffect(() => {
+    pendingPrefixRef.current = pendingPrefix;
+  }, [pendingPrefix]);
+  useEffect(() => {
+    pendingSuffixRef.current = pendingSuffix;
+  }, [pendingSuffix]);
 
   // Invariant: the string sent to the AI equals the visible transcript.
   const baseTextRef = useRef(baseText);
@@ -272,14 +301,83 @@ export default function CleanupPad({
   const activeAi = slotAis[Math.min(activeSlotIdx, MAX_CUSTOM_SLOTS - 1)];
 
   // ── Surface scope (live values for agent variable/slot mapping) ────────────
+  // Volatile render state mirrored into a ref so the scope builder (called at
+  // trigger time from stable callbacks) never reads stale closures.
+  const scopeRenderState = {
+    isMicRecording,
+    isMicTranscribing,
+    liveTranscript,
+    agentNames,
+    activeSlotIdx,
+    cleanPhase: cleanAi.phase,
+    slotPhases: slotAis.map((ai) => ai.phase),
+    slotTexts: slots.map((_, idx) => slotValue(idx)),
+  };
+  const scopeStateRef = useRef(scopeRenderState);
+  scopeStateRef.current = scopeRenderState;
+
+  /** Emits every value declared in `transcriptsCleanupManifest` except the
+   * selection family (`selection` / `text_before` / `text_after`), which
+   * `UnifiedAgentContextMenu` captures itself at trigger time. */
   const buildScope = useCallback(() => {
+    const s = scopeStateRef.current;
+    const slotList = slotsRef.current;
+    const raw = baseTextRef.current;
+    const cleaned = responseRef.current;
+    const idx = Math.min(s.activeSlotIdx, slotList.length - 1);
+    const slot = slotList[idx];
+    const words = (t: string) => (t.trim() ? t.trim().split(/\s+/).length : 0);
+    const slotLabel = (sl: CleanupCustomSlot, i: number) =>
+      sl.label ||
+      (sl.agentId ? s.agentNames[sl.agentId] : undefined) ||
+      `slot-${i + 1}`;
+    const activeContextItems = contextItemsRef.current
+      .filter((i) => i.value.trim())
+      .map((i) => ({ key: i.key, label: i.label, value: i.value }));
+
     return createTranscriptsCleanupScope({
-      content: baseTextRef.current,
-      raw_transcript_text: baseTextRef.current,
-      cleaned_transcript_text: responseRef.current || undefined,
+      content: raw,
+      raw_transcript_text: raw,
+      cleaned_transcript_text: cleaned || undefined,
       custom_output_text: customRef.current || undefined,
+      all_custom_outputs: Object.fromEntries(
+        slotList.map((sl, i) => [slotLabel(sl, i), s.slotTexts[i] ?? ""]),
+      ),
       session_id: sessionRefs.current.activeSessionId ?? undefined,
       session_title: sessionRefs.current.activeSession?.title,
+      session_started_at: sessionRefs.current.activeSession?.startedAt,
+      raw_word_count: words(raw),
+      raw_char_count: raw.length,
+      cleaned_word_count: words(cleaned),
+      is_recording: s.isMicRecording,
+      is_transcribing: s.isMicTranscribing,
+      is_transcript_locked: s.isMicRecording || s.isMicTranscribing,
+      live_transcript_text: s.liveTranscript || undefined,
+      pending_insert_start: pendingPrefixRef.current || undefined,
+      pending_insert_end: pendingSuffixRef.current || undefined,
+      clean_agent_id: cleanAgentIdRef.current,
+      clean_agent_name: s.agentNames[cleanAgentIdRef.current],
+      clean_run_status: s.cleanPhase,
+      active_slot_index: idx,
+      active_slot_agent_id: slot?.agentId ?? undefined,
+      active_slot_agent_name: slot?.agentId
+        ? s.agentNames[slot.agentId]
+        : undefined,
+      active_slot_source: slot?.source ?? "clean",
+      active_slot_auto_run: slot?.autoRun ?? false,
+      active_slot_run_status: s.slotPhases[idx] ?? "idle",
+      custom_slot_count: slotList.length,
+      custom_slots_summary: slotList.map((sl, i) => ({
+        label: slotLabel(sl, i),
+        agent_id: sl.agentId,
+        agent_name: sl.agentId ? (s.agentNames[sl.agentId] ?? null) : null,
+        source: sl.source,
+        auto_run: sl.autoRun,
+        run_status: s.slotPhases[i] ?? "idle",
+        has_output: Boolean(s.slotTexts[i]?.trim()),
+      })),
+      context_items: activeContextItems,
+      context_item_count: activeContextItems.length,
     });
   }, []);
 
@@ -287,9 +385,14 @@ export default function CleanupPad({
    * (`context` is omitted: the menu types it as a string; our scope's named
    * values carry everything the mappings need.) */
   const menuContextData = useCallback(
-    (paneText: string) => {
+    (pane: "transcript" | "clean" | "custom", paneText: string) => {
       const { context: _omitted, ...scope } = buildScope();
-      return { ...scope, content: paneText };
+      return {
+        ...scope,
+        content: paneText,
+        active_pane: pane,
+        active_pane_text: paneText,
+      };
     },
     [buildScope],
   );
@@ -366,6 +469,10 @@ export default function CleanupPad({
     setEditedResponse(null);
     setEditedBySlot({});
     setLiveTranscript("");
+    setPendingPrefix("");
+    setPendingSuffix("");
+    pendingPrefixRef.current = "";
+    pendingSuffixRef.current = "";
     cleanAi.reset();
     for (const ai of slotAis) ai.reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -548,22 +655,38 @@ export default function CleanupPad({
   ]);
 
   // ── Mic ────────────────────────────────────────────────────────────────────
+  const clearPendingInserts = useCallback(() => {
+    setPendingPrefix("");
+    setPendingSuffix("");
+    pendingPrefixRef.current = "";
+    pendingSuffixRef.current = "";
+  }, []);
+
   const commitTranscript = useCallback(
     (text: string) => {
       setLiveTranscript("");
       const trimmed = text.trim();
-      if (!trimmed) return null;
-
-      const previous = baseTextRef.current;
-      const combined = previous ? previous + "\n\n" + trimmed : trimmed;
-
-      dispatch(
-        addTranscriptEntry({
-          overlayId: OVERLAY_ID,
-          instanceId: INSTANCE_ID,
-          text,
-        }),
+      const prefix = pendingPrefixRef.current;
+      const suffix = pendingSuffixRef.current;
+      const combined = composeCommittedTranscript(
+        baseTextRef.current,
+        trimmed,
+        prefix,
+        suffix,
       );
+
+      clearPendingInserts();
+      if (!combined) return null;
+
+      if (trimmed) {
+        dispatch(
+          addTranscriptEntry({
+            overlayId: OVERLAY_ID,
+            instanceId: INSTANCE_ID,
+            text: trimmed,
+          }),
+        );
+      }
       dispatch(
         setDraftText({
           overlayId: OVERLAY_ID,
@@ -572,10 +695,17 @@ export default function CleanupPad({
         }),
       );
       baseTextRef.current = combined;
-      void sessionRefs.current.persistRawAppend(trimmed);
+
+      if (trimmed) {
+        void sessionRefs.current.persistRawAppend(trimmed);
+      }
+      if (prefix.trim() || suffix.trim() || !trimmed) {
+        void sessionRefs.current.persistRawReplace(combined);
+      }
+
       return combined;
     },
-    [dispatch],
+    [clearPendingInserts, dispatch],
   );
 
   const handleTranscriptionComplete = useCallback(
@@ -601,10 +731,63 @@ export default function CleanupPad({
   }, []);
 
   const handleRecordingStateChange = useCallback(
-    ({ isRecording }: { isRecording: boolean; isTranscribing: boolean }) => {
+    ({
+      isRecording,
+      isTranscribing,
+    }: {
+      isRecording: boolean;
+      isTranscribing: boolean;
+    }) => {
       setIsMicRecording(isRecording);
+      setIsMicTranscribing(isTranscribing);
     },
     [],
+  );
+
+  const queueTranscriptInsert = useCallback(
+    (position: TranscriptInsertTarget, text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+
+      if (isMicRecording || isMicTranscribing) {
+        if (position === "start") {
+          setPendingPrefix((prev) => composeTranscriptParts(prev, trimmed));
+        } else {
+          setPendingSuffix((prev) => composeTranscriptParts(prev, trimmed));
+        }
+        toast.success(
+          position === "start"
+            ? "Text queued at the start"
+            : "Text queued at the end",
+        );
+        return;
+      }
+
+      const current = baseTextRef.current.trim();
+      const next =
+        position === "start"
+          ? composeTranscriptParts(trimmed, current)
+          : composeTranscriptParts(current, trimmed);
+      dispatch(
+        setDraftText({
+          overlayId: OVERLAY_ID,
+          instanceId: INSTANCE_ID,
+          text: next,
+        }),
+      );
+      baseTextRef.current = next;
+      session.persistRawReplace(next);
+    },
+    [dispatch, isMicRecording, isMicTranscribing, session],
+  );
+
+  const handleInsertDialogConfirm = useCallback(
+    (text: string) => {
+      if (!insertDialogTarget) return;
+      queueTranscriptInsert(insertDialogTarget, text);
+      setInsertDialogTarget(null);
+    },
+    [insertDialogTarget, queueTranscriptInsert],
   );
 
   const handleSoftStop = useCallback(() => {
@@ -614,6 +797,7 @@ export default function CleanupPad({
   // ── Edits ──────────────────────────────────────────────────────────────────
   const handleDraftChange = useCallback(
     (value: string) => {
+      if (isTranscriptLocked) return;
       dispatch(
         setDraftText({
           overlayId: OVERLAY_ID,
@@ -623,7 +807,7 @@ export default function CleanupPad({
       );
       session.persistRawReplace(value);
     },
-    [dispatch, session],
+    [dispatch, isTranscriptLocked, session],
   );
 
   const handleResponseChange = useCallback(
@@ -679,6 +863,10 @@ export default function CleanupPad({
 
   // ── Manual Clean Up ────────────────────────────────────────────────────────
   const handleProcess = useCallback(() => {
+    if (isTranscriptLocked) {
+      toast.info("Finish recording before running Clean");
+      return;
+    }
     const transcript = baseTextRef.current.trim();
     if (!transcript) {
       toast.info("Add a transcript before analyzing");
@@ -688,7 +876,7 @@ export default function CleanupPad({
     // Autorun (source = raw): Clean and these slots run simultaneously.
     autoRunRawSlots(transcript);
     setDrawerOpen(false);
-  }, [runClean, autoRunRawSlots]);
+  }, [isTranscriptLocked, runClean, autoRunRawSlots]);
 
   const handleCopyJoined = useCallback(async () => {
     const transcript = transcriptDisplayRef.current.trim();
@@ -1043,31 +1231,60 @@ export default function CleanupPad({
   );
   const transcriptPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/30 px-3 py-2">
-        <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-muted">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-muted/30 px-3 py-2">
+        <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-muted">
             <AudioLines className="h-3 w-3 text-muted-foreground" />
           </span>
           Transcript
+          {isTranscriptLocked && (pendingPrefix || pendingSuffix) ? (
+            <span className="rounded-full bg-primary/10 px-1.5 py-px font-normal normal-case text-primary">
+              Queued
+            </span>
+          ) : null}
         </span>
-        {(transcriptDisplay.trim().length > 0 || entries.length > 0) && (
-          <ContentActionBar
-            content={transcriptDisplay}
-            title="Voice Pad Transcript"
-            instanceKey={`transcription-cleanup-page-transcript-${INSTANCE_ID}`}
-            hideSpeaker
-            hidePencil
-            onDelete={handleClearAll}
-            deleteAriaLabel="Clear transcript"
-          />
-        )}
+        <div className="flex shrink-0 items-center gap-1">
+          {isTranscriptLocked ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setInsertDialogTarget("start")}
+                title="Queue text at the start of the transcript"
+                className="inline-flex h-7 items-center gap-1 rounded-md border border-border bg-background px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <ArrowUpToLine className="h-3 w-3" />
+                <span className="hidden sm:inline">At start</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setInsertDialogTarget("end")}
+                title="Queue text at the end of the transcript"
+                className="inline-flex h-7 items-center gap-1 rounded-md border border-border bg-background px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <ArrowDownToLine className="h-3 w-3" />
+                <span className="hidden sm:inline">At end</span>
+              </button>
+            </>
+          ) : null}
+          {(transcriptDisplay.trim().length > 0 || entries.length > 0) && (
+            <ContentActionBar
+              content={transcriptDisplay}
+              title="Voice Pad Transcript"
+              instanceKey={`transcription-cleanup-page-transcript-${INSTANCE_ID}`}
+              hideSpeaker
+              hidePencil
+              onDelete={handleClearAll}
+              deleteAriaLabel="Clear transcript"
+            />
+          )}
+        </div>
       </div>
       <UnifiedAgentContextMenu
         sourceFeature="transcription-cleanup"
         surfaceName="matrx-user/transcripts-cleanup"
         getTextarea={() => transcriptTaRef.current}
-        isEditable
-        contextData={menuContextData(transcriptDisplay)}
+        isEditable={!isTranscriptLocked}
+        contextData={menuContextData("transcript", transcriptDisplay)}
         placementMode={{ "content-block": "hide" }}
         className="flex min-h-0 flex-1 flex-col"
         {...transcriptHandlers}
@@ -1075,12 +1292,18 @@ export default function CleanupPad({
         <textarea
           ref={transcriptTaRef}
           value={transcriptDisplay}
+          readOnly={isTranscriptLocked}
           onChange={(e) => handleDraftChange(e.target.value)}
-          placeholder="Tap the mic above to record. Transcribed text appears here and is processed automatically..."
+          placeholder={
+            isTranscriptLocked
+              ? "Live transcript streams here while recording. Use At start / At end to queue extra text."
+              : "Tap the mic above to record. Transcribed text appears here and is processed automatically..."
+          }
           className={cn(
             "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
             "text-base md:text-sm",
             "focus:outline-none focus:ring-0",
+            isTranscriptLocked && "cursor-default",
           )}
         />
       </UnifiedAgentContextMenu>
@@ -1151,7 +1374,7 @@ export default function CleanupPad({
         surfaceName="matrx-user/transcripts-cleanup"
         getTextarea={() => cleanTaRef.current}
         isEditable
-        contextData={menuContextData(responseValue)}
+        contextData={menuContextData("clean", responseValue)}
         placementMode={{ "content-block": "hide" }}
         className="flex min-h-0 flex-1 flex-col"
         {...cleanHandlers}
@@ -1356,7 +1579,7 @@ export default function CleanupPad({
         surfaceName="matrx-user/transcripts-cleanup"
         getTextarea={() => customTaRef.current}
         isEditable
-        contextData={menuContextData(activeSlotValue)}
+        contextData={menuContextData("custom", activeSlotValue)}
         placementMode={{ "content-block": "hide" }}
         className="flex min-h-0 flex-1 flex-col"
         {...customHandlers}
@@ -1381,6 +1604,17 @@ export default function CleanupPad({
     <PageHeader>
       <TranscriptsListHeader />
     </PageHeader>
+  );
+
+  const transcriptInsertDialog = (
+    <TranscriptInsertDialog
+      open={insertDialogTarget !== null}
+      target={insertDialogTarget}
+      onOpenChange={(open) => {
+        if (!open) setInsertDialogTarget(null);
+      }}
+      onConfirm={handleInsertDialogConfirm}
+    />
   );
 
   // ── Mobile: single scroll column + drawer ──────────────────────────────────
@@ -1425,6 +1659,7 @@ export default function CleanupPad({
             </aside>
           </div>
         )}
+        {transcriptInsertDialog}
       </>
     );
   }
@@ -1433,6 +1668,7 @@ export default function CleanupPad({
   return (
     <>
       {shellHeader}
+      {transcriptInsertDialog}
       <div className="h-full overflow-hidden">
         <ResizablePanelGroup
           id="cleanup-h3"
