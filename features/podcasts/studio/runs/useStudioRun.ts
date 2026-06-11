@@ -32,8 +32,14 @@ import {
   type PodcastMetadataEvent,
   type PodcastAssetEvent,
   type PodcastCompleteEvent,
+  type AudioStreamChunkEvent,
+  type AudioStreamEndEvent,
   type MediaSlot,
 } from "@/features/podcasts/generator/types";
+import {
+  createStreamingPcmPlayer,
+  type StreamingPcmPlayer,
+} from "@/features/audio/streamingPcmPlayer";
 import { studioRunsService } from "./service";
 import { rowToRunState, detailToRunState } from "./mapping";
 import { takePendingStart } from "./pendingStart";
@@ -91,6 +97,9 @@ export interface UseStudioRun {
   selectedCoverUrl: string | null;
   selectCover: (url: string) => void;
   cancel: () => void;
+  /** Live in-flight TTS audio (listen while it renders). Non-null only while a
+   *  live stream is delivering audio chunks and the canonical file isn't ready. */
+  livePlayer: StreamingPcmPlayer | null;
 }
 
 export function useStudioRun(runId: string): UseStudioRun {
@@ -109,10 +118,17 @@ export function useStudioRun(runId: string): UseStudioRun {
     deriveRecoveryState(null),
   );
   const [assetBusy, setAssetBusy] = useState<Record<string, boolean>>({});
+  const [livePlayer, setLivePlayer] = useState<StreamingPcmPlayer | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
   const startedRef = useRef(false);
   const streamingRef = useRef(false);
+  const livePlayerRef = useRef<StreamingPcmPlayer | null>(null);
+  // Next expected audio chunk seq. A gap means we missed audio (reconnect /
+  // dropped frame) — buffered playback would be corrupt, so we stop feeding
+  // and fall back to waiting for the canonical file.
+  const audioSeqRef = useRef(0);
+  const audioStreamBrokenRef = useRef(false);
   const backendRunIdRef = useRef<string | null>(null);
   const resumeAttemptsRef = useRef(0);
   const completedRef = useRef(false);
@@ -161,6 +177,47 @@ export function useStudioRun(runId: string): UseStudioRun {
       // it, so short-circuit to avoid a no-op render.
       if (kind === "podcast_tick") return;
 
+      if (kind === "audio_stream_chunk") {
+        // Live TTS audio. Chunks feed the player directly (never React state —
+        // base64 PCM at chunk rate would thrash renders). First chunk creates
+        // the player; one state set exposes it to the view.
+        if (audioStreamBrokenRef.current) return;
+        const e = raw as AudioStreamChunkEvent;
+        if (e.seq !== audioSeqRef.current) {
+          console.warn(
+            `[studio-run] audio stream gap (expected seq ${audioSeqRef.current}, got ${e.seq}) — dropping live playback, the canonical file will arrive at stage end`,
+          );
+          audioStreamBrokenRef.current = true;
+          livePlayerRef.current?.destroy();
+          livePlayerRef.current = null;
+          setLivePlayer(null);
+          return;
+        }
+        audioSeqRef.current = e.seq + 1;
+        let player = livePlayerRef.current;
+        if (!player) {
+          player = createStreamingPcmPlayer({
+            sampleRate: e.sample_rate || 24000,
+            channels: e.channels || 1,
+          });
+          livePlayerRef.current = player;
+          setLivePlayer(player);
+        }
+        player.enqueueBase64(e.audio_base64);
+        return;
+      }
+
+      if (kind === "audio_stream_end") {
+        const e = raw as AudioStreamEndEvent;
+        livePlayerRef.current?.end();
+        // Persist the durable audio URL the moment TTS finishes (crash-safe,
+        // minutes before podcast_complete). Only the permanent CDN flavour —
+        // never a signed URL — may be written to a row the public web reads.
+        if (e.cdn_url) persist({ audio_url: e.cdn_url });
+        setState((s) => reduce(s, raw));
+        return;
+      }
+
       if (raw.type === "podcast_run") {
         const r = raw as PodcastRunEvent;
         if (r.run_id && backendRunIdRef.current !== r.run_id) {
@@ -205,6 +262,8 @@ export function useStudioRun(runId: string): UseStudioRun {
           video_urls: (c.video_urls ?? []).filter(Boolean),
           episode_id: c.episode_id,
           episode_slug: c.episode_slug,
+          host_count: c.host_count ?? null,
+          speakers: c.speakers ?? null,
           error: c.success ? null : (c.error ?? "Generation failed"),
         });
       }
@@ -279,6 +338,13 @@ export function useStudioRun(runId: string): UseStudioRun {
       setStalled(false);
       setCanReconnect(false);
       lastHeartbeatRef.current = Date.now();
+      // Fresh stream ⇒ fresh audio chunk sequence (a resume that re-runs the
+      // audio stage restarts at seq 0).
+      audioSeqRef.current = 0;
+      audioStreamBrokenRef.current = false;
+      livePlayerRef.current?.destroy();
+      livePlayerRef.current = null;
+      setLivePlayer(null);
       if (kind === "generate") {
         setState({
           ...INITIAL_RUN_STATE,
@@ -305,6 +371,21 @@ export function useStudioRun(runId: string): UseStudioRun {
           response,
           {
             onData: (d) => onData(d as PodcastDataEvent),
+            // Token-level text from the in-flight stages (script writing) —
+            // feeds the ProductionTeaser's live sneak peek. Tail-capped so a
+            // long run never grows unbounded state.
+            onChunk: (d) => {
+              const delta = d.text ?? "";
+              if (!delta) return;
+              lastHeartbeatRef.current = Date.now();
+              setState((s) => {
+                const next = s.liveText + delta;
+                return {
+                  ...s,
+                  liveText: next.length > 24_000 ? next.slice(-24_000) : next,
+                };
+              });
+            },
             onError: (d) => {
               // A real backend error event — not a transient drop. Stop, but the
               // run is still RESUMABLE: /resume re-runs the failed stage.
@@ -392,9 +473,9 @@ export function useStudioRun(runId: string): UseStudioRun {
           if (episode.image_url) setSelectedCoverUrl(episode.image_url);
         }
       }
-      setCanReconnect(
-        (d.liveness === "stalled" || d.liveness === "failed") && d.recovery.resumable,
-      );
+      // Any non-live resumable run gets the Resume affordance — including a
+      // "completed" run with no audio/episode (a mis-stamped audio failure).
+      setCanReconnect(d.liveness !== "alive" && d.recovery.resumable);
     }
     reloadRef.current = () => void reloadDurable();
 
@@ -476,6 +557,10 @@ export function useStudioRun(runId: string): UseStudioRun {
       ) {
         // Interrupted with a checkpoint — offer manual Resume (don't auto-burn).
         setCanReconnect(true);
+      } else if (runDetail?.recovery.resumable && backendRunIdRef.current) {
+        // "Completed" but resumable = a mis-stamped failure (e.g. audio failed
+        // while the rest rendered) — surface the Resume affordance.
+        setCanReconnect(true);
       }
     }
 
@@ -484,6 +569,8 @@ export function useStudioRun(runId: string): UseStudioRun {
       cancelled = true;
       if (bgPollTimer) clearTimeout(bgPollTimer);
       abortRef.current?.abort();
+      livePlayerRef.current?.destroy();
+      livePlayerRef.current = null;
     };
   }, [runId, api, persist]);
 
@@ -660,5 +747,6 @@ export function useStudioRun(runId: string): UseStudioRun {
     selectedCoverUrl,
     selectCover,
     cancel,
+    livePlayer,
   };
 }

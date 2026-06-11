@@ -14,7 +14,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { parseScript, speakerSlot } from "../script";
+import { parseScript, speakerSlot, SPEAKER_SLOT_TEXT } from "../script";
 
 interface TranscriptPanelProps {
   script: string;
@@ -103,7 +103,7 @@ export function TranscriptPanel({ script, rtl }: TranscriptPanelProps) {
                       <span
                         className={cn(
                           "text-xs font-semibold uppercase tracking-wide",
-                          slot === 0 ? "text-primary" : "text-secondary",
+                          SPEAKER_SLOT_TEXT[slot],
                         )}
                       >
                         {turn.speaker}

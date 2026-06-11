@@ -78,6 +78,7 @@ function applyAsset(
   url: string,
   prompt: string,
   success: boolean,
+  note?: string | null,
 ): MediaSlot[] {
   const idx = slots.findIndex((s) => s.index === index);
   const next: MediaSlot = {
@@ -86,6 +87,7 @@ function applyAsset(
     prompt: prompt || slots[idx]?.prompt || "",
     url: success ? url : null,
     status: success ? "done" : "failed",
+    note: note ?? null,
   };
   if (idx === -1) {
     return [...slots, next].sort((a, b) => a.index - b.index);
@@ -231,6 +233,7 @@ export function reduce(
             data.url,
             data.prompt,
             data.success,
+            data.note,
           ),
         };
       }
@@ -242,8 +245,20 @@ export function reduce(
           data.url,
           data.prompt,
           data.success,
+          data.note,
         ),
       };
+    }
+
+    case "audio_stream_end": {
+      // The TTS render finished and the canonical file is persisted — minutes
+      // before podcast_complete (which also waits on images/videos). Swap the
+      // UI to the real player now. Prefer the permanent CDN URL; the plain
+      // `url` is still renderable in-page but may be signed, and the durable
+      // value lands again via podcast_complete / the episode row.
+      const url = data.cdn_url || data.url || null;
+      if (!url) return state;
+      return { ...state, audioUrl: state.audioUrl ?? url };
     }
 
     case "podcast_complete": {

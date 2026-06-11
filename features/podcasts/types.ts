@@ -39,6 +39,13 @@ export type PcShow = {
   updated_at: string;
 };
 
+/** One cast member as persisted on the episode — name + provider voice
+ *  (Gemini voice name for 1–2 hosts, ElevenLabs voice_id for 3+). */
+export type PcEpisodeSpeaker = {
+  name: string;
+  voice: string;
+};
+
 export type PcEpisode = {
   id: string;
   slug: string;
@@ -54,6 +61,9 @@ export type PcEpisode = {
   display_mode: PcDisplayMode;
   episode_number: number | null;
   duration_seconds: number | null;
+  /** Cast metadata (migration pc_episode_speakers) — null on older rows. */
+  host_count: number | null;
+  speakers: PcEpisodeSpeaker[] | null;
   is_published: boolean;
   created_at: string;
   updated_at: string;

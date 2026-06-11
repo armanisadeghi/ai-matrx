@@ -148,6 +148,17 @@ export function AssetCard({
           </div>
         )}
 
+        {/* Quiet informational chip on a successful asset (e.g. the primary
+            model was rejected and a backup rendered it) — never error styling. */}
+        {isDone && slot.note && (
+          <span
+            className="absolute bottom-2 left-2 z-20 max-w-[85%] truncate rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] text-white/85 backdrop-blur"
+            title={slot.note}
+          >
+            {slot.note}
+          </span>
+        )}
+
         {/* Done — media only */}
         {isDone &&
           (slot.kind === "image" ? (

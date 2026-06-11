@@ -15,14 +15,15 @@
 //        external content into editable text that's sent as input_data.
 //   2. Processing     (pre-script · post-script — both ComingSoon)
 //   3. Language       (Gemini 2.5 TTS locales — English + Persian live, rest Soon)
-//   4. Format         (Educational + News wired, rest ComingSoon)
-//   5. Hosts          (2 wired, rest ComingSoon + Advanced-hosts disclosure)
+//   4. Format         (all wired via the multihost script agent) + theme
+//   5. Hosts          (1–20 wired + optional per-host names & voices)
 //   6. Show picker
 //   7. Advanced       (extra instruction, show blurb, Test mode)
 //
 // Request fields sent: input_data / file_urls, input_data_type, podcast_type
-// (derived from Language + Format), language, host_count, post_prep_option,
-// show_id, prep_user_message, first_show_info_text, truncate_audio_for_testing.
+// (derived from Language + Format), language, format, theme, host_count,
+// speakers (only when customized), post_prep_option, show_id,
+// prep_user_message, first_show_info_text, truncate_audio_for_testing.
 
 import { useState } from "react";
 import {
@@ -74,14 +75,20 @@ import {
   FORMAT_OPTIONS,
   HOST_COUNT_OPTIONS,
   HOST_COUNT_DEFAULT,
+  MAX_HOST_COUNT,
   PRE_SCRIPT_PROCESSING_OPTIONS,
   POST_SCRIPT_PROCESSING_OPTIONS,
 } from "../constants";
+import {
+  voicesForHostCount,
+  DEFAULT_SPEAKER_NAMES,
+} from "../voices";
 import type {
   PodcastGenerateRequest,
   PodcastSourceKind,
   PodcastLanguageCode,
   PodcastFormat,
+  PodcastSpeaker,
 } from "../types";
 import type { PcShow } from "@/features/podcasts/types";
 
@@ -110,7 +117,12 @@ export function GeneratorForm({
   const [resolverBusy, setResolverBusy] = useState(false);
   const [language, setLanguage] = useState<PodcastLanguageCode>(DEFAULT_LANGUAGE);
   const [format, setFormat] = useState<PodcastFormat>("educational");
-  const [hostCount, setHostCount] = useState("2");
+  const [theme, setTheme] = useState("");
+  const [hostCount, setHostCount] = useState(HOST_COUNT_DEFAULT);
+  /** Sparse per-host drafts (name/voice). Untouched hosts stay on auto. */
+  const [speakerDrafts, setSpeakerDrafts] = useState<
+    Record<number, Partial<PodcastSpeaker>>
+  >({});
   const [showId, setShowId] = useState<string | null>(null);
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -139,11 +151,26 @@ export function GeneratorForm({
       input_data_type: activeSource.inputDataType,
       podcast_type: deriveBackendPodcastType(language, format),
       language,
-      host_count: Number(hostCount) || HOST_COUNT_DEFAULT,
+      format,
+      host_count: hostCount,
       truncate_audio_for_testing: truncate,
       post_prep_option: "none",
       show_id: showId,
     };
+    if (theme.trim()) body.theme = theme.trim();
+    // Speakers ride along only when the user customized at least one host —
+    // otherwise the server's defaults (names + voice palette) stay in charge.
+    const anyCustom = Array.from({ length: hostCount }, (_, i) => speakerDrafts[i]).some(
+      (d) => d?.name?.trim() || d?.voice,
+    );
+    if (anyCustom) {
+      body.speakers = Array.from({ length: hostCount }, (_, i) => ({
+        name:
+          speakerDrafts[i]?.name?.trim() ||
+          DEFAULT_SPEAKER_NAMES[i % DEFAULT_SPEAKER_NAMES.length],
+        voice: speakerDrafts[i]?.voice ?? "",
+      }));
+    }
     if (activeSource.control === "urls") {
       body.file_urls = cleanUrls;
     } else if (activeSource.control === "resolve") {
@@ -383,6 +410,16 @@ export function GeneratorForm({
             );
           })}
         </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">
+            Theme / framing (optional)
+          </Label>
+          <Input
+            value={theme}
+            onChange={(e) => setTheme(e.target.value)}
+            placeholder={'e.g. "skeptic vs optimist" or "keep it beginner-friendly"'}
+          />
+        </div>
       </section>
 
       {/* ── 5. HOSTS ──────────────────────────────────────────────────── */}
@@ -391,44 +428,64 @@ export function GeneratorForm({
           <Users className="h-3.5 w-3.5" />
           Hosts
         </Label>
-        <div className="grid grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-5 gap-2.5">
           {HOST_COUNT_OPTIONS.map((opt) => {
-            const selected = hostCount === opt.value;
+            const isLarge = opt.value === "5+";
+            const selected = isLarge
+              ? hostCount >= 5
+              : hostCount === Number(opt.value);
             return (
               <button
                 key={opt.value}
                 type="button"
-                disabled={!opt.enabled}
-                onClick={() => opt.enabled && setHostCount(opt.value)}
+                onClick={() => setHostCount(isLarge ? Math.max(hostCount, 5) : Number(opt.value))}
                 className={cn(
                   "relative flex flex-col items-center gap-1 rounded-xl border p-3 text-center transition-all",
                   selected
                     ? "border-primary/60 bg-primary/5 shadow-sm ring-1 ring-primary/30"
-                    : opt.enabled
-                      ? "border-border bg-card hover:border-primary/30 hover:bg-accent/40"
-                      : "cursor-not-allowed border-dashed border-border bg-muted/20",
+                    : "border-border bg-card hover:border-primary/30 hover:bg-accent/40",
                 )}
               >
-                <span
-                  className={cn(
-                    "text-base font-semibold",
-                    opt.enabled ? "text-foreground" : "text-muted-foreground",
-                  )}
-                >
-                  {opt.label}
+                <span className="text-base font-semibold text-foreground">
+                  {isLarge && hostCount >= 5 ? hostCount : opt.label}
                 </span>
                 {opt.helper && (
                   <span className="text-[11px] text-muted-foreground">
                     {opt.helper}
                   </span>
                 )}
-                {!opt.enabled && <ComingSoonBadge className="mt-0.5" />}
               </button>
             );
           })}
         </div>
+        {hostCount >= 5 && (
+          <div className="flex items-center gap-2.5">
+            <Label className="text-xs text-muted-foreground">Exact count</Label>
+            <Select
+              value={String(hostCount)}
+              onValueChange={(v) => setHostCount(Number(v))}
+            >
+              <SelectTrigger className="h-8 w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: MAX_HOST_COUNT - 4 }, (_, i) => i + 5).map(
+                  (n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectContent>
+            </Select>
+            <span className="text-[11px] text-muted-foreground">
+              Large casts run a moderated roundtable format.
+            </span>
+          </div>
+        )}
 
-        {/* Advanced hosts — per-host name / gender / voice, all display-only. */}
+        {/* Advanced hosts — optional per-host name + voice. Anything left on
+            auto gets the server's defaults; everything here is optional. */}
         <Collapsible
           open={advancedHostsOpen}
           onOpenChange={setAdvancedHostsOpen}
@@ -436,8 +493,10 @@ export function GeneratorForm({
           <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-1 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
             <span className="flex items-center gap-1.5">
               <UserCog className="h-3.5 w-3.5" />
-              Advanced hosts
-              <ComingSoonBadge />
+              Host names &amp; voices
+              <span className="text-[11px] font-normal text-muted-foreground">
+                optional
+              </span>
             </span>
             <ChevronDown
               className={cn(
@@ -447,47 +506,66 @@ export function GeneratorForm({
             />
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-2.5 pt-3">
-            {[1, 2].map((n) => (
-              <div
-                key={n}
-                className="grid gap-2.5 rounded-xl border border-dashed border-border bg-muted/20 p-3 sm:grid-cols-3"
-              >
-                <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground">
-                    Host {n} name
-                  </Label>
-                  <Input disabled placeholder="e.g. Alex" />
+            {Array.from({ length: hostCount }, (_, i) => {
+              const draft = speakerDrafts[i] ?? {};
+              const voices = voicesForHostCount(hostCount);
+              return (
+                <div
+                  key={i}
+                  className="grid gap-2.5 rounded-xl border border-border bg-card p-3 sm:grid-cols-2"
+                >
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">
+                      Host {i + 1} name
+                    </Label>
+                    <Input
+                      value={draft.name ?? ""}
+                      onChange={(e) =>
+                        setSpeakerDrafts((d) => ({
+                          ...d,
+                          [i]: { ...d[i], name: e.target.value },
+                        }))
+                      }
+                      placeholder={`e.g. ${DEFAULT_SPEAKER_NAMES[i % DEFAULT_SPEAKER_NAMES.length]}`}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px] text-muted-foreground">
+                      Voice
+                    </Label>
+                    <Select
+                      value={draft.voice || "auto"}
+                      onValueChange={(v) =>
+                        setSpeakerDrafts((d) => ({
+                          ...d,
+                          [i]: { ...d[i], voice: v === "auto" ? "" : v },
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Auto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">Auto</SelectItem>
+                        {voices.map((v) => (
+                          <SelectItem key={v.value} value={v.value}>
+                            {v.label}
+                            <span className="ml-1.5 text-xs text-muted-foreground">
+                              {v.style}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground">
-                    Gender
-                  </Label>
-                  <Select disabled>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Any" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="neutral">Neutral</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[11px] text-muted-foreground">
-                    Voice
-                  </Label>
-                  <Select disabled>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Auto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="auto">Auto</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            ))}
+              );
+            })}
+            <p className="px-1 text-[11px] text-muted-foreground">
+              {hostCount <= 2
+                ? "Voices are Google Gemini studio voices."
+                : "Casts of 3+ use ElevenLabs voices."}
+            </p>
           </CollapsibleContent>
         </Collapsible>
       </section>

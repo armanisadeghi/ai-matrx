@@ -169,6 +169,11 @@ export function PodcastEpisodePage({ episode }: PodcastEpisodePageProps) {
                                     <p className="text-xs text-muted-foreground mb-0.5">Episode {episode.episode_number}</p>
                                 )}
                                 <h1 className="text-foreground font-bold text-xl leading-tight">{episode.title}</h1>
+                                {(episode.speakers?.length ?? 0) > 0 && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Hosted by {episode.speakers!.map((s) => s.name).join(", ")}
+                                    </p>
+                                )}
                             </div>
                             <div className="shrink-0 pt-1">
                                 <ShareButtonLight />

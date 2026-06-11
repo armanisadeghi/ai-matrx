@@ -74,13 +74,23 @@ export type PodcastLanguageCode =
   | "ja-JP"
   | "ko-KR";
 
-/** Conversational format. Educational + News are wired; the rest are previews. */
+/** Conversational format — passed to the host-count-aware script agents. */
 export type PodcastFormat =
   | "educational"
   | "news"
   | "entertainment"
   | "interview"
+  | "debate"
+  | "panel"
   | "storytelling";
+
+/** One requested speaker. `voice` is provider-appropriate: a Gemini prebuilt
+ *  voice name for 1–2 hosts, an ElevenLabs voice_id for 3+ hosts. Empty voice
+ *  → the server fills from its default palette. */
+export interface PodcastSpeaker {
+  name: string;
+  voice: string;
+}
 
 export interface PodcastGenerateRequest {
   // What to make a podcast about (pick the input type, fill the matching field).
@@ -92,10 +102,18 @@ export interface PodcastGenerateRequest {
   podcast_type: PodcastType;
   post_prep_option?: PodcastPostPrepOption;
 
-  // User-facing dimensions the backend will honor once wired. Carried on every
-  // request so the choice is persisted with the run from second zero.
+  // Host-count-aware dimensions (honored server-side since 2026-06-10):
+  // 1 → solo script + single voice; 2 → the proven two-host path;
+  // 3-4 → multihost script; 5-20 → roundtable script + ElevenLabs dialogue.
   language?: PodcastLanguageCode;
   host_count?: number;
+  /** Format string for the script agent (extends podcast_type for non-default
+   *  shows: interview / debate / panel / storytelling / entertainment). */
+  format?: string;
+  /** Optional freeform framing, e.g. "debate: pro vs con". */
+  theme?: string;
+  /** Optional speakers in turn-priority order — names + voices. */
+  speakers?: PodcastSpeaker[];
 
   // Optional context.
   show_id?: string | null;
@@ -152,6 +170,9 @@ export interface PodcastAssetEvent {
   prompt: string;
   success: boolean;
   error?: string | null;
+  /** Informational note on a SUCCESSFUL asset (e.g. "rendered with a backup
+   *  model after the primary was rejected") — a quiet chip, never an error. */
+  note?: string | null;
 }
 
 export interface PodcastCompleteEvent {
@@ -166,7 +187,41 @@ export interface PodcastCompleteEvent {
   description: string;
   image_urls: string[];
   video_urls: string[];
+  /** Resolved cast (names + voices) — present on host-count-aware backends. */
+  host_count?: number;
+  speakers?: PodcastSpeaker[];
   error?: string | null;
+}
+
+/** One live segment of the in-flight TTS render — base64 s16le PCM. Emitted by
+ *  the streaming TTS provider (matrx_connect AudioStreamChunkData) on the same
+ *  data stream. Chunks are a low-latency playback aid, NOT durable files; the
+ *  canonical file arrives via `audio_stream_end`. `seq` is monotonic from 0 —
+ *  a gap means missed audio (drop live playback, wait for the file). */
+export interface AudioStreamChunkEvent {
+  type: "audio_stream_chunk";
+  stream_id: string;
+  seq: number;
+  audio_base64: string;
+  mime_type: string;
+  encoding?: string;
+  sample_rate: number;
+  bits_per_sample: number;
+  channels: number;
+}
+
+/** End of the streaming TTS render — the persisted file is ready (minutes
+ *  before podcast_complete, which also waits on images/videos). */
+export interface AudioStreamEndEvent {
+  type: "audio_stream_end";
+  stream_id: string;
+  total_chunks: number;
+  url: string;
+  mime_type: string;
+  file_id?: string | null;
+  cdn_url?: string | null;
+  duration_ms?: number | null;
+  sample_rate: number;
 }
 
 export type PodcastDataEvent =
@@ -175,6 +230,8 @@ export type PodcastDataEvent =
   | PodcastStageEvent
   | PodcastMetadataEvent
   | PodcastAssetEvent
+  | AudioStreamChunkEvent
+  | AudioStreamEndEvent
   | PodcastCompleteEvent;
 
 // ── Render-ready run state ──────────────────────────────────────────────────
@@ -187,6 +244,8 @@ export interface MediaSlot {
   prompt: string;
   url: string | null;
   status: MediaSlotStatus;
+  /** Informational-only (e.g. "rendered with a backup model"). */
+  note?: string | null;
 }
 
 export type StageStatus = "running" | "done" | "failed";

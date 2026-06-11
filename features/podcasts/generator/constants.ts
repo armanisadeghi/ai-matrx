@@ -280,7 +280,7 @@ export const FORMAT_OPTIONS: FormatOption[] = [
   {
     value: "educational",
     label: "Educational",
-    helper: "Two-host teaching dialogue.",
+    helper: "Teaching dialogue.",
     icon: GraduationCap,
     enabled: true,
   },
@@ -292,25 +292,39 @@ export const FORMAT_OPTIONS: FormatOption[] = [
     enabled: true,
   },
   {
-    value: "entertainment",
-    label: "Entertainment",
-    helper: "Loose, lively, for-fun banter.",
-    icon: PartyPopper,
-    enabled: false,
-  },
-  {
     value: "interview",
     label: "Interview",
     helper: "Host-and-guest Q&A.",
     icon: MessageSquare,
-    enabled: false,
+    enabled: true,
+  },
+  {
+    value: "debate",
+    label: "Debate",
+    helper: "Opposing advocates, real disagreement.",
+    icon: MessageSquare,
+    enabled: true,
+  },
+  {
+    value: "panel",
+    label: "Panel",
+    helper: "Moderator + panelists with distinct views.",
+    icon: LayoutGrid,
+    enabled: true,
   },
   {
     value: "storytelling",
     label: "Storytelling",
     helper: "Narrative, single-thread arc.",
     icon: BookOpen,
-    enabled: false,
+    enabled: true,
+  },
+  {
+    value: "entertainment",
+    label: "Entertainment",
+    helper: "Loose, lively, for-fun banter.",
+    icon: PartyPopper,
+    enabled: true,
   },
 ];
 
@@ -369,7 +383,10 @@ export const POST_SCRIPT_PROCESSING_OPTIONS: ProcessingOption[] = [
 
 // ── Hosts ───────────────────────────────────────────────────────────────────
 //
-// Only 2 hosts is wired today. The rest are display-only previews.
+// 1–20 hosts, all wired (2026-06-10): 1 → solo script + single voice;
+// 2 → the proven two-host path; 3-4 → multihost script (Gemini caps at 2
+// voices, so 3+ audio runs ElevenLabs dialogue); 5-20 → roundtable script.
+// The "5+" tile opens an exact-count select.
 
 export interface HostCountOption {
   value: string;
@@ -379,11 +396,14 @@ export interface HostCountOption {
 }
 
 export const HOST_COUNT_OPTIONS: HostCountOption[] = [
-  { value: "1", label: "1", helper: "Solo", enabled: false },
-  { value: "2", label: "2", helper: "Current", enabled: true },
-  { value: "3", label: "3", helper: null, enabled: false },
-  { value: "4-20", label: "4–20", helper: "Up to 20", enabled: false },
+  { value: "1", label: "1", helper: "Solo", enabled: true },
+  { value: "2", label: "2", helper: "Classic duo", enabled: true },
+  { value: "3", label: "3", helper: null, enabled: true },
+  { value: "4", label: "4", helper: null, enabled: true },
+  { value: "5+", label: "5+", helper: "Up to 20", enabled: true },
 ];
+
+export const MAX_HOST_COUNT = 20;
 
 /**
  * Friendly fallback labels for stage keys, used when a stage_started event

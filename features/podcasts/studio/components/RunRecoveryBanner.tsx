@@ -20,6 +20,9 @@ interface RunRecoveryBannerProps {
   backgroundWorking: boolean;
   canReconnect: boolean;
   canRerun: boolean;
+  /** Run reports done but produced no audio — a mis-stamped failure
+   *  (audio is the critical path); resume re-runs only the audio tail. */
+  audioMissing?: boolean;
   error: string | null;
   onResume: () => void;
   onRerun: () => void;
@@ -63,6 +66,7 @@ export function RunRecoveryBanner({
   backgroundWorking,
   canReconnect,
   canRerun,
+  audioMissing = false,
   error,
   onResume,
   onRerun,
@@ -134,6 +138,30 @@ export function RunRecoveryBanner({
           onResume={onResume}
           onRerun={onRerun}
           tone="border-destructive/40"
+        />
+      </div>
+    );
+  }
+
+  // Finished without audio — the critical path failed even though the rest of
+  // the episode rendered. Never present this as a clean "done": offer the
+  // audio-only resume (finished media replays free).
+  if (status === "done" && audioMissing && (canReconnect || canRerun)) {
+    return (
+      <div className="flex flex-col gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-500 sm:flex-row sm:items-center sm:justify-between">
+        <span className="flex items-start gap-2.5">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+          <span>
+            The audio didn&apos;t make it — everything else (script, covers,
+            clips) is saved. Resume to re-run just the audio step.
+          </span>
+        </span>
+        <Actions
+          canReconnect={canReconnect}
+          canRerun={canRerun}
+          onResume={onResume}
+          onRerun={onRerun}
+          tone="border-amber-500/40"
         />
       </div>
     );

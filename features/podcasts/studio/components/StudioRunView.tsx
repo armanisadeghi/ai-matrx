@@ -8,6 +8,7 @@
 // post-creation toolkit. A creation is never lost again.
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   Podcast,
   ArrowLeft,
@@ -21,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { ComingSoonCard } from "@/components/coming-soon/ComingSoonCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PodcastAudioPlayer } from "@/features/podcasts/components/player/PodcastAudioPlayer";
+import { LiveAudioPlayer } from "@/features/podcasts/generator/components/LiveAudioPlayer";
 import { MetadataHero } from "@/features/podcasts/generator/components/MetadataHero";
 import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveProgressRail";
 import { ProductionTeaser } from "@/features/podcasts/generator/components/ProductionTeaser";
@@ -52,7 +54,24 @@ export function StudioRunView({ runId }: { runId: string }) {
     addAsset,
     selectedCoverUrl,
     selectCover,
+    livePlayer,
   } = useStudioRun(runId);
+
+  // When the canonical audio URL lands while the user is listening live, carry
+  // the position (and playing state) over to the real player and silence the
+  // streaming one — never two audio sources at once.
+  const [handoff, setHandoff] = useState<{
+    timeSec: number;
+    resume: boolean;
+  } | null>(null);
+  useEffect(() => {
+    if (state.audioUrl && livePlayer) {
+      const resume = livePlayer.isPlaying();
+      const timeSec = livePlayer.getPositionMs() / 1000;
+      livePlayer.pause();
+      if (timeSec > 0) setHandoff({ timeSec, resume });
+    }
+  }, [state.audioUrl, livePlayer]);
 
   if (loading) {
     return (
@@ -144,15 +163,20 @@ export function StudioRunView({ runId }: { runId: string }) {
         <div className="order-1 min-w-0 space-y-6">
           <MetadataHero state={state} />
 
-          {/* Audio: the finished player, or the live teaser while it renders. */}
+          {/* Audio: the finished player; the live (streaming) player while the
+              TTS is still rendering; or the teaser before any audio exists. */}
           {state.audioUrl ? (
             <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
               <PodcastAudioPlayer
                 audioUrl={state.audioUrl}
                 title={state.title}
                 coverImageUrl={effectiveCover ?? undefined}
+                initialTime={handoff?.timeSec}
+                autoPlay={handoff?.resume ?? false}
               />
             </div>
+          ) : livePlayer ? (
+            <LiveAudioPlayer player={livePlayer} title={state.title} />
           ) : streaming && state.title ? (
             <ProductionTeaser state={state} startedAt={startedAt} />
           ) : null}
@@ -213,6 +237,7 @@ export function StudioRunView({ runId }: { runId: string }) {
             backgroundWorking={backgroundWorking}
             canReconnect={canReconnect}
             canRerun={recovery.canRerun}
+            audioMissing={!state.audioUrl}
             error={state.error}
             onResume={reconnect}
             onRerun={rerunFromSource}

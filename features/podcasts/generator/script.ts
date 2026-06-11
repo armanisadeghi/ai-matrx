@@ -110,9 +110,25 @@ export function parseScript(raw: string): ParsedScript {
 }
 
 /**
- * Stable color slot for a speaker (by order of appearance) so the two hosts get
- * consistent, distinct accents across the transcript and the teaser.
+ * Stable color slot for a speaker (by order of appearance) so every host gets
+ * a consistent, distinct accent across the transcript and the teaser. Slots
+ * cycle through the SPEAKER_SLOT_TEXT palette for casts larger than it.
  */
-export function speakerSlot(speaker: string, speakers: string[]): 0 | 1 {
-  return speakers.indexOf(speaker) % 2 === 0 ? 0 : 1;
+export function speakerSlot(speaker: string, speakers: string[]): number {
+  const idx = speakers.indexOf(speaker);
+  return idx === -1 ? 0 : idx % SPEAKER_SLOT_TEXT.length;
 }
+
+/** Text color per speaker slot — distinct accents for up to 8 concurrent
+ *  voices before cycling (semantic primary/secondary first, then a stable
+ *  hue walk that reads in both themes). */
+export const SPEAKER_SLOT_TEXT: string[] = [
+  "text-primary",
+  "text-secondary",
+  "text-sky-500",
+  "text-amber-500",
+  "text-emerald-500",
+  "text-fuchsia-500",
+  "text-orange-500",
+  "text-violet-500",
+];

@@ -18,7 +18,7 @@ import { AudioLines } from "lucide-react";
 import { InlineMediaRef } from "@/features/files";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "./ElapsedTimer";
-import { parseScript, speakerSlot } from "../script";
+import { parseScript, speakerSlot, SPEAKER_SLOT_TEXT } from "../script";
 import { podcastMediaRef } from "../media";
 import type { PodcastRunState } from "../types";
 
@@ -148,9 +148,9 @@ export function ProductionTeaser({ state, startedAt }: ProductionTeaserProps) {
                       <span
                         className={cn(
                           "font-semibold",
-                          speakerSlot(turn.speaker, dialogue.speakers) === 0
-                            ? "text-primary"
-                            : "text-secondary",
+                          SPEAKER_SLOT_TEXT[
+                            speakerSlot(turn.speaker, dialogue.speakers)
+                          ],
                         )}
                       >
                         {turn.speaker}:

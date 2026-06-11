@@ -11950,12 +11950,14 @@ export type Database = {
           display_mode: string
           duration_seconds: number | null
           episode_number: number | null
+          host_count: number | null
           id: string
           image_url: string | null
           is_published: boolean
           og_image_url: string | null
           show_id: string | null
           slug: string
+          speakers: Json | null
           thumbnail_url: string | null
           title: string
           updated_at: string
@@ -11969,12 +11971,14 @@ export type Database = {
           display_mode?: string
           duration_seconds?: number | null
           episode_number?: number | null
+          host_count?: number | null
           id?: string
           image_url?: string | null
           is_published?: boolean
           og_image_url?: string | null
           show_id?: string | null
           slug: string
+          speakers?: Json | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string
@@ -11988,12 +11992,14 @@ export type Database = {
           display_mode?: string
           duration_seconds?: number | null
           episode_number?: number | null
+          host_count?: number | null
           id?: string
           image_url?: string | null
           is_published?: boolean
           og_image_url?: string | null
           show_id?: string | null
           slug?: string
+          speakers?: Json | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
@@ -12137,6 +12143,7 @@ export type Database = {
           episode_id: string | null
           episode_slug: string | null
           error: string | null
+          host_count: number | null
           id: string
           image_prompts: string[]
           image_urls: string[]
@@ -12146,6 +12153,7 @@ export type Database = {
           script: string | null
           selected_cover_url: string | null
           show_id: string | null
+          speakers: Json | null
           status: string
           title: string
           updated_at: string
@@ -12161,6 +12169,7 @@ export type Database = {
           episode_id?: string | null
           episode_slug?: string | null
           error?: string | null
+          host_count?: number | null
           id?: string
           image_prompts?: string[]
           image_urls?: string[]
@@ -12170,6 +12179,7 @@ export type Database = {
           script?: string | null
           selected_cover_url?: string | null
           show_id?: string | null
+          speakers?: Json | null
           status?: string
           title?: string
           updated_at?: string
@@ -12185,6 +12195,7 @@ export type Database = {
           episode_id?: string | null
           episode_slug?: string | null
           error?: string | null
+          host_count?: number | null
           id?: string
           image_prompts?: string[]
           image_urls?: string[]
@@ -12194,6 +12205,7 @@ export type Database = {
           script?: string | null
           selected_cover_url?: string | null
           show_id?: string | null
+          speakers?: Json | null
           status?: string
           title?: string
           updated_at?: string

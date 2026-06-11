@@ -327,7 +327,14 @@ export async function fetchPodcastRunDetail(runId: string): Promise<RunDetail | 
         error: s.error,
       })),
     recovery: {
-      resumable: (status === "processing" || status === "failed") && hasCompleted,
+      // "Completed" without audio AND without an episode is a mis-stamped
+      // failure (the pre-2026-06-10 server claimed success when the audio
+      // stage failed) — a resume re-runs only the audio tail, so offer it.
+      resumable:
+        (status === "processing" ||
+          status === "failed" ||
+          (status === "completed" && !audioUrl && !run.episode_id)) &&
+        hasCompleted,
       can_rerun_from_source: canRerun,
     },
     request,

@@ -29,6 +29,13 @@ interface PodcastAudioPlayerProps {
   onError?: () => void;
   /** Use white/light text for dark backgrounds (video mode) */
   dark?: boolean;
+  /** Start playback at this offset (seconds) once metadata loads — used to
+   *  carry the position over from the live (streaming) player. */
+  initialTime?: number;
+  /** Attempt to continue playing on load (the live-player handoff). Browsers
+   *  allow this after any prior user gesture on the page; a denial is silent
+   *  and the user just presses play at the carried-over position. */
+  autoPlay?: boolean;
 }
 
 // Standard variant of HTMLMediaElement extended with the older vendor-prefixed
@@ -80,6 +87,8 @@ export function PodcastAudioPlayer({
   coverImageUrl,
   onError,
   dark = false,
+  initialTime,
+  autoPlay = false,
 }: PodcastAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -107,8 +116,35 @@ export function PodcastAudioPlayer({
     });
   });
   const [audioError, setAudioError] = useState(false);
+  // The live-player handoff (initialTime/autoPlay) applies exactly once per
+  // source — not again after the user seeks or replays.
+  const handoffAppliedRef = useRef(false);
+  // One silent retry per source before declaring failure — a just-persisted
+  // CDN object can 404/stall for a beat right after generation finishes.
+  const errorRetriedRef = useRef(false);
 
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  const handleLoadedMetadata = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    setDuration(audio.duration ?? 0);
+    if (handoffAppliedRef.current) return;
+    handoffAppliedRef.current = true;
+    if (initialTime && initialTime > 0 && Number.isFinite(audio.duration)) {
+      const t = Math.min(initialTime, Math.max(0, audio.duration - 0.25));
+      audio.currentTime = t;
+      setCurrentTime(t);
+    }
+    if (autoPlay) {
+      audio
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch(() => {
+          // Autoplay denied — the user resumes manually at the carried position.
+        });
+    }
+  }, [initialTime, autoPlay]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
@@ -193,6 +229,8 @@ export function PodcastAudioPlayer({
     setCurrentTime(0);
     setDuration(0);
     setAudioError(false);
+    handoffAppliedRef.current = false;
+    errorRetriedRef.current = false;
   }, [audioUrl]);
 
   // Apply playback speed AND preserve pitch — this is the YouTube/Spotify
@@ -280,9 +318,14 @@ export function PodcastAudioPlayer({
         ref={audioRef}
         src={audioUrl}
         onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
-        onLoadedMetadata={() => setDuration(audioRef.current?.duration ?? 0)}
+        onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => setIsPlaying(false)}
         onError={() => {
+          if (!errorRetriedRef.current) {
+            errorRetriedRef.current = true;
+            setTimeout(() => audioRef.current?.load(), 1500);
+            return;
+          }
           setAudioError(true);
           onError?.();
         }}
