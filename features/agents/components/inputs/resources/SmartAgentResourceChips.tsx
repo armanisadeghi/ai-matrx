@@ -3,15 +3,14 @@
 /**
  * SmartAgentResourceChips
  *
- * Renders chips for all attached resources on an execution instance.
+ * Renders attachment tiles for all resources on an execution instance.
+ * Non-file blocks use ResourceAttachmentTile; file_id media uses FileResourceChip.
  * Reads from instanceResources, dispatches removeResource directly.
- * No prop callbacks needed — conversationId is the only prop.
  */
 
-import { useCallback, createElement } from "react";
+import { useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  X,
   StickyNote,
   CheckSquare,
   Table2,
@@ -23,7 +22,6 @@ import {
   Video,
   Youtube,
   FolderKanban,
-  Loader2,
   AlertCircle,
   Code2,
 } from "lucide-react";
@@ -40,6 +38,7 @@ import { TaskHoverPreview } from "@/features/agents/components/previews/TaskHove
 import { WebpageHoverPreview } from "@/features/agents/components/previews/WebpageHoverPreview";
 import { DataRefHoverPreview } from "@/features/agents/components/previews/DataRefHoverPreview";
 import { FileResourceChip } from "@/features/files";
+import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
 import type { DataRef } from "@/features/agents/types/message-types";
 
 function getBlockTypeDisplay(blockType: ResourceBlockType) {
@@ -47,93 +46,63 @@ function getBlockTypeDisplay(blockType: ResourceBlockType) {
     ResourceBlockType,
     {
       icon: React.ElementType;
-      color: string;
-      bg: string;
       label: string;
     }
   > = {
     text: {
       icon: FileText,
-      color: "text-gray-600 dark:text-gray-400",
-      bg: "bg-gray-100 dark:bg-gray-800",
       label: "Text",
     },
     image: {
       icon: Image,
-      color: "text-blue-600 dark:text-blue-400",
-      bg: "bg-blue-100 dark:bg-blue-950/30",
       label: "Image",
     },
     audio: {
       icon: Mic,
-      color: "text-pink-600 dark:text-pink-400",
-      bg: "bg-pink-100 dark:bg-pink-950/30",
       label: "Audio",
     },
     video: {
       icon: Video,
-      color: "text-indigo-600 dark:text-indigo-400",
-      bg: "bg-indigo-100 dark:bg-indigo-950/30",
       label: "Video",
     },
     youtube_video: {
       icon: Youtube,
-      color: "text-red-600 dark:text-red-400",
-      bg: "bg-red-100 dark:bg-red-950/30",
       label: "YouTube",
     },
     document: {
       icon: File,
-      color: "text-purple-600 dark:text-purple-400",
-      bg: "bg-purple-100 dark:bg-purple-950/30",
       label: "File",
     },
     input_webpage: {
       icon: Globe,
-      color: "text-teal-600 dark:text-teal-400",
-      bg: "bg-teal-100 dark:bg-teal-950/30",
       label: "Webpage",
     },
     input_notes: {
       icon: StickyNote,
-      color: "text-orange-600 dark:text-orange-400",
-      bg: "bg-orange-100 dark:bg-orange-950/30",
       label: "Note",
     },
     input_task: {
       icon: CheckSquare,
-      color: "text-blue-600 dark:text-blue-400",
-      bg: "bg-blue-100 dark:bg-blue-950/30",
       label: "Task",
     },
     input_table: {
       icon: Table2,
-      color: "text-green-600 dark:text-green-400",
-      bg: "bg-green-100 dark:bg-green-950/30",
       label: "Table",
     },
     input_list: {
       icon: FolderKanban,
-      color: "text-violet-600 dark:text-violet-400",
-      bg: "bg-violet-100 dark:bg-violet-950/30",
       label: "List",
     },
     input_data: {
       icon: FileText,
-      color: "text-gray-600 dark:text-gray-400",
-      bg: "bg-gray-100 dark:bg-gray-800",
       label: "Data",
     },
     editor_error: {
       icon: AlertCircle,
-      color: "text-red-600 dark:text-red-400",
-      bg: "bg-red-100 dark:bg-red-950/30",
       label: "Error",
     },
     editor_code_snippet: {
       icon: Code2,
-      color: "text-cyan-600 dark:text-cyan-400",
-      bg: "bg-cyan-100 dark:bg-cyan-950/30",
       label: "Code",
     },
   };
@@ -188,15 +157,10 @@ function getResourceLabel(resource: ManagedResource): string {
   return getBlockTypeDisplay(resource.blockType).label;
 }
 
-function truncate(s: string, max = 20) {
-  return s.length <= max ? s : `${s.slice(0, max)}…`;
-}
-
 /**
  * Media blocks (image / audio / video / document) whose source carries a
  * cld_files UUID get the rich `FileResourceChip` — real thumbnail,
- * hover-peek, click-to-preview. Everything else (text / notes / tasks /
- * webpages / etc.) keeps the existing icon-only pill below.
+ * hover-peek, click-to-preview. Everything else uses `ResourceAttachmentTile`.
  */
 function extractFileId(resource: ManagedResource): string | null {
   const isMedia =
@@ -240,43 +204,31 @@ function ResourceChip({ resource, onRemove }: ResourceChipProps) {
   }
 
   const display = getBlockTypeDisplay(resource.blockType);
-  const Icon = display.icon;
-  const label = truncate(getResourceLabel(resource));
+  const label = getResourceLabel(resource);
 
-  const chip = (
+  const tile = (
     <motion.div
       initial={{ opacity: 0, scale: 0.85 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.85 }}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${display.bg} border border-border/60 shadow-[0_1px_0_0_rgba(255,255,255,0.5)_inset,0_1px_1px_0_rgba(0,0,0,0.04)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_1px_1px_0_rgba(0,0,0,0.3)] ${isError ? "ring-1 ring-destructive/50" : ""}`}
     >
-      {isPending ? (
-        <Loader2 className={`w-3 h-3 ${display.color} animate-spin`} />
-      ) : isError ? (
-        <AlertCircle className="w-3 h-3 text-destructive" />
-      ) : (
-        createElement(Icon, { className: `w-3 h-3 ${display.color}` })
-      )}
-      <span className="text-foreground select-none">{label}</span>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove();
-        }}
-        className="ml-0.5 p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-        aria-label={`Remove ${label}`}
-      >
-        <X className="w-2.5 h-2.5 text-muted-foreground" />
-      </button>
+      <ResourceAttachmentTile
+        typeLabel={display.label}
+        title={label}
+        icon={display.icon}
+        themeKey={resource.blockType}
+        onRemove={onRemove}
+        pending={isPending}
+        error={isError}
+      />
     </motion.div>
   );
 
   // Don't show hover previews while the resource is still resolving/erroring —
   // the source data may not be in its final shape yet.
-  if (isPending || isError) return chip;
+  if (isPending || isError) return tile;
 
-  return wrapWithPreview(resource, chip);
+  return wrapWithPreview(resource, tile);
 }
 
 /**

@@ -4,7 +4,7 @@ import { cache } from 'react';
 import type { Metadata } from 'next';
 import { PodcastEpisodePage } from '@/features/podcasts/components/player/PodcastEpisodePage';
 import { PodcastShowPage } from '@/features/podcasts/components/player/PodcastShowPage';
-import type { PcEpisodeWithShow, PcShow, PcEpisode } from '@/features/podcasts/types';
+import type { PcArticle, PcEpisodeWithShow, PcShow, PcEpisode } from '@/features/podcasts/types';
 
 export const revalidate = 3600;
 
@@ -132,7 +132,19 @@ export default async function PodcastPage({
     }
 
     if (result.type === 'episode') {
-        return <PodcastEpisodePage episode={result.data} />;
+        // Published companion content (blog / show notes) drives the live CTAs.
+        const supabase = await createClient();
+        const { data: articles } = await supabase
+            .from('pc_articles')
+            .select('*')
+            .eq('episode_id', result.data.id)
+            .eq('status', 'published');
+        return (
+            <PodcastEpisodePage
+                episode={result.data}
+                articles={(articles ?? []) as PcArticle[]}
+            />
+        );
     }
 
     // Show page — fetch its published episodes

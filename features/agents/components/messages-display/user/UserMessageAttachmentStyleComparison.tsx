@@ -14,10 +14,10 @@ import {
   Music,
   FileText,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { SmartAgentResourceChips } from "@/features/agents/components/inputs/resources/SmartAgentResourceChips";
 import type { DemoAttachmentSpec } from "./userMessageChipsDemoData";
+import { ResourceAttachmentTile } from "./ResourceAttachmentTile";
 
 const COMPARISON_ICONS: Record<
   string,
@@ -34,7 +34,6 @@ const COMPARISON_ICONS: Record<
 
 /** Production sent-message styling from AgentUserMessage AttachmentChip. */
 function SentMessageChip({ spec }: { spec: DemoAttachmentSpec }) {
-  const Icon = COMPARISON_ICONS[spec.id] ?? FileText;
   if (spec.id === "image-legacy") {
     return (
       <FileResourceChip
@@ -45,18 +44,14 @@ function SentMessageChip({ spec }: { spec: DemoAttachmentSpec }) {
     );
   }
 
+  const Icon = COMPARISON_ICONS[spec.id] ?? FileText;
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-medium leading-none",
-        spec.chipBg,
-        spec.chipBorder,
-        spec.iconColor,
-      )}
-    >
-      <Icon className="w-2.5 h-2.5 flex-shrink-0" />
-      <span className="max-w-[120px] truncate">{spec.title}</span>
-    </span>
+    <ResourceAttachmentTile
+      typeLabel={spec.label}
+      title={spec.title}
+      icon={Icon}
+      themeKey={spec.id}
+    />
   );
 }
 
@@ -138,9 +133,10 @@ export function UserMessageAttachmentStyleComparison({
           Side-by-side: attachment styles
         </h2>
         <p className="text-xs text-muted-foreground mt-2 max-w-3xl">
-          Same six fake resources in each column — note, task, webpage, image,
-          audio, YouTube. Middle column is the live input component (with ✕);
-          sent messages would drop the remove button.
+          Same six fake resources in each column. Input bar and sent messages
+          both use <code className="text-[10px]">ResourceAttachmentTile</code>{" "}
+          (file attachments with a <code className="text-[10px]">file_id</code>{" "}
+          still use <code className="text-[10px]">FileResourceChip</code>).
         </p>
       </div>
 
@@ -150,7 +146,7 @@ export function UserMessageAttachmentStyleComparison({
           source="AgentUserMessage → AttachmentChip"
           badge="production"
         >
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {specs.map((spec) => (
               <SentMessageChip key={spec.id} spec={spec} />
             ))}
@@ -158,9 +154,9 @@ export function UserMessageAttachmentStyleComparison({
         </ComparisonColumn>
 
         <ComparisonColumn
-          title="Input bar (polished)"
-          source="SmartAgentResourceChips → ResourceChip"
-          badge="recommended"
+          title="Input bar"
+          source="SmartAgentResourceChips → ResourceAttachmentTile"
+          badge="production"
         >
           <div className="-mx-2 px-2">
             <SmartAgentResourceChips
@@ -168,8 +164,8 @@ export function UserMessageAttachmentStyleComparison({
             />
           </div>
           <p className="text-[10px] text-muted-foreground">
-            Hover chips for previews. Image/audio use FileResourceChip when a{" "}
-            <code className="text-[10px]">file_id</code> is present.
+            Hover for previews. Remove via corner ✕. Image/audio with{" "}
+            <code className="text-[10px]">file_id</code> use FileResourceChip.
           </p>
         </ComparisonColumn>
 

@@ -527,12 +527,21 @@ export function useStudioRun(runId: string): UseStudioRun {
       setLoading(false);
 
       // A completed run carries DURABLE (public/CDN) audio + cover on its
-      // episode — prefer those over the expiring signed stream URLs.
+      // episode — prefer those over the expiring signed stream URLs. The
+      // agent_run isn't always linked to its episode (older runs / resume
+      // persists left agent_run.episode_id null), so fall back to the
+      // pc_studio_runs row's episode_id and backfill it into state — the
+      // run page's post-run tools (companion content) gate on state.episodeId.
       const episodeId = runDetail?.episode_id ?? row?.episode_id ?? null;
       if (episodeId) {
         const episode = await podcastService.fetchEpisodeById(episodeId);
         if (episode && !cancelled) {
-          setState((s) => ({ ...s, audioUrl: episode.audio_url || s.audioUrl }));
+          setState((s) => ({
+            ...s,
+            episodeId: s.episodeId ?? episode.id,
+            episodeSlug: s.episodeSlug ?? episode.slug ?? null,
+            audioUrl: episode.audio_url || s.audioUrl,
+          }));
           if (episode.image_url) setSelectedCoverUrl(episode.image_url);
         }
       }

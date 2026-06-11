@@ -210,12 +210,16 @@ export function useXaiVoiceSession(
   const mirrorFlags = useCallback(() => {
     const tokenMgr = tokenManagerRef.current;
     const expiresAt = tokenMgr?.expiresAt() ?? null;
+    const stats = captureRef.current?.getStats();
     voiceDebugSetFlags(instanceId, {
       status:
         store.getState().voiceAgent.instances[instanceId]?.status ?? "idle",
       wsOpen: xaiClientRef.current?.isOpen() ?? false,
       streamingReady: xaiClientRef.current?.isStreamingReady() ?? false,
       captureActive: captureRef.current?.isActive() ?? false,
+      micFramesCaptured: stats?.framesCaptured ?? 0,
+      micFramesSent: stats?.framesSent ?? 0,
+      micRms: stats?.lastRms ?? 0,
       tokenPresent: !!tokenMgr?.peek(),
       tokenExpiresInS:
         expiresAt !== null ? Math.round(expiresAt - Date.now() / 1000) : null,

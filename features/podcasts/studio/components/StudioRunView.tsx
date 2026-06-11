@@ -14,12 +14,11 @@ import {
   ArrowLeft,
   Plus,
   RefreshCw,
-  BookOpen,
   Bookmark,
-  ListChecks,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ComingSoonCard } from "@/components/coming-soon/ComingSoonCard";
+import { EpisodeContentStudio } from "@/features/podcasts/studio/components/EpisodeContentStudio";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PodcastAudioPlayer } from "@/features/podcasts/components/player/PodcastAudioPlayer";
 import { LiveAudioPlayer } from "@/features/podcasts/generator/components/LiveAudioPlayer";
@@ -191,12 +190,8 @@ export function StudioRunView({ runId }: { runId: string }) {
             />
           )}
 
-          {isDone && (
-            <ComingSoonCard
-              icon={BookOpen}
-              title="Blog post"
-              description="Turn this episode into a polished, shareable article — generated from the same script."
-            />
+          {isDone && state.episodeId && (
+            <EpisodeContentStudio episodeId={state.episodeId} />
           )}
 
           <MediaOptionsGrid
@@ -211,18 +206,11 @@ export function StudioRunView({ runId }: { runId: string }) {
           />
 
           {isDone && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <ComingSoonCard
-                icon={Bookmark}
-                title="Chapter markers"
-                description="Auto-generated timestamps that let listeners jump to each topic."
-              />
-              <ComingSoonCard
-                icon={ListChecks}
-                title="Show notes"
-                description="A structured summary with key points, links, and references."
-              />
-            </div>
+            <ComingSoonCard
+              icon={Bookmark}
+              title="Chapter markers"
+              description="Auto-generated timestamps that let listeners jump to each topic."
+            />
           )}
         </div>
 

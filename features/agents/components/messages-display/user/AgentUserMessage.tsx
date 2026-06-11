@@ -41,6 +41,7 @@ import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHo
 import { FileResourceChip } from "@/features/files";
 import { InlineMediaRef } from "@/features/files";
 import { ContextSlotChipStrip } from "@/features/agents/components/context-slots-display/ContextSlotChipStrip";
+import { ResourceAttachmentTile } from "./ResourceAttachmentTile";
 import type { RootState } from "@/lib/redux/store";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -466,38 +467,26 @@ function extractBlockFileId(raw: ContentBlock): string | null {
 
 function AttachmentChip({ block }: { block: NormalisedBlock }) {
   const [open, setOpen] = useState(false);
-  const Icon = block.icon;
 
-  // Media blocks with a cld_files UUID get the rich FileResourceChip —
-  // real thumbnail + hover-peek + click → canonical FilePreview dialog.
-  // Everything else (notes, tasks, webpages, tables, list, data, etc.)
-  // keeps the legacy per-type chip + modal pathway below.
   const fileId = extractBlockFileId(block.raw);
   if (fileId) {
     return <FileResourceChip fileId={fileId} size="xs" />;
   }
 
-  const chipButton = (
-    <button
-      onClick={() => setOpen(true)}
-      className={cn(
-        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-medium leading-none",
-        "cursor-pointer transition-colors hover:brightness-95 active:brightness-90",
-        block.chipBg,
-        block.chipBorder,
-        block.iconColor,
-      )}
+  const tile = (
+    <ResourceAttachmentTile
+      typeLabel={block.label}
       title={block.title}
-    >
-      <Icon className="w-2.5 h-2.5 flex-shrink-0" />
-      <span className="max-w-[120px] truncate">{block.title}</span>
-    </button>
+      icon={block.icon}
+      themeKey={block.blockType}
+      onClick={() => setOpen(true)}
+    />
   );
 
   return (
     <>
       <BlockHoverPreview block={block.raw} side="top" align="start">
-        {chipButton}
+        {tile}
       </BlockHoverPreview>
 
       {open && <BlockModal block={block} onClose={() => setOpen(false)} />}
@@ -608,7 +597,7 @@ export function AgentUserMessage({
 
           {/* Attachment chips */}
           {normalisedBlocks.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {normalisedBlocks.map((block) => (
                 <AttachmentChip key={block.key} block={block} />
               ))}

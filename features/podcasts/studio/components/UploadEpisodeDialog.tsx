@@ -52,6 +52,7 @@ import {
   type AssetUrls,
 } from "@/features/podcasts/components/admin/AssetUploader";
 import { podcastService } from "@/features/podcasts/service";
+import { slugify } from "@/features/podcasts/utils";
 import type {
   PcShow,
   PcEpisodeWithShow,
@@ -59,19 +60,6 @@ import type {
 } from "@/features/podcasts/types";
 
 const ACCEPT_AUDIO = "audio/*,.mp3,.m4a,.wav,.aac,.ogg";
-
-function slugify(value: string): string {
-  return (
-    value
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 60) || "episode"
-  );
-}
 
 interface UploadEpisodeDialogProps {
   open: boolean;
@@ -193,7 +181,7 @@ export function UploadEpisodeDialog({
 
       const suffix = Math.random().toString(36).slice(2, 7);
       const created = await podcastService.createEpisode({
-        slug: `${slugify(title)}-${suffix}`,
+        slug: `${slugify(title) || "episode"}-${suffix}`,
         show_id: showId,
         title: title.trim(),
         description: description.trim() || null,

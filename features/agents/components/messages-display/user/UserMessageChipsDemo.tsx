@@ -182,10 +182,11 @@ export function UserMessageChipsDemo() {
             User Message Chips
           </h1>
           <p className="text-sm text-muted-foreground">
-            Preview how context slots and resource attachments render inside{" "}
-            <code className="text-xs">AgentUserMessage</code>. Click chips to
-            open the detail sheet (context) or file preview (when a real{" "}
-            <code className="text-xs">file_id</code> exists).
+            Production attachment tiles in{" "}
+            <code className="text-xs">AgentUserMessage</code> and{" "}
+            <code className="text-xs">SmartAgentResourceChips</code>. Style
+            explorations below are kept for future tuning — visit{" "}
+            <code className="text-xs">/demos/agents/user-message-chips</code>.
           </p>
         </header>
 

@@ -11942,6 +11942,69 @@ export type Database = {
           },
         ]
       }
+      pc_articles: {
+        Row: {
+          canonical_url: string | null
+          content_markdown: string
+          created_at: string
+          episode_id: string
+          id: string
+          kind: string
+          og_image_url: string | null
+          show_id: string | null
+          slug: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          canonical_url?: string | null
+          content_markdown?: string
+          created_at?: string
+          episode_id: string
+          id?: string
+          kind?: string
+          og_image_url?: string | null
+          show_id?: string | null
+          slug?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          canonical_url?: string | null
+          content_markdown?: string
+          created_at?: string
+          episode_id?: string
+          id?: string
+          kind?: string
+          og_image_url?: string | null
+          show_id?: string | null
+          slug?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pc_articles_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "pc_episodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pc_articles_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "pc_shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pc_episodes: {
         Row: {
           audio_url: string

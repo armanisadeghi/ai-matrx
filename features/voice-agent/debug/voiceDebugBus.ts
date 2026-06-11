@@ -39,6 +39,12 @@ export interface VoiceDebugFlags {
   wsOpen: boolean;
   streamingReady: boolean;
   captureActive: boolean;
+  /** Mic PCM frames produced by the worklet this session. */
+  micFramesCaptured: number;
+  /** Mic frames actually sent to the WebSocket this session. */
+  micFramesSent: number;
+  /** Most recent mic RMS [0..1] — non-zero means audio is reaching the worklet. */
+  micRms: number;
   tokenPresent: boolean;
   /** Seconds until the cached token expires, or null if none. */
   tokenExpiresInS: number | null;
@@ -67,6 +73,9 @@ function emptyFlags(): VoiceDebugFlags {
     wsOpen: false,
     streamingReady: false,
     captureActive: false,
+    micFramesCaptured: 0,
+    micFramesSent: 0,
+    micRms: 0,
     tokenPresent: false,
     tokenExpiresInS: null,
     micPermission: "unknown",

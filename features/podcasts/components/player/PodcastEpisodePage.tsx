@@ -1,18 +1,25 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Music, Share2, Link as LinkIcon, ListChecks, BookOpen } from 'lucide-react';
-import type { PcEpisodeWithShow } from '../../types';
+import Link from 'next/link';
+import { Music, Share2, Link as LinkIcon, ListChecks, BookOpen, ChevronRight } from 'lucide-react';
+import type { PcArticle, PcEpisodeWithShow } from '../../types';
 import { PodcastAudioPlayer } from './PodcastAudioPlayer';
+import { EpisodeShowNotes } from './EpisodeShowNotes';
 import { useShare } from '../../hooks/useShare';
 import { InlineMediaRef } from '@/features/files';
 import { ComingSoonBadge } from '@/components/coming-soon/ComingSoonBadge';
 
 interface PodcastEpisodePageProps {
     episode: PcEpisodeWithShow;
+    /** Published companion articles for this episode (from the route). */
+    articles?: PcArticle[];
 }
 
-export function PodcastEpisodePage({ episode }: PodcastEpisodePageProps) {
+export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePageProps) {
+    const blog = articles.find((a) => a.kind === 'blog') ?? null;
+    const showNotes = articles.find((a) => a.kind === 'show_notes') ?? null;
+    const episodeHref = `/podcast/${episode.slug ?? episode.id}`;
     const coverImage = episode.image_url ?? episode.show?.image_url ?? null;
     const thumbnailImage = episode.thumbnail_url ?? episode.show?.thumbnail_url ?? coverImage;
     const [videoFailed, setVideoFailed] = useState(false);
@@ -194,22 +201,37 @@ export function PodcastEpisodePage({ episode }: PodcastEpisodePageProps) {
                             </div>
                         )}
 
-                        {/* Coming-soon companion content for this episode */}
+                        {showNotes && <EpisodeShowNotes article={showNotes} className="mt-5" />}
+
+                        {/* Companion content — live links when published, else Coming soon. */}
                         <div className="mt-5 space-y-2">
-                            <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-border bg-muted/20 px-3 py-2.5">
-                                <ListChecks className="h-4 w-4 shrink-0 text-muted-foreground/50" />
-                                <span className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
-                                    Chapters &amp; show notes
-                                    <ComingSoonBadge />
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-border bg-muted/20 px-3 py-2.5">
-                                <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground/50" />
-                                <span className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
-                                    Read the blog post
-                                    <ComingSoonBadge />
-                                </span>
-                            </div>
+                            {!showNotes && (
+                                <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-border bg-muted/20 px-3 py-2.5">
+                                    <ListChecks className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                                    <span className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
+                                        Chapters &amp; show notes
+                                        <ComingSoonBadge />
+                                    </span>
+                                </div>
+                            )}
+                            {blog ? (
+                                <Link
+                                    href={`${episodeHref}/blog`}
+                                    className="flex items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2.5 transition-colors hover:border-primary/40 hover:bg-accent/40"
+                                >
+                                    <BookOpen className="h-4 w-4 shrink-0 text-primary" />
+                                    <span className="flex-1 text-sm font-medium text-foreground">Read the blog post</span>
+                                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                </Link>
+                            ) : (
+                                <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-border bg-muted/20 px-3 py-2.5">
+                                    <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                                    <span className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
+                                        Read the blog post
+                                        <ComingSoonBadge />
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

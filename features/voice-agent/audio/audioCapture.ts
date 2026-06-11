@@ -47,6 +47,19 @@ export interface CaptureError {
   cause?: unknown;
 }
 
+export interface CaptureStats {
+  /** PCM frames produced by the worklet since start(). */
+  framesCaptured: number;
+  /** Frames handed to the live sink (i.e. sent to the WebSocket) since start(). */
+  framesSent: number;
+  /** Frames currently held in the pre-connect buffer (pre session.updated). */
+  framesBuffered: number;
+  /** Most recent mic RMS [0..1] reported by the worklet. */
+  lastRms: number;
+  /** Date.now() of the last PCM frame, or null. */
+  lastFrameAt: number | null;
+}
+
 export interface AudioCaptureHandle {
   warmupSync: () => void;
   start: () => Promise<void>;
@@ -56,6 +69,8 @@ export interface AudioCaptureHandle {
   /** Listen for unrecoverable capture errors (mic disconnect, permission revoked). */
   onError: (cb: (err: CaptureError) => void) => () => void;
   isActive: () => boolean;
+  /** Live diagnostics — frame flow + amplitude. For the debug panel. */
+  getStats: () => CaptureStats;
 }
 
 export function createAudioCapture(): AudioCaptureHandle {
@@ -75,6 +90,12 @@ export function createAudioCapture(): AudioCaptureHandle {
   let liveSink: ((pcm: ArrayBuffer) => void) | null = null;
   let active = false;
   const errorCallbacks = new Set<(err: CaptureError) => void>();
+
+  // Live diagnostics.
+  let framesCaptured = 0;
+  let framesSent = 0;
+  let lastRms = 0;
+  let lastFrameAt: number | null = null;
 
   function emitError(err: CaptureError): void {
     for (const cb of errorCallbacks) {
@@ -120,6 +141,10 @@ export function createAudioCapture(): AudioCaptureHandle {
    */
   async function start(): Promise<void> {
     if (active) return;
+    framesCaptured = 0;
+    framesSent = 0;
+    lastRms = 0;
+    lastFrameAt = null;
     if (!ctx) warmupSync();
     if (!ctx)
       throw {
@@ -214,7 +239,10 @@ export function createAudioCapture(): AudioCaptureHandle {
         | { type: "rms"; value: number };
 
       if (msg.type === "pcm") {
+        framesCaptured += 1;
+        lastFrameAt = Date.now();
         if (liveSink) {
+          framesSent += 1;
           liveSink(msg.payload);
         } else {
           // Pre-connect buffering with a safety cap.
@@ -231,6 +259,7 @@ export function createAudioCapture(): AudioCaptureHandle {
           }
         }
       } else if (msg.type === "rms") {
+        lastRms = msg.value;
         writeAmplitude("mic", msg.value);
       }
     };
@@ -314,5 +343,15 @@ export function createAudioCapture(): AudioCaptureHandle {
     return active;
   }
 
-  return { warmupSync, start, setLive, stop, onError, isActive };
+  function getStats(): CaptureStats {
+    return {
+      framesCaptured,
+      framesSent,
+      framesBuffered: prebuffer.length,
+      lastRms,
+      lastFrameAt,
+    };
+  }
+
+  return { warmupSync, start, setLive, stop, onError, isActive, getStats };
 }

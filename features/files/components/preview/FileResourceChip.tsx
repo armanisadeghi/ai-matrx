@@ -6,6 +6,9 @@
  *   - input-area chips (`SmartAgentResourceChips`) before send, with X
  *   - sent-message chips (`AgentUserMessage` AttachmentChip), without X
  *
+ * Non-file resources (notes, tasks, webpages, etc.) use
+ * `ResourceAttachmentTile` in the same two surfaces.
+ *
  * Behaviour:
  *   - Renders the file's representative icon / thumbnail via the central
  *     [`MediaThumbnail`](../core/MediaThumbnail/MediaThumbnail.tsx) — so

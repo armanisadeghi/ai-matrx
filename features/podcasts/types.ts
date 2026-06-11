@@ -64,7 +64,31 @@ export type PcEpisode = {
   /** Cast metadata (migration pc_episode_speakers) — null on older rows. */
   host_count: number | null;
   speakers: PcEpisodeSpeaker[] | null;
+  /** Full generated dialogue script (migration pc_episodes_script) — null on
+   *  older rows / uploaded episodes. Source for transcript + article gen. */
+  script: string | null;
   is_published: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Per-episode companion content (migration pc_articles). One row per
+ *  (episode_id, kind); regenerating replaces content in place. */
+export type PcArticleKind = "blog" | "show_notes";
+export type PcArticleStatus = "draft" | "published";
+
+export type PcArticle = {
+  id: string;
+  show_id: string | null;
+  episode_id: string;
+  user_id: string | null;
+  kind: PcArticleKind;
+  slug: string | null;
+  title: string;
+  content_markdown: string;
+  og_image_url: string | null;
+  canonical_url: string | null;
+  status: PcArticleStatus;
   created_at: string;
   updated_at: string;
 };

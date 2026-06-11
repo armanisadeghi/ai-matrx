@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/styles/themes/utils";
+import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
 import type { AgentShortcut } from "@/features/agents/redux/agent-shortcuts/types";
 
 /**
@@ -74,10 +75,7 @@ export function AdvancedSection({
         className="w-full flex items-center gap-2 py-1.5 text-sm font-semibold text-foreground hover:text-foreground transition-colors"
       >
         <ChevronDown
-          className={cn(
-            "h-4 w-4 transition-transform",
-            !open && "-rotate-90",
-          )}
+          className={cn("h-4 w-4 transition-transform", !open && "-rotate-90")}
         />
         Advanced
         <span className="ml-1 text-[11px] font-normal text-muted-foreground">
@@ -111,16 +109,16 @@ export function AdvancedSection({
           </FieldRow>
 
           <FieldRow
-            title="Icon name"
-            hint="Lucide icon name (e.g. Sparkles, Wand2)."
+            title="Icon"
+            hint="Pick from the curated gallery or enter a Lucide icon name."
           >
-            <Input
+            <IconInputWithValidation
               value={value.iconName ?? ""}
-              onChange={(e) => onChange("iconName", e.target.value || null)}
-              placeholder="Sparkles"
+              onChange={(next) => onChange("iconName", next || null)}
+              placeholder="e.g. Sparkles, Flame, svg:icons/Home"
               disabled={disabled}
-              className="h-9 text-sm"
-              style={{ fontSize: "16px" }}
+              showLucideLink
+              showCuratedIconGallery
             />
           </FieldRow>
 
@@ -248,7 +246,7 @@ export function AdvancedSection({
 
           <JsonFieldRow
             title="JSON extraction"
-            hint='Streaming JSON extraction config. NULL = off. See JsonExtractionConfig.'
+            hint="Streaming JSON extraction config. NULL = off. See JsonExtractionConfig."
             value={value.jsonExtraction}
             onChange={(v) =>
               onChange("jsonExtraction", v as AgentShortcut["jsonExtraction"])
@@ -341,8 +339,7 @@ function JsonFieldRow({
   disabled?: boolean;
   placeholder: string;
 }) {
-  const initial =
-    value == null ? "" : JSON.stringify(value, null, 2);
+  const initial = value == null ? "" : JSON.stringify(value, null, 2);
   const [draft, setDraft] = useState(initial);
   const [error, setError] = useState<string | null>(null);
 
@@ -380,9 +377,7 @@ function JsonFieldRow({
         className="text-xs font-mono resize-y"
         style={{ fontSize: "13px" }}
       />
-      {error && (
-        <p className="text-[11px] text-destructive mt-1">{error}</p>
-      )}
+      {error && <p className="text-[11px] text-destructive mt-1">{error}</p>}
     </FieldRow>
   );
 }

@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
+import { useDialogContainer } from "@/components/ui/dialog";
 import {
   Drawer,
   DrawerTrigger,
@@ -59,6 +60,7 @@ export function AgentListDropdown({
   contentSide,
 }: AgentListDropdownProps) {
   const isMobile = useIsMobile();
+  const dialogContainer = useDialogContainer();
   const [open, setOpen] = useState(false);
   const [rightPanel, setRightPanel] = useState<RightPanel>(null);
   const [catSearch, setCatSearch] = useState("");
@@ -239,12 +241,13 @@ export function AgentListDropdown({
 
   // ── Desktop ──
   return (
-    <Popover open={open} onOpenChange={handleOpen}>
+    <Popover open={open} onOpenChange={handleOpen} modal={false}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
         side={contentSide}
         align="start"
         sideOffset={4}
+        container={dialogContainer ?? undefined}
         className={cn(
           "p-0 overflow-hidden",
           hasRightPanel ? "w-[680px]" : "w-[340px]",

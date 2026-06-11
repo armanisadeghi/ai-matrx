@@ -196,6 +196,20 @@ export function VoiceDebugPanel({
                 {flags.lastEventType ?? "—"} · {agoLabel(flags.lastEventAt)}
               </span>
             </div>
+            <div
+              className={cn(
+                "col-span-full",
+                flags.micFramesSent === 0 && flags.streamingReady
+                  ? "text-red-400"
+                  : "",
+              )}
+            >
+              mic flow:{" "}
+              <span className="text-zinc-200">
+                captured={flags.micFramesCaptured} · sent={flags.micFramesSent}{" "}
+                · rms={flags.micRms.toFixed(3)}
+              </span>
+            </div>
             <div className="col-span-full">
               mic mgr:{" "}
               <span className="text-zinc-200">

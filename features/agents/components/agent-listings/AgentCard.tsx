@@ -12,8 +12,6 @@ import {
   Loader2,
   Share2,
   LayoutPanelTop,
-  Settings,
-  Globe,
   AppWindow,
   Webhook,
   FileText,
@@ -21,9 +19,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { RootState } from "@/lib/redux/store";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { AgentActionModal } from "./AgentActionModal";
@@ -32,13 +28,6 @@ import { ComingSoonModal } from "./ComingSoonModal";
 import { FavoriteAgentButton } from "./FavoriteAgentButton";
 import { useState } from "react";
 import { toast } from "@/lib/toast-service";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 
 interface AgentCardProps {
@@ -76,19 +65,13 @@ export function AgentCard({
   const isArchived = record?.isArchived ?? false;
   const isOwner = record?.isOwner ?? true;
 
-  const isSystemAdmin = useAppSelector((state: RootState) =>
-    selectIsSuperAdmin(state),
-  );
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [isCreateAppModalOpen, setIsCreateAppModalOpen] = useState(false);
-  const [isConvertToBuiltinModalOpen, setIsConvertToBuiltinModalOpen] =
-    useState(false);
   const [isMetadataModalOpen, setIsMetadataModalOpen] = useState(false);
   const [isSneakPeekOpen, setIsSneakPeekOpen] = useState(false);
   const [isConvertingToTemplate, setIsConvertingToTemplate] = useState(false);
   const [lastModalCloseTime, setLastModalCloseTime] = useState(0);
-  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
 
   const handleView = (e?: React.MouseEvent) => {
     if (e && (e.metaKey || e.ctrlKey)) return;
@@ -195,12 +178,6 @@ export function AgentCard({
     }
   };
 
-  const handleMakeGlobalBuiltin = async () => {
-    if (!isSystemAdmin) return;
-    setIsAdminMenuOpen(false);
-    setIsConvertToBuiltinModalOpen(true);
-  };
-
   const handleCardClick = (e: React.MouseEvent) => {
     if (e.metaKey || e.ctrlKey) {
       window.open(`${basePath}/${id}/run`, "_blank");
@@ -212,7 +189,6 @@ export function AgentCard({
       !isShareModalOpen &&
       !isActionModalOpen &&
       !isCreateAppModalOpen &&
-      !isConvertToBuiltinModalOpen &&
       !isMetadataModalOpen &&
       !isSneakPeekOpen &&
       timeSinceClose > 300
@@ -287,180 +263,144 @@ export function AgentCard({
       </div>
       <div className="border-t border-border p-1 bg-card rounded-b-lg min-h-[36px]">
         <div
-          className="flex gap-1 justify-between items-center"
+          className="flex items-center justify-between gap-1"
           onClick={(e) => e.stopPropagation()}
         >
-          <Link
-            href={`${basePath}/${id}/run`}
-            tabIndex={-1}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleRun(e);
-            }}
-          >
-            <IconButton
-              icon={Play}
-              tooltip={isDisabled ? "Please wait..." : "Run"}
-              size="sm"
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              disabled={isDisabled}
-            />
-          </Link>
-          <Link
-            href={`${basePath}/${id}/build`}
-            tabIndex={-1}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEdit(e);
-            }}
-          >
-            <IconButton
-              icon={Pencil}
-              tooltip={isDisabled ? "Please wait..." : "Edit"}
-              size="sm"
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              disabled={isDisabled}
-            />
-          </Link>
-          <Link
-            href={`${basePath}/${id}/run`}
-            tabIndex={-1}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleView(e);
-            }}
-          >
-            <IconButton
-              icon={Eye}
-              tooltip={isDisabled ? "Please wait..." : "View"}
-              size="sm"
-              variant="ghost"
-              tooltipSide="top"
-              tooltipAlign="center"
-              disabled={isDisabled}
-            />
-          </Link>
-          <IconButton
-            icon={Lightbulb}
-            tooltip={isDisabled ? "Please wait..." : "Sneak Peek"}
-            size="sm"
-            variant="ghost"
-            tooltipSide="top"
-            tooltipAlign="center"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!isDisabled) setIsSneakPeekOpen(true);
-            }}
-            disabled={isDisabled}
-          />
-          <IconButton
-            icon={isDuplicating ? Loader2 : Copy}
-            tooltip={
-              isDuplicating
-                ? "Duplicating..."
-                : isDisabled
-                  ? "Please wait..."
-                  : "Duplicate"
-            }
-            size="sm"
-            variant="ghost"
-            tooltipSide="top"
-            tooltipAlign="center"
-            onClick={handleDuplicate}
-            disabled={isDuplicating || isDisabled}
-            iconClassName={isDuplicating ? "animate-spin" : ""}
-          />
-          <IconButton
-            icon={Share2}
-            tooltip="Share"
-            size="sm"
-            variant="ghost"
-            tooltipSide="top"
-            tooltipAlign="center"
-            onClick={handleShareClickInline}
-            disabled={isDisabled}
-          />
-          <IconButton
-            icon={FileText}
-            tooltip={isDisabled ? "Please wait..." : "Edit Details"}
-            size="sm"
-            variant="ghost"
-            tooltipSide="top"
-            tooltipAlign="center"
-            onClick={handleEditDetails}
-            disabled={isDisabled}
-          />
-          <IconButton
-            icon={AppWindow}
-            tooltip={isDisabled ? "Please wait..." : "Create App"}
-            size="sm"
-            variant="ghost"
-            tooltipSide="top"
-            tooltipAlign="center"
-            onClick={handleCreateApp}
-            disabled={isDisabled}
-          />
-          <IconButton
-            icon={isConvertingToTemplate ? Loader2 : LayoutPanelTop}
-            tooltip={
-              isConvertingToTemplate
-                ? "Saving template..."
-                : isDisabled
-                  ? "Please wait..."
-                  : "Save as Template"
-            }
-            size="sm"
-            variant="ghost"
-            tooltipSide="top"
-            tooltipAlign="center"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleConvertToTemplate();
-            }}
-            disabled={isConvertingToTemplate || isDisabled}
-            iconClassName={isConvertingToTemplate ? "animate-spin" : ""}
-          />
-          <div
-            className={
-              isSystemAdmin ? undefined : "invisible pointer-events-none"
-            }
-          >
-            <DropdownMenu
-              open={isAdminMenuOpen}
-              onOpenChange={setIsAdminMenuOpen}
+          <div className="flex gap-1 items-center min-w-0">
+            <Link
+              href={`${basePath}/${id}/run`}
+              tabIndex={-1}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRun(e);
+              }}
             >
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                <div>
-                  <IconButton
-                    icon={Settings}
-                    tooltip="Admin Actions"
-                    size="sm"
-                    variant="ghost"
-                    tooltipSide="top"
-                    tooltipAlign="center"
-                    disabled={isDisabled || !isSystemAdmin}
-                  />
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsAdminMenuOpen(false);
-                    handleMakeGlobalBuiltin();
-                  }}
-                  disabled={isDisabled}
-                  className="cursor-pointer"
-                >
-                  <Globe className="mr-2 h-4 w-4" />
-                  <span>Convert to Agent Builtin</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <IconButton
+                icon={Play}
+                tooltip={isDisabled ? "Please wait..." : "Run"}
+                size="sm"
+                variant="ghost"
+                tooltipSide="top"
+                tooltipAlign="center"
+                disabled={isDisabled}
+              />
+            </Link>
+            <Link
+              href={`${basePath}/${id}/build`}
+              tabIndex={-1}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit(e);
+              }}
+            >
+              <IconButton
+                icon={Pencil}
+                tooltip={isDisabled ? "Please wait..." : "Edit"}
+                size="sm"
+                variant="ghost"
+                tooltipSide="top"
+                tooltipAlign="center"
+                disabled={isDisabled}
+              />
+            </Link>
+            <Link
+              href={`${basePath}/${id}/run`}
+              tabIndex={-1}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleView(e);
+              }}
+            >
+              <IconButton
+                icon={Eye}
+                tooltip={isDisabled ? "Please wait..." : "View"}
+                size="sm"
+                variant="ghost"
+                tooltipSide="top"
+                tooltipAlign="center"
+                disabled={isDisabled}
+              />
+            </Link>
+            <IconButton
+              icon={Lightbulb}
+              tooltip={isDisabled ? "Please wait..." : "Sneak Peek"}
+              size="sm"
+              variant="ghost"
+              tooltipSide="top"
+              tooltipAlign="center"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isDisabled) setIsSneakPeekOpen(true);
+              }}
+              disabled={isDisabled}
+            />
+            <IconButton
+              icon={isDuplicating ? Loader2 : Copy}
+              tooltip={
+                isDuplicating
+                  ? "Duplicating..."
+                  : isDisabled
+                    ? "Please wait..."
+                    : "Duplicate"
+              }
+              size="sm"
+              variant="ghost"
+              tooltipSide="top"
+              tooltipAlign="center"
+              onClick={handleDuplicate}
+              disabled={isDuplicating || isDisabled}
+              iconClassName={isDuplicating ? "animate-spin" : ""}
+            />
+            <IconButton
+              icon={Share2}
+              tooltip="Share"
+              size="sm"
+              variant="ghost"
+              tooltipSide="top"
+              tooltipAlign="center"
+              onClick={handleShareClickInline}
+              disabled={isDisabled}
+            />
+            <IconButton
+              icon={FileText}
+              tooltip={isDisabled ? "Please wait..." : "Edit Details"}
+              size="sm"
+              variant="ghost"
+              tooltipSide="top"
+              tooltipAlign="center"
+              onClick={handleEditDetails}
+              disabled={isDisabled}
+            />
+            <IconButton
+              icon={AppWindow}
+              tooltip={isDisabled ? "Please wait..." : "Create App"}
+              size="sm"
+              variant="ghost"
+              tooltipSide="top"
+              tooltipAlign="center"
+              onClick={handleCreateApp}
+              disabled={isDisabled}
+            />
+            <IconButton
+              icon={isConvertingToTemplate ? Loader2 : LayoutPanelTop}
+              tooltip={
+                isConvertingToTemplate
+                  ? "Saving template..."
+                  : isDisabled
+                    ? "Please wait..."
+                    : "Save as Template"
+              }
+              size="sm"
+              variant="ghost"
+              tooltipSide="top"
+              tooltipAlign="center"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleConvertToTemplate();
+              }}
+              disabled={isConvertingToTemplate || isDisabled}
+              iconClassName={isConvertingToTemplate ? "animate-spin" : ""}
+            />
           </div>
           <IconButton
             icon={isDeleting ? Loader2 : Trash2}
@@ -517,15 +457,6 @@ export function AgentCard({
           setLastModalCloseTime(Date.now());
         }}
         featureName="Create App from Agent"
-      />
-
-      <ComingSoonModal
-        isOpen={isConvertToBuiltinModalOpen}
-        onClose={() => {
-          setIsConvertToBuiltinModalOpen(false);
-          setLastModalCloseTime(Date.now());
-        }}
-        featureName="Convert to Agent Builtin"
       />
 
       <ComingSoonModal
