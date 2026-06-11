@@ -51,12 +51,6 @@ export function WorkingDocumentHeader({
           aria-expanded={docOpen}
           className="flex min-w-0 flex-1 items-center gap-1.5 py-2 text-left"
         >
-          <ChevronRight
-            className={cn(
-              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
-              docOpen && "rotate-90",
-            )}
-          />
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Working document
           </span>
@@ -97,6 +91,22 @@ export function WorkingDocumentHeader({
           )}
         >
           <Maximize2 className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setDocOpen((v) => !v)}
+          aria-expanded={docOpen}
+          aria-label={
+            docOpen ? "Collapse working document" : "Expand working document"
+          }
+          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground active:bg-accent"
+        >
+          <ChevronRight
+            className={cn(
+              "h-4 w-4 shrink-0 transition-transform",
+              docOpen && "rotate-90",
+            )}
+          />
         </button>
       </div>
       {docOpen && (

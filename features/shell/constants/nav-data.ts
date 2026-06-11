@@ -234,8 +234,7 @@ export const primaryNavItems: ShellNavItem[] = [
     section: "primary",
     profileMenu: true,
     dashboard: true,
-    description:
-      "Browse, generate, edit, annotate, convert — every image tool in one place",
+    description: "Browse, generate, edit, annotate, and convert images",
     color: "pink",
   },
   {
@@ -251,8 +250,7 @@ export const primaryNavItems: ShellNavItem[] = [
     section: "primary",
     profileMenu: true,
     dashboard: true,
-    description:
-      "Record, transcribe, and manage audio. Includes Studio (4-column live workspace) and Scribe (mobile capture).",
+    description: "Record, transcribe, and manage audio.",
     color: "rose",
     children: [
       {
@@ -262,7 +260,11 @@ export const primaryNavItems: ShellNavItem[] = [
         exact: true,
       },
       { label: "New Transcript", href: "/transcripts/new", iconName: "Plus" },
-      { label: "Processor", href: "/transcripts/processor", iconName: "FileText" },
+      {
+        label: "Processor",
+        href: "/transcripts/processor",
+        iconName: "FileText",
+      },
       { label: "Studio", href: "/transcripts/studio", iconName: "Columns2" },
       { label: "Scribe", href: "/transcripts/scribe", iconName: "Mic" },
       { label: "Cleanup", href: "/transcripts/cleanup", iconName: "Eraser" },

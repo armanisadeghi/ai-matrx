@@ -33,7 +33,7 @@ import { VoiceStatusPill } from "@/features/voice-agent/components/VoiceStatusPi
 import { VoiceTranscriptStream } from "@/features/voice-agent/components/VoiceTranscriptStream";
 import { VoiceErrorBanner } from "@/features/voice-agent/components/VoiceErrorBanner";
 import { VoiceDebugPanel } from "@/features/voice-agent/components/VoiceDebugPanel";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { cn } from "@/lib/utils";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 
@@ -92,7 +92,7 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
   const turns = useAppSelector((s) => selectVoiceTurns(s, instanceId));
   const liveError = useAppSelector((s) => selectVoiceError(s, instanceId));
   const liveStatus = useAppSelector((s) => selectVoiceStatus(s, instanceId));
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const debugMode = useAppSelector(selectIsDebugMode);
   void status;
   void error;
 
@@ -138,8 +138,8 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
     <div className="relative flex h-full flex-col overflow-hidden">
       <VoiceAmbientGlow status={liveStatus} />
 
-      {/* Admin-only live diagnostics for the voice session. */}
-      {isAdmin && (
+      {/* Live diagnostics — gated behind app-wide debug mode. */}
+      {debugMode && (
         <div className="relative z-20 shrink-0 px-2 pt-2">
           <VoiceDebugPanel instanceId={instanceId} />
         </div>

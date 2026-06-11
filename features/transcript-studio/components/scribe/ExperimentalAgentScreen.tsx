@@ -15,7 +15,17 @@
 // It shares the same conversation as the Agent tab via useStudioAssistant.
 
 import { useRef, useState } from "react";
-import { FileText, Loader2, Mic, Send, Square, Webhook } from "lucide-react";
+import {
+  FileText,
+  Keyboard,
+  Loader2,
+  Mic,
+  Send,
+  Square,
+  Volume2,
+  VolumeX,
+  Webhook,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -23,6 +33,7 @@ import { AgentConversationColumn } from "@/features/agents/components/shared/Age
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { useGlobalRecording } from "@/providers/GlobalRecordingProvider";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
+import { useAutoVoiceResponse } from "../../hooks/useAutoVoiceResponse";
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
 
 interface ExperimentalAgentScreenProps {
@@ -49,6 +60,16 @@ export function ExperimentalAgentScreen({
   const ownedRef = useRef(false);
   const [pendingText, setPendingText] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Agent+ is a voice-in / voice-out surface: no text field by default, and
+  // responses are read back automatically. Both are toggleable from the bar.
+  const [inputOpen, setInputOpen] = useState(false);
+  const [autoVoice, setAutoVoice] = useState(true);
+
+  const speaker = useAutoVoiceResponse({
+    conversationId,
+    enabled: autoVoice,
+  });
+  const speaking = speaker.isPlaying || speaker.isLoading;
 
   // Recording state from the global mirror — this screen only "owns" the
   // session when the active context is our ephemeral standalone capture.
@@ -146,6 +167,7 @@ export function ExperimentalAgentScreen({
           conversationId={conversationId}
           surfaceKey={`studio-assistant-experimental:${sessionId}`}
           constrainWidth
+          hideInput={!inputOpen}
           smartInputProps={{ sendButtonVariant: "blue" }}
         />
       </div>
@@ -177,7 +199,34 @@ export function ExperimentalAgentScreen({
           </span>
         </div>
 
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-center gap-4">
+          {/* Auto-voice toggle — read responses aloud. Dimmed when off. */}
+          <button
+            type="button"
+            onClick={() => {
+              if (speaking) void speaker.stop();
+              setAutoVoice((v) => !v);
+            }}
+            aria-pressed={autoVoice}
+            aria-label={
+              autoVoice ? "Turn off voice replies" : "Turn on voice replies"
+            }
+            className={cn(
+              "flex h-16 w-16 items-center justify-center rounded-full transition-transform active:scale-95",
+              autoVoice
+                ? "bg-secondary text-secondary-foreground"
+                : "bg-muted text-muted-foreground/60",
+            )}
+          >
+            {speaking ? (
+              <Volume2 className="h-6 w-6 animate-pulse" />
+            ) : autoVoice ? (
+              <Volume2 className="h-6 w-6" />
+            ) : (
+              <VolumeX className="h-6 w-6" />
+            )}
+          </button>
+
           <button
             type="button"
             onClick={isRecording ? recording.stop : startRecording}
@@ -201,6 +250,23 @@ export function ExperimentalAgentScreen({
             ) : (
               <Mic className="h-7 w-7" />
             )}
+          </button>
+
+          {/* Text input toggle — Agent+ hides the field by default. Same size
+              as the mic; reveals the SmartAgentInput above the bar. */}
+          <button
+            type="button"
+            onClick={() => setInputOpen((v) => !v)}
+            aria-pressed={inputOpen}
+            aria-label={inputOpen ? "Hide text input" : "Show text input"}
+            className={cn(
+              "flex h-16 w-16 items-center justify-center rounded-full transition-transform active:scale-95",
+              inputOpen
+                ? "bg-primary/15 text-primary"
+                : "bg-muted text-muted-foreground/60",
+            )}
+          >
+            <Keyboard className="h-6 w-6" />
           </button>
         </div>
         {blockedByOther && (

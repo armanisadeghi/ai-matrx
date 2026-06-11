@@ -1,65 +1,58 @@
 // lib/googleScopes.ts
+//
+// Scopes registered on the AI Matrx GCP OAuth consent screen (non-sensitive).
+// Keep this list in sync with Google Cloud Console → Data Access.
+
+export const REGISTERED_GOOGLE_SCOPE_URLS = [
+  "https://www.googleapis.com/auth/webmasters",
+  "https://www.googleapis.com/auth/webmasters.readonly",
+  "https://www.googleapis.com/auth/calendar.app.created",
+  "https://www.googleapis.com/auth/drive.file",
+] as const;
+
+export type RegisteredGoogleScopeUrl =
+  (typeof REGISTERED_GOOGLE_SCOPE_URLS)[number];
 
 export const googleServices = {
-    drive: {
-      name: "Google Drive",
-      scope: "https://www.googleapis.com/auth/drive",
-      description: "Access, upload, and manage your Drive files",
-      color: "#0F9D58", // Google Drive green
-      icon: "drive"
-    },
-    gmail: {
-      name: "Gmail",
-      scope: "https://www.googleapis.com/auth/gmail.send",
-      description: "Access and send emails from your Gmail account",
-      color: "#D14836", // Gmail red
-      icon: "gmail"
-    },
-    calendar: {
-      name: "Google Calendar",
-      scope: "https://www.googleapis.com/auth/calendar",
-      description: "Access and manage your calendar events",
-      color: "#4285F4", // Calendar blue
-      icon: "calendar"
-    },
-    docs: {
-      name: "Google Docs",
-      scope: "https://www.googleapis.com/auth/documents",
-      description: "Access, view and edit your documents",
-      color: "#4285F4", // Docs blue
-      icon: "docs"
-    },
-    sheets: {
-      name: "Google Sheets",
-      scope: "https://www.googleapis.com/auth/spreadsheets",
-      description: "Access, view and edit your spreadsheets",
-      color: "#0F9D58", // Sheets green
-      icon: "sheets"
-    },
-    slides: {
-      name: "Google Slides",
-      scope: "https://www.googleapis.com/auth/presentations",
-      description: "Access, view and edit your presentations",
-      color: "#F4B400", // Slides yellow
-      icon: "slides"
-    },
-    tasks: {
-      name: "Google Tasks",
-      scope: "https://www.googleapis.com/auth/tasks",
-      description: "Access, view and manage your tasks",
-      color: "#4285F4", // Tasks blue
-      icon: "tasks"
-    },
-  } as const;
-  
-  export type ServiceKey = keyof typeof googleServices;
-  
-  // Additional Google brand colors for reference
-  export const googleBrandColors = {
-    blue: "#4285F4",
-    red: "#DB4437",
-    yellow: "#F4B400",
-    green: "#0F9D58",
-    lightBlue: "#00ACC1",
-    purple: "#673AB7"
-  };
+  webmasters: {
+    name: "Search Console (read/write)",
+    scope: "https://www.googleapis.com/auth/webmasters",
+    description: "View and manage Search Console data for your verified sites.",
+    color: "#0F9D58",
+    icon: "webmasters",
+  },
+  webmasters_readonly: {
+    name: "Search Console (read-only)",
+    scope: "https://www.googleapis.com/auth/webmasters.readonly",
+    description: "Read-only access to Search Console data.",
+    color: "#34A853",
+    icon: "webmasters",
+  },
+  calendar_app_created: {
+    name: "App-created Calendars",
+    scope: "https://www.googleapis.com/auth/calendar.app.created",
+    description:
+      "Create and manage secondary Google Calendars created by this app.",
+    color: "#4285F4",
+    icon: "calendar",
+  },
+  drive_file: {
+    name: "Drive (app files only)",
+    scope: "https://www.googleapis.com/auth/drive.file",
+    description:
+      "Access only Google Drive files created or opened by this app.",
+    color: "#0F9D58",
+    icon: "drive",
+  },
+} as const;
+
+export type ServiceKey = keyof typeof googleServices;
+
+export const googleBrandColors = {
+  blue: "#4285F4",
+  red: "#DB4437",
+  yellow: "#F4B400",
+  green: "#0F9D58",
+  lightBlue: "#00ACC1",
+  purple: "#673AB7",
+};

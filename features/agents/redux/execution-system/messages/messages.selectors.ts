@@ -209,6 +209,25 @@ export const selectIsLatestAssistantMessage =
     return false;
   };
 
+/**
+ * Id of the latest assistant message in the conversation, or undefined.
+ * Primitive return — safe to subscribe to without memoization. Used by the
+ * auto-voice hook to know which assistant turn to read aloud on completion.
+ */
+export const selectLatestAssistantMessageId =
+  (conversationId: string) =>
+  (state: RootState): string | undefined => {
+    const entry = state.messages.byConversationId[conversationId];
+    const ordered = entry?.orderedIds;
+    const byId = entry?.byId;
+    if (!ordered || !byId) return undefined;
+    for (let i = ordered.length - 1; i >= 0; i--) {
+      const id = ordered[i];
+      if (byId[id]?.role === "assistant") return id;
+    }
+    return undefined;
+  };
+
 // ---------------------------------------------------------------------------
 // Conversation-level fields
 // ---------------------------------------------------------------------------
