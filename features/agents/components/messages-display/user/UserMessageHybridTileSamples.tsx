@@ -144,6 +144,47 @@ function HybridTileHorizontal({ spec }: { spec: DemoAttachmentSpec }) {
   );
 }
 
+/**
+ * E — Stacked rows (B variant): icon + type on top, full-width title below.
+ * Height grows with title; bottom row gets the full card width.
+ */
+function HybridTileStackedRows({ spec }: { spec: DemoAttachmentSpec }) {
+  const theme = tileTheme(spec);
+  const isImage = spec.id === "image-legacy";
+
+  return (
+    <button
+      type="button"
+      title={spec.title}
+      className={cn(
+        TILE_SHELL,
+        "w-[7.25rem] min-h-[2.75rem] flex flex-col gap-1 px-2 py-1.5 text-left",
+        theme.bg,
+      )}
+    >
+      <span className="flex items-center gap-1.5 min-w-0">
+        {isImage ? (
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-background/40 dark:bg-black/15 overflow-hidden">
+            <div className="h-full w-full bg-gradient-to-br from-blue-200/80 to-indigo-300/60 dark:from-blue-800/50 dark:to-indigo-900/40 flex items-center justify-center">
+              <ImageIcon className={cn("h-3 w-3", theme.icon)} />
+            </div>
+          </span>
+        ) : (
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-background/40 dark:bg-black/15">
+            <TileIcon spec={spec} className="h-3.5 w-3.5" />
+          </span>
+        )}
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground leading-none truncate">
+          {spec.label}
+        </span>
+      </span>
+      <span className="block w-full text-[11px] font-medium text-foreground leading-snug line-clamp-2">
+        {spec.title}
+      </span>
+    </button>
+  );
+}
+
 /** C — Wide card: type + title on two lines, icon in corner. 8.5rem × 3rem. */
 function HybridTileWide({ spec }: { spec: DemoAttachmentSpec }) {
   const theme = tileTheme(spec);
@@ -220,6 +261,14 @@ const HYBRID_VARIANTS = [
     gap: "gap-1.5",
   },
   {
+    id: "stacked-rows",
+    title: "E · Stacked rows (B variant)",
+    description:
+      "Icon + type on row 1; full-width title on row 2. Taller card, more room for the name.",
+    Tile: HybridTileStackedRows,
+    gap: "gap-1.5",
+  },
+  {
     id: "wide",
     title: "C · Wide mini-card",
     description:
@@ -283,6 +332,40 @@ export function UserMessageHybridTileSamples({
           uses the same border, radius, and shadow shell — only layout differs.
           Slightly larger than legacy 40px tiles, with room for a short label.
         </p>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-foreground">
+          B vs E — your pick vs stacked rows
+        </h3>
+        <div className="grid gap-4 md:grid-cols-2">
+          <SampleBubble
+            title="B · Horizontal pill-box"
+            description="Icon and text side-by-side (current favorite)."
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {specs.map((spec) => (
+                <HybridTileHorizontal
+                  key={`compare-b-${spec.id}`}
+                  spec={spec}
+                />
+              ))}
+            </div>
+          </SampleBubble>
+          <SampleBubble
+            title="E · Stacked rows"
+            description="Row 1: icon + NOTE. Row 2: full-width title — card grows if needed."
+          >
+            <div className="flex flex-wrap gap-1.5">
+              {specs.map((spec) => (
+                <HybridTileStackedRows
+                  key={`compare-e-${spec.id}`}
+                  spec={spec}
+                />
+              ))}
+            </div>
+          </SampleBubble>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

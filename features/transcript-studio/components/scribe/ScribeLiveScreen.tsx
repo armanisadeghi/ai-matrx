@@ -32,6 +32,8 @@ import { VoiceMicButton } from "@/features/voice-agent/components/VoiceMicButton
 import { VoiceStatusPill } from "@/features/voice-agent/components/VoiceStatusPill";
 import { VoiceTranscriptStream } from "@/features/voice-agent/components/VoiceTranscriptStream";
 import { VoiceErrorBanner } from "@/features/voice-agent/components/VoiceErrorBanner";
+import { VoiceDebugPanel } from "@/features/voice-agent/components/VoiceDebugPanel";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 
@@ -90,6 +92,7 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
   const turns = useAppSelector((s) => selectVoiceTurns(s, instanceId));
   const liveError = useAppSelector((s) => selectVoiceError(s, instanceId));
   const liveStatus = useAppSelector((s) => selectVoiceStatus(s, instanceId));
+  const isAdmin = useAppSelector(selectIsAdmin);
   void status;
   void error;
 
@@ -134,6 +137,13 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
       <VoiceAmbientGlow status={liveStatus} />
+
+      {/* Admin-only live diagnostics for the voice session. */}
+      {isAdmin && (
+        <div className="relative z-20 shrink-0 px-2 pt-2">
+          <VoiceDebugPanel instanceId={instanceId} />
+        </div>
+      )}
 
       {/* Transcript — fades older content so the eye is drawn to the mic. */}
       <section

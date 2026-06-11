@@ -1,0 +1,149 @@
+/* app/(core)/podcast/studio/run-refine/[id]/_components/refine.css
+ *
+ * Custom loaders + reveal animations for the ui-refine run surface. All motion
+ * is scoped under the .pcr root so it never leaks. Respects reduced-motion. */
+
+.pcr-card-in {
+  animation: pcr-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes pcr-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* A teaser reveal that slides up + fades, used as buffered items surface. */
+.pcr-reveal {
+  animation: pcr-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes pcr-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* The cross-fade swap of the rotating cover showcase. */
+.pcr-cover-enter {
+  animation: pcr-cover-enter 1s ease both;
+}
+@keyframes pcr-cover-enter {
+  from {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* A slow Ken-Burns drift so a held cover never feels frozen. */
+.pcr-kenburns {
+  animation: pcr-kenburns 14s ease-in-out infinite alternate;
+}
+@keyframes pcr-kenburns {
+  from {
+    transform: scale(1) translate(0, 0);
+  }
+  to {
+    transform: scale(1.08) translate(-1.5%, -1.5%);
+  }
+}
+
+/* The "we're working" sweep across the production-pulse strip. */
+.pcr-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in oklab, var(--color-primary) 14%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: pcr-sheen 2.4s ease-in-out infinite;
+}
+@keyframes pcr-sheen {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Audio waveform bars — a custom loader for the long TTS step. */
+.pcr-wave-bar {
+  width: 0.2rem;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to top,
+    var(--color-primary),
+    var(--color-secondary)
+  );
+  animation: pcr-wave 1.05s ease-in-out infinite;
+}
+@keyframes pcr-wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* A soft orbiting ring used on the "in the studio" status chip. */
+.pcr-orbit {
+  animation: pcr-orbit 1.4s linear infinite;
+}
+@keyframes pcr-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Count-up flash so a number bump reads as progress. */
+.pcr-bump {
+  animation: pcr-bump 0.4s ease both;
+}
+@keyframes pcr-bump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.22);
+    color: var(--color-primary);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pcr-card-in,
+  .pcr-reveal,
+  .pcr-cover-enter,
+  .pcr-kenburns,
+  .pcr-wave-bar,
+  .pcr-orbit,
+  .pcr-bump {
+    animation: none !important;
+  }
+  .pcr-sheen::after {
+    animation: none !important;
+    display: none;
+  }
+}

@@ -67,6 +67,19 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+- 2026-06-10 — **Studio bake-off: `*-reimagine` surfaces (ui-reimagine).** Added
+  two presentation-only reinventions on top of the unchanged data layer:
+  `app/(core)/podcast/studio/create-reimagine/` (the "Studio Command Bar" — a
+  single-canvas composer: hero prompt + source chip rail + inline settings-tray
+  pills + real recent-runs rail; same `createRun → stashPendingStart → push`
+  submit) and `app/(core)/podcast/studio/run-reimagine/[id]/` (the "Studio Stage"
+  — one living cover canvas that breathes while producing and becomes the album
+  cover + player when done, with a slim control-rail). Both consume
+  `useStudioRun` / generator constants / `MediaOptionsGrid` / `RunRecoveryBanner`
+  / `ProductionTeaser` script logic UNCHANGED; every heartbeat / stall /
+  background-poll / never-dead-end behavior is preserved. Verified live against
+  the real `POST {base}/podcast/generate` stream (create→navigate→stream, real
+  metadata/covers/progress) and the real durable-record reload path.
 - 2026-06-08 — **Per-asset failures are non-fatal (server + client).** A single
   image/video rejection (Together.ai / Black Forest Labs content moderation
   false-flagging a benign concept) no longer kills the whole run. Server

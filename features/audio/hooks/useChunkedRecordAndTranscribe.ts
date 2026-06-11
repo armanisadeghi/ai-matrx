@@ -28,6 +28,7 @@ import {
   uploadAndTranscribeFull,
   logClientError,
 } from "../services/audioFallbackUpload";
+import { acquireMicStream, releaseMicStream } from "../micStream";
 
 /**
  * Per-chunk timing + content payload. Fires once per chunk after a successful
@@ -89,6 +90,9 @@ export function useChunkedRecordAndTranscribe({
   const [failedChunkCount, setFailedChunkCount] = useState(0);
 
   const streamRef = useRef<MediaStream | null>(null);
+  // Whether we hold a ref on the shared mic stream — keeps acquire/release
+  // balanced exactly once across the cleanup / stop / pagehide paths.
+  const micHeldRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const accumulatedRef = useRef("");
   const pendingRef = useRef(0);
@@ -164,9 +168,10 @@ export function useChunkedRecordAndTranscribe({
       audioCtxRef.current = null;
     }
     analyserRef.current = null;
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
+    streamRef.current = null;
+    if (micHeldRef.current) {
+      releaseMicStream();
+      micHeldRef.current = false;
     }
     if (mediaRecorderRef.current?.state !== "inactive") {
       mediaRecorderRef.current?.stop();
@@ -216,10 +221,12 @@ export function useChunkedRecordAndTranscribe({
         rafRef.current = null;
       }
 
-      // Release the microphone immediately.
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
+      // Release the microphone (shared manager keeps the grant warm so a
+      // bfcache restore won't re-prompt; a real unload tears everything down).
+      streamRef.current = null;
+      if (micHeldRef.current) {
+        releaseMicStream();
+        micHeldRef.current = false;
       }
 
       // Stopping the recorder flushes its internal buffer → onstop fires →
@@ -638,15 +645,16 @@ export function useChunkedRecordAndTranscribe({
       setLiveTranscript("");
       setFailedChunkCount(0);
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 16_000,
-          channelCount: 1,
-        },
+      // Shared mic manager: reuses a warm grant so mobile doesn't re-prompt
+      // on every recording. Released (not hard-stopped) on teardown.
+      const stream = await acquireMicStream({
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: 16_000,
+        channelCount: 1,
       });
+      micHeldRef.current = true;
       streamRef.current = stream;
 
       audioCtxRef.current = new AudioContext();
@@ -725,9 +733,10 @@ export function useChunkedRecordAndTranscribe({
       audioCtxRef.current = null;
     }
     analyserRef.current = null;
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
+    streamRef.current = null;
+    if (micHeldRef.current) {
+      releaseMicStream();
+      micHeldRef.current = false;
     }
 
     setIsRecording(false);

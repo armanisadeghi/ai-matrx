@@ -28,6 +28,7 @@ import {
   SAMPLE_RATE_HZ,
 } from "../constants";
 import { writeAmplitude } from "./amplitudeBus";
+import { acquireMicStream, releaseMicStream } from "@/features/audio/micStream";
 
 const WORKLET_PATH = "/pcm-processor-worklet.js";
 
@@ -67,6 +68,9 @@ export function createAudioCapture(): AudioCaptureHandle {
   let prebuffer: ArrayBuffer[] = [];
   let prebufferedSamples = 0;
   let bufferOverflowedReported = false;
+  // Whether we currently hold a ref on the shared mic stream — so release is
+  // balanced exactly once across the abort/stop paths.
+  let holdingMic = false;
 
   let liveSink: ((pcm: ArrayBuffer) => void) | null = null;
   let active = false;
@@ -126,30 +130,25 @@ export function createAudioCapture(): AudioCaptureHandle {
 
     const abortIfTornDown = (): boolean => {
       if (ctx === localCtx) return false;
-      // stop() ran while we awaited — release anything we grabbed and bail.
-      if (stream) {
-        for (const t of stream.getTracks()) {
-          try {
-            t.stop();
-          } catch {
-            // ignore
-          }
-        }
-        stream = null;
+      // stop() ran while we awaited — release our shared-mic hold and bail.
+      if (holdingMic) {
+        releaseMicStream();
+        holdingMic = false;
       }
+      stream = null;
       return true;
     };
 
-    // 1. Mic permission + stream
+    // 1. Mic permission + stream (via the shared manager so we don't re-prompt
+    //    on every session — it keeps the grant warm between uses).
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: SAMPLE_RATE_HZ,
-        },
+      stream = await acquireMicStream({
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: SAMPLE_RATE_HZ,
       });
+      holdingMic = true;
     } catch (err: unknown) {
       const code = (
         (err as { name?: string })?.name === "NotAllowedError"
@@ -276,17 +275,19 @@ export function createAudioCapture(): AudioCaptureHandle {
       source = null;
     }
     if (stream) {
-      for (const t of stream.getTracks()) {
-        if (trackEndedHandler)
+      if (trackEndedHandler) {
+        for (const t of stream.getAudioTracks()) {
           t.removeEventListener("ended", trackEndedHandler);
-        try {
-          t.stop();
-        } catch {
-          // ignore
         }
       }
       stream = null;
       trackEndedHandler = null;
+    }
+    // Release our hold on the shared mic (does NOT stop tracks immediately —
+    // the manager keeps the grant warm so the next session won't re-prompt).
+    if (holdingMic) {
+      releaseMicStream();
+      holdingMic = false;
     }
     if (ctx) {
       try {
