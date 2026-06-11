@@ -178,9 +178,10 @@ export const ENDPOINTS = {
    * `features/pdf-extractor/types.ts` for the full type re-exports.
    *
    * NOTE: list/detail endpoints below are kept for backwards compatibility
-   * but the workspace now reads `extracted_documents` directly from Supabase
-   * for the sidebar list and the on-click detail. Loading hundreds of full
-   * `content` rows from Python was making the window take 2+ minutes to open.
+   * but the workspace now reads `processed_documents` directly from Supabase
+   * for the sidebar list and the on-click detail (the old `extracted_documents`
+   * facade view was retired 2026-06-11). Loading hundreds of full `content`
+   * rows from Python was making the window take 2+ minutes to open.
    */
   pdf: {
     // ── Lifecycle ─────────────────────────────────────────────────────────
@@ -227,9 +228,9 @@ export const ENDPOINTS = {
       `/utilities/pdf/clean-content/${docId}` as const,
 
     // ── Document management (server-side; prefer direct Supabase reads) ──
-    /** @deprecated — Read `extracted_documents` directly from Supabase with metadata-only projection. */
+    /** @deprecated — Read `processed_documents` directly from Supabase with metadata-only projection. */
     documents: "/utilities/pdf/documents" as const,
-    /** @deprecated — Read `extracted_documents` directly from Supabase. */
+    /** @deprecated — Read `processed_documents` directly from Supabase. */
     document: (docId: string) => `/utilities/pdf/documents/${docId}` as const,
 
     // ── Phase 2 — render & advanced page ops ──────────────────────────────

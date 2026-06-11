@@ -3869,6 +3869,13 @@ export type Database = {
             referencedRelation: "cld_files"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cld_file_versions_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
         ]
       }
       cld_files: {
@@ -3958,13 +3965,6 @@ export type Database = {
             foreignKeyName: "cld_files_canonical_processed_document_id_fkey"
             columns: ["canonical_processed_document_id"]
             isOneToOne: false
-            referencedRelation: "extracted_documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cld_files_canonical_processed_document_id_fkey"
-            columns: ["canonical_processed_document_id"]
-            isOneToOne: false
             referencedRelation: "processed_documents"
             referencedColumns: ["id"]
           },
@@ -3976,11 +3976,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "cld_files_duplicate_of_file_id_fkey"
+            columns: ["duplicate_of_file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "cld_files_parent_file_id_fkey"
             columns: ["parent_file_id"]
             isOneToOne: false
             referencedRelation: "cld_files"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cld_files_parent_file_id_fkey"
+            columns: ["parent_file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
           },
           {
             foreignKeyName: "cld_files_parent_folder_id_fkey"
@@ -8831,39 +8845,6 @@ export type Database = {
         }
         Relationships: []
       }
-      extracted_documents_legacy: {
-        Row: {
-          clean_content: string | null
-          content: string | null
-          created_at: string
-          id: string
-          name: string
-          source: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          clean_content?: string | null
-          content?: string | null
-          created_at?: string
-          id?: string
-          name: string
-          source?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          clean_content?: string | null
-          content?: string | null
-          created_at?: string
-          id?: string
-          name?: string
-          source?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       extractor: {
         Row: {
           default_identifier: string | null
@@ -9123,6 +9104,13 @@ export type Database = {
             referencedRelation: "cld_files"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "file_analysis_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: true
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
         ]
       }
       file_analysis_result: {
@@ -9186,11 +9174,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "file_analysis_result_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "file_analysis_result_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "file_pages"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_analysis_result_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_page_id"]
           },
         ]
       }
@@ -9241,6 +9243,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cld_files"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_entities_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
           },
           {
             foreignKeyName: "file_entities_source_annotation_id_fkey"
@@ -9297,11 +9306,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "file_overrides_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "file_overrides_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "file_pages"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_overrides_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_page_id"]
           },
         ]
       }
@@ -9397,11 +9420,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "file_page_annotations_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "file_page_annotations_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "file_pages"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_page_annotations_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_page_id"]
           },
           {
             foreignKeyName: "file_page_annotations_parent_result_id_fkey"
@@ -9425,6 +9462,7 @@ export type Database = {
           ocr_confidence: number | null
           owner_id: string
           page_index: number
+          processed_document_page_id: string | null
           rotation: number
           source_page_index: number
           status: string
@@ -9446,6 +9484,7 @@ export type Database = {
           ocr_confidence?: number | null
           owner_id: string
           page_index: number
+          processed_document_page_id?: string | null
           rotation?: number
           source_page_index: number
           status?: string
@@ -9467,6 +9506,7 @@ export type Database = {
           ocr_confidence?: number | null
           owner_id?: string
           page_index?: number
+          processed_document_page_id?: string | null
           rotation?: number
           source_page_index?: number
           status?: string
@@ -9482,6 +9522,27 @@ export type Database = {
             columns: ["file_id"]
             isOneToOne: false
             referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_pages_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
+            foreignKeyName: "file_pages_processed_document_page_id_fkey"
+            columns: ["processed_document_page_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["page_id"]
+          },
+          {
+            foreignKeyName: "file_pages_processed_document_page_id_fkey"
+            columns: ["processed_document_page_id"]
+            isOneToOne: false
+            referencedRelation: "processed_document_pages"
             referencedColumns: ["id"]
           },
         ]
@@ -11677,6 +11738,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "page_extraction_jobs_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "page_extraction_jobs_latest_run_fk"
             columns: ["latest_run_id"]
             isOneToOne: false
@@ -11688,13 +11756,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "page_extraction_jobs_processed_document_id_fkey"
-            columns: ["processed_document_id"]
-            isOneToOne: false
-            referencedRelation: "extracted_documents"
             referencedColumns: ["id"]
           },
           {
@@ -11797,6 +11858,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "page_extraction_page_runs_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "page_extraction_page_runs_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
@@ -11853,6 +11921,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cld_files"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_results_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
           },
           {
             foreignKeyName: "page_extraction_results_job_id_fkey"
@@ -12296,6 +12371,158 @@ export type Database = {
           },
         ]
       }
+      pdf_consolidation_log: {
+        Row: {
+          chosen_id: string | null
+          cld_file_id: string | null
+          created_at: string
+          detail: Json
+          id: string
+          kind: string
+        }
+        Insert: {
+          chosen_id?: string | null
+          cld_file_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind: string
+        }
+        Update: {
+          chosen_id?: string | null
+          cld_file_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind?: string
+        }
+        Relationships: []
+      }
+      pdf_redaction_audits: {
+        Row: {
+          bytes_removed_estimate: number
+          created_at: string
+          file_id: string | null
+          id: string
+          parent_file_id: string | null
+          reason: string
+          redaction_kind: string
+          redaction_params: Json
+          regions_count: number
+          status: string
+          tier_used: string
+          user_id: string
+        }
+        Insert: {
+          bytes_removed_estimate?: number
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          parent_file_id?: string | null
+          reason: string
+          redaction_kind: string
+          redaction_params?: Json
+          regions_count?: number
+          status?: string
+          tier_used?: string
+          user_id: string
+        }
+        Update: {
+          bytes_removed_estimate?: number
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          parent_file_id?: string | null
+          reason?: string
+          redaction_kind?: string
+          redaction_params?: Json
+          regions_count?: number
+          status?: string
+          tier_used?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_redaction_audits_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdf_redaction_audits_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
+            foreignKeyName: "pdf_redaction_audits_parent_file_id_fkey"
+            columns: ["parent_file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdf_redaction_audits_parent_file_id_fkey"
+            columns: ["parent_file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+        ]
+      }
+      pdf_redaction_key_escrow: {
+        Row: {
+          created_at: string
+          file_id: string | null
+          id: string
+          organization_id: string | null
+          owner_id: string
+          revoked_at: string | null
+          session_id: string
+          wrap_alg: string
+          wrapped_key: string
+        }
+        Insert: {
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          organization_id?: string | null
+          owner_id: string
+          revoked_at?: string | null
+          session_id: string
+          wrap_alg: string
+          wrapped_key: string
+        }
+        Update: {
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          organization_id?: string | null
+          owner_id?: string
+          revoked_at?: string | null
+          session_id?: string
+          wrap_alg?: string
+          wrapped_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_redaction_key_escrow_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdf_redaction_key_escrow_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           created_at: string | null
@@ -12437,11 +12664,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "processed_document_pages_processed_document_id_fkey"
-            columns: ["processed_document_id"]
+            foreignKeyName: "processed_document_pages_image_cld_file_id_fkey"
+            columns: ["image_cld_file_id"]
             isOneToOne: false
-            referencedRelation: "extracted_documents"
-            referencedColumns: ["id"]
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
           },
           {
             foreignKeyName: "processed_document_pages_processed_document_id_fkey"
@@ -12560,21 +12787,7 @@ export type Database = {
             foreignKeyName: "processed_documents_canonical_clean_id_fkey"
             columns: ["canonical_clean_id"]
             isOneToOne: false
-            referencedRelation: "extracted_documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "processed_documents_canonical_clean_id_fkey"
-            columns: ["canonical_clean_id"]
-            isOneToOne: false
             referencedRelation: "processed_documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "processed_documents_parent_processed_id_fkey"
-            columns: ["parent_processed_id"]
-            isOneToOne: false
-            referencedRelation: "extracted_documents"
             referencedColumns: ["id"]
           },
           {
@@ -14229,11 +14442,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "redaction_mapping_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "redaction_mapping_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "file_pages"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "redaction_mapping_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_page_id"]
           },
         ]
       }
@@ -20896,6 +21123,13 @@ export type Database = {
             referencedRelation: "cld_files"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "udt_workbooks_original_file_id_fkey"
+            columns: ["original_file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
         ]
       }
       ui_client: {
@@ -23971,38 +24205,53 @@ export type Database = {
           },
         ]
       }
-      extracted_documents: {
+      pdf_unified_pages: {
         Row: {
-          clean_content: string | null
-          content: string | null
-          created_at: string | null
-          id: string | null
-          name: string | null
-          source: string | null
-          updated_at: string | null
-          user_id: string | null
+          cleaned_text: string | null
+          excluded_at: string | null
+          extract_rotation: number | null
+          file_id: string | null
+          file_page_id: string | null
+          height: number | null
+          image_cld_file_id: string | null
+          is_continuation: boolean | null
+          page_id: string | null
+          page_index: number | null
+          page_number: number | null
+          processed_document_id: string | null
+          raw_text: string | null
+          section_kind: string | null
+          section_title: string | null
+          thumbnail_url: string | null
+          used_ocr: boolean | null
+          user_modified: boolean | null
+          user_rotation: number | null
+          user_status: string | null
+          width: number | null
         }
-        Insert: {
-          clean_content?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          source?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          clean_content?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          source?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "processed_document_pages_image_cld_file_id_fkey"
+            columns: ["image_cld_file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "processed_document_pages_image_cld_file_id_fkey"
+            columns: ["image_cld_file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
+            foreignKeyName: "processed_document_pages_processed_document_id_fkey"
+            columns: ["processed_document_id"]
+            isOneToOne: false
+            referencedRelation: "processed_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       prompt_app_analytics: {
         Row: {
