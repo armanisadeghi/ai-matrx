@@ -13,7 +13,8 @@
 // admins by the caller.
 
 import { useEffect, useReducer, useState } from "react";
-import { Bug, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Bug, Check, ChevronDown, ChevronUp, Copy, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   voiceDebugClear,
@@ -84,6 +85,7 @@ export function VoiceDebugPanel({
   defaultOpen = false,
 }: VoiceDebugPanelProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const [copied, setCopied] = useState(false);
   const [, force] = useReducer((n: number) => n + 1, 0);
 
   // Re-render on every bus notify (lifecycle events) AND on a 500ms tick so
@@ -106,17 +108,57 @@ export function VoiceDebugPanel({
       ? `${Math.floor((Date.now() - flags.sessionStartedAt) / 1000)}s`
       : "—";
 
+  const handleCopy = async () => {
+    const lines = [
+      `status: ${flags.status}`,
+      `ws open: ${flags.wsOpen} · streaming: ${flags.streamingReady} · mic active: ${flags.captureActive}`,
+      `token: ${flags.tokenPresent} · mic permission: ${flags.micPermission}`,
+      `token exp: ${flags.tokenExpiresInS === null ? "—" : `${flags.tokenExpiresInS}s`} · session: ${sessionAge}`,
+      `starts: ${flags.startCount} · connects: ${flags.connectOkCount} · closes: ${flags.closeCount} · errors: ${flags.errorCount}`,
+      `last close: ${flags.lastCloseCode ?? "—"}${
+        flags.lastCloseIntentional === null
+          ? ""
+          : flags.lastCloseIntentional
+            ? " (intent)"
+            : " (net)"
+      }`,
+      `last event: ${flags.lastEventType ?? "—"} · ${agoLabel(flags.lastEventAt)}`,
+      `mic flow: captured=${flags.micFramesCaptured} · sent=${flags.micFramesSent} · rms=${flags.micRms.toFixed(3)}`,
+      `worklet: process calls=${flags.micProcessCalls} · hasInput=${flags.micHasInput}`,
+      `audio ctx: ${flags.micCtxState}`,
+      `mic mgr: ${mic.state} · refs=${mic.refCount} · live=${String(mic.live)}`,
+      "",
+      "EVENT LOG (newest first):",
+      ...[...entries].reverse().map(
+        (e) =>
+          `${new Date(e.t).toLocaleTimeString([], {
+            hour12: false,
+            minute: "2-digit",
+            second: "2-digit",
+          })}  [${e.level}] ${e.label}${e.detail ? ` — ${e.detail}` : ""}`,
+      ),
+    ];
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+      toast.success("Voice debug copied");
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+
   return (
     <div className="pointer-events-auto w-full overflow-hidden rounded-lg border border-border bg-zinc-950/95 text-zinc-100 shadow-lg backdrop-blur">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left"
-      >
-        <span className="flex items-center gap-2 text-xs font-semibold">
+      <div className="flex w-full items-center justify-between gap-2 px-3 py-1.5">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex flex-1 items-center gap-2 text-left text-xs font-semibold"
+        >
           <Bug className="h-3.5 w-3.5 text-emerald-400" />
           Live voice debug
-        </span>
+        </button>
         <span className="flex items-center gap-2">
           <span
             className={cn(
@@ -130,13 +172,31 @@ export function VoiceDebugPanel({
           >
             {flags.status}
           </span>
-          {open ? (
-            <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
-          ) : (
-            <ChevronUp className="h-3.5 w-3.5 text-zinc-400" />
-          )}
+          <button
+            type="button"
+            onClick={handleCopy}
+            title="Copy debug data"
+            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-emerald-400" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="text-zinc-400 hover:text-zinc-200"
+          >
+            {open ? (
+              <ChevronDown className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronUp className="h-3.5 w-3.5" />
+            )}
+          </button>
         </span>
-      </button>
+      </div>
 
       {open && (
         <div className="space-y-2 border-t border-zinc-800 px-3 py-2">
@@ -220,6 +280,21 @@ export function VoiceDebugPanel({
             >
               audio ctx:{" "}
               <span className="text-zinc-200">{flags.micCtxState}</span>
+            </div>
+            <div
+              className={cn(
+                "col-span-full",
+                flags.captureActive &&
+                  (flags.micProcessCalls === 0 || !flags.micHasInput)
+                  ? "text-red-400"
+                  : "",
+              )}
+            >
+              worklet:{" "}
+              <span className="text-zinc-200">
+                process calls={flags.micProcessCalls} · hasInput=
+                {String(flags.micHasInput)}
+              </span>
             </div>
             <div className="col-span-full">
               mic mgr:{" "}

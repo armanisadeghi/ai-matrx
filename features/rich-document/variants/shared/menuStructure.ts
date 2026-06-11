@@ -17,6 +17,7 @@ import {
   BarChart3,
   Shield,
   Settings,
+  GitCompareArrows,
   type LucideIcon,
 } from "lucide-react";
 import type { RichDocumentAction } from "../../types";
@@ -75,6 +76,15 @@ export const MENU_STRUCTURE: MenuSection[] = [
       "full-print",
       "convert-to-broker",
       "add-to-docs",
+    ],
+  },
+  {
+    submenu: "Compare",
+    icon: GitCompareArrows,
+    actionIds: [
+      "compare-with-clipboard",
+      "set-compare-base",
+      "compare-with-base",
     ],
   },
   {

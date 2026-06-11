@@ -47,6 +47,10 @@ export interface VoiceDebugFlags {
   micRms: number;
   /** Capture AudioContext state — must be "running" for frames to flow. */
   micCtxState: string;
+  /** Worklet process() call count — 0 means the worklet isn't being scheduled. */
+  micProcessCalls: number;
+  /** Whether the worklet's last heartbeat saw input channel data. */
+  micHasInput: boolean;
   tokenPresent: boolean;
   /** Seconds until the cached token expires, or null if none. */
   tokenExpiresInS: number | null;
@@ -79,6 +83,8 @@ function emptyFlags(): VoiceDebugFlags {
     micFramesSent: 0,
     micRms: 0,
     micCtxState: "none",
+    micProcessCalls: 0,
+    micHasInput: false,
     tokenPresent: false,
     tokenExpiresInS: null,
     micPermission: "unknown",

@@ -16,7 +16,12 @@
  */
 
 import type { LucideIcon } from "lucide-react";
-import { FlaskConical, LayoutGrid, Microscope } from "lucide-react";
+import {
+  FlaskConical,
+  LayoutGrid,
+  Microscope,
+  GitCompareArrows,
+} from "lucide-react";
 
 export type PageStatus = "stable" | "wip" | "planned";
 
@@ -40,6 +45,16 @@ export interface ContextMenuPage {
 export const CONTEXT_MENU_BASE = "/demos/ssr/context-menu" as const;
 
 export const CONTEXT_MENU_PAGES: ContextMenuPage[] = [
+  {
+    slug: "canonical",
+    title: "Canonical Proving Ground",
+    tagline:
+      "One core menu behind four wrappers (none/agent/notes/code) + extraSections injection + live Diff.",
+    description:
+      "The single page to validate the system as we build it. The SAME UniversalContextMenuV2 is rendered behind four wrapper configurations so you can confirm parity and per-surface tuning. The Notes panel demonstrates the `extraSections` injection contract (Save/Export/Move/Delete rendered by the core, described by the wrapper). The bottom section runs the Diff system live — right-click → Compare → 'Compare with clipboard', plus an inline DiffViewer and 'Open in window'.",
+    icon: GitCompareArrows,
+    status: "wip",
+  },
   {
     slug: "lab",
     title: "Diagnostic Lab",

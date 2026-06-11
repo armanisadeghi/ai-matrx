@@ -66,12 +66,26 @@ export interface OrchestratorTarget {
 
 /**
  * Resolve which orchestrator to forward a request to based on a sandbox's
- * persisted tier. Rows without an explicit tier default to EC2 — that
- * preserves behavior for sandboxes created before the tier model existed.
+ * persisted tier. Logs loudly when tier is null/undefined — every callsite
+ * should resolve tier before calling this. The EC2 fallback is kept for
+ * legacy rows written before the tier column existed, but the error makes
+ * it visible so those rows can be backfilled.
+ *
+ * For new sandbox creation, tier must be passed explicitly — the creation
+ * API now returns a 400 rather than silently defaulting.
  */
 export function resolveOrchestratorByTier(
   tier: SandboxTier | null | undefined,
 ): OrchestratorTarget {
+  if (tier == null) {
+    console.error(
+      `${LOG} ❌ resolveOrchestratorByTier called with null/undefined tier. ` +
+        "A sandbox row has no tier set — was it created without an explicit tier? " +
+        "Falling back to 'ec2'. Update the row or ensure tier is passed at creation time. " +
+        "Stack: " +
+        new Error().stack,
+    );
+  }
   if (tier === "hosted") {
     if (!HOSTED_KEY)
       console.error(

@@ -60,6 +60,10 @@ export interface CaptureStats {
   lastFrameAt: number | null;
   /** AudioContext state — "running" is required for process() to fire. */
   ctxState: AudioContextState | "none";
+  /** Worklet process() invocation count — 0 means the worklet isn't scheduled. */
+  processCalls: number;
+  /** Whether the worklet's last heartbeat saw input channel data. */
+  hasInput: boolean;
 }
 
 export interface AudioCaptureHandle {
@@ -106,6 +110,9 @@ export function createAudioCapture(): AudioCaptureHandle {
   let framesSent = 0;
   let lastRms = 0;
   let lastFrameAt: number | null = null;
+  // Worklet heartbeat — distinguishes "process() never runs" from "runs but no input".
+  let processCalls = 0;
+  let hasInput = false;
 
   function emitError(err: CaptureError): void {
     for (const cb of errorCallbacks) {
@@ -155,6 +162,8 @@ export function createAudioCapture(): AudioCaptureHandle {
     framesSent = 0;
     lastRms = 0;
     lastFrameAt = null;
+    processCalls = 0;
+    hasInput = false;
     if (!ctx) warmupSync();
     if (!ctx)
       throw {
@@ -246,7 +255,8 @@ export function createAudioCapture(): AudioCaptureHandle {
     workletNode.port.onmessage = (event: MessageEvent) => {
       const msg = event.data as
         | { type: "pcm"; payload: ArrayBuffer }
-        | { type: "rms"; value: number };
+        | { type: "rms"; value: number }
+        | { type: "diag"; calls: number; hasInput: boolean };
 
       if (msg.type === "pcm") {
         framesCaptured += 1;
@@ -271,6 +281,9 @@ export function createAudioCapture(): AudioCaptureHandle {
       } else if (msg.type === "rms") {
         lastRms = msg.value;
         writeAmplitude("mic", msg.value);
+      } else if (msg.type === "diag") {
+        processCalls = msg.calls;
+        hasInput = msg.hasInput;
       }
     };
 
@@ -390,6 +403,8 @@ export function createAudioCapture(): AudioCaptureHandle {
       lastRms,
       lastFrameAt,
       ctxState: ctx?.state ?? "none",
+      processCalls,
+      hasInput,
     };
   }
 

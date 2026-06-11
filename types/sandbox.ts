@@ -128,8 +128,13 @@ export interface SandboxCreateRequest {
   project_id?: string;
   config?: SandboxConfig;
   ttl_seconds?: number;
-  /** Tier picker — 'ec2' (ephemeral, S3-backed) or 'hosted' (this server, larger workloads). */
-  tier?: SandboxTier;
+  /**
+   * Tier picker — 'ec2' (ephemeral, S3-backed) or 'hosted' (this server,
+   * larger workloads). Required — the API rejects requests without an
+   * explicit tier rather than silently defaulting. Use `sandboxPrefs.tier`
+   * or `useSandboxCreate().tier` to read the user's configured default.
+   */
+  tier: SandboxTier;
   /** Template id; see `GET /api/templates`. */
   template?: string;
   template_version?: string;

@@ -191,9 +191,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Resolve tier — explicit > config.tier > default 'ec2' for back-compat.
-    const tier: SandboxTier =
-      tierInput || (config?.tier as SandboxTier) || "ec2";
+    // Tier is required — reject requests that omit it rather than silently
+    // routing to a default orchestrator. Callers must read the user's
+    // configured default from `sandboxPrefs.tier` or `useSandboxCreate().tier`.
+    const tier: SandboxTier | undefined =
+      (tierInput as SandboxTier | undefined) ||
+      (config?.tier as SandboxTier | undefined);
+    if (!tier) {
+      console.error(
+        "[POST /api/sandbox] tier is required but was not provided. " +
+          "Pass tier: 'ec2' or tier: 'hosted' explicitly — no silent defaults.",
+      );
+      return NextResponse.json(
+        {
+          error: "tier is required",
+          details:
+            "Pass tier: 'ec2' or tier: 'hosted'. No silent defaults — the caller must be explicit.",
+        },
+        { status: 400 },
+      );
+    }
     const target = resolveOrchestratorByTier(tier);
 
     // Secrets-vault injection happens INSIDE the orchestrator now (it

@@ -221,6 +221,8 @@ export function useXaiVoiceSession(
       micFramesSent: stats?.framesSent ?? 0,
       micRms: stats?.lastRms ?? 0,
       micCtxState: stats?.ctxState ?? "none",
+      micProcessCalls: stats?.processCalls ?? 0,
+      micHasInput: stats?.hasInput ?? false,
       tokenPresent: !!tokenMgr?.peek(),
       tokenExpiresInS:
         expiresAt !== null ? Math.round(expiresAt - Date.now() / 1000) : null,
