@@ -1,21 +1,23 @@
 "use client";
 
 /**
- * NotePickerPopover — lazy-loaded, searchable note picker with folder grouping.
+ * NotePickerPopover — lazy-loaded, searchable note picker with a collapsible
+ * folder tree (same browse pattern as NotesTreeView on /notes).
  *
  * Fetches lightweight list items (id + label + folder, no content) only when
  * the popover opens. The parent receives a note id and should fetch full
  * content via NotesAPI.getById (or fetchNoteContent) on selection.
  *
- * Used by transcription cleanup context blocks and any surface that needs to
- * pick an existing note without hydrating the full notes Redux slice first.
+ * Browse: folders collapsed by default with counts — expand one folder at a time.
+ * Search: flat results across all notes (label, folder, id).
  */
 
 import React, { useCallback, useMemo, useState } from "react";
-import { FileText, Loader2 } from "lucide-react";
+import { ChevronRight, FileText, Loader2, Search } from "lucide-react";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
@@ -27,16 +29,11 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { NotesAPI } from "@/features/notes/service/notesApi";
-import { getAllFolders } from "@/features/notes/utils/folderUtils";
+import {
+  getAllFolders,
+  getFolderIconAndColor,
+} from "@/features/notes/utils/folderUtils";
 import type { NoteListItem } from "@/features/notes/types";
 
 // ── Shared list cache (names only — invalidated after creates/deletes) ───────
@@ -108,6 +105,9 @@ function NotePickerBody({
   onClose,
 }: NotePickerBodyProps) {
   const [search, setSearch] = useState("");
+  const [expandedFolder, setExpandedFolder] = useState<string | null>(
+    folderFilter ?? null,
+  );
 
   const scopedItems = useMemo(() => {
     if (!folderFilter) return items;
@@ -116,7 +116,7 @@ function NotePickerBody({
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return scopedItems;
+    if (!q) return [];
     return scopedItems.filter(
       (n) =>
         n.label.toLowerCase().includes(q) ||
@@ -125,30 +125,37 @@ function NotePickerBody({
     );
   }, [scopedItems, search]);
 
-  const folders = useMemo(
-    () => getAllFolders(filteredItems as Parameters<typeof getAllFolders>[0]),
-    [filteredItems],
-  );
-
   const notesByFolder = useMemo(() => {
     const grouped: Record<string, NoteListItem[]> = {};
-    for (const folder of folders) {
-      grouped[folder] = [];
-    }
-    for (const note of filteredItems) {
+    for (const note of scopedItems) {
       const folder = note.folder_name || "Draft";
       (grouped[folder] ??= []).push(note);
     }
+    for (const folder of Object.keys(grouped)) {
+      grouped[folder].sort((a, b) =>
+        (b.updated_at ?? "").localeCompare(a.updated_at ?? ""),
+      );
+    }
     return grouped;
-  }, [filteredItems, folders]);
+  }, [scopedItems]);
+
+  const treeFolders = useMemo(() => {
+    const withNotes = getAllFolders(
+      scopedItems as Parameters<typeof getAllFolders>[0],
+    ).filter((folder) => (notesByFolder[folder]?.length ?? 0) > 0);
+    return withNotes;
+  }, [scopedItems, notesByFolder]);
+
+  const isSearching = search.trim().length > 0;
 
   const handlePick = useCallback(
     async (noteId: string) => {
       await onSelectNote(noteId);
       onClose();
       setSearch("");
+      setExpandedFolder(folderFilter ?? null);
     },
-    [onSelectNote, onClose],
+    [onSelectNote, onClose, folderFilter],
   );
 
   const handleAction = useCallback(
@@ -159,6 +166,10 @@ function NotePickerBody({
     },
     [onClose],
   );
+
+  const handleToggleFolder = useCallback((folder: string) => {
+    setExpandedFolder((prev) => (prev === folder ? null : folder));
+  }, []);
 
   if (isLoading) {
     return (
@@ -178,84 +189,133 @@ function NotePickerBody({
   }
 
   return (
-    <Command shouldFilter={false}>
-      <CommandInput
-        placeholder="Search notes…"
-        value={search}
-        onValueChange={setSearch}
-      />
-      <CommandList className="max-h-[280px]">
-        {search.trim() ? (
-          <CommandGroup heading="Results">
-            {filteredItems.map((note) => (
-              <CommandItem
-                key={note.id}
-                value={note.id}
-                onSelect={() => {
-                  void handlePick(note.id);
-                }}
-                className="gap-2 cursor-pointer"
-              >
-                <FileText className="w-3.5 h-3.5 shrink-0 opacity-50" />
-                <span className="truncate text-xs">
-                  {note.label || "Untitled"}
-                </span>
-                {note.folder_name && (
-                  <span className="ml-auto text-[0.5625rem] text-muted-foreground/50 truncate max-w-[80px]">
-                    {note.folder_name}
+    <div className="flex flex-col text-xs">
+      <div className="border-b border-border px-2 py-1.5">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search notes…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 border-0 bg-muted/40 pl-7 text-xs shadow-none focus-visible:ring-1"
+            style={{ fontSize: "16px" }}
+          />
+        </div>
+      </div>
+
+      <div className="max-h-[300px] overflow-y-auto scrollbar-thin">
+        {isSearching ? (
+          <div className="py-0.5">
+            {filteredItems.length === 0 ? (
+              <div className="px-3 py-6 text-center text-muted-foreground">
+                No notes found
+              </div>
+            ) : (
+              filteredItems.map((note) => (
+                <button
+                  key={note.id}
+                  type="button"
+                  onClick={() => {
+                    void handlePick(note.id);
+                  }}
+                  className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
+                >
+                  <FileText className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                  <span className="min-w-0 flex-1 truncate">
+                    {note.label || "Untitled"}
                   </span>
-                )}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        ) : (
-          folders.map((folder) => {
-            const folderNotes = notesByFolder[folder] ?? [];
-            if (folderNotes.length === 0) return null;
-            return (
-              <CommandGroup key={folder} heading={folder}>
-                {folderNotes.map((note) => (
-                  <CommandItem
-                    key={note.id}
-                    value={note.id}
-                    onSelect={() => {
-                      void handlePick(note.id);
-                    }}
-                    className="gap-2 cursor-pointer"
-                  >
-                    <FileText className="w-3.5 h-3.5 shrink-0 text-primary/60" />
-                    <span className="truncate text-xs">
-                      {note.label || "Untitled"}
+                  {note.folder_name && (
+                    <span className="shrink-0 truncate text-[0.5625rem] text-muted-foreground/50 max-w-[72px]">
+                      {note.folder_name}
                     </span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            );
-          })
+                  )}
+                </button>
+              ))
+            )}
+          </div>
+        ) : (
+          <div className="select-none py-0.5">
+            {treeFolders.length === 0 ? (
+              <div className="px-3 py-6 text-center text-muted-foreground">
+                No notes yet
+              </div>
+            ) : (
+              treeFolders.map((folder) => {
+                const isExpanded = expandedFolder === folder;
+                const folderNotes = notesByFolder[folder] ?? [];
+                const { icon: FolderIcon, color: folderColor } =
+                  getFolderIconAndColor(folder);
+
+                return (
+                  <div key={folder}>
+                    <button
+                      type="button"
+                      className={cn(
+                        "flex w-full items-center gap-1 px-2 py-1 hover:bg-accent/50 transition-colors",
+                        isExpanded && "bg-accent/30",
+                      )}
+                      onClick={() => handleToggleFolder(folder)}
+                    >
+                      <ChevronRight
+                        className={cn(
+                          "h-3 w-3 shrink-0 transition-transform duration-150",
+                          isExpanded && "rotate-90",
+                        )}
+                      />
+                      <FolderIcon
+                        className={cn("h-3 w-3 shrink-0", folderColor)}
+                      />
+                      <span className="truncate font-medium">{folder}</span>
+                      <span className="ml-auto pr-0.5 text-[9px] tabular-nums text-muted-foreground/50">
+                        {folderNotes.length}
+                      </span>
+                    </button>
+
+                    {isExpanded && (
+                      <div>
+                        {folderNotes.map((note) => (
+                          <button
+                            key={note.id}
+                            type="button"
+                            onClick={() => {
+                              void handlePick(note.id);
+                            }}
+                            className="flex w-full items-center gap-1 py-1 pl-6 pr-2 text-left hover:bg-accent/40 transition-colors"
+                          >
+                            <FileText className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+                            <span className="truncate">
+                              {note.label || "Untitled"}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
         )}
 
         {extraActions && extraActions.length > 0 && (
-          <CommandGroup heading="Actions">
+          <div className="border-t border-border py-0.5">
             {extraActions.map((action) => (
-              <CommandItem
+              <button
                 key={action.id}
-                value={action.id}
-                onSelect={() => {
+                type="button"
+                onClick={() => {
                   void handleAction(action);
                 }}
-                className="gap-2 cursor-pointer text-primary"
+                className="flex w-full items-center px-2.5 py-1.5 text-left text-primary hover:bg-accent/50 transition-colors"
               >
-                <span className="text-xs">{action.label}</span>
-              </CommandItem>
+                {action.label}
+              </button>
             ))}
-          </CommandGroup>
+          </div>
         )}
-
-        <CommandEmpty className="text-xs py-3 text-center">
-          No notes found
-        </CommandEmpty>
-      </CommandList>
-    </Command>
+      </div>
+    </div>
   );
 }
 

@@ -182,7 +182,9 @@ export function ChatRoomClient({
           // this load was already superseded by a navigation (don't revert the
           // surface back to the conversation the user just left).
           if (ctrl.signal.aborted) return;
-          dispatch(setFocus({ surfaceKey, conversationId: conversationIdProp }));
+          dispatch(
+            setFocus({ surfaceKey, conversationId: conversationIdProp }),
+          );
           return;
         }
         if (ctrl.signal.aborted) return;
@@ -323,7 +325,8 @@ export function ChatRoomClient({
           constrainWidth
           smartInputProps={{
             sendButtonVariant: "blue",
-            showSubmitOnEnterToggle: true,
+            // Lives in the Chat Options (+) → Preferences tab now.
+            showSubmitOnEnterToggle: false,
           }}
           landingContent={landingContent}
         />

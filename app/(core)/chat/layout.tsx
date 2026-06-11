@@ -1,4 +1,6 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { ChatIncognitoProvider } from "@/features/agents/components/chat/ChatIncognitoProvider";
+import { ChatIncognitoHeaderButton } from "@/features/agents/components/chat/ChatIncognitoHeaderButton";
 
 export const metadata = createRouteMetadata("/chat", {
   title: "Chat",
@@ -22,9 +24,10 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <ChatIncognitoProvider>
       <span className="shell-hide-dock" aria-hidden="true" />
+      <ChatIncognitoHeaderButton />
       {children}
-    </>
+    </ChatIncognitoProvider>
   );
 }

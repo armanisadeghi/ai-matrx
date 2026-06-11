@@ -1473,6 +1473,30 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   border: 0;
 }
 
+.shell-header-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.shell-header-right-inject {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* Chat incognito — visually mute identity chrome (sidebar + avatar). */
+.shell-root[data-chat-incognito="true"] .shell-sidebar,
+.shell-root[data-chat-incognito="true"] .shell-user-menu-wrapper,
+.shell-root[data-chat-incognito="true"] .shell-mobile-sheet {
+  filter: brightness(0);
+  opacity: 0.35;
+  pointer-events: none;
+  transition:
+    filter var(--shell-duration-fast) var(--shell-ease-smooth),
+    opacity var(--shell-duration-fast) var(--shell-ease-smooth);
+}
+
 .shell-user-menu-wrapper {
   position: relative;
   z-index: 41;

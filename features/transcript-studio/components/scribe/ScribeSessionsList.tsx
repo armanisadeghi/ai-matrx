@@ -59,6 +59,13 @@ export function ScribeSessionsList({
   const [creating, setCreating] = useState(false);
   const [menuSessionId, setMenuSessionId] = useState<string | null>(null);
   const [renameSessionId, setRenameSessionId] = useState<string | null>(null);
+  // The session list is driven by a persisted Redux store that rehydrates only
+  // on the client, so the server (empty store → empty state) and the first
+  // client paint (rehydrated → list) disagree. Render a stable placeholder
+  // until mounted so SSR and the first client render match exactly, then swap
+  // in the real list. (Also guards locale date formatting in `formatWhen`.)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const menuSession = sessions.find((s) => s.id === menuSessionId) ?? null;
   const renameSession = sessions.find((s) => s.id === renameSessionId) ?? null;
@@ -149,7 +156,7 @@ export function ScribeSessionsList({
 
       <div className="flex-1 overflow-y-auto px-3 py-3">
         {/* Unsorted pool entry */}
-        {unsortedCount > 0 && (
+        {mounted && unsortedCount > 0 && (
           <button
             type="button"
             onClick={onOpenUnsorted}
@@ -171,7 +178,7 @@ export function ScribeSessionsList({
           </button>
         )}
 
-        {fetchStatus === "loading" && sessions.length === 0 ? (
+        {!mounted || (fetchStatus === "loading" && sessions.length === 0) ? (
           <div className="flex justify-center py-10">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>

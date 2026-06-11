@@ -38,6 +38,7 @@ import {
   Layers,
   Crown,
   Bug,
+  SlidersVertical,
 } from "lucide-react";
 import {
   Popover,
@@ -45,6 +46,7 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { useDialogContainer } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +65,9 @@ import {
 import {
   selectBuilderAdvancedSettings,
   selectIsCreator,
+  selectSubmitOnEnter,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { setSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectConversationSandboxOverride } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import {
   selectShowCreatorPanel,
@@ -81,6 +85,7 @@ type Tab =
   | "tools"
   | "sandbox"
   | "settings"
+  | "preferences"
   | "creator";
 
 interface TabDef {
@@ -93,12 +98,13 @@ const ATTACH_TAB: TabDef = { id: "attach", label: "Attach", icon: Paperclip };
 const CONTEXT_TAB: TabDef = { id: "context", label: "Context", icon: Layers };
 // Per-conversation overrides (model + run config) that overwrite the agent's
 // own settings for this run only.
-const MODEL_TAB: TabDef = { id: "model", label: "Overwrite", icon: Cpu };
+const MODEL_TAB: TabDef = { id: "model", label: "Overrides", icon: Cpu };
 const CREATOR_TAB: TabDef = { id: "creator", label: "Creator", icon: Crown };
 const BASE_TABS: TabDef[] = [
   { id: "tools", label: "Tools", icon: Wrench },
   { id: "sandbox", label: "Sandbox", icon: Box },
   { id: "settings", label: "Settings", icon: Settings2 },
+  { id: "preferences", label: "Preferences", icon: SlidersVertical },
 ];
 
 export interface RunControlsMenuProps {
@@ -153,6 +159,8 @@ export function RunControlsMenu({
   const showCreatorTab = isCreator || isAdmin;
   const showDebugAction = isAdmin && isDebugMode;
 
+  const submitOnEnter = useAppSelector(selectSubmitOnEnter(conversationId));
+
   // The Model tab (and per-run model/settings overrides) only applies to
   // instances that own an override layer — manual/builder-test runs read the
   // agent live and have no override state, so we hide it there.
@@ -205,22 +213,12 @@ export function RunControlsMenu({
         <button
           type="button"
           tabIndex={variant === "plus" ? -1 : undefined}
-          title={
-            includeAttach
-              ? "Attach, model, tools, sandbox & settings"
-              : "Model, tools, sandbox & run settings"
-          }
-          aria-label={
-            includeAttach
-              ? "Attach, model, tools, sandbox & settings"
-              : "Model, tools, sandbox & run settings"
-          }
+          title="Chat Options"
+          aria-label="Chat Options"
           className={cn(
             "relative flex items-center justify-center rounded-full transition-colors",
             variant === "plus" ? "h-9 w-9" : "h-8 w-8",
-            isCustomized
-              ? "text-primary bg-primary/10 hover:bg-primary/15"
-              : "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60",
+            "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60",
           )}
         >
           <TriggerIcon className={variant === "plus" ? "h-5 w-5" : "h-4 w-4"} />
@@ -238,13 +236,13 @@ export function RunControlsMenu({
         align={align}
         side={side}
         sideOffset={8}
-        className="w-[min(440px,calc(100vw-1rem))] p-0 border-border"
+        className="w-[min(680px,calc(100vw-1rem))] p-0 border-border"
         container={dialogContainer ?? undefined}
       >
         <div
           role="tablist"
           aria-label="Run controls"
-          className="flex border-b border-border"
+          className="flex overflow-x-auto border-b border-border scrollbar-thin"
         >
           {tabs.map((t) => {
             const Icon = t.icon;
@@ -259,7 +257,7 @@ export function RunControlsMenu({
                 aria-controls={`runctl-panel-${conversationId}`}
                 onClick={() => setTab(t.id)}
                 className={cn(
-                  "-mb-px flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-2 text-xs font-medium transition-colors",
+                  "-mb-px flex flex-1 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap border-b-2 px-2.5 py-2 text-xs font-medium transition-colors",
                   on
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground",
@@ -325,6 +323,28 @@ export function RunControlsMenu({
           {activeTab === "settings" && (
             <div className="h-full overflow-y-auto px-3 py-2">
               <RunSettingsEditor conversationId={conversationId} />
+            </div>
+          )}
+          {activeTab === "preferences" && (
+            <div className="h-full overflow-y-auto px-3 py-3">
+              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5 transition-colors hover:bg-muted/40">
+                <span className="flex flex-col">
+                  <span className="text-sm font-medium text-foreground">
+                    Submit on Enter
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {submitOnEnter
+                      ? "Enter sends · Shift+Enter for a new line"
+                      : "Enter adds a new line · ⌘/Ctrl+Enter sends"}
+                  </span>
+                </span>
+                <Switch
+                  checked={submitOnEnter}
+                  onCheckedChange={(value) =>
+                    dispatch(setSubmitOnEnter({ conversationId, value }))
+                  }
+                />
+              </label>
             </div>
           )}
           {activeTab === "creator" && (

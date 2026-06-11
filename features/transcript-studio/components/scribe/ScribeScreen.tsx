@@ -89,21 +89,24 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   // only while the title is still the placeholder; never overrides a custom name.
   useStudioAutoLabel({ sessionId, currentTitle: session?.title ?? "" });
 
-  // Offer to send a just-finished recording to the agent for review — as a
-  // toast (no dedicated header/strip row), available from any mode.
-  const wasRecording = useRef(false);
+  // Offer to send a just-KEPT recording to the agent for review — as a toast,
+  // available from any mode. Driven by `keptRecordingTick` (bumped only when a
+  // recording is finalized) so a discarded too-short clip never prompts.
+  const keptTick = useAppSelector((s) => s.transcriptStudio.keptRecordingTick);
+  const lastKeptTick = useRef(keptTick);
   useEffect(() => {
-    if (wasRecording.current && !recorder.isOwnedRecording) {
+    if (keptTick > lastKeptTick.current) {
       toast("Recording added", {
         description: "Send it to the agent to update the working document?",
+        closeButton: true,
         action: {
           label: "Send",
           onClick: () => void send(REVIEW_MESSAGE),
         },
       });
     }
-    wasRecording.current = recorder.isOwnedRecording;
-  }, [recorder.isOwnedRecording, send]);
+    lastKeptTick.current = keptTick;
+  }, [keptTick, send]);
 
   const recordingBlocked =
     recorder.isAnyRecording && !recorder.isOwnedRecording;
@@ -251,7 +254,9 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
                 {!recorder.isPaused && (
                   <span
                     aria-hidden
-                    className="absolute inset-0 animate-ping rounded-full bg-red-500/40"
+                    /* Desktop only — on mobile the bottom bar owns the pulsing
+                       "Recording" indicator, so we don't double up. */
+                    className="absolute inset-0 hidden animate-ping rounded-full bg-red-500/40 sm:block"
                   />
                 )}
                 <Square className="relative h-4 w-4 fill-current" />
@@ -274,11 +279,20 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
         </div>
       </header>
 
-      {/* Body */}
-      <main className="min-h-0 flex-1">
-        {screen === "capture" && <ScribeCaptureScreen sessionId={sessionId} />}
-        {screen === "agent" && <AssistantScreen sessionId={sessionId} />}
-        {screen === "live" && <ScribeLiveScreen sessionId={sessionId} />}
+      {/* Body — all three modes stay mounted; switching tabs only flips
+          visibility. This keeps one shared state across Record / Agent / Live:
+          nothing unmounts, re-fetches, re-resolves the conversation, or flashes
+          a spinner when you move between tabs. */}
+      <main className="relative min-h-0 flex-1">
+        <div className={cn("h-full", screen !== "capture" && "hidden")}>
+          <ScribeCaptureScreen sessionId={sessionId} />
+        </div>
+        <div className={cn("h-full", screen !== "agent" && "hidden")}>
+          <AssistantScreen sessionId={sessionId} />
+        </div>
+        <div className={cn("h-full", screen !== "live" && "hidden")}>
+          <ScribeLiveScreen sessionId={sessionId} />
+        </div>
       </main>
 
       <ActionSheet

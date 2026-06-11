@@ -50,6 +50,9 @@ export function SwipeableRow({
   const x = useMotionValue(0);
   const rowRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
+  // A drag fires a click on release (pointerup → click). Swallow that click so a
+  // swipe never also opens/selects the row underneath.
+  const suppressClickRef = useRef(false);
 
   const leadingWidth = leadingActions.length * ACTION_WIDTH;
   const trailingWidth = trailingActions.length * ACTION_WIDTH;
@@ -61,6 +64,8 @@ export function SwipeableRow({
 
   const handleDragEnd = (_e: unknown, info: PanInfo) => {
     setDragging(false);
+    // Any real drag (even one that snaps back to 0) must not also click.
+    if (Math.abs(info.offset.x) > 4) suppressClickRef.current = true;
     const width = rowRef.current?.offsetWidth ?? 320;
     const fullThreshold = width * FULL_SWIPE_RATIO;
     const pos = x.get();
@@ -149,6 +154,13 @@ export function SwipeableRow({
         drag="x"
         dragDirectionLock
         style={{ x }}
+        onClickCapture={(e) => {
+          if (suppressClickRef.current) {
+            e.stopPropagation();
+            e.preventDefault();
+            suppressClickRef.current = false;
+          }
+        }}
         onDragStart={() => setDragging(true)}
         onDragEnd={handleDragEnd}
         dragConstraints={{

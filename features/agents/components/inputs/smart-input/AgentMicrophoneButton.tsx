@@ -37,6 +37,8 @@ interface AgentMicrophoneButtonProps {
   size?: "xs" | "sm" | "md" | "lg";
   variant?: MicVariant;
   className?: string;
+  /** Tooltip for the idle mic button. */
+  label?: string;
   /**
    * Fires after the final transcript is appended to the input, with the full
    * resulting text. Lets an audio-first surface auto-send on speech end.
@@ -49,6 +51,7 @@ export function AgentMicrophoneButton({
   size = "sm",
   variant = "icon-only",
   className,
+  label,
   onTranscribed,
 }: AgentMicrophoneButtonProps) {
   const dispatch = useAppDispatch();
@@ -139,6 +142,7 @@ export function AgentMicrophoneButton({
       variant={variant}
       size={size}
       className={className}
+      label={label}
       onLiveTranscript={handleLiveTranscript}
       onTranscriptionComplete={handleTranscriptionComplete}
     />

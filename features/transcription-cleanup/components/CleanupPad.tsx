@@ -37,6 +37,7 @@ import React, {
 } from "react";
 import {
   AudioLines,
+  BookOpen,
   ChevronDown,
   CircleStop,
   Loader2,
@@ -81,7 +82,10 @@ import type {
   SessionContextItem,
 } from "@/features/transcript-studio/types";
 import { CleanupContextPanel } from "./CleanupContextPanel";
-import { CleanupSessionList } from "./CleanupSessionList";
+import {
+  CleanupSessionList,
+  CleanupSessionsToolbar,
+} from "./CleanupSessionList";
 import { DEFAULT_CLEAN_AGENT_ID, SYSTEM_AGENT_NAMES } from "../ai-agents";
 import {
   useAiPostProcess,
@@ -101,6 +105,42 @@ const V_COOKIE = "panels:cleanup-v";
 
 /** Fixed hook pool size — raise here when more parallel slots are needed. */
 const MAX_CUSTOM_SLOTS = 3;
+
+/** Side columns — top band aligns vertically with the center record band. */
+const SIDE_COLUMN_TOP_BAND =
+  "flex shrink-0 flex-col justify-center gap-2 border-b border-border bg-muted/30 px-3 py-3 min-h-[4.5rem]";
+
+const RECORD_BAND =
+  "flex shrink-0 items-center justify-center border-b border-border px-4 py-3 min-h-[4.5rem]";
+
+function SidebarSectionLabel({
+  icon: Icon,
+  label,
+  accent = "muted",
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  accent?: "muted" | "primary";
+}) {
+  return (
+    <div className="mb-1.5 mt-4 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <span
+        className={cn(
+          "inline-flex h-5 w-5 items-center justify-center rounded-md",
+          accent === "primary" ? "bg-primary/10" : "bg-muted",
+        )}
+      >
+        <Icon
+          className={cn(
+            "h-3 w-3",
+            accent === "primary" ? "text-primary" : "text-muted-foreground",
+          )}
+        />
+      </span>
+      {label}
+    </div>
+  );
+}
 
 function writeLayoutCookie(name: string, layout: Record<string, number>) {
   document.cookie =
@@ -903,11 +943,7 @@ export default function CleanupPad({
     </div>
   );
 
-  const recordBand = (
-    <div className="flex h-[calc(var(--shell-header-h)+3.5rem)] shrink-0 items-center justify-center border-b border-border px-4">
-      {recordArea}
-    </div>
-  );
+  const recordBand = <div className={RECORD_BAND}>{recordArea}</div>;
 
   const mobileDrawerToggle = isMobile ? (
     <button
@@ -921,7 +957,7 @@ export default function CleanupPad({
   ) : null;
 
   const recordControl = (
-    <div className="relative flex shrink-0 items-center justify-center border-b border-border px-4 py-3">
+    <div className="relative flex shrink-0 items-center justify-center border-b border-border px-4 py-4">
       {mobileDrawerToggle}
       {recordArea}
     </div>
@@ -929,7 +965,15 @@ export default function CleanupPad({
 
   const sidebarBody = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 pt-4 pb-3">
+      <div className={SIDE_COLUMN_TOP_BAND}>
+        <CleanupSessionsToolbar
+          scope={session.scope}
+          onScopeChange={session.setScope}
+          onCreate={() => void handleNewSession()}
+        />
+      </div>
+
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 pt-2 pb-3">
         <CleanupSessionList
           sessions={session.sessions}
           fetchStatus={session.fetchStatus}
@@ -939,11 +983,14 @@ export default function CleanupPad({
           onSelect={handleSelectSession}
           onCreate={() => void handleNewSession()}
           onDelete={(id) => void session.deleteSession(id)}
+          showToolbar={false}
         />
 
-        <div className="mb-1.5 mt-5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Cleaning Agent
-        </div>
+        <SidebarSectionLabel
+          icon={Stars}
+          label="Cleaning Agent"
+          accent="primary"
+        />
         <AgentListDropdown
           onSelect={handleCleanAgentSelect}
           label={agentNames[cleanAgentId] ?? "Choose an agent…"}
@@ -955,9 +1002,7 @@ export default function CleanupPad({
           </div>
         )}
 
-        <div className="mb-1.5 mt-5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Context
-        </div>
+        <SidebarSectionLabel icon={BookOpen} label="Context" />
         <CleanupContextPanel
           key={session.loaded?.sessionId ?? "draft"}
           initialItems={session.loaded?.contextItems ?? null}
@@ -1132,11 +1177,11 @@ export default function CleanupPad({
     () => customRef.current,
     handleCustomChange,
   );
-  const customControls = (
-    <div className="flex shrink-0 flex-col gap-2 border-b border-border bg-muted/30 px-3 py-2">
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-primary/10">
+  const customTopBand = (
+    <div className={SIDE_COLUMN_TOP_BAND}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/10">
             <Wand2 className="h-3 w-3 text-primary" />
           </span>
           Custom
@@ -1151,7 +1196,7 @@ export default function CleanupPad({
             </span>
           )}
         </span>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           <Loader2
             className={cn(
               "h-4 w-4 text-muted-foreground",
@@ -1174,7 +1219,6 @@ export default function CleanupPad({
         </div>
       </div>
 
-      {/* Slot tabs — one visible at a time; each runs its own agent. */}
       <div className="flex items-center gap-1">
         {slots.map((slot, idx) => {
           const active = idx === activeSlotIdx;
@@ -1224,7 +1268,11 @@ export default function CleanupPad({
           </button>
         )}
       </div>
+    </div>
+  );
 
+  const customToolbar = (
+    <div className="flex shrink-0 flex-col gap-2 border-b border-border px-3 py-2">
       <div className="flex items-center gap-1.5">
         <div className="min-w-0 flex-1">
           <AgentListDropdown
@@ -1301,7 +1349,8 @@ export default function CleanupPad({
 
   const customPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      {customControls}
+      {customTopBand}
+      {customToolbar}
       <UnifiedAgentContextMenu
         sourceFeature="transcription-cleanup"
         surfaceName="matrx-user/transcripts-cleanup"
@@ -1398,7 +1447,7 @@ export default function CleanupPad({
             minSize="16%"
             maxSize="38%"
           >
-            <div className="h-full pt-[var(--shell-header-h)]">
+            <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
               {sidebarBody}
             </div>
           </ResizablePanel>
@@ -1406,7 +1455,7 @@ export default function CleanupPad({
           <ResizableHandle withHandle />
 
           <ResizablePanel id="main" minSize="30%">
-            <div className="flex h-full min-h-0 flex-col">
+            <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
               {recordBand}
               <ResizablePanelGroup
                 id="cleanup-v"
@@ -1436,7 +1485,7 @@ export default function CleanupPad({
             minSize="18%"
             maxSize="45%"
           >
-            <div className="h-full pt-[var(--shell-header-h)]">
+            <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
               {customPane}
             </div>
           </ResizablePanel>

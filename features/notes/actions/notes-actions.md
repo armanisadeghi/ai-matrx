@@ -24,7 +24,7 @@ Source: `features/notes/actions/`. Import from `@/features/notes` (barrel re-exp
 | **CategoryNotesModal** | Folder-scoped modal: list/search notes in one `folder_name`, optional create/edit/delete/import, `onSelectNote` for picking a note into another flow. Requires `NotesProvider` ancestor. |
 | **WindowNotesBody** | Lightweight single-note editor for embedding in draggable windows / panels. Includes own `NotesProvider`, auto-save, auto-label, tree-view picker, and new-note button. No external provider needed. |
 | **NotesTreeView** | VS Code-style folder/note tree with single-folder expand, inline note creation, inline folder creation, and `onSelectNote`/`onSelectFolder` callbacks. Requires `NotesProvider` ancestor. |
-| **NotePickerPopover** | Lazy-loaded searchable popover (Drawer on mobile) with folder-grouped note list. Fetches lightweight list items on open; parent fetches full note on select. No `NotesProvider` required. Path: `features/notes/components/NotePickerPopover.tsx`. |
+| **NotePickerPopover** | Lazy-loaded searchable popover (Drawer on mobile) with collapsible folder tree (same browse pattern as `NotesTreeView`). Fetches lightweight list items on open; parent fetches full note on select. No `NotesProvider` required. Path: `features/notes/components/NotePickerPopover.tsx`. |
 | **NotesWindow** | Complete self-contained `WindowPanel` with `NotesTreeView` sidebar + single-note editor. Bundles own `NotesProvider`. Accepts all `WindowPanelProps` (id, initialRect, onClose, etc.). Header has left/right action zones (sidebar toggle, +, save, open-in-tab). |
 | **SidebarNotesToggle** | Shell sidebar button that toggles a floating `NotesWindow`. Renders the window via portal on toggle. No provider needed. |
 

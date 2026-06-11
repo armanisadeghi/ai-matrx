@@ -11,11 +11,60 @@
  */
 
 import React from "react";
-import { AudioLines, Loader2, Plus, Trash2 } from "lucide-react";
+import { AudioLines, Layers, Loader2, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import ActionFeedbackButton from "@/components/official/ActionFeedbackButton";
 import type { StudioSession } from "@/features/transcript-studio/types";
+
+interface CleanupSessionsToolbarProps {
+  scope: "cleanup" | "all";
+  onScopeChange: (scope: "cleanup" | "all") => void;
+  onCreate: () => void;
+}
+
+/** Sessions column header — icon, scope toggle, compact new action. */
+export function CleanupSessionsToolbar({
+  scope,
+  onScopeChange,
+  onCreate,
+}: CleanupSessionsToolbarProps) {
+  return (
+    <div className="flex w-full items-center justify-between gap-2">
+      <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-muted">
+          <Layers className="h-3 w-3 text-muted-foreground" />
+        </span>
+        Sessions
+      </span>
+      <div className="flex shrink-0 items-center gap-1">
+        <div className="flex items-center rounded-md border border-border p-0.5">
+          {(["cleanup", "all"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onScopeChange(s)}
+              className={cn(
+                "rounded px-1.5 py-0.5 text-[10px] font-medium capitalize transition-colors",
+                scope === s
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {s === "cleanup" ? "Mine" : "All"}
+            </button>
+          ))}
+        </div>
+        <ActionFeedbackButton
+          icon={<Plus className="h-3.5 w-3.5" />}
+          tooltip="New session"
+          onClick={onCreate}
+          className="h-6 w-6 text-muted-foreground hover:text-foreground"
+        />
+      </div>
+    </div>
+  );
+}
 
 interface CleanupSessionListProps {
   sessions: StudioSession[];
@@ -26,6 +75,8 @@ interface CleanupSessionListProps {
   onSelect: (id: string) => void;
   onCreate: () => void;
   onDelete: (id: string) => void;
+  /** When false, render list only (header lives in the column top band). */
+  showToolbar?: boolean;
 }
 
 function timeAgo(iso: string): string {
@@ -51,40 +102,19 @@ export function CleanupSessionList({
   onSelect,
   onCreate,
   onDelete,
+  showToolbar = true,
 }: CleanupSessionListProps) {
   return (
     <div className="flex flex-col">
-      <div className="mb-1.5 flex items-center justify-between gap-1">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Sessions
-        </span>
-        <div className="flex items-center gap-1">
-          {/* Scope: this surface only vs everything visible to the user */}
-          <div className="flex items-center rounded-md border border-border p-0.5">
-            {(["cleanup", "all"] as const).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => onScopeChange(s)}
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-[10px] font-medium capitalize transition-colors",
-                  scope === s
-                    ? "bg-primary/15 text-primary"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {s === "cleanup" ? "Mine" : "All"}
-              </button>
-            ))}
-          </div>
-          <ActionFeedbackButton
-            icon={<Plus className="h-3.5 w-3.5" />}
-            tooltip="New session"
-            onClick={onCreate}
-            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+      {showToolbar && (
+        <div className="mb-1.5">
+          <CleanupSessionsToolbar
+            scope={scope}
+            onScopeChange={onScopeChange}
+            onCreate={onCreate}
           />
         </div>
-      </div>
+      )}
 
       {fetchStatus === "loading" && sessions.length === 0 ? (
         <div className="flex items-center gap-2 px-2 py-3 text-xs text-muted-foreground">

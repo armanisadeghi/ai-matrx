@@ -58,6 +58,8 @@ export interface MicrophoneIconButtonProps {
   size?: "xs" | "sm" | "md" | "lg";
   className?: string;
   disabled?: boolean;
+  /** Tooltip/aria-label for the idle (pre-recording) button. */
+  label?: string;
 }
 
 // ── Size maps (static — no imports needed) ───────────────────────────────────
@@ -123,6 +125,7 @@ export const MicrophoneIconButton = forwardRef<
     size = "md",
     className,
     disabled = false,
+    label = "Start recording",
   },
   ref,
 ) {
@@ -147,8 +150,8 @@ export const MicrophoneIconButton = forwardRef<
         type="button"
         onClick={handleClick}
         disabled={disabled}
-        title="Start recording"
-        aria-label="Start voice recording"
+        title={label}
+        aria-label={label}
         className={cn(
           "inline-flex items-center justify-center rounded-full",
           "transition-colors hover:bg-accent",

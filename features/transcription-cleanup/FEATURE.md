@@ -104,7 +104,7 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
-- 2026-06-10 — Context block note picker: replaced folder-filtered `<select>` (Transcription Contexts only) with shared `NotePickerPopover` — lazy list fetch (names/metadata only on open), folder-grouped search, full note via `NotesAPI.getById` on select.
+- 2026-06-10 — Context block note picker: replaced folder-filtered `<select>` (Transcription Contexts only) with shared `NotePickerPopover` — lazy list fetch (names/metadata only on open), collapsible folder tree + search, full note via `NotesAPI.getById` on select.
 - 2026-06-10 — Auto-label on first Clean pass: when the transcript is first sent
   for cleaning and the session title is still the default (`New Cleanup` /
   empty / untitled), one parallel `POST /api/content-label` call labels the
@@ -116,7 +116,10 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
   stops + transcribes + persists raw transcript without Clean, autorun slots,
   or auto-label — always visible, disabled until recording starts (no layout
   shift). Prominent **New session** pill at the top of the listen/record band
-  (creates a fresh session; does not delete existing sessions). (tabs, per-slot agent /
+  (creates a fresh session; does not delete existing sessions). Side columns
+  use matched top bands (`Sessions` / `Custom` with icon chips) aligned to the
+  center record band; sidebar subsections (`Cleaning Agent`, `Context`) share
+  the same labeled header pattern. (tabs, per-slot agent /
   source / autorun / output doc; `custom_slots` jsonb migration
   `studio_session_settings_custom_slots.sql`, applied live; legacy
   `module_shortcut_id` migrated to slot 1 on load) + `UnifiedAgentContextMenu`

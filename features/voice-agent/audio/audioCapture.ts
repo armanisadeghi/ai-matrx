@@ -105,10 +105,40 @@ export function createAudioCapture(): AudioCaptureHandle {
     }
   }
 
+  /**
+   * Abort guard for the async `start()` path. `start()` has two awaits (mic
+   * permission, worklet module). If `stop()` runs during either — toggle spam,
+   * tab/route change, unmount — it sets `ctx = null`, which previously made the
+   * post-await `ctx.createMediaStreamSource(...)` throw
+   * "Cannot read properties of null". We snapshot the context at entry and, after
+   * each await, bail out cleanly (releasing any half-acquired mic stream) if the
+   * live `ctx` is no longer the one we started with.
+   */
   async function start(): Promise<void> {
     if (active) return;
     if (!ctx) warmupSync();
-    if (!ctx) throw { code: "unsupported", message: "No AudioContext" } satisfies CaptureError;
+    if (!ctx)
+      throw {
+        code: "unsupported",
+        message: "No AudioContext",
+      } satisfies CaptureError;
+    const localCtx = ctx;
+
+    const abortIfTornDown = (): boolean => {
+      if (ctx === localCtx) return false;
+      // stop() ran while we awaited — release anything we grabbed and bail.
+      if (stream) {
+        for (const t of stream.getTracks()) {
+          try {
+            t.stop();
+          } catch {
+            // ignore
+          }
+        }
+        stream = null;
+      }
+      return true;
+    };
 
     // 1. Mic permission + stream
     try {
@@ -121,13 +151,15 @@ export function createAudioCapture(): AudioCaptureHandle {
         },
       });
     } catch (err: unknown) {
-      const code = ((err as { name?: string })?.name === "NotAllowedError"
-        ? "permission-denied"
-        : (err as { name?: string })?.name === "NotFoundError"
-          ? "no-microphone"
-          : (err as { name?: string })?.name === "NotReadableError"
-            ? "device-busy"
-            : "unknown") satisfies CaptureErrorCode;
+      const code = (
+        (err as { name?: string })?.name === "NotAllowedError"
+          ? "permission-denied"
+          : (err as { name?: string })?.name === "NotFoundError"
+            ? "no-microphone"
+            : (err as { name?: string })?.name === "NotReadableError"
+              ? "device-busy"
+              : "unknown"
+      ) satisfies CaptureErrorCode;
       const message =
         code === "permission-denied"
           ? "Microphone access denied — check browser permissions."
@@ -138,6 +170,8 @@ export function createAudioCapture(): AudioCaptureHandle {
               : "Unable to access microphone.";
       throw { code, message, cause: err } satisfies CaptureError;
     }
+
+    if (abortIfTornDown()) return;
 
     // Detect mid-session disconnect (unplugging, OS-level revoke).
     const [track] = stream.getAudioTracks();
@@ -153,7 +187,7 @@ export function createAudioCapture(): AudioCaptureHandle {
 
     // 2. Worklet
     try {
-      await ctx.audioWorklet.addModule(WORKLET_PATH);
+      await localCtx.audioWorklet.addModule(WORKLET_PATH);
     } catch (err) {
       throw {
         code: "worklet-load-failed",
@@ -163,9 +197,11 @@ export function createAudioCapture(): AudioCaptureHandle {
       } satisfies CaptureError;
     }
 
+    if (abortIfTornDown()) return;
+
     // 3. Wire the graph
-    source = ctx.createMediaStreamSource(stream);
-    workletNode = new AudioWorkletNode(ctx, "pcm-processor", {
+    source = localCtx.createMediaStreamSource(stream);
+    workletNode = new AudioWorkletNode(localCtx, "pcm-processor", {
       numberOfInputs: 1,
       numberOfOutputs: 0,
       channelCount: 1,
@@ -241,7 +277,8 @@ export function createAudioCapture(): AudioCaptureHandle {
     }
     if (stream) {
       for (const t of stream.getTracks()) {
-        if (trackEndedHandler) t.removeEventListener("ended", trackEndedHandler);
+        if (trackEndedHandler)
+          t.removeEventListener("ended", trackEndedHandler);
         try {
           t.stop();
         } catch {

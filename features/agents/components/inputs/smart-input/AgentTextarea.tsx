@@ -198,10 +198,14 @@ export function AgentTextarea({
   // ── Key down ────────────────────────────────────────────────────────────────
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Enter" && !e.shiftKey && submitOnEnter) {
-        e.preventDefault();
-        if (!disableSend && !isExecuting) handleSend();
-      }
+      if (e.key !== "Enter") return;
+      const withCmd = e.metaKey || e.ctrlKey;
+      // submitOnEnter ON  → Enter sends, Shift+Enter is a newline.
+      // submitOnEnter OFF → Enter is a newline, ⌘/Ctrl+Enter sends.
+      const shouldSend = submitOnEnter ? !e.shiftKey && !withCmd : withCmd;
+      if (!shouldSend) return;
+      e.preventDefault();
+      if (!disableSend && !isExecuting) handleSend();
     },
     [submitOnEnter, disableSend, isExecuting, handleSend],
   );

@@ -14,7 +14,7 @@
  */
 
 import React, { useCallback } from "react";
-import { ArrowUp, Braces, CircleStop } from "lucide-react";
+import { ArrowUp, Braces, CircleStop, AudioLines } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { RunControlsMenu } from "./RunControlsMenu";
@@ -93,7 +93,7 @@ export function SingleRowActionButtons({
       {shouldShowVariables && showVariableIcon && (
         <InputButton
           icon={Braces}
-          tooltip={showVariablePanel ? "Hide variables" : "Show variables"}
+          tooltip={showVariablePanel ? "Hide Form Inputs" : "Show Form Inputs"}
           onClick={() => dispatch(toggleVariablePanel(conversationId))}
           active={showVariablePanel}
         />
@@ -102,7 +102,11 @@ export function SingleRowActionButtons({
       {extraRightControls}
 
       {showMicrophone && (
-        <AgentMicrophoneButton conversationId={conversationId} size="xs" />
+        <AgentMicrophoneButton
+          conversationId={conversationId}
+          size="xs"
+          label="Record audio"
+        />
       )}
 
       {showSendButton && (
@@ -111,7 +115,7 @@ export function SingleRowActionButtons({
           disabled={disableSend}
           className={sendBtnClass}
           tabIndex={-1}
-          title={isExecuting ? "Stop" : "Send"}
+          title={isExecuting ? "Stop" : "Send Message"}
         >
           {isExecuting ? (
             <CircleStop className="w-3 h-3" />
@@ -119,6 +123,18 @@ export function SingleRowActionButtons({
             <ArrowUp className="w-3 h-3" />
           )}
         </Button>
+      )}
+
+      {showSendButton && (
+        <button
+          type="button"
+          tabIndex={-1}
+          title="Live audio"
+          aria-label="Live audio"
+          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <AudioLines className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
       )}
     </div>
   );
