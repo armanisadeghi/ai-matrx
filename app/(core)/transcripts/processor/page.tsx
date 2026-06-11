@@ -12,13 +12,6 @@
 import { TranscriptsLayout } from "@/features/transcripts/components/TranscriptsLayout";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { redirect } from "next/navigation";
-import { createRouteMetadata } from "@/utils/route-metadata";
-
-export const metadata = createRouteMetadata("/transcripts/processor", {
-  title: "Transcripts Processor",
-  description: "Record, transcribe, view, and edit individual transcripts.",
-});
-
 export default async function TranscriptsProcessorPage() {
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) {

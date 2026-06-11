@@ -14,30 +14,23 @@
  */
 
 import React, { useCallback } from "react";
-import {
-  ArrowUp,
-  Braces,
-  ChevronDown,
-  Bug,
-  CircleStop,
-} from "lucide-react";
+import { ArrowUp, Braces, Crown, Bug, CircleStop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { SmartAgentResourcePickerButton } from "../resources/SmartAgentResourcePickerButton";
 import { RunControlsMenu } from "./RunControlsMenu";
 import { InputButton } from "./InputActionButtons";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import {
   selectShowVariablePanel,
   selectIsCreator,
-  selectShowCreatorDebug,
   selectShowAttachments,
   selectShowMicrophone,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
+import { toggleVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
-  toggleCreatorDebug,
-  toggleVariablePanel,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+  selectShowCreatorPanel,
+  toggleShowCreatorPanel,
+} from "@/lib/redux/preferences/creatorDebugSlice";
 import {
   selectIsExecuting,
   selectShouldShowVariables,
@@ -64,8 +57,6 @@ interface SingleRowActionButtonsProps {
 
 export function SingleRowActionButtons({
   conversationId,
-  uploadBucket = "userContent",
-  uploadPath = "agent-attachments",
   showSendButton = true,
   showVariableIcon = true,
   sendButtonVariant = "default",
@@ -80,18 +71,12 @@ export function SingleRowActionButtons({
     selectShowVariablePanel(conversationId),
   );
   const isCreator = useAppSelector(selectIsCreator(conversationId));
-  const showCreatorDebug = useAppSelector(
-    selectShowCreatorDebug(conversationId),
-  );
+  const showCreatorPanel = useAppSelector(selectShowCreatorPanel);
   const shouldShowVariables = useAppSelector(
     selectShouldShowVariables(conversationId),
   );
-  const showAttachments = useAppSelector(
-    selectShowAttachments(conversationId),
-  );
-  const showMicrophone = useAppSelector(
-    selectShowMicrophone(conversationId),
-  );
+  const showAttachments = useAppSelector(selectShowAttachments(conversationId));
+  const showMicrophone = useAppSelector(selectShowMicrophone(conversationId));
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const isDebugMode = useAppSelector(selectIsDebugMode);
 
@@ -111,15 +96,11 @@ export function SingleRowActionButtons({
 
   return (
     <div className="flex items-center gap-0.5 shrink-0">
-      {showAttachments && (
-        <SmartAgentResourcePickerButton
-          conversationId={conversationId}
-          uploadBucket={uploadBucket}
-          uploadPath={uploadPath}
-        />
-      )}
-
-      <RunControlsMenu conversationId={conversationId} />
+      <RunControlsMenu
+        conversationId={conversationId}
+        variant="plus"
+        includeAttach={showAttachments}
+      />
 
       {isAdmin && isDebugMode && (
         <InputButton
@@ -139,10 +120,12 @@ export function SingleRowActionButtons({
 
       {isCreator && (
         <InputButton
-          icon={ChevronDown}
-          tooltip={showCreatorDebug ? "Hide debug" : "Show debug"}
-          onClick={() => dispatch(toggleCreatorDebug(conversationId))}
-          active={showCreatorDebug}
+          icon={Crown}
+          tooltip={
+            showCreatorPanel ? "Hide creator panel" : "Show creator panel"
+          }
+          onClick={() => dispatch(toggleShowCreatorPanel())}
+          active={showCreatorPanel}
           className="text-amber-500"
         />
       )}

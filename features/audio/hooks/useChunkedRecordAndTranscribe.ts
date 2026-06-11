@@ -418,10 +418,26 @@ export function useChunkedRecordAndTranscribe({
         if (opts?.language) form.append("language", opts.language);
         if (opts?.prompt) form.append("prompt", opts.prompt);
 
-        const res = await fetch(AUDIO_API_ROUTES.TRANSCRIBE, {
-          method: "POST",
-          body: form,
-        });
+        // Bound the request: on bad networks a chunk fetch can hang
+        // indefinitely, leaving `pendingRef` > 0 forever so `maybeFireFinal`
+        // never fires and the recording is never finalized (card stuck
+        // "Saving…"). An abort surfaces as a normal failed chunk — its audio is
+        // already in IndexedDB and the stop-time fallback re-transcribes it.
+        const ctrl = new AbortController();
+        const timeoutId = setTimeout(
+          () => ctrl.abort(),
+          AUDIO_LIMITS.CHUNK_FETCH_TIMEOUT_MS,
+        );
+        let res: Response;
+        try {
+          res = await fetch(AUDIO_API_ROUTES.TRANSCRIBE, {
+            method: "POST",
+            body: form,
+            signal: ctrl.signal,
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
         const data = await res.json();
 
         if (!res.ok) {

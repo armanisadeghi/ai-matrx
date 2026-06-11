@@ -7,10 +7,12 @@
 // from Redux.
 
 import { useRouter } from "next/navigation";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { PlusTapButton } from "@/components/icons/tap-buttons";
+import { stashChatDraftTransfer } from "./chat-draft-transfer";
 
 interface ChatRunHeaderProps {
   /**
@@ -28,6 +30,7 @@ export function ChatRunHeader({
   initialAgentName,
 }: ChatRunHeaderProps) {
   const router = useRouter();
+  const store = useAppStore();
   const liveName = useAppSelector((state) =>
     activeAgentId ? selectAgentName(state, activeAgentId) : undefined,
   );
@@ -36,6 +39,25 @@ export function ChatRunHeader({
 
   const handleAgentSelect = (id: string) => {
     if (id === activeAgentId) return;
+    // Carry any in-progress draft over to the newly-selected agent so switching
+    // agents never destroys what the user has typed. Mirrors the chip path in
+    // NewChatGreeting: snapshot the current surface's draft via getState (no
+    // per-keystroke subscription) and stash it for the destination route's
+    // consumeChatDraftTransfer in ChatRoomClient.
+    if (activeAgentId) {
+      const state = store.getState();
+      const sourceSurfaceKey = `chat-route:${activeAgentId}`;
+      const sourceConversationId =
+        state.conversationFocus.bySurface[sourceSurfaceKey]?.input ??
+        state.conversationFocus.bySurface[sourceSurfaceKey]?.display ??
+        null;
+      const draftText = sourceConversationId
+        ? selectUserInputText(sourceConversationId)(state)
+        : "";
+      if (draftText && draftText.trim().length > 0) {
+        stashChatDraftTransfer({ text: draftText, targetAgentId: id });
+      }
+    }
     router.push(`/chat/a/${encodeURIComponent(id)}`);
   };
 

@@ -16,7 +16,7 @@ import React, { useCallback } from "react";
 import {
   ArrowUp,
   CornerDownLeft,
-  ChevronDown,
+  Crown,
   RefreshCcw,
   Braces,
   Bug,
@@ -24,23 +24,24 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { SmartAgentResourcePickerButton } from "../resources/SmartAgentResourcePickerButton";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import { RunControlsMenu } from "./RunControlsMenu";
 import {
   selectSubmitOnEnter,
   selectShowVariablePanel,
   selectIsCreator,
-  selectShowCreatorDebug,
   selectShowAttachments,
   selectShowMicrophone,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   setSubmitOnEnter,
   setAutoClearConversation,
-  toggleCreatorDebug,
   toggleVariablePanel,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import {
+  selectShowCreatorPanel,
+  toggleShowCreatorPanel,
+} from "@/lib/redux/preferences/creatorDebugSlice";
 import {
   selectIsExecuting,
   selectShouldShowVariables,
@@ -104,8 +105,6 @@ interface InputActionButtonsProps {
 
 export function InputActionButtons({
   conversationId,
-  uploadBucket = "userContent",
-  uploadPath = "agent-attachments",
   showSendButton = true,
   showSubmitOnEnterToggle = true,
   showVariableIcon = true,
@@ -123,9 +122,7 @@ export function InputActionButtons({
     selectShowVariablePanel(conversationId),
   );
   const isCreator = useAppSelector(selectIsCreator(conversationId));
-  const showCreatorDebug = useAppSelector(
-    selectShowCreatorDebug(conversationId),
-  );
+  const showCreatorPanel = useAppSelector(selectShowCreatorPanel);
   const shouldShowVariables = useAppSelector(
     selectShouldShowVariables(conversationId),
   );
@@ -158,20 +155,18 @@ export function InputActionButtons({
 
   return (
     <div className="flex items-center justify-between px-1 shrink-0">
-      {/* Left: resource picker / debug / variable toggle */}
+      {/* Left: consolidated run controls / debug / creator / variable toggle */}
       <div className="flex items-center gap-0.5">
-        {showAttachments && (
-          <SmartAgentResourcePickerButton
-            conversationId={conversationId}
-            uploadBucket={uploadBucket}
-            uploadPath={uploadPath}
-          />
-        )}
-
-        {/* Consolidated run controls — Model (per-conversation model override),
-            Tools (add tools to this run), Sandbox binding, and run Settings
-            (disable injection, Surface Simulator, …) in one tabbed popover. */}
-        <RunControlsMenu conversationId={conversationId} />
+        {/* Single shared popover — Attach, Model (per-conversation model
+            override), Tools (add tools to this run), Sandbox binding, and run
+            Settings (disable injection, Surface Simulator, …) — identical to
+            the `/chat/new` hero input's `+`. Attach is gated on the surface's
+            attachment capability. */}
+        <RunControlsMenu
+          conversationId={conversationId}
+          variant="plus"
+          includeAttach={showAttachments}
+        />
 
         {isAdmin && isDebugMode && (
           <InputButton
@@ -191,10 +186,12 @@ export function InputActionButtons({
 
         {isCreator && (
           <InputButton
-            icon={ChevronDown}
-            tooltip={showCreatorDebug ? "Hide debug" : "Show debug"}
-            onClick={() => dispatch(toggleCreatorDebug(conversationId))}
-            active={showCreatorDebug}
+            icon={Crown}
+            tooltip={
+              showCreatorPanel ? "Hide creator panel" : "Show creator panel"
+            }
+            onClick={() => dispatch(toggleShowCreatorPanel())}
+            active={showCreatorPanel}
             className="text-amber-500"
           />
         )}

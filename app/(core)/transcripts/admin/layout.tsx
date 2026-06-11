@@ -1,15 +1,14 @@
-import React from "react";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/transcripts", {
-  titlePrefix: "Studio",
+  titlePrefix: "Admin",
   title: "Transcripts",
   description:
-    "Live multi-column transcription workspace — raw, cleaned, concepts, and a pluggable module column.",
-  letter: "Ts",
+    "Feature admin map for the transcripts ecosystem — routes, panels, components, and demos.",
+  letter: "Ta",
 });
 
-export default function TranscriptStudioLayout({
+export default function TranscriptsAdminLayout({
   children,
 }: {
   children: React.ReactNode;

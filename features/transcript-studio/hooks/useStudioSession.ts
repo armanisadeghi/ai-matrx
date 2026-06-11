@@ -38,6 +38,8 @@ interface UseStudioSessionReturn {
   isOwnedRecording: boolean;
   /** True iff some recording is in flight, not necessarily this session. */
   isAnyRecording: boolean;
+  /** True while the just-stopped recording is still saving its transcript/audio. */
+  isFinalizing: boolean;
   isPaused: boolean;
   audioLevel: number;
   durationSec: number;
@@ -203,6 +205,7 @@ export function useStudioSession({
     () => ({
       isOwnedRecording,
       isAnyRecording,
+      isFinalizing: recording.isFinalizing,
       isPaused: recordings.isPaused,
       audioLevel: recordings.audioLevel,
       durationSec: recordings.durationSec,
@@ -215,6 +218,7 @@ export function useStudioSession({
     [
       isOwnedRecording,
       isAnyRecording,
+      recording.isFinalizing,
       recordings.isPaused,
       recordings.audioLevel,
       recordings.durationSec,

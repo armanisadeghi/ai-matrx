@@ -30,6 +30,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
   type ReactNode,
 } from "react";
 import {
@@ -68,6 +69,13 @@ export interface StartRecordingArgs {
 export interface GlobalRecordingApi {
   /** True iff a recording is currently active (recording or paused). */
   isActive: boolean;
+  /**
+   * True between `stop()` and the moment the final transcript/finalize callback
+   * fires. A new recording MUST NOT start during this window — the recorder is a
+   * single shared instance and starting again would reset the refs the pending
+   * finalization depends on, stranding the previous recording forever.
+   */
+  isFinalizing: boolean;
   /** Active recording context, or null when idle. */
   context: RecordingContext | null;
   start: (args: StartRecordingArgs) => Promise<void>;
@@ -88,9 +96,14 @@ export function GlobalRecordingProvider({
   const dispatch = useAppDispatch();
 
   const contextRef = useRef<RecordingContext | null>(null);
+  // True from stop() until the final transcript/finalize callback fires (or the
+  // recorder errors). Gates `start()` so a back-to-back recording can't stomp
+  // the single shared recorder while the prior recording is still finalizing.
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const chunkSubRef = useRef<StartRecordingArgs["onChunkComplete"]>(undefined);
   const completeSubRef = useRef<StartRecordingArgs["onComplete"]>(undefined);
-  const chunkErrorSubRef = useRef<StartRecordingArgs["onChunkError"]>(undefined);
+  const chunkErrorSubRef =
+    useRef<StartRecordingArgs["onChunkError"]>(undefined);
   const errorSubRef = useRef<StartRecordingArgs["onError"]>(undefined);
 
   const recorder = useChunkedRecordAndTranscribe({
@@ -109,6 +122,7 @@ export function GlobalRecordingProvider({
       completeSubRef.current = undefined;
       chunkErrorSubRef.current = undefined;
       errorSubRef.current = undefined;
+      setIsFinalizing(false);
     },
     onChunkError: (chunkIndex, error) => {
       chunkErrorSubRef.current?.(chunkIndex, error);
@@ -121,6 +135,7 @@ export function GlobalRecordingProvider({
       completeSubRef.current = undefined;
       chunkErrorSubRef.current = undefined;
       errorSubRef.current = undefined;
+      setIsFinalizing(false);
     },
   });
 
@@ -151,6 +166,15 @@ export function GlobalRecordingProvider({
         args.onError?.(message);
         throw new Error(message);
       }
+      // Block while the previous recording is still finalizing. Starting now
+      // would reset the shared recorder's refs and strand the prior recording's
+      // pending finalize (lost transcript/audio + a card stuck "Saving…").
+      if (isFinalizing || recorder.isTranscribing) {
+        const message =
+          "Still saving the previous recording. Try again in a moment.";
+        args.onError?.(message);
+        throw new Error(message);
+      }
       contextRef.current = args.context;
       chunkSubRef.current = args.onChunkComplete;
       completeSubRef.current = args.onComplete;
@@ -164,14 +188,31 @@ export function GlobalRecordingProvider({
       );
       await recorder.startRecording();
     },
-    [dispatch, recorder],
+    [dispatch, recorder, isFinalizing],
   );
 
+  const finalizeSafetyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stop = useCallback(() => {
     if (!recorder.isRecording) return;
+    setIsFinalizing(true);
+    // Safety net: the finalize callback clears `isFinalizing`, but if it never
+    // fires (unexpected) the gate must not wedge recording shut forever. The
+    // chunk fetch is bounded, so finalization should always complete well
+    // within this window; reconcile heals any DB row that slipped through.
+    if (finalizeSafetyRef.current) clearTimeout(finalizeSafetyRef.current);
+    finalizeSafetyRef.current = setTimeout(() => {
+      setIsFinalizing(false);
+    }, 45_000);
     dispatch(recordingStopped());
     recorder.stopRecording();
   }, [dispatch, recorder]);
+
+  useEffect(() => {
+    if (!isFinalizing && finalizeSafetyRef.current) {
+      clearTimeout(finalizeSafetyRef.current);
+      finalizeSafetyRef.current = null;
+    }
+  }, [isFinalizing]);
 
   const pause = useCallback(() => {
     if (!recorder.isRecording || recorder.isPaused) return;
@@ -188,13 +229,14 @@ export function GlobalRecordingProvider({
   const api = useMemo<GlobalRecordingApi>(
     () => ({
       isActive: recorder.isRecording,
+      isFinalizing,
       context: contextRef.current,
       start,
       stop,
       pause,
       resume,
     }),
-    [recorder.isRecording, start, stop, pause, resume],
+    [recorder.isRecording, isFinalizing, start, stop, pause, resume],
   );
 
   return (

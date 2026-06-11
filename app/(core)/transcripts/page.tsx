@@ -16,13 +16,6 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { TranscriptsListPage } from "@/features/transcripts/components/TranscriptsListPage";
 import TranscriptsLanding from "@/features/auth/components/module-landing/landings/TranscriptsLanding";
 import type { TranscriptListRow } from "@/features/transcripts/components/TranscriptsListPage";
-import { createRouteMetadata } from "@/utils/route-metadata";
-
-export const metadata = createRouteMetadata("/transcripts", {
-  title: "Transcripts",
-  description: "All your transcripts. Open in the UI you want.",
-});
-
 // Server-side fetch — narrow projection. The client island only needs
 // what it renders, not the heavy `segments` JSONB blob.
 async function loadTranscriptSummaries(): Promise<TranscriptListRow[]> {
@@ -41,11 +34,14 @@ async function loadTranscriptSummaries(): Promise<TranscriptListRow[]> {
   }
   return (data ?? []).map((row) => {
     const meta =
-      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+      row.metadata &&
+      typeof row.metadata === "object" &&
+      !Array.isArray(row.metadata)
         ? (row.metadata as Record<string, unknown>)
         : {};
     const duration = typeof meta.duration === "number" ? meta.duration : null;
-    const wordCount = typeof meta.wordCount === "number" ? meta.wordCount : null;
+    const wordCount =
+      typeof meta.wordCount === "number" ? meta.wordCount : null;
     const segmentCount =
       typeof meta.segmentCount === "number" ? meta.segmentCount : null;
     return {

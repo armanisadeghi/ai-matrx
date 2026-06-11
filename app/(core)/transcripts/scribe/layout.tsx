@@ -3,6 +3,15 @@ import type { ReactNode } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { listSessionsServer } from "@/features/transcript-studio/service/studioService";
 import { StudioHydrator } from "@/features/transcript-studio/route/StudioHydrator";
+import { createRouteMetadata } from "@/utils/route-metadata";
+
+export const metadata = createRouteMetadata("/transcripts", {
+  titlePrefix: "Scribe",
+  title: "Transcripts",
+  description:
+    "Voice-first capture, live transcription, and an assistant workspace for working documents.",
+  letter: "Sc",
+});
 
 /**
  * Layout for the Scribe section (voice-driven working-document workspace).

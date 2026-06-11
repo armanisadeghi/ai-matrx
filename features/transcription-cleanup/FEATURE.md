@@ -104,7 +104,13 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
-- 2026-06-10 (eve) — Multi-slot Custom container (tabs, per-slot agent /
+- 2026-06-10 — Auto-label on first Clean pass: when the transcript is first sent
+  for cleaning and the session title is still the default (`New Cleanup` /
+  empty / untitled), one parallel `POST /api/content-label` call labels the
+  session (same API + guard rails as Scribe/studio — one-shot per session,
+  manual rename wins, local heuristic fallback). Removed the old
+  first-chunk `deriveTitle` heuristic on mic save. Record pill: the full pill
+  (including “Tap to record”) now starts recording, not just the mic icon. (tabs, per-slot agent /
   source / autorun / output doc; `custom_slots` jsonb migration
   `studio_session_settings_custom_slots.sql`, applied live; legacy
   `module_shortcut_id` migrated to slot 1 on load) + `UnifiedAgentContextMenu`

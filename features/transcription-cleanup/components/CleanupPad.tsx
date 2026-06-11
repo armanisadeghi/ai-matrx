@@ -250,7 +250,9 @@ export default function CleanupPad({
   useEffect(() => {
     const loaded = session.loaded;
     if (!loaded) return;
-    dispatch(clearAllEntries({ overlayId: OVERLAY_ID, instanceId: INSTANCE_ID }));
+    dispatch(
+      clearAllEntries({ overlayId: OVERLAY_ID, instanceId: INSTANCE_ID }),
+    );
     dispatch(
       setDraftText({
         overlayId: OVERLAY_ID,
@@ -303,9 +305,15 @@ export default function CleanupPad({
   }, [session.loaded, dispatch]);
 
   const clearLocalContent = useCallback(() => {
-    dispatch(clearAllEntries({ overlayId: OVERLAY_ID, instanceId: INSTANCE_ID }));
     dispatch(
-      setDraftText({ overlayId: OVERLAY_ID, instanceId: INSTANCE_ID, text: "" }),
+      clearAllEntries({ overlayId: OVERLAY_ID, instanceId: INSTANCE_ID }),
+    );
+    dispatch(
+      setDraftText({
+        overlayId: OVERLAY_ID,
+        instanceId: INSTANCE_ID,
+        text: "",
+      }),
     );
     setEditedResponse(null);
     setEditedBySlot({});
@@ -372,6 +380,7 @@ export default function CleanupPad({
   const runClean = useCallback(
     (text: string) => {
       setEditedResponse(null);
+      void session.maybeAutoLabelFromTranscript(text);
       void cleanAi.process({
         agentId: cleanAgentIdRef.current,
         text,
@@ -379,7 +388,7 @@ export default function CleanupPad({
         scope: buildScope(),
       });
     },
-    [cleanAi, buildScope],
+    [cleanAi, buildScope, session.maybeAutoLabelFromTranscript],
   );
 
   // ── Run: Custom slots ──────────────────────────────────────────────────────
@@ -387,8 +396,7 @@ export default function CleanupPad({
     (idx: number, input: string, opts?: { silent?: boolean }) => {
       const slot = slotsRef.current[idx];
       if (!slot?.agentId) {
-        if (!opts?.silent)
-          toast.info("Choose an agent for this slot first");
+        if (!opts?.silent) toast.info("Choose an agent for this slot first");
         return;
       }
       if (!input.trim()) {
@@ -734,13 +742,37 @@ export default function CleanupPad({
       : "Tap to record";
 
   const micId = `transcription-cleanup-page-mic-${INSTANCE_ID}`;
+  const recordPillRef = useRef<HTMLDivElement>(null);
+
+  const handleRecordPillClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if ((event.target as HTMLElement).closest("button")) return;
+      recordPillRef.current?.querySelector("button")?.click();
+    },
+    [],
+  );
+
+  const handleRecordPillKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      recordPillRef.current?.querySelector("button")?.click();
+    },
+    [],
+  );
 
   // ── Shared UI fragments ────────────────────────────────────────────────────
 
   const recordPill = (
     <div
+      ref={recordPillRef}
+      role="button"
+      tabIndex={0}
+      aria-label={recordStatus}
+      onClick={handleRecordPillClick}
+      onKeyDown={handleRecordPillKeyDown}
       className={cn(
-        "flex items-center gap-2.5 rounded-full border bg-card py-1 pl-1 pr-4 shadow-sm transition-all",
+        "flex cursor-pointer items-center gap-2.5 rounded-full border bg-card py-1 pl-1 pr-4 shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         liveTranscript
           ? "border-red-500/40 ring-2 ring-red-500/15"
           : "border-border ring-1 ring-primary/10 hover:ring-primary/25 hover:shadow-md",
@@ -1037,7 +1069,9 @@ export default function CleanupPad({
           const busy = slotAis[idx]?.isBusy;
           const label =
             slot.label ||
-            (slot.agentId ? (agentNames[slot.agentId] ?? `Slot ${idx + 1}`) : `Slot ${idx + 1}`);
+            (slot.agentId
+              ? (agentNames[slot.agentId] ?? `Slot ${idx + 1}`)
+              : `Slot ${idx + 1}`);
           return (
             <span key={slot.id} className="group/tab relative inline-flex">
               <button
@@ -1262,8 +1296,15 @@ export default function CleanupPad({
           onLayoutChanged={(layout) => writeLayoutCookie(H_COOKIE, layout)}
           className="h-full w-full"
         >
-          <ResizablePanel id="sidebar" defaultSize="24%" minSize="16%" maxSize="38%">
-            <div className="h-full pt-[var(--shell-header-h)]">{sidebarBody}</div>
+          <ResizablePanel
+            id="sidebar"
+            defaultSize="24%"
+            minSize="16%"
+            maxSize="38%"
+          >
+            <div className="h-full pt-[var(--shell-header-h)]">
+              {sidebarBody}
+            </div>
           </ResizablePanel>
 
           <ResizableHandle withHandle />
@@ -1275,7 +1316,9 @@ export default function CleanupPad({
                 id="cleanup-v"
                 orientation="vertical"
                 defaultLayout={defaultVLayout}
-                onLayoutChanged={(layout) => writeLayoutCookie(V_COOKIE, layout)}
+                onLayoutChanged={(layout) =>
+                  writeLayoutCookie(V_COOKIE, layout)
+                }
                 className="min-h-0 flex-1"
               >
                 <ResizablePanel id="transcript" defaultSize="50%" minSize="20%">
@@ -1291,8 +1334,15 @@ export default function CleanupPad({
 
           <ResizableHandle withHandle />
 
-          <ResizablePanel id="custom" defaultSize="28%" minSize="18%" maxSize="45%">
-            <div className="h-full pt-[var(--shell-header-h)]">{customPane}</div>
+          <ResizablePanel
+            id="custom"
+            defaultSize="28%"
+            minSize="18%"
+            maxSize="45%"
+          >
+            <div className="h-full pt-[var(--shell-header-h)]">
+              {customPane}
+            </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>

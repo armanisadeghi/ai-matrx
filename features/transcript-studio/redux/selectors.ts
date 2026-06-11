@@ -228,6 +228,15 @@ export function selectUnsortedRecordings(state: RootState): RecordingSegment[] {
 export const selectUnsortedCount = (state: RootState): number =>
   state.transcriptStudio.unsortedIds.length;
 
+/**
+ * Memoize per-recording raw-chunk slices off the stable `selectRawSegments`
+ * result so `useAppSelector` keeps the same reference when nothing changed.
+ */
+const rawForRecordingCache = new WeakMap<
+  RawSegment[],
+  Map<string, RawSegment[]>
+>();
+
 /** Raw chunks belonging to one recording cycle, ordered by tStart. */
 export function selectRawSegmentsForRecording(
   sessionId: string | null,
@@ -236,10 +245,23 @@ export function selectRawSegmentsForRecording(
   return (state: RootState): RawSegment[] => {
     if (!sessionId || !recordingSegmentId) return EMPTY_RAW;
     const all = selectRawSegments(sessionId)(state);
+    if (all.length === 0) return EMPTY_RAW;
+
+    let byRecordingId = rawForRecordingCache.get(all);
+    if (!byRecordingId) {
+      byRecordingId = new Map();
+      rawForRecordingCache.set(all, byRecordingId);
+    }
+
+    const cached = byRecordingId.get(recordingSegmentId);
+    if (cached) return cached;
+
     const filtered = all.filter(
       (s) => s.recordingSegmentId === recordingSegmentId,
     );
-    return filtered.length === 0 ? EMPTY_RAW : filtered;
+    const result = filtered.length === 0 ? EMPTY_RAW : filtered;
+    byRecordingId.set(recordingSegmentId, result);
+    return result;
   };
 }
 

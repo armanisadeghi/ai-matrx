@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mic, Pause, Play, Square } from "lucide-react";
+import { Loader2, Mic, Pause, Play, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useStudioSession } from "../../hooks/useStudioSession";
@@ -119,19 +119,32 @@ export function ScribeCaptureScreen({ sessionId }: ScribeCaptureScreenProps) {
             <button
               type="button"
               onClick={session.start}
-              disabled={blockedByOther}
-              aria-label="Start recording"
+              disabled={blockedByOther || session.isFinalizing}
+              aria-label={
+                session.isFinalizing
+                  ? "Saving previous recording"
+                  : "Start recording"
+              }
               className={cn(
                 "flex h-20 w-20 items-center justify-center rounded-full transition-transform active:scale-95",
-                blockedByOther
+                blockedByOther || session.isFinalizing
                   ? "cursor-not-allowed bg-muted text-muted-foreground"
                   : "bg-primary text-primary-foreground",
               )}
             >
-              <Mic className="h-8 w-8" />
+              {session.isFinalizing ? (
+                <Loader2 className="h-8 w-8 animate-spin" />
+              ) : (
+                <Mic className="h-8 w-8" />
+              )}
             </button>
           )}
         </div>
+        {session.isFinalizing && !isRecording && (
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Saving the previous recording…
+          </p>
+        )}
         {blockedByOther && (
           <p className="mt-2 text-center text-xs text-muted-foreground">
             Another recording is active elsewhere. Stop it first.

@@ -102,10 +102,7 @@ export async function listSessions(
   filter?: SessionListFilter,
 ): Promise<StudioSession[]> {
   const { data, error } = await applySourceFilter(
-    db
-      .from("studio_sessions")
-      .select("*")
-      .eq("is_deleted", false),
+    db.from("studio_sessions").select("*").eq("is_deleted", false),
     filter,
   )
     .order("updated_at", { ascending: false })
@@ -215,10 +212,7 @@ export async function listSessionsServer(
 ): Promise<StudioSession[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
   const { data, error } = await applySourceFilter(
-    looseClient
-      .from("studio_sessions")
-      .select("*")
-      .eq("is_deleted", false),
+    looseClient.from("studio_sessions").select("*").eq("is_deleted", false),
     filter,
   )
     .order("updated_at", { ascending: false })
@@ -227,6 +221,25 @@ export async function listSessionsServer(
     throw new Error(`[studio] listSessionsServer failed: ${error.message}`);
   }
   return ((data ?? []) as SessionRow[]).map(rowToSession);
+}
+
+export async function getSessionServer(
+  serverClient: {
+    from: (table: string) => unknown;
+  },
+  id: string,
+): Promise<StudioSession | null> {
+  const looseClient = serverClient as unknown as LooseSupabase;
+  const { data, error } = await looseClient
+    .from("studio_sessions")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`[studio] getSessionServer failed: ${error.message}`);
+  }
+  return data ? rowToSession(data as SessionRow) : null;
 }
 
 // ── studio_raw_segments ───────────────────────────────────────────────
@@ -1339,8 +1352,7 @@ export async function upsertSessionSettings(
     update.show_prior_modules = input.showPriorModules;
   if (input.contextItems !== undefined)
     update.context_items = input.contextItems;
-  if (input.customSlots !== undefined)
-    update.custom_slots = input.customSlots;
+  if (input.customSlots !== undefined) update.custom_slots = input.customSlots;
 
   const { data, error } = await db
     .from("studio_session_settings")

@@ -547,6 +547,125 @@ export const uploadRecordingAudioThunk = createAsyncThunk<
   },
 );
 
+/**
+ * Self-heal stranded recording segments.
+ *
+ * A recording is "finalized" when its `endedAt` is written by the live stop
+ * flow (finalizeRecordingSegmentThunk). That write can be lost when the single
+ * shared recorder is stomped by a back-to-back start, or when the page reloads
+ * / crashes / hides mid-finalize. The result is a segment with `endedAt == null`
+ * that spins "Saving…" forever even though its transcript chunks are safely in
+ * the DB.
+ *
+ * This runs on session load. For every segment that is NOT the currently-active
+ * live recording and has no `endedAt`, it derives `tEnd` from the segment's raw
+ * chunks (the last chunk's `tEnd`, falling back to its own `tStart`) and stamps
+ * `endedAt = now`, so the card leaves its stuck state and becomes usable.
+ *
+ * It is LOUD on purpose (console.warn + toast): a recovery firing means the
+ * proactive stop flow failed and a real bug got past it.
+ */
+export const reconcileStuckRecordingsThunk = createAsyncThunk<
+  number,
+  { sessionId: string }
+>(
+  "transcriptStudio/reconcileStuckRecordings",
+  async ({ sessionId }, { dispatch, getState }) => {
+    interface ReconcileState {
+      transcriptStudio: {
+        recordingSegmentIdsBySession: Record<string, string[]>;
+        recordingSegmentsById: Record<string, Record<string, RecordingSegment>>;
+        rawIdsBySession: Record<string, string[]>;
+        rawById: Record<string, Record<string, RawSegment>>;
+        byId: Record<string, StudioSession>;
+      };
+      recordings: {
+        isRecording: boolean;
+        isTranscribing: boolean;
+        context: { kind: string; sessionId?: string } | null;
+      };
+    }
+    const root = getState() as ReconcileState;
+
+    // If this exact session is mid-recording (or still finalizing), its
+    // newest open segment is legitimately un-ended — leave the live flow alone.
+    const rec = root.recordings;
+    const liveForThisSession =
+      (rec.isRecording || rec.isTranscribing) &&
+      rec.context?.kind === "studio" &&
+      rec.context.sessionId === sessionId;
+    if (liveForThisSession) return 0;
+
+    const ids =
+      root.transcriptStudio.recordingSegmentIdsBySession[sessionId] ?? [];
+    const byId = root.transcriptStudio.recordingSegmentsById[sessionId] ?? {};
+    const rawIds = root.transcriptStudio.rawIdsBySession[sessionId] ?? [];
+    const rawById = root.transcriptStudio.rawById[sessionId] ?? {};
+
+    const stranded = ids
+      .map((id) => byId[id])
+      .filter((seg): seg is RecordingSegment => Boolean(seg) && !seg!.endedAt);
+
+    if (stranded.length === 0) return 0;
+
+    let healed = 0;
+    for (const seg of stranded) {
+      // Derive tEnd from this segment's raw chunks (last chunk's tEnd).
+      let tEnd = seg.tEnd ?? seg.tStart ?? 0;
+      for (const rawId of rawIds) {
+        const raw = rawById[rawId];
+        if (raw?.recordingSegmentId === seg.id && raw.tEnd > tEnd) {
+          tEnd = raw.tEnd;
+        }
+      }
+      try {
+        const updated = await updateRecordingSegment(seg.id, {
+          tEnd,
+          endedAt: new Date().toISOString(),
+        });
+        dispatch(recordingSegmentUpserted({ sessionId, segment: updated }));
+        healed += 1;
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error(
+          "[studio] reconcile: failed to finalize stranded recording",
+          seg.id,
+          err,
+        );
+      }
+    }
+
+    // Un-stick the session row if it's still flagged "recording" with nothing
+    // actually in flight.
+    const session = root.transcriptStudio.byId[sessionId];
+    if (session && session.status === "recording") {
+      try {
+        const fixedSession = await updateSession(sessionId, {
+          status: "stopped",
+          endedAt: session.endedAt ?? new Date().toISOString(),
+        });
+        dispatch(sessionUpserted(fixedSession));
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("[studio] reconcile: failed to unstick session", err);
+      }
+    }
+
+    if (healed > 0) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[studio] reconcile: recovered ${healed} stranded recording(s) in session ${sessionId}. ` +
+          "A recording's stop-finalize was lost (likely a back-to-back start or a reload mid-save).",
+      );
+      toast.success(
+        `Recovered ${healed} unfinished recording${healed === 1 ? "" : "s"}.`,
+      );
+    }
+
+    return healed;
+  },
+);
+
 export const deleteRecordingSegmentThunk = createAsyncThunk<
   void,
   { sessionId: string; recordingSegmentId: string }

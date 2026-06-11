@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ChevronLeft,
+  Loader2,
   Mic,
   MoreVertical,
   Pencil,
@@ -25,6 +26,7 @@ import {
   fetchRawSegmentsThunk,
   fetchRecordingSegmentsThunk,
   fetchStudioDocumentsThunk,
+  reconcileStuckRecordingsThunk,
   updateSessionThunk,
 } from "../../redux/thunks";
 import { EditableSessionTitle } from "../EditableSessionTitle";
@@ -34,6 +36,7 @@ import { ScribeCaptureScreen } from "./ScribeCaptureScreen";
 import { AssistantScreen } from "./AssistantScreen";
 import { ScribeLiveScreen } from "./ScribeLiveScreen";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
+import { useStudioAutoLabel } from "../../hooks/useStudioAutoLabel";
 import { useStudioSession } from "../../hooks/useStudioSession";
 
 type Screen = "capture" | "agent" | "live";
@@ -76,6 +79,10 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   // control lives in the header and its state is read here. The capture
   // screen keeps its own full-size transport.
   const recorder = useStudioSession({ sessionId });
+
+  // One-shot GLiNER2 auto-label once the first transcript text streams in —
+  // only while the title is still the placeholder; never overrides a custom name.
+  useStudioAutoLabel({ sessionId, currentTitle: session?.title ?? "" });
 
   // Offer to send a just-finished recording to the agent for review — as a
   // toast (no dedicated header/strip row), available from any mode.
@@ -136,10 +143,19 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   useEffect(() => {
     if (!sessionId) return;
     dispatch(activeSessionIdSet(sessionId));
-    void dispatch(fetchRecordingSegmentsThunk({ sessionId }));
-    void dispatch(fetchRawSegmentsThunk({ sessionId }));
     void dispatch(fetchCleanedSegmentsThunk({ sessionId }));
     void dispatch(fetchStudioDocumentsThunk({ sessionId }));
+    // Recording + raw segments must land before reconcile so it can derive
+    // each stranded segment's tEnd from its chunks. Recovery then finalizes
+    // any segment whose stop-finalize was lost (stomped start / reload mid-save)
+    // so cards never spin "Saving…" forever.
+    void (async () => {
+      await Promise.all([
+        dispatch(fetchRecordingSegmentsThunk({ sessionId })),
+        dispatch(fetchRawSegmentsThunk({ sessionId })),
+      ]);
+      void dispatch(reconcileStuckRecordingsThunk({ sessionId }));
+    })();
   }, [sessionId, dispatch]);
 
   return (
@@ -201,15 +217,19 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
                 ? recorder.stop
                 : () => void recorder.start()
             }
-            disabled={recordingBlocked}
+            disabled={recordingBlocked || recorder.isFinalizing}
             aria-label={
-              recorder.isOwnedRecording ? "Stop recording" : "Add recording"
+              recorder.isOwnedRecording
+                ? "Stop recording"
+                : recorder.isFinalizing
+                  ? "Saving previous recording"
+                  : "Add recording"
             }
             className={cn(
               "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors",
               recorder.isOwnedRecording
                 ? "bg-red-500 text-white active:scale-95"
-                : recordingBlocked
+                : recordingBlocked || recorder.isFinalizing
                   ? "cursor-not-allowed text-muted-foreground"
                   : "text-foreground active:bg-accent",
             )}
@@ -224,6 +244,8 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
                 )}
                 <Square className="relative h-4 w-4 fill-current" />
               </>
+            ) : recorder.isFinalizing ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <Mic className="h-5 w-5" />
             )}

@@ -5,25 +5,11 @@
 // Server component — no client state needed.
 
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Columns2,
-  FileUp,
-  Import,
-  Mic,
-  Eraser,
-} from "lucide-react";
+import { ArrowLeft, Columns2, FileUp, Import, Mic, Eraser } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { redirect } from "next/navigation";
-import { createRouteMetadata } from "@/utils/route-metadata";
-
-export const metadata = createRouteMetadata("/transcripts/new", {
-  title: "New Transcript",
-  description: "Pick how you want to create a new transcript.",
-});
-
 interface CreationOption {
   href: string;
   title: string;

@@ -24,11 +24,7 @@ import {
   resetOverride,
 } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 
-export function RunModelPicker({
-  conversationId,
-}: {
-  conversationId: string;
-}) {
+export function RunModelPicker({ conversationId }: { conversationId: string }) {
   const dispatch = useAppDispatch();
   // Read the (stable-ref) override state and derive everything locally — avoids
   // the new-object selectCurrentSettings, which would re-render on every store
@@ -59,7 +55,7 @@ export function RunModelPicker({
     dispatch(resetOverride({ conversationId, key: "model" }));
 
   return (
-    <div className="flex h-full flex-col gap-2 px-3 py-3">
+    <div className="flex flex-col gap-2 px-3 py-3">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-foreground">Model</span>
         {isOverridden && (
@@ -79,21 +75,6 @@ export function RunModelPicker({
         onValueChange={handleChange}
         className="w-full"
       />
-
-      <p className="flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground">
-        <Info className="mt-0.5 h-3 w-3 shrink-0" />
-        {isOverridden ? (
-          <span>
-            Overriding{baseModelLabel ? ` the agent's ${baseModelLabel}` : " the agent's model"} for
-            this conversation only.
-          </span>
-        ) : (
-          <span>
-            Using the agent&apos;s model. Pick another to override it for this
-            conversation only — the agent itself is unchanged.
-          </span>
-        )}
-      </p>
     </div>
   );
 }

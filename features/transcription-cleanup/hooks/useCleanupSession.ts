@@ -29,7 +29,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { generateLabelFromContent } from "@/features/notes/hooks/useAutoLabel";
+import { useBackendApi } from "@/hooks/useBackendApi";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
 import { getUserId } from "@/utils/auth/getUserId";
 import {
@@ -69,9 +71,19 @@ export const CLEANUP_DOC_KIND_PREFIX = "cleanup_custom";
 
 /** docKind for a new slot — first slot keeps the legacy kind. */
 export function makeSlotDocKind(slotId: string, isFirst: boolean): string {
-  return isFirst ? CLEANUP_DOC_KIND : `${CLEANUP_DOC_KIND_PREFIX}_${slotId.slice(0, 8)}`;
+  return isFirst
+    ? CLEANUP_DOC_KIND
+    : `${CLEANUP_DOC_KIND_PREFIX}_${slotId.slice(0, 8)}`;
 }
-const NEW_CLEANUP_TITLE = "New Cleanup";
+export const NEW_CLEANUP_TITLE = "New Cleanup";
+const TITLE_MIN_CHARS = 8;
+const TITLE_MAX_LEN = 50;
+const LABEL_INPUT_MAX_CHARS = 8000;
+const CLEANUP_PLACEHOLDER_TITLES = new Set([
+  NEW_CLEANUP_TITLE.toLowerCase(),
+  "untitled",
+  "",
+]);
 const RAW_SAVE_DEBOUNCE_MS = 1500;
 const TEXT_SAVE_DEBOUNCE_MS = 1200;
 const SETTINGS_SAVE_DEBOUNCE_MS = 800;
@@ -97,14 +109,11 @@ interface AgentSelections {
   customSlots: CleanupCustomSlot[];
 }
 
-function deriveTitle(text: string): string {
-  const words = text.trim().split(/\s+/).slice(0, 8).join(" ");
-  return words.length > 48 ? `${words.slice(0, 48)}…` : words || NEW_CLEANUP_TITLE;
+function isCleanupPlaceholderTitle(title: string | null | undefined): boolean {
+  return CLEANUP_PLACEHOLDER_TITLES.has((title ?? "").trim().toLowerCase());
 }
 
-async function fetchAgentNames(
-  ids: string[],
-): Promise<Record<string, string>> {
+async function fetchAgentNames(ids: string[]): Promise<Record<string, string>> {
   const unique = [...new Set(ids.filter(Boolean))];
   if (unique.length === 0) return {};
   const { data, error } = await supabase
@@ -122,6 +131,8 @@ async function fetchAgentNames(
 
 export function useCleanupSession() {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
+  const api = useBackendApi();
   const searchParams = useSearchParams();
   const urlSessionId = searchParams.get("session");
 
@@ -168,6 +179,10 @@ export function useCleanupSession() {
   const agentsRef = useRef<AgentSelections | null>(null);
   const contextItemsRef = useRef<SessionContextItem[]>([]);
   const loadSeqRef = useRef(0);
+  /** One content-label request per session — reset when activeSessionId changes. */
+  const autoLabelRequestedRef = useRef(false);
+  const autoLabelSessionRef = useRef<string | null>(null);
+  const autoLabelAbortRef = useRef<AbortController | null>(null);
   /**
    * Sessions created by THIS mount (ensureSession mid-draft / createNew).
    * Their content lives in local state and in-flight inserts — loading from
@@ -209,6 +224,18 @@ export function useCleanupSession() {
   useEffect(() => {
     setActiveSessionId(urlSessionId);
   }, [urlSessionId]);
+
+  // Each session gets one auto-label attempt; abort in-flight work on switch.
+  useEffect(() => {
+    if (autoLabelSessionRef.current !== activeSessionId) {
+      autoLabelSessionRef.current = activeSessionId;
+      autoLabelRequestedRef.current = false;
+      autoLabelAbortRef.current?.abort();
+      autoLabelAbortRef.current = null;
+    }
+  }, [activeSessionId]);
+
+  useEffect(() => () => autoLabelAbortRef.current?.abort(), []);
 
   // ── Load the active session's content ─────────────────────────────────────
   useEffect(() => {
@@ -389,7 +416,77 @@ export function useCleanupSession() {
 
   // ── Raw transcript persistence ─────────────────────────────────────────────
 
-  /** Mic completion → append one 'chunk' segment. Auto-titles the session. */
+  /**
+   * First clean pass only: label the session from the transcript via the
+   * content-label API (same as Scribe/studio). Fires in parallel with Clean;
+   * never overwrites a user-set title; at most once per session.
+   */
+  const maybeAutoLabelFromTranscript = useCallback(
+    async (text: string) => {
+      if (autoLabelRequestedRef.current) return;
+
+      const trimmed = text.trim();
+      if (trimmed.length < TITLE_MIN_CHARS) return;
+
+      const current = sessionRef.current;
+      if (current && !isCleanupPlaceholderTitle(current.title)) {
+        autoLabelRequestedRef.current = true;
+        return;
+      }
+
+      autoLabelRequestedRef.current = true;
+      const sessionId = await ensureSession();
+      if (!sessionId) return;
+
+      autoLabelAbortRef.current?.abort();
+      const controller = new AbortController();
+      autoLabelAbortRef.current = controller;
+
+      const persistIfStillPlaceholder = (label: string) => {
+        const next = label.trim().slice(0, TITLE_MAX_LEN);
+        if (!next) return;
+        const liveTitle =
+          store.getState().transcriptStudio.byId[sessionId]?.title ??
+          sessionRef.current?.title ??
+          "";
+        if (!isCleanupPlaceholderTitle(liveTitle)) return;
+        if (next.toLowerCase() === liveTitle.trim().toLowerCase()) return;
+        void updateSession(sessionId, { title: next }).then((updated) => {
+          dispatch(sessionUpserted(updated));
+        });
+      };
+
+      void (async () => {
+        try {
+          const res = await api.post(
+            "/api/content-label",
+            {
+              text: trimmed.slice(0, LABEL_INPUT_MAX_CHARS),
+              content_type: "transcript",
+              label_max_chars: TITLE_MAX_LEN,
+            },
+            controller.signal,
+          );
+          const data = (await res.json()) as { label?: string };
+          const label = (data?.label ?? "").trim();
+          if (!label) throw new Error("content-label returned an empty label");
+          persistIfStillPlaceholder(label);
+        } catch (err) {
+          if (controller.signal.aborted) return;
+          // eslint-disable-next-line no-console
+          console.warn(
+            "[cleanup] content-label failed; using local heuristic instead:",
+            err,
+          );
+          const generated = generateLabelFromContent(trimmed, TITLE_MAX_LEN);
+          if (generated) persistIfStillPlaceholder(generated);
+        }
+      })();
+    },
+    [api, dispatch, ensureSession, store],
+  );
+
+  /** Mic completion → append one 'chunk' segment. */
   const persistRawAppend = useCallback(
     async (text: string) => {
       const sessionId = await ensureSession();
@@ -405,19 +502,12 @@ export function useCleanupSession() {
           source: "chunk",
         });
         rawSegmentsRef.current.push({ id: seg.id, text: seg.text });
-        const session = sessionRef.current;
-        if (session && session.title === NEW_CLEANUP_TITLE) {
-          const updated = await updateSession(sessionId, {
-            title: deriveTitle(text),
-          });
-          dispatch(sessionUpserted(updated));
-        }
       } catch (err) {
         console.error("[cleanup] persistRawAppend failed:", err);
         toast.error("Could not save the recording text");
       }
     },
-    [dispatch, elapsedSeconds, ensureSession],
+    [elapsedSeconds, ensureSession],
   );
 
   /**
@@ -677,6 +767,7 @@ export function useCleanupSession() {
     persistRawAppend,
     persistRawReplace,
     persistRawClear,
+    maybeAutoLabelFromTranscript,
     persistCleanRun,
     persistCleanEdit,
     persistCustomRun,

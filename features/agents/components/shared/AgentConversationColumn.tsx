@@ -95,6 +95,7 @@ export function AgentConversationColumn({
   const displayId = displayConversationId ?? conversationId;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
+
   // Subscribed because we need to swap landing → message list the moment the
   // first message lands. `selectMessageCount` returns a primitive (number),
   // so re-renders are cheap.
