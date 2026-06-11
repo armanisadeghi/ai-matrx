@@ -32,6 +32,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
 import {
   Tooltip,
   TooltipContent,
@@ -208,6 +209,14 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
 
       {/* Right-side actions */}
       <div className="flex items-center gap-0.5 shrink-0 mr-2">
+        {file?.mimeType === "application/pdf" && (
+          <PdfSurfaceSwitcher
+            current="file-viewer"
+            fileId={fileId}
+            size="icon"
+            className="h-7 w-7 border-0"
+          />
+        )}
         {/* Show files — opens NavSidebar in a slide-out Sheet so the user
          * can hop between files without leaving the single-file shell. */}
         <Sheet open={showFiles} onOpenChange={setShowFiles}>

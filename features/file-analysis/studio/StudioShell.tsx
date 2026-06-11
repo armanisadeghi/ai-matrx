@@ -15,6 +15,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Edit3, MousePointer2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
 import { cn } from "@/lib/utils";
 import { AnnotatablePdfCanvas } from "@/features/file-analysis/components/AnnotatablePdfCanvas";
 import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
@@ -156,6 +157,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
           {file?.meta.fileName ?? "Document"}{" "}
           <span className="text-muted-foreground">— Analysis Studio</span>
         </h1>
+        <PdfSurfaceSwitcher current="analysis-studio" fileId={fileId} size="icon" />
         {annotationPages.length ? (
           <button
             type="button"
