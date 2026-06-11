@@ -18,7 +18,7 @@
 // useStudioRun owns. Media is rendered only via <InlineMediaRef>.
 
 import { useEffect, useState } from "react";
-import { AudioLines, ImageIcon, Clapperboard, FileText, CheckCircle2, Sparkles } from "lucide-react";
+import { AudioLines, ImageIcon, Clapperboard, FileText, CheckCircle2, Palette } from "lucide-react";
 import { InlineMediaRef } from "@/features/files";
 import { cn } from "@/lib/utils";
 import { ElapsedTimer } from "@/features/podcasts/generator/components/ElapsedTimer";
@@ -82,7 +82,7 @@ export function ProductionStage({
           {/* No covers yet — a calm custom loader, never a broken placeholder. */}
           {readyImages.length === 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted-foreground/50">
-              <Sparkles className="h-9 w-9 animate-pulse" />
+              <Palette className="h-9 w-9 animate-pulse" />
               <span className="text-xs font-medium">Designing the cover…</span>
             </div>
           )}
@@ -284,7 +284,7 @@ function MomentCard({ moment }: { moment: TeaserMoment }) {
   return (
     <div className="pcr-reveal flex h-full flex-col justify-center gap-2">
       <span className="inline-flex w-fit items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-        <Sparkles className="h-3.5 w-3.5" />
+        <FileText className="h-3.5 w-3.5" />
         About this episode
       </span>
       <p className="line-clamp-5 text-sm leading-relaxed text-muted-foreground">

@@ -113,12 +113,12 @@ export function CreateDenseView() {
       <header className="flex shrink-0 items-center gap-3 border-b border-border bg-card/60 px-4 py-2 pr-14 backdrop-blur-glass">
         <Link
           href="/podcast/studio"
-          className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Studio
+          <span className="hidden sm:inline">Studio</span>
         </Link>
-        <span className="text-border">/</span>
+        <span className="hidden text-border sm:inline">/</span>
         <h1 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
           <Terminal className="h-4 w-4 text-primary" />
           New episode
