@@ -43,6 +43,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
 import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
+import { saveDerivative as saveDerivativeCanonical } from "@/features/pdf/services/saveDerivative";
 import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
 import {
   buildPdfSource,
@@ -52,8 +53,6 @@ import {
 } from "@/features/pdf/utils/source";
 import { cn } from "@/lib/utils";
 import { parsePagesInput } from "@/features/pdf/utils/pages";
-import { fileHandler } from "@/features/files";
-import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
@@ -99,6 +98,8 @@ function useOpState() {
 type OpState = ReturnType<typeof useOpState>;
 
 // ─── Save-as-derivative ───────────────────────────────────────────────────────
+// Thin adapter over the canonical features/pdf service (one persist path
+// for every surface); keeps this file's call sites unchanged.
 
 async function saveDerivative(params: {
   doc: PdfDocument;
@@ -107,58 +108,13 @@ async function saveDerivative(params: {
   derivationKind: string;
   derivationMetadata: Record<string, unknown>;
 }): Promise<{ docId: string | null; error: string | null }> {
-  const { doc, userId, result, derivationKind, derivationMetadata } = params;
-
-  // 1. Upload blob to cld_files
-  const file = new File([result.blob], result.filename, {
-    type: result.contentType || "application/pdf",
+  return saveDerivativeCanonical({
+    parent: { id: params.doc.id, name: params.doc.name, totalPages: params.doc.totalPages },
+    userId: params.userId,
+    result: params.result,
+    derivationKind: params.derivationKind,
+    derivationMetadata: params.derivationMetadata,
   });
-  let fileId: string;
-  let storageUri: string;
-  try {
-    const normalized = await fileHandler.upload(
-      { kind: "file", file },
-      { folderPath: `derivatives/${doc.id}` },
-    );
-    if (!normalized.fileId || !normalized.fileUri) {
-      throw new Error("Upload returned no fileId/fileUri");
-    }
-    fileId = normalized.fileId;
-    storageUri = normalized.fileUri;
-  } catch (err) {
-    return {
-      docId: null,
-      error: err instanceof Error ? err.message : String(err),
-    };
-  }
-
-  // 2. Create a derivative processed_documents row with lineage
-  const { data: newDoc, error: insertError } = await supabase
-    .from("processed_documents")
-    .insert({
-      name: result.filename.replace(/\.pdf$/i, ""),
-      storage_uri: storageUri,
-      source_kind: "cld_file",
-      source_id: fileId,
-      source_hash: "",
-      owner_id: userId,
-      parent_processed_id: doc.id,
-      derivation_kind: derivationKind,
-      derivation_metadata: {
-        ...derivationMetadata,
-        original_name: doc.name,
-        original_total_pages: doc.totalPages,
-      },
-      mime_type: "application/pdf",
-    })
-    .select("id")
-    .single();
-
-  if (insertError) {
-    return { docId: null, error: insertError.message };
-  }
-
-  return { docId: (newDoc as { id: string }).id, error: null };
 }
 
 
