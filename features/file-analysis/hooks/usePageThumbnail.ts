@@ -22,7 +22,30 @@ interface CacheEntry {
   error: string | null;
 }
 
+// LRU-bounded: data-url PNGs are 10-50KB each; an unbounded Map grew
+// without limit while browsing 500-page docs (audit W5). Map iteration
+// order is insertion order, so delete+set on read keeps it LRU.
+const MAX_CACHE_ENTRIES = 150;
 const cache = new Map<Key, CacheEntry>();
+
+function cacheGet(key: Key): CacheEntry | undefined {
+  const hit = cache.get(key);
+  if (hit) {
+    cache.delete(key);
+    cache.set(key, hit);
+  }
+  return hit;
+}
+
+function cacheSet(key: Key, entry: CacheEntry): void {
+  if (cache.has(key)) cache.delete(key);
+  cache.set(key, entry);
+  while (cache.size > MAX_CACHE_ENTRIES) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+}
 
 function k(fileId: string, pageId: string, dpi: number): Key {
   return `${fileId}|${pageId}|${dpi}`;
@@ -54,7 +77,7 @@ export function usePageThumbnail(
   const dpi = options?.dpi ?? 50;
   const enabled = options?.enabled ?? true;
   const key = fileId && pageId ? k(fileId, pageId, dpi) : null;
-  const initial = key ? cache.get(key) : null;
+  const initial = key ? cacheGet(key) : null;
   const [png, setPng] = useState<string | null>(initial?.png ?? null);
   const [loading, setLoading] = useState<boolean>(
     !!key && enabled && !initial?.png && !initial?.error,
@@ -64,10 +87,10 @@ export function usePageThumbnail(
   useEffect(() => {
     if (!key || !enabled) return;
     let cancelled = false;
-    let entry = cache.get(key);
+    let entry = cacheGet(key);
     if (!entry) {
       entry = { png: null, inflight: null, error: null };
-      cache.set(key, entry);
+      cacheSet(key, entry);
     }
     if (entry.png) {
       setPng(entry.png);
@@ -84,7 +107,7 @@ export function usePageThumbnail(
     setLoading(true);
     if (!entry.inflight) {
       entry.inflight = fetchThumbnail(fileId!, pageId!, dpi).then((result) => {
-        const e = cache.get(key);
+        const e = cacheGet(key);
         if (!e) return;
         if (result) {
           e.png = result;
@@ -97,7 +120,7 @@ export function usePageThumbnail(
     }
     entry.inflight.then(() => {
       if (cancelled) return;
-      const e = cache.get(key);
+      const e = cacheGet(key);
       setPng(e?.png ?? null);
       setError(e?.error ?? null);
       setLoading(false);
