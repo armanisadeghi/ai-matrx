@@ -35,6 +35,7 @@ import {
 } from "./session-keys";
 import { KeyHandoff } from "./KeyHandoff";
 import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 interface MaskDialogProps {
   fileId: string;
@@ -62,6 +63,16 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
 
   const handleRun = async () => {
     if (!candidates.length) return;
+    if (mode === "destructive") {
+      const ok = await confirm({
+        title: "Destructive masking?",
+        description:
+          "Destructive mode produces a masked copy with NO restore key — the masked values cannot be recovered from it later. The original file itself stays unchanged. Use reversible mode if you may need the originals back.",
+        confirmLabel: "Mask destructively",
+        variant: "destructive",
+      });
+      if (!ok) return;
+    }
     setRunning(true);
     setError(null);
     try {

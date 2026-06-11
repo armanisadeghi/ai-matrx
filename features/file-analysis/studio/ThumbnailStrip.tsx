@@ -15,7 +15,8 @@
 import { useEffect, useRef, useState } from "react";
 import { EyeOff, Eye, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { usePages } from "@/features/file-analysis/hooks/usePages";
+import { toast } from "sonner";
+import { usePages, invalidatePages } from "@/features/file-analysis/hooks/usePages";
 import { usePageThumbnail } from "@/features/file-analysis/hooks/usePageThumbnail";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type { FilePageOut } from "@/features/file-analysis/api/file-analysis";
@@ -109,12 +110,24 @@ function ThumbnailItem({
 
   const excluded = page.status === "excluded";
 
+  const [toggling, setToggling] = useState(false);
   const toggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (excluded) {
-      await Api.includePage(fileId, page.id);
-    } else {
-      await Api.excludePage(fileId, page.id, { reason: null });
+    if (toggling) return;
+    setToggling(true);
+    try {
+      if (excluded) {
+        await Api.includePage(fileId, page.id);
+      } else {
+        await Api.excludePage(fileId, page.id, { reason: null });
+      }
+      invalidatePages(fileId);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Couldn't update the page",
+      );
+    } finally {
+      setToggling(false);
     }
   };
 
@@ -166,10 +179,14 @@ function ThumbnailItem({
         <button
           type="button"
           onClick={(e) => void toggle(e)}
-          className="ml-auto opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+          disabled={toggling}
+          aria-label={excluded ? "Include in extraction" : "Exclude from extraction"}
+          className="ml-auto opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 disabled:opacity-100"
           title={excluded ? "Include in extraction" : "Exclude from extraction"}
         >
-          {excluded ? (
+          {toggling ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : excluded ? (
             <Eye className="h-3 w-3" />
           ) : (
             <EyeOff className="h-3 w-3" />

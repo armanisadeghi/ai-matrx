@@ -44,6 +44,7 @@ import { Input } from "@/components/ui/input";
 import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
 import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import { saveDerivative as saveDerivativeCanonical } from "@/features/pdf/services/saveDerivative";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
 import {
   buildPdfSource,
@@ -694,6 +695,14 @@ export function ManipulationPanel({
             del.setError("Enter at least one page.");
             return;
           }
+          const ok = await confirm({
+            title: `Delete ${pages.length} page${pages.length === 1 ? "" : "s"}?`,
+            description:
+              "This creates a new PDF without those pages — the original document is unchanged.",
+            confirmLabel: "Delete pages",
+            variant: "destructive",
+          });
+          if (!ok) return;
           await run(del, "deletePages", { ...src, pages });
         }}
         onSave={() => {
@@ -993,6 +1002,14 @@ export function ManipulationPanel({
             redact.setError("Reason is required.");
             return;
           }
+          const ok = await confirm({
+            title: "Redact every match?",
+            description:
+              "Blacks out all matches in a NEW redacted copy — the original file stays unchanged. Redacted content in the copy cannot be recovered.",
+            confirmLabel: "Redact",
+            variant: "destructive",
+          });
+          if (!ok) return;
           await run(redact, "redactPattern", {
             ...src,
             pattern: redactPattern,
