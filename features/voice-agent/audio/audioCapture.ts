@@ -58,6 +58,8 @@ export interface CaptureStats {
   lastRms: number;
   /** Date.now() of the last PCM frame, or null. */
   lastFrameAt: number | null;
+  /** AudioContext state — "running" is required for process() to fire. */
+  ctxState: AudioContextState | "none";
 }
 
 export interface AudioCaptureHandle {
@@ -78,6 +80,14 @@ export function createAudioCapture(): AudioCaptureHandle {
   let stream: MediaStream | null = null;
   let source: MediaStreamAudioSourceNode | null = null;
   let workletNode: AudioWorkletNode | null = null;
+  // Muted tap into the destination. A capture-only worklet has 0 outputs, so it
+  // is never connected to ctx.destination — and on Chrome a graph with NO path
+  // to the destination is not pulled by the render thread, so the mic source
+  // (and the worklet sharing it) never receives audio: process() runs with
+  // empty inputs forever (captured=0, rms=0). Routing the source through a
+  // gain=0 node to the destination keeps the source actively rendered, which
+  // feeds the worklet its channel data without any audible playback/feedback.
+  let keepAliveGain: GainNode | null = null;
   let trackEndedHandler: (() => void) | null = null;
 
   let prebuffer: ArrayBuffer[] = [];
@@ -265,6 +275,27 @@ export function createAudioCapture(): AudioCaptureHandle {
     };
 
     source.connect(workletNode);
+
+    // Muted keepalive path → destination so the render thread actually pulls
+    // the source chain (see keepAliveGain comment above). gain=0 = silent.
+    keepAliveGain = localCtx.createGain();
+    keepAliveGain.gain.value = 0;
+    source.connect(keepAliveGain);
+    keepAliveGain.connect(localCtx.destination);
+
+    // A context created via `new AudioContext()` can come up "suspended" even
+    // after a synchronous warmup resume() — especially when the mic stream was
+    // reused warm (no getUserMedia await gave resume() time to settle). Await
+    // it here so process() actually starts; otherwise frames never flow.
+    if (localCtx.state === "suspended") {
+      try {
+        await localCtx.resume();
+      } catch {
+        // ignore — if it can't resume we surface zero frames in the debug panel
+      }
+    }
+    if (abortIfTornDown()) return;
+
     active = true;
   }
 
@@ -302,6 +333,14 @@ export function createAudioCapture(): AudioCaptureHandle {
         // already disconnected
       }
       source = null;
+    }
+    if (keepAliveGain) {
+      try {
+        keepAliveGain.disconnect();
+      } catch {
+        // already disconnected
+      }
+      keepAliveGain = null;
     }
     if (stream) {
       if (trackEndedHandler) {
@@ -350,6 +389,7 @@ export function createAudioCapture(): AudioCaptureHandle {
       framesBuffered: prebuffer.length,
       lastRms,
       lastFrameAt,
+      ctxState: ctx?.state ?? "none",
     };
   }
 

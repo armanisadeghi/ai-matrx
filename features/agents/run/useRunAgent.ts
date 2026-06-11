@@ -98,12 +98,29 @@ export function useRunAgent(): UseRunAgent {
         );
 
         let accumulated = "";
+        // Structured-output agents (a declared response schema) deliver their
+        // result via the terminal `completion` event's `result.output`, NOT as
+        // streamed `chunk` events — so capture both. A failed completion is a
+        // run failure even when no error event was emitted.
+        let completionOutput: string | null = null;
         const { accumulatedText } = await consumeStream(
           response,
           {
             onChunk: (chunk) => {
               accumulated += chunk.text;
               onChunk?.(accumulated);
+            },
+            onCompletion: (c) => {
+              if (c.status === "failed" || c.status === "cancelled") {
+                const r = (c.result ?? {}) as Record<string, unknown>;
+                streamErrorRef.current =
+                  (typeof r.error === "string" && r.error) ||
+                  (typeof r.user_message === "string" && r.user_message) ||
+                  `The agent run ${c.status}`;
+                return;
+              }
+              const out = (c.result as Record<string, unknown> | undefined)?.output;
+              if (typeof out === "string" && out) completionOutput = out;
             },
             onError: (err) => {
               streamErrorRef.current =
@@ -117,7 +134,9 @@ export function useRunAgent(): UseRunAgent {
           throw new Error(streamErrorRef.current);
         }
 
-        return accumulatedText || accumulated;
+        // Prefer streamed chunk text; fall back to the structured completion
+        // output for schema agents that don't stream chunks.
+        return accumulatedText || accumulated || completionOutput || "";
       } catch (err) {
         const message = extractErrorMessage(err);
         setError(message);

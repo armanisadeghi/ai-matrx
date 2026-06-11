@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useRunAgent } from "@/features/agents/run/useRunAgent";
 import { articleService } from "@/features/podcasts/articleService";
+import { assembleArticle } from "@/features/podcasts/generator/articleMarkdown";
 import { slugify } from "@/features/podcasts/utils";
 import type {
   PcArticle,
@@ -45,7 +46,8 @@ function episodeMetadata(episode: PcEpisodeWithShow): Record<string, unknown> {
 export interface UseEpisodeArticles {
   /** Persisted articles keyed by kind (loaded + after save). */
   articles: Partial<Record<PcArticleKind, PcArticle>>;
-  /** Live streaming markdown while a kind generates (cleared on save). */
+  /** Assembled markdown preview shown right after generation, before reload
+   *  (cleared once the saved article is in `articles`). */
   drafts: Partial<Record<PcArticleKind, string>>;
   busy: Partial<Record<PcArticleKind, boolean>>;
   loading: boolean;
@@ -100,7 +102,7 @@ export function useEpisodeArticles(
         return;
       }
       setBusy((b) => ({ ...b, [kind]: true }));
-      setDrafts((d) => ({ ...d, [kind]: "" }));
+      setDrafts((d) => ({ ...d, [kind]: undefined }));
       try {
         const metadataJson = JSON.stringify(episodeMetadata(episode));
         const variables =
@@ -117,24 +119,29 @@ export function useEpisodeArticles(
                   ? String(episode.duration_seconds)
                   : "",
               };
-        const markdown = await run({
+        // The agents emit a structured JSON envelope (behind a <reasoning>
+        // preamble), NOT raw markdown — streaming it raw would show JSON, so we
+        // assemble renderable markdown from the parsed object on completion.
+        const agentText = await run({
           agentId: kind === "blog" ? BLOG_WRITER_AGENT_ID : SHOW_NOTES_AGENT_ID,
           variables,
-          onChunk: (full) => setDrafts((d) => ({ ...d, [kind]: full })),
         });
-        const title =
-          markdown.match(/^#\s+(.+)$/m)?.[1]?.trim() ||
-          `${episode.title} — ${kind === "blog" ? "Blog" : "Show notes"}`;
+        const fallbackTitle = `${episode.title} — ${kind === "blog" ? "Blog" : "Show notes"}`;
+        const { title, markdown, slugSuggestion } = assembleArticle(
+          kind,
+          agentText,
+          fallbackTitle,
+        );
+        setDrafts((d) => ({ ...d, [kind]: markdown }));
         const saved = await articleService.upsert({
           episode_id: episode.id,
           show_id: episode.show_id,
           kind,
-          // Blog gets its own public slug; show notes render inline (no slug).
           // Blog gets a public, globally-unique slug (the suffix guards the DB
           // unique constraint); show notes render inline (no slug).
           slug:
             kind === "blog"
-              ? `${slugify(title) || "episode"}-${episode.id.slice(0, 8)}`
+              ? `${slugify(slugSuggestion || title) || "episode"}-${episode.id.slice(0, 8)}`
               : null,
           title,
           content_markdown: markdown,

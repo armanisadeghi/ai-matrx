@@ -75,7 +75,9 @@ files, with a live-streaming studio, resumable runs, and public share pages.
   5–20-host paths fail loudly until their agents are built (version-id
   constants in aidream `podcast_generator.py`).
 - `docs/BLOG_PER_EPISODE.md` — rich SEO blog article per episode (≠ transcript).
-  Schema (`pc_articles`) applied; generation UI + public route in progress.
+  **Live 2026-06-11:** generate from the run page (`EpisodeContentStudio`),
+  publish, public route `/podcast/[slug]/blog`. Show notes share the path
+  (rendered inline on the episode page).
 - Near-term: RSS feed per show, `file_id` persistence on episodes, transcripts +
   chapters + show notes, search, embeddable player, automated heal (pg_cron).
 
@@ -84,6 +86,25 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+- 2026-06-11 — **Blog posts + show notes (generate → publish → public).** Per
+  episode, `EpisodeContentStudio` (on the run page) generates a blog article or
+  show notes from the episode's `script` via the `podcast_blog_writer`
+  (`58204bd9`) / `podcast_show_notes_generator` (`b1910198`) agents through
+  `useEpisodeArticles` + `useRunAgent`, saving to `pc_articles`
+  (`articleService`, migrations `pc_articles.sql` + `pc_episodes_script.sql`).
+  These agents emit a **structured JSON envelope** (behind `<reasoning>`), NOT
+  raw markdown — `articleMarkdown.ts#assembleArticle` extracts the object
+  (`utils/json/extract-json`) and assembles renderable markdown. Two
+  `useRunAgent` fixes this surfaced: it now reads `completion.result.output`
+  (schema agents don't stream `chunk` events) and treats a failed/cancelled
+  completion as an error. Publish flips `status`; public blog renders at
+  `/podcast/[slug]/blog` (`PodcastBlogPage`, SSR + `generateMetadata` with
+  `og:type=article` + canonical), show notes inline on the episode page
+  (`EpisodeShowNotes`). Episode-page CTAs go live when published; `ResultActions`
+  blog/show-notes ComingSoon removed. Server now links `agent_run.episode_id` on
+  persist + persists `pc_episodes.script`. Shared `slugify` extracted to
+  `features/podcasts/utils.ts` (was duplicated in two dialogs). Live-verified:
+  generated → published → anonymous `/blog` page renders with cover + byline.
 - 2026-06-10 — **Multi-speaker (1–20 hosts) + streaming audio + error taxonomy.**
   Server (aidream): host-count-aware script routing (`_select_script_agent` —
   legacy 2-host agents stay for default educational/news; `podcast_multihost_script`

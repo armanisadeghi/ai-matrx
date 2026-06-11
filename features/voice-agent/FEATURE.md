@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-06-10`
+**Last updated:** `2026-06-11`
 
 ---
 
@@ -187,6 +187,7 @@ Implementation tracked in
 
 ## Change log
 
+- `2026-06-11` — **Fix: mic captured=0 (no audio ever reached xAI).** The debug panel revealed `mic flow: captured=0 · sent=0 · rms=0.000` while `mic active`, `ws open`, and `streaming` were all green — i.e. the session sat in `listening` forever because the worklet never produced a single PCM frame. Root cause: the capture-only `pcm-processor` worklet has `numberOfOutputs: 0` and was only wired `source → workletNode`, leaving the capture graph with **no path to `ctx.destination`**. Chrome doesn't pull a source chain that reaches nothing, so the worklet's `process()` ran with empty inputs indefinitely. Fix in `audio/audioCapture.ts`: route the source through a `gain=0` keepalive node into `ctx.destination` (silent, no feedback) so the render thread pulls the source and feeds the worklet, and `await ctx.resume()` if the context came up suspended (more likely now that the warm shared stream returns instantly, giving the synchronous warmup resume no time to settle). Added `ctxState` to `CaptureStats` → `micCtxState` flag → new "audio ctx" line in `VoiceDebugPanel` (red when active but not `running`).
 - `2026-06-10` — **Live observability + reconnection hardening + shared mic grant.** Three additions driven by "Live works sometimes / dies after idle / mobile re-prompts the mic every time":
   - **Debug bus + panel.** New `features/voice-agent/debug/voiceDebugBus.ts` — a React/Redux-free per-instance ring-buffer log + live flag snapshot (`wsOpen`, `streamingReady`, `captureActive`, `tokenPresent`, `tokenExpiresInS`, `micPermission`, start/connect/close/error counters, last close code+intent, last server-event type/age, session age). `useXaiVoiceSession` now logs every lifecycle transition (start, audio warmup, token ready, ws connecting/open, session.updated, ws close intentional-vs-network with close code, all token/mic/ws/server errors) and mirrors live flags every second. New admin-only `VoiceDebugPanel` (`components/VoiceDebugPanel.tsx`) renders it; mounted at the top of `ScribeLiveScreen` behind `selectIsAdmin`. `tokenManager` gained `expiresAt()`; `xaiClient.onClose` now forwards the WebSocket close `code`.
   - **Connection watchdog + loud recovery.** A 1s interval detects the silent-death state (status is `listening`/`thinking`/`speaking`/`interrupting` but `xaiClient.isOpen()` is false) — the exact "UI says connected but the socket is gone" cause of "works sometimes / dies after idle". On detection it dispatches a sticky error and `stop()` (which mints a fresh token), so the next mic tap reconnects cleanly. Network-close now also surfaces a `ws-connection-dropped` error instead of silently flipping to idle. Added tab-visible / network-online token re-prime (a backgrounded tab throttles the refresh timer, leaving a stale/absent token; we warm a fresh one when idle and visible).

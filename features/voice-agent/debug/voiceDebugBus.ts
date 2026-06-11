@@ -45,6 +45,8 @@ export interface VoiceDebugFlags {
   micFramesSent: number;
   /** Most recent mic RMS [0..1] — non-zero means audio is reaching the worklet. */
   micRms: number;
+  /** Capture AudioContext state — must be "running" for frames to flow. */
+  micCtxState: string;
   tokenPresent: boolean;
   /** Seconds until the cached token expires, or null if none. */
   tokenExpiresInS: number | null;
@@ -76,6 +78,7 @@ function emptyFlags(): VoiceDebugFlags {
     micFramesCaptured: 0,
     micFramesSent: 0,
     micRms: 0,
+    micCtxState: "none",
     tokenPresent: false,
     tokenExpiresInS: null,
     micPermission: "unknown",

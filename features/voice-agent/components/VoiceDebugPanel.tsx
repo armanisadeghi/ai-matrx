@@ -210,6 +210,17 @@ export function VoiceDebugPanel({
                 · rms={flags.micRms.toFixed(3)}
               </span>
             </div>
+            <div
+              className={cn(
+                "col-span-full",
+                flags.captureActive && flags.micCtxState !== "running"
+                  ? "text-red-400"
+                  : "",
+              )}
+            >
+              audio ctx:{" "}
+              <span className="text-zinc-200">{flags.micCtxState}</span>
+            </div>
             <div className="col-span-full">
               mic mgr:{" "}
               <span className="text-zinc-200">
