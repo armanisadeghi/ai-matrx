@@ -211,8 +211,19 @@ export default function WorkbookEditor({
 
         // V2 CRDT collab — opt-in. Mounted only after Univer is ready so we
         // can resolve ICommandService and the local user identity.
+        //
+        // Fire-and-forget with a hard try/catch: a failure in collab boot
+        // (offline, broken injector path, dynamic-import miss, permission
+        // glitch) must NEVER take the workbook page down. The user keeps a
+        // working solo workbook; collab silently degrades with a console
+        // warning that surfaces in error tracking.
         if (collab) {
-          void startCollabSession();
+          void startCollabSession().catch((err) => {
+            console.warn(
+              "[workbook] collab boot failed — falling back to solo mode",
+              err,
+            );
+          });
         }
       } catch (err) {
         if (cancelled) return;
@@ -245,28 +256,46 @@ export default function WorkbookEditor({
     if (!uid) return;
     setCollabSelfUid(uid);
 
-    const [
-      { WorkbookCollabSession },
-      { SupabaseYjsProvider },
-    ] = await Promise.all([
-      import("../collab/WorkbookCollabSession"),
-      import("../collab/SupabaseYjsProvider"),
-    ]);
+    const [{ WorkbookCollabSession }, { SupabaseYjsProvider }] =
+      await Promise.all([
+        import("../collab/WorkbookCollabSession"),
+        import("../collab/SupabaseYjsProvider"),
+      ]);
 
-    // Access the command service via Univer's injector. The public hook
-    // (`onMutationExecutedForCollab`) is on ICommandService, which the facade
-    // does not re-export — we go through the DI surface.
-    const injector = (univerRef.current as unknown as {
-      __getInjector(): {
-        get: <T>(token: unknown) => T;
-      };
-    }).__getInjector();
-    // Univer's ICommandService is registered by the `ICommandService` identifier
-    // import; we resolve by string identity since the runtime token is opaque.
-    const { ICommandService } = await import("@univerjs/core");
-    const commandService = injector.get(
-      ICommandService as unknown,
-    ) as import("../collab/WorkbookCollabSession").CommandServiceLike;
+    // Univer's `__getInjector` is technically a private path (the double
+    // underscore is the warning). On some build/runtime combos it returns
+    // undefined or `injector.get(ICommandService)` returns undefined; both
+    // would crash the page if uncaught. Probe defensively — when we can't
+    // resolve the command service, log + return so the editor runs in
+    // solo-without-collab mode rather than tearing down the route.
+    let commandService:
+      | import("../collab/WorkbookCollabSession").CommandServiceLike
+      | null = null;
+    try {
+      const injector = (univerRef.current as unknown as {
+        __getInjector?: () => {
+          get: <T>(token: unknown) => T | undefined;
+        };
+      }).__getInjector?.();
+      if (!injector) {
+        console.warn("[workbook] collab: Univer injector unavailable");
+        return;
+      }
+      const { ICommandService } = await import("@univerjs/core");
+      const resolved = injector.get<
+        import("../collab/WorkbookCollabSession").CommandServiceLike
+      >(ICommandService as unknown);
+      if (!resolved || typeof resolved.onMutationExecutedForCollab !== "function") {
+        console.warn(
+          "[workbook] collab: ICommandService missing the onMutationExecutedForCollab hook",
+        );
+        return;
+      }
+      commandService = resolved;
+    } catch (err) {
+      console.warn("[workbook] collab: command-service resolution threw", err);
+      return;
+    }
 
     const clientId =
       typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -286,7 +315,12 @@ export default function WorkbookEditor({
           awareness,
         }),
       onAwarenessChange: (aw) => {
-        setRemoteAwareness(new Map(aw.getStates() as Map<number, import("../collab/types").AwarenessState>));
+        setRemoteAwareness(
+          new Map(aw.getStates() as Map<
+            number,
+            import("../collab/types").AwarenessState
+          >),
+        );
         const election = session.electHost();
         setCollabIsHost(election.isHost);
       },
@@ -296,31 +330,37 @@ export default function WorkbookEditor({
     await session.start();
 
     // Stream local selection changes into Awareness so remote peers can
-    // render this user's cell ring. The facade's onSelectionChange fires on
-    // both keyboard and mouse selection; we update at every fire (the
-    // provider throttles outbound at 50ms, so the broadcast rate is bounded
-    // regardless of how fast the user moves).
-    const fb = (apiRef.current as unknown as {
-      getActiveWorkbook: () => {
-        getActiveSheet: () => { getSheetId: () => string } | null;
-        onSelectionChange: (
-          cb: (selections: Array<{ startRow: number; startColumn: number }>) => void,
-        ) => { dispose: () => void };
-      } | undefined;
-    } | null)?.getActiveWorkbook();
-    if (fb) {
-      const disposer = fb.onSelectionChange((selections) => {
-        if (!collabSessionRef.current) return;
-        const first = selections?.[0];
-        if (!first) return;
-        const sheetId = fb.getActiveSheet()?.getSheetId() ?? null;
-        collabSessionRef.current.setCursor({
-          sheetId,
-          row: first.startRow,
-          col: first.startColumn,
+    // render this user's cell ring. Defensive: facade typings are loose at
+    // the .onSelectionChange boundary; on a Univer build where the method
+    // is missing we just skip cursor broadcasting — sessions still sync
+    // mutations + presence (uid + color) without cell coords.
+    try {
+      const fb = (apiRef.current as unknown as {
+        getActiveWorkbook?: () => {
+          getActiveSheet?: () => { getSheetId: () => string } | null;
+          onSelectionChange?: (
+            cb: (
+              selections: Array<{ startRow: number; startColumn: number }>,
+            ) => void,
+          ) => { dispose: () => void };
+        } | undefined;
+      } | null)?.getActiveWorkbook?.();
+      if (fb?.onSelectionChange) {
+        const disposer = fb.onSelectionChange((selections) => {
+          if (!collabSessionRef.current) return;
+          const first = selections?.[0];
+          if (!first) return;
+          const sheetId = fb.getActiveSheet?.()?.getSheetId() ?? null;
+          collabSessionRef.current.setCursor({
+            sheetId,
+            row: first.startRow,
+            col: first.startColumn,
+          });
         });
-      });
-      collabSelectionDisposerRef.current = disposer;
+        collabSelectionDisposerRef.current = disposer;
+      }
+    } catch (err) {
+      console.warn("[workbook] collab: selection wiring failed", err);
     }
   }, [workbookId]);
 

@@ -233,15 +233,12 @@ export default function WorkbooksLandingPage() {
 
   return (
     <div className="w-full h-page p-4 space-y-4 overflow-y-auto scrollbar-none">
-      <div className="flex items-center justify-between pr-10">
-        <div>
-          <h1 className="text-2xl font-bold">Workbooks</h1>
-          <p className="text-sm text-muted-foreground">
-            Lossless spreadsheets — multi-sheet, formulas, formatting. Each
-            workbook autosaves and syncs in realtime to anyone with access.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      {/* Mobile: title row stacks above a single button row that wraps
+          cleanly. The wide `pr-10` reservation existed for a desktop side
+          drawer hit-area; on small screens it crushed the button row. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:pr-10">
+        <h1 className="text-2xl font-bold">Workbooks</h1>
+        <div className="flex flex-wrap items-center gap-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -264,35 +261,41 @@ export default function WorkbooksLandingPage() {
           />
           <Button
             variant="outline"
+            size="sm"
             disabled={importing || creating || smartCommitting}
             onClick={() => smartFileInputRef.current?.click()}
             title="Auto-detect whether your file is a typed dataset or a workbook"
           >
-            <Sparkles className="h-4 w-4 mr-2" />
-            Smart import
+            <Sparkles className="h-4 w-4 sm:mr-2" />
+            {/* Hide labels on phones; keep icons + tooltips. */}
+            <span className="hidden sm:inline">Smart import</span>
           </Button>
           <Button
             variant="outline"
+            size="sm"
             disabled={importing || creating || smartCommitting}
             onClick={() => fileInputRef.current?.click()}
+            title="Import XLSX or CSV"
           >
             {importing ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
             ) : (
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 sm:mr-2" />
             )}
-            Import XLSX / CSV
+            <span className="hidden sm:inline">Import XLSX / CSV</span>
           </Button>
           <Button
+            size="sm"
             onClick={handleCreate}
             disabled={creating || importing || smartCommitting}
+            title="New workbook"
           >
             {creating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
             ) : (
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 sm:mr-2" />
             )}
-            New workbook
+            <span className="hidden sm:inline">New workbook</span>
           </Button>
         </div>
       </div>

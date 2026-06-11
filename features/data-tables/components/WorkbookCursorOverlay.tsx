@@ -30,19 +30,22 @@ type FRangeLike = {
   getCellRect(): DOMRect;
 };
 
+// Univer facade fields are typed as required by the .d.ts but in practice
+// some build flavors or boot races leave them undefined; mirror that with
+// optional method signatures so our runtime guards (?.) actually narrow.
 type FWorksheetLike = {
-  getSheetId(): string;
-  getRange(row: number, column: number): FRangeLike;
-  onScroll?(callback: () => void): { dispose(): void } | undefined;
+  getSheetId?: () => string;
+  getRange?: (row: number, column: number) => FRangeLike;
+  onScroll?: (callback: () => void) => { dispose(): void } | undefined;
 };
 
 type FWorkbookLike = {
-  getActiveSheet(): FWorksheetLike | null;
-  getSheetBySheetId(sheetId: string): FWorksheetLike | null;
+  getActiveSheet?: () => FWorksheetLike | null;
+  getSheetBySheetId?: (sheetId: string) => FWorksheetLike | null;
 };
 
 type FUniverLike = {
-  getActiveWorkbook(): FWorkbookLike | undefined;
+  getActiveWorkbook?: () => FWorkbookLike | undefined;
 };
 
 type Props = {
@@ -81,13 +84,19 @@ export function WorkbookCursorOverlay({
     let scrollDisposer: { dispose(): void } | null | undefined;
 
     const subscribeActive = () => {
-      const wb = api.getActiveWorkbook();
-      const sheet = wb?.getActiveSheet();
-      const newId = sheet?.getSheetId() ?? null;
-      setActiveSheetId((prev) => (prev === newId ? prev : newId));
-      scrollDisposer?.dispose();
-      if (sheet?.onScroll) {
-        scrollDisposer = sheet.onScroll(() => bump());
+      // Defensive across the whole boundary — Univer's facade typing is
+      // loose; a missing field or a mid-boot null reference here would
+      // crash the route, not just the overlay. Swallow + log; the worst
+      // case is stale cursor positions for one tick.
+      try {
+        const wb = api.getActiveWorkbook?.();
+        const sheet = wb?.getActiveSheet?.();
+        const newId = sheet?.getSheetId?.() ?? null;
+        setActiveSheetId((prev) => (prev === newId ? prev : newId));
+        scrollDisposer?.dispose();
+        scrollDisposer = sheet?.onScroll?.(() => bump());
+      } catch (err) {
+        console.warn("[workbook] cursor overlay: subscribe failed", err);
       }
     };
 
@@ -196,7 +205,7 @@ function useCellRects(
       setRects([]);
       return;
     }
-    const wb = api.getActiveWorkbook();
+    const wb = api.getActiveWorkbook?.();
     if (!wb) {
       setRects([]);
       return;
@@ -205,12 +214,13 @@ function useCellRects(
     const next: Array<CellRect | null> = peers.map((peer) => {
       try {
         const sheet = peer.sheetId
-          ? wb.getSheetBySheetId(peer.sheetId) ?? wb.getActiveSheet()
-          : wb.getActiveSheet();
+          ? wb.getSheetBySheetId?.(peer.sheetId) ?? wb.getActiveSheet?.()
+          : wb.getActiveSheet?.();
         if (!sheet) return null;
         if (peer.row === null || peer.col === null) return null;
-        const range = sheet.getRange(peer.row, peer.col);
-        const cellDom = range.getCellRect();
+        const range = sheet.getRange?.(peer.row, peer.col);
+        const cellDom = range?.getCellRect();
+        if (!cellDom) return null;
         // getCellRect returns viewport-relative coordinates; translate into
         // container-local pixels so the overlay div positions correctly even
         // when the page itself is scrolled or padded.
