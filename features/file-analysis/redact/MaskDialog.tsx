@@ -34,6 +34,7 @@ import {
   type StoredSession,
 } from "./session-keys";
 import { KeyHandoff } from "./KeyHandoff";
+import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 
 interface MaskDialogProps {
   fileId: string;
@@ -54,6 +55,7 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
   const [mode, setMode] = useState<Mode>("reversible");
   const [style, setStyle] = useState<Style>("bracket");
   const [running, setRunning] = useState(false);
+  const downloadBlob = useDownloadBlob();
   const [error, setError] = useState<string | null>(null);
   const [handoff, setHandoff] = useState<StoredSession | null>(null);
   const [maskedBlob, setMaskedBlob] = useState<Blob | null>(null);
@@ -112,14 +114,7 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
 
   const downloadMasked = () => {
     if (!maskedBlob) return;
-    const url = URL.createObjectURL(maskedBlob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${fileId}-masked.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob({ blob: maskedBlob, filename: `${fileId}-masked.pdf` });
   };
 
   return (

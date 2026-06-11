@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
+import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 
@@ -54,6 +55,7 @@ type OpKey =
 
 export function DocumentOpsPanel({ fileId }: Props) {
   const api = usePdfDemoApi();
+  const downloadBlob = useDownloadBlob();
   const [busy, setBusy] = useState<OpKey | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ op: OpKey; result: BinaryResult } | null>(null);
@@ -84,14 +86,7 @@ export function DocumentOpsPanel({ fileId }: Props) {
 
   function downloadResult() {
     if (!result) return;
-    const url = URL.createObjectURL(result.result.blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = result.result.filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(result.result);
   }
 
   return (

@@ -42,6 +42,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
+import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
 import {
   buildPdfSource,
@@ -50,7 +51,7 @@ import {
   type PdfSourceWire,
 } from "@/features/pdf/utils/source";
 import { cn } from "@/lib/utils";
-import { parsePagesInput } from "@/features/pdf-demo/utils/pages";
+import { parsePagesInput } from "@/features/pdf/utils/pages";
 import { fileHandler } from "@/features/files";
 import { supabase } from "@/utils/supabase/client";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -160,18 +161,6 @@ async function saveDerivative(params: {
   return { docId: (newDoc as { id: string }).id, error: null };
 }
 
-// ─── Download helper ──────────────────────────────────────────────────────────
-
-function downloadBlob({ blob, filename }: BinaryResult) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
 
 // ─── Result bar ───────────────────────────────────────────────────────────────
 
@@ -184,6 +173,7 @@ function ResultBar({
   saveState: DerivativeSave;
   onSave: () => Promise<void>;
 }) {
+  const downloadBlob = useDownloadBlob();
   return (
     <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
       <Button
