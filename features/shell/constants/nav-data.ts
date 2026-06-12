@@ -291,6 +291,16 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "emerald",
   },
   {
+    label: "Documents",
+    href: "/documents",
+    iconName: "FileText",
+    section: "primary",
+    profileMenu: true,
+    dashboard: true,
+    description: "Cloud documents — realtime co-editing, full history",
+    color: "indigo",
+  },
+  {
     // `/scraper` lives in `(transitional)` and that group's layout
     // hard-redirects guests to `/login`. We don't have a dedicated
     // scraper landing yet, so guests in the sidebar go to `/features`

@@ -31,7 +31,20 @@ import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/utils/supabase/client";
 
 export type SupabaseYjsProviderOptions = {
+  /**
+   * Opaque resource identifier (e.g. workbookId, documentId). Combined with
+   * `channelPrefix` to form the Broadcast channel name, so distinct resource
+   * types live on distinct channels even when their UUIDs are unrelated.
+   */
   workbookId: string;
+  /**
+   * Channel namespace — defaults to `"workbook"` for back-compat with the
+   * spreadsheet surface that built this provider. The docs surface passes
+   * `"document"` so the channel becomes `yjs:document:<id>` instead of
+   * `yjs:workbook:<id>`. Pick distinct values per surface to keep CRDT rooms
+   * from cross-talking.
+   */
+  channelPrefix?: string;
   /** Stable per-tab session id. Use crypto.randomUUID() at the call site. */
   clientId: string;
   doc: Y.Doc;
@@ -148,7 +161,7 @@ export class SupabaseYjsProvider {
     this.awareness = options.awareness;
     this.chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;
     this.client = options.client ?? (supabase as SupabaseClient);
-    this.channelName = `yjs:workbook:${this.workbookId}`;
+    this.channelName = `yjs:${options.channelPrefix ?? "workbook"}:${this.workbookId}`;
     this.readyPromise = new Promise<void>((resolve) => {
       this.resolveReady = resolve;
     });
