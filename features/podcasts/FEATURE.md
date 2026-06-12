@@ -86,6 +86,16 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+- 2026-06-12 — **ElevenLabs dialogue agent live → 1–20 hosts proven end-to-end.**
+  Created `podcast_audio_dialogue` (master `88f05360`, version `293425be`,
+  pinned to `eleven_v3`/`elevenlabs_dialogue`) and wired `_AUDIO_DIALOGUE_VERSION_ID`
+  in the aidream pipeline — the last missing piece for the 3–20 host band. With
+  the solo + roundtable script agents, every host-count band routes correctly
+  (solo→Gemini single, 2→Gemini multi, 3–20→ElevenLabs dialogue). Verified via
+  `scripts/podcast_e2e_matrix.py` (`solo`/`three_host`/`six_host_roundtable` all
+  PASS with real audio). Also fixed a build-blocking dangling `human-id` pnpm
+  symlink (cartesia dep). Full status: `docs/HANDOFF_2026-06-12.md`. Server work
+  committed (`aidream 05c457d0`) but **awaits deploy** for production.
 - 2026-06-11 — **Blog posts + show notes (generate → publish → public).** Per
   episode, `EpisodeContentStudio` (on the run page) generates a blog article or
   show notes from the episode's `script` via the `podcast_blog_writer`
