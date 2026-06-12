@@ -1490,19 +1490,6 @@ export default function CleanupPad({
               activeBusyEarly || activeThinking ? "animate-spin" : "invisible",
             )}
           />
-          {activeSlotValue.trim().length > 0 && (
-            <ContentActionBar
-              content={activeSlotValue}
-              title={`Custom: ${activeSlot?.agentId ? (agentNames[activeSlot.agentId] ?? "agent") : "output"}`}
-              metadata={{
-                agent_id: activeSlot?.agentId ?? "",
-                source: "transcription-cleanup-page-custom",
-              }}
-              instanceKey={`transcription-cleanup-page-custom-${activeSlot?.id ?? INSTANCE_ID}`}
-              hideSpeaker
-              hidePencil
-            />
-          )}
         </div>
       </div>
 
@@ -1609,8 +1596,8 @@ export default function CleanupPad({
         </button>
       </div>
 
-      <div className="flex items-center justify-between">
-        <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
+      <div className="flex items-center justify-between gap-2">
+        <label className="flex min-w-0 cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
           <Switch
             checked={activeSlot?.autoRun ?? false}
             onCheckedChange={(on) =>
@@ -1621,15 +1608,30 @@ export default function CleanupPad({
             aria-label="Auto-run this slot"
           />
           Auto-run
-          <span className="text-muted-foreground/60">
+          <span className="truncate text-muted-foreground/60">
             {activeSlot?.source === "raw" ? "(with Clean)" : "(after Clean)"}
           </span>
         </label>
-        {activeAi.mapping && (
-          <span className="text-[10px] text-muted-foreground/70">
-            {mappingCaption(activeAi.mapping)}
-          </span>
-        )}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {activeAi.mapping && (
+            <span className="hidden text-[10px] text-muted-foreground/70 sm:inline">
+              {mappingCaption(activeAi.mapping)}
+            </span>
+          )}
+          {activeSlotValue.trim().length > 0 && (
+            <ContentActionBar
+              content={activeSlotValue}
+              title={`Custom: ${activeSlot?.agentId ? (agentNames[activeSlot.agentId] ?? "agent") : "output"}`}
+              metadata={{
+                agent_id: activeSlot?.agentId ?? "",
+                source: "transcription-cleanup-page-custom",
+              }}
+              instanceKey={`transcription-cleanup-page-custom-${activeSlot?.id ?? INSTANCE_ID}`}
+              hideSpeaker
+              hidePencil
+            />
+          )}
+        </div>
       </div>
     </div>
   );

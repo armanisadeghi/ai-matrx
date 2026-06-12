@@ -132,7 +132,9 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
   stale-content flash that made switching feel like it "didn't work". Veil
   formula: `loadState === "loading" || (loaded && loaded.sessionId !==
   appliedSessionId)`; locally-created sessions never populate `loaded`, so they
-  never veil.
+  never veil. Also moved the Custom pane's `ContentActionBar` (copy/save
+  actions) out of the pane header into the Auto-run toggle row, so it reads as
+  associated with that slot's output.
 - 2026-06-10 — Surface registration expanded to the "expose everything"
   standard: manifest 8 → 36 values (active pane, session identity, all
   container texts + `all_custom_outputs`, word/char counts, mic/recording

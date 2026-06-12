@@ -39,6 +39,14 @@ interface Options {
   scrollToken: number;
   /** Whether find is open — if not, we clear highlights. */
   enabled: boolean;
+  /**
+   * Bumped by the consumer (on a bounded interval after mount) to force a full
+   * re-evaluation. A cold switch into preview renders its markdown seconds
+   * later and React can swap the scroll-container element after Suspense
+   * resolves — re-running on each nonce lets us re-acquire the real, now-filled
+   * container and apply highlights + scroll once it's ready.
+   */
+  refreshNonce: number;
 }
 
 function buildRegex(
@@ -77,6 +85,7 @@ export function usePreviewFindHighlight({
   matchCount,
   scrollToken,
   enabled,
+  refreshNonce,
 }: Options) {
   useEffect(() => {
     const highlights = getHighlights();
@@ -169,7 +178,10 @@ export function usePreviewFindHighlight({
 
       if (nonActive.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        highlights.set("notes-find-match", new (window as any).Highlight(...nonActive));
+        highlights.set(
+          "notes-find-match",
+          new (window as any).Highlight(...nonActive),
+        );
       }
       if (activeRange) {
         highlights.set(
@@ -235,20 +247,7 @@ export function usePreviewFindHighlight({
     // is trivial while the container is empty, so polling stays cheap.
     const attemptAndWatch = () => {
       if (cancelled) return;
-      const settledNow = apply();
-      // TEMP DEBUG
-      // eslint-disable-next-line no-console
-      console.log("[findhl] attempt", {
-        polls,
-        settledNow,
-        enabled,
-        query,
-        hasContainer: !!containerRef.current,
-        containerText: (containerRef.current?.textContent ?? "").slice(0, 20),
-        activeIndex,
-        hlSize: getHighlights()?.size,
-      });
-      if (settledNow) {
+      if (apply()) {
         stopWatching();
         return;
       }
@@ -295,5 +294,6 @@ export function usePreviewFindHighlight({
     matchCount,
     scrollToken,
     enabled,
+    refreshNonce,
   ]);
 }

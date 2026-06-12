@@ -57,9 +57,9 @@ import { getDiffRange, type DiffRange } from "../utils/diffRange";
 
 const NoteConflictWindow = dynamic(
   () =>
-    import("@/features/notes/components/NoteConflictWindow").then(
-      (mod) => ({ default: mod.NoteConflictWindow }),
-    ),
+    import("@/features/notes/components/NoteConflictWindow").then((mod) => ({
+      default: mod.NoteConflictWindow,
+    })),
   { ssr: false },
 );
 
@@ -609,17 +609,6 @@ function NotePreviewFindHighlightRedux({
   containerRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const fr = useAppSelector(selectFindReplaceState(instanceId));
-  useEffect(() => {
-    // TEMP DEBUG
-    // eslint-disable-next-line no-console
-    console.log("[findhl] NotePreviewFindHighlightRedux MOUNT", {
-      hasContainer: !!containerRef.current,
-    });
-    return () => {
-      // eslint-disable-next-line no-console
-      console.log("[findhl] NotePreviewFindHighlightRedux UNMOUNT");
-    };
-  }, [containerRef]);
   const [scrollToken, setScrollToken] = useState(0);
   // Sentinel seed (see NoteFindMatchOverlayRedux) so a fresh mount after a
   // mode switch scrolls the active match into view rather than staying put.
@@ -632,6 +621,32 @@ function NotePreviewFindHighlightRedux({
     }
   }, [fr?.currentMatchIndex]);
 
+  // ── Cold-mount readiness ticker ───────────────────────────────────
+  // A cold switch into preview renders its markdown seconds later (lazy chunk
+  // + parse) and React can swap the scroll-container element once Suspense
+  // resolves — leaving `containerRef.current` pointing at an empty/discarded
+  // node. Owned by a stable effect (only torn down on unmount), this bounded
+  // interval bumps a nonce so the highlighter re-acquires the now-filled
+  // container and applies highlights + scroll. It stops the moment the
+  // container has rendered text AND highlights are registered (or after ~9s).
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  useEffect(() => {
+    let ticks = 0;
+    const id = setInterval(() => {
+      ticks += 1;
+      // Bump the nonce first — this re-runs the highlighter against whatever the
+      // container holds right now. Then stop once the container has actually
+      // rendered text (the cold-load race is over) or after a ~9s safety cap.
+      setRefreshNonce((n) => n + 1);
+      const el = containerRef.current;
+      const hasText = !!el && (el.textContent ?? "").trim().length > 0;
+      // Stop as soon as content is present (normal notes settle in 1 tick);
+      // the cap (~18s) only ever matters for a huge doc's slow cold render.
+      if (hasText || ticks >= 120) clearInterval(id);
+    }, 150);
+    return () => clearInterval(id);
+  }, [containerRef]);
+
   usePreviewFindHighlight({
     containerRef,
     query: fr?.query ?? "",
@@ -642,6 +657,7 @@ function NotePreviewFindHighlightRedux({
     matchCount: fr?.matchCount ?? 0,
     scrollToken,
     enabled: !!fr?.isOpen,
+    refreshNonce,
   });
   return null;
 }
