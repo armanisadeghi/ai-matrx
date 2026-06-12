@@ -7,10 +7,55 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { adminCategories } from "@/app/(admin)/administration/categories";
 import { Input } from "@/components/ui/input";
-import { filterAndSortBySearch, matchesSearch } from "@/utils/search-scoring";
+import { matchesSearch } from "@/utils/search-scoring";
 
 // IMPORTANT: All features and routes are defined in: app/(admin)/administration/categories.tsx
 // The top navigation menu automatically extracts routes from categories.tsx via config.ts
+
+type AdminFeature = (typeof adminCategories)[number]["features"][number];
+type AdminCategory = (typeof adminCategories)[number];
+
+function sortByTitle<T extends { title: string }>(items: readonly T[]): T[] {
+  return [...items].sort((a, b) =>
+    a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
+  );
+}
+
+function sortCategories(categories: typeof adminCategories): AdminCategory[] {
+  return [...categories]
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    )
+    .map((category) => ({
+      ...category,
+      features: sortByTitle(category.features),
+    }));
+}
+
+const sortedAdminCategories = sortCategories(adminCategories);
+
+const featureSearchFields = [
+  { get: (feature: AdminFeature) => feature.title, weight: "title" as const },
+  {
+    get: (feature: AdminFeature) => feature.description,
+    weight: "body" as const,
+  },
+];
+
+const categorySearchFields = [
+  { get: (category: AdminCategory) => category.name, weight: "title" as const },
+];
+
+function filterFeaturesBySearch(
+  features: readonly AdminFeature[],
+  query: string,
+): AdminFeature[] {
+  return sortByTitle(
+    features.filter((feature) =>
+      matchesSearch(feature, query, featureSearchFields),
+    ),
+  );
+}
 
 function categoryHref(name: string) {
   return `/administration?category=${encodeURIComponent(name)}`;
@@ -49,17 +94,13 @@ function AdminPageContent() {
   const normalizedQuery = searchQuery.toLowerCase().trim();
 
   const filteredCategories = React.useMemo(() => {
-    if (!normalizedQuery) return adminCategories;
+    if (!normalizedQuery) return sortedAdminCategories;
 
-    return adminCategories
+    return sortedAdminCategories
       .map((category) => {
-        const filteredFeatures = filterAndSortBySearch(
+        const filteredFeatures = filterFeaturesBySearch(
           category.features,
           searchQuery,
-          [
-            { get: (f) => f.title, weight: "title" },
-            { get: (f) => f.description, weight: "body" },
-          ],
         );
 
         if (filteredFeatures.length > 0) {
@@ -69,33 +110,27 @@ function AdminPageContent() {
           };
         }
 
-        if (
-          matchesSearch(category, searchQuery, [
-            { get: (c) => c.name, weight: "title" },
-          ])
-        ) {
+        if (matchesSearch(category, searchQuery, categorySearchFields)) {
           return category;
         }
 
         return null;
       })
-      .filter(Boolean) as typeof adminCategories;
+      .filter(Boolean) as AdminCategory[];
   }, [normalizedQuery, searchQuery]);
 
-  const matchingFeatures = React.useMemo(() => {
-    if (!normalizedQuery) return [];
-    return filterAndSortBySearch(
-      adminCategories.flatMap((cat) => cat.features),
-      searchQuery,
-      [
-        { get: (f) => f.title, weight: "title" },
-        { get: (f) => f.description, weight: "body" },
-      ],
+  const searchResultCount = React.useMemo(() => {
+    if (!normalizedQuery) return 0;
+    return filteredCategories.reduce(
+      (total, category) => total + category.features.length,
+      0,
     );
-  }, [normalizedQuery, searchQuery]);
+  }, [filteredCategories, normalizedQuery]);
 
   if (selectedCategory) {
-    const category = adminCategories.find((c) => c.name === selectedCategory);
+    const category = sortedAdminCategories.find(
+      (c) => c.name === selectedCategory,
+    );
     return (
       <div className="h-full w-full overflow-y-auto">
         <div className="py-4 bg-neutral-100 dark:bg-neutral-900 w-full">
@@ -156,99 +191,129 @@ function AdminPageContent() {
             </Link>
           </div>
 
-          {normalizedQuery && matchingFeatures.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-lg font-semibold mb-4 text-neutral-700 dark:text-neutral-300">
-                Matching Routes
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {matchingFeatures.map((feature, index) => (
-                  <FeatureSectionLinkComponent
-                    key={feature.title}
-                    title={feature.title}
-                    description={feature.description}
-                    icon={feature.icon}
-                    index={index}
-                    link={feature.link}
-                    isNew={feature.isNew}
-                  />
-                ))}
-              </div>
+          {normalizedQuery ? (
+            <>
+              {filteredCategories.length > 0 ? (
+                <div className="space-y-6">
+                  <p className="text-sm text-muted-foreground">
+                    {searchResultCount} result
+                    {searchResultCount === 1 ? "" : "s"} in{" "}
+                    {filteredCategories.length} categor
+                    {filteredCategories.length === 1 ? "y" : "ies"}
+                  </p>
+
+                  {filteredCategories.map((category) => (
+                    <section key={category.name}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div
+                          className={`p-1.5 rounded-md text-white ${getCategoryBgClass(category.iconColor)}`}
+                        >
+                          {category.icon}
+                        </div>
+                        <h2 className="text-sm font-semibold text-foreground">
+                          {category.name}
+                        </h2>
+                        <span className="text-xs text-muted-foreground">
+                          ({category.features.length})
+                        </span>
+                      </div>
+
+                      <div className="rounded-lg border border-border bg-card divide-y divide-border overflow-hidden">
+                        {category.features.map((feature) => (
+                          <Link
+                            key={`${category.name}-${feature.title}`}
+                            href={feature.link}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                          >
+                            <div className="shrink-0 w-4 h-4 text-muted-foreground [&>svg]:w-4 [&>svg]:h-4 [&>svg]:max-w-none">
+                              {feature.icon}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-foreground truncate">
+                                  {feature.title}
+                                </span>
+                                {feature.isNew && (
+                                  <span className="shrink-0 text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-full text-amber-600 dark:text-amber-400">
+                                    New
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {feature.description}
+                              </p>
+                            </div>
+                            <IconChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
+                          </Link>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  No results found for &ldquo;{searchQuery}&rdquo;
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {filteredCategories.map((category) => (
+                <div
+                  key={category.name}
+                  className="bg-white dark:bg-neutral-800 rounded-lg shadow-lg p-4 transform transition-all duration-200 hover:scale-105 hover:shadow-xl relative group"
+                >
+                  <Link
+                    href={categoryHref(category.name)}
+                    className="flex items-center space-x-4 mb-4 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <div
+                      className={`p-3 rounded-lg text-white ${getCategoryBgClass(category.iconColor)}`}
+                    >
+                      {category.icon}
+                    </div>
+                    <h3 className="text-xl font-semibold group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
+                      {category.name}
+                    </h3>
+                  </Link>
+                  <div className="h-auto flex flex-col justify-between">
+                    <div
+                      className={`grid gap-x-3 gap-y-1 ${getPreviewFeatures(category.features).length >= 5 ? "grid-cols-2" : "grid-cols-1"}`}
+                    >
+                      {getPreviewFeatures(category.features).map((feature) => (
+                        <Link
+                          key={feature.title}
+                          href={feature.link}
+                          className={`flex items-center h-6 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${feature.isNew ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-gray-600 dark:text-gray-300"} hover:text-blue-700 dark:hover:text-blue-500 transition-colors duration-200`}
+                        >
+                          <div className="shrink-0 w-3.5 h-3.5 mr-1.5 [&>svg]:w-3.5 [&>svg]:h-3.5 [&>svg]:max-w-none opacity-80">
+                            {feature.icon}
+                          </div>
+                          <span className="text-sm font-medium truncate">
+                            {feature.title}
+                            {feature.isNew && (
+                              <span className="ml-2 text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-full text-amber-600 dark:text-amber-400">
+                                New
+                              </span>
+                            )}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                    {category.features.length > 8 && (
+                      <Link
+                        href={categoryHref(category.name)}
+                        className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors duration-200 mt-2 pl-7 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <span>See all {category.features.length} features</span>
+                        <IconChevronRight className="w-4 h-4 ml-1" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
-
-          {normalizedQuery &&
-            filteredCategories.length > 0 &&
-            matchingFeatures.length > 0 && (
-              <h2 className="text-lg font-semibold mb-4 text-neutral-700 dark:text-neutral-300">
-                Matching Categories
-              </h2>
-            )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {filteredCategories.map((category) => (
-              <div
-                key={category.name}
-                className="bg-white dark:bg-neutral-800 rounded-lg shadow-lg p-4 transform transition-all duration-200 hover:scale-105 hover:shadow-xl relative group"
-              >
-                <Link
-                  href={categoryHref(category.name)}
-                  className="flex items-center space-x-4 mb-4 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <div
-                    className={`p-3 rounded-lg text-white ${getCategoryBgClass(category.iconColor)}`}
-                  >
-                    {category.icon}
-                  </div>
-                  <h3 className="text-xl font-semibold group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
-                    {category.name}
-                  </h3>
-                </Link>
-                <div className="h-auto flex flex-col justify-between">
-                  <div
-                    className={`grid gap-x-3 gap-y-1 ${getPreviewFeatures(category.features).length >= 5 ? "grid-cols-2" : "grid-cols-1"}`}
-                  >
-                    {getPreviewFeatures(category.features).map((feature) => (
-                      <Link
-                        key={feature.title}
-                        href={feature.link}
-                        className={`flex items-center h-6 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${feature.isNew ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-gray-600 dark:text-gray-300"} hover:text-blue-700 dark:hover:text-blue-500 transition-colors duration-200`}
-                      >
-                        <div className="shrink-0 w-3.5 h-3.5 mr-1.5 [&>svg]:w-3.5 [&>svg]:h-3.5 [&>svg]:max-w-none opacity-80">
-                          {feature.icon}
-                        </div>
-                        <span className="text-sm font-medium truncate">
-                          {feature.title}
-                          {feature.isNew && (
-                            <span className="ml-2 text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-full text-amber-600 dark:text-amber-400">
-                              New
-                            </span>
-                          )}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                  {category.features.length > 8 && (
-                    <Link
-                      href={categoryHref(category.name)}
-                      className="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors duration-200 mt-2 pl-7 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <span>See all {category.features.length} features</span>
-                      <IconChevronRight className="w-4 h-4 ml-1" />
-                    </Link>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {normalizedQuery &&
-            filteredCategories.length === 0 &&
-            matchingFeatures.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                No results found for "{searchQuery}"
-              </div>
-            )}
         </div>
       </div>
     </div>

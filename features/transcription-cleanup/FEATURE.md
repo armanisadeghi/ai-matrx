@@ -134,7 +134,12 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
   appliedSessionId)`; locally-created sessions never populate `loaded`, so they
   never veil. Also moved the Custom pane's `ContentActionBar` (copy/save
   actions) out of the pane header into the Auto-run toggle row, so it reads as
-  associated with that slot's output.
+  associated with that slot's output. Added a live processing/done border on the
+  Clean and Custom panes (`useStreamPulse` + `StreamPulseBorder`): a breathing
+  primary inset ring (`animate-slowPulse`) while a run streams, then a one-shot
+  green flash (`animate-done-flash`, new keyframe in `globals.css`) on
+  busy → complete, after which all processing affordances are removed.
+  Layout-safe (pointer-events-none inset overlay; no size impact).
 - 2026-06-10 — Surface registration expanded to the "expose everything"
   standard: manifest 8 → 36 values (active pane, session identity, all
   container texts + `all_custom_outputs`, word/char counts, mic/recording

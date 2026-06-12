@@ -50,7 +50,8 @@ import {
   selectAccumulatedText,
   selectRequestStatus,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { listAgentSurfaceBindings } from "@/features/surfaces/services/agent-surface-bindings.service";
+import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/agent-surface-bindings.service";
+import { mergeValueMappingLayers } from "@/features/surfaces/utils/merge-value-mappings";
 import { resolveValueMappings } from "@/features/surfaces/utils/value-mapping-resolver";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
@@ -107,24 +108,6 @@ export interface ProcessLaunchResult {
   mapping: InputMappingInfo;
 }
 
-function pickMostSpecificBinding<
-  T extends {
-    surfaceName: string;
-    userId: string | null;
-    organizationId: string | null;
-    projectId: string | null;
-    taskId: string | null;
-  },
->(bindings: T[]): T | null {
-  const forSurface = bindings.filter(
-    (b) => b.surfaceName === CLEANUP_SURFACE_NAME,
-  );
-  if (forSurface.length === 0) return null;
-  const rank = (b: T) =>
-    b.userId ? 0 : b.taskId ? 1 : b.projectId ? 2 : b.organizationId ? 3 : 4;
-  return [...forSurface].sort((a, b) => rank(a) - rank(b))[0];
-}
-
 export function useAiPostProcess() {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -173,11 +156,28 @@ export function useAiPostProcess() {
         const slots = payload.contextSlots ?? [];
         const slotKeys = new Set(slots.map((s) => s.key));
 
-        // 2. Surface binding (explicit value mappings + auto-name-match).
+        // 2. Surface bindings — same layered per-key merge as the launch
+        //    thunk (global → org-by-membership → user), so the in-page Run
+        //    buttons and the context menu resolve identically.
         let bindingMappings = null;
         try {
-          const bindings = await listAgentSurfaceBindings(agentId);
-          bindingMappings = pickMostSpecificBinding(bindings)?.valueMappings ?? null;
+          const layers = await fetchSurfaceBindingLayers(
+            agentId,
+            CLEANUP_SURFACE_NAME,
+          );
+          if (layers.length > 0) {
+            const mergedResult = mergeValueMappingLayers(layers);
+            for (const inert of mergedResult.inertLayers) {
+              console.warn(
+                `[cleanup] mapping layer "${inert}" for agent ${agentId} exists but contributed no keys — fully shadowed`,
+                { provenance: mergedResult.provenance },
+              );
+            }
+            bindingMappings =
+              Object.keys(mergedResult.merged).length > 0
+                ? mergedResult.merged
+                : null;
+          }
         } catch (err) {
           // Binding lookup is an enhancement, never a blocker — but say so.
           console.warn(
@@ -186,6 +186,28 @@ export function useAiPostProcess() {
           );
         }
         const resolved = resolveValueMappings(scope, bindingMappings, defs, slots);
+        if (resolved.errors.length > 0) {
+          // Required surface values missing — the page IS the surface, so
+          // this is a real configuration/state problem. Abort loudly.
+          throw new Error(resolved.errors.join("\n"));
+        }
+        if (resolved.pendingPrompts.length > 0) {
+          // In-page runs are non-interactive (no pre-launch dialog here).
+          const requiredPrompts = resolved.pendingPrompts.filter(
+            (p) => p.required,
+          );
+          if (requiredPrompts.length > 0) {
+            throw new Error(
+              `This agent's binding requires user input (${requiredPrompts
+                .map((p) => `"${p.targetName}"`)
+                .join(", ")}) — run it from the context menu instead.`,
+            );
+          }
+          console.warn(
+            "[cleanup] optional prompt_user mappings skipped for in-page run:",
+            resolved.pendingPrompts.map((p) => p.targetName),
+          );
+        }
 
         const variableValues: Record<string, unknown> = {
           ...resolved.variableValues,

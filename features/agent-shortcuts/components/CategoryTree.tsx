@@ -21,11 +21,11 @@ import {
   Edit2,
   Eye,
   EyeOff,
-  Folder,
   FolderOpen,
   Plus,
   Trash2,
 } from "lucide-react";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { getPlacementTypeMeta, PLACEMENT_TYPES } from "../constants";
 import type { AgentShortcutCategory, ScopeProps } from "../types";
 
@@ -173,9 +173,12 @@ export function CategoryTree({
           ) : (
             <div className="w-5" />
           )}
-          <Folder
+          <DynamicIcon
+            name={node.iconName}
+            color={node.color || "zinc"}
+            size={4}
+            fallbackIcon="SquareMenu"
             className="h-4 w-4 flex-shrink-0"
-            style={{ color: node.color || "currentColor" }}
           />
           <button
             type="button"

@@ -19,6 +19,7 @@ import type {
   AiModelsPreferences,
   SystemPreferences,
   AgentContextPreferences,
+  MermaidPreferences,
 } from "@/lib/redux/preferences/userPreferencesSlice";
 
 // Base selector
@@ -134,6 +135,11 @@ export const selectSystemPreferences = createSelector(
 export const selectDefaultContextPreferences = createSelector(
   selectUserPreferences,
   (state): AgentContextPreferences => state.agentContext,
+);
+
+export const selectMermaidPreferences = createSelector(
+  selectUserPreferences,
+  (state): MermaidPreferences => state.mermaid,
 );
 
 // Meta selectors for async state management

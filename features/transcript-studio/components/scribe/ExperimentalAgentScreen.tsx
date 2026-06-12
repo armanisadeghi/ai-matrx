@@ -153,6 +153,23 @@ export function ExperimentalAgentScreen({
     void recording.stop();
   }, [recording]);
 
+  // Safety net: a recording WE own can also be stopped from outside this tree —
+  // notably the global RecordingPill (mounted in app/Providers), which calls
+  // recording.stop() directly and is the only stop control reachable while the
+  // full-screen working-document editor covers this screen. Whenever an owned
+  // recording transitions from active → inactive by ANY route, surface the
+  // chooser so the captured turn is never silently dropped. onComplete then
+  // fills in the transcript and the countdown takes over.
+  const wasRecordingRef = useRef(false);
+  useEffect(() => {
+    if (isRecording) {
+      wasRecordingRef.current = true;
+    } else if (wasRecordingRef.current) {
+      wasRecordingRef.current = false;
+      setSheetOpen(true);
+    }
+  }, [isRecording]);
+
   if (!conversationId) {
     return (
       <div className="flex h-full items-center justify-center">

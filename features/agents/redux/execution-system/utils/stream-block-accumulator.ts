@@ -346,7 +346,15 @@ export class StreamBlockAccumulator {
       const fence = extractFenceInfo(trimmed);
       if (fence) {
         this.closeCurrentBlock(dispatch);
-        this.openBlock("code", dispatch);
+        // Mermaid fences promote to a first-class block type at open time so
+        // the diagram renders progressively during the stream. The fence line
+        // arrives as a complete line (pendingLineFragment holds partials), so
+        // the language token is never truncated here. Mirrors the splitter's
+        // SPECIAL_CODE_LANGUAGES promotion; other special languages keep
+        // their established close-time/server-side promotion paths.
+        const lang = fence.language.toLowerCase();
+        const blockType = lang === "mermaid" || lang === "mmd" ? "mermaid" : "code";
+        this.openBlock(blockType, dispatch);
         this.subState = {
           kind: "code_fence",
           language: fence.language,

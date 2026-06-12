@@ -6,7 +6,7 @@
  *   - `SingleFileShell` (the dedicated full-page viewer at `/files/f/<id>`)
  *
  * What lives here:
- *   - The 7 tab buttons (Preview / Edit / Document / Analysis / Share / Info / Versions)
+ *   - The 7 tab buttons (Preview / Edit / Knowledge / Analysis / Share / Info / Versions)
  *   - The always-mounted tab bodies (each previewer keeps its fetched bytes
  *     and Monaco model alive even when its tab is hidden — switching to
  *     Versions and back to Preview doesn't re-download the PDF).
@@ -188,11 +188,11 @@ export function FileTabsBody({
         />
         <TabButton
           icon={<FileSearch className="h-3.5 w-3.5" />}
-          label="Document"
+          label="Knowledge"
           active={activeTab === "document"}
           onClick={() => setActiveTab("document")}
           density={density}
-          title="Processed-document view (RAG: pages, cleaned text, chunks, lineage)"
+          title="Knowledge index view (RAG: pages, cleaned text, chunks, lineage)"
         />
         <TabButton
           icon={<Atom className="h-3.5 w-3.5" />}

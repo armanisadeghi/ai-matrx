@@ -13,7 +13,10 @@
 import React, { useMemo } from "react";
 import { ShortcutCategory } from "../types/core";
 import { getPlacementTypeMeta, PlacementType } from "../constants";
-import { getIconComponent } from "@/components/official/icons/IconResolver";
+import {
+  DynamicIcon,
+  getIconComponent,
+} from "@/components/official/icons/IconResolver";
 import {
   Select,
   SelectContent,
@@ -175,6 +178,13 @@ export function CategorySelector({
         <SelectValue placeholder={placeholder}>
           {selectedCategory && (
             <div className="flex items-center gap-1.5">
+              <DynamicIcon
+                name={selectedCategory.icon_name}
+                color={selectedCategory.color || "zinc"}
+                size={compact ? 3 : 4}
+                fallbackIcon="SquareMenu"
+                className="shrink-0"
+              />
               <Badge
                 variant="secondary"
                 className={`${compact ? "text-[10px] px-1 py-0" : "text-xs px-1.5 py-0.5"} font-medium shrink-0`}
@@ -209,15 +219,20 @@ export function CategorySelector({
                     className="pl-2"
                   >
                     <div className="flex items-start gap-1.5 py-0.5">
-                      <div className="flex items-center text-muted-foreground shrink-0 pt-0.5">
-                        <span
-                          className="text-xs"
-                          style={{
-                            paddingLeft: `${(category.level + 1) * 12}px`,
-                          }}
-                        >
+                      <div
+                        className="flex items-center gap-1 shrink-0 pt-0.5"
+                        style={{ paddingLeft: `${category.level * 12}px` }}
+                      >
+                        <span className="text-xs text-muted-foreground">
                           {category.level === 0 ? "├" : "└"}
                         </span>
+                        <DynamicIcon
+                          name={category.icon_name}
+                          color={category.color || "zinc"}
+                          size={4}
+                          fallbackIcon="SquareMenu"
+                          className="shrink-0"
+                        />
                       </div>
                       <div className="flex flex-col flex-1 min-w-0">
                         <span className="font-medium truncate">

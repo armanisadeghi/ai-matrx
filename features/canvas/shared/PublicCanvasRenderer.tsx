@@ -29,6 +29,7 @@ const ComparisonTableBlock = dynamic(() => import('@/components/mardown-display/
 const TroubleshootingBlock = dynamic(() => import('@/components/mardown-display/blocks/troubleshooting/TroubleshootingBlock'), { ssr: false });
 const DecisionTreeBlock = dynamic(() => import('@/components/mardown-display/blocks/decision-tree/DecisionTreeBlock'), { ssr: false });
 const InteractiveDiagramBlock = dynamic(() => import('@/components/mardown-display/blocks/diagram/InteractiveDiagramBlock'), { ssr: false });
+const StandaloneMermaidView = dynamic(() => import('@/components/mermaid/MermaidView').then((m) => ({ default: m.StandaloneMermaidView })), { ssr: false });
 const FlashcardsBlock = dynamic(() => import('@/components/mardown-display/blocks/flashcards/FlashcardsBlock'), { ssr: false });
 const CodeBlock = dynamic(() => import('@/features/code-editor/components/code-block/CodeBlock'), { ssr: false });
 
@@ -145,6 +146,16 @@ function renderContent(content: CanvasContent | any): React.ReactNode {
             return (
                 <div className="h-full p-4">
                     <InteractiveDiagramBlock diagram={data} />
+                </div>
+            );
+
+        case 'mermaid':
+            return (
+                <div className="h-full p-4">
+                    <StandaloneMermaidView
+                        source={typeof data === 'string' ? data : String(data?.data ?? '')}
+                        metadata={content.metadata?.mermaid as Record<string, unknown> | undefined}
+                    />
                 </div>
             );
 

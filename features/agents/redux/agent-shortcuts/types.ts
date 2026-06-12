@@ -72,10 +72,12 @@ export interface AgentShortcut {
   /** UI scope key → agent variable name. */
   scopeMappings: Record<string, string> | null;
   /**
-   * Successor to `scopeMappings`. Keyed by surface-value name; values are
-   * the rich ValueMapping DSL (surface_value | direct_value | prompt_user
-   * | unmapped). Reads should go through `resolveShortcutMappings()`,
-   * which prefers this and falls back to `scopeMappings`.
+   * Successor to `scopeMappings`. Canonical DSL direction: keyed by AGENT
+   * variable / context-slot name; each value is a rich ValueMapping
+   * (surface_value | direct_value | prompt_user | unmapped) whose `target`
+   * names the surface value. Reads should go through
+   * `resolveShortcutMappings()`, which layers this over the promoted legacy
+   * columns.
    */
   valueMappings: ValueMappingMap | null;
   /** UI scope key → agent context-slot key. Parity with scopeMappings. */

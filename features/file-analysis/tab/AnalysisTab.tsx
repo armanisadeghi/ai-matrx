@@ -21,6 +21,7 @@
 
 "use client";
 
+import { FileKnowledgePanel } from "@/features/rag/components/files/FileKnowledgePanel";
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -242,6 +243,8 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
       {/* Section body */}
       <div className="min-h-0 flex-1 overflow-hidden">
         {section === "overview" ? (
+          <>
+          <FileKnowledgePanel fileId={fileId} className="mb-2" />
           <OverviewSection
             results={results}
             counts={counts}
@@ -249,6 +252,7 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
             summaryCounts={summaryCounts}
             onJumpToPage={(p) => jumpToPage(fileId, p)}
           />
+          </>
         ) : section === "outline" ? (
           <ScrollSection>
             <OutlineContent

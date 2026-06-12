@@ -523,6 +523,27 @@
   --animate-progress-spin: progressSpin 3s infinite linear;
   --animate-bounce: bounce 1s infinite ease-in-out;
   --animate-text-fade: textFade 12s infinite;
+  --animate-done-flash: done-flash 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* One-shot "stream finished" border pop — bright ring snaps in, then fades.
+     Pairs with animate-slowPulse for the in-progress breathing border. */
+  @keyframes done-flash {
+    0% {
+      opacity: 0;
+      transform: scale(0.985);
+    }
+    18% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    55% {
+      opacity: 0.85;
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.004);
+    }
+  }
 
   @keyframes audio-shimmer {
     0% {

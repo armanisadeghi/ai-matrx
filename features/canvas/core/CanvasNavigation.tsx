@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { CanvasItem } from "@/features/canvas/redux/canvasSlice";
+import { NewDiagramMenuItems } from "@/components/mermaid/workbench/NewDiagramMenu";
 import {
   Tooltip,
   TooltipContent,
@@ -167,6 +168,9 @@ export function CanvasNavigation({
                 </DropdownMenuItem>
               </>
             )}
+
+            <DropdownMenuSeparator />
+            <NewDiagramMenuItems />
           </DropdownMenuContent>
           </DropdownMenu>
         </Tooltip>

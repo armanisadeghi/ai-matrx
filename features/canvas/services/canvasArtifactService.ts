@@ -22,6 +22,8 @@ export interface ArtifactUpsertInput {
     type: string;
     title: string;
     content: string;
+    /** Type-specific metadata persisted as content.metadata (e.g. mermaid diagramType/theme). */
+    metadata?: Record<string, unknown>;
     conversationId?: string | null;
     sourceType?: "model_direct" | "model_converted" | "user_created" | "forked";
 }
@@ -33,6 +35,7 @@ export interface ArtifactVersionInput {
     type: string;
     title: string;
     content: string;
+    metadata?: Record<string, unknown>;
 }
 
 export interface CanvasArtifactRow {
@@ -71,7 +74,7 @@ export const canvasArtifactService = {
                 p_content: {
                     data: input.content,
                     type: input.type,
-                    metadata: {},
+                    metadata: input.metadata ?? {},
                 },
                 p_conversation_id: input.conversationId ?? null,
                 p_source_type: input.sourceType ?? "model_direct",
@@ -106,7 +109,7 @@ export const canvasArtifactService = {
                 p_content: {
                     data: input.content,
                     type: input.type,
-                    metadata: {},
+                    metadata: input.metadata ?? {},
                 },
             });
 
@@ -187,6 +190,81 @@ export const canvasArtifactService = {
             return (data as CanvasArtifactRow | null) ?? null;
         } catch (err) {
             console.error("[canvasArtifactService.getById] Error:", err);
+            return null;
+        }
+    },
+
+    /**
+     * Save a USER edit as a new version in the artifact's chain.
+     *
+     * This is the canonical user-edit path (the model-update path is
+     * createVersion, which requires the new message id). The RPC resolves the
+     * chain root, takes MAX(version)+1 atomically, and inserts with
+     * source_type='user_created', source_message_id NULL, artifact_index NULL
+     * (respects the (source_message_id, artifact_index) partial unique).
+     */
+    async saveUserVersion(input: {
+        canvasId: string;
+        title?: string | null;
+        content: string;
+        type: string;
+        metadata?: Record<string, unknown>;
+    }): Promise<CanvasArtifactRow | null> {
+        try {
+            const userId = requireUserId();
+            const { data, error } = await supabase.rpc("cx_canvas_save_user_version", {
+                p_user_id: userId,
+                p_canvas_id: input.canvasId,
+                p_title: input.title ?? null,
+                p_content: {
+                    data: input.content,
+                    type: input.type,
+                    metadata: input.metadata ?? {},
+                },
+            });
+
+            if (error) {
+                console.error("[canvasArtifactService.saveUserVersion] RPC error:", error);
+                return null;
+            }
+            return data as CanvasArtifactRow;
+        } catch (err) {
+            console.error("[canvasArtifactService.saveUserVersion] Error:", err);
+            return null;
+        }
+    },
+
+    /**
+     * Create a brand-new user-authored artifact (no source message).
+     */
+    async createManual(input: {
+        type: string;
+        title: string;
+        content: string;
+        metadata?: Record<string, unknown>;
+        conversationId?: string | null;
+    }): Promise<CanvasArtifactRow | null> {
+        try {
+            const userId = requireUserId();
+            const { data, error } = await supabase.rpc("cx_canvas_create_manual", {
+                p_user_id: userId,
+                p_type: input.type,
+                p_title: input.title,
+                p_content: {
+                    data: input.content,
+                    type: input.type,
+                    metadata: input.metadata ?? {},
+                },
+                p_conversation_id: input.conversationId ?? null,
+            });
+
+            if (error) {
+                console.error("[canvasArtifactService.createManual] RPC error:", error);
+                return null;
+            }
+            return data as CanvasArtifactRow;
+        } catch (err) {
+            console.error("[canvasArtifactService.createManual] Error:", err);
             return null;
         }
     },

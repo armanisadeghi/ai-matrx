@@ -32,9 +32,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Folder } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { getIconComponent } from "@/components/official/icons/IconResolver";
+import {
+  DynamicIcon,
+  getIconComponent,
+} from "@/components/official/icons/IconResolver";
 import { getPlacementTypeMeta, type PlacementType } from "../constants";
 import type { AgentShortcutCategory } from "../types";
 
@@ -248,6 +249,13 @@ export function CategorySelect({
             </span>
           ) : selectedCategory ? (
             <div className="flex items-center gap-1.5 min-w-0">
+              <DynamicIcon
+                name={selectedCategory.iconName}
+                color={selectedCategory.color || "zinc"}
+                size={compact ? 3 : 4}
+                fallbackIcon="SquareMenu"
+                className="shrink-0"
+              />
               {showPlacementHeaders && selectedPlacementMeta && (
                 <Badge
                   variant="secondary"
@@ -356,9 +364,12 @@ function CategorySelectItem({
               └
             </span>
           ) : null}
-          <Folder
-            className={cn("shrink-0", compact ? "h-3 w-3" : "h-3.5 w-3.5")}
-            style={{ color: category.color || undefined }}
+          <DynamicIcon
+            name={category.iconName}
+            color={category.color || "zinc"}
+            size={compact ? 3 : 3.5}
+            fallbackIcon="SquareMenu"
+            className="shrink-0"
           />
         </span>
         <span

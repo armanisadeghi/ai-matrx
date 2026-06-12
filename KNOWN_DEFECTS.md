@@ -118,6 +118,27 @@ and storing raw keys server-side would silently weaken the custody model.
 Mitigation today: MaskDialog's KeyHandoff acknowledgment + destructive-mode
 ConfirmDialog. **Close by:** wiring wrap/unwrap once the KMS interface exists.
 
+### D5 — Foreign user-scoped shortcut-category LABELS visible to everyone (empty groups)
+**Severity: low — name disclosure + menu noise, no item leak. Fold into the D2 security overhaul.**
+
+**What.** `shortcut_categories` carries a legacy permissive policy
+`shortcut_categories_select_any USING (true)`, so every user can read every
+category row — including other users' personal category labels (e.g. "School",
+"Learn Coding"). After the `agx_context_menu_view` security_invoker fix
+(2026-06-12, `migrations/agx_context_menu_view_security_invoker.sql`) the
+*items* inside foreign categories are correctly filtered by RLS, so these
+categories render as empty groups in the unified context menu.
+
+**Why it happened.** The permissive policy predates the scoped
+`shortcut_categories_read` policy and was never retired; policies OR together.
+
+**The fence.** Drop `shortcut_categories_select_any` during the security
+overhaul (the scoped read policy already covers global + own + member-org).
+Check first whether any admin UI legitimately depends on listing all
+categories — if so, that path moves to a super-admin RPC.
+
+**What's still open.** The policy drop itself.
+
 ### D4 — PDF W5 scale items pending (500-page client-normal band)
 **Severity: medium — degraded UX on large docs, no data risk.**
 

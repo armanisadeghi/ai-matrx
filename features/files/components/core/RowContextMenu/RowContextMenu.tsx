@@ -14,6 +14,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
+import { PDF_SURFACES } from "@/features/pdf/surfaces/registry";
+import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import {
   ClipboardPaste,
   Copy,
@@ -90,6 +93,7 @@ export function FileRowContextMenu({ fileId, children }: FileRowContextMenuProps
   const filesById = useAppSelector(selectAllFilesMap);
   const file = filesById[fileId];
   const actions = useFileActions(fileId);
+  const router = useRouter();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const cmd =
@@ -262,6 +266,31 @@ export function FileRowContextMenu({ fileId, children }: FileRowContextMenuProps
            * sources (notes, code-files) ingest via their own source_kind
            * and surface "Process for RAG" inside their dedicated editors.
            */}
+          {/* PDF surfaces — canonical registry; identical list everywhere. */}
+          {!isVirtual && file?.mimeType === "application/pdf" ? (
+            <>
+              <ContextMenuSeparator />
+              {PDF_SURFACES.filter((sf) => sf.id !== "rag-library").map(
+                (surface) => {
+                  const Icon = surface.icon;
+                  return (
+                    <ContextMenuItem
+                      key={surface.id}
+                      onClick={() => {
+                        void resolvePdfSurfaceIds({ fileId }).then((ids) => {
+                          const href = surface.buildHref(ids);
+                          if (href) router.push(href);
+                        });
+                      }}
+                    >
+                      <Icon className="mr-2 h-4 w-4" />
+                      Open in {surface.label}
+                    </ContextMenuItem>
+                  );
+                },
+              )}
+            </>
+          ) : null}
           {!isVirtual ? (
             <>
               <ContextMenuSeparator />

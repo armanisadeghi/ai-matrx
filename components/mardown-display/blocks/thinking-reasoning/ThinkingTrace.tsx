@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
+import { ThinkingTraceMarkdown } from "./ThinkingTraceMarkdown";
 
 export interface ThinkingTraceProps {
   /** A single thinking/reasoning text block. */
@@ -65,7 +66,11 @@ const ThinkingTrace: React.FC<ThinkingTraceProps> = ({
   if (!showThinking || !fullText) return null;
 
   // Collapsed, mid-stream: show the tail so the thought visibly "comes in".
-  const tail = fullText.split("\n").filter((l) => l.trim()).pop() ?? "";
+  const tail =
+    fullText
+      .split("\n")
+      .filter((l) => l.trim())
+      .pop() ?? "";
   const collapsedLabel = isStreaming ? tail || "Thinking…" : "Thought process";
 
   return (
@@ -86,15 +91,19 @@ const ThinkingTrace: React.FC<ThinkingTraceProps> = ({
           <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-muted-foreground/50" />
         )}
         {isStreaming && !expanded ? (
-          // Gradient sweep across the streaming tail — the same shimmer used
-          // for "Processing…" / "Planning…" so the running treatment is
-          // identical everywhere thoughts are still arriving.
-          <ShimmerText
-            text={collapsedLabel}
-            className="truncate italic text-xs"
-          />
+          tail ? (
+            <ThinkingTraceMarkdown
+              content={tail}
+              variant="inline"
+              className="min-w-0 flex-1 text-xs"
+            />
+          ) : (
+            // Gradient sweep when tokens haven't arrived yet — same shimmer as
+            // "Processing…" / "Planning…".
+            <ShimmerText text="Thinking…" className="truncate text-xs" />
+          )
         ) : (
-          <span className="truncate italic">
+          <span className="truncate">
             {expanded ? "Thought process" : collapsedLabel}
           </span>
         )}
@@ -103,9 +112,9 @@ const ThinkingTrace: React.FC<ThinkingTraceProps> = ({
       {expanded && (
         <div
           ref={bodyRef}
-          className="mt-1 ml-1 max-h-[400px] overflow-y-auto whitespace-pre-wrap border-l border-border/60 pl-3 leading-relaxed text-muted-foreground"
+          className="mt-1 ml-1 max-h-[400px] overflow-y-auto border-l border-border/60 pl-3 leading-relaxed"
         >
-          {fullText}
+          <ThinkingTraceMarkdown content={fullText} variant="body" />
         </div>
       )}
     </div>

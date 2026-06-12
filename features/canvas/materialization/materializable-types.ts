@@ -38,6 +38,7 @@ export const ARTIFACT_TYPE_TO_CANVAS_TYPE: Record<string, CanvasContentType> = {
   progress: "progress",
   progress_tracker: "progress",
   math_problem: "math_problem",
+  mermaid: "mermaid",
 };
 
 /**
@@ -61,6 +62,7 @@ export const RENDER_TYPE_TO_CANVAS_TYPE: Record<string, CanvasContentType> = {
   diagram: "diagram",
   cooking_recipe: "recipe",
   math_problem: "math_problem",
+  mermaid: "mermaid",
 };
 
 /**

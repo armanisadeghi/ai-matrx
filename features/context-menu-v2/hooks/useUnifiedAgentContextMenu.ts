@@ -148,6 +148,17 @@ function classifyVisibility(
   if (surfaceName && item.surfaceName && item.surfaceName === surfaceName) {
     return { visible: true, legacy: false };
   }
+  // A shortcut that declares a home surface and NO explicit contexts is
+  // exclusive to that surface — don't leak it onto every page via the
+  // untagged→general fallback. Declaring enabledFeatures alongside a
+  // surfaceName still opts it into other contexts deliberately.
+  if (
+    item.surfaceName &&
+    item.surfaceName !== surfaceName &&
+    (!item.enabledFeatures || item.enabledFeatures.length === 0)
+  ) {
+    return { visible: false, legacy: false };
+  }
   if (matchesAllowedContexts(item, allowed)) {
     return { visible: true, legacy: true };
   }

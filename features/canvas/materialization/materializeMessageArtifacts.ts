@@ -81,6 +81,7 @@ export async function materializeMessageArtifacts(
       type: artifact.canvasType,
       title: artifact.title,
       content: artifact.content,
+      metadata: artifact.metadata,
       conversationId,
       sourceType: "model_direct",
     });

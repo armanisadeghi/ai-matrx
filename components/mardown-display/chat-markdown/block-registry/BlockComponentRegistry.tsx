@@ -66,6 +66,7 @@ const DecisionTreeBlock = lazy(
 const InteractiveDiagramBlock = lazy(
   () => import("../../blocks/diagram/InteractiveDiagramBlock"),
 );
+const MermaidBlock = lazy(() => import("../../blocks/mermaid/MermaidBlock"));
 const MathProblemBlock = lazy(
   () => import("../../blocks/math/MathProblemBlock"),
 );
@@ -343,6 +344,11 @@ export const BlockComponents = {
   InteractiveDiagramBlock: (props: any) => (
     <LazyBlockWrapper>
       <InteractiveDiagramBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  MermaidBlock: (props: any) => (
+    <LazyBlockWrapper>
+      <MermaidBlock {...props} />
     </LazyBlockWrapper>
   ),
   MathProblemBlock: (props: any) => (

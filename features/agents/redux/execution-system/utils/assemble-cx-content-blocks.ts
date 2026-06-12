@@ -97,6 +97,10 @@ export function reconstructBlockMarkdown(block: {
       const language = typeof data.language === "string" ? data.language : "";
       return `\`\`\`${language}\n${content}\n\`\`\``;
     }
+    // Mermaid is a code-fence-promoted type — it MUST reconstruct as a fence
+    // (not an XML wrapper) so the reload parser re-detects it as mermaid.
+    case "mermaid":
+      return `\`\`\`mermaid\n${content}\n\`\`\``;
     case "reasoning":
     case "thinking":
       return `<thinking>\n${content}\n</thinking>`;

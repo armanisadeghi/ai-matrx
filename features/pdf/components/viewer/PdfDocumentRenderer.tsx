@@ -52,7 +52,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import { cn } from "@/lib/utils";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
-import { FileFetchProgress } from "@/features/files/components/core/FilePreview/FileFetchProgress";
+import { PdfLoadingState } from "@/features/pdf/components/viewer/PdfLoadingState";
 
 // Worker source — pinned to the installed pdfjs version and served from
 // our own origin (`/public/pdfjs/pdf.worker.min.mjs`, mirrored by a post-
@@ -129,7 +129,7 @@ export interface PdfDocumentRendererProps {
 
   /**
    * Caller-managed loading state. When `true`, the renderer shows the
-   * shared `<FileFetchProgress/>` UI instead of the document.
+   * shared `<PdfLoadingState/>` UI instead of the document.
    */
   loading?: boolean;
   bytesLoaded?: number;
@@ -680,25 +680,12 @@ export default function PdfDocumentRenderer({
 
   if (loading || !documentFile) {
     return (
-      <div
-        className={cn(
-          "flex h-full w-full items-center justify-center bg-muted/20",
-          className,
-        )}
-      >
-        {bytesTotal != null || bytesLoaded > 0 ? (
-          <FileFetchProgress
-            fileName={fileName ?? null}
-            bytesLoaded={bytesLoaded}
-            bytesTotal={bytesTotal ?? null}
-          />
-        ) : (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Loading PDF…</span>
-          </div>
-        )}
-      </div>
+      <PdfLoadingState
+        fileName={fileName ?? null}
+        bytesLoaded={bytesLoaded}
+        bytesTotal={bytesTotal ?? null}
+        className={className}
+      />
     );
   }
 
@@ -819,7 +806,12 @@ export default function PdfDocumentRenderer({
           }}
           onLoadError={(err) => setLoadError(err.message)}
           loading={
-            <div className="mt-6 h-6 w-40 animate-pulse rounded bg-muted" />
+            <PdfLoadingState
+              fileName={fileName ?? null}
+              bytesLoaded={bytesLoaded}
+              bytesTotal={bytesTotal ?? null}
+              className="bg-transparent"
+            />
           }
           className="flex w-full flex-col items-center"
         >

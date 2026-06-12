@@ -8,6 +8,7 @@ export type CanvasType =
   | "flashcard"
   | "game"
   | "diagram"
+  | "mermaid"
   | "timeline"
   | "comparison"
   | "decision-tree"

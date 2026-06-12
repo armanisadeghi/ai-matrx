@@ -12,6 +12,9 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { PDF_SURFACES } from "@/features/pdf/surfaces/registry";
+import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import {
   Copy,
   CopyPlus,
@@ -92,6 +95,7 @@ export function FileContextMenu({
 }: FileContextMenuProps) {
   const dispatch = useAppDispatch();
   const actions = useFileActions(fileId);
+  const router = useRouter();
   const selection = useAppSelector(selectSelection);
   const filesById = useAppSelector(selectAllFilesMap);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -544,6 +548,36 @@ export function FileContextMenu({
                     Show versions
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  {/* PDF surfaces — driven by the canonical registry
+                    * (features/pdf/surfaces/registry). One entry per surface,
+                    * identical everywhere this menu appears; adding a surface
+                    * to the registry adds it to every menu and switcher. */}
+                  {file?.mimeType === "application/pdf"
+                    ? PDF_SURFACES.filter((s) => s.id !== "rag-library").map(
+                        (surface) => {
+                          const Icon = surface.icon;
+                          return (
+                            <DropdownMenuItem
+                              key={surface.id}
+                              onClick={() => {
+                                void resolvePdfSurfaceIds({ fileId }).then(
+                                  (ids) => {
+                                    const href = surface.buildHref(ids);
+                                    if (href) router.push(href);
+                                  },
+                                );
+                              }}
+                            >
+                              <Icon className="mr-2 h-4 w-4" />
+                              Open in {surface.label}
+                            </DropdownMenuItem>
+                          );
+                        },
+                      )
+                    : null}
+                  {file?.mimeType === "application/pdf" ? (
+                    <DropdownMenuSeparator />
+                  ) : null}
                   {/*
                    * RAG / processed-document actions. Open the Document tab
                    * (4-pane viewer of pages, cleaned text, chunks, lineage)

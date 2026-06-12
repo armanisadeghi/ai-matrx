@@ -63,6 +63,33 @@ export type ContentBlock = SplitterBlock;
 
 const MATRX_PATTERN = /<<<MATRX_START>>>(.*?)<<<MATRX_END>>>/gs;
 
+/**
+ * Code-fence languages that promote to a first-class block type (the fence
+ * language becomes the block type). Mirrors SPECIAL_CODE_LANGUAGES in
+ * aidream block_detector.py — keep the two in lockstep.
+ */
+export const SPECIAL_CODE_LANGUAGES = [
+  "transcript",
+  "tasks",
+  "structured_info",
+  "questionnaire",
+  "flashcards",
+  "cooking_recipe",
+  "mermaid",
+];
+
+/**
+ * Fence-language aliases that normalize to a canonical special language
+ * (e.g. ```mmd → mermaid). Mirrors CODE_LANGUAGE_ALIASES in block_detector.py.
+ */
+export const CODE_LANGUAGE_ALIASES: Record<string, string> = { mmd: "mermaid" };
+
+export function normalizeCodeLanguage(language: string | undefined): string | undefined {
+  if (!language) return language;
+  const lower = language.toLowerCase();
+  return CODE_LANGUAGE_ALIASES[lower] ?? lower;
+}
+
 interface ExtractionResult {
   content: string;
   nextIndex: number;
@@ -1436,20 +1463,13 @@ export const splitContentIntoBlocksV2 = (
 
       const extraction = extractCodeBlock(codeCheck.language, i + 1, lines);
 
-      // Determine block type based on language
-      const specialCodeTypes = [
-        "transcript",
-        "tasks",
-        "structured_info",
-        "questionnaire",
-        "flashcards",
-        "cooking_recipe",
-      ];
+      const normalizedLanguage = normalizeCodeLanguage(codeCheck.language);
 
-      if (codeCheck.language && specialCodeTypes.includes(codeCheck.language)) {
+      if (normalizedLanguage && SPECIAL_CODE_LANGUAGES.includes(normalizedLanguage)) {
         blocks.push({
-          type: codeCheck.language as SplitterBlockType,
+          type: normalizedLanguage as SplitterBlockType,
           content: extraction.content,
+          language: codeCheck.language,
         });
       } else if (codeCheck.language === "json") {
         // Check for special JSON block types

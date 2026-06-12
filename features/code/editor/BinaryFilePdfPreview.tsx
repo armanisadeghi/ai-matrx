@@ -1,72 +1,45 @@
 "use client";
 
 /**
- * features/code/editor/BinaryFilePdfPreview.tsx
+ * BinaryFilePdfPreview — code-editor binary-file PDF preview.
  *
- * Sandbox-editor PDF previewer. Thin wrapper around the shared
- * `<PdfDocumentRenderer/>` core used by every PDF surface.
- *
- * The sandbox editor already owns the PDF's bytes as a Blob (the
- * filesystem adapter handed it directly), so all this wrapper does is
- * forward the existing `blob:` URL into the renderer. Zoom, fit-page
- * math, rotate, pagination, error UI all come from the core.
- *
- * Lazy-loaded by `BinaryFileViewer` so non-PDF callers never pay the
- * react-pdf bundle cost (~400KB + the pdfjs worker).
+ * Thin adapter over the CANONICAL viewer (features/pdf PdfDocumentRenderer)
+ * for the editor's already-downloaded blob. Converged 2026-06-12: this file
+ * previously re-implemented its own react-pdf shell (own zoom/fit), which
+ * violated the one-implementation-per-purpose rule and drifted from the
+ * canonical viewer's features (loading state, retry, rotation).
  */
 
 import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { PdfLoadingState } from "@/features/pdf/components/viewer/PdfLoadingState";
 
-// Defer the renderer (which imports react-pdf + sets the worker URL)
-// until this previewer actually mounts.
 const PdfDocumentRenderer = dynamic(
-  () =>
-    import(
-      "@/features/files/components/core/FilePreview/previewers/PdfDocumentRenderer"
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-full w-full items-center justify-center bg-muted/20">
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-      </div>
-    ),
-  },
+  () => import("@/features/pdf/components/viewer/PdfDocumentRenderer"),
+  { ssr: false, loading: () => <PdfLoadingState /> },
 );
 
 export interface BinaryFilePdfPreviewProps {
   /** Same-origin blob containing the PDF bytes. Owned by the parent. */
   blob: Blob;
-  /**
-   * `blob:` URL pinned to that Blob. Used as the document source —
-   * react-pdf's Document accepts `{ url }` and the worker fetches the
-   * same-origin blob without CORS friction.
-   */
+  /** `blob:` URL pinned to that Blob (parent-owned lifecycle). */
   url: string | null;
-  fileName: string;
+  fileName?: string | null;
   className?: string;
 }
 
 export function BinaryFilePdfPreview({
-  blob,
   url,
   fileName,
   className,
 }: BinaryFilePdfPreviewProps) {
-  // The blob is held by the parent purely for the download path; we
-  // keep it in the prop list so callers don't have to pass two stable
-  // refs.
-  void blob;
-
+  if (!url) {
+    return <PdfLoadingState fileName={fileName ?? null} className={className} />;
+  }
   return (
     <PdfDocumentRenderer
       blobUrl={url}
-      fileName={fileName}
-      className={cn(className)}
+      fileName={fileName ?? undefined}
+      className={className}
     />
   );
 }
-
-export default BinaryFilePdfPreview;

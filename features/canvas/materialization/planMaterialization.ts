@@ -23,6 +23,11 @@ import type {
 } from "@/features/public-chat/types/cx-tables";
 import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 import { reconstructBlockMarkdown } from "@/features/agents/redux/execution-system/utils/assemble-cx-content-blocks";
+import { getCatalogEntry } from "@/components/mermaid/catalog";
+import {
+  detectDiagramType,
+  extractMermaidTitle,
+} from "@/components/mermaid/diagram-type";
 import { resolveCanvasType } from "./materializable-types";
 
 export interface PlannedArtifact {
@@ -33,6 +38,8 @@ export interface PlannedArtifact {
   title: string;
   /** Raw payload string the type's renderer consumes (markdown or JSON). */
   content: string;
+  /** Type-specific metadata persisted into canvas_items.content.metadata. */
+  metadata?: Record<string, unknown>;
 }
 
 export interface MaterializationPlan {
@@ -128,11 +135,22 @@ export function planMaterialization(
       // Materializable: flush preceding text, emit a ref placeholder + plan.
       flushTextRun();
       index += 1;
+      let title = titleFor(sb.type, sb.metadata, index);
+      let artifactMetadata: Record<string, unknown> | undefined;
+      if (canvasType === "mermaid") {
+        // Mermaid identity travels in metadata: the user-facing label is the
+        // diagram type's feature name (Flowchart, Mind Map, …), never "mermaid".
+        const source = sb.content ?? "";
+        const diagramType = detectDiagramType(source);
+        title = extractMermaidTitle(source) ?? getCatalogEntry(diagramType).label;
+        artifactMetadata = { diagramType, title };
+      }
       artifacts.push({
         artifactIndex: index,
         canvasType,
-        title: titleFor(sb.type, sb.metadata, index),
+        title,
         content: sb.content ?? "",
+        metadata: artifactMetadata,
       });
       rewritten.push({
         type: "artifact_ref",
@@ -140,7 +158,7 @@ export function planMaterialization(
         artifact_type: canvasType,
         version: 1,
         artifact_index: index,
-        title: titleFor(sb.type, sb.metadata, index),
+        title,
       } as CxArtifactRefContent);
     }
   }

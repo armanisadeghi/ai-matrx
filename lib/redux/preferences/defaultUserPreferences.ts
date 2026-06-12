@@ -157,6 +157,7 @@ export const defaultUserPreferences: UserPreferences = {
   },
   transcription: {
     customCleanerAgents: [],
+    scribeAssistantAgentId: null,
   },
   agentConnections: {
     notifyOnConnect: true,
@@ -179,5 +180,10 @@ export const defaultUserPreferences: UserPreferences = {
       shift: false,
       meta: false,
     },
+  },
+  mermaid: {
+    theme: "auto",
+    look: "classic",
+    layout: "dagre",
   },
 };

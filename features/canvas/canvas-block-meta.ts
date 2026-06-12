@@ -244,6 +244,21 @@ export const CANVAS_BLOCK_META: Record<string, CanvasBlockMeta> = {
     iconName: 'Sigma',
     emoji: '🔢',
   },
+  mermaid: {
+    label: 'Diagram',
+    badge: 'Interactive Diagram',
+    descriptionTemplate: 'View "{title}" — an interactive diagram you can explore and edit.',
+    keywords: ['diagram', 'flowchart', 'mind map', 'sequence diagram', 'chart', 'visualization', 'mermaid'],
+    color: '#e11d48', // rose-600
+    iconPaths: [
+      // Lucide "Workflow" (rects converted to path data)
+      'M5 3h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z',
+      'M7 11v4a2 2 0 0 0 2 2h4',
+      'M15 13h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2z',
+    ],
+    iconName: 'Workflow',
+    emoji: '📊',
+  },
 };
 
 /** Default metadata for unknown/unregistered canvas types */

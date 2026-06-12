@@ -50,7 +50,11 @@ export function RecordingPill() {
 
   if (!isRecording && !isTranscribing) return null;
 
-  const dotState = isPaused ? "paused" : isTranscribing && !isRecording ? "saving" : "live";
+  const dotState = isPaused
+    ? "paused"
+    : isTranscribing && !isRecording
+      ? "saving"
+      : "live";
   const label =
     dotState === "paused"
       ? "paused"
@@ -63,7 +67,11 @@ export function RecordingPill() {
       role="status"
       aria-live="polite"
       className={cn(
-        "fixed top-2 right-3 z-[120]",
+        // Top-CENTER, not the corners: full-screen overlays/dialogs put their
+        // close / Done controls in the top-right (and back/menu in the top-left).
+        // A corner-anchored pill at this z-index occludes those and traps the
+        // user inside the overlay (e.g. the focused working-document editor).
+        "fixed top-2 left-1/2 z-[120] -translate-x-1/2",
         "flex items-center gap-2 rounded-full",
         "border border-border/60 bg-background/90 backdrop-blur",
         "px-2.5 py-1 text-xs font-medium shadow-sm",

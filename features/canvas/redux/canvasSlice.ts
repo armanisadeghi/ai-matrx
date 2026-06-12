@@ -21,7 +21,8 @@ export type CanvasContentType =
   | "code_preview"
   | "code_edit_error"
   | "progress"
-  | "math_problem";
+  | "math_problem"
+  | "mermaid";
 
 /**
  * Canvas content types that hold live, non-serializable runtime state —
@@ -50,6 +51,13 @@ export interface CanvasContent {
     /** Optional chat linkage for canvas views (e.g. flashcards). */
     conversationId?: string;
     messageId?: string;
+    /** canvas_items row id when the open content is a persisted artifact —
+     *  editors use it to save new versions instead of creating new rows. */
+    canvasItemId?: string;
+    /** Persisted artifact version when known (display chip). */
+    artifactVersion?: number;
+    /** Per-artifact mermaid render options + diagram identity. */
+    mermaid?: Record<string, unknown>;
   };
 }
 

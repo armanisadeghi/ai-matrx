@@ -370,6 +370,12 @@ export interface AgentConnectionsPreferences {
   quickToggleShortcut: AgentConnectionsShortcut | null;
 }
 
+/** Default render options for mermaid diagram blocks (theme "auto" follows
+ *  the app's dark/light mode). Per-artifact metadata overrides these. The
+ *  option unions live with the mermaid core so the renderer and this slice
+ *  can never drift. */
+export type MermaidPreferences = import("@/components/mermaid/types").MermaidOptionPreferences;
+
 // Combine all module preferences into one interface
 export interface UserPreferences {
   display: DisplayPreferences;
@@ -392,6 +398,7 @@ export interface UserPreferences {
   agentContext: AgentContextPreferences;
   transcription: TranscriptionPreferences;
   agentConnections: AgentConnectionsPreferences;
+  mermaid: MermaidPreferences;
 }
 
 // Add state interface for async operations
@@ -599,6 +606,11 @@ export const initializeUserPreferencesState = (
       enabledRegistries: [],
       quickToggleShortcut: null,
     },
+    mermaid: {
+      theme: "auto",
+      look: "classic",
+      layout: "dagre",
+    },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -647,6 +659,7 @@ export const initializeUserPreferencesState = (
       ...defaultPreferences.agentConnections,
       ...preferences.agentConnections,
     },
+    mermaid: { ...defaultPreferences.mermaid, ...preferences.mermaid },
   };
 
   // If setAsLoaded is true, store the merged preferences as the loaded state
@@ -735,6 +748,7 @@ const userPreferencesSlice = createSlice({
         state.system = { ...state._meta.loadedPreferences.system };
         state.messaging = { ...state._meta.loadedPreferences.messaging };
         state.agentContext = { ...state._meta.loadedPreferences.agentContext };
+        state.mermaid = { ...state._meta.loadedPreferences.mermaid };
         state._meta.hasUnsavedChanges = false;
         state._meta.error = null;
       }
@@ -800,6 +814,8 @@ const userPreferencesSlice = createSlice({
         state.messaging = { ...state.messaging, ...loaded.messaging };
       if (loaded.agentContext)
         state.agentContext = { ...state.agentContext, ...loaded.agentContext };
+      if (loaded.mermaid)
+        state.mermaid = { ...state.mermaid, ...loaded.mermaid };
 
       // Snapshot the loaded state so `resetToLoadedPreferences` still works.
       const { _meta, ...currentPreferences } = state;
@@ -860,6 +876,7 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "system",
   "messaging",
   "agentContext",
+  "mermaid",
 ] as const;
 
 export const userPreferencesPolicy = definePolicy<UserPreferencesState>({

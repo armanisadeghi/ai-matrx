@@ -5,6 +5,7 @@
 
 "use client";
 
+import { FileKnowledgePanel } from "@/features/rag/components/files/FileKnowledgePanel";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -129,6 +130,8 @@ export function DetectorsPanel({ fileId, onJumpToPage }: Props) {
           onJumpToPage={onJumpToPage}
         />
       ))}
+
+      <FileKnowledgePanel fileId={fileId} compact />
 
       <DetectorPrefsSection knownKinds={Object.keys(byKind)} />
     </div>

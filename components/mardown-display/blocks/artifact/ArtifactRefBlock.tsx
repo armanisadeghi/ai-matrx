@@ -1,10 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import ArtifactBlock from "./ArtifactBlock";
+
+const MermaidBlock = lazy(() => import("../mermaid/MermaidBlock"));
 
 interface ArtifactRefServerData {
     artifact_id?: string;
@@ -35,7 +37,13 @@ const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
     taskId,
 }) => {
     const artifactId = serverData?.artifact_id;
-    const { row, loading, error } = useCanvasItem(artifactId);
+    // Mermaid artifacts are user-editable — always show the newest version in
+    // the chain, and live-refresh when an editor saves (event-driven).
+    const wantLatest = serverData?.artifact_type === "mermaid";
+    const { row, loading, error } = useCanvasItem(
+        artifactId,
+        wantLatest ? { resolve: "latest" } : undefined,
+    );
 
     if (loading) {
         return (
@@ -72,6 +80,33 @@ const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
             : typeof stored === "string"
               ? stored
               : JSON.stringify(stored ?? "");
+
+    // Mermaid gets its first-class block (full toolbar: options, export,
+    // source, edit-in-canvas) instead of the generic artifact chrome.
+    if (row.type === "mermaid") {
+        const storedMetadata =
+            stored && typeof stored === "object" && "metadata" in stored
+                ? (stored.metadata as Record<string, unknown> | undefined)
+                : undefined;
+        return (
+            <Suspense
+                fallback={
+                    <div className="my-3 rounded-lg border border-border bg-card p-4">
+                        <MatrxMiniLoader />
+                    </div>
+                }
+            >
+                <MermaidBlock
+                    content={raw}
+                    metadata={storedMetadata}
+                    messageId={messageId}
+                    taskId={taskId ?? `artifact:${row.id}`}
+                    artifactId={row.id}
+                    artifactVersion={row.version}
+                />
+            </Suspense>
+        );
+    }
 
     return (
         <ArtifactBlock

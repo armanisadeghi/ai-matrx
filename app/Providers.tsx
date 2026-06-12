@@ -70,6 +70,7 @@ import {
   UploadGuardHost,
 } from "@/features/files";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { AudioModalHost } from "@/providers/AudioModalHost";
 
 // NOTE: client-capability providers are registered by `register-all`, which is
@@ -151,6 +152,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                                   global replacement for `window.confirm`.
                                   See components/dialogs/confirm/. */}
                               <ConfirmDialogHost />
+                              <ValuePromptsDialogHost />
                               {/* Imperative audio modal host. Exposes the global
                                   `showAudioModal({ text, title, ... })` helper
                                   (see utils/audio/audioModal.ts). The modal is

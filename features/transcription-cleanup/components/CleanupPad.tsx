@@ -102,6 +102,7 @@ import {
 import { DEFAULT_CLEAN_AGENT_ID, SYSTEM_AGENT_NAMES } from "../ai-agents";
 import {
   useAiPostProcess,
+  type AiProcessPhase,
   type InputMappingInfo,
 } from "../hooks/useAiPostProcess";
 import {
@@ -199,6 +200,65 @@ function PaneLoadingVeil({ label }: { label: string }) {
         ))}
       </div>
     </div>
+  );
+}
+
+/** Phases that mean an agent run is actively in flight. */
+const STREAM_BUSY_PHASES: readonly AiProcessPhase[] = [
+  "launching",
+  "pending",
+  "connecting",
+  "streaming",
+  "awaiting-tools",
+];
+
+/**
+ * Tracks an agent run's stream for the pane border treatment: `running` while
+ * the stream is in flight (breathing border), and a one-shot `doneFlash` the
+ * moment it transitions from busy → complete (a quick, obvious "done" pop). The
+ * flash auto-clears so all processing affordances are removed after it plays.
+ */
+function useStreamPulse(phase: AiProcessPhase): {
+  running: boolean;
+  doneFlash: boolean;
+} {
+  const [doneFlash, setDoneFlash] = useState(false);
+  const prevPhaseRef = useRef<AiProcessPhase>(phase);
+  useEffect(() => {
+    const prev = prevPhaseRef.current;
+    prevPhaseRef.current = phase;
+    if (STREAM_BUSY_PHASES.includes(prev) && phase === "complete") {
+      setDoneFlash(true);
+      const t = setTimeout(() => setDoneFlash(false), 750);
+      return () => clearTimeout(t);
+    }
+  }, [phase]);
+  return { running: STREAM_BUSY_PHASES.includes(phase), doneFlash };
+}
+
+/**
+ * Layout-safe processing/done border for a pane. Renders an inset, glowing ring
+ * over the pane body (pointer-events-none) — primary + breathing while running,
+ * a bright green one-shot flash on completion — without affecting content size.
+ */
+function StreamPulseBorder({
+  running,
+  doneFlash,
+}: {
+  running: boolean;
+  doneFlash: boolean;
+}) {
+  if (!doneFlash && !running) return null;
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "pointer-events-none absolute inset-0 z-20 ring-2 ring-inset",
+        doneFlash
+          ? "animate-done-flash shadow-[inset_0_0_18px_rgba(34,197,94,0.35)] ring-[3px] ring-green-500/80"
+          : "animate-slowPulse shadow-[inset_0_0_16px_hsl(var(--primary)/0.18)] ring-primary/55",
+      )}
+    />
   );
 }
 
@@ -342,6 +402,10 @@ export default function CleanupPad({
   const activeSlotValue = activeSlot ? slotValue(activeSlotIdx) : "";
   customRef.current = activeSlotValue;
   const activeAi = slotAis[Math.min(activeSlotIdx, MAX_CUSTOM_SLOTS - 1)];
+
+  // Pane border treatment: breathing while a run streams, quick flash on done.
+  const cleanPulse = useStreamPulse(cleanAi.phase);
+  const customPulse = useStreamPulse(activeAi.phase);
 
   // ── Surface scope (live values for agent variable/slot mapping) ────────────
   // Volatile render state mirrored into a ref so the scope builder (called at
@@ -1454,6 +1518,10 @@ export default function CleanupPad({
             )}
           />
         </UnifiedAgentContextMenu>
+        <StreamPulseBorder
+          running={cleanPulse.running}
+          doneFlash={cleanPulse.doneFlash}
+        />
         {isLoadingSession && <PaneLoadingVeil label="Loading cleaned text…" />}
       </div>
     </div>
@@ -1664,6 +1732,10 @@ export default function CleanupPad({
             )}
           />
         </UnifiedAgentContextMenu>
+        <StreamPulseBorder
+          running={customPulse.running}
+          doneFlash={customPulse.doneFlash}
+        />
         {isLoadingSession && <PaneLoadingVeil label="Loading output…" />}
       </div>
     </div>

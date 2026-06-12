@@ -42,6 +42,7 @@ import GlobalTaskShortcut from "@/features/tasks/widgets/GlobalTaskShortcut";
 import CreateTaskFromSourceDialog from "@/features/tasks/widgets/CreateTaskFromSourceDialog";
 import { CloudFilesPickerHost } from "@/features/files";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 
 // Phase 4 PR 4.C: deleted both imperative seed sites (setGlobalUserId from
 // app/Providers + setGlobalUserIdAndToken from lib/globalState). The
@@ -93,6 +94,7 @@ export function EntityProviders({
                               <CloudFilesPickerHost />
                               {/* See app/Providers.tsx for the rationale. */}
                               <ConfirmDialogHost />
+                              <ValuePromptsDialogHost />
                             </RequestRecoveryProvider>
                           </AudioRecoveryProvider>
                         </TranscriptsProvider>

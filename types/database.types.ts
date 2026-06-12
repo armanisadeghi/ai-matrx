@@ -1149,6 +1149,90 @@ export type Database = {
           },
         ]
       }
+      agx_drift_alert: {
+        Row: {
+          agent_id: string
+          agent_name: string
+          breaking_count: number
+          created_at: string
+          detected_at: string
+          dismissed_at: string | null
+          dm_message_id: string | null
+          findings: Json
+          fingerprint: string
+          id: string
+          info_count: number
+          last_scanned_at: string
+          severity: string
+          silent_count: number
+          status: string
+          suppressed_until: string | null
+          usage_count: number
+          user_id: string
+          viewed_at: string | null
+          warning_count: number
+        }
+        Insert: {
+          agent_id: string
+          agent_name: string
+          breaking_count?: number
+          created_at?: string
+          detected_at?: string
+          dismissed_at?: string | null
+          dm_message_id?: string | null
+          findings?: Json
+          fingerprint: string
+          id?: string
+          info_count?: number
+          last_scanned_at?: string
+          severity: string
+          silent_count?: number
+          status?: string
+          suppressed_until?: string | null
+          usage_count?: number
+          user_id: string
+          viewed_at?: string | null
+          warning_count?: number
+        }
+        Update: {
+          agent_id?: string
+          agent_name?: string
+          breaking_count?: number
+          created_at?: string
+          detected_at?: string
+          dismissed_at?: string | null
+          dm_message_id?: string | null
+          findings?: Json
+          fingerprint?: string
+          id?: string
+          info_count?: number
+          last_scanned_at?: string
+          severity?: string
+          silent_count?: number
+          status?: string
+          suppressed_until?: string | null
+          usage_count?: number
+          user_id?: string
+          viewed_at?: string | null
+          warning_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agx_drift_alert_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agx_agent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agx_drift_alert_dm_message_id_fkey"
+            columns: ["dm_message_id"]
+            isOneToOne: false
+            referencedRelation: "dm_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agx_shortcut: {
         Row: {
           agent_id: string | null
@@ -1328,6 +1412,69 @@ export type Database = {
           },
           {
             foreignKeyName: "agx_shortcut_version_fk"
+            columns: ["agent_version_id"]
+            isOneToOne: false
+            referencedRelation: "agx_version"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agx_usage_registry: {
+        Row: {
+          agent_id: string | null
+          agent_version_id: string | null
+          code_path: string | null
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          last_synced_at: string
+          purpose: string
+          ref_kind: string
+          source_system: string
+          status: string
+          synced_by: string | null
+          usage_key: string
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_version_id?: string | null
+          code_path?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          last_synced_at?: string
+          purpose: string
+          ref_kind: string
+          source_system: string
+          status?: string
+          synced_by?: string | null
+          usage_key: string
+        }
+        Update: {
+          agent_id?: string | null
+          agent_version_id?: string | null
+          code_path?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          last_synced_at?: string
+          purpose?: string
+          ref_kind?: string
+          source_system?: string
+          status?: string
+          synced_by?: string | null
+          usage_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agx_usage_registry_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agx_agent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agx_usage_registry_agent_version_id_fkey"
             columns: ["agent_version_id"]
             isOneToOne: false
             referencedRelation: "agx_version"
@@ -8721,6 +8868,7 @@ export type Database = {
       }
       dm_messages: {
         Row: {
+          action_data: Json | null
           client_message_id: string | null
           content: string
           conversation_id: string
@@ -8738,6 +8886,7 @@ export type Database = {
           status: string | null
         }
         Insert: {
+          action_data?: Json | null
           client_message_id?: string | null
           content: string
           conversation_id: string
@@ -8755,6 +8904,7 @@ export type Database = {
           status?: string | null
         }
         Update: {
+          action_data?: Json | null
           client_message_id?: string | null
           content?: string
           conversation_id?: string
@@ -25600,38 +25750,11 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      agx_accept_version: {
-        Args: { p_reference_id: string; p_reference_type: string }
-        Returns: Json
-      }
       agx_build_shortcut_menu: {
         Args: { p_placement_types: string[] }
         Returns: {
           menu_data: Json
           placement_type: string
-        }[]
-      }
-      agx_check_drift: {
-        Args: { p_agent_id?: string }
-        Returns: {
-          agent_id: string
-          agent_name: string
-          current_version: number
-          reference_id: string
-          reference_name: string
-          reference_type: string
-          version_pinned_to: number
-          versions_behind: number
-        }[]
-      }
-      agx_check_references: {
-        Args: { p_agent_id: string }
-        Returns: {
-          is_behind: boolean
-          reference_id: string
-          reference_name: string
-          reference_type: string
-          use_latest: boolean
         }[]
       }
       agx_create_agent_from_template: {
@@ -26009,6 +26132,190 @@ export type Database = {
         Returns: string
       }
       agx_update_from_source: { Args: { p_agent_id: string }; Returns: Json }
+      agx_usage_contract: {
+        Args: { p_slots: Json; p_vars: Json }
+        Returns: {
+          required_var_names: string[]
+          slot_keys: string[]
+          var_names: string[]
+        }[]
+      }
+      agx_usage_eval: {
+        Args: {
+          p_agent_unavailable: boolean
+          p_contract_changed: boolean
+          p_is_interactive: boolean
+          p_pin_mode: string
+          p_required_var_names: string[]
+          p_slot_keys: string[]
+          p_stale_pin: boolean
+          p_stored_slot_keys: string[]
+          p_stored_var_keys: string[]
+          p_usage_type: string
+          p_var_names: string[]
+        }
+        Returns: Json
+      }
+      agx_usage_history_counts: {
+        Args: { p_agent_id: string }
+        Returns: {
+          last_used_at: string
+          source: string
+          total: number
+        }[]
+      }
+      agx_usage_jsonb_keys: { Args: { p: Json }; Returns: string[] }
+      agx_usage_jsonb_text_values: { Args: { p: Json }; Returns: string[] }
+      agx_usage_report: {
+        Args: never
+        Returns: {
+          agent_id: string
+          agent_is_active: boolean
+          agent_name: string
+          alert_detected_at: string
+          alert_id: string
+          alert_last_scanned_at: string
+          alert_severity: string
+          alert_status: string
+          by_type: Json
+          current_version: number
+          my_breaking: number
+          my_info: number
+          my_silent: number
+          my_stale_pins: number
+          my_usage_count: number
+          my_warning: number
+          others_redflag_count: number
+          others_usage_count: number
+          owned_by_caller: boolean
+        }[]
+      }
+      agx_usage_report_admin: {
+        Args: never
+        Returns: {
+          affected_users: number
+          agent_id: string
+          agent_is_active: boolean
+          agent_name: string
+          agent_owner_email: string
+          agent_owner_id: string
+          breaking: number
+          by_type: Json
+          current_version: number
+          info: number
+          open_alerts: number
+          owners: Json
+          silent: number
+          stale_pins: number
+          usage_count: number
+          warning: number
+        }[]
+      }
+      agx_usage_scan: {
+        Args: { p_agent_id: string }
+        Returns: {
+          agent_id: string
+          agent_name: string
+          agg_breaking: number
+          agg_info: number
+          agg_owner_user_ids: string[]
+          agg_silent: number
+          agg_stale_pins: number
+          agg_usage_count: number
+          agg_warning: number
+          config: Json
+          current_version: number
+          findings: Json
+          is_usage_active: boolean
+          label: string
+          managed_by_caller: boolean
+          node_id: string
+          org_manager_user_ids: string[]
+          organization_id: string
+          organization_name: string
+          owner_user_id: string
+          pin_mode: string
+          pinned_version_id: string
+          pinned_version_number: number
+          row_kind: string
+          severity: string
+          stale_pin: boolean
+          usage_id: string
+          usage_type: string
+          usage_updated_at: string
+          versions_behind: number
+        }[]
+      }
+      agx_usage_scan_admin: {
+        Args: { p_agent_id: string }
+        Returns: {
+          agent_id: string
+          agent_name: string
+          agg_breaking: number
+          agg_info: number
+          agg_owner_user_ids: string[]
+          agg_silent: number
+          agg_stale_pins: number
+          agg_usage_count: number
+          agg_warning: number
+          config: Json
+          current_version: number
+          findings: Json
+          is_usage_active: boolean
+          label: string
+          managed_by_caller: boolean
+          node_id: string
+          org_manager_user_ids: string[]
+          organization_id: string
+          organization_name: string
+          owner_user_id: string
+          pin_mode: string
+          pinned_version_id: string
+          pinned_version_number: number
+          row_kind: string
+          severity: string
+          stale_pin: boolean
+          usage_id: string
+          usage_type: string
+          usage_updated_at: string
+          versions_behind: number
+        }[]
+      }
+      agx_usage_scan_core: {
+        Args: { p_agent_id: string; p_scope?: string; p_viewer: string }
+        Returns: {
+          agent_id: string
+          agent_name: string
+          config: Json
+          current_version: number
+          findings: Json
+          is_usage_active: boolean
+          label: string
+          managed_by_caller: boolean
+          node_id: string
+          org_manager_user_ids: string[]
+          organization_id: string
+          organization_name: string
+          owner_user_id: string
+          pin_mode: string
+          pinned_version_id: string
+          pinned_version_number: number
+          severity: string
+          stale_pin: boolean
+          usage_id: string
+          usage_type: string
+          usage_updated_at: string
+          versions_behind: number
+        }[]
+      }
+      agx_usage_update_all_to_active: {
+        Args: { p_agent_id: string; p_mode?: string }
+        Returns: Json
+      }
+      agx_usage_update_to_active: {
+        Args: { p_mode?: string; p_usage_id: string; p_usage_type: string }
+        Returns: Json
+      }
       append_rows_to_user_table: {
         Args: { p_rows: Json; p_table_id: string }
         Returns: number

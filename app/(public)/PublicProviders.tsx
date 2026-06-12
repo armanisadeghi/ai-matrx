@@ -9,6 +9,7 @@ import { PublicAuthSync } from "./PublicAuthSync";
 import OverlayController from "@/features/overlays/OverlayController";
 import LegacyPromptOverlaysController from "@/features/prompts/components/results-display/LegacyPromptOverlaysController";
 import { ConfirmDialogHost } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { ValuePromptsDialogHost } from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 
 // Thin static shell — the heavy bits (window registry traversal, prompt
 // surfaces) are dynamic-loaded INSIDE each leaf widget's own file, not at
@@ -43,6 +44,7 @@ export function PublicProviders({
           <LegacyPromptOverlaysController />
           {/* See app/Providers.tsx for the rationale. */}
           <ConfirmDialogHost />
+          <ValuePromptsDialogHost />
           {children}
         </TooltipProvider>
       </StoreProvider>

@@ -30,9 +30,10 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { AlertCircle, Copy, Folder, Loader2, Save, X } from "lucide-react";
+import { AlertCircle, Copy, Loader2, Save, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { useToast } from "@/components/ui/use-toast";
 import { CategoryColorPicker } from "./CategoryColorPicker";
 import { ShortcutContextsPicker } from "./ShortcutContextsPicker";
@@ -404,9 +405,12 @@ export function CategoryForm({
           Preview
         </p>
         <div className="flex items-center gap-2">
-          <Folder
-            className="w-4 h-4 flex-shrink-0"
-            style={{ color: formData.color || "currentColor" }}
+          <DynamicIcon
+            name={formData.iconName}
+            color={formData.color || "zinc"}
+            size={4}
+            fallbackIcon="SquareMenu"
+            className="flex-shrink-0"
           />
           <span className="text-sm font-medium">
             {formData.label || "Category Name"}

@@ -15,10 +15,32 @@ import {
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import type { SharedCanvasItem } from '@/types/canvas-social';
+import { getCanvasBlockMeta } from '@/features/canvas/canvas-block-meta';
 import { cn } from '@/lib/utils';
 
 interface CanvasCardProps {
     canvas: SharedCanvasItem;
+}
+
+/** Type icon driven by the canonical canvas-block-meta iconPaths (Lucide). */
+function CanvasTypeIcon({ type }: { type: string }) {
+    const meta = getCanvasBlockMeta(type);
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-14 w-14 text-white/90 drop-shadow-lg"
+            aria-hidden="true"
+        >
+            {meta.iconPaths.map((d) => (
+                <path key={d} d={d} />
+            ))}
+        </svg>
+    );
 }
 
 export function CanvasCard({ canvas }: CanvasCardProps) {
@@ -27,30 +49,13 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
         return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     };
 
-    const getTypeIcon = (type: string) => {
-        const icons: Record<string, string> = {
-            quiz: '📝',
-            flashcards: '🗂️',
-            presentation: '📊',
-            diagram: '📐',
-            timeline: '📅',
-            research: '🔬',
-            troubleshooting: '🔧',
-            'decision-tree': '🌳',
-            resources: '📚',
-            progress: '📈',
-            html: '🌐',
-            code: '💻'
-        };
-        return icons[type] || '✨';
-    };
-
     const getTypeGradient = (type: string) => {
         const gradients: Record<string, string> = {
             quiz: 'from-blue-500 to-cyan-500',
             flashcards: 'from-purple-500 to-pink-500',
             presentation: 'from-orange-500 to-red-500',
             diagram: 'from-green-500 to-teal-500',
+            mermaid: 'from-rose-500 to-pink-500',
             timeline: 'from-indigo-500 to-purple-500',
             research: 'from-yellow-500 to-orange-500',
             troubleshooting: 'from-red-500 to-pink-500',
@@ -69,11 +74,9 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
             <div className={cn(
                 "relative h-32 bg-gradient-to-br",
                 getTypeGradient(canvas.canvas_type),
-                "flex items-center justify-center text-6xl"
+                "flex items-center justify-center"
             )}>
-                <span className="filter drop-shadow-lg">
-                    {getTypeIcon(canvas.canvas_type)}
-                </span>
+                <CanvasTypeIcon type={canvas.canvas_type} />
                 
                 {/* Hover Overlay */}
                 <Link 

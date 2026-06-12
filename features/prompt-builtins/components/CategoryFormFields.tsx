@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Folder, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
+import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import {
   ShortcutCategory,
   CreateShortcutCategoryInput,
@@ -264,9 +265,12 @@ export function CategoryFormFields({
           Preview
         </p>
         <div className="flex items-center gap-2">
-          <Folder
-            className="w-4 h-4 flex-shrink-0"
-            style={{ color: formData.color || "#666666" }}
+          <DynamicIcon
+            name={formData.icon_name}
+            color={formData.color || "zinc"}
+            size={4}
+            fallbackIcon="SquareMenu"
+            className="flex-shrink-0"
           />
           <span className="text-sm font-medium">
             {formData.label || "Category Name"}

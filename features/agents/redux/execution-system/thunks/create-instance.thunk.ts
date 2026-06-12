@@ -540,21 +540,17 @@ export const createInstanceFromShortcut = createAsyncThunk<
   //
   // Two paths:
   //
-  //   A. SURFACE PATH — caller passed `surfaceValueMappings` (resolved by
-  //      the launch thunk from `agx_agent_surface.value_mappings` for
-  //      (shortcut.agentId, surfaceName, caller scope)). Apply explicit
-  //      ValueMapping rules via `mapScopeToInstanceWithSurface`. The
-  //      shortcut's own `scopeMappings`/`contextMappings` are ignored —
-  //      surface bindings are authoritative when present.
+  //   A. SURFACE PATH — caller passed `surfaceValueMappings`: the launch
+  //      thunk's per-key MERGE of agx_agent_surface bindings (global →
+  //      org-by-membership → user) and the shortcut's own mappings
+  //      (value_mappings layered over the promoted legacy
+  //      scopeMappings/contextMappings), with prompt_user entries already
+  //      drained into direct_value answers and required-missing already
+  //      pre-checked. Apply via `mapScopeToInstanceWithSurface`.
   //
-  //   B. LEGACY PATH — no surface binding for this surface, fall back to
-  //      the shortcut's persisted `scopeMappings`/`contextMappings` and
-  //      auto-name-match. This is the universal path until every shortcut
-  //      gets an explicit surface binding.
-  //
-  // pendingPrompts / warnings / errors from path A are logged for now;
-  // user-facing remediation (pre-launch dialog for `prompt_user`, blocking
-  // on `required`) lands in the Phase 2 mapping editor.
+  //   B. LEGACY PATH — no mappings exist anywhere for this launch; run
+  //      `mapScopeToInstance` (pure auto-name-match — the legacy columns
+  //      are empty too, or they'd have formed a layer in path A).
   if (surfaceValueMappings && Object.keys(surfaceValueMappings).length > 0) {
     const result = mapScopeToInstanceWithSurface(
       uiScopes,
@@ -564,8 +560,11 @@ export const createInstanceFromShortcut = createAsyncThunk<
       shortcutContextSlots,
     );
     if (result.errors.length > 0) {
+      // Backstop only — required-missing is pre-checked by the launch
+      // thunk's prepareLaunchMappings before this thunk runs. If this
+      // fires, the resolver and the pre-check have diverged.
       console.error(
-        "[createInstanceFromShortcut] surface mapping errors:",
+        "[createInstanceFromShortcut] surface mapping errors (post-precheck — investigate):",
         result.errors,
       );
     }
@@ -589,8 +588,11 @@ export const createInstanceFromShortcut = createAsyncThunk<
       );
     }
     if (result.pendingPrompts.length > 0) {
-      console.info(
-        "[createInstanceFromShortcut] pendingPrompts deferred to Phase 2 UI:",
+      // Should be empty — the launch thunk drains prompt_user mappings into
+      // direct_value entries (value-prompts dialog) before dispatching this
+      // thunk. Loud if not.
+      console.warn(
+        "[createInstanceFromShortcut] pendingPrompts survived the pre-launch drain — investigate:",
         result.pendingPrompts.map((p) => p.targetName),
       );
     }

@@ -1325,6 +1325,50 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         </React.Suspense>
       );
 
+    // Mermaid owns ALL its phases internally (skeleton → progressive render →
+    // toolbar/error) — never swap it for a loading skeleton: it must keep
+    // receiving content while its fence is still streaming. The streaming
+    // signal is the BLOCK's own status (fence closes → diagram is final even
+    // if the message keeps streaming text after it).
+    case "mermaid": {
+      const mermaidStreaming = Boolean(block.isStreamingBlock);
+      if (block.serverData) {
+        return (
+          <BlockComponents.MermaidBlock
+            key={index}
+            serverData={block.serverData as any}
+            metadata={block.metadata}
+            isStreamActive={mermaidStreaming}
+            conversationId={conversationId}
+            messageId={messageId}
+            blockIndex={index}
+            taskId={taskId}
+          />
+        );
+      }
+      if (strictServerData) {
+        return (
+          <StrictModeError
+            key={index}
+            blockType="mermaid"
+            blockId={(block as any).blockId}
+          />
+        );
+      }
+      return (
+        <BlockComponents.MermaidBlock
+          key={index}
+          content={block.content}
+          metadata={block.metadata}
+          isStreamActive={mermaidStreaming}
+          conversationId={conversationId}
+          messageId={messageId}
+          blockIndex={index}
+          taskId={taskId}
+        />
+      );
+    }
+
     case "math_problem":
       if (block.serverData) {
         return (

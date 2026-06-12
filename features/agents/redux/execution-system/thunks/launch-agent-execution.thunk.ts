@@ -28,10 +28,19 @@ import {
   mapScopeToInstance,
   mapScopeToInstanceWithSurface,
 } from "@/features/agents/utils/scope-mapping";
-import { createClient as createBrowserSupabase } from "@/utils/supabase/client";
-import { pgErrorToError } from "@/utils/supabase/pg-error";
-import { isValueMappingMap } from "@/features/surfaces/types";
-import type { ValueMappingMap } from "@/features/surfaces/types";
+import { toast } from "sonner";
+import type { ValueMapping, ValueMappingMap } from "@/features/surfaces/types";
+import { fetchSurfaceBindingLayers } from "@/features/surfaces/services/agent-surface-bindings.service";
+import {
+  mergeValueMappingLayers,
+  type MappingLayer,
+  type MergedValueMappings,
+} from "@/features/surfaces/utils/merge-value-mappings";
+import { resolveShortcutMappings } from "@/features/agent-shortcuts/utils/resolveShortcutMappings";
+import {
+  promptForValues,
+  type ValuePromptField,
+} from "@/components/dialogs/value-prompts/ValuePromptsDialogHost";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
@@ -120,71 +129,133 @@ async function pollForCompletion(
 }
 
 // =============================================================================
-// Surface value_mappings lookup
+// Surface value_mappings — layered launch resolution
 //
-// Returns the most-specific `agx_agent_surface.value_mappings` JSONB for the
-// given (agentId, surfaceName) and the current Redux caller scope:
-//   1. user binding for the active auth user (most specific)
-//   2. organization binding for the active organization (when one is set)
-//   3. global binding (user_id IS NULL AND organization_id IS NULL ...)
+// Layers, weakest → strongest (later wins PER KEY):
+//   1. agx_agent_surface global binding
+//   2. agx_agent_surface org bindings — by MEMBERSHIP: RLS only returns
+//      member-org rows, so every visible org row applies. There is no
+//      "active org" filter (the old read targeted a field the organizations
+//      slice never defined, so the org tier could never fire).
+//   3. agx_agent_surface user binding
+//   4. the shortcut's own mappings (value_mappings layered over the promoted
+//      legacy scope_mappings / context_mappings) — the most specific intent.
 //
-// Returns `null` when no binding row matches. RLS does the heavy lifting —
-// this code only picks the priority order; it cannot read someone else's
-// rows even if it tried.
+// `prepareLaunchMappings` then makes the merged map runnable:
+//   - required surface_value entries missing from the live scope ABORT the
+//     launch loudly (toast + throw) before any instance is created;
+//   - prompt_user entries drain through the global value-prompts dialog
+//     (interactive modes) or hard-error/skip (direct & background);
+//   - inert layers (present but fully shadowed) console.warn with full
+//     provenance, so a misconfigured binding is never silent.
 // =============================================================================
 
-async function fetchSurfaceValueMappingsForLaunch(
+interface ShortcutMappingSource {
+  valueMappings: ValueMappingMap | null;
+  scopeMappings: Record<string, string> | null;
+  contextMappings: Record<string, string> | null;
+}
+
+async function resolveLaunchMappingLayers(
   agentId: string,
-  surfaceName: string,
-  state: RootState,
-): Promise<ValueMappingMap | null> {
-  const supabase = createBrowserSupabase();
-  const userId = state.userAuth?.id ?? null;
-  // Active org id, when the user has one selected. Read defensively — slice
-  // shape varies across feature flags. `organizationId` is the canonical key
-  // on most slices that expose it.
-  const orgState = (
-    state as unknown as {
-      organizations?: { activeOrganizationId?: string | null };
+  surfaceName: string | undefined,
+  shortcut: ShortcutMappingSource | null,
+): Promise<MergedValueMappings | null> {
+  const layers: MappingLayer[] = [];
+  if (surfaceName) {
+    layers.push(...(await fetchSurfaceBindingLayers(agentId, surfaceName)));
+  }
+  if (shortcut) {
+    const shortcutMappings = resolveShortcutMappings(shortcut);
+    if (Object.keys(shortcutMappings).length > 0) {
+      layers.push({ name: "shortcut", mappings: shortcutMappings });
     }
-  ).organizations;
-  const orgId = orgState?.activeOrganizationId ?? null;
+  }
+  if (layers.length === 0) return null;
 
-  // One query returns every row visible under RLS; pick the best match in JS
-  // to avoid a chain of conditional queries.
-  const { data, error } = await supabase
-    .from("agx_agent_surface")
-    .select("user_id, organization_id, project_id, task_id, value_mappings")
-    .eq("agent_id", agentId)
-    .eq("surface_name", surfaceName);
+  const result = mergeValueMappingLayers(layers);
+  if (Object.keys(result.merged).length === 0) return null;
 
-  if (error) throw pgErrorToError(error);
-  if (!data || data.length === 0) return null;
+  for (const inert of result.inertLayers) {
+    console.warn(
+      `[surfaces] mapping layer "${inert}" for (agent=${agentId}, surface=${surfaceName ?? "none"}) exists but contributed no keys — fully shadowed by more specific layers`,
+      { provenance: result.provenance },
+    );
+  }
+  return result;
+}
 
-  const userRow = userId ? data.find((r) => r.user_id === userId) : undefined;
-  if (userRow && isValueMappingMap(userRow.value_mappings)) {
-    return userRow.value_mappings;
+async function prepareLaunchMappings(args: {
+  merged: ValueMappingMap;
+  applicationScope: Record<string, unknown>;
+  /** False for direct/background — no UI may interrupt those launches. */
+  interactive: boolean;
+  /** Dialog title — the shortcut/agent label. */
+  title: string;
+}): Promise<ValueMappingMap> {
+  const { merged, applicationScope, interactive, title } = args;
+
+  // Required surface_value pre-check — abort BEFORE creating the instance.
+  const missingRequired: string[] = [];
+  for (const [key, mapping] of Object.entries(merged)) {
+    if (
+      mapping.mapType === "surface_value" &&
+      mapping.required &&
+      applicationScope[mapping.target] === undefined
+    ) {
+      missingRequired.push(`"${key}" needs surface value "${mapping.target}"`);
+    }
+  }
+  if (missingRequired.length > 0) {
+    const message = `Cannot run "${title}" — required values are missing from this page: ${missingRequired.join("; ")}`;
+    toast.error(message);
+    throw new Error(message);
   }
 
-  const orgRow = orgId
-    ? data.find((r) => r.organization_id === orgId)
-    : undefined;
-  if (orgRow && isValueMappingMap(orgRow.value_mappings)) {
-    return orgRow.value_mappings;
-  }
-
-  const globalRow = data.find(
-    (r) =>
-      r.user_id === null &&
-      r.organization_id === null &&
-      r.project_id === null &&
-      r.task_id === null,
+  const promptEntries = Object.entries(merged).filter(
+    (
+      entry,
+    ): entry is [string, Extract<ValueMapping, { mapType: "prompt_user" }>] =>
+      entry[1].mapType === "prompt_user",
   );
-  if (globalRow && isValueMappingMap(globalRow.value_mappings)) {
-    return globalRow.value_mappings;
+  if (promptEntries.length === 0) return merged;
+
+  const out: ValueMappingMap = { ...merged };
+
+  if (!interactive) {
+    const requiredNames = promptEntries
+      .filter(([, m]) => m.required)
+      .map(([k]) => `"${k}"`);
+    if (requiredNames.length > 0) {
+      const message = `Cannot run "${title}" in the background — required input(s) ${requiredNames.join(", ")} must be entered by a user. Use an interactive display mode.`;
+      toast.error(message);
+      throw new Error(message);
+    }
+    for (const [key] of promptEntries) {
+      console.warn(
+        `[surfaces] optional prompt_user mapping "${key}" skipped — non-interactive display mode`,
+      );
+      delete out[key];
+    }
+    return out;
   }
 
-  return null;
+  const fields: ValuePromptField[] = promptEntries.map(([name, m]) => ({
+    name,
+    prompt: m.prompt,
+    defaultValue: m.defaultValue,
+    required: m.required,
+  }));
+  const answers = await promptForValues({ title, fields });
+  if (answers === null) {
+    // Cancel is only offered when nothing is required — drop the optional keys.
+    for (const [key] of promptEntries) delete out[key];
+    return out;
+  }
+  for (const [key] of promptEntries) {
+    out[key] = { mapType: "direct_value", target: answers[key] ?? "" };
+  }
+  return out;
 }
 
 // =============================================================================
@@ -388,28 +459,49 @@ export const launchAgentExecution = createAsyncThunk<
       jsonExtraction ?? shortcut.jsonExtraction ?? undefined;
 
     // ── Surface mapping resolution for shortcuts ────────────────────────
-    // When the caller passed `runtime.surfaceName` AND the shortcut has
-    // an agentId, look up the most-specific `agx_agent_surface.value_mappings`
-    // for (agentId, surfaceName, caller scope). If found, the shortcut
-    // path applies those mappings via `mapScopeToInstanceWithSurface`
-    // inside `createInstanceFromShortcut`. If absent, the legacy
-    // `mapScopeToInstance` path runs with the shortcut's persisted
-    // `scopeMappings`/`contextMappings`. Both paths funnel through
-    // `createInstanceFromShortcut` so the rest of the instance
-    // initialization stays identical.
+    // Layered per-key merge: agx_agent_surface bindings (global → org-by-
+    // membership → user) under the shortcut's own mappings (value_mappings
+    // over promoted legacy scopeMappings/contextMappings). The merged map
+    // is applied via `mapScopeToInstanceWithSurface` inside
+    // `createInstanceFromShortcut`; when no layer exists anywhere, the
+    // legacy `mapScopeToInstance` path runs unchanged. Required-missing and
+    // prompt_user handling happen HERE, before the instance exists.
     let shortcutSurfaceMappings: ValueMappingMap | null = null;
-    if (surfaceName && shortcut.agentId) {
+    if (shortcut.agentId) {
+      let resolvedLayers: MergedValueMappings | null = null;
       try {
-        shortcutSurfaceMappings = await fetchSurfaceValueMappingsForLaunch(
+        resolvedLayers = await resolveLaunchMappingLayers(
           shortcut.agentId,
           surfaceName,
-          state,
+          shortcut,
         );
       } catch (err) {
+        // Binding lookup is a network read — degrade to the shortcut's own
+        // mappings rather than blocking the launch, but say so.
         console.warn(
-          "[launchAgentExecution] shortcut surface value_mappings lookup failed; falling back to scopeMappings",
+          "[launchAgentExecution] surface binding lookup failed; continuing with shortcut-only mappings",
           err,
         );
+        const shortcutOnly = resolveShortcutMappings(shortcut);
+        resolvedLayers =
+          Object.keys(shortcutOnly).length > 0
+            ? { merged: shortcutOnly, provenance: {}, inertLayers: [] }
+            : null;
+      }
+      if (resolvedLayers) {
+        // Validation/prompt failures here are intentional launch aborts.
+        shortcutSurfaceMappings = await prepareLaunchMappings({
+          merged: resolvedLayers.merged,
+          applicationScope: (applicationScope ?? {}) as Record<
+            string,
+            unknown
+          >,
+          interactive:
+            typeof window !== "undefined" &&
+            resolvedDisplayMode !== "direct" &&
+            resolvedDisplayMode !== "background",
+          title: shortcut.label ?? "Provide values",
+        });
       }
     }
 
@@ -490,23 +582,36 @@ export const launchAgentExecution = createAsyncThunk<
       const agState = getState() as RootState;
       const agent = agState.agentDefinition.agents?.[agentId];
       if (agent) {
-        // When the caller passed `surfaceName`, look up the most-specific
-        // `agx_agent_surface` binding for (agentId, surfaceName, caller scope)
-        // and apply its `value_mappings` JSONB. The legacy auto-name-match
-        // still runs as a fallback for keys the binding didn't address.
+        // When the caller passed `surfaceName`, resolve the layered
+        // `agx_agent_surface` bindings (global → org-by-membership → user)
+        // and apply the merged map. The legacy auto-name-match still runs
+        // as a fallback for keys the bindings didn't address.
         let surfaceValueMappings: ValueMappingMap | null = null;
         if (surfaceName) {
+          let resolvedLayers: MergedValueMappings | null = null;
           try {
-            surfaceValueMappings = await fetchSurfaceValueMappingsForLaunch(
+            resolvedLayers = await resolveLaunchMappingLayers(
               agentId,
               surfaceName,
-              agState,
+              null,
             );
           } catch (err) {
             console.warn(
-              "[launchAgentExecution] surface value_mappings lookup failed; falling back to legacy resolver",
+              "[launchAgentExecution] surface binding lookup failed; falling back to legacy resolver",
               err,
             );
+          }
+          if (resolvedLayers) {
+            // Validation/prompt failures are intentional launch aborts.
+            surfaceValueMappings = await prepareLaunchMappings({
+              merged: resolvedLayers.merged,
+              applicationScope: applicationScope as Record<string, unknown>,
+              interactive:
+                typeof window !== "undefined" &&
+                resolvedDisplayMode !== "direct" &&
+                resolvedDisplayMode !== "background",
+              title: agent.name ?? "Provide values",
+            });
           }
         }
 
@@ -522,13 +627,14 @@ export const launchAgentExecution = createAsyncThunk<
             agent.contextSlots ?? [],
           );
           if (result.errors.length > 0) {
+            // Backstop only — required-missing is pre-checked in
+            // prepareLaunchMappings before the instance exists. If this
+            // fires, the resolver and the pre-check have diverged.
+            toast.error(result.errors.join("\n"));
             console.error(
-              "[launchAgentExecution] surface mapping errors:",
+              "[launchAgentExecution] surface mapping errors (post-precheck — investigate):",
               result.errors,
             );
-            // Phase 1: surface the errors via console; user-facing remediation
-            // (pre-launch dialog for `prompt_user`, blocking on `required`)
-            // lands in Phase 2 alongside the mapping editor.
           }
           if (result.warnings.length > 0) {
             console.warn(
@@ -553,8 +659,10 @@ export const launchAgentExecution = createAsyncThunk<
             );
           }
           if (result.pendingPrompts.length > 0) {
-            console.info(
-              "[launchAgentExecution] pendingPrompts deferred to Phase 2 UI:",
+            // Should be empty — prompts were drained into direct_value
+            // entries by prepareLaunchMappings. Loud if not.
+            console.warn(
+              "[launchAgentExecution] pendingPrompts survived the pre-launch drain — investigate:",
               result.pendingPrompts.map((p) => p.targetName),
             );
           }

@@ -38,6 +38,8 @@ const MATERIALIZABLE_MARKERS = [
   "math_problem",
   "<presentation",
   "<cooking_recipe",
+  "```mermaid",
+  "```mmd",
 ];
 
 export function mightContainMaterializable(content: unknown): boolean {

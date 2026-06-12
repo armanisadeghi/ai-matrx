@@ -19,11 +19,9 @@
 import { useEffect, useRef } from "react";
 import { useAppStore, useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectLatestAssistantMessageId,
-  selectMessageClientStatus,
-  selectMessageById,
-  extractFlatText,
-} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+  selectPrimaryRequest,
+  selectAccumulatedText,
+} from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useCartesiaStreamingSpeaker } from "@/features/tts/hooks/useCartesiaStreamingSpeaker";
 import {
   setVoicePlayback,
@@ -48,33 +46,32 @@ export function useAutoVoiceResponse({
     nextChunkMax: 300,
   });
 
-  // Messages already fully handled (spoken, or skipped because they predate us
-  // / arrived complete). Keyed by message id.
+  // Requests already fully handled (spoken, or skipped because they predate us
+  // / arrived complete). Keyed by request id.
   const handledIdRef = useRef<Set<string>>(new Set());
-  // The id we are currently streaming speech for, if any.
+  // The request id we are currently streaming speech for, if any.
   const activeIdRef = useRef<string | null>(null);
   // Per-conversation baseline guard — so we mark history handled exactly once.
   const baselinedConvRef = useRef<string | null>(null);
 
-  const latestId = useAppSelector((s) =>
-    conversationId
-      ? selectLatestAssistantMessageId(conversationId)(s)
-      : undefined,
+  // Drive off the LIVE active request, not the committed message. The message
+  // slice only receives the assistant turn at end-of-stream, so reading it here
+  // delayed all audio until the response finished. The active request's render
+  // blocks (`selectAccumulatedText`) grow token-by-token as the stream lands —
+  // exactly what the conversation column renders — so feeding the speaker from
+  // here makes audio start mid-response.
+  const request = useAppSelector((s) =>
+    conversationId ? selectPrimaryRequest(conversationId)(s) : undefined,
   );
-  const status = useAppSelector((s) =>
-    conversationId && latestId
-      ? selectMessageClientStatus(conversationId, latestId)(s)
-      : undefined,
-  );
+  const requestId = request?.requestId;
+  const status = request?.status;
   const text = useAppSelector((s) =>
-    conversationId && latestId
-      ? extractFlatText(selectMessageById(conversationId, latestId)(s))
-      : "",
+    conversationId && requestId ? selectAccumulatedText(requestId)(s) : "",
   );
 
   // Baseline: when enabled (re)engages for a conversation, treat whatever is
-  // currently the latest assistant message as already-handled so we never
-  // replay it. Reset when the conversation changes.
+  // currently the latest request as already-handled so we never replay it.
+  // Reset when the conversation changes.
   useEffect(() => {
     if (!enabled || !conversationId) {
       baselinedConvRef.current = null;
@@ -84,46 +81,53 @@ export function useAutoVoiceResponse({
     baselinedConvRef.current = conversationId;
     handledIdRef.current = new Set();
     activeIdRef.current = null;
-    const currentLatest = selectLatestAssistantMessageId(conversationId)(
-      store.getState(),
-    );
-    if (currentLatest) handledIdRef.current.add(currentLatest);
+    const current = selectPrimaryRequest(conversationId)(store.getState());
+    if (current?.requestId) handledIdRef.current.add(current.requestId);
   }, [enabled, conversationId, store]);
 
   useEffect(() => {
-    if (!enabled || !conversationId || !latestId) return;
+    if (!enabled || !conversationId || !requestId) return;
     // Wait until the baseline effect has claimed this conversation.
     if (baselinedConvRef.current !== conversationId) return;
-    if (handledIdRef.current.has(latestId)) return;
+    if (handledIdRef.current.has(requestId)) return;
 
-    if (activeIdRef.current !== latestId) {
-      // A new, not-yet-handled assistant message. ONLY auto-speak if it is
-      // genuinely streaming in live — `_clientStatus` is "pending"/"streaming"
-      // for a turn produced this session. Anything else ("complete", or
-      // undefined for messages hydrated from the DB on load) must NOT auto-play
-      // — it requires a manual click. This is what stops the bottom button from
-      // "playing" a hydrated last message on page load.
-      const isLive = status === "pending" || status === "streaming";
-      if (!isLive) {
-        handledIdRef.current.add(latestId);
+    const isLive =
+      status === "pending" ||
+      status === "connecting" ||
+      status === "streaming" ||
+      status === "awaiting-tools";
+    const isDone = status === "complete";
+    const isFailed =
+      status === "error" || status === "cancelled" || status === "timeout";
+
+    if (activeIdRef.current !== requestId) {
+      // A new, not-yet-handled request. Only auto-speak if it's genuinely
+      // streaming in this session — anything already terminal we skip (a manual
+      // click replays it). New requests baseline-guarded above never reach here.
+      if (isFailed || isDone) {
+        handledIdRef.current.add(requestId);
         return;
       }
-      // It's streaming in — open a live context and feed what we have.
-      activeIdRef.current = latestId;
+      if (!isLive) return; // not started yet — wait for the first chunk
+      activeIdRef.current = requestId;
       void speaker.beginStream();
-      void speaker.streamText(text);
+      if (text) void speaker.streamText(text);
       return;
     }
 
-    // Continuing the message we're already streaming.
-    if (status === "complete") {
+    // Continuing the request we're already streaming.
+    if (isDone) {
       void speaker.finishStream(text);
-      handledIdRef.current.add(latestId);
+      handledIdRef.current.add(requestId);
       activeIdRef.current = null;
-    } else {
+    } else if (isFailed) {
+      void speaker.stop();
+      handledIdRef.current.add(requestId);
+      activeIdRef.current = null;
+    } else if (text) {
       void speaker.streamText(text);
     }
-  }, [enabled, conversationId, latestId, status, text, speaker]);
+  }, [enabled, conversationId, requestId, status, text, speaker]);
 
   // When auto-voice is switched off, cut any in-flight playback immediately.
   useEffect(() => {

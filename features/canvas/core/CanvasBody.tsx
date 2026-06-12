@@ -105,6 +105,10 @@ const CodeEditErrorCanvas = dynamic(
     ),
   { ssr: false },
 );
+const MermaidWorkbench = dynamic(
+  () => import("@/components/mermaid/workbench/MermaidWorkbench"),
+  { ssr: false },
+);
 
 export interface CanvasBodyProps {
   content: CanvasContent;
@@ -156,6 +160,7 @@ export function getDefaultTitle(type: string): string {
     resources: "Resources",
     progress: "Progress Tracker",
     math_problem: "Math Problem",
+    mermaid: "Diagram",
     code_preview: "Code Preview",
     code_edit_error: "Code Edit Error",
   };
@@ -169,6 +174,7 @@ export function getSubtitle(type: string): string | undefined {
     presentation: "Slideshow presentation",
     code: "Code snippet",
     diagram: "Interactive diagram",
+    mermaid: "Editable diagram",
     math_problem: "Step-by-step solution",
   };
   return subtitles[type];
@@ -282,6 +288,14 @@ function renderContent(content: CanvasContent): React.ReactNode {
         <div className="h-full p-0">
           <MathProblem id="canvas-preview" {...data.math_problem} />
         </div>
+      );
+
+    case "mermaid":
+      return (
+        <MermaidWorkbench
+          source={typeof data === "string" ? data : String((data as { data?: unknown })?.data ?? "")}
+          metadata={content.metadata}
+        />
       );
 
     case "code":
