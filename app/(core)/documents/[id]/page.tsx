@@ -105,51 +105,57 @@ export default function DocumentPage({
     );
   }
 
+  // Title + share ride inside the editor's own toolbar — single row top,
+  // no wasted vertical space. Mobile: no padding. Desktop: pr-12 clears
+  // the global avatar.
+  const titleSlot = (
+    <>
+      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" asChild>
+        <a href="/documents" aria-label="Back to documents">
+          <ArrowLeft className="size-4" />
+        </a>
+      </Button>
+      <Input
+        value={renameDraft}
+        onChange={(e) => setRenameDraft(e.target.value)}
+        onBlur={commitRename}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Escape" && doc) {
+            setRenameDraft(doc.document_name);
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        className="h-7 min-w-0 max-w-xs text-sm font-semibold border-0 bg-transparent shadow-none focus-visible:ring-1 px-1"
+        disabled={!doc || !canEdit}
+        placeholder="Document name"
+      />
+      {renameSaving && (
+        <Loader2 className="size-3 animate-spin text-muted-foreground shrink-0" />
+      )}
+    </>
+  );
+  const shareSlot = doc ? (
+    <ShareButton
+      resourceType="udt_documents"
+      resourceId={doc.id}
+      resourceName={doc.document_name}
+      isOwner={isOwner}
+      variant="ghost"
+      size="sm"
+    />
+  ) : null;
+
   return (
-    <div className="flex h-page w-full flex-col p-3">
-      <div className="flex items-center gap-2 pb-2">
-        <Button variant="ghost" size="icon" asChild>
-          <a href="/documents" aria-label="Back to documents">
-            <ArrowLeft className="size-4" />
-          </a>
-        </Button>
-        <Input
-          value={renameDraft}
-          onChange={(e) => setRenameDraft(e.target.value)}
-          onBlur={commitRename}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-            if (e.key === "Escape" && doc) {
-              setRenameDraft(doc.document_name);
-              (e.target as HTMLInputElement).blur();
-            }
-          }}
-          className="h-8 max-w-md text-base font-semibold"
-          disabled={!doc || !canEdit}
-          placeholder="Document name"
-        />
-        {renameSaving && (
-          <Loader2 className="size-3 animate-spin text-muted-foreground" />
-        )}
-        <div className="ml-auto">
-          {doc && (
-            <ShareButton
-              resourceType="udt_documents"
-              resourceId={doc.id}
-              resourceName={doc.document_name}
-              isOwner={isOwner}
-              variant="outline"
-              size="sm"
-            />
-          )}
-        </div>
-      </div>
-      <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
+    <div className="flex h-page w-full flex-col p-0 sm:p-3 sm:pr-12">
+      <div className="min-h-0 flex-1 overflow-hidden sm:rounded-md sm:border sm:border-border">
         <DocumentEditor
           documentId={id}
           documentName={doc?.document_name ?? undefined}
           editable={canEdit}
           collab
+          toolbarLeftSlot={titleSlot}
+          toolbarRightSlot={shareSlot}
         />
       </div>
     </div>

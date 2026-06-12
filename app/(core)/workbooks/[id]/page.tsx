@@ -103,51 +103,57 @@ export default function WorkbookPage({
     );
   }
 
+  // Title + share now ride inside the editor's own toolbar via slots — one
+  // row total at the top instead of two. `pr-10` on desktop clears the
+  // global avatar; mobile reclaims every pixel (no padding at all).
+  const titleSlot = (
+    <>
+      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" asChild>
+        <a href="/workbooks" aria-label="Back to workbooks">
+          <ArrowLeft className="size-4" />
+        </a>
+      </Button>
+      <Input
+        value={renameDraft}
+        onChange={(e) => setRenameDraft(e.target.value)}
+        onBlur={commitRename}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Escape" && workbook) {
+            setRenameDraft(workbook.workbook_name);
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        className="h-7 min-w-0 max-w-xs text-sm font-semibold border-0 bg-transparent shadow-none focus-visible:ring-1 px-1"
+        disabled={!workbook || !canEdit}
+        placeholder="Workbook name"
+      />
+      {renameSaving && (
+        <Loader2 className="size-3 animate-spin text-muted-foreground shrink-0" />
+      )}
+    </>
+  );
+  const shareSlot = workbook ? (
+    <ShareButton
+      resourceType="udt_workbooks"
+      resourceId={workbook.id}
+      resourceName={workbook.workbook_name}
+      isOwner={isOwner}
+      variant="ghost"
+      size="sm"
+    />
+  ) : null;
+
   return (
-    <div className="flex h-page w-full flex-col p-3">
-      <div className="flex items-center gap-2 pb-2">
-        <Button variant="ghost" size="icon" asChild>
-          <a href="/workbooks" aria-label="Back to workbooks">
-            <ArrowLeft className="size-4" />
-          </a>
-        </Button>
-        <Input
-          value={renameDraft}
-          onChange={(e) => setRenameDraft(e.target.value)}
-          onBlur={commitRename}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-            if (e.key === "Escape" && workbook) {
-              setRenameDraft(workbook.workbook_name);
-              (e.target as HTMLInputElement).blur();
-            }
-          }}
-          className="h-8 max-w-md text-base font-semibold"
-          disabled={!workbook || !canEdit}
-          placeholder="Workbook name"
-        />
-        {renameSaving && (
-          <Loader2 className="size-3 animate-spin text-muted-foreground" />
-        )}
-        <div className="ml-auto">
-          {workbook && (
-            <ShareButton
-              resourceType="udt_workbooks"
-              resourceId={workbook.id}
-              resourceName={workbook.workbook_name}
-              isOwner={isOwner}
-              variant="outline"
-              size="sm"
-            />
-          )}
-        </div>
-      </div>
-      <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
+    <div className="flex h-page w-full flex-col p-0 sm:p-3 sm:pr-12">
+      <div className="min-h-0 flex-1 overflow-hidden sm:rounded-md sm:border sm:border-border">
         <WorkbookEditor
           workbookId={id}
           workbookName={workbook?.workbook_name ?? undefined}
           editable={canEdit}
           collab
+          toolbarLeftSlot={titleSlot}
+          toolbarRightSlot={shareSlot}
         />
       </div>
     </div>

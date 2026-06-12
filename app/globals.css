@@ -1631,3 +1631,43 @@
   color: var(--shell-pill-text);
   font-weight: 600;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Univer (workbooks + documents) — UX overrides scoped to .matrx-univer-shell.
+   Univer ships a light-only UI; without these the second toolbar row drifts
+   center-aligned (it should hug the left like Google Sheets), the canvas
+   wastes vertical space on phones, and dark-mode portal popovers visually
+   collide with the surrounding app chrome. We pin `color-scheme: light`
+   on the editor shell (in JSX) and shape the toolbar geometry here.
+   ──────────────────────────────────────────────────────────────────────── */
+.matrx-univer-shell {
+  /* Univer renders its built-in chrome inside its container — clipping the
+     overflow on the wrapper keeps the layout tight when the canvas resizes. */
+  contain: layout paint;
+}
+
+/* Univer 0.25.x toolbar row classes: center-justify by default. Force the
+   secondary toolbar row to start-align so the buttons hug the left edge.
+   The class names are Univer-internal but stable across 0.25.x patch releases;
+   if a future major rename breaks this, the only consequence is the toolbar
+   reverts to its default centering — nothing functional fails. */
+.matrx-univer-shell .univer-toolbar-group,
+.matrx-univer-shell [class*="univer-toolbar"][class*="group"],
+.matrx-univer-shell [class*="univer-ribbon"][class*="row"] {
+  justify-content: flex-start !important;
+}
+
+
+/* Univer portals popovers to document.body — outside the .matrx-univer-shell
+   subtree — so the inline color-scheme there does not reach them. Catch
+   any Univer-classed container globally and pin it to light. Class-prefix
+   selector is stable across 0.25.x; even a future rename can only revert
+   to whatever Univer ships natively (no functional break). */
+[class*="univer-popup"],
+[class*="univer-menu"],
+[class*="univer-dropdown"],
+[class*="univer-tooltip"],
+[class*="univer-portal"] {
+  color-scheme: light !important;
+}
+
