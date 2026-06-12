@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Loader2, FileDown, X, Check } from 'lucide-react';
-import { usePdfOptimize, PdfOptimizeResult } from '@/hooks/usePdfOptimize';
+import { usePdfOptimize, PdfOptimizeResult } from '@/features/pdf/hooks/usePdfOptimize';
 
 function formatSize(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
