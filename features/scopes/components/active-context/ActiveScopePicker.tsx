@@ -60,6 +60,12 @@ import {
 } from "@/features/scopes/redux/selectors/tree";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import {
+  fetchAssignableProjects,
+  fetchAssignableTasks,
+  type AssignableProject,
+  type AssignableTask,
+} from "@/features/scopes/components/context-assignment/data";
 import { ensureScopeTasks } from "@/features/scopes/redux/thunks/ensureScopeTasks";
 import { ensureOrphanProjects } from "@/features/scopes/redux/thunks/ensureOrphanProjects";
 import { selectDefaultContextPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
@@ -207,6 +213,21 @@ export function ActiveScopePicker({
 
   // ─── Collapsed/expanded UI ─────────────────────────────────────────
   const [expanded, setExpanded] = useState(defaultExpanded || alwaysExpanded);
+
+  // No-org fallback: the user's WHOLE project/task lists (org-less ones
+  // included) via the shared cached data layer — projects and tasks do NOT
+  // require an organization, so the picker must never gate them behind one.
+  // Loaded only while the picker is expanded and no org narrows the lists;
+  // the module cache (60s TTL + in-flight dedup) keeps this storm-safe.
+  const [allProjects, setAllProjects] = useState<AssignableProject[]>([]);
+  const [allTasks, setAllTasks] = useState<AssignableTask[]>([]);
+  useEffect(() => {
+    if (!expanded || orgId) return;
+    let alive = true;
+    void fetchAssignableProjects().then((p) => { if (alive) setAllProjects(p); });
+    void fetchAssignableTasks().then((t) => { if (alive) setAllTasks(t); });
+    return () => { alive = false; };
+  }, [expanded, orgId]);
   const reallyExpanded = alwaysExpanded || expanded;
 
   // ─── Picker options ───────────────────────────────────────────────
@@ -216,8 +237,11 @@ export function ActiveScopePicker({
   );
 
   const projectOptions: PickerOption[] = useMemo(
-    () => projects.map((p) => ({ id: p.id, name: p.name })),
-    [projects],
+    () =>
+      orgId
+        ? projects.map((p) => ({ id: p.id, name: p.name }))
+        : allProjects.map((p) => ({ id: p.id, name: p.name })),
+    [orgId, projects, allProjects],
   );
 
   const orphanProjectOptions: PickerOption[] = useMemo(
@@ -231,13 +255,17 @@ export function ActiveScopePicker({
     [orphanProjectsBucket],
   );
 
-  const taskOptions: PickerOption[] = useMemo(
-    () =>
-      (tasksForLevel ?? [])
+  const taskOptions: PickerOption[] = useMemo(() => {
+    if (taskLevel) {
+      return (tasksForLevel ?? [])
         .filter((t) => t.status !== "completed")
-        .map((t) => ({ id: t.id, name: t.title, status: t.status })),
-    [tasksForLevel],
-  );
+        .map((t) => ({ id: t.id, name: t.title, status: t.status }));
+    }
+    // No org/scope/project picked → every open task the user has.
+    return allTasks
+      .filter((t) => t.status !== "completed")
+      .map((t) => ({ id: t.id, name: t.title, status: t.status ?? undefined }));
+  }, [taskLevel, tasksForLevel, allTasks]);
 
   // ─── Handlers (Surface A — all writes to appContextSlice) ──────────
   const handleSelectOrg = useCallback(
@@ -270,22 +298,27 @@ export function ActiveScopePicker({
     (id: string | null) => {
       const proj =
         projects.find((p) => p.id === id) ??
-        orphanProjectsBucket.items.find((p) => p.id === id);
+        orphanProjectsBucket.items.find((p) => p.id === id) ??
+        allProjects.find((p) => p.id === id);
       dispatch(setProject({ id, name: proj?.name ?? null }));
     },
-    [dispatch, projects, orphanProjectsBucket.items],
+    [dispatch, projects, orphanProjectsBucket.items, allProjects],
   );
 
   const handleSelectTask = useCallback(
     (id: string | null) => {
-      const task = tasksForLevel?.find((t) => t.id === id);
-      if (task?.project_id && !projectId) {
-        const proj = projects.find((p) => p.id === task.project_id);
-        dispatch(setProject({ id: task.project_id, name: proj?.name ?? null }));
+      const levelTask = tasksForLevel?.find((t) => t.id === id);
+      const flatTask = levelTask ? null : allTasks.find((t) => t.id === id);
+      const taskProjectId = levelTask?.project_id ?? flatTask?.projectId ?? null;
+      if (taskProjectId && !projectId) {
+        const proj =
+          projects.find((p) => p.id === taskProjectId) ??
+          allProjects.find((p) => p.id === taskProjectId);
+        dispatch(setProject({ id: taskProjectId, name: proj?.name ?? null }));
       }
-      dispatch(setTask({ id, name: task?.title ?? null }));
+      dispatch(setTask({ id, name: levelTask?.title ?? flatTask?.title ?? null }));
     },
-    [dispatch, tasksForLevel, projects, projectId],
+    [dispatch, tasksForLevel, allTasks, projects, allProjects, projectId],
   );
 
   const handleClearAll = useCallback(() => {
@@ -473,9 +506,7 @@ export function ActiveScopePicker({
             orphanOptions={orphanProjectOptions}
             onSelect={handleSelectProject}
             emptyText={
-              orgId
-                ? "No projects in this organization"
-                : "Select an organization first"
+              orgId ? "No projects in this organization" : "No projects yet"
             }
           />
 
@@ -504,7 +535,7 @@ export function ActiveScopePicker({
             onSelect={handleSelectTask}
             emptyText={
               !taskLevel
-                ? "Pick an org, scope, or project first"
+                ? "No open tasks yet"
                 : taskBucket?.status === "loading"
                   ? "Loading tasks…"
                   : taskBucket?.status === "empty"
