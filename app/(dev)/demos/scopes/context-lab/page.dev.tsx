@@ -92,6 +92,10 @@ import {
   type AssignableProject,
   type AssignableTask,
 } from "@/features/scopes/components/context-assignment/data";
+import { ContextSummaryChips } from "@/features/scopes/components/context-assignment/ContextSummaryChips";
+import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
+import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
+import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import type { OrgNode, ScopeTypeNode, ContextItemRow, ContextItemValue } from "@/features/scopes/types";
 
 interface DemoFile { id: string; file_name: string; mime_type?: string | null }
@@ -677,6 +681,7 @@ export default function ContextLabPage() {
   const [liveRows, setLiveRows] = useState<LiveRowView[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [windowOpen, setWindowOpen] = useState(false);
+  const [uploadPromptOpen, setUploadPromptOpen] = useState(false);
   const requested = useRef(false);
 
   useEffect(() => { dispatch(ensureScopeTree({})); }, [dispatch]);
@@ -809,6 +814,45 @@ export default function ContextLabPage() {
             <Note><b>Live writes are built in.</b> <code>writeMode</code> defaults to <code>live</code>: scope assignments persist through the canonical <code>setEntityScopes</code> chokepoint (incl. org adoption), existing tags hydrate on open, and inline quick-add creates REAL scopes/tasks. The demo runs <code>preview</code> so nothing here touches your data.</Note>
             <Note><b>Org is default-but-changeable</b> (your 2026-06-10 decision): surfaces pass <code>defaultOrganizationId</code>; the field falls back to the active org, and the user can always switch.</Note>
             <Note tone="warn"><b>Two loud gaps until migration/rollout:</b> project/task association writes log-and-toast until <code>ctx_associations</code> lands; live project quick-add warns (slug/membership semantics get wired per-surface). The window wrapper is inline-controlled — registering it as a global overlay-catalogue entry is the approved-then-do step.</Note>
+          </>}
+        />
+
+        {/* Block 1.6 — the rollout kit: button, chips, status icon, upload prompt */}
+        <ConceptBlock
+          icon={Layers}
+          kicker="Official component set · rollout kit"
+          title="The pieces every surface drops in"
+          intro={<>The four small components the app-wide rollout uses: the Surface-A <code>ActiveContextButton</code> (headers/toolbars), <code>ContextSummaryChips</code> (readable display, org never implied by a scope), the amber/green <code>ContextStatusButton</code> (per-entity nudge), and <code>UploadContextPrompt</code> (the upload race).</>}
+          ui={renderField(
+            <div className="w-[680px] max-w-full space-y-3">
+              <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                <span className="w-40 shrink-0 text-xs text-muted-foreground">ActiveContextButton</span>
+                <ActiveContextButton size="sm" />
+                <ActiveContextButton size="xs" />
+              </div>
+              <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                <span className="w-40 shrink-0 text-xs text-muted-foreground">Status icon (this file)</span>
+                {fileSubject && <ContextStatusButton subject={fileSubject} writeMode="live" />}
+                <span className="text-[11px] text-muted-foreground">amber = no context · green = set · click = assign (LIVE writes)</span>
+              </div>
+              <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                <span className="w-40 shrink-0 text-xs text-muted-foreground">UploadContextPrompt</span>
+                <Button size="sm" variant="outline" onClick={() => setUploadPromptOpen(true)}>Simulate upload (3s)</Button>
+                <span className="text-[11px] text-muted-foreground">Save waits for the &quot;upload&quot;, then LIVE-tags the demo file</span>
+              </div>
+              {file && (
+                <UploadContextPrompt
+                  open={uploadPromptOpen}
+                  onOpenChange={setUploadPromptOpen}
+                  fileNames={[file.file_name]}
+                  awaitFileIds={() => new Promise((r) => setTimeout(() => r([file.id]), 3000))}
+                />
+              )}
+            </div>,
+          )}
+          notes={<>
+            <Note tone="good"><b>The upload race, one rule:</b> Save = await file ids → write. Fast upload: instant. Slow: the Save spinner runs until it lands. Dismiss writes nothing and the amber icons keep nudging.</Note>
+            <Note tone="warn"><b>Status icon + UploadContextPrompt here are LIVE</b> — they write real ctx_scope_assignments to the selected demo file (reversible by re-opening and unchecking).</Note>
           </>}
         />
 
