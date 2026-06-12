@@ -105,6 +105,31 @@ URLs and work fine; the new pipeline regressed.
 
 ---
 
+### D3 — PDF reversible-redaction keys: client-only custody until KMS escrow lands
+**Severity: medium — browser data loss = permanently unrecoverable redacted text.**
+
+**What.** Reversible-redaction session keys live ONLY in the redacting browser's
+IndexedDB (`features/file-analysis/redact/session-keys.ts`); `redaction_mapping`
+holds ciphertext+nonce. Clearing browser data / switching devices makes those
+spans cryptographically unrecoverable. The org-recovery model exists
+(`pdf_redaction_key_escrow`, applied 2026-06-11) but its WRITE PATH is
+intentionally unwired: keys must be KMS-wrapped (security team's interface),
+and storing raw keys server-side would silently weaken the custody model.
+Mitigation today: MaskDialog's KeyHandoff acknowledgment + destructive-mode
+ConfirmDialog. **Close by:** wiring wrap/unwrap once the KMS interface exists.
+
+### D4 — PDF W5 scale items pending (500-page client-normal band)
+**Severity: medium — degraded UX on large docs, no data risk.**
+
+**What.** Remaining from the 2026-06-11 PDF consolidation (plan
+`~/.claude/plans/feature-deep-dive-audit-rustling-hare.md`):
+PdfStudioReader mounts all page blocks (no virtualization); render-all/split
+build ZIPs in memory server-side (bounded but unstreamed); AI clean/extract
+on >200pp runs as a held request instead of the resumable per-page job model
+(Operational Default: resume from last clean page preserving overlap).
+Also open: reading-order viewer tab; verify aidream variant pipeline renders
+PDF page-1 grid thumbnails.
+
 ## RESOLVED
 
 _(none yet — move D-entries here as their fences fully land.)_
