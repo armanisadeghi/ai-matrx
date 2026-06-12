@@ -29,6 +29,7 @@ import {
   switchAssistantAgentThunk,
 } from "../../redux/thunks";
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
+import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 
 interface AssistantAgentBarProps {
   sessionId: string;
@@ -153,6 +154,12 @@ export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
       </span>
 
       <div className="flex-1" />
+
+      {/* Working context — DUAL ROLE: execute-instance stamps it onto every
+          assistant run (backend access), and it is the context the artifacts
+          this page saves (recordings, conversation, working doc) should
+          inherit. Save-side stamping lands with the ctx_associations work. */}
+      <ActiveContextButton size="xs" align="end" triggerClassName="max-w-[280px]" />
 
       {conversations.length > 1 && (
         <button

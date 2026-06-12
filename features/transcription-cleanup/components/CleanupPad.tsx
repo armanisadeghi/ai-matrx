@@ -49,11 +49,13 @@ import {
   Pin,
   Play,
   Plus,
+  SlidersHorizontal,
   Stars,
   Wand2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -1400,6 +1402,11 @@ export default function CleanupPad({
           onDelete={(id) => void session.deleteSession(id)}
           showToolbar={false}
         />
+
+        {/* Working context — org · scopes · project · task. Shows only what
+            is explicitly selected (a scope never implies its organization). */}
+        <SidebarSectionLabel icon={SlidersHorizontal} label="Working Context" />
+        <ActiveContextButton size="sm" triggerClassName="w-full" />
 
         <SidebarSectionLabel
           icon={Stars}

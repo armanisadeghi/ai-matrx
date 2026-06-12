@@ -10,6 +10,7 @@ import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
 
 interface ChatRunHeaderProps {
@@ -75,6 +76,9 @@ export function ChatRunHeader({
           noBorder
         />
       </div>
+      {/* Working context — sets appContextSlice, which execute-instance reads
+          and stamps onto every run. Sized to match the compact agent picker. */}
+      <ActiveContextButton size="xs" triggerClassName="max-w-[320px]" />
     </div>
   );
 }
