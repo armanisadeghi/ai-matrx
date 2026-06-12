@@ -28,6 +28,13 @@ export interface StudioDocSummary {
   sourceId: string | null;
   parentProcessedId: string | null;
   derivationKind: string;
+  /**
+   * True when this doc's backing `cld_files` source has been removed
+   * (deleted / trashed). The extracted text still renders, but the original
+   * PDF binary can't be shown. Surfaced as a sidebar badge so a broken
+   * source is visible at a glance instead of only erroring on open.
+   */
+  sourceMissing: boolean;
 }
 
 type SortKey = "recent" | "name" | "size";
@@ -56,33 +63,69 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
             "id, name, storage_uri, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind",
           )
           .eq("owner_id", userId)
+          // Archived docs are the canonical "removed from view" state
+          // (mirrors document-lookup.ts). Dangling docs whose source binary
+          // was lost in the 2026-05 AWS migration are archived, so this
+          // keeps them out of the studio without destroying their text.
+          .is("archived_at", null)
           .order("created_at", { ascending: false })
           .limit(pageSize);
         if (err) throw err;
         if (cancelled) return;
         const rows = (data ?? []) as Record<string, unknown>[];
+
+        // Source-health pass: for cld_file-backed docs, find which backing
+        // `cld_files` rows still exist and aren't trashed. Anything not in
+        // that healthy set has lost its original binary. One batched IN
+        // query — cheap regardless of corpus size.
+        const cldSourceIds = Array.from(
+          new Set(
+            rows
+              .filter((r) => r.source_kind === "cld_file" && !!r.source_id)
+              .map((r) => r.source_id as string),
+          ),
+        );
+        const healthyCldIds = new Set<string>();
+        if (cldSourceIds.length > 0) {
+          const { data: cldRows } = await supabase
+            .from("cld_files")
+            .select("id, deleted_at")
+            .in("id", cldSourceIds)
+            .is("deleted_at", null);
+          for (const c of (cldRows ?? []) as { id: string }[]) {
+            healthyCldIds.add(c.id);
+          }
+        }
+        if (cancelled) return;
+
         setDocs(
-          rows.map((r) => ({
-            id: r.id as string,
-            name: (r.name as string) ?? "Untitled",
-            source: (r.storage_uri as string | null) ?? null,
-            createdAt: r.created_at as string,
-            updatedAt: r.updated_at as string,
-            totalPages: (r.total_pages as number | null) ?? null,
-            mimeType: (r.mime_type as string | null) ?? null,
-            sourceKind: (r.source_kind as string | null) ?? null,
-            sourceId: (r.source_id as string | null) ?? null,
-            parentProcessedId:
-              (r.parent_processed_id as string | null) ?? null,
-            derivationKind:
-              (r.derivation_kind as string) ?? "initial_extract",
-          })),
+          rows.map((r) => {
+            const sourceKind = (r.source_kind as string | null) ?? null;
+            const sourceId = (r.source_id as string | null) ?? null;
+            return {
+              id: r.id as string,
+              name: (r.name as string) ?? "Untitled",
+              source: (r.storage_uri as string | null) ?? null,
+              createdAt: r.created_at as string,
+              updatedAt: r.updated_at as string,
+              totalPages: (r.total_pages as number | null) ?? null,
+              mimeType: (r.mime_type as string | null) ?? null,
+              sourceKind,
+              sourceId,
+              parentProcessedId:
+                (r.parent_processed_id as string | null) ?? null,
+              derivationKind:
+                (r.derivation_kind as string) ?? "initial_extract",
+              sourceMissing:
+                sourceKind === "cld_file" &&
+                !!sourceId &&
+                !healthyCldIds.has(sourceId),
+            };
+          }),
         );
       } catch (e) {
         if (cancelled) return;
-        setError(
-          e instanceof Error ? e.message : "Could not load documents",
-        );
+        setError(e instanceof Error ? e.message : "Could not load documents");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -106,8 +149,7 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
     if (q) {
       rows = rows.filter(
         (d) =>
-          d.name.toLowerCase().includes(q) ||
-          d.id.toLowerCase().startsWith(q),
+          d.name.toLowerCase().includes(q) || d.id.toLowerCase().startsWith(q),
       );
     }
     if (filterKind) {

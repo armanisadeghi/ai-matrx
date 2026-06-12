@@ -32,6 +32,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { usePdfRemoteSource } from "@/features/files/hooks/usePdfRemoteSource";
 import PdfDocumentRenderer from "./PdfDocumentRenderer";
+import PdfSourceUnavailable from "./PdfSourceUnavailable";
 
 export interface PdfPreviewProps {
   fileId: string;
@@ -69,10 +70,19 @@ export default function PdfPreview({
     headers,
     loading: sessionLoading,
     error: sessionError,
+    sourceMissing,
   } = usePdfRemoteSource(fileId);
   const file = useAppSelector((s) =>
     fileId ? selectFileById(s, fileId) : null,
   );
+
+  if (sourceMissing) {
+    return (
+      <div className={cn("relative h-full w-full", className)}>
+        <PdfSourceUnavailable fileName={file?.fileName ?? null} />
+      </div>
+    );
+  }
 
   return (
     <div className={cn("relative h-full w-full", className)}>

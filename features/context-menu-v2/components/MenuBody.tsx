@@ -336,14 +336,17 @@ export function MenuBody(props: MenuBodyRenderProps) {
                 key={entry.id}
                 onSelect={() => onEntrySelect(entry, placementType)}
                 disabled={isDisabled}
-                className={isLegacy ? "text-red-600 dark:text-red-400" : ""}
                 title={
                   isLegacy
                     ? "Legacy match: shown via enabledFeatures/untagged, not surfaceName. Needs backfill."
                     : undefined
                 }
               >
-                <ItemIcon className="h-4 w-4 mr-2" />
+                <ItemIcon
+                  className={`h-4 w-4 mr-2 ${
+                    isLegacy ? "text-red-600 dark:text-red-400" : ""
+                  }`}
+                />
                 {entry.label}
                 {entry.entryType === "agent_shortcut" &&
                   entry.keyboardShortcut && (

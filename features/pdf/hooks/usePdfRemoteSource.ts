@@ -42,6 +42,18 @@ export interface UsePdfRemoteSourceResult {
   loading: boolean;
   /** Last error from session lookup (rare — only logged). */
   error: string | null;
+  /**
+   * True when the backing `cld_files` row is gone — it doesn't exist or was
+   * soft-deleted (moved to trash). The S3 binary can't be served in either
+   * case, so the backend returns 401/404 and pdfjs surfaces a raw "Failed to
+   * fetch" card. Callers should render a graceful "source unavailable" state
+   * instead of attempting the fetch.
+   *
+   * Determined by a single PK lookup on `cld_files`. Stays `false` while the
+   * check is in flight and on any transient query error (fail-open — we'd
+   * rather attempt the fetch than wrongly hide a healthy file).
+   */
+  sourceMissing: boolean;
 }
 
 export function usePdfRemoteSource(
@@ -50,6 +62,7 @@ export function usePdfRemoteSource(
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(!!fileId);
   const [error, setError] = useState<string | null>(null);
+  const [sourceMissing, setSourceMissing] = useState<boolean>(false);
 
   // Read the access token once on mount (and again whenever the active
   // session changes — `onAuthStateChange` fires for sign-in / sign-out /
@@ -62,10 +75,28 @@ export function usePdfRemoteSource(
     if (!fileId) {
       setToken(null);
       setLoading(false);
+      setSourceMissing(false);
       return;
     }
     let cancelled = false;
     setLoading(true);
+    // Reset on every new fileId so a stale flag from a previous (broken)
+    // file never leaks onto a healthy one.
+    setSourceMissing(false);
+
+    // Source-health probe: a single PK lookup. If the row is absent (deleted
+    // and filtered by RLS, or genuinely gone) or carries a `deleted_at`, the
+    // binary is unreachable and the caller should degrade gracefully rather
+    // than letting pdfjs throw. Fail-open on query errors.
+    void supabase
+      .from("cld_files")
+      .select("id, deleted_at")
+      .eq("id", fileId)
+      .maybeSingle()
+      .then(({ data, error: lookupError }) => {
+        if (cancelled || lookupError) return;
+        setSourceMissing(!data || data.deleted_at != null);
+      });
 
     void supabase.auth
       .getSession()
@@ -93,7 +124,13 @@ export function usePdfRemoteSource(
   }, [fileId]);
 
   if (!fileId) {
-    return { remoteUrl: null, headers: {}, loading: false, error: null };
+    return {
+      remoteUrl: null,
+      headers: {},
+      loading: false,
+      error: null,
+      sourceMissing: false,
+    };
   }
 
   const headers: Record<string, string> = token
@@ -105,5 +142,6 @@ export function usePdfRemoteSource(
     headers,
     loading,
     error,
+    sourceMissing,
   };
 }

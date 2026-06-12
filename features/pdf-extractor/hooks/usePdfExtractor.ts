@@ -313,6 +313,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           "id, name, storage_uri, created_at, updated_at, total_pages, mime_type, source_kind, source_id, parent_processed_id, derivation_kind",
         )
         .eq("owner_id", userId)
+        // Exclude archived docs (the canonical "removed from view" state —
+        // mirrors document-lookup.ts and usePdfStudioDocs).
+        .is("archived_at", null)
         .order("created_at", { ascending: false })
         .limit(HISTORY_PAGE_SIZE);
 
@@ -655,9 +658,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               : tab,
           ),
         );
-        setHistory((prev) =>
-          prev.map((h) => (h.id === doc.id ? full : h)),
-        );
+        setHistory((prev) => prev.map((h) => (h.id === doc.id ? full : h)));
       })();
     },
     [tabs, fetchDocument],
@@ -770,9 +771,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               opts.onTextDelta?.(text);
               setTabs((prev) =>
                 prev.map((tab) =>
-                  tab.id === docId
-                    ? { ...tab, streamingText: text }
-                    : tab,
+                  tab.id === docId ? { ...tab, streamingText: text } : tab,
                 ),
               );
             },
@@ -797,8 +796,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
             if (tab.id !== docId) return tab;
             // Prefer the freshly-fetched document; fall back to splicing
             // the streamed text onto whatever's there if the read failed.
-            const document = fresh
-              ?? (tab.document && streamedClean
+            const document =
+              fresh ??
+              (tab.document && streamedClean
                 ? { ...tab.document, cleanContent: streamedClean }
                 : tab.document);
             return {
@@ -888,9 +888,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
             : tab,
         ),
       );
-      setHistory((prev) =>
-        prev.map((h) => (h.id === docId ? fresh : h)),
-      );
+      setHistory((prev) => prev.map((h) => (h.id === docId ? fresh : h)));
       return true;
     },
     [fetchDocument],
@@ -991,9 +989,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               options?.onTextDelta?.(accumulated);
               setTabs((prev) =>
                 prev.map((t) =>
-                  t.id === docId
-                    ? { ...t, streamingText: accumulated }
-                    : t,
+                  t.id === docId ? { ...t, streamingText: accumulated } : t,
                 ),
               );
             },
@@ -1079,7 +1075,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
   const activeTab =
     activeTabId === "new"
       ? null
-      : tabs.find((t) => t.id === activeTabId) ?? null;
+      : (tabs.find((t) => t.id === activeTabId) ?? null);
 
   const openTabIds = new Set(tabs.map((t) => t.id));
 

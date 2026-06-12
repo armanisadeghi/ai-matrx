@@ -52,7 +52,7 @@ import {
   Check,
   RefreshCw,
   SquareStack,
-  Copy
+  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
@@ -80,6 +80,10 @@ const PdfDocumentRenderer = dynamic(
     import("@/features/files/components/core/FilePreview/previewers/PdfDocumentRenderer"),
   { ssr: false, loading: () => <PdfPaneLoading /> },
 );
+
+// Lightweight graceful state when the cld_files source has been removed
+// (deleted / trashed). Static import — it's a tiny presentational panel.
+import PdfSourceUnavailable from "@/features/pdf/components/viewer/PdfSourceUnavailable";
 
 function PdfPaneLoading() {
   return (
@@ -111,7 +115,17 @@ function PdfCldFileViewer({
   pageNumber?: number;
   onPageChange?: (page: number) => void;
 }) {
-  const { remoteUrl, headers, loading, error } = usePdfRemoteSource(fileId);
+  const { remoteUrl, headers, loading, error, sourceMissing } =
+    usePdfRemoteSource(fileId);
+  if (sourceMissing) {
+    return (
+      <PdfSourceUnavailable
+        fileName={fileName ?? null}
+        hint="The extracted text and pages on the right are still available."
+        className="border-0"
+      />
+    );
+  }
   return (
     <PdfDocumentRenderer
       remoteUrl={remoteUrl}
@@ -1306,9 +1320,13 @@ function TextPane({
               )}
             </div>
             <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-foreground/85">
-              {streamingText && streamingText.length > 0
-                ? streamingText
-                : <span className="italic text-muted-foreground">Waiting for the model…</span>}
+              {streamingText && streamingText.length > 0 ? (
+                streamingText
+              ) : (
+                <span className="italic text-muted-foreground">
+                  Waiting for the model…
+                </span>
+              )}
             </pre>
           </div>
         )}

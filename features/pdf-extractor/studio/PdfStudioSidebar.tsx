@@ -29,6 +29,7 @@ import {
   Layers,
   GitBranch,
   CheckCircle2,
+  FileX2,
   Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -123,129 +124,127 @@ export function PdfStudioSidebar({
         />
       ) : (
         <>
-      {/* Search + Add */}
-      <div className="shrink-0 px-3 pt-1 pb-2 space-y-2">
-        {onAddDocs && (
-          <button
-            type="button"
-            onClick={onAddDocs}
-            className="w-full h-8 flex items-center justify-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 hover:bg-primary/15 text-primary text-xs font-medium transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add documents
-          </button>
-        )}
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search documents…"
-            className="h-8 pl-7 text-xs"
-            style={{ fontSize: "16px" }}
-          />
-        </div>
+          {/* Search + Add */}
+          <div className="shrink-0 px-3 pt-1 pb-2 space-y-2">
+            {onAddDocs && (
+              <button
+                type="button"
+                onClick={onAddDocs}
+                className="w-full h-8 flex items-center justify-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 hover:bg-primary/15 text-primary text-xs font-medium transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add documents
+              </button>
+            )}
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search documents…"
+                className="h-8 pl-7 text-xs"
+                style={{ fontSize: "16px" }}
+              />
+            </div>
 
-        {/* Tier toggle */}
-        <div className="flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5 h-7 text-[10px]">
-          {(["all", "roots", "derivatives"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTier(t)}
-              className={cn(
-                "flex-1 h-6 rounded-md px-1.5 capitalize transition-colors",
-                tier === t
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
-              )}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
-        {/* Filter + sort row */}
-        <div className="flex items-center gap-1">
-          <div className="relative flex-1">
-            <Filter className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-            <select
-              value={filterKind ?? ""}
-              onChange={(e) => setFilterKind(e.target.value || null)}
-              className="w-full h-7 pl-6 pr-2 text-[11px] rounded-md border border-border bg-background text-foreground"
-            >
-              <option value="">All kinds</option>
-              {kinds.map((k) => (
-                <option key={k} value={k}>
-                  {k}
-                </option>
+            {/* Tier toggle */}
+            <div className="flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5 h-7 text-[10px]">
+              {(["all", "roots", "derivatives"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTier(t)}
+                  className={cn(
+                    "flex-1 h-6 rounded-md px-1.5 capitalize transition-colors",
+                    tier === t
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  {t}
+                </button>
               ))}
-            </select>
+            </div>
+
+            {/* Filter + sort row */}
+            <div className="flex items-center gap-1">
+              <div className="relative flex-1">
+                <Filter className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                <select
+                  value={filterKind ?? ""}
+                  onChange={(e) => setFilterKind(e.target.value || null)}
+                  className="w-full h-7 pl-6 pr-2 text-[11px] rounded-md border border-border bg-background text-foreground"
+                >
+                  <option value="">All kinds</option>
+                  {kinds.map((k) => (
+                    <option key={k} value={k}>
+                      {k}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="relative flex-1">
+                <ArrowUpDown className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                <select
+                  value={sortBy}
+                  onChange={(e) =>
+                    setSortBy(e.target.value as "recent" | "name" | "size")
+                  }
+                  className="w-full h-7 pl-6 pr-2 text-[11px] rounded-md border border-border bg-background text-foreground"
+                >
+                  <option value="recent">Recent</option>
+                  <option value="name">Name</option>
+                  <option value="size">Pages</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div className="relative flex-1">
-            <ArrowUpDown className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-            <select
-              value={sortBy}
-              onChange={(e) =>
-                setSortBy(
-                  e.target.value as "recent" | "name" | "size",
-                )
-              }
-              className="w-full h-7 pl-6 pr-2 text-[11px] rounded-md border border-border bg-background text-foreground"
+
+          {/* List */}
+          <div
+            ref={listRef}
+            className="flex-1 min-h-0 overflow-y-auto scrollbar-thin px-2 pb-2 space-y-0.5"
+          >
+            {loading && docs.length === 0 ? (
+              <SidebarSkeleton />
+            ) : visible.length === 0 ? (
+              <div className="px-3 py-6 text-center">
+                <p className="text-[11px] text-muted-foreground">
+                  {docs.length === 0
+                    ? "No documents yet."
+                    : "No matches for the current filter."}
+                </p>
+              </div>
+            ) : (
+              visible.map((d) => (
+                <DocRow
+                  key={d.id}
+                  doc={d}
+                  active={activeDocId === d.id}
+                  onClick={() => onSelectDoc(d)}
+                />
+              ))
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="shrink-0 border-t border-border px-3 py-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>
+              <span className="font-medium text-foreground">
+                {visible.length.toLocaleString()}
+              </span>{" "}
+              / {docs.length.toLocaleString()} docs
+            </span>
+            <button
+              type="button"
+              onClick={refresh}
+              disabled={loading}
+              className="p-1 hover:text-foreground transition-colors rounded disabled:opacity-50"
+              title="Refresh"
             >
-              <option value="recent">Recent</option>
-              <option value="name">Name</option>
-              <option value="size">Pages</option>
-            </select>
+              <RefreshCw className={cn("w-3 h-3", loading && "animate-spin")} />
+            </button>
           </div>
-        </div>
-      </div>
-
-      {/* List */}
-      <div
-        ref={listRef}
-        className="flex-1 min-h-0 overflow-y-auto scrollbar-thin px-2 pb-2 space-y-0.5"
-      >
-        {loading && docs.length === 0 ? (
-          <SidebarSkeleton />
-        ) : visible.length === 0 ? (
-          <div className="px-3 py-6 text-center">
-            <p className="text-[11px] text-muted-foreground">
-              {docs.length === 0
-                ? "No documents yet."
-                : "No matches for the current filter."}
-            </p>
-          </div>
-        ) : (
-          visible.map((d) => (
-            <DocRow
-              key={d.id}
-              doc={d}
-              active={activeDocId === d.id}
-              onClick={() => onSelectDoc(d)}
-            />
-          ))
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="shrink-0 border-t border-border px-3 py-1.5 flex items-center justify-between text-[10px] text-muted-foreground">
-        <span>
-          <span className="font-medium text-foreground">
-            {visible.length.toLocaleString()}
-          </span>{" "}
-          / {docs.length.toLocaleString()} docs
-        </span>
-        <button
-          type="button"
-          onClick={refresh}
-          disabled={loading}
-          className="p-1 hover:text-foreground transition-colors rounded disabled:opacity-50"
-          title="Refresh"
-        >
-          <RefreshCw className={cn("w-3 h-3", loading && "animate-spin")} />
-        </button>
-      </div>
         </>
       )}
     </aside>
@@ -283,7 +282,12 @@ function DocRow({
         )}
       >
         {isDerivative ? (
-          <GitBranch className={cn("w-3 h-3", active ? "text-primary" : "text-muted-foreground")} />
+          <GitBranch
+            className={cn(
+              "w-3 h-3",
+              active ? "text-primary" : "text-muted-foreground",
+            )}
+          />
         ) : (
           <Layers
             className={cn(
@@ -308,6 +312,12 @@ function DocRow({
             : ""}
           {doc.derivationKind} · {formatRelativeTime(doc.createdAt)}
         </p>
+        {doc.sourceMissing && (
+          <span className="mt-0.5 inline-flex items-center gap-1 text-[9px] text-amber-600 dark:text-amber-400">
+            <FileX2 className="w-2.5 h-2.5" />
+            Original file removed · text only
+          </span>
+        )}
       </div>
       {active && (
         <CheckCircle2 className="w-3 h-3 text-primary shrink-0 mt-0.5" />

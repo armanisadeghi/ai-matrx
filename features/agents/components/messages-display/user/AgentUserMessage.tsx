@@ -604,7 +604,7 @@ export function AgentUserMessage({
               <div
                 className={cn(
                   "text-xs text-foreground whitespace-pre-wrap break-words overflow-hidden transition-all duration-300",
-                  shouldBeCollapsible && isCollapsed && "max-h-12",
+                  isCollapsed && "max-h-12",
                 )}
               >
                 {trimmedText}
