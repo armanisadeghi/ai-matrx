@@ -345,6 +345,31 @@ export function getAnnotationManifest(
 
 // ─── Label catalog ───────────────────────────────────────────────────────────
 
+export interface AnalysisPreferences {
+  per_detector_enabled: Record<string, boolean>;
+  default_tier_per_detector: Record<string, string>;
+  default_redaction_mode: string;
+}
+
+/** Detector preferences — exposed 2026-06-11 (the prefs system was
+ *  write-only server-side before; audit intent-gap #7). */
+export function getAnalysisPreferences(
+  opts: RequestOptions = {},
+): Result<AnalysisPreferences> {
+  return getJson<AnalysisPreferences>(`/files/analysis/preferences`, opts);
+}
+
+export function putAnalysisPreferences(
+  body: AnalysisPreferences,
+  opts: RequestOptions = {},
+): Result<AnalysisPreferences & { status: string }> {
+  return putJson<AnalysisPreferences & { status: string }, AnalysisPreferences>(
+    `/files/analysis/preferences`,
+    body,
+    opts,
+  );
+}
+
 export function getLabelCatalog(
   opts: RequestOptions = {},
 ): Result<LabelCatalogResponse> {
