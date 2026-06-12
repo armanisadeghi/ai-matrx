@@ -92,7 +92,6 @@ const FeedbackTab = lazyTab(() => import("./tabs/FeedbackTab"));
 const ExtensionTab = lazyTab(() => import("./tabs/ExtensionTab"));
 const ContentTemplatesTab = lazyTab(() => import("./tabs/ContentTemplatesTab"));
 const VoiceMicTab = lazyTab(() => import("./tabs/VoiceMicTab"));
-const TranscriptionTab = lazyTab(() => import("./tabs/TranscriptionTab"));
 const MemoryTab = lazyTab(() => import("./tabs/MemoryTab"));
 
 export const settingsRegistry: SettingsTabDef[] = [
@@ -353,23 +352,6 @@ export const settingsRegistry: SettingsTabDef[] = [
     searchKeywords: ["microphone", "test", "troubleshoot", "permissions"],
     component: VoiceMicTab,
     persistence: "local-only",
-  },
-  {
-    id: "voice.transcription",
-    label: "Transcription cleaners",
-    icon: FileText,
-    parentId: "voice",
-    description:
-      "Add custom AI agents to the Transcription Cleanup window's picker.",
-    searchKeywords: [
-      "transcription",
-      "cleanup",
-      "voice pad ai",
-      "agents",
-      "custom",
-    ],
-    component: TranscriptionTab,
-    persistence: "synced",
   },
 
   // ── Communication ─────────────────────────────────────────────────────────

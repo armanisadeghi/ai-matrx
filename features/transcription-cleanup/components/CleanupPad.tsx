@@ -46,6 +46,7 @@ import {
   CircleStop,
   Loader2,
   PanelLeftOpen,
+  Pin,
   Play,
   Plus,
   Stars,
@@ -81,6 +82,7 @@ import { AgentListDropdown } from "@/features/agents/components/agent-listings/A
 import { UnifiedAgentContextMenu } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
 import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
 import { createTranscriptsCleanupScope } from "@/features/surfaces/manifests/transcripts-cleanup.manifest";
+import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
 import type {
   CleanupCustomSlot,
   SessionContextItem,
@@ -99,8 +101,8 @@ import {
   composeTranscriptDisplay,
   composeTranscriptParts,
 } from "../utils/transcriptCompose";
-import { DEFAULT_CLEAN_AGENT_ID, SYSTEM_AGENT_NAMES } from "../ai-agents";
 import {
+  CLEANUP_SURFACE_NAME,
   useAiPostProcess,
   type AiProcessPhase,
   type InputMappingInfo,
@@ -311,10 +313,27 @@ export default function CleanupPad({
   const [appliedSessionId, setAppliedSessionId] = useState<string | null>(null);
   const micRef = useRef<MicrophoneIconButtonHandle>(null);
 
-  // Agents — Clean defaults to the system cleaner.
-  const [cleanAgentId, setCleanAgentId] = useState(DEFAULT_CLEAN_AGENT_ID);
-  const [agentNames, setAgentNames] =
-    useState<Record<string, string>>(SYSTEM_AGENT_NAMES);
+  // Agents — Clean is seeded from the surface's "clean" role (below).
+  const [cleanAgentId, setCleanAgentId] = useState<string>("");
+  const [agentNames, setAgentNames] = useState<Record<string, string>>({});
+
+  // ── Surface "clean" role — supplies the default Clean agent ───────────────
+  const surfaceRoles = useSurfaceAgentRoles(CLEANUP_SURFACE_NAME);
+  const cleanRole = surfaceRoles.roles.clean ?? null;
+  const cleanRoleRef = useRef(cleanRole);
+  cleanRoleRef.current = cleanRole;
+  /** True once the user explicitly picks a Clean agent this mount — the role
+   * default never overrides an explicit choice. */
+  const [cleanAgentPicked, setCleanAgentPicked] = useState(false);
+
+  // Seed the Clean picker from the role's effective agent once resolved —
+  // only when neither the user nor a loaded session has chosen one.
+  useEffect(() => {
+    if (surfaceRoles.status !== "ready") return;
+    const roleAgentId = cleanRole?.effectiveAgentId;
+    if (!roleAgentId || cleanAgentPicked) return;
+    setCleanAgentId((current) => current || roleAgentId);
+  }, [surfaceRoles.status, cleanRole?.effectiveAgentId, cleanAgentPicked]);
 
   // Custom slots — one visible at a time, each with its own agent/source/autorun.
   const [slots, setSlots] = useState<CleanupCustomSlot[]>([initialSlot()]);
@@ -523,15 +542,17 @@ export default function CleanupPad({
     // Guard: ids that didn't resolve to a real agent name (studio shortcut
     // ids on foreign sessions) aren't runnable here — fall back, loudly.
     const validClean =
-      loaded.cleanAgentId &&
-      (loaded.agentNames[loaded.cleanAgentId] ||
-        SYSTEM_AGENT_NAMES[loaded.cleanAgentId]);
+      loaded.cleanAgentId && loaded.agentNames[loaded.cleanAgentId];
     if (loaded.cleanAgentId && !validClean) {
       console.warn(
-        `[cleanup] persisted clean agent ${loaded.cleanAgentId} did not resolve to an agent (studio shortcut id?) — using default`,
+        `[cleanup] persisted clean agent ${loaded.cleanAgentId} did not resolve to an agent (studio shortcut id?) — using the role default`,
       );
     }
-    setCleanAgentId(validClean ? loaded.cleanAgentId! : DEFAULT_CLEAN_AGENT_ID);
+    setCleanAgentId(
+      validClean
+        ? loaded.cleanAgentId!
+        : (cleanRoleRef.current?.effectiveAgentId ?? ""),
+    );
 
     const loadedSlots = (
       loaded.customSlots.length > 0 ? loaded.customSlots : [initialSlot()]
@@ -610,6 +631,12 @@ export default function CleanupPad({
     [agentNames, session],
   );
 
+  // Role-seeded / session-fallback ids aren't guaranteed a display name yet.
+  useEffect(() => {
+    if (!cleanAgentId || agentNames[cleanAgentId]) return;
+    void resolveAgentName(cleanAgentId);
+  }, [cleanAgentId, agentNames, resolveAgentName]);
+
   // ── Slot mutations (persisted via custom_slots) ────────────────────────────
   const updateSlots = useCallback(
     (next: CleanupCustomSlot[]) => {
@@ -656,6 +683,10 @@ export default function CleanupPad({
   // ── Run: Clean ─────────────────────────────────────────────────────────────
   const runClean = useCallback(
     (text: string) => {
+      if (!cleanAgentIdRef.current) {
+        toast.info("Choose a cleaning agent first");
+        return;
+      }
       setEditedResponse(null);
       void session.maybeAutoLabelFromTranscript(text);
       void cleanAi.process({
@@ -967,11 +998,38 @@ export default function CleanupPad({
   const handleCleanAgentSelect = useCallback(
     (agentId: string) => {
       setCleanAgentId(agentId);
+      setCleanAgentPicked(true);
       void resolveAgentName(agentId);
       session.persistSettings({ cleanAgentId: agentId });
     },
     [resolveAgentName, session],
   );
+
+  // ── My-default (user-tier role selection) ──────────────────────────────────
+  const handleSetMyDefault = useCallback(async () => {
+    const role = cleanRoleRef.current;
+    const agentId = cleanAgentIdRef.current;
+    if (!role || !agentId) return;
+    try {
+      await role.setForMe(agentId);
+      toast.success("Saved as your default cleaning agent");
+    } catch (err) {
+      console.error("[cleanup] set my-default failed:", err);
+      toast.error("Could not save your default agent");
+    }
+  }, []);
+
+  const handleClearMyDefault = useCallback(async () => {
+    const role = cleanRoleRef.current;
+    if (!role) return;
+    try {
+      await role.clearForMe();
+      toast.success("Your default was reset");
+    } catch (err) {
+      console.error("[cleanup] clear my-default failed:", err);
+      toast.error("Could not reset your default agent");
+    }
+  }, []);
 
   const handleSlotAgentSelect = useCallback(
     (agentId: string) => {
@@ -987,6 +1045,10 @@ export default function CleanupPad({
   const handleProcess = useCallback(() => {
     if (isTranscriptLocked) {
       toast.info("Finish recording before running Clean");
+      return;
+    }
+    if (!cleanAgentIdRef.current) {
+      toast.info("Choose a cleaning agent first");
       return;
     }
     const transcript = baseTextRef.current.trim();
@@ -1273,6 +1335,49 @@ export default function CleanupPad({
     </div>
   );
 
+  // ── Clean role provenance + my-default affordance (one compact line) ──────
+  const userTierCleanAgentId =
+    cleanRole?.effective.find((e) => e.sourceTier === "user")?.agentId ?? null;
+  const isMyDefaultClean =
+    Boolean(cleanAgentId) &&
+    cleanRole?.sourceTier === "user" &&
+    cleanRole.effectiveAgentId === cleanAgentId;
+  /** Shown only while the role default is still driving the picker. */
+  const cleanProvenanceCaption =
+    !cleanAgentPicked &&
+    cleanRole &&
+    cleanAgentId &&
+    cleanRole.effectiveAgentId === cleanAgentId &&
+    cleanRole.sourceTier &&
+    cleanRole.sourceTier !== "user"
+      ? cleanRole.sourceTier === "org"
+        ? "default · via org"
+        : "default · platform"
+      : null;
+  const cleanDefaultAffordance =
+    !cleanRole || !cleanAgentId ? null : isMyDefaultClean ? (
+      <span className="inline-flex items-center gap-1.5">
+        Your default
+        <button
+          type="button"
+          onClick={() => void handleClearMyDefault()}
+          className="underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
+        >
+          Reset
+        </button>
+      </span>
+    ) : userTierCleanAgentId !== cleanAgentId ? (
+      <button
+        type="button"
+        onClick={() => void handleSetMyDefault()}
+        title="Make this agent your default for Clean on this surface"
+        className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+      >
+        <Pin className="h-2.5 w-2.5" />
+        Set as my default
+      </button>
+    ) : null;
+
   const sidebarBody = (
     <div className="flex h-full min-h-0 flex-col bg-background">
       <div className={SIDE_COLUMN_TOP_BAND}>
@@ -1306,6 +1411,12 @@ export default function CleanupPad({
           label={agentNames[cleanAgentId] ?? "Choose an agent…"}
           className="w-full"
         />
+        {(cleanProvenanceCaption || cleanDefaultAffordance) && (
+          <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground/70">
+            <span>{cleanProvenanceCaption}</span>
+            {cleanDefaultAffordance}
+          </div>
+        )}
         {cleanAi.mapping && (
           <div className="mt-1 text-[10px] text-muted-foreground/70">
             {mappingCaption(cleanAi.mapping)}

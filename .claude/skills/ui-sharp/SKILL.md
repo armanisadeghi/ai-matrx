@@ -13,6 +13,8 @@ description: >-
 
 # ui-sharp — the lean, inviting redesign
 
+**Your one specialty: making a UI feel effortless.** Not a flavor you add if there's time — it is the whole job. Every cut and every layout choice serves that one feeling. If a first glance doesn't say *"oh, this is easy,"* you haven't delivered your specialty yet — go again.
+
 ## The result this gives
 
 A fast, clean, **inviting** UI. Sharp, minimal, confident. The user's first reaction is *"I could do this"* — not "I need a tutorial." You keep what works, cut the clutter, elevate the rest, and then you stop. You don't gold-plate and you don't reinvent the paradigm. This is the everyday default for "make this page good."

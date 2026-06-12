@@ -47,6 +47,16 @@ input text + context reach it, in priority order:
 4. **`user_input` fallback** — the text becomes the user message.
 The active mapping is shown under each dropdown (`input → <target>`).
 
+**Clean default via surface roles** — no hardcoded agent ids. The `clean`
+role on `matrx-user/transcripts-cleanup` (manifest `agentRoles` →
+`ui_surface_agent_role` + `ui_surface_agent_pref`) seeds the Clean dropdown
+through `useSurfaceAgentRoles(CLEANUP_SURFACE_NAME)`, resolved
+platform → org → user (provenance caption under the dropdown). "Set as my
+default" / "Your default · Reset" beside the dropdown write/clear the
+user-tier selection (`setForMe` / `clearForMe`). A session's persisted agent
+always wins over the role default; with no agent at all, Clean refuses with
+a toast.
+
 **Context items** are first-class: each block in the sidebar is
 `{id, key, label, value}` (key slugified from the title — name a block
 `Client Brief` to fill an agent's `client_brief` slot). Items whose key
@@ -61,7 +71,6 @@ behavior); otherwise items ride as ad-hoc context entries.
 - `components/CleanupPad.tsx` — page shell: 3 resizable panels (sidebar │ transcript/clean │ custom), `<PageHeader>` portal title, mobile stacked + drawer. Layout cookies `panels:cleanup-h3` / `panels:cleanup-v` (server-read for first-paint sizes).
 - `components/CleanupSessionList.tsx` — recents rail (title + time-ago, hover delete with confirm).
 - `components/CleanupContextPanel.tsx` — structured context items, notes-backed (explicit save only; `NotePickerPopover` lists **all** notes with folder grouping + search; full note fetched on select).
-- `ai-agents.ts` — just the default Clean agent id + system-agent display names.
 
 ## What is NOT duplicated (shared platform primitives)
 
@@ -121,7 +130,15 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
-- 2026-06-12 — Per-pane loading state on session switch. `CleanupPad` now
+- 2026-06-12 — Clean default absorbed into the surfaces role system:
+  `CleanupPad` seeds the Clean agent from the `clean` role
+  (`useSurfaceAgentRoles(CLEANUP_SURFACE_NAME)`) instead of hardcoded ids;
+  `ai-agents.ts` deleted; provenance caption (`default · platform` /
+  `default · via org`) + "Set as my default"/Reset affordance added beside
+  the dropdown; empty selection now guards Clean with a toast. The
+  `userPreferences.transcription.customCleanerAgents` preference (and its
+  settings tab) was removed — rosters live in `ui_surface_agent_pref`
+  (DB backfill was a no-op: zero rows carried the key). `CleanupPad` now
   consumes `useCleanupSession().loadState` (previously unused): each data pane
   (Transcript / Clean / Custom) renders its own `PaneLoadingVeil` (spinner +
   skeleton shimmer, `absolute inset-0` over the body only) while the active

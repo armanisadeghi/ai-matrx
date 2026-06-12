@@ -2,6 +2,8 @@
 
 Load this for any UI work. The posture skill you triggered (`ui-sharp` / `ui-reimagine` / `ui-refine` / `ui-dense`) decides *how* you design. This file is what's never optional regardless of posture. Read it first, every time.
 
+**New build vs redesign — know which you're in.** Creating a *new* UI? Full latitude — design to your skill's purpose, have fun. Handed an *existing* UI to redesign? The underlying system stays; only the surface changes. Read the current screen **only** to learn its data, options, and behavior — then reinvent the surface to your skill's purpose. You are **not** required to keep any existing layout, structure, or component (see §2 and §5). Keeping the old design because it's already there is the #1 reason a redesign comes out as a timid reskin — don't.
+
 ---
 
 ## 1. Build it real. Never fake. — the rule that matters most
@@ -24,9 +26,11 @@ Every UI must therefore handle the **full reality of its data**:
 
 The *only* exception: if the user **explicitly** asks for a throwaway visual mock to explore a design — not feature work — you may stub, but say so **loudly** in your output and never let it reach a real route. The default, always, is real.
 
-## 2. Preserve (or beat) what already works
+## 2. Preserve working *behavior* — but reinvent the *surface* freely
 
-Before you redesign, inventory what the current implementation does *well* — a nice animation, a fast path, a clever affordance — and either keep it or do better. **Never silently regress working behavior.** "I reinvented it" is not a license to lose a good thing that was already there. Losing existing quality in a redesign is the single most common avoidable miss — don't make it.
+This rule is about what the system **does**, not how it looks. Inventory the *behavior* the current build gets right — a fast path, a clever affordance, graceful recovery, the way it survives a stalled stream — and keep it or beat it. Never silently regress working **behavior or data**.
+
+It is **not** a mandate to keep the existing *visual design*. In a redesign, the layout, structure, and screen-level components are exactly what you're free to rebuild from scratch. Never keep a component or arrangement just because it exists — that instinct is what collapses a redesign into a reskin.
 
 ## 3. Every surface and every state gets first-class care
 
@@ -40,9 +44,12 @@ The reference product you model gives you *structure*; the look is always ours. 
 - `--elevation-1/2/3` for depth, `bg-textured` pages, `bg-card` cards, Lucide icons only, **no emoji** (this is enterprise).
 - Exact names and paths: **`design-system-anchors.md`** (next to this file).
 
-## 5. Reuse before you build
+## 5. Reuse the design *system* — not a feature's existing *screens*
 
-`GenericDataTable` (filter/sort/paginate), official cards/sheets/layouts, `LoadingComponents` skeletons, `confirm()` / `toast` / `TextInputDialog` already exist. Forking a primitive that already exists is the doctrine violation this app cares most about. Check `design-system-anchors.md` before writing a new one.
+Two very different things wear the word "reuse," and conflating them kills redesigns:
+
+- **The design system — always reuse.** Tokens, glass, shared primitives (`Button`, `Input`, `GenericDataTable`, official cards/sheets, `LoadingComponents`, `confirm()` / `toast` / `TextInputDialog`) and the data/service hooks. Forking a generic primitive that already exists (a second `DataTable`) is the duplication this app forbids — check `design-system-anchors.md` first.
+- **A feature's existing *composed* screens/components — do NOT feel bound to them.** In a redesign you are free to rebuild every screen-level component from scratch. **Reuse the system; reinvent the surface.** Dropping the old composed UI back in to save effort is exactly how a redesign dies — and nobody will tell you that you did it.
 
 ## 6. Desktop-first, but never broken on mobile
 

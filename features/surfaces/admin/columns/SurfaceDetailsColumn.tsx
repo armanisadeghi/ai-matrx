@@ -19,8 +19,10 @@ import {
   selectAllSurfaces,
 } from "@/features/surfaces/redux/selectors";
 import type { SurfaceValue } from "@/features/surfaces/types";
+import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 import { useSurfacesAdminSelection } from "../useSurfacesAdminSelection";
+import { SurfaceRolesSection } from "./SurfaceRolesSection";
 
 const TYPE_ICONS: Record<
   SurfaceValue["valueType"],
@@ -58,7 +60,7 @@ function prettifySurfaceLocal(fullName: string): string {
  * a row expands it inline to reveal the full description plus any
  * remaining technical fields.
  */
-export function SurfaceDetailsColumn() {
+export function SurfaceDetailsColumn({ agent }: { agent: AgentDefinition }) {
   const dispatch = useAppDispatch();
   const { surfaceName } = useSurfacesAdminSelection();
   const allSurfaces = useAppSelector(selectAllSurfaces);
@@ -104,6 +106,8 @@ export function SurfaceDetailsColumn() {
 
   return (
     <div className="h-full flex flex-col bg-muted/50 pt-[var(--shell-header-h)]">
+      <SurfaceRolesSection surfaceName={surfaceName} agent={agent} />
+
       {/* Header — name only, plus counts */}
       <header className="shrink-0 mx-3 mt-4 rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center gap-2.5 mb-1.5">

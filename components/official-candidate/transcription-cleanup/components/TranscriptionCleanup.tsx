@@ -27,8 +27,6 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { FilesTapButton } from "@/components/icons/tap-buttons";
-import { useSetting } from "@/features/settings/hooks/useSetting";
-import type { CustomCleanerAgent } from "@/lib/redux/preferences/userPreferencesSlice";
 import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
 import { TranscriptionCleanupContextPanel } from "./TranscriptionCleanupContextPanel";
 import {
@@ -64,24 +62,6 @@ export default function TranscriptionCleanup({
 
   const ai = useAiPostProcess();
 
-  // Custom user-defined cleaners (from preferences) merged into the picker
-  // alongside the system-owned agents. Empty by default.
-  const [customAgents] = useSetting<CustomCleanerAgent[]>(
-    "userPreferences.transcription.customCleanerAgents",
-  );
-  const allAgents = useMemo<AiPostProcessAgent[]>(() => {
-    if (!customAgents || customAgents.length === 0)
-      return AI_POST_PROCESS_AGENTS;
-    const customMapped: AiPostProcessAgent[] = customAgents.map((a) => ({
-      id: a.id,
-      name: a.displayName,
-      transcriptVariableKey: a.transcriptVariableKey,
-      contextSlotKey: a.contextSlotKey,
-      contextVariableKey: a.contextVariableKey,
-    }));
-    return [...AI_POST_PROCESS_AGENTS, ...customMapped];
-  }, [customAgents]);
-
   // Keep the latest selection + context so the async transcription-complete
   // callback can read them without stale closures.
   const agentIdRef = useRef(agentId);
@@ -99,8 +79,10 @@ export default function TranscriptionCleanup({
   const micId = `transcription-cleanup-mic-${instanceId}`;
 
   const selectedAgent = useMemo<AiPostProcessAgent>(
-    () => allAgents.find((a) => a.id === agentId) ?? allAgents[0],
-    [agentId, allAgents],
+    () =>
+      AI_POST_PROCESS_AGENTS.find((a) => a.id === agentId) ??
+      AI_POST_PROCESS_AGENTS[0],
+    [agentId],
   );
 
   const allText = useMemo(
@@ -151,7 +133,8 @@ export default function TranscriptionCleanup({
       baseTextRef.current = combined;
 
       const agent =
-        allAgents.find((a) => a.id === agentIdRef.current) ?? allAgents[0];
+        AI_POST_PROCESS_AGENTS.find((a) => a.id === agentIdRef.current) ??
+        AI_POST_PROCESS_AGENTS[0];
       setEditedResponse(null);
       ai.process({
         agent,
@@ -159,7 +142,7 @@ export default function TranscriptionCleanup({
         context: contextRef.current,
       });
     },
-    [ai, dispatch, instanceId, allAgents],
+    [ai, dispatch, instanceId],
   );
 
   const handleLiveTranscript = useCallback((text: string) => {
@@ -250,7 +233,7 @@ export default function TranscriptionCleanup({
           Agent
         </div>
         <div className="flex flex-col gap-1">
-          {allAgents.map((agent) => (
+          {AI_POST_PROCESS_AGENTS.map((agent) => (
             <label
               key={agent.id}
               className={cn(

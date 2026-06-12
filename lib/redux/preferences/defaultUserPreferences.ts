@@ -156,7 +156,6 @@ export const defaultUserPreferences: UserPreferences = {
     taskId: null,
   },
   transcription: {
-    customCleanerAgents: [],
     scribeAssistantAgentId: null,
   },
   agentConnections: {

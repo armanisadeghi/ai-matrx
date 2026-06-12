@@ -263,3 +263,12 @@ pnpm check:doctrine
   text typed by one user does not appear for another. Toggle `collab=false`
   at `app/(core)/documents/[id]/page.tsx:148` to fall back to snapshot-
   per-save behavior while debugging.
+
+
+## Additional known bugs:
+- The system collides with parts of the header on both desktop and mobile because it doesn't use the system's proper header injection system. See agents/build to see how it's to be done. 
+- Because it's doing things incorrectly, it is not occupying the full height of the page so the bottom has a giant empty gap, most likely cause is trying to subtract the header height but THERE IS NO HEADER HEIGHT to subtract. Our header lives inline with the main header. We just need to respect the avatar on the right side of the header on mobile and desktop. On mobile, we also need to respect the menu hamburger on the left as well. Otherwise, we share the space. Therefore, you do not subtract anything!
+- Documents bug: The scroll is not working. 
+- Documents adding extra padding to top, right and bottom and wasting space!
+- Neither route has proper metadata with a favicon and everything. 
+- 

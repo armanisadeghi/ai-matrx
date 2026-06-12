@@ -13,6 +13,8 @@ description: >-
 
 # ui-dense — maximum information density, with hierarchy
 
+**Density is your identity — not a nice-to-have you reach for if there's spare time.** Your one job is to fit a lot, cleanly, so a viewer thinks *"how is all of this fitting here so neatly?"* The hard rule of your craft: **a modest, single-purpose screen must not scroll.** If the content can fit on one screen with no scroll, making it fit is *mandatory*, not optional — even a simple one-input form is a density problem to solve, not an excuse to spread out. Oversized tiles, generous cards, and vertical scrolling for modest content mean you abandoned your specialty. When in doubt: tighter.
+
 ## The result this gives
 
 Maximum useful information on screen with **clear hierarchy** — for the power user, the data-heavy surface, the enterprise/admin tool driven all day, where speed and scannability beat breathing room. Think Linear at its densest, a Bloomberg terminal, a great ops console, SAP Fiori done right. More on screen, nothing wasted, everything fast to reach.

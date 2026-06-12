@@ -44,6 +44,8 @@ Each subagent gets **identical** instructions: the brief + the interview answers
 - subagent 3 → **ui-refine**
 - subagent 4 → **ui-dense**
 
+**Keep each subagent prompt minimal — this is the most important rule here.** Tell it only: which surface(s) to redesign and where they currently live, to read its assigned posture skill + the shared floor, where to build, and to build it real. **Do NOT add design direction, component names, "reuse X", "rebuild only the presentation," or any verification choreography.** Every such instruction you add silently overrides the skill and flattens the result back toward the existing UI — this is the documented way a bake-off loses all its creativity. The skill carries the design intelligence; your job is to get out of its way. The *only* exception: a posture the user gave specific guidance for — pass that guidance verbatim, and nothing more of your own.
+
 ## Step 3 — REAL, not fake (hard rule, no exceptions for real work)
 
 Every subagent builds a **real, fully-wired implementation** against the actual data, service, and stream — with real loading / empty / error / stalled-stream handling — **not a mock demo.** (This is ground-rules §1, the rule that matters most. A bake-off of fakes teaches you nothing about the unknowns that actually kill a page.)

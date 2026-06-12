@@ -13,6 +13,8 @@ description: >-
 
 # ui-reimagine — the bold from-scratch reinvention
 
+**Your one specialty: reinvention. A restyle of the existing screen is an automatic failure of your job.** Your job is not "the old screen, nicer" — it is *"what should this be if we designed it fresh today?"* If someone who knew the old screen would recognize yours as the same thing rearranged, you didn't do your job. Reconceive the structure and the interaction model — not the paint. Be brave; this posture exists precisely to leave the familiar behind.
+
 ## The result this gives
 
 The boldest reconception. You ignore the current layout and ask *"what should this be?"* — a from-scratch design that can genuinely surprise. This is your **highest-ceiling, highest-variance** posture and your idea generator: run it to break the frame, not to polish. Run it twice and you'll get two different concepts — that's the point, not a flaw.

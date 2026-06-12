@@ -113,7 +113,7 @@ function DesktopResizable({
           defaultSize="18%"
           minSize="4%"
         >
-          <SurfaceDetailsColumn />
+          <SurfaceDetailsColumn agent={agent} />
         </RegisteredPanel>
         <Handle hideWhenCollapsed={["surface-details", "playground"]} />
 
@@ -149,7 +149,7 @@ function MobileStack({ agent }: { agent: AgentDefinition }) {
         <BindingColumn agent={agent} />
       </div>
       <div className="min-h-[280px] border-b border-border">
-        <SurfaceDetailsColumn />
+        <SurfaceDetailsColumn agent={agent} />
       </div>
       <div className="min-h-[200px]">
         <PlaygroundColumn />

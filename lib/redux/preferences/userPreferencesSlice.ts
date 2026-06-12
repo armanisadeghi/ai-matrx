@@ -311,28 +311,7 @@ export interface PromptsPreferences {
   autoClearResponsesInEditMode: boolean;
 }
 
-/**
- * One user-defined transcription cleaner agent. Mirrors
- * `AiPostProcessAgent` so the Transcription Cleanup pad can drop these
- * straight into its agent picker alongside the system-owned agents in
- * `ai-agents.ts`.
- */
-export interface CustomCleanerAgent {
-  /** Agent UUID (must exist in the agents system). */
-  id: string;
-  /** Label shown in the picker. */
-  displayName: string;
-  /** Variable key on the agent that should receive the transcript. */
-  transcriptVariableKey: string;
-  /** Optional context slot key for slot-based agents. */
-  contextSlotKey?: string;
-  /** Optional context variable key for variable-based agents. */
-  contextVariableKey?: string;
-}
-
 export interface TranscriptionPreferences {
-  /** User-added cleaner agents merged into the Transcription Cleanup picker. */
-  customCleanerAgents: CustomCleanerAgent[];
   /**
    * User-wide default agent for the Scribe audio assistant. Null → fall back to
    * the seeded AUDIO_ASSISTANT_AGENT_ID. Per-session choices override this.
@@ -587,7 +566,6 @@ export const initializeUserPreferencesState = (
       taskId: null,
     },
     transcription: {
-      customCleanerAgents: [],
       scribeAssistantAgentId: null,
     },
     agentConnections: {
