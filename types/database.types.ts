@@ -27510,6 +27510,47 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cx_canvas_save_user_version: {
+        Args: {
+          p_canvas_id: string
+          p_content: Json
+          p_title: string
+          p_user_id: string
+        }
+        Returns: {
+          artifact_index: number | null
+          content: Json
+          content_hash: string | null
+          conversation_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_archived: boolean | null
+          is_favorited: boolean | null
+          is_public: boolean | null
+          last_accessed_at: string | null
+          organization_id: string | null
+          parent_canvas_id: string | null
+          project_id: string | null
+          session_id: string | null
+          share_token: string | null
+          source_message_id: string | null
+          source_type: string
+          tags: string[] | null
+          task_id: string | null
+          title: string | null
+          type: string
+          updated_at: string | null
+          user_id: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "canvas_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cx_canvas_toggle_favorite: {
         Args: { p_canvas_id: string }
         Returns: boolean

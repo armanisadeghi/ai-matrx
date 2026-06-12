@@ -60,7 +60,7 @@ ON CONFLICT (category_key) DO NOTHING;
 INSERT INTO public.skl_definitions
   (skill_id, label, description, skill_type, body, icon_name,
    is_active, is_system, is_public, category_id, sort_order, version, platform_targets)
-VALUES (
+SELECT
   'mermaid-diagrams',
   'Mermaid Diagrams',
   'How and when to emit ```mermaid render blocks: supported diagram types, fence rules, syntax rules that prevent render failures, sizing guidance, and editing etiquette.',
@@ -272,17 +272,11 @@ $SKILL_BODY$,
   true, true, true,
   (SELECT id FROM public.skl_categories WHERE category_key = 'render-blocks'),
   10, '1.0.0', '["web"]'::jsonb
-)
-ON CONFLICT (skill_id) DO UPDATE SET
-  label = EXCLUDED.label,
-  description = EXCLUDED.description,
-  skill_type = EXCLUDED.skill_type,
-  body = EXCLUDED.body,
-  icon_name = EXCLUDED.icon_name,
-  category_id = EXCLUDED.category_id,
-  version = EXCLUDED.version,
-  is_active = true,
-  updated_at = now();
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.skl_definitions
+  WHERE skill_id = 'mermaid-diagrams'
+    AND user_id IS NULL AND organization_id IS NULL AND project_id IS NULL
+);
 
 -- ── 4. Render definition + per-platform components ──────────────────────────
 
