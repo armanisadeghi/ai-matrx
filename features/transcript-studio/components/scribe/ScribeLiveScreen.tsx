@@ -26,8 +26,8 @@ import {
   selectVoiceStatus,
   selectVoiceTurns,
 } from "@/features/voice-agent/state/selectors";
-import { VoiceAmbientGlow } from "@/features/voice-agent/components/VoiceAmbientGlow";
-import { VoiceListenHalo } from "@/features/voice-agent/components/VoiceListenHalo";
+import { VoiceOrb } from "@/features/voice-agent/components/VoiceOrb";
+import { VoiceEdgeRibbon } from "@/features/voice-agent/components/VoiceEdgeRibbon";
 import { VoiceMicButton } from "@/features/voice-agent/components/VoiceMicButton";
 import { VoiceStatusPill } from "@/features/voice-agent/components/VoiceStatusPill";
 import { VoiceTranscriptStream } from "@/features/voice-agent/components/VoiceTranscriptStream";
@@ -136,7 +136,7 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
-      <VoiceAmbientGlow status={liveStatus} />
+      <VoiceEdgeRibbon status={liveStatus} />
 
       {/* Live diagnostics — gated behind app-wide debug mode. */}
       {debugMode && (
@@ -169,8 +169,10 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
       <section className="relative z-10 flex shrink-0 flex-col items-center justify-end gap-4 px-4 pb-6 pb-safe">
         <VoiceStatusPill status={liveStatus} />
         <div className="relative inline-flex items-center justify-center">
-          <VoiceListenHalo status={liveStatus} />
-          <VoiceMicButton status={liveStatus} onToggle={toggle} />
+          <VoiceOrb status={liveStatus} />
+          <div className="relative z-10">
+            <VoiceMicButton status={liveStatus} onToggle={toggle} />
+          </div>
         </div>
         <VoiceErrorBanner error={liveError} />
       </section>

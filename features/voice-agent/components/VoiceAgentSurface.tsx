@@ -25,8 +25,8 @@ import {
   selectVoiceStatus,
   selectVoiceTurns,
 } from "../state/selectors";
-import { VoiceAmbientGlow } from "./VoiceAmbientGlow";
-import { VoiceListenHalo } from "./VoiceListenHalo";
+import { VoiceOrb } from "./VoiceOrb";
+import { VoiceEdgeRibbon } from "./VoiceEdgeRibbon";
 import { VoiceMicButton } from "./VoiceMicButton";
 import { VoiceStatusPill } from "./VoiceStatusPill";
 import { VoiceTranscriptStream } from "./VoiceTranscriptStream";
@@ -150,12 +150,13 @@ export function VoiceAgentSurface({ preset, agentId }: VoiceAgentSurfaceProps) {
         "relative h-dvh flex flex-col overflow-hidden bg-background text-foreground",
       )}
     >
-      {/* ─── Ambient mood layer ─────────────────────────────────────────
-          Fullscreen, non-interactive. Sits behind every other surface
-          child via stacking order (it's the first sibling and the rest
-          carry `relative z-10`). Replaces the old centered orb so the
-          mic button is the only thing that looks tappable. */}
-      <VoiceAmbientGlow status={liveStatus} />
+      {/* ─── Edge ribbon — wraparound border that pulses on active turns ─
+          Apple-Intelligence-style: two stacked strokes around the
+          rounded-rect surface inset, the outer one blurred for halo.
+          Visible only when the agent is listening or speaking — its
+          appearance itself is a peripheral-vision signal that the AI
+          is engaged. See VoiceEdgeRibbon.tsx for the design rationale. */}
+      <VoiceEdgeRibbon status={liveStatus} />
 
       {/* ─── Header ─────────────────────────────────────────────────── */}
       {/* pr-14 clears the shell's user-menu avatar (44px) that's anchored to the viewport right edge */}
@@ -209,12 +210,12 @@ export function VoiceAgentSurface({ preset, agentId }: VoiceAgentSurfaceProps) {
         )}
       </section>
 
-      {/* ─── Hero: status + mic + error ─────────────────────────────
-          Ambient glow (agent-speaking) sits behind the whole surface
-          via the top-level layer. A focal warm halo (user-listening)
-          sits inside this hero section, anchored to the mic button, so
-          the user-side cue is structurally distinct from the agent-side
-          cue. The mic button itself stays the single tappable control. */}
+      {/* ─── Hero: status + orb + mic + error ───────────────────────
+          The orb is the single state-machine-readable focal element.
+          The mic button rides on top of the orb at z=10 — the orb is
+          identity, the button is the tactile control. The two are
+          spatially co-located so the user's eye never has to choose
+          between them. */}
       <section
         className={cn(
           "relative z-10 shrink-0 flex flex-col items-center justify-end gap-5",
@@ -223,8 +224,10 @@ export function VoiceAgentSurface({ preset, agentId }: VoiceAgentSurfaceProps) {
       >
         <VoiceStatusPill status={liveStatus} />
         <div className="relative inline-flex items-center justify-center">
-          <VoiceListenHalo status={liveStatus} />
-          <VoiceMicButton status={liveStatus} onToggle={toggle} />
+          <VoiceOrb status={liveStatus} />
+          <div className="relative z-10">
+            <VoiceMicButton status={liveStatus} onToggle={toggle} />
+          </div>
         </div>
         <VoiceErrorBanner error={liveError} />
       </section>
