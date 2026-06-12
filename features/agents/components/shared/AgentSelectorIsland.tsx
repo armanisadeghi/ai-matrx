@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -58,9 +58,6 @@ export function AgentSelectorIsland({
     const nextHref = getAgentModeHref(currentMode, selectedId, basePath);
     startTransition(() => router.push(nextHref));
   };
-
-  console.log("[DEBUG] showVersion", showVersion);
-  console.log("[DEBUG] version", version);
 
   return (
     <div className="flex items-center gap-2 min-w-0 shrink">
