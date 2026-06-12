@@ -15,6 +15,7 @@
  */
 
 import type { ColumnId, SortBy, VisibleColumns } from "@/features/files/types";
+import { DEFAULT_VISIBLE_COLUMNS } from "@/features/files/types";
 
 export interface ColumnSpec {
   id: ColumnId;
@@ -88,6 +89,15 @@ export const COLUMN_SPECS: Record<ColumnId, ColumnSpec> = {
     sortKey: null,
     fileOnly: true,
   },
+  context: {
+    id: "context",
+    label: "Context",
+    // Amber = no context, green = assigned — click either to assign. The
+    // signal that drives RAG/NER, so it ships visible by default. Populated
+    // by ONE bulk query per visible page, never per-row probes.
+    sortKey: null,
+    fileOnly: true,
+  },
 };
 
 /**
@@ -111,11 +121,15 @@ export const COLUMN_ORDER: ReadonlyArray<ColumnId> = [
   "updated_at",
   "created_at",
   "access",
+  "context",
   "rag_status",
 ];
 
 export function visibleColumnIds(
   visible: VisibleColumns,
 ): ReadonlyArray<ColumnId> {
-  return COLUMN_ORDER.filter((id) => visible[id]);
+  // Fall back to the default for column ids a user's persisted map predates
+  // (e.g. `context` added 2026-06) — otherwise new columns stay invisible
+  // for every existing user.
+  return COLUMN_ORDER.filter((id) => visible[id] ?? DEFAULT_VISIBLE_COLUMNS[id]);
 }

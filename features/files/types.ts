@@ -563,7 +563,8 @@ export type ColumnId =
   | "updated_at"
   | "created_at"
   | "access"
-  | "rag_status";
+  | "rag_status"
+  | "context";
 
 export type VisibleColumns = Record<ColumnId, boolean>;
 
@@ -590,6 +591,10 @@ export const DEFAULT_VISIBLE_COLUMNS: VisibleColumns = {
   created_at: false,
   access: true,
   rag_status: false,
+  // ON by default on purpose: context drives RAG/NER and everything
+  // downstream — its presence (or amber absence) must be impossible to miss.
+  // One bulk query per visible page populates it (no per-row probes).
+  context: true,
 };
 
 export interface UiState {

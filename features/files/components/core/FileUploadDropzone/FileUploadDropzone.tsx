@@ -39,6 +39,9 @@ export interface FileUploadDropzoneProps {
   /** Children render inside the drop surface. */
   children?: React.ReactNode;
   className?: string;
+  /** Fires the moment an upload batch STARTS (before any network completes).
+   *  Hosts use it to open the context-assignment prompt while bytes move. */
+  onUploadStart?: (files: File[]) => void;
   onUploaded?: (fileIds: string[]) => void;
   onError?: (message: string) => void;
   /** Optional window event name that opens the native file picker. */
@@ -54,6 +57,7 @@ export function FileUploadDropzone({
   mode = "overlay",
   children,
   className,
+  onUploadStart,
   onUploaded,
   onError,
   pickerEventName,
@@ -66,6 +70,7 @@ export function FileUploadDropzone({
     async (files: File[]) => {
       if (!files.length) return;
       try {
+        onUploadStart?.(files);
         const { uploaded, failed } = await upload(files, {
           parentFolderId,
           visibility,
@@ -85,7 +90,7 @@ export function FileUploadDropzone({
         onError?.(message);
       }
     },
-    [upload, parentFolderId, visibility, onUploaded, onError],
+    [upload, parentFolderId, visibility, onUploadStart, onUploaded, onError],
   );
 
   const acceptMap = useMemo<Record<string, string[]> | undefined>(() => {

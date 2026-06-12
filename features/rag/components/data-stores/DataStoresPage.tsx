@@ -19,6 +19,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import {
   AlertCircle,
   CloudUpload,
@@ -86,6 +87,10 @@ export function DataStoresPage() {
           <span className="text-xs text-muted-foreground tabular-nums">
             {list.stores.length}
           </span>
+        </div>
+        {/* Working context — what scoped retrieval acts within. */}
+        <div className="border-b px-3 py-1.5">
+          <ActiveContextButton size="sm" triggerClassName="max-w-full" />
         </div>
         <CreateStoreInline onCreated={(id) => select(id)} />
         <div className="flex-1 overflow-auto">

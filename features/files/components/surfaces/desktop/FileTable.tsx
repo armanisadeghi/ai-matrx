@@ -43,6 +43,7 @@ import {
   toggleSelection,
 } from "@/features/files/redux/slice";
 import { prefetchRagStatusesForFiles } from "@/features/files/redux/rag-thunks";
+import { primeEntityScopes } from "@/features/scopes/components/context-assignment/data";
 import type {
   AccessFilter,
   CloudFilePermission,
@@ -244,6 +245,15 @@ export function FileTable({
       prefetchRagStatusesForFiles({ fileIds: ragFileIds, force: false }),
     );
   }, [ragColumnVisible, ragFileIds, dispatch]);
+
+  // Prime the Context column's row-scope store: ONE bulk
+  // ctx_scope_assignments query per page of files in view
+  // (primeEntityScopes itself skips already-known ids).
+  const contextColumnVisible = visibleIds.includes("context");
+  useEffect(() => {
+    if (!contextColumnVisible || files.length === 0) return;
+    primeEntityScopes("file", files.map((f) => f.id));
+  }, [contextColumnVisible, files]);
 
   const refreshRagStatuses = useCallback(() => {
     if (ragFileIds.length === 0) return;

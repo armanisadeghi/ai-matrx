@@ -54,6 +54,7 @@ import { SharedAvatarStack } from "./SharedAvatarStack";
 import { FileTypeBadge } from "./FileTypeBadge";
 import { OwnerCell } from "./OwnerCell";
 import { RagStatusCell } from "./RagStatusCell";
+import { FileContextCell } from "./FileContextCell";
 
 export interface FileTableRowProps {
   kind: "file" | "folder";
@@ -359,6 +360,12 @@ function FileCell({
           <RagStatusCell fileId={file.id} />
         </td>
       );
+    case "context":
+      return (
+        <td className="px-4 py-2 whitespace-nowrap">
+          <FileContextCell fileId={file.id} fileName={file.fileName} />
+        </td>
+      );
   }
 }
 
@@ -530,6 +537,7 @@ function FolderCell({
     case "size":
     case "version":
     case "rag_status":
+    case "context":
       return (
         <td className="px-4 py-2 text-xs text-muted-foreground/60 whitespace-nowrap">
           —

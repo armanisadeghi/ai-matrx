@@ -31,6 +31,9 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
+import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
+import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
+import { setRowScopes } from "@/features/scopes/components/context-assignment/data";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 
 export interface PdfStudioToolbarProps {
@@ -131,6 +134,11 @@ export function PdfStudioToolbar({
 
         {/* Chips */}
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Context status for the underlying cloud file — the same entity
+              the files table/preview tag, so all three surfaces stay in sync. */}
+          {doc.sourceKind === "cld_file" && doc.sourceId && (
+            <PdfFileContextChip fileId={doc.sourceId} fileName={doc.name} />
+          )}
           <Chip>{(doc.totalPages ?? pageRowCount).toLocaleString()} pages</Chip>
           <Chip muted>{doc.charCount.toLocaleString()} chars</Chip>
           {!hasPageRows && <Chip tone="amber">no per-page</Chip>}
@@ -372,4 +380,33 @@ function formatRelativeTime(iso: string): string {
   const d = Math.floor(h / 24);
   if (d < 30) return `${d}d ago`;
   return `${Math.floor(d / 30)}mo ago`;
+}
+
+/**
+ * Context status chip for the studio's underlying cloud file. Amber = no
+ * context (and this document is invisible to scoped RAG/NER) — click to
+ * assign via the official picker. Saves write through to the row-scope store
+ * so the files table updates in lock-step.
+ */
+function PdfFileContextChip({ fileId, fileName }: { fileId: string; fileName: string }) {
+  const es = useEntityScopes({ entityType: "file", entityId: fileId });
+  const n = es.scopeIds.length;
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5">
+      <ContextStatusButton
+        size="xs"
+        subject={{ entityType: "file", entityId: fileId, title: fileName }}
+        knownScopeCount={n}
+        writeMode="live"
+        onSaved={(r) => {
+          if (!r.ok) return;
+          setRowScopes("file", fileId, r.selection.scopeIds.filter((id) => !id.startsWith("new:")));
+          void es.refresh();
+        }}
+      />
+      <span className="text-[10px] text-muted-foreground">
+        {n === 0 ? "no context" : `${n} scope${n === 1 ? "" : "s"}`}
+      </span>
+    </span>
+  );
 }

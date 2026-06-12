@@ -100,6 +100,7 @@ import { MobileStack } from "./MobileStack";
 import { PreviewPane } from "./PreviewPane";
 import { useFileShortcuts } from "./useFileShortcuts";
 import { RenameHost } from "@/features/files/components/core/RenameDialog/RenameHost";
+import { UploadContextPrompt } from "@/features/scopes/components/context-assignment/UploadContextPrompt";
 import { CloudFileEditorHost } from "@/features/files/components/core/FileEditor/CloudFileEditorHost";
 // Side-effect import: each adapter calls `registerVirtualSource` at module
 // load. Must come before `attachVirtualRoots` is dispatched.
@@ -254,6 +255,24 @@ function PageShellDesktop({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
   const [dragLabel, setDragLabel] = useState<string | null>(null);
+
+  // Upload-time context prompt. The dropzone fires onUploadStart the moment
+  // bytes start moving; we open the prompt immediately and hand it a deferred
+  // that onUploaded resolves — Save inside the prompt awaits it, so the
+  // user-picks-first and upload-finishes-first races both just work.
+  const [uploadPromptNames, setUploadPromptNames] = useState<string[] | null>(null);
+  const uploadIdsPromise = useRef<Promise<string[]>>(Promise.resolve([]));
+  const uploadIdsResolve = useRef<((ids: string[]) => void) | null>(null);
+  const handleUploadStart = useCallback((started: File[]) => {
+    uploadIdsPromise.current = new Promise<string[]>((resolve) => {
+      uploadIdsResolve.current = resolve;
+    });
+    setUploadPromptNames(started.map((f) => f.name));
+  }, []);
+  const handleUploadedIds = useCallback((ids: string[]) => {
+    uploadIdsResolve.current?.(ids);
+    uploadIdsResolve.current = null;
+  }, []);
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const active = event.active.data.current as
@@ -639,6 +658,8 @@ function PageShellDesktop({
                         parentFolderId={null}
                         mode="overlay"
                         className="h-full w-full"
+                        onUploadStart={handleUploadStart}
+                        onUploaded={handleUploadedIds}
                       >
                         <OnboardingEmptyState />
                       </FileUploadDropzone>
@@ -654,6 +675,8 @@ function PageShellDesktop({
                         parentFolderId={activeFolderId}
                         mode="overlay"
                         className="h-full w-full"
+                        onUploadStart={handleUploadStart}
+                        onUploaded={handleUploadedIds}
                       >
                         {viewMode === "grid" ? (
                           <FileGrid
@@ -774,6 +797,12 @@ function PageShellDesktop({
 
         <RenameHost />
         <CloudFileEditorHost />
+        <UploadContextPrompt
+          open={uploadPromptNames !== null}
+          onOpenChange={(o) => { if (!o) setUploadPromptNames(null); }}
+          fileNames={uploadPromptNames ?? []}
+          awaitFileIds={() => uploadIdsPromise.current}
+        />
         {/* Render-less Redux → URL bridge. Sees every UI-state change
          *  and writes it back to `?…` via `router.replace`. The reverse
          *  direction (URL → Redux) happens once on mount via

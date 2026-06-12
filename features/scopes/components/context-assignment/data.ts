@@ -127,6 +127,44 @@ export async function fetchEntityScopesBulk(
   });
 }
 
+/* ── row-scope store: per-row context status for LIST surfaces ────────────
+   A tiny external store so table cells can read "this row's scope ids"
+   without prop-threading or per-row fetches. Lists call `primeEntityScopes`
+   once per visible page (one bulk query); cells subscribe via
+   useSyncExternalStore; saves write through with `setRowScopes`. */
+
+const rowScopeStore = new Map<string, string[]>();
+const rowScopeListeners = new Set<() => void>();
+const notifyRowScopes = () => rowScopeListeners.forEach((l) => l());
+
+export function primeEntityScopes(entityType: string, entityIds: string[]): void {
+  const missing = entityIds.filter((id) => !rowScopeStore.has(`${entityType}:${id}`));
+  if (missing.length === 0) return;
+  void fetchEntityScopesBulk(entityType, missing).then((byEntity) => {
+    for (const id of missing) {
+      rowScopeStore.set(`${entityType}:${id}`, byEntity[id] ?? []);
+    }
+    notifyRowScopes();
+  });
+}
+
+export function subscribeRowScopes(cb: () => void): () => void {
+  rowScopeListeners.add(cb);
+  return () => { rowScopeListeners.delete(cb); };
+}
+
+/** undefined = not yet loaded (render neutral, never amber-by-default). */
+export function getRowScopes(entityType: string, entityId: string): string[] | undefined {
+  return rowScopeStore.get(`${entityType}:${entityId}`);
+}
+
+/** Write-through after a save so every visible cell updates instantly. */
+export function setRowScopes(entityType: string, entityId: string, scopeIds: string[]): void {
+  rowScopeStore.set(`${entityType}:${entityId}`, scopeIds);
+  invalidateAssignableData("bulk");
+  notifyRowScopes();
+}
+
 /**
  * Drop cached engagement data after a mutation (e.g. a quick-add created a
  * real task, or a row's context was edited) so the next engagement refetches.

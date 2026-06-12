@@ -43,8 +43,11 @@ import {
   fileInfoHumanSummary,
   type FileInfoSnapshot,
 } from "@/features/files/utils/file-info-format";
-import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
-import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
+import { FileText } from "lucide-react";
+import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
+import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
+import { ContextSummaryChips } from "@/features/scopes/components/context-assignment/ContextSummaryChips";
+import { setRowScopes } from "@/features/scopes/components/context-assignment/data";
 import Link from "next/link";
 
 export interface FileInfoTabProps {
@@ -63,7 +66,6 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
   );
   const actions = useFileActions(fileId);
   const docState = useFileDocument(fileId);
-  const activeContext = useActiveContext();
 
   const details = useMemo(
     () => getFileTypeDetails(file?.fileName ?? ""),
@@ -249,31 +251,19 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
           </Section>
 
           {/*
-           * Scopes — tag this file to the org's scopes (Client Ava, Case 123,
-           * Patient X). Writes ctx_scope_assignments via the canonical
-           * EntityScopeTagger (NEVER appContext — this is local, per-entity
-           * tagging). Real files only; virtual rows live in their own systems.
-           * This is what makes a file discoverable structurally ("all files
-           * for Client Ava") and feeds the Knowledge scope-association pipeline.
+           * Context — tag this file to scopes (Client Ava, Case 123, Patient
+           * X) via the official ContextAssignment surface. Writes
+           * ctx_scope_assignments through the canonical chokepoint (NEVER
+           * appContext — this is local, per-entity tagging). No org
+           * pre-selection required: the picker browses every org. Real files
+           * only; virtual rows live in their own systems. This is what makes
+           * a file discoverable structurally and feeds RAG/NER downstream.
            */}
           {file.source.kind === "real" ? (
-            <Section title="Scopes">
-              {activeContext.organizationId ? (
-                <div className="px-3 py-2">
-                  <EntityScopeTagger
-                    entityType="file"
-                    entityId={fileId}
-                    organizationId={activeContext.organizationId}
-                    variant="compact"
-                    showHeader={false}
-                  />
-                </div>
-              ) : (
-                <Row
-                  label="Scopes"
-                  value="Select an organization in the context bar to tag this file to a scope."
-                />
-              )}
+            <Section title="Context">
+              <div className="px-3 py-2">
+                <FileContextInfoRow fileId={fileId} fileName={file.fileName} />
+              </div>
             </Section>
           ) : null}
 
@@ -512,6 +502,35 @@ function CopyableShareLink({
         )}
         {copied ? "Copied" : "Copy URL"}
       </button>
+    </div>
+  );
+}
+
+/**
+ * Per-file context status + readable chips + assign affordance. The shield is
+ * amber until the file has context (the nudge that drives RAG/NER hygiene).
+ * Reads the canonical per-entity cache; saves write through to the row-scope
+ * store so any visible table cell for this file updates instantly.
+ */
+function FileContextInfoRow({ fileId, fileName }: { fileId: string; fileName: string }) {
+  const es = useEntityScopes({ entityType: "file", entityId: fileId });
+  return (
+    <div className="flex items-start gap-2">
+      <ContextStatusButton
+        subject={{ entityType: "file", entityId: fileId, title: fileName, icon: FileText }}
+        knownScopeCount={es.scopeIds.length}
+        writeMode="live"
+        onSaved={(r) => {
+          if (!r.ok) return;
+          setRowScopes("file", fileId, r.selection.scopeIds.filter((id) => !id.startsWith("new:")));
+          void es.refresh();
+        }}
+      />
+      <ContextSummaryChips
+        size="sm"
+        value={{ scopeIds: es.scopeIds }}
+        emptyText="No context — invisible to scoped RAG, NER, and agents. Click the shield to assign."
+      />
     </div>
   );
 }
