@@ -115,7 +115,7 @@ export function ThemeDemoClient() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-2.5rem)] flex-col gap-4 overflow-y-auto bg-textured p-6">
+    <div className="flex h-[calc(100dvh-2.5rem)] flex-col gap-4 overflow-y-auto bg-textured p-6">
       <header>
         <h1 className="text-2xl font-semibold text-foreground">
           Sync Engine — Theme Demo

@@ -29,11 +29,11 @@ export type BaseDrawerProps = {
 };
 
 const sizeClasses = {
-    sm: 'max-h-[35vh] md:max-h-[35vh]',
-    default: 'max-h-[50vh] md:max-h-[50vh]',
-    lg: 'max-h-[65vh] md:max-h-[65vh]',
-    xl: 'max-h-[75vh] md:max-h-[75vh]',
-    full: 'max-h-screen'
+    sm: 'max-h-[35dvh] md:max-h-[35dvh]',
+    default: 'max-h-[50dvh] md:max-h-[50dvh]',
+    lg: 'max-h-[65dvh] md:max-h-[65dvh]',
+    xl: 'max-h-[75dvh] md:max-h-[75dvh]',
+    full: 'max-h-dvh'
 };
 
 const centerSizeClasses = {

@@ -110,7 +110,7 @@ export function SurfaceCandidatesDialog({ existingNames, onClose, onAdded }: Pro
 
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="sm:max-w-3xl max-h-[80vh] flex flex-col p-0 gap-0">
+      <DialogContent className="sm:max-w-3xl max-h-[80dvh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-5 py-3 border-b border-border flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-sm font-medium">
             <Zap className="h-4 w-4 text-primary" />

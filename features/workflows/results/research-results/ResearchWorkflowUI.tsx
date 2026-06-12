@@ -80,8 +80,8 @@ const ResearchWorkflowUI = () => {
   const processingTasks = tasks.filter(task => task.status === 'processing');
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'dark bg-slate-900' : 'bg-slate-50'}`}>
-      <div className="flex h-screen">
+    <div className={`min-h-dvh transition-colors duration-300 ${darkMode ? 'dark bg-slate-900' : 'bg-slate-50'}`}>
+      <div className="flex h-dvh">
         {/* Sidebar */}
         <div className={`w-80 border-r transition-colors duration-300 ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
           {/* Header */}

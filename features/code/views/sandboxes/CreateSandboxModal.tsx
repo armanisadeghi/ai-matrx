@@ -122,7 +122,7 @@ export const CreateSandboxModal: React.FC<CreateSandboxModalProps> = ({
   if (createdInstance) {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[85dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {readyDiag?.overall_ok ? (

@@ -98,14 +98,14 @@ export default function WorkflowPage({
   // Show error if workflow not found (but only if not loading)
   if (workflowId !== "new" && !workflow && !isLoading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
+      <div className="h-dvh w-full flex items-center justify-center bg-background">
         <div className="text-lg text-red-500">Workflow not found</div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-full">
+    <div className="h-dvh w-full">
       <WorkflowSystem workflowId={workflowId} mode={mode} />
     </div>
   );

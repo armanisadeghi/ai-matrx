@@ -20,7 +20,7 @@ export default function ExecutionInspectorWindow({
       title="Execution Inspector"
       onClose={onClose}
       width="80vw"
-      height="75vh"
+      height="75dvh"
       minWidth={900}
       minHeight={500}
       urlSyncKey="exec-inspector"

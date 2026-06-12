@@ -141,7 +141,7 @@ export function PromptImporter({ isOpen, onClose, onImportSuccess }: PromptImpor
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-5xl h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-5xl h-[85dvh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <FileJson className="h-5 w-5 text-blue-600 dark:text-blue-400" />

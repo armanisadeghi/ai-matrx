@@ -302,7 +302,7 @@ function BlockModalShell({
       onClick={onClose}
     >
       <div
-        className="bg-background border border-border rounded-xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden"
+        className="bg-background border border-border rounded-xl shadow-xl w-full max-w-lg max-h-[80dvh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border">

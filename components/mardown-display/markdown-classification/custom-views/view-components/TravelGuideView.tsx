@@ -336,7 +336,7 @@ const TravelGuide: React.FC<TravelGuideProps> = ({
   
   return (
     <div className={`${darkMode ? 'dark' : ''}`}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         {/* Header */}
         <header className="sticky top-0 z-10 bg-textured shadow-md">
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -373,7 +373,7 @@ const TravelGuide: React.FC<TravelGuideProps> = ({
         <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row">
           {/* Table of Contents - Sidebar */}
           {showTableOfContents && (
-            <aside className="md:w-64 lg:w-72 flex-shrink-0 mb-8 md:mb-0 md:sticky md:top-24 md:h-[calc(100vh-6rem)] md:overflow-y-auto">
+            <aside className="md:w-64 lg:w-72 flex-shrink-0 mb-8 md:mb-0 md:sticky md:top-24 md:h-[calc(100dvh-6rem)] md:overflow-y-auto">
               <div className="bg-textured rounded-lg shadow-md p-4">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-bold text-gray-800 dark:text-white">Contents</h2>
@@ -467,7 +467,7 @@ export const TravelGuideLoading = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* Loading Header */}
       <header className="sticky top-0 z-10 bg-textured shadow-md">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -489,7 +489,7 @@ export const TravelGuideLoading = () => {
       
       <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row">
         {/* Table of Contents Skeleton */}
-        <aside className="md:w-64 lg:w-72 flex-shrink-0 mb-8 md:mb-0 md:sticky md:top-24 md:h-[calc(100vh-6rem)] md:overflow-y-auto">
+        <aside className="md:w-64 lg:w-72 flex-shrink-0 mb-8 md:mb-0 md:sticky md:top-24 md:h-[calc(100dvh-6rem)] md:overflow-y-auto">
           <div className="bg-textured rounded-lg shadow-md p-4">
             <div className="flex justify-between items-center mb-4">
               <div className="h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded loading-shine"></div>

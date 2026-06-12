@@ -61,7 +61,7 @@ export default function AgentAssistantMarkdownDebugWindow({
       title="Agent assistant — markdown edit sink"
       onClose={onClose}
       width="88vw"
-      height="82vh"
+      height="82dvh"
       minWidth={480}
       minHeight={360}
       urlSyncKey="agent-md-debug"

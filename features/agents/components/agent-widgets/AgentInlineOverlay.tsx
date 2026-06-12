@@ -14,7 +14,7 @@ export function AgentInlineOverlay({
   onClose,
 }: AgentInlineOverlayProps) {
   return (
-    <div className="fixed top-1/3 left-1/2 -translate-x-1/2 z-50 w-[600px] max-h-[60vh] bg-card border border-border rounded-lg shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed top-1/3 left-1/2 -translate-x-1/2 z-50 w-[600px] max-h-[60dvh] bg-card border border-border rounded-lg shadow-2xl overflow-hidden flex flex-col">
       <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30 border-b border-border shrink-0">
         <span className="text-xs font-medium text-muted-foreground">
           Agent Result

@@ -193,7 +193,7 @@ export const ConversationsPanel: React.FC = () => {
 // Main component that includes the conversation panel and preview
 const ConversationsWithPreview: React.FC = () => {
   return (
-    <div className="flex h-screen">
+    <div className="flex h-dvh">
       <ConversationsPanel />
 
       <div className="flex-1 flex items-center justify-center bg-gray-50 dark:bg-gray-900">

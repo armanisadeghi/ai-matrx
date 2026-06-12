@@ -734,7 +734,7 @@ export function AgentSneakPeekModal({
 
         <div
           ref={bodyRef}
-          className="overflow-y-auto max-h-[65vh] -mr-2 pr-2"
+          className="overflow-y-auto max-h-[65dvh] -mr-2 pr-2"
         >
           <AgentSneakPeekContent agentId={currentId} active={isOpen} />
         </div>

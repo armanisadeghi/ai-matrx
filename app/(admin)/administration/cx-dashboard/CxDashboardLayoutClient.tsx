@@ -49,7 +49,7 @@ export function CxDashboardLayoutClient({
   const pathname = usePathname();
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
       <div className="flex-shrink-0 border-b border-border bg-card/50 px-4">
         <nav className="flex items-center gap-1 h-9 overflow-x-auto">
           {NAV_ITEMS.map((item) => {

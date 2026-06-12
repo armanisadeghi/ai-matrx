@@ -288,7 +288,7 @@ export const AppendToTableDialog: React.FC<AppendToTableDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[760px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[760px] max-h-[90dvh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>Append rows to existing table</DialogTitle>
         </DialogHeader>

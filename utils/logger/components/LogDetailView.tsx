@@ -113,7 +113,7 @@ const LogDetailView = ({ log }: { log: ReduxLog }) => {
           </div>
         </div>
       </DialogTrigger>
-      <DialogContent className="w-screen h-screen max-w-full z-[9999]">
+      <DialogContent className="w-screen h-dvh max-w-full z-[9999]">
         <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle className="flex items-center gap-2">
             <LogLevel level={log.level} />

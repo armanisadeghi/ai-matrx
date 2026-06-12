@@ -130,7 +130,7 @@ const VoicesList: React.FC = () => {
 
     return (
         <TooltipProvider>
-            <div className="space-y-8 p-4 min-h-screen">
+            <div className="space-y-8 p-4 min-h-dvh">
                 {/* Desktop Search Bar */}
                 {!isMobile && (
                     <DesktopSearchBar

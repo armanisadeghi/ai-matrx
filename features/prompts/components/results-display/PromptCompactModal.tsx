@@ -161,7 +161,7 @@ export default function PromptCompactModal({
           )}
           
           {/* Content - Message Display */}
-          <div className="px-2 py-3 min-h-[200px] max-h-[70vh] overflow-y-auto bg-textured">
+          <div className="px-2 py-3 min-h-[200px] max-h-[70dvh] overflow-y-auto bg-textured">
             <SmartMessageList 
               runId={runId} 
               showSystemMessage={false}

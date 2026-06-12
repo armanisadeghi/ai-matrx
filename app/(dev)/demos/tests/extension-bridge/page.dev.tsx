@@ -91,7 +91,7 @@ export default function ExtensionBridgeDemoPage() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-2.5rem)] flex-col overflow-hidden bg-textured">
+    <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
       <div className="flex-1 overflow-auto">
         <div className="mx-auto max-w-7xl space-y-4 px-4 py-4">
           <header className="space-y-1">

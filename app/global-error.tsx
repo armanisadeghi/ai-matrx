@@ -110,7 +110,7 @@ export default function GlobalError({
   if (isStaleChunk) {
     return (
       <html>
-        <body className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex items-center justify-center p-4">
+        <body className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-dvh flex items-center justify-center p-4">
           <div className="text-center">
             <div className="inline-block w-8 h-8 border-2 border-gray-300 dark:border-gray-700 border-t-blue-500 rounded-full animate-spin mb-4" />
             <h2 className="text-lg font-semibold mb-1">Updating to the latest version…</h2>
@@ -125,7 +125,7 @@ export default function GlobalError({
 
   return (
     <html>
-      <body className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex items-center justify-center p-4">
+      <body className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-dvh flex items-center justify-center p-4">
         <div className="max-w-lg w-full bg-textured shadow-lg rounded-lg overflow-hidden">
           <div className="p-6">
             <div className="flex items-center justify-center mb-6">

@@ -46,7 +46,7 @@ const AdvancedDynamicLayoutNew: React.FC<EnhancedDynamicLayoutNewProps> = ({ lay
         padding: '1rem',
         backgroundColor: '#1a202c',
         borderRadius: '0.5rem',
-        minHeight: '100vh',
+        minHeight: '100dvh',
         width: '100%',
     };
 

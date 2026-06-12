@@ -219,7 +219,7 @@ export const WorkflowAdminOverlay: React.FC<WorkflowAdminOverlayProps> = ({
             onCancel={onClose}
             cancelButtonLabel="Close"
             width="95vw"
-            height="95vh"
+            height="95dvh"
         />
     );
 }; 

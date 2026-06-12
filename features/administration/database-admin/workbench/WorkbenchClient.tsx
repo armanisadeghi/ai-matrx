@@ -176,7 +176,7 @@ export function WorkbenchClient() {
           {/* Scroll runway — lets the user pull the merge panel up to the
               middle of the viewport instead of getting stuck at the bottom
               edge while inspecting results. */}
-          <div className="h-[60vh] shrink-0" aria-hidden />
+          <div className="h-[60dvh] shrink-0" aria-hidden />
         </main>
       </div>
     </div>

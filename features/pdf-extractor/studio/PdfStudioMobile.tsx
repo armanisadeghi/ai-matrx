@@ -421,7 +421,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
         open={drawer === "docs"}
         onOpenChange={(o) => !o && setDrawer("none")}
       >
-        <DrawerContent className="h-[85vh]">
+        <DrawerContent className="h-[85dvh]">
           <div className="flex flex-col h-full min-h-0">
             <div className="shrink-0 px-3 py-2 flex items-center justify-between border-b border-border">
               <span className="text-sm font-semibold">Documents</span>
@@ -467,7 +467,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
         open={drawer === "inspector"}
         onOpenChange={(o) => !o && setDrawer("none")}
       >
-        <DrawerContent className="h-[85vh]">
+        <DrawerContent className="h-[85dvh]">
           <div className="flex flex-col h-full min-h-0">
             <div className="shrink-0 px-3 py-2 flex items-center justify-between border-b border-border">
               <span className="text-sm font-semibold">Inspector</span>

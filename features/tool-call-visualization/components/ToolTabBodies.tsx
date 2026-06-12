@@ -253,13 +253,13 @@ export const OutputView: React.FC<{ entry: ToolLifecycleEntry }> = ({
       )}
 
       {textContent && !isJson ? (
-        <div className="bg-card p-4 rounded-lg border overflow-auto max-h-[75vh]">
+        <div className="bg-card p-4 rounded-lg border overflow-auto max-h-[75dvh]">
           <div className="prose dark:prose-invert max-w-none text-sm whitespace-pre-wrap">
             {textContent}
           </div>
         </div>
       ) : (
-        <pre className="text-xs bg-muted p-4 rounded overflow-auto max-h-[75vh]">
+        <pre className="text-xs bg-muted p-4 rounded overflow-auto max-h-[75dvh]">
           {JSON.stringify(entry.result, null, 2)}
         </pre>
       )}

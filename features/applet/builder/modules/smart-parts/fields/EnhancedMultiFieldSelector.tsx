@@ -461,7 +461,7 @@ const EnhancedMultiFieldSelector: React.FC<MultiFieldSelectorProps> & {
       
       {/* Field selector dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="p-0 border-gray-200 dark:border-gray-700 sm:max-w-[90vw] sm:max-h-[90vh]">
+        <DialogContent className="p-0 border-gray-200 dark:border-gray-700 sm:max-w-[90vw] sm:max-h-[90dvh]">
           <DialogHeader className="px-6 py-4 border-b border-border">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">

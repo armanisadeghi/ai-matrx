@@ -69,7 +69,7 @@ export function MoveNoteDialog({
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="sm:max-w-[500px] max-h-[85vh] flex flex-col">
+            <DialogContent className="sm:max-w-[500px] max-h-[85dvh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <FolderInput className="h-5 w-5 text-primary" />

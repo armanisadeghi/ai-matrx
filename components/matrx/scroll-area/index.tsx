@@ -9,7 +9,7 @@ interface MatrxScrollAreaProps {
 }
 
 export const MatrxScrollArea: React.FC<MatrxScrollAreaProps> = ({ children, className }) => (
-    <ScrollArea className={`h-[calc(100vh-200px)] ${className}`}>
+    <ScrollArea className={`h-[calc(100dvh-200px)] ${className}`}>
         {children}
     </ScrollArea>
 );

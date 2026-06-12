@@ -34,7 +34,7 @@ export default function FullScreenComponent() {
     };
 
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-100">
+        <div className="flex justify-center items-center min-h-dvh bg-gray-100">
             <button
                 className="px-4 py-2 bg-blue-500 text-white rounded-md"
                 onClick={isFullScreen ? exitFullScreen : requestFullScreen}

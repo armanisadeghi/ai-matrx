@@ -161,7 +161,7 @@ export const NavigationMenu: React.FC<NavigationMenuProps> = ({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className={`w-72 ${contentClassName} ${creatorAnimClass} max-h-[calc(100vh-4rem)] flex flex-col overflow-hidden`}
+          className={`w-72 ${contentClassName} ${creatorAnimClass} max-h-[calc(100dvh-4rem)] flex flex-col overflow-hidden`}
           align={position === "right" ? "end" : "start"}
         >
           {/* User info section - Fixed at top, clickable to profile */}

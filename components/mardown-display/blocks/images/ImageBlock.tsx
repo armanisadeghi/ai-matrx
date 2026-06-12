@@ -300,7 +300,7 @@ const ImageBlock: React.FC<ImageBlockProps> = ({ src, alt = "Image" }) => {
               transform: `scale(${zoomLevel})`,
               transformOrigin: "center center",
             }}
-            className="h-[94vh] w-[96vw] object-contain transition-transform duration-200 cursor-zoom-out"
+            className="h-[94dvh] w-[96vw] object-contain transition-transform duration-200 cursor-zoom-out"
           />
 
           {/* Top-center close button — avoids sidebar (left) and avatar (right) */}

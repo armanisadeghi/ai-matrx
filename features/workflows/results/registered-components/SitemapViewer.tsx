@@ -276,7 +276,7 @@ const SitemapViewer: React.FC<ViewerProps> = ({ nodeData, brokerId, keyToDisplay
     // Error state
     if (!data?.success && data?.error) {
         return (
-            <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-screen">
+            <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-dvh">
                 <div className="max-w-full px-2 sm:px-4 lg:px-6 py-4">
                     <Card title="Error">
                         <div className="text-red-500 p-4">{data?.error}</div>
@@ -287,7 +287,7 @@ const SitemapViewer: React.FC<ViewerProps> = ({ nodeData, brokerId, keyToDisplay
     }
 
     return (
-        <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-screen">
+        <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-dvh">
             <div className="max-w-full px-2 sm:px-4 lg:px-6 py-4">
                 {/* Hero section with custom button */}
                 <div className="mb-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl shadow-xl overflow-hidden">

@@ -213,7 +213,7 @@ export default function MobileFilterMenu() {
 
       {/* Project Selector Sheet */}
       <Sheet open={showProjectSheet} onOpenChange={setShowProjectSheet}>
-        <SheetContent side="bottom" className="h-[60vh]">
+        <SheetContent side="bottom" className="h-[60dvh]">
           <SheetHeader className="sr-only">
             <SheetTitle>Select Project</SheetTitle>
             <SheetDescription>Choose a project to view its tasks</SheetDescription>
@@ -233,7 +233,7 @@ export default function MobileFilterMenu() {
 
       {/* Scope Filter Sheet */}
       <Sheet open={showScopeSheet} onOpenChange={setShowScopeSheet}>
-        <SheetContent side="bottom" className="h-[70vh] overflow-y-auto">
+        <SheetContent side="bottom" className="h-[70dvh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Filter by Scope</SheetTitle>
             <SheetDescription>

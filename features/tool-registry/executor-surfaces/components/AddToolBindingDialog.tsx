@@ -116,7 +116,7 @@ export function AddToolBindingDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && finish()}>
-      <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[80dvh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-sm">
             Bind a tool to <span className="font-mono">{executorName}</span>

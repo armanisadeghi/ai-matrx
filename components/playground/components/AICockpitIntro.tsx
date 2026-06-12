@@ -127,10 +127,10 @@ const AICockpitIntro = ({ onNewRecipe }) => {
 
             {/* Recipe Templates Dialog */}
             <Dialog open={isTemplatesDialogOpen} onOpenChange={setIsTemplatesDialogOpen}>
-                <DialogContent className='max-w-[95vw] max-h-[95vh] p-0'>
+                <DialogContent className='max-w-[95vw] max-h-[95dvh] p-0'>
                     <RecipeTemplatesGallery 
                         onSelectTemplate={handleSelectTemplate}
-                        className='h-[90vh]'
+                        className='h-[90dvh]'
                     />
                 </DialogContent>
             </Dialog>

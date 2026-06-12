@@ -192,7 +192,7 @@ function Gallery() {
                 <DialogHeader>
                     <DialogTitle>{images.length} Photos</DialogTitle>
                 </DialogHeader>
-                <ScrollArea className="h-[calc(80vh-_theme(spacing.16))]">
+                <ScrollArea className="h-[calc(80dvh-_theme(spacing.16))]">
                     <div className="grid grid-cols-2 gap-2  ">
                         {images.map((image, index) => (
                             <div key={index} className="relative ">

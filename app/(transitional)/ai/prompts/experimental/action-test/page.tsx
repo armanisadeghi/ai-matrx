@@ -86,7 +86,7 @@ export default function ActionTestPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Header */}

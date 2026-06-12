@@ -252,12 +252,12 @@ function FocusView({
             draggable={false}
           />
         ) : (
-          <div className="h-full w-full max-h-[80vh] max-w-[80vw] animate-pulse bg-muted" />
+          <div className="h-full w-full max-h-[80dvh] max-w-[80vw] animate-pulse bg-muted" />
         )
       ) : (
         <MediaThumbnail
           file={file}
-          className="h-full max-h-[80vh] aspect-square"
+          className="h-full max-h-[80dvh] aspect-square"
         />
       )}
 

@@ -73,7 +73,7 @@ export default function AppBuilderLayout({ children }: AppBuilderLayoutProps) {
             </div>
 
             <div className="flex flex-col space-y-6">
-                <main className="min-h-[calc(100vh-200px)]">{children}</main>
+                <main className="min-h-[calc(100dvh-200px)]">{children}</main>
             </div>
             <AppBuilderDebugOverlay position="middle-right" />
         </div>

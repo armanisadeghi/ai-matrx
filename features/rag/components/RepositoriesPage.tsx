@@ -119,7 +119,7 @@ export function RepositoriesPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3rem)] bg-background">
+    <div className="flex flex-col h-[calc(100dvh-3rem)] bg-background">
       <header className="border-b px-6 py-4 space-y-2">
         <div className="flex items-center justify-between gap-3">
           <div>

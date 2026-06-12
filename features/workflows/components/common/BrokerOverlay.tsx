@@ -26,7 +26,7 @@ export function BrokerOverlay({ workflowData, isOpen, onClose }: BrokerOverlayPr
       />
       
       {/* Overlay Content */}
-      <div className="relative bg-textured rounded-lg shadow-2xl border-border w-full max-w-6xl max-h-[90vh] overflow-hidden mx-4">
+      <div className="relative bg-textured rounded-lg shadow-2xl border-border w-full max-w-6xl max-h-[90dvh] overflow-hidden mx-4">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
@@ -46,7 +46,7 @@ export function BrokerOverlay({ workflowData, isOpen, onClose }: BrokerOverlayPr
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(90dvh-120px)]">
           {brokerCollection.uniqueCount === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <Database className="w-12 h-12 mx-auto mb-4 opacity-50" />

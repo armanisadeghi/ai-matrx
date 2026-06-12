@@ -206,7 +206,7 @@ export const JsonToTableDialog: React.FC<JsonToTableDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[720px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[720px] max-h-[90dvh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>Save JSON as Data Table</DialogTitle>
         </DialogHeader>

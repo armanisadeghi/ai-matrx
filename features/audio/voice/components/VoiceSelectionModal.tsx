@@ -177,7 +177,7 @@ export function VoiceSelectionModal({
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-background/95 backdrop-blur-xl rounded-3xl border border-border/50 shadow-2xl w-full max-w-6xl max-h-[85vh] flex flex-col overflow-hidden"
+                    className="bg-background/95 backdrop-blur-xl rounded-3xl border border-border/50 shadow-2xl w-full max-w-6xl max-h-[85dvh] flex flex-col overflow-hidden"
                 >
                     {/* Header */}
                     <div className="px-6 py-4 border-b border-border/50 flex items-center justify-between">

@@ -40,10 +40,10 @@ export function MobileOverlayWrapper({
     if (!isOpen) return null;
 
     const maxHeightClass = {
-        sm: "max-h-[50vh]",
-        md: "max-h-[65vh]",
-        lg: "max-h-[80vh]",
-        xl: "max-h-[90vh]",
+        sm: "max-h-[50dvh]",
+        md: "max-h-[65dvh]",
+        lg: "max-h-[80dvh]",
+        xl: "max-h-[90dvh]",
     }[maxHeight];
 
     return (

@@ -37,7 +37,7 @@ const EmailAppPage = () => {
 
     if (isMobile) {
         return (
-            <div className="h-screen flex flex-col">
+            <div className="h-dvh flex flex-col">
                 {/* Mobile Header */}
                 <div className="flex items-center justify-between p-4 border-b">
                     <Button
@@ -95,7 +95,7 @@ const EmailAppPage = () => {
 
     // Desktop layout with resizable panels
     return (
-        <div className="h-screen flex overflow-hidden">
+        <div className="h-dvh flex overflow-hidden">
             {/* Collapsible Sidebar */}
             <div className={cn(
                 "flex-shrink-0 transition-all duration-300",

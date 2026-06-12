@@ -4,7 +4,7 @@ import { FileX, ArrowLeft, Plus } from "lucide-react";
 
 export default function WorkflowNotFound() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-background flex items-center justify-center p-4">
       <div className="max-w-md w-full text-center space-y-8">
         {/* Icon */}
         <div className="flex justify-center">

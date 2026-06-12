@@ -244,7 +244,7 @@ export default function ReviseCommentsModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden border border-slate-100 dark:border-slate-700">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90dvh] overflow-hidden border border-slate-100 dark:border-slate-700">
         <div className="p-6">
           <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
             Revise Content

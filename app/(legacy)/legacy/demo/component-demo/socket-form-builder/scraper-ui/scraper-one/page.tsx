@@ -27,7 +27,7 @@ export default function Page() {
     }, [isResponseActive]);
 
     return (
-        <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="flex flex-col min-h-dvh bg-gray-100 dark:bg-gray-900">
             {/* Controls Section */}
             <div
                 className={`transition-all duration-300 ease-in-out overflow-hidden ${

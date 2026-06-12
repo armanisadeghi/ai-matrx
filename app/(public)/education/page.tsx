@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 
 export default function EducationPage() {
     return (
-        <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-8">
+        <div className="min-h-dvh bg-background text-foreground flex flex-col items-center justify-center p-8">
             <div className="max-w-4xl w-full space-y-8 text-center">
                 {/* Icon */}
                 <div className="flex justify-center">

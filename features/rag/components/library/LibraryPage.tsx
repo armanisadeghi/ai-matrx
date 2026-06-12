@@ -381,7 +381,7 @@ export function LibraryPage() {
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3rem)] bg-textured">
+    <div className="flex flex-col h-[calc(100dvh-3rem)] bg-textured">
       {/* Header — stays put while the table area scrolls */}
       <header className="border-b bg-background/60 backdrop-blur-sm">
         <div className="px-6 py-4 space-y-4">

@@ -69,7 +69,7 @@ const MarkdownDualDisplay: React.FC = () => {
 
   return (
       <motion.div
-          className="flex flex-col sm:flex-row w-full h-[calc(100vh-4rem)] bg-background shadow-lg rounded-lg overflow-hidden"
+          className="flex flex-col sm:flex-row w-full h-[calc(100dvh-4rem)] bg-background shadow-lg rounded-lg overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}

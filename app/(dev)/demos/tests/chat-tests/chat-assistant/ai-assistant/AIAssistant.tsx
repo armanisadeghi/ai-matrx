@@ -206,14 +206,14 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
   
   return (
     <div 
-      className={`fixed bottom-0 right-0 z-50 flex flex-col-reverse gap-2 max-h-screen ${className || ''}`}
+      className={`fixed bottom-0 right-0 z-50 flex flex-col-reverse gap-2 max-h-dvh ${className || ''}`}
     >
       {/* Interaction Items (visible when open) */}
       <div 
         ref={interactionsContainerRef}
         className={`
           overflow-y-auto flex flex-col-reverse gap-2 w-72 pr-2 pb-2 pl-1
-          ${isOpen ? "opacity-100 visible max-h-[70vh]" : "opacity-0 invisible h-0"} 
+          ${isOpen ? "opacity-100 visible max-h-[70dvh]" : "opacity-0 invisible h-0"} 
           transition-all duration-300 ease-in-out scroll-smooth scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700
         `}
       >
@@ -238,7 +238,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({
         ref={historyContainerRef}
         className={`
           overflow-y-auto flex flex-col-reverse gap-1 w-72 pr-2 pb-0 pl-1
-          ${isOpen && showHistory ? "opacity-100 visible max-h-[70vh]" : "opacity-0 invisible h-0"} 
+          ${isOpen && showHistory ? "opacity-100 visible max-h-[70dvh]" : "opacity-0 invisible h-0"} 
           transition-all duration-300 ease-in-out
         `}
       >

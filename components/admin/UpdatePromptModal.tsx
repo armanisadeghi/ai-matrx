@@ -283,7 +283,7 @@ export function UpdatePromptModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh]">
+      <DialogContent className="max-w-5xl max-h-[90dvh]">
         <DialogHeader>
           <DialogTitle>Update "{systemPrompt.name}" to Latest Version</DialogTitle>
           <DialogDescription>

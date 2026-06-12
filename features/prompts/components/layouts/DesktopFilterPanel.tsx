@@ -309,7 +309,7 @@ export function DesktopFilterPanel({
         className="w-[360px] p-0 overflow-hidden flex flex-col"
         style={{
           maxHeight:
-            "var(--radix-popover-content-available-height, calc(100vh - 120px))",
+            "var(--radix-popover-content-available-height, calc(100dvh - 120px))",
         }}
       >
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border shrink-0">

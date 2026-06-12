@@ -103,7 +103,7 @@ export const SocketAdminOverlay: React.FC<SocketAdminOverlayProps> = ({
 
     // FullScreenOverlay customization props
     width = "95vw",
-    height = "95vh",
+    height = "95dvh",
     initialTab = "tasks",
     leftSidePanelRatio = 0.2,
     showLeftSidePanel = true,

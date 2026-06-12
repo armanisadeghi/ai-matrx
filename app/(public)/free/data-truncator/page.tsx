@@ -29,7 +29,7 @@ export default function DataTruncatorPage() {
   }, []);
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
       {/* Sample loader bar — page-specific, not part of the reusable component */}
       <div className="flex items-center gap-2 px-3 py-1 bg-card border-b border-border flex-shrink-0">
         <span className="text-[10px] text-muted-foreground">Samples:</span>

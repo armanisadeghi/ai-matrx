@@ -17,7 +17,7 @@ import {
 // Loading Skeleton Component
 const LoadingSkeleton = () => {
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center space-y-8 min-h-[50vh]">
+    <div className="w-full h-full flex flex-col items-center justify-center space-y-8 min-h-[50dvh]">
       <motion.div
         animate={{ rotate: 360 }}
         transition={{ duration: 2, repeat: Infinity, ease: "linear" }}

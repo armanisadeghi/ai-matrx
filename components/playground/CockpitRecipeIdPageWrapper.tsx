@@ -40,7 +40,7 @@ export default function CockpitRecipeIdPageWrapper({ recipeId }: CockpitRecipeId
     // Show loading state during transition
     if (isTransitioning || mountedRecipeId === null || mountedRecipeId !== recipeId) {
         return (
-            <div className="h-[calc(100vh-3rem)] lg:h-[calc(100vh-2.5rem)] flex items-center justify-center bg-textured">
+            <div className="h-[calc(100dvh-3rem)] lg:h-[calc(100dvh-2.5rem)] flex items-center justify-center bg-textured">
                 <div className="flex flex-col items-center gap-4">
                     <LoadingSpinner size="xl" />
                     <p className="text-sm text-gray-600 dark:text-gray-400">

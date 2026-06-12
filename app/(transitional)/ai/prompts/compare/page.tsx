@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function MultiVersionTestingPage() {
     return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] px-6">
+        <div className="flex flex-col items-center justify-center min-h-[60dvh] px-6">
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
                 <div className="p-3 rounded-xl bg-primary/10">

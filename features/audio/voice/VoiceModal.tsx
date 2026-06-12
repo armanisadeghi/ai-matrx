@@ -79,7 +79,7 @@ const VoiceModal: React.FC<VoiceModalProps> = ({ voice, onClose }) => {
 
     return (
         <Credenza open={!!voice} onOpenChange={onClose}>
-            <CredenzaContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <CredenzaContent className="sm:max-w-[600px] max-h-[90dvh] overflow-y-auto">
                 <div className="relative">
                     <Suspense fallback={<ImageLoader />}>
                         <div className="relative h-[200px] w-full">

@@ -92,7 +92,7 @@ const EntityAnalyzerGpt: React.FC<EntityAnalyzerProps> = ({
             </div>
           </div>
           {isOpen && (
-            <div className="p-2 overflow-auto" style={{ maxHeight: "50vh" }}>
+            <div className="p-2 overflow-auto" style={{ maxHeight: "50dvh" }}>
               <div className="flex space-x-1 overflow-x-auto mb-2">
                 {entityOptions.map((option) => (
                   <Button

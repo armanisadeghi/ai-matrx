@@ -235,7 +235,7 @@ const MultiSearchableSelectField: React.FC<CommonFieldProps> = ({
                                 onClick={(e) => e.stopPropagation()}
                             />
                         </div>
-                        <ScrollArea className="h-72 max-h-[60vh] nodrag">
+                        <ScrollArea className="h-72 max-h-[60dvh] nodrag">
                             <div className="p-1 nodrag">
                                 {showSelectAll && (
                                     <div

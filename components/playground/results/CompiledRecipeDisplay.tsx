@@ -84,7 +84,7 @@ export function CompiledRecipeDisplay({ cockpitControls }: CompiledRecipeDisplay
                 open={isFullScreen}
                 onOpenChange={setIsFullScreen}
             >
-                <DialogContent className='max-w-[90vw] max-h-[90vh] flex flex-col'>
+                <DialogContent className='max-w-[90vw] max-h-[90dvh] flex flex-col'>
                     <div className='flex items-center gap-2 mb-4'>
                         <DialogTitle className='text-lg font-semibold'>Compiled Recipe View</DialogTitle>
                         <Button

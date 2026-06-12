@@ -305,7 +305,7 @@ export function AgentSettingsModal({
           else handleOpen();
         }}
       >
-        <DialogContent className="max-w-xl p-0 overflow-hidden flex flex-col h-[65vh] max-h-[65vh]">
+        <DialogContent className="max-w-xl p-0 overflow-hidden flex flex-col h-[65dvh] max-h-[65dvh]">
           <DialogHeader className="px-4 py-2.5 border-b border-border flex-shrink-0">
             <DialogTitle className="text-xs font-semibold uppercase tracking-wide">
               Model Settings

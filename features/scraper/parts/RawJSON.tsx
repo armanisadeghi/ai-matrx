@@ -22,7 +22,7 @@ const RawJSON = ({ pageData }) => {
           <CopyIcon className="w-4 h-4" />
         </Button>
       </div>
-      <pre className="whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 p-4 rounded-md text-sm text-gray-800 dark:text-gray-200 overflow-auto max-h-[70vh]">
+      <pre className="whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 p-4 rounded-md text-sm text-gray-800 dark:text-gray-200 overflow-auto max-h-[70dvh]">
         {jsonStr}
       </pre>
     </div>

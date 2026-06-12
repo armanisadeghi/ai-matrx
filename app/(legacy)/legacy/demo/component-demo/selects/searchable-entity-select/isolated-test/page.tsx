@@ -16,7 +16,7 @@ export default function TestPage() {
   const [selectedValue, setSelectedValue] = useState<string>();
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <div className="min-h-dvh bg-background p-8">
       <div className="max-w-md mx-auto space-y-4">
         <h1 className="text-xl font-bold">SearchableSelect Test</h1>
         

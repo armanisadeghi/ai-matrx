@@ -16,7 +16,7 @@ interface LogDetailsDialogProps {
 export function LogDetailsDialog({ log, onClose }: LogDetailsDialogProps) {
     return (
         <Dialog open onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl max-h-[80vh]">
+            <DialogContent className="max-w-2xl max-h-[80dvh]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Badge>{log.category}</Badge>

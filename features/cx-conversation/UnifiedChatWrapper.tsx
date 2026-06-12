@@ -270,7 +270,7 @@ export function UnifiedChatWrapper({
 
   // ── Container classes ────────────────────────────────────────────────────
   const containerClass = [
-    layout === "full" ? "h-[calc(100vh-2.5rem)]" : "h-full",
+    layout === "full" ? "h-[calc(100dvh-2.5rem)]" : "h-full",
     "flex w-full overflow-hidden",
     className ?? "",
   ]

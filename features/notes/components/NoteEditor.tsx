@@ -679,7 +679,7 @@ export function NoteEditor({
               value={localContent}
               onChange={(e) => handleContentChange(e.target.value)}
               placeholder="Start typing your note..."
-              className="absolute inset-0 w-full h-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed bg-transparent p-3 pb-[50vh]"
+              className="absolute inset-0 w-full h-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed bg-transparent p-3 pb-[50dvh]"
             />
           </UnifiedAgentContextMenu>
         )}
@@ -803,7 +803,7 @@ export function NoteEditor({
             ]}
           >
             <ScrollArea className="absolute inset-0 w-full h-full">
-              <div className="p-6 pb-[50vh] bg-textured">
+              <div className="p-6 pb-[50dvh] bg-textured">
                 {localContent.trim() ? (
                   <RichDocument
                     content={localContent}

@@ -96,7 +96,7 @@ export default function CustomAppSlugLayoutClient({
 
   if (!isAppInitialized) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-textured">
+      <div className="h-dvh w-full flex items-center justify-center bg-textured">
         <div className="flex flex-col items-center justify-center">
           <LoadingSpinner size="lg" />
           <p className="mt-4 text-gray-600 dark:text-gray-400 text-sm animate-pulse">

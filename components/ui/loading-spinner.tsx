@@ -231,7 +231,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     return (
       <div className={cn(
         "flex items-center justify-center bg-background",
-        fullscreen && "h-screen w-full",
+        fullscreen && "h-dvh w-full",
         className
       )}>
         {/* Overlay to prevent interactions */}

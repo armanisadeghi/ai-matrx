@@ -218,7 +218,7 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
                 <div
                     className={`max-w-6xl mx-auto ${
                         isFullScreen
-                            ? "bg-textured rounded-xl shadow-2xl h-full max-h-[98vh] w-full flex flex-col overflow-hidden border border-primary cursor-default"
+                            ? "bg-textured rounded-xl shadow-2xl h-full max-h-[98dvh] w-full flex flex-col overflow-hidden border border-primary cursor-default"
                             : ""
                     }`}
                     onClick={isFullScreen ? (e) => e.stopPropagation() : undefined}

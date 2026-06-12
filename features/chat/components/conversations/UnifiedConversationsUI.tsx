@@ -296,7 +296,7 @@ export const UnifiedConversationsUI: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-dvh">
       {/* Mobile header - only visible on small screens */}
       <header className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-white dark:bg-gray-950">
         <button

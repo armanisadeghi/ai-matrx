@@ -28,7 +28,7 @@ const DynamicLayout = ({ layoutType, children }) => {
     const selectedLayout = layouts[layoutType] || layouts.fourEqualTop;
 
     return (
-        <div className="grid grid-cols-12 gap-4 p-4 bg-gray-900 min-h-screen">
+        <div className="grid grid-cols-12 gap-4 p-4 bg-gray-900 min-h-dvh">
             {React.Children.map(children, (child, index) => {
                 if (index >= selectedLayout.length) return null;
                 const { gridColumn, gridRow, minHeight } = selectedLayout[index];

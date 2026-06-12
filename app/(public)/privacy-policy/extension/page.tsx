@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function ExtensionPrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-12 px-6">
+    <div className="min-h-dvh bg-gradient-to-b from-background to-muted/20 py-12 px-6">
       <div className="max-w-3xl mx-auto">
         <div className="space-y-2 mb-10">
           <p className="text-sm text-muted-foreground">

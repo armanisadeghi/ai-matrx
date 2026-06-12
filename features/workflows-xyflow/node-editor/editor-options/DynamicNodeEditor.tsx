@@ -67,7 +67,7 @@ export const DynamicNodeEditor: React.FC<NodeEditorProps> = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] sm:w-[70vw] h-[90dvh] sm:h-[90vh] max-w-none flex flex-col overflow-hidden">
+            <DialogContent className="w-[95vw] sm:w-[70vw] h-[90dvh] sm:h-[90dvh] max-w-none flex flex-col overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Edit Node: {nodeData.step_name || nodeData.id}</DialogTitle>
                 </DialogHeader>

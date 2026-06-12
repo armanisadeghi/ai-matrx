@@ -100,7 +100,7 @@ export function QuickSaveCodeDialog({
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogContent className="max-w-4xl h-[min(85vh,780px)] p-3 flex flex-col gap-2">
+      <DialogContent className="max-w-4xl h-[min(85dvh,780px)] p-3 flex flex-col gap-2">
         <DialogHeader className="shrink-0">
           <DialogTitle className="text-sm">Quick Save Code</DialogTitle>
           <DialogDescription className="sr-only">

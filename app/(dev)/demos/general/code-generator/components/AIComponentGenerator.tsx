@@ -232,7 +232,7 @@ render(<CustomComponent />);
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="flex flex-col h-dvh bg-gray-50">
       <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4">
         <h1 className="text-2xl font-bold">AI-Powered React Component Generator</h1>
         <p className="text-sm opacity-80">

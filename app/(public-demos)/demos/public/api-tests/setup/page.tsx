@@ -47,7 +47,7 @@ export default function ApiTestSetupPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-textured p-6">
+    <div className="min-h-dvh bg-textured p-6">
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Header */}
         <div>

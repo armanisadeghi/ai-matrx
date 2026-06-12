@@ -74,13 +74,13 @@ export default function TestEntityMetadata() {
                         >
                             <div className='grid grid-cols-2 gap-4'>
                                 <SimpleCard title='Entity Fields'>
-                                    <pre className='text-sm whitespace-pre-wrap break-words bg-gray-50 dark:bg-gray-700 p-4 rounded overflow-auto h-[calc(100vh-36rem)]'>
+                                    <pre className='text-sm whitespace-pre-wrap break-words bg-gray-50 dark:bg-gray-700 p-4 rounded overflow-auto h-[calc(100dvh-36rem)]'>
                                         {JSON.stringify(metadata.entityFields, null, 2)}
                                     </pre>
                                 </SimpleCard>
 
                                 <SimpleCard title='Full Metadata'>
-                                    <pre className='text-sm whitespace-pre-wrap break-words bg-gray-50 dark:bg-gray-700 p-4 rounded overflow-auto h-[calc(100vh-36rem)]'>
+                                    <pre className='text-sm whitespace-pre-wrap break-words bg-gray-50 dark:bg-gray-700 p-4 rounded overflow-auto h-[calc(100dvh-36rem)]'>
                                         {JSON.stringify(metadata, null, 2)}
                                     </pre>
                                 </SimpleCard>

@@ -385,7 +385,7 @@ const RemirrorEditor: React.FC = () => {
           className="remirror-editor-wrapper w-full border border-border rounded-md focus-within:ring-1 focus-within:ring-primary/50 transition-shadow overflow-auto bg-background"
           style={{ 
             height: `${height}px`, 
-            maxHeight: '80vh',
+            maxHeight: '80dvh',
             '--editor-line-height': lineSpacing
           } as React.CSSProperties}
           data-theme={mode}

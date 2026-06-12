@@ -265,7 +265,7 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess }: Add
           {loadingFields ? (
             <div className="py-4 text-center">Loading fields...</div>
           ) : (
-            <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-2 scrollbar-none">
+            <div className="max-h-[60dvh] overflow-y-auto space-y-4 pr-2 scrollbar-none">
               {fields.sort((a, b) => a.field_order - b.field_order).map((field) => (
                 <div key={field.id} className="space-y-2">
                   <div className="flex items-center">

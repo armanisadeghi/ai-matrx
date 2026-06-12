@@ -121,7 +121,7 @@ export function GlobalSearchResults({
         <span className="tabular-nums">{searchedNotes} searched</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-1 max-h-[40vh]">
+      <div className="flex-1 overflow-y-auto py-1 max-h-[40dvh]">
         {folderGroups.map((group) => (
           <div key={group.folder || "__unfiled__"} className="mb-1">
             <div className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">

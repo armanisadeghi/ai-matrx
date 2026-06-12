@@ -106,7 +106,7 @@ function Test4_ExplicitHeightOnGroup() {
   return (
     <Group
       orientation="horizontal"
-      style={{ height: "calc(100vh - 600px)", border: "3px solid purple" }}
+      style={{ height: "calc(100dvh - 600px)", border: "3px solid purple" }}
     >
       <Panel defaultSize="22%" minSize="14%" maxSize="40%">
         <div

@@ -67,7 +67,7 @@ const FloatingSheet = ({
       lg: "max-h-lg",
       xl: "max-h-xl",
       full: "max-h-full",
-      auto: position === "center" ? "max-h-[80vh]" : "max-h-[50vh]"
+      auto: position === "center" ? "max-h-[80dvh]" : "max-h-[50dvh]"
     };
     
     return heightMap[height];
@@ -129,7 +129,7 @@ const PositioningDemo = () => {
   const handleClose = () => setIsOpen(false);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-8">
+    <div className="min-h-dvh bg-gray-100 dark:bg-gray-900 p-8">
       <div className="max-w-3xl mx-auto bg-textured p-6 rounded-lg shadow">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
           FloatingSheet Positioning Demo

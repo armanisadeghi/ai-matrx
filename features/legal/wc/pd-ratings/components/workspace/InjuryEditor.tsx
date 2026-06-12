@@ -71,7 +71,7 @@ export function InjuryEditor(props: InjuryEditorProps) {
             <DrawerTitle>{TitleNode}</DrawerTitle>
             <DrawerDescription>{Description}</DrawerDescription>
           </DrawerHeader>
-          <div className="px-4 pb-4 max-h-[70vh] overflow-y-auto">
+          <div className="px-4 pb-4 max-h-[70dvh] overflow-y-auto">
             <InjuryEditorBody {...props} />
           </div>
           <DrawerFooter>
@@ -93,7 +93,7 @@ export function InjuryEditor(props: InjuryEditorProps) {
           <DialogTitle>{TitleNode}</DialogTitle>
           <DialogDescription>{Description}</DialogDescription>
         </DialogHeader>
-        <div className="max-h-[70vh] overflow-y-auto pr-1">
+        <div className="max-h-[70dvh] overflow-y-auto pr-1">
           <InjuryEditorBody {...props} />
         </div>
         <DialogFooter>

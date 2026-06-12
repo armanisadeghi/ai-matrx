@@ -113,7 +113,7 @@ export function CompactPromptModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-xl p-0 gap-0 max-h-[calc(100vh-4rem)] overflow-hidden">
+      <DialogContent className="max-w-xl p-0 gap-0 max-h-[calc(100dvh-4rem)] overflow-hidden">
         {/* Header with prompt name */}
         <div className="h-10 flex-shrink-0 flex items-center px-3 border-b border-border">
           <DialogTitle className="text-sm font-semibold truncate">{promptName}</DialogTitle>

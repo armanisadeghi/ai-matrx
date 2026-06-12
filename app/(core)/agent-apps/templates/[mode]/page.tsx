@@ -64,7 +64,7 @@ export default async function TemplateDemoPage({
     : null;
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-border bg-card">
         <div className="flex items-center gap-3 min-w-0">
           <Link

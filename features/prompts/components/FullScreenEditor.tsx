@@ -321,7 +321,7 @@ export function FullScreenEditor({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-none w-screen h-screen p-0 m-0 rounded-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-90 data-[state=open]:zoom-in-90 data-[state=open]:duration-300 data-[state=closed]:duration-200">
+            <DialogContent className="max-w-none w-screen h-dvh p-0 m-0 rounded-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-90 data-[state=open]:zoom-in-90 data-[state=open]:duration-300 data-[state=closed]:duration-200">
                 <div className="flex h-full bg-gray-50 dark:bg-gray-950">
                     {/* Sidebar */}
                     <div className="w-80 bg-textured border-r border-border flex flex-col">

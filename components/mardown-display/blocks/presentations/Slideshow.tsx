@@ -86,7 +86,7 @@ const Slideshow = (
         className={`w-full ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-4" : "rounded-2xl overflow-hidden shadow-xl border-border"}`}
       >
         <div
-          className={`bg-textured ${isFullScreen ? "h-full w-full max-w-7xl max-h-[95vh] rounded-2xl overflow-hidden" : "w-full"} flex flex-col`}
+          className={`bg-textured ${isFullScreen ? "h-full w-full max-w-7xl max-h-[95dvh] rounded-2xl overflow-hidden" : "w-full"} flex flex-col`}
         >
           {/* Header with Controls */}
           <div className="flex-shrink-0 px-4 py-3 border-b border-border flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">

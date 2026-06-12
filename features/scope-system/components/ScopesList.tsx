@@ -389,7 +389,7 @@ export function ScopesList({
         ) : scopeCount > 0 ? (
           <Card className="overflow-hidden">
             {/* Scroll container: vertical + horizontal, with frozen name column + header */}
-            <div className="overflow-auto max-h-[65vh]">
+            <div className="overflow-auto max-h-[65dvh]">
               <Table className="w-full border-separate border-spacing-0">
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">

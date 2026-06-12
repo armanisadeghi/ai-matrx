@@ -32,7 +32,7 @@ export function LLMDataModal({ open, onOpenChange, data }: LLMDataModalProps) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col bg-textured">
+            <DialogContent className="max-w-4xl max-h-[85dvh] flex flex-col bg-textured">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
                         LLM Analysis Data - {data.strategy.toUpperCase()}

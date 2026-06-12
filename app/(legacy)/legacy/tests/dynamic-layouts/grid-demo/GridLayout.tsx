@@ -109,7 +109,7 @@ const ExampleLayout = () => {
                 items={items}
                 gap={4}
                 preserveHeight
-                className="min-h-screen bg-background border border-border rounded-lg p-4"
+                className="min-h-dvh bg-background border border-border rounded-lg p-4"
             />
         </div>
     );

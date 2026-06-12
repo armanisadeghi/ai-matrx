@@ -291,7 +291,7 @@ export default function ZipCodeHeatmapPage() {
                             )}
 
                             {/* Map */}
-                            <div className={`relative ${isFullscreen ? "h-screen" : "h-full"} overflow-hidden`}>
+                            <div className={`relative ${isFullscreen ? "h-dvh" : "h-full"} overflow-hidden`}>
                                 {/* Fullscreen Controls */}
                                 {zipData.length > 0 && (
                                     <>

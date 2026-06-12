@@ -46,7 +46,7 @@ export function PeekDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[80vh] flex flex-col gap-0 p-0">
+      <DialogContent className="max-w-lg max-h-[80dvh] flex flex-col gap-0 p-0">
         <DialogHeader className="px-5 pt-5 pb-3 border-b border-border">
           <DialogTitle className="flex items-center gap-2 text-base">
             {icon}

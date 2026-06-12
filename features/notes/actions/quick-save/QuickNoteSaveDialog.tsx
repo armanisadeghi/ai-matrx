@@ -68,7 +68,7 @@ export function QuickNoteSaveDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl h-[min(80vh,720px)] p-3 flex flex-col gap-2">
+      <DialogContent className="max-w-3xl h-[min(80dvh,720px)] p-3 flex flex-col gap-2">
         <DialogHeader className="shrink-0">
           <DialogTitle className="text-sm">Quick Save to Notes</DialogTitle>
           <DialogDescription className="sr-only">

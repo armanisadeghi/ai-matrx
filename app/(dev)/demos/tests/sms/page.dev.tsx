@@ -15,7 +15,7 @@ export default function SMSTestPage() {
   const [activeTab, setActiveTab] = useState('send');
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       <div className="flex-shrink-0 border-b bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
           <h1 className="text-2xl font-bold">SMS Integration Testing</h1>

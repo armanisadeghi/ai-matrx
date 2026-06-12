@@ -125,7 +125,7 @@ export default function FeedbackList() {
                 </Card>
 
                 {/* Feedback Items */}
-                <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
+                <div className="space-y-2 max-h-[calc(100dvh-300px)] overflow-y-auto">
                     {filteredFeedback.length === 0 ? (
                         <Card className="p-6 text-center">
                             <p className="text-gray-600 dark:text-gray-400">No feedback found</p>

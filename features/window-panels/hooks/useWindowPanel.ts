@@ -123,7 +123,7 @@ export interface UseWindowPanelOptions {
    */
   width?: number | string;
   /**
-   * Initial height. Accepts pixels (number) or viewport strings ("60vh").
+   * Initial height. Accepts pixels (number) or viewport strings ("60dvh").
    * Default: 400.
    */
   height?: number | string;

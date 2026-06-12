@@ -95,7 +95,7 @@ interface ApiTestSearchResponse {
 export interface LibraryPreviewPageProps {
   documentId: string;
   /** When true, drop the header chrome and use h-full instead of
-   *  h-[calc(100vh-3rem)] so the viewer can be embedded inside other
+   *  h-[calc(100dvh-3rem)] so the viewer can be embedded inside other
    *  surfaces (e.g. the /files Document tab). */
   embedded?: boolean;
 }
@@ -115,7 +115,7 @@ export function LibraryPreviewPage({
     <div
       className={
         "flex flex-col bg-background " +
-        (embedded ? "h-full" : "h-[calc(100vh-3rem)]")
+        (embedded ? "h-full" : "h-[calc(100dvh-3rem)]")
       }
     >
       {!embedded && (

@@ -13,7 +13,7 @@ interface ErrorPageProps {
 
 export default function WorkflowsError({ error, reset }: ErrorPageProps) {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-background p-4">
+    <div className="min-h-dvh w-full flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">

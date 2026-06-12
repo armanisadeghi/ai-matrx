@@ -80,7 +80,7 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogContent className="sm:max-w-[800px] max-h-[90dvh] overflow-hidden flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Bookmark Manager</DialogTitle>
                 </DialogHeader>

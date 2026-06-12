@@ -264,7 +264,7 @@ const DebugOverlay: React.FC<DebugOverlayProps> = ({
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="max-w-7xl h-[90vh] flex flex-col">
+      <DialogContent className="max-w-7xl h-[90dvh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Bug className="h-4 w-4 text-amber-600 dark:text-amber-400" />

@@ -69,7 +69,7 @@ export function generatePresentationHTML(presentationData: PresentationData): st
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, ${theme.backgroundColor} 0%, ${adjustBrightness(theme.backgroundColor, -10)} 100%);
-            min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -252,20 +252,20 @@ export function generatePresentationHTML(presentationData: PresentationData): st
 
             .presentation-container {
                 padding: 0;
-                min-height: 100vh;
+                min-height: 100dvh;
             }
 
             .slides-wrapper {
                 /* Full viewport on mobile, no fixed height */
                 height: auto;
-                min-height: calc(100vh - 100px); /* Leave room for navigation */
+                min-height: calc(100dvh - 100px); /* Leave room for navigation */
                 border-radius: 0;
                 flex: 1;
             }
 
             .slide {
                 padding: 2rem 1.5rem;
-                min-height: calc(100vh - 100px);
+                min-height: calc(100dvh - 100px);
             }
 
             .slide-title {
@@ -305,7 +305,7 @@ export function generatePresentationHTML(presentationData: PresentationData): st
         @media (min-width: 769px) {
             .slides-wrapper {
                 /* Increase height on larger screens */
-                height: calc(100vh - 180px);
+                height: calc(100dvh - 180px);
                 min-height: 600px;
                 max-height: 800px;
             }
@@ -314,7 +314,7 @@ export function generatePresentationHTML(presentationData: PresentationData): st
         /* Extra large screens */
         @media (min-width: 1400px) {
             .slides-wrapper {
-                height: calc(100vh - 200px);
+                height: calc(100dvh - 200px);
                 max-height: 900px;
             }
         }
@@ -329,7 +329,7 @@ export function generatePresentationHTML(presentationData: PresentationData): st
                 display: block !important;
                 page-break-after: always;
                 height: auto;
-                min-height: 100vh;
+                min-height: 100dvh;
             }
 
             .navigation {

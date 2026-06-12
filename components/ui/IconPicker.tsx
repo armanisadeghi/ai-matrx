@@ -86,7 +86,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
                         />
                     </div>
 
-                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 overflow-y-auto max-h-[60vh]">
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 overflow-y-auto max-h-[60dvh]">
                         {filteredIcons.map(({ name }) => {
                             const isSelected = name === (selectedIcon || defaultIcon);
                             

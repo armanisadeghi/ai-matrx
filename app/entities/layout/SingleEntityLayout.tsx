@@ -153,7 +153,7 @@ export const SingleEntityOverlay: React.FC<SingleEntityOverlayProps> = ({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent
         className={cn(
-          "w-[95vw] sm:w-[80vw] h-[85dvh] sm:h-[80vh] max-w-none p-0 gap-0 flex flex-col",
+          "w-[95vw] sm:w-[80vw] h-[85dvh] sm:h-[80dvh] max-w-none p-0 gap-0 flex flex-col",
           className,
         )}
       >

@@ -88,7 +88,7 @@ export const PromptBuilderRedux: React.FC<PromptBuilderReduxProps> = ({
 
   if (status.isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-dvh">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -96,7 +96,7 @@ export const PromptBuilderRedux: React.FC<PromptBuilderReduxProps> = ({
 
   if (status.error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen space-y-4">
+      <div className="flex flex-col items-center justify-center h-dvh space-y-4">
         <div className="text-destructive font-medium">Error loading prompt</div>
         <div className="text-muted-foreground">{status.error}</div>
         <Link href={basePath}>

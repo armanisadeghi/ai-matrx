@@ -224,7 +224,7 @@ const NextWindowManager = ({windows: initialWindows}) => {
     return (
         <motion.div
             ref={containerRef}
-            className="relative w-full h-screen overflow-hidden bg-background p-8"
+            className="relative w-full h-dvh overflow-hidden bg-background p-8"
             onMouseMove={(e) => {
                 setBackgroundPosition({x: e.clientX / 100, y: e.clientY / 100});
             }}

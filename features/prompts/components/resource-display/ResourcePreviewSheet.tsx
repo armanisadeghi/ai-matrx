@@ -563,7 +563,7 @@ const ResourcePreviewSheet: React.FC<ResourcePreviewSheetProps> = ({
                           Row Data
                         </h4>
                       </div>
-                      <div className="p-3 space-y-2 max-h-[60vh] overflow-y-auto">
+                      <div className="p-3 space-y-2 max-h-[60dvh] overflow-y-auto">
                         {Object.entries(tableData.row.data).map(
                           ([fieldName, value]: [string, any]) => (
                             <div
@@ -611,7 +611,7 @@ const ResourcePreviewSheet: React.FC<ResourcePreviewSheetProps> = ({
                           {tableData.total || tableData.rows.length} rows)
                         </h4>
                       </div>
-                      <div className="max-h-[60vh] overflow-y-auto">
+                      <div className="max-h-[60dvh] overflow-y-auto">
                         {tableData.rows.length === 0 ? (
                           <div className="p-4 text-center text-xs text-gray-500 dark:text-gray-400">
                             No rows found
@@ -716,7 +716,7 @@ const ResourcePreviewSheet: React.FC<ResourcePreviewSheetProps> = ({
                   {resource.data.charCount?.toLocaleString() || 0} characters
                 </span>
               </div>
-              <div className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg border-border max-h-[70vh] overflow-y-auto">
+              <div className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg border-border max-h-[70dvh] overflow-y-auto">
                 <pre className="text-xs text-gray-900 dark:text-gray-100 whitespace-pre-wrap font-mono">
                   {resource.data.textContent}
                 </pre>

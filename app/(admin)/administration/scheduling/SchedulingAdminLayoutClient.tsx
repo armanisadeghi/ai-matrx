@@ -79,7 +79,7 @@ export function SchedulingAdminLayoutClient({
   };
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       <div className="border-b border-border px-4 bg-card flex items-center gap-2">
         <Link
           href="/administration"

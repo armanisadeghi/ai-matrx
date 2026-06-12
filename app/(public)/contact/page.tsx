@@ -60,7 +60,7 @@ export default function ContactPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center p-6">
+      <div className="min-h-dvh bg-gradient-to-b from-background to-muted/20 flex items-center justify-center p-6">
         <div className="max-w-md w-full text-center space-y-6">
           <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto">
             <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
@@ -83,7 +83,7 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-12 px-6">
+    <div className="min-h-dvh bg-gradient-to-b from-background to-muted/20 py-12 px-6">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center space-y-4 mb-12">

@@ -77,7 +77,7 @@ const FullscreenSocketAccordion = ({
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
         <div 
           ref={contentRef}
-          className="w-[95vw] h-[90vh] bg-textured rounded-lg shadow-xl flex flex-col overflow-hidden"
+          className="w-[95vw] h-[90dvh] bg-textured rounded-lg shadow-xl flex flex-col overflow-hidden"
         >
           <div className="flex items-center justify-between p-2 border-b border-border">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Socket Admin</h2>
@@ -117,7 +117,7 @@ const FullscreenSocketAccordion = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div 
             ref={contentRef}
-            className="w-[95vw] h-[90vh] bg-textured rounded-lg shadow-xl flex flex-col overflow-hidden"
+            className="w-[95vw] h-[90dvh] bg-textured rounded-lg shadow-xl flex flex-col overflow-hidden"
           >
             <div className="flex items-center justify-between p-2 border-b border-border">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{triggerLabel || "Socket Admin"}</h2>

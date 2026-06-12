@@ -238,7 +238,7 @@ export function ModelSwitchConflictDialog({
         open={!!pendingSwitch}
         onOpenChange={(open) => !open && handleCancel()}
       >
-        <DialogContent className="max-w-3xl max-h-[88vh] flex flex-col gap-0 p-0">
+        <DialogContent className="max-w-3xl max-h-[88dvh] flex flex-col gap-0 p-0">
           {/* Header */}
           <DialogHeader className="px-5 py-3 border-b border-border shrink-0">
             <DialogTitle className="flex items-center gap-2 text-sm font-semibold">

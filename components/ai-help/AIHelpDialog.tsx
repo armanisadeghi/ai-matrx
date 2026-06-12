@@ -97,7 +97,7 @@ export function AIHelpDialog(
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] sm:w-[80vw] h-[85dvh] sm:h-[80vh] max-w-[95vw] sm:max-w-[80vw] max-h-[85dvh] sm:max-h-[80vh] flex flex-col">
+            <DialogContent className="w-[95vw] sm:w-[80vw] h-[85dvh] sm:h-[80dvh] max-w-[95vw] sm:max-w-[80vw] max-h-[85dvh] sm:max-h-[80dvh] flex flex-col">
                 <DialogHeader className="px-6 pt-6">
                     <DialogTitle>Page Context & Help</DialogTitle>
                 </DialogHeader>

@@ -35,7 +35,7 @@ export function StreamProfilerOverlay() {
   }
 
   return (
-    <div className="fixed top-4 right-4 w-[400px] max-h-[80vh] bg-slate-950 border border-slate-800 shadow-2xl rounded-xl z-50 flex flex-col overflow-hidden text-sm font-mono text-slate-300">
+    <div className="fixed top-4 right-4 w-[400px] max-h-[80dvh] bg-slate-950 border border-slate-800 shadow-2xl rounded-xl z-50 flex flex-col overflow-hidden text-sm font-mono text-slate-300">
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900">
         <div className="flex items-center gap-2 text-green-400 font-semibold">
           <Activity className="w-4 h-4" />

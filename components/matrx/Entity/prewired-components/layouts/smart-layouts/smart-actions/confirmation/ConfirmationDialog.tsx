@@ -39,7 +39,7 @@ const ConfirmationDialog = ({
             open={open}
             onOpenChange={onOpenChange}
         >
-            <AlertDialogContent className='max-h-screen flex flex-col'>
+            <AlertDialogContent className='max-h-dvh flex flex-col'>
                 <AlertDialogHeader className='flex-none'>
                     <AlertDialogTitle>{title}</AlertDialogTitle>
                     <AlertDialogDescription className='sr-only'>Please review the changes before confirming</AlertDialogDescription>

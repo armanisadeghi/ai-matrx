@@ -86,7 +86,7 @@ export function CanvasDiscovery() {
     ).sort();
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+        <div className="min-h-dvh bg-zinc-50 dark:bg-zinc-950">
             {/* Hero Header - Professional */}
             <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

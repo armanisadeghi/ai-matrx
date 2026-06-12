@@ -248,7 +248,7 @@ export default function AcceptInvitationPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-textured flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-textured flex items-center justify-center p-4">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto mb-4" />
           <p className="text-lg text-muted-foreground">Loading invitation...</p>
@@ -260,7 +260,7 @@ export default function AcceptInvitationPage() {
   // Error state
   if (error || !invitation) {
     return (
-      <div className="min-h-screen bg-textured flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-textured flex items-center justify-center p-4">
         <Card className="max-w-lg w-full p-8 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
           <div className="text-center space-y-4">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-800 mb-2">
@@ -289,7 +289,7 @@ export default function AcceptInvitationPage() {
 
   // Success state - show invitation details
   return (
-    <div className="min-h-screen bg-textured flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-textured flex items-center justify-center p-4">
       <Card className="max-w-2xl w-full p-8">
         <div className="text-center space-y-6">
           {/* Success Icon */}

@@ -300,14 +300,14 @@ function ImagePreviewModal({
           </div>
         ) : (
           <div className="relative">
-            <div className="flex items-center justify-center min-h-[400px] max-h-[80vh]">
+            <div className="flex items-center justify-center min-h-[400px] max-h-[80dvh]">
               <InlineMediaRef
                 ref={imageUrls[currentIndex] ?? null}
                 size="fill"
                 fit="contain"
                 rounded="none"
                 fallback={null}
-                className="max-w-full max-h-[80vh]"
+                className="max-w-full max-h-[80dvh]"
                 alt={`Screenshot ${currentIndex + 1}`}
               />
             </div>

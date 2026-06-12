@@ -41,7 +41,7 @@ export function PreExecutionCard({
   };
 
   const card = (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15dvh]">
       <div
         className="absolute inset-0 bg-black/20 backdrop-blur-[2px]"
         onClick={handleCancel}

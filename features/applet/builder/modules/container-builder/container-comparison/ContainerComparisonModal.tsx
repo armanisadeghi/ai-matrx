@@ -115,7 +115,7 @@ export const ContainerComparisonModal: React.FC<
           Container Mismatch
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Container Comparison Analysis</DialogTitle>
           <DialogDescription>

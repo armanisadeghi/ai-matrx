@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const html = `<!DOCTYPE html>
 <html>
 <head><title>MCP Connection</title></head>
-<body style="font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #111; color: #eee;">
+<body style="font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100dvh; margin: 0; background: #111; color: #eee;">
 <div style="text-align: center; max-width: 400px; padding: 2rem;">
   ${
     serverId

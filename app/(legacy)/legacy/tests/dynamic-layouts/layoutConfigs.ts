@@ -333,7 +333,7 @@ const layoutConfigs = {
         // Hero with content
         hero: {
             container: 'w-full relative',
-            hero: 'w-full h-[50vh] relative',
+            hero: 'w-full h-[50dvh] relative',
             content: `${widthPresets.lg} mx-auto relative -mt-16 bg-white p-6 rounded-lg shadow-lg`
         },
         // Media with sidebar
@@ -347,7 +347,7 @@ const layoutConfigs = {
         // Hero with features grid
         heroWithFeatures: {
             container: 'w-full space-y-8',
-            hero: 'w-full min-h-[60vh] relative',
+            hero: 'w-full min-h-[60dvh] relative',
             featuresGrid: 'w-full grid grid-cols-1 md:grid-cols-3 gap-6',
             content: 'w-full space-y-6'
         },

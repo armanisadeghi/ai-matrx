@@ -88,7 +88,7 @@ export function LayoutWithSidebar({
 
   return (
     <SidebarContext.Provider value={{ open, setOpen, isNavigating }}>
-      <div className="mx-auto flex w-full max-w-[120rem] flex-1 flex-col overflow-hidden rounded-md border border-neutral-200 bg-gray-100 dark:border-neutral-700 dark:bg-neutral-800 md:flex-row h-screen">
+      <div className="mx-auto flex w-full max-w-[120rem] flex-1 flex-col overflow-hidden rounded-md border border-neutral-200 bg-gray-100 dark:border-neutral-700 dark:bg-neutral-800 md:flex-row h-dvh">
         <NavSidebar
           primaryLinks={primaryLinks}
           secondaryLinks={secondaryLinks || defaultSecondaryLinks}

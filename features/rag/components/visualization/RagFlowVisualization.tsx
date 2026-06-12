@@ -606,7 +606,7 @@ export function RagFlowVisualization({
     <div
       className={cn(
         "relative w-full overflow-hidden rounded-2xl border bg-background",
-        "min-h-[640px] h-[min(90vh,920px)]",
+        "min-h-[640px] h-[min(90dvh,920px)]",
         className,
       )}
     >

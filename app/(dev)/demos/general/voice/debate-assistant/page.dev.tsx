@@ -9,7 +9,7 @@ export const metadata = createRouteMetadata("/demo/voice/debate-assistant", {
 
 export default function Page() {
     return (
-        <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
+        <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
             <DebatePage />
         </div>
     );

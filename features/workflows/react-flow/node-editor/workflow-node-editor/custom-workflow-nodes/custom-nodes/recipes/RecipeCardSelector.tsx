@@ -39,7 +39,7 @@ const RecipeCardSelector: React.FC<RecipeCardSelectorProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <Card className="w-full max-w-4xl max-h-[90vh] flex flex-col  py-4">
+            <Card className="w-full max-w-4xl max-h-[90dvh] flex flex-col  py-4">
                 <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
                     <div className="space-y-1 px-4">
                         <CardTitle>Select a Recipe</CardTitle>

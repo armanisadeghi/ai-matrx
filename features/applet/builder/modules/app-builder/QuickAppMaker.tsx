@@ -395,7 +395,7 @@ export const QuickAppMaker: React.FC<QuickAppMakerProps> = ({ currentAppId, onAp
 export const QuickAppMakerOverlay: React.FC<QuickAppMakerProps> = ({ currentAppId, onAppSaved, onCancel }) => {
     return (
         <Dialog open={true} onOpenChange={(open) => !open && onCancel()}>
-            <DialogContent className="max-w-none bg-transparent" style={{ width: 'min(95vw, 40vw)', minWidth: '320px', height: '50vh' }}>
+            <DialogContent className="max-w-none bg-transparent" style={{ width: 'min(95vw, 40vw)', minWidth: '320px', height: '50dvh' }}>
                 <DialogTitle className="sr-only">
                     {currentAppId ? "Edit App" : "Create New App"}
                 </DialogTitle>

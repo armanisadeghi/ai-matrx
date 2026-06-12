@@ -644,7 +644,7 @@ export default function ChatTestClient() {
                   <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                 )}
               </CollapsibleTrigger>
-              <CollapsibleContent className="max-h-[min(40vh,280px)] overflow-y-auto data-[state=closed]:hidden">
+              <CollapsibleContent className="max-h-[min(40dvh,280px)] overflow-y-auto data-[state=closed]:hidden">
                 <div className="p-3 space-y-3">
                   {/* Stream & Debug Mode Toggles */}
                   <div className="space-y-2">

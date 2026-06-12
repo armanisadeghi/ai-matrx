@@ -363,7 +363,7 @@ export function CreateTranscriptModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-xl max-h-[90dvh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileAudio className="h-5 w-5" />

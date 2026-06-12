@@ -139,7 +139,7 @@ export function SelectPromptForBuiltinModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-3xl max-h-[85vh]">
+        <DialogContent className="max-w-3xl max-h-[85dvh]">
           <DialogHeader>
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">

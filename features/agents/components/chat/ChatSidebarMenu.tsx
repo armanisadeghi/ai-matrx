@@ -179,7 +179,7 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           sideOffset={8}
           className="w-80 overflow-hidden p-0"
         >
-          <div className="flex h-[min(70vh,560px)] flex-col">
+          <div className="flex h-[min(70dvh,560px)] flex-col">
             <ChatHistorySidebar
               scopeId={CHAT_HISTORY_SEARCH_SCOPE}
               activeConversationId={activeConversationId}

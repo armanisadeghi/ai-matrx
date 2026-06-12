@@ -235,7 +235,7 @@ export function LinkBuiltinToShortcutModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="max-w-3xl max-h-[90dvh] flex flex-col p-0">
         <DialogHeader className="px-4 pt-4 pb-3 border-b">
           <DialogTitle>Link Shortcut to &quot;{builtin.name}&quot;</DialogTitle>
           <DialogDescription>

@@ -148,7 +148,7 @@ export function WorkflowEditOverlay({ workflowId, isOpen, onClose }: WorkflowEdi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] bg-background border-border">
+      <DialogContent className="max-w-2xl max-h-[80dvh] bg-background border-border">
         <DialogHeader>
           <DialogTitle>Edit Workflow</DialogTitle>
         </DialogHeader>
@@ -160,7 +160,7 @@ export function WorkflowEditOverlay({ workflowId, isOpen, onClose }: WorkflowEdi
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
 
-          <div className="overflow-y-auto max-h-[60vh] px-1">
+          <div className="overflow-y-auto max-h-[60dvh] px-1">
             <TabsContent value="basic" className="space-y-4 mt-4">
               {/* Basic Fields */}
               <div className="space-y-4">

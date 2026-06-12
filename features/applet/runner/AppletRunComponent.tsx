@@ -176,7 +176,7 @@ export default function AppletRunComponent({
       {/* Scrollable content area — grows to fill space above the follow-up bar */}
       <div
         ref={scrollAreaRef}
-        className={`flex-1 overflow-y-auto scrollbar-none ${showFollowUpBar ? "pb-[50vh]" : ""}`}
+        className={`flex-1 overflow-y-auto scrollbar-none ${showFollowUpBar ? "pb-[50dvh]" : ""}`}
       >
         {!taskSubmitted && (
           <>

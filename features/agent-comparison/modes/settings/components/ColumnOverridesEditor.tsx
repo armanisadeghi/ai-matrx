@@ -96,7 +96,7 @@ export function ColumnOverridesEditor({ conversationId }: Props) {
     }));
 
   return (
-    <div className="w-[360px] max-h-[70vh] overflow-y-auto p-3 space-y-3 text-xs">
+    <div className="w-[360px] max-h-[70dvh] overflow-y-auto p-3 space-y-3 text-xs">
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <Label className="text-[11px] font-semibold">Model</Label>

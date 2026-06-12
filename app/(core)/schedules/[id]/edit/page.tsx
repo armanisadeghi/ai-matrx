@@ -19,7 +19,7 @@ export default function EditSchedulePage({ params }: Props) {
   const { task, status, error } = useTaskDetail(id);
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       <header className="shrink-0 border-b border-border bg-card/40 px-4 sm:px-6 py-3 flex items-center gap-3">
         <Button asChild variant="ghost" size="sm" className="gap-1.5">
           <Link href={`/schedules/${id}`}>

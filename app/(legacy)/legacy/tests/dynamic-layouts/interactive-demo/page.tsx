@@ -153,7 +153,7 @@ const LayoutDemoPage = () => {
     const layoutConfig = getTestLayoutWithSpacing(category, variant, spacing);
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6">
+        <div className="min-h-dvh bg-gray-50 p-6">
             {/* Controls */}
             <Card className="mb-8 p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -673,7 +673,7 @@ export function PicklistManagerV1({ supabase, userId, forcedListId }: PicklistMa
     return (
         <div
             className={cn(
-                "grid h-[calc(100vh-8rem)] min-h-[560px] overflow-hidden rounded-lg border bg-background",
+                "grid h-[calc(100dvh-8rem)] min-h-[560px] overflow-hidden rounded-lg border bg-background",
                 forcedListId ? "grid-cols-1" : "grid-cols-[260px_1fr]",
             )}
         >

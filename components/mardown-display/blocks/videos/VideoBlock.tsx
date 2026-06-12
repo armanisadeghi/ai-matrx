@@ -243,7 +243,7 @@ const VideoBlock: React.FC<VideoBlockProps> = ({ src, alt = "Video" }) => {
                                 ref={expandedVideoRef}
                                 src={src}
                                 controls
-                                className="max-h-[90vh] max-w-[90vw]"
+                                className="max-h-[90dvh] max-w-[90vw]"
                             >
                                 Your browser does not support the video tag.
                             </video>

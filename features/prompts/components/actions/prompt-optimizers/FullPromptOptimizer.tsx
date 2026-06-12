@@ -248,7 +248,7 @@ export function FullPromptOptimizer({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-7xl h-[95vh] flex flex-col p-0">
+      <DialogContent className="max-w-7xl h-[95dvh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-2">
             <Rainbow className="h-5 w-5 text-amber-600 dark:text-amber-400" />

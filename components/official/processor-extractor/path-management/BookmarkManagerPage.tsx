@@ -24,7 +24,7 @@ const BookmarkManagerPage: React.FC = () => {
   };
 
   return (
-    <div className="container max-w-[95vw] mx-auto py-6 h-[calc(100vh-4rem)]">
+    <div className="container max-w-[95vw] mx-auto py-6 h-[calc(100dvh-4rem)]">
       <div className="flex flex-col h-full">
         <div className="mb-4 flex items-center gap-3">
           <BookmarkIcon className="h-7 w-7 text-blue-500" />

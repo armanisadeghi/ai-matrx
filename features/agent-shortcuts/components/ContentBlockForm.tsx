@@ -432,7 +432,7 @@ export function ContentBlockForm({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0">
+        <DialogContent className="max-w-3xl max-h-[90dvh] flex flex-col p-0">
           <DialogHeader className="px-4 pt-4 pb-2 border-b border-border">
             <DialogTitle>
               {isEditing ? `Edit "${contentBlock?.label}"` : "Create Content Block"}

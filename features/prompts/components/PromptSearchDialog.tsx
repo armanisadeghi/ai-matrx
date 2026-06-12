@@ -55,7 +55,7 @@ export function PromptSearchDialog({ isOpen, onClose, prompts }: PromptSearchDia
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-2xl max-h-[80vh] bg-textured border-slate-200 dark:border-slate-700">
+            <DialogContent className="sm:max-w-2xl max-h-[80dvh] bg-textured border-slate-200 dark:border-slate-700">
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                         Search Prompts

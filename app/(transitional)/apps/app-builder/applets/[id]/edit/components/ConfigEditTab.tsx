@@ -48,7 +48,7 @@ export default function ConfigEditTab({ applet, onUpdate }: ConfigEditTabProps) 
             <Textarea
               value={jsonValue}
               onChange={handleJsonChange}
-              className="font-mono text-xs h-[70vh]"
+              className="font-mono text-xs h-[70dvh]"
             />
           </div>
           

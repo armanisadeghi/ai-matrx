@@ -24,7 +24,7 @@ export const CodeWorkspaceModal: React.FC<CodeWorkspaceModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-[95vw] h-[85vh] p-0 overflow-hidden"
+        className="max-w-[95vw] h-[85dvh] p-0 overflow-hidden"
       >
         <DialogHeader className="px-4 py-2 border-b border-neutral-200 dark:border-neutral-800">
           <DialogTitle className="text-sm font-medium">{title}</DialogTitle>

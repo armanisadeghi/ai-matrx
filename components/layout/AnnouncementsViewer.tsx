@@ -171,7 +171,7 @@ export function AnnouncementsViewer({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="max-w-lg max-h-[70vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-lg max-h-[70dvh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-4 py-3 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2 text-sm">
             <Megaphone className="h-4 w-4" />

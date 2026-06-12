@@ -1185,10 +1185,10 @@ const MarkdownTester: React.FC<MarkdownTesterProps> = ({ className }) => {
 
   const containerClasses = isFullScreen
     ? "fixed inset-0 z-50 bg-textured"
-    : `h-screen flex flex-col ${className || ""}`;
+    : `h-dvh flex flex-col ${className || ""}`;
 
   // Calculate available height considering external header (assuming ~64px for typical header)
-  const availableHeight = isFullScreen ? "100vh" : "calc(100vh - 64px)";
+  const availableHeight = isFullScreen ? "100dvh" : "calc(100dvh - 64px)";
 
   return (
     <>

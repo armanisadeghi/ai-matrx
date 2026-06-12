@@ -161,7 +161,7 @@ export default function AddProviderModelDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => !submitting && onOpenChange(o)}>
       <DialogContent
-        className="max-w-3xl p-0 flex flex-col max-h-[90vh] overflow-hidden"
+        className="max-w-3xl p-0 flex flex-col max-h-[90dvh] overflow-hidden"
         onInteractOutside={(e) => submitting && e.preventDefault()}
       >
         <DialogHeader className="px-5 pt-4 pb-3 border-b shrink-0">

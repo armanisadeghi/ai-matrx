@@ -62,7 +62,7 @@ export default function TuiTestPage() {
     };
 
     return (
-        <div className="h-screen w-full bg-gray-50 dark:bg-gray-950 flex flex-col">
+        <div className="h-dvh w-full bg-gray-50 dark:bg-gray-950 flex flex-col">
             {/* Status Bar */}
             <div className="flex items-center justify-between px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-700">
                 <div className="flex items-center gap-3">
@@ -119,7 +119,7 @@ export default function TuiTestPage() {
                                             Load
                                         </Button>
                                     </DialogTrigger>
-                                    <DialogContent className="max-w-3xl max-h-[80vh]">
+                                    <DialogContent className="max-w-3xl max-h-[80dvh]">
                                         <DialogHeader>
                                             <DialogTitle>Load Markdown Content</DialogTitle>
                                         </DialogHeader>
@@ -144,11 +144,11 @@ export default function TuiTestPage() {
                                             View Output
                                         </Button>
                                     </DialogTrigger>
-                                    <DialogContent className="max-w-3xl max-h-[80vh]">
+                                    <DialogContent className="max-w-3xl max-h-[80dvh]">
                                         <DialogHeader>
                                             <DialogTitle>Markdown Output</DialogTitle>
                                         </DialogHeader>
-                                        <div className="overflow-auto max-h-[60vh]">
+                                        <div className="overflow-auto max-h-[60dvh]">
                                             <pre className="p-4 font-mono text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 rounded">
                                                 {htmlPreviewState.currentMarkdown || "No content yet..."}
                                             </pre>

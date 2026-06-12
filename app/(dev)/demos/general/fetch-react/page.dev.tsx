@@ -28,7 +28,7 @@ export default function FetchReactPage() {
     };
 
     return (
-        <main className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+        <main className="min-h-dvh bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             <div className="container mx-auto p-6 space-y-6">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">HTML Content Viewer</h1>
                 

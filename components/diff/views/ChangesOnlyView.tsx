@@ -137,7 +137,7 @@ export function ChangesOnlyView({
       </div>
 
       {/* Bottom padding */}
-      <div className="h-[50vh]" />
+      <div className="h-[50dvh]" />
     </div>
   );
 }

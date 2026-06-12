@@ -406,7 +406,7 @@ export default function FieldListTableOverlay({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className={`${getDialogSizeClass(overlaySize)} max-h-[90vh] flex flex-col p-0 gap-0`}>
+      <DialogContent className={`${getDialogSizeClass(overlaySize)} max-h-[90dvh] flex flex-col p-0 gap-0`}>
         <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex-1">

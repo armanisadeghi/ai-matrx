@@ -222,7 +222,7 @@ export const ConversationSearchOverlay: React.FC<ConversationSearchOverlayProps>
         >
             <div
                 ref={overlayRef}
-                className="bg-zinc-100 dark:bg-zinc-850 rounded-3xl shadow-xl flex flex-col w-full max-w-7xl h-full max-h-[92vh] mx-4 overflow-hidden"
+                className="bg-zinc-100 dark:bg-zinc-850 rounded-3xl shadow-xl flex flex-col w-full max-w-7xl h-full max-h-[92dvh] mx-4 overflow-hidden"
                 onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling to backdrop
             >
                 {/* Header with search inputs */}

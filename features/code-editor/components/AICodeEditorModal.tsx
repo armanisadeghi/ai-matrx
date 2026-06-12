@@ -17,7 +17,7 @@ export function AICodeEditorModal({
 }: AICodeEditorModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl h-[95vh] p-0 flex flex-col overflow-hidden gap-0">
+      <DialogContent className="max-w-7xl h-[95dvh] p-0 flex flex-col overflow-hidden gap-0">
         <AICodeEditor
           open={open}
           onOpenChange={onOpenChange}

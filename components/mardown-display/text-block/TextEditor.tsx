@@ -132,7 +132,7 @@ const TextEditor: React.FC<TextEditorProps> = ({ content, onChange, isExpanded }
     const [activeTab, setActiveTab] = useState<string>("write");
     
     return (
-        <div className={cn("w-full", isExpanded ? "h-[calc(100vh-8rem)]" : "min-h-[200px]")}>
+        <div className={cn("w-full", isExpanded ? "h-[calc(100dvh-8rem)]" : "min-h-[200px]")}>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
                 <div className="border-b border-neutral-200 dark:border-neutral-700">
                     <TabsList className="bg-transparent">

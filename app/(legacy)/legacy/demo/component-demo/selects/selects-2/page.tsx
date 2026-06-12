@@ -55,7 +55,7 @@ export default function SelectDemo() {
     };
 
     return (
-        <div className="flex min-h-screen w-full flex-col gap-6">
+        <div className="flex min-h-dvh w-full flex-col gap-6">
             {/* Color Variants */}
             <DemoSection title="Color Variants">
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

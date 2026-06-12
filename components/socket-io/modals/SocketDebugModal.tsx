@@ -157,7 +157,7 @@ const SocketDebugModal: React.FC<DebugModalProps> = ({
         tabs={tabs}
         initialTab="raw-task-state"
         width="90vw"
-        height="90vh"
+        height="90dvh"
       />
     </>
   );

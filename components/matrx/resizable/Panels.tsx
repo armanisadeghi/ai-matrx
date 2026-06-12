@@ -41,7 +41,7 @@ export const PanelLeft = ({
     <div className="fixed inset-0 z-50" data-testid="panel-container-left">
       <ResizablePanelGroup
         orientation="horizontal"
-        className="w-screen h-screen min-h-0"
+        className="w-screen h-dvh min-h-0"
         onLayoutChanged={onResize}
       >
         <ResizablePanel
@@ -94,7 +94,7 @@ export const PanelRight = ({
     <div className="fixed inset-0 z-50" data-testid="panel-container-right">
       <ResizablePanelGroup
         orientation="horizontal"
-        className="w-screen h-screen min-h-0"
+        className="w-screen h-dvh min-h-0"
         onLayoutChanged={onResize}
       >
         <ResizablePanel
@@ -147,7 +147,7 @@ export const PanelTop = ({
     <div className="fixed inset-0 z-50" data-testid="panel-container-top">
       <ResizablePanelGroup
         orientation="vertical"
-        className="w-screen h-screen min-h-0"
+        className="w-screen h-dvh min-h-0"
         onLayoutChanged={onResize}
       >
         <ResizablePanel
@@ -197,7 +197,7 @@ export const PanelBottom = ({
     <div className="fixed inset-0 z-50" data-testid="panel-container-bottom">
       <ResizablePanelGroup
         orientation="vertical"
-        className="w-screen h-screen min-h-0"
+        className="w-screen h-dvh min-h-0"
         onLayoutChanged={onResize}
       >
         <ResizablePanel

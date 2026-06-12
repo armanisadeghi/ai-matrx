@@ -49,7 +49,7 @@ const CustomNodeEditor: React.FC<CustomNodeEditorProps> = ({
   validation = 'permissive',
   title,
   width = 'max-w-7xl',
-  height = 'h-[85vh]',
+  height = 'h-[85dvh]',
   nodeDefinition,
   enrichedBrokers,
   defaultTabId

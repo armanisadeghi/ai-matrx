@@ -14,7 +14,7 @@ export function ConversationalLayout({ config }: ConversationalLayoutProps) {
     const [selectedSection, setSelectedSection] = useState('new-chat');
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-background to-background/50 animate-fade-in">
+        <div className="min-h-dvh bg-gradient-to-b from-background to-background/50 animate-fade-in">
             <div className="container py-8">
                 {/* Floating Header */}
                 <div className="fixed top-4 left-1/2 -translate-x-1/2 z-10 bg-background/80 backdrop-blur-lg rounded-full px-6 py-3 shadow-lg border border-border/50 flex items-center space-x-4">

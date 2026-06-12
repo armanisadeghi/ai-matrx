@@ -138,7 +138,7 @@ const UserInputEditor: React.FC<UserInputEditorProps> = ({ nodeData, onSave, onC
 
     return (
         <Dialog open={open} onOpenChange={handleDialogClose}>
-            <DialogContent className="max-w-2xl h-[85vh] flex flex-col">
+            <DialogContent className="max-w-2xl h-[85dvh] flex flex-col">
                 <DialogHeader className="flex-shrink-0">
                     <DialogTitle className="flex items-center gap-2">
                         <User className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />

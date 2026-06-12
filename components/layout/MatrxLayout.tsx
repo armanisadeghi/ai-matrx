@@ -129,7 +129,7 @@ export function LayoutWithSidebar({
           </div>
         </SidebarLayout>
       ) : (
-        <div className="h-screen w-full bg-white dark:bg-background flex overflow-hidden">
+        <div className="h-dvh w-full bg-white dark:bg-background flex overflow-hidden">
           <div className="flex flex-1 flex-col w-full h-full overflow-y-auto scrollbar-none">
             {children}
             <button
@@ -240,7 +240,7 @@ export function SidebarLayout({
     <div
       className={cn(
         "mx-auto flex w-full max-w-[120rem] flex-1 flex-col overflow-hidden rounded-md border border-neutral-200 bg-gray-100 dark:border-neutral-700 dark:bg-neutral-800 md:flex-row",
-        "h-screen",
+        "h-dvh",
         className,
       )}
     >

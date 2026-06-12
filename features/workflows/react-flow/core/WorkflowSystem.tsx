@@ -373,7 +373,7 @@ export const WorkflowSystem: React.FC<WorkflowSystemProps> = ({
   );
 
   return (
-    <div className="h-screen w-full flex flex-col bg-background">
+    <div className="h-dvh w-full flex flex-col bg-background">
       <WorkflowHeader
         selectedFunction={selectedFunction}
         onFunctionSelect={setSelectedFunction}

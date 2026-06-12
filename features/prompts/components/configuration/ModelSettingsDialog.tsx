@@ -72,7 +72,7 @@ export function ModelSettingsDialog({
       onClick={handleClose}
     >
       <div
-        className="bg-textured rounded-lg shadow-xl max-w-xl w-full mx-4 max-h-[85vh] overflow-hidden flex flex-col"
+        className="bg-textured rounded-lg shadow-xl max-w-xl w-full mx-4 max-h-[85dvh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

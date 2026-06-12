@@ -143,7 +143,7 @@ export function RecipeEditContent({
   }
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
       {/* Compact header in portal */}
       <RecipeEditHeader
         recipeId={recipeId}
@@ -238,7 +238,7 @@ export function RecipeEditContent({
 
       {/* Settings Modal */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh]">
+        <DialogContent className="max-w-3xl max-h-[80dvh]">
           <DialogHeader>
             <DialogTitle>Edit Settings JSON</DialogTitle>
           </DialogHeader>

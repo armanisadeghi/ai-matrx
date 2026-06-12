@@ -101,7 +101,7 @@ export default function PromptInlineOverlay({
           </div>
           
           {/* Content - Compact display */}
-          <div className="px-3 py-3 max-h-[60vh] overflow-y-auto">
+          <div className="px-3 py-3 max-h-[60dvh] overflow-y-auto">
             {isStreaming && !result ? (
               <div className="flex items-start">
                 <span className="text-sm text-[#858585] animate-[fadeInOut_2s_ease-in-out_infinite]">

@@ -40,7 +40,7 @@ const AudioModal: React.FC<AudioModalProps> = ({
         <Credenza open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
             <CredenzaContent
                 className={cn(
-                    "sm:max-w-[800px] max-h-[90vh] w-[95vw] sm:w-[90vw]",
+                    "sm:max-w-[800px] max-h-[90dvh] w-[95vw] sm:w-[90vw]",
                     className
                 )}
             >
@@ -55,7 +55,7 @@ const AudioModal: React.FC<AudioModalProps> = ({
                 </CredenzaHeader>
                 <CredenzaBody className="mt-4 sm:mt-6 flex flex-col gap-4">
                     {!hideText && (
-                        <ScrollArea className="flex-grow h-[30vh] sm:h-[40vh] w-full rounded-md border p-4">
+                        <ScrollArea className="flex-grow h-[30dvh] sm:h-[40dvh] w-full rounded-md border p-4">
                             <div className="text-base sm:text-lg leading-relaxed whitespace-pre-wrap">
                                 {text}
                             </div>

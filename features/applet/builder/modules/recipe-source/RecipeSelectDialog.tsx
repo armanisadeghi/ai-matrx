@@ -86,7 +86,7 @@ export const RecipeSelectDialog: React.FC<RecipeSelectDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="py-4 max-h-[70vh] overflow-y-auto">
+        <div className="py-4 max-h-[70dvh] overflow-y-auto">
           <RecipeSelectionList
             initialSelectedRecipe={initialSelectedRecipe}
             onRecipeSelected={onRecipeSelected}

@@ -193,7 +193,7 @@ export default function MobileTasksList({
                       </span>
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="bottom" className="h-[50vh]">
+                  <SheetContent side="bottom" className="h-[50dvh]">
                     <SheetHeader className="sr-only">
                       <SheetTitle>Select Project</SheetTitle>
                       <SheetDescription>

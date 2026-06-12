@@ -62,7 +62,7 @@ export default function SelectDemo() {
     };
 
     return (
-        <div className="flex min-h-screen w-full flex-col gap-6 p-6">
+        <div className="flex min-h-dvh w-full flex-col gap-6 p-6">
             {/* Multi-Select Examples */}
             <DemoSection
                 title="Multi-Select Variants"

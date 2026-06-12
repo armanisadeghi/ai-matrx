@@ -127,7 +127,7 @@ const GroupSelectorOverlay: React.FC<GroupSelectorOverlayProps> & {
       <DialogContent 
         className={`
           p-0 border-gray-200 dark:border-gray-700
-          ${isFullscreen ? 'w-screen h-screen max-w-none rounded-none' : 'sm:max-w-[90vw] max-h-[90vh]'}
+          ${isFullscreen ? 'w-screen h-dvh max-w-none rounded-none' : 'sm:max-w-[90vw] max-h-[90dvh]'}
         `}
       >
         <DialogHeader className="px-6 py-4 border-b border-border">
@@ -149,7 +149,7 @@ const GroupSelectorOverlay: React.FC<GroupSelectorOverlayProps> & {
           </div>
         </DialogHeader>
         
-        <div className={`overflow-y-auto p-6 ${isFullscreen ? 'h-[calc(100vh-10rem)]' : 'max-h-[70vh]'}`}>
+        <div className={`overflow-y-auto p-6 ${isFullscreen ? 'h-[calc(100dvh-10rem)]' : 'max-h-[70dvh]'}`}>
           <SmartContainerList
             ref={groupListRef}
             onSelectGroup={handleGroupSelect}

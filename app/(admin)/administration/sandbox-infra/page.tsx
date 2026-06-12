@@ -382,7 +382,7 @@ export default function SandboxInfraPage() {
     }, [refreshRuns]);
 
     return (
-        <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
+        <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
             <div className="px-6 py-4 border-b border-border flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-semibold">Sandbox Infrastructure</h1>

@@ -89,7 +89,7 @@ The VS Code overlay uses authentic VS Code colors (\`#1e1e1e\` background, \`#d4
   }, [isDragging, dragOffset]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+    <div className="min-h-dvh bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
           <h1 className="text-2xl font-semibold text-slate-900 mb-6">AI Response UI Patterns</h1>

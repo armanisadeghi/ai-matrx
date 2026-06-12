@@ -610,7 +610,7 @@ function SearchDialog({
 }: SearchDialogProps) {
   return (
     <Dialog open={true} onOpenChange={setIsDialogOpen}>
-      <DialogContent className="max-w-5xl w-full h-[80vh] flex flex-col p-0">
+      <DialogContent className="max-w-5xl w-full h-[80dvh] flex flex-col p-0">
         <DialogHeader className="px-4 py-2 border-b border-border">
           <DialogTitle>Search Public Images</DialogTitle>
         </DialogHeader>
@@ -781,7 +781,7 @@ function ImagePreviewDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="max-w-5xl w-full max-h-[90vh] flex flex-col p-4">
+      <DialogContent className="max-w-5xl w-full max-h-[90dvh] flex flex-col p-4">
         <DialogHeader>
           <DialogTitle className="sr-only">Image Preview</DialogTitle>
         </DialogHeader>
@@ -789,7 +789,7 @@ function ImagePreviewDialog({
           <img
             src={imageUrl}
             alt="Preview"
-            className="max-w-full max-h-[70vh] object-contain"
+            className="max-w-full max-h-[70dvh] object-contain"
           />
         </div>
         <div className="mt-4 flex justify-end">

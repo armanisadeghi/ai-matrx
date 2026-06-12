@@ -32,7 +32,7 @@ export default function AdvancedRunSettingsDemoPage() {
           </div>
         </div>
 
-        <aside className="rounded-xl border border-border bg-card overflow-hidden self-start xl:sticky xl:top-6 max-h-[calc(100vh-4rem)] overflow-y-auto">
+        <aside className="rounded-xl border border-border bg-card overflow-hidden self-start xl:sticky xl:top-6 max-h-[calc(100dvh-4rem)] overflow-y-auto">
           <div className="px-4 py-2 border-b border-border bg-muted/30">
             <h2 className="text-xs font-semibold text-foreground">
               Algorithm trace

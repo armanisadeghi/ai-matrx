@@ -10,7 +10,7 @@ export default function AppNotFoundPage() {
     const router = useRouter();
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
+        <div className="min-h-dvh w-full flex items-center justify-center p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
             <Card className="w-full max-w-2xl border-2 shadow-2xl bg-textured">
                 <CardHeader className="text-center space-y-4 pb-8">
                     <div className="mx-auto w-24 h-24 rounded-full bg-gradient-to-br from-orange-400 to-red-500 dark:from-orange-500 dark:to-red-600 flex items-center justify-center shadow-lg">

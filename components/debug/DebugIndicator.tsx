@@ -138,7 +138,7 @@ export const DebugIndicator: React.FC<DebugIndicatorProps> = ({
         transition: isDragging ? "none" : "all 0.2s ease",
       }}
     >
-      <Card className="w-[600px] max-h-[80vh] shadow-2xl">
+      <Card className="w-[600px] max-h-[80dvh] shadow-2xl">
         {/* Header - draggable */}
         <div
           className="flex items-center justify-between p-3 border-b cursor-move bg-muted/50"
@@ -169,7 +169,7 @@ export const DebugIndicator: React.FC<DebugIndicatorProps> = ({
         </div>
 
         {/* Content - scrollable */}
-        <ScrollArea className="max-h-[calc(80vh-60px)]">
+        <ScrollArea className="max-h-[calc(80dvh-60px)]">
           <div className="p-4 space-y-4">
             {debugData ? (
               <>

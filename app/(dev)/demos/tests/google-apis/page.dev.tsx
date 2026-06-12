@@ -27,7 +27,7 @@ export default function GoogleAccessPage() {
   }, [resetError]);
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 dark:bg-gray-950 flex flex-col">
+    <div className="min-h-dvh w-full bg-gray-50 dark:bg-gray-950 flex flex-col">
       <div className="flex-1 flex flex-col items-center py-12 px-4">
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-3 mb-4">

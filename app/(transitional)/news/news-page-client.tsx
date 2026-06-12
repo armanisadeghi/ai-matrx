@@ -93,7 +93,7 @@ const NewsPage = () => {
     };
 
     return (
-        <div className="min-h-screen p-4 space-y-6">
+        <div className="min-h-dvh p-4 space-y-6">
             <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
                 <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 max-w-7xl mx-auto">
                     <div className="flex items-center space-x-3 mb-4 sm:mb-0">

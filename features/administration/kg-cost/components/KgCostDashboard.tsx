@@ -430,7 +430,7 @@ function OrgDetailDialog({
         )}
 
         {detail && (
-          <ScrollArea className="max-h-[70vh]">
+          <ScrollArea className="max-h-[70dvh]">
             <div className="space-y-5 pr-3">
               {/* Header stats */}
               <div className="grid grid-cols-3 gap-3">
@@ -613,7 +613,7 @@ function BatchDetailDialog({
         )}
 
         {detail && (
-          <ScrollArea className="max-h-[70vh]">
+          <ScrollArea className="max-h-[70dvh]">
             <div className="space-y-4 pr-3">
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                 <dt className="text-muted-foreground">Provider</dt>
@@ -765,7 +765,7 @@ export function KgCostDashboard() {
   }, [refreshTick]);
 
   return (
-    <div className="flex h-[calc(100vh-2.5rem)] flex-col overflow-hidden">
+    <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden">
       <header className="flex items-center justify-between border-b border-border px-4 py-2">
         <div>
           <h1 className="text-lg font-semibold">KG Cost</h1>

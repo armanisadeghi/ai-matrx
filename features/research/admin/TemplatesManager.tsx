@@ -345,7 +345,7 @@ export function TemplatesManager() {
   }
 
   const formContent = (
-    <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+    <div className="space-y-5 max-h-[70dvh] overflow-y-auto pr-1">
       <div className="space-y-2">
         <label className="text-sm font-medium">Name *</label>
         <Input

@@ -131,7 +131,7 @@ const ResizableBottomPanel: React.FC<ResizableBottomPanelProps> = ({
     <div
       className={cn("fixed inset-x-0 bottom-0 z-[100]", className)}
       style={{
-        height: "100vh",
+        height: "100dvh",
         willChange: "transform",
         isolation: "isolate",
       }}

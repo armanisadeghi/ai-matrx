@@ -382,7 +382,7 @@ export function QuickSaveCodeCore({
                   <SelectTrigger className="h-8 text-xs rounded-md w-full">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="max-h-[40vh]">
+                  <SelectContent className="max-h-[40dvh]">
                     {languageOptions.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         {opt.label}

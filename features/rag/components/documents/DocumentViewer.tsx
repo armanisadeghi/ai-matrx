@@ -196,7 +196,7 @@ function BindButton({
             Bind document to data stores
           </DialogTitle>
         </DialogHeader>
-        <div className="max-h-[70vh] overflow-y-auto">
+        <div className="max-h-[70dvh] overflow-y-auto">
           <DataStoreBindPanel
             processedDocumentId={documentId}
             documentName={documentName}

@@ -99,9 +99,9 @@ export default async function MathProblemPage({ params }: PageProps) {
     };
 
     return (
-        <div className="min-h-screen bg-textured">
+        <div className="min-h-dvh bg-textured">
             <div className="container mx-auto px-4 py-8 max-w-5xl">
-                <div className="h-[calc(100vh-8rem)] flex flex-col">
+                <div className="h-[calc(100dvh-8rem)] flex flex-col">
                     <MathProblem {...problemProps} />
                 </div>
             </div>

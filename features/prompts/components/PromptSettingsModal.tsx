@@ -542,7 +542,7 @@ export function PromptSettingsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl h-[95vh] flex flex-col bg-textured p-0">
+      <DialogContent className="max-w-5xl h-[95dvh] flex flex-col bg-textured p-0">
         <DialogHeader className="px-4 py-3 border-b border-border flex-shrink-0">
           <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Prompt Settings

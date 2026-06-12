@@ -141,7 +141,7 @@ export default function RecoveryWindowImpl() {
         if (!open) close();
       }}
     >
-      <DialogContent className="max-w-4xl w-[92vw] h-[80vh] p-0 overflow-hidden">
+      <DialogContent className="max-w-4xl w-[92vw] h-[80dvh] p-0 overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>Recovered submissions</DialogTitle>
           <DialogDescription>

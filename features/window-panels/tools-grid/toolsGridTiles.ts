@@ -189,7 +189,7 @@ const CODE_EDITOR_DEMO_FILES = [
     path: "src/index.tsx",
     language: "typescript",
     content:
-      'import React from "react";\n\nexport default function App() {\n  return (\n    <div className="flex items-center justify-center h-screen">\n      <h1 className="text-2xl font-bold">Hello, World!</h1>\n    </div>\n  );\n}\n',
+      'import React from "react";\n\nexport default function App() {\n  return (\n    <div className="flex items-center justify-center h-dvh">\n      <h1 className="text-2xl font-bold">Hello, World!</h1>\n    </div>\n  );\n}\n',
   },
   {
     name: "styles.css",

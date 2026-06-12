@@ -713,7 +713,7 @@ function AddMemberDialog({
                   autoFocus
                 />
               </div>
-              <div className="max-h-[40vh] overflow-auto rounded-md border border-border bg-card divide-y divide-border">
+              <div className="max-h-[40dvh] overflow-auto rounded-md border border-border bg-card divide-y divide-border">
                 {searching && (
                   <div className="px-3 py-4 text-center text-xs text-muted-foreground">
                     <Loader2 className="h-3.5 w-3.5 animate-spin inline mr-1" />

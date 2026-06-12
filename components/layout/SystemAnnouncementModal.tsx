@@ -79,7 +79,7 @@ export default function SystemAnnouncementModal({ announcement }: SystemAnnounce
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
             <Card 
                 className={`
-                    relative max-w-2xl w-full max-h-[90vh] overflow-y-auto
+                    relative max-w-2xl w-full max-h-[90dvh] overflow-y-auto
                     border-4 shadow-2xl animate-in zoom-in duration-300
                     ${announcementStyles[announcement.announcement_type]}
                 `}

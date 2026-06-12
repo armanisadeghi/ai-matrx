@@ -20,7 +20,7 @@ export default function MatxRouteLoader({
   fullscreen = true
 }: MatxRouteLoaderProps) {
   return (
-    <div className={`w-full flex items-center justify-center bg-background ${fullscreen ? 'h-screen' : 'py-12'}`}>
+    <div className={`w-full flex items-center justify-center bg-background ${fullscreen ? 'h-dvh' : 'py-12'}`}>
       {/* Overlay to prevent interactions */}
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50" />
       

@@ -96,12 +96,12 @@ export default function TableReferenceModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[40vw] max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-[40vw] max-h-[90dvh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Get Table/Row/Cell Reference</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6 overflow-y-auto max-h-[calc(90vh-120px)] pr-2">
+        <div className="space-y-6 overflow-y-auto max-h-[calc(90dvh-120px)] pr-2">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Create references to use this data in workflows. Choose between table, row, or specific cell references.
           </p>
