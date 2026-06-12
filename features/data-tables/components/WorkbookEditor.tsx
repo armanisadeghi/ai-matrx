@@ -72,6 +72,19 @@ type Props = {
    * toolbar. Snapshot writes become host-gated.
    */
   collab?: boolean;
+  /**
+   * Optional content rendered into the editor's compact top toolbar (left
+   * cluster). Use this to push the page-level "back arrow + rename input"
+   * INTO the editor's bar so we don't burn a second row above the canvas.
+   * On phones every pixel matters; on desktop it dodges the avatar.
+   */
+  toolbarLeftSlot?: React.ReactNode;
+  /**
+   * Optional content for the right cluster of the toolbar — typically the
+   * <ShareButton>. Renders left of the save-status / Save now / Export /
+   * History controls so primary actions stay closest to the canvas.
+   */
+  toolbarRightSlot?: React.ReactNode;
 };
 
 export default function WorkbookEditor({
@@ -79,6 +92,8 @@ export default function WorkbookEditor({
   editable = true,
   workbookName,
   collab = false,
+  toolbarLeftSlot,
+  toolbarRightSlot,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const apiRef = useRef<FUniver | null>(null);
@@ -171,6 +186,11 @@ export default function WorkbookEditor({
           presets: [
             UniverSheetsCorePreset({
               container: containerRef.current as HTMLElement,
+              // 'simple' collapses Univer's "Start / Formulas / Data" ribbon
+              // tabs into a single icon row — keeps the editor's vertical
+              // footprint tight (Google-Sheets-shaped), which matters on
+              // phones and short laptop screens.
+              ribbonType: "simple",
             }),
           ],
         });
@@ -428,33 +448,56 @@ export default function WorkbookEditor({
   const statusPill = useMemo(() => statusPillFor(saveStatus), [saveStatus]);
 
   return (
-    <div className="flex h-full w-full flex-col bg-card">
-      <div className="flex items-center justify-between border-b border-border px-3 py-1.5 text-xs">
-        <div className="text-muted-foreground">
-          {bootState === "booting" && (
-            <span className="flex items-center gap-2">
-              <Loader2 className="size-3 animate-spin" />
-              Loading workbook…
-            </span>
-          )}
-          {bootState === "load_error" && (
-            <span className="text-destructive">
-              Load failed: {loadError ?? "unknown"}
-            </span>
-          )}
-          {bootState === "ready" && <span>{editable ? "Editing" : "Viewing"}</span>}
-        </div>
-        <div className="flex items-center gap-2">
+    // colorScheme: light pins this subtree to the light palette so Univer's
+    // portal popovers / context menus (which read browser color-scheme to
+    // decide their background) don't half-render against our dark app
+    // surfaces. The Univer canvas itself was always light; the popovers
+    // were where the visual collision happened.
+    <div
+      className="matrx-univer-shell flex h-full w-full flex-col bg-card"
+      style={{ colorScheme: "light" }}
+    >
+      <div className="flex items-center gap-2 border-b border-border px-2 py-1 text-xs min-w-0">
+        {/* Left cluster — caller-supplied (back arrow + rename) when this
+            editor lives on the workbook page, empty otherwise. */}
+        {toolbarLeftSlot && (
+          <div className="flex items-center gap-1 min-w-0 flex-1">
+            {toolbarLeftSlot}
+          </div>
+        )}
+        {!toolbarLeftSlot && (
+          <div className="text-muted-foreground flex-1 min-w-0 truncate">
+            {bootState === "booting" && (
+              <span className="flex items-center gap-2">
+                <Loader2 className="size-3 animate-spin" />
+                Loading workbook…
+              </span>
+            )}
+            {bootState === "load_error" && (
+              <span className="text-destructive">
+                Load failed: {loadError ?? "unknown"}
+              </span>
+            )}
+            {bootState === "ready" && (
+              <span>{editable ? "Editing" : "Viewing"}</span>
+            )}
+          </div>
+        )}
+        <div className="flex items-center gap-1 shrink-0">
           {collab && bootState === "ready" && (
             <RemoteCursorsLayer
               states={remoteAwareness}
               selfUid={collabSelfUid}
             />
           )}
-          <div className={`flex items-center gap-1 ${statusPill.className}`}>
-            {statusPill.icon}
-            <span>{statusPill.text}</span>
-          </div>
+          {/* Compact status pill (icon only on phones, full text on sm+). */}
+          {bootState === "ready" && saveStatus !== "idle" && (
+            <div className={`hidden sm:flex items-center gap-1 ${statusPill.className}`}>
+              {statusPill.icon}
+              <span>{statusPill.text}</span>
+            </div>
+          )}
+          {toolbarRightSlot}
           {editable && bootState === "ready" && (
             <Button
               variant="ghost"
@@ -465,7 +508,7 @@ export default function WorkbookEditor({
               title="Save a labeled snapshot now (bypass autosave debounce)"
             >
               <Save className="size-3" />
-              Save now
+              <span className="hidden sm:inline">Save now</span>
             </Button>
           )}
           {bootState === "ready" && (
@@ -477,7 +520,7 @@ export default function WorkbookEditor({
               title="Download as .xlsx"
             >
               <Download className="size-3" />
-              Export
+              <span className="hidden sm:inline">Export</span>
             </Button>
           )}
           <Button
@@ -488,7 +531,7 @@ export default function WorkbookEditor({
             title="View snapshot history"
           >
             <History className="size-3" />
-            History
+            <span className="hidden sm:inline">History</span>
           </Button>
         </div>
       </div>
