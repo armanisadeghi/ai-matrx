@@ -20,7 +20,13 @@
  * `pdfStudio` Redux slice so new panes/columns share the same contract.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   PanelLeftClose,
   PanelLeftOpen,
@@ -39,10 +45,7 @@ import {
 } from "./hooks/usePdfStudioDocs";
 import { PdfStudioSidebar } from "./PdfStudioSidebar";
 import { PdfStudioToolbar } from "./PdfStudioToolbar";
-import {
-  PdfStudioReader,
-  type PdfPaneEditMode,
-} from "./PdfStudioReader";
+import { PdfStudioReader, type PdfPaneEditMode } from "./PdfStudioReader";
 import { PdfStudioInspector, type SectionKey } from "./PdfStudioInspector";
 import { PdfStudioUpload } from "./PdfStudioUpload";
 import { PdfStudioUploadDrawer } from "./PdfStudioUploadDrawer";
@@ -399,6 +402,34 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     [docsState, activeDoc, router, selectDocById],
   );
 
+  // ── Open the source PDF ───────────────────────────────────────────────────
+  //
+  // The stored `source` is `processed_documents.storage_uri` — for the common
+  // cld_file path that's an `s3://…` URI. `window.open("s3://…")` opens a tab
+  // the browser can never navigate to (blank, forever). Resolve to something
+  // the browser can actually show:
+  //   - cld_file-backed → the in-app file viewer `/files/f/{id}` (auth-safe,
+  //     progressive PDF render, no expiring URL).
+  //   - http(s) source   → open the URL directly.
+  //   - anything else (s3://, supabase://, none) is not directly openable.
+  const handleOpenSource = useCallback(() => {
+    if (!activeDoc) return;
+    if (activeDoc.sourceKind === "cld_file" && activeDoc.sourceId) {
+      window.open(
+        `/files/f/${activeDoc.sourceId}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+      return;
+    }
+    const src = activeDoc.source?.trim();
+    if (src && (src.startsWith("http://") || src.startsWith("https://"))) {
+      window.open(src, "_blank", "noopener,noreferrer");
+      return;
+    }
+    toast.error("This document's original file isn't directly viewable.");
+  }, [activeDoc, toast]);
+
   const handleRunShortcut = useCallback(
     async (shortcutId: string) => {
       if (!activeDoc) return;
@@ -546,11 +577,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
           onRunAiClean={handleRunAiClean}
           aiCleanRunning={aiCleanRunning}
           liveStatus={liveStatus}
-          onOpenSource={() => {
-            if (activeDoc?.source && typeof window !== "undefined") {
-              window.open(activeDoc.source, "_blank", "noopener,noreferrer");
-            }
-          }}
+          onOpenSource={handleOpenSource}
           onOpenCopyPages={() => setCopyPagesOpen(true)}
         />
 

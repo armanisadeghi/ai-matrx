@@ -47,6 +47,7 @@ import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import { usePdfStudioDocs } from "./hooks/usePdfStudioDocs";
 import { PdfStudioSidebar } from "./PdfStudioSidebar";
+import { PdfCldFileViewer } from "./PdfStudioReader";
 import { PdfStudioInspector } from "./PdfStudioInspector";
 import { PdfStudioUpload } from "./PdfStudioUpload";
 import { PdfStudioUploadDrawer } from "./PdfStudioUploadDrawer";
@@ -357,7 +358,19 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
             />
           </div>
         ) : tab === "pdf" ? (
-          activeDoc.source ? (
+          activeDoc.sourceKind === "cld_file" && activeDoc.sourceId ? (
+            // cld_file sources are `s3://` URIs the browser can't fetch —
+            // render via pdfjs + the authenticated inline endpoint, the same
+            // path the desktop reader uses.
+            <PdfCldFileViewer
+              fileId={activeDoc.sourceId}
+              fileName={activeDoc.name}
+              pageNumber={activePage ?? 1}
+              onPageChange={(n) => setActivePage(n)}
+            />
+          ) : activeDoc.source &&
+            (activeDoc.source.startsWith("http://") ||
+              activeDoc.source.startsWith("https://")) ? (
             <iframe
               src={`${activeDoc.source}#page=${activePage ?? 1}`}
               title={activeDoc.name}
@@ -365,7 +378,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
             />
           ) : (
             <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
-              No source URL.
+              No source PDF linked to this record.
             </div>
           )
         ) : (
@@ -377,9 +390,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
             fallbackText={
               tab === "clean" ? activeDoc.cleanContent : activeDoc.content
             }
-            streaming={
-              tab === "clean" && (aiCleanRunning || pipelineRunning)
-            }
+            streaming={tab === "clean" && (aiCleanRunning || pipelineRunning)}
             streamingText={tab === "clean" ? streamingCleanText : null}
           />
         )}

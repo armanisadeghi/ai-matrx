@@ -108,11 +108,32 @@ export async function fetchTypeItems(
 }
 
 /**
+ * Bulk per-entity scope assignments for LIST surfaces (file tables, note
+ * lists): one query per visible page of rows, cached + deduped like
+ * everything else here. Keyed by sorted id-set so scrolling back re-uses it.
+ */
+export async function fetchEntityScopesBulk(
+  entityType: string,
+  entityIds: string[],
+): Promise<Record<string, string[]>> {
+  if (entityIds.length === 0) return {};
+  const key = `bulk:${entityType}:${[...entityIds].sort().join(",")}`;
+  return cached(key, async () => {
+    const r = await scopesService.getEntityScopesBulk(
+      entityType as Parameters<typeof scopesService.getEntityScopesBulk>[0],
+      entityIds,
+    );
+    return r.ok ? r.data.byEntity : {};
+  });
+}
+
+/**
  * Drop cached engagement data after a mutation (e.g. a quick-add created a
- * real task) so the next engagement refetches. Pass nothing to clear all.
+ * real task, or a row's context was edited) so the next engagement refetches.
+ * Pass nothing to clear all.
  */
 export function invalidateAssignableData(
-  kind?: "projects" | "tasks" | "items",
+  kind?: "projects" | "tasks" | "items" | "bulk",
   id?: string,
 ): void {
   if (!kind) {
@@ -124,5 +145,8 @@ export function invalidateAssignableData(
   if (kind === "items") {
     if (id) cache.delete(`items:${id}`);
     else for (const k of [...cache.keys()]) if (k.startsWith("items:")) cache.delete(k);
+  }
+  if (kind === "bulk") {
+    for (const k of [...cache.keys()]) if (k.startsWith("bulk:")) cache.delete(k);
   }
 }

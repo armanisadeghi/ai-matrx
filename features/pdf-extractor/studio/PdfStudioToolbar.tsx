@@ -25,7 +25,7 @@ import {
   Search,
   RefreshCw,
   PartyPopper,
-  ClipboardList
+  ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -204,7 +204,9 @@ export function PdfStudioToolbar({
             <ClipboardList className="w-3 h-3" />
             Copy Pages
           </Button>
-          {doc.source && (
+          {((doc.sourceKind === "cld_file" && doc.sourceId) ||
+            doc.source?.startsWith("http://") ||
+            doc.source?.startsWith("https://")) && (
             <Button
               size="sm"
               variant="outline"

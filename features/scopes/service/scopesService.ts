@@ -670,6 +670,34 @@ export const scopesService = {
     }
   },
 
+  /**
+   * Bulk read: scope assignments for MANY entities of one type in ONE query.
+   * Built for list surfaces (file tables, note lists) that show per-row
+   * context status — N visible rows must never mean N requests.
+   */
+  async getEntityScopesBulk(
+    entityType: ScopeAssignmentEntityType,
+    entityIds: string[],
+  ): Promise<ScopesRpcResult<{ byEntity: Record<string, string[]> }>> {
+    try {
+      requireUserId();
+      if (entityIds.length === 0) return ok({ byEntity: {} });
+      const { data, error } = await supabase
+        .from("ctx_scope_assignments")
+        .select("entity_id, scope_id")
+        .eq("entity_type", entityType)
+        .in("entity_id", entityIds);
+      if (error) return err(...mapPgErrorPair(error));
+      const byEntity: Record<string, string[]> = {};
+      for (const row of data ?? []) {
+        (byEntity[row.entity_id] ??= []).push(row.scope_id);
+      }
+      return ok({ byEntity });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
   // ──────────────────────────────────────────────────────────────────
   //  WRITE — ENTITY ASSIGNMENTS (M2M tagging)
   //

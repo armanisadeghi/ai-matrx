@@ -105,7 +105,7 @@ export interface ContextSelection {
 
 export interface ContextAssignmentSaveResult {
   ok: boolean;
-  mode: "assignment" | "active";
+  mode: "assignment" | "active" | "filter";
   selection: ContextSelection;
   /** True when scope assignments were persisted to the DB this save. */
   wroteScopes: boolean;
@@ -113,17 +113,34 @@ export interface ContextAssignmentSaveResult {
 }
 
 export interface ContextAssignmentFieldProps {
-  subject: ContextAssignmentSubject;
-  mode?: "assignment" | "active";
+  /** Required for "assignment" mode (the entity being tagged). Optional for
+   *  "active"/"filter" modes, which have no subject entity. */
+  subject?: ContextAssignmentSubject;
+  /**
+   * - "assignment" — durable tagging of a subject entity (multi-select).
+   * - "active"     — working-context selection (one scope per type, single
+   *                  project/task, ORG IS EXPLICIT OPT-IN); emits, never writes.
+   * - "filter"     — pure filtering selection (multi-select everything, no
+   *                  save button, no quick-add); emits live via
+   *                  onSelectionChange. Has zero effect on any saving.
+   */
+  mode?: "assignment" | "active" | "filter";
   /** "live" persists (scopes today; projects/tasks after ctx_associations).
    *  "preview" console.logs everything. Default: "live". */
   writeMode?: "live" | "preview";
   /** Enforced-context default. User can ALWAYS change it afterwards. */
   defaultOrganizationId?: string | null;
+  /** Pre-select on mount (e.g. a filter bar restoring state). */
+  initialSelection?: Partial<ContextSelection>;
   /** Active mode only: receives the selection — the Surface A host dispatches. */
   onApplyActive?: (selection: ContextSelection) => void;
+  /** Replaces the built-in save entirely (e.g. batch-apply to N uploads).
+   *  The field shows its busy state while the promise is pending. */
+  onSubmitSelection?: (selection: ContextSelection) => Promise<{ ok: boolean; error?: string }>;
   onSaved?: (result: ContextAssignmentSaveResult) => void;
   onSelectionChange?: (selection: ContextSelection) => void;
+  /** Hide the subject header row (popover/dialog hosts often provide one). */
+  hideSubject?: boolean;
   /** Fixed height of the scrolling section area (px). Default 440. */
   sectionHeight?: number;
   className?: string;
@@ -160,7 +177,7 @@ function SectionShell({
   icon: Icon, title, count, onAdd, addLabel, children, headerExtra, iconClass, borderClass,
 }: {
   icon: React.ComponentType<{ className?: string }>; title: string; count: number;
-  onAdd: () => void; addLabel: string; children: React.ReactNode; headerExtra?: React.ReactNode;
+  onAdd?: () => void; addLabel?: string; children: React.ReactNode; headerExtra?: React.ReactNode;
   iconClass?: string; borderClass?: string;
 }) {
   const [open, setOpen] = useState(true);
@@ -174,9 +191,11 @@ function SectionShell({
           <span className="shrink-0 text-xs text-muted-foreground">{count}</span>
         </button>
         {headerExtra}
-        <button onClick={onAdd} className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground">
-          <Plus className="h-3.5 w-3.5" /> {addLabel}
-        </button>
+        {onAdd && (
+          <button onClick={onAdd} className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground">
+            <Plus className="h-3.5 w-3.5" /> {addLabel}
+          </button>
+        )}
       </div>
       {open && <div className="border-t border-border p-1.5">{children}</div>}
     </div>
@@ -210,9 +229,12 @@ export function ContextAssignmentField({
   mode = "assignment",
   writeMode = "live",
   defaultOrganizationId,
+  initialSelection,
   onApplyActive,
+  onSubmitSelection,
   onSaved,
   onSelectionChange,
+  hideSubject = false,
   sectionHeight = 440,
   className,
 }: ContextAssignmentFieldProps) {
@@ -247,9 +269,13 @@ export function ContextAssignmentField({
 
   // Selection state
   const [query, setQuery] = useState("");
-  const [selScopes, setSelScopes] = useState<Set<string>>(new Set());
-  const [selProjects, setSelProjects] = useState<Set<string>>(new Set());
-  const [selTasks, setSelTasks] = useState<Set<string>>(new Set());
+  const [selScopes, setSelScopes] = useState<Set<string>>(new Set(initialSelection?.scopeIds ?? []));
+  // Explicit org selection — active/filter modes only. Selecting a scope does
+  // NOT imply selecting its organization (product semantics: org and scope are
+  // independent context dimensions; org rides along only when checked).
+  const [selOrgs, setSelOrgs] = useState<Set<string>>(new Set(initialSelection?.organizationId ? [initialSelection.organizationId] : []));
+  const [selProjects, setSelProjects] = useState<Set<string>>(new Set(initialSelection?.projectIds ?? []));
+  const [selTasks, setSelTasks] = useState<Set<string>>(new Set(initialSelection?.taskIds ?? []));
   const [adding, setAdding] = useState<string | null>(null);
   const [showAllProjects, setShowAllProjects] = useState(false);
   const [showAllTasks, setShowAllTasks] = useState(false);
@@ -262,26 +288,28 @@ export function ContextAssignmentField({
   // once per subject via the canonical per-entity cache — edits then diff
   // against reality instead of starting blank.
   const entityScopes = useEntityScopes({
-    entityType: subject.entityType,
-    entityId: mode === "assignment" ? subject.entityId : null,
+    entityType: subject?.entityType ?? "file",
+    entityId: mode === "assignment" && subject ? subject.entityId : null,
     organizationId: org?.id,
   });
   const hydratedFor = useRef<string | null>(null);
   useEffect(() => {
+    if (!subject) return;
     const key = `${subject.entityType}:${subject.entityId}`;
     if (mode !== "assignment" || hydratedFor.current === key) return;
     if (entityScopes.status !== "ready") return;
     hydratedFor.current = key;
     if (entityScopes.scopeIds.length > 0) setSelScopes(new Set(entityScopes.scopeIds));
-  }, [mode, subject.entityType, subject.entityId, entityScopes.status, entityScopes.scopeIds]);
+  }, [mode, subject?.entityType, subject?.entityId, entityScopes.status, entityScopes.scopeIds]);
 
   // Reset on subject change (NOT on org change — org switch keeps cross-org
   // project/task picks and existing scope tags from other orgs are unioned).
   useEffect(() => {
+    if (!subject) return;
     setSelScopes(new Set()); setSelProjects(new Set()); setSelTasks(new Set());
     setAddedScopes([]); setAddedProjects([]); setAddedTasks([]); setQuery("");
     hydratedFor.current = null;
-  }, [subject.entityType, subject.entityId]);
+  }, [subject?.entityType, subject?.entityId]);
 
   const q = query.trim().toLowerCase();
   const match = (s: string) => !q || s.toLowerCase().includes(q);
@@ -310,7 +338,7 @@ export function ContextAssignmentField({
 
   // Lateral suggestions from REAL project↔scope links (suggest, never force).
   const suggestions = useMemo(() => {
-    if (mode === "active" || !org) return [] as { id: string; label: string; kind: "project" | "scope" }[];
+    if (mode !== "assignment" || !org) return [] as { id: string; label: string; kind: "project" | "scope" }[];
     const out: { id: string; label: string; kind: "project" | "scope" }[] = [];
     const seen = new Set<string>();
     selScopes.forEach((sid) => {
@@ -333,7 +361,8 @@ export function ContextAssignmentField({
     set((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   function toggleScope(id: string) {
-    if (mode === "assignment") return toggle(setSelScopes, id);
+    // assignment + filter: free multi-select. active: one scope per type.
+    if (mode !== "active") return toggle(setSelScopes, id);
     const typeId = typeOfScope(id)?.id;
     setSelScopes((p) => {
       const n = new Set(p);
@@ -347,13 +376,17 @@ export function ContextAssignmentField({
     set((p) => (p.has(id) ? new Set<string>() : new Set([id])));
   const toggleProject = mode === "active" ? toggleSingle(setSelProjects) : (id: string) => toggle(setSelProjects, id);
   const toggleTask = mode === "active" ? toggleSingle(setSelTasks) : (id: string) => toggle(setSelTasks, id);
+  // Org is single-select where it appears (active/filter explicit section).
+  const toggleOrg = toggleSingle(setSelOrgs);
 
   const selection: ContextSelection = useMemo(() => ({
-    organizationId: org?.id ?? null,
+    // assignment: the subject's org of record (the dropdown). active/filter:
+    // ONLY an explicitly checked org — a scope never drags its org along.
+    organizationId: mode === "assignment" ? (org?.id ?? null) : ([...selOrgs][0] ?? null),
     scopeIds: [...selScopes],
     projectIds: [...selProjects],
     taskIds: [...selTasks],
-  }), [org?.id, selScopes, selProjects, selTasks]);
+  }), [mode, org?.id, selOrgs, selScopes, selProjects, selTasks]);
 
   useEffect(() => { onSelectionChange?.(selection); }, [selection]);
 
@@ -414,6 +447,14 @@ export function ContextAssignmentField({
   async function save() {
     setBusy(true);
     try {
+      // Custom submit replaces everything (e.g. batch-apply to N uploads).
+      if (onSubmitSelection) {
+        const r = await onSubmitSelection(selection);
+        if (r.ok) toast.success("Saved");
+        else toast.error(r.error ?? "Failed to save");
+        onSaved?.({ ok: r.ok, mode, selection, wroteScopes: r.ok, error: r.error });
+        return;
+      }
       if (mode === "active") {
         if (onApplyActive) onApplyActive(selection);
         else console.log("[context-assignment] ACTIVE selection (no Surface A host wired) →", selection);
@@ -423,7 +464,7 @@ export function ContextAssignmentField({
       }
       if (writeMode === "preview") {
         console.log("[context-assignment] SAVE (preview) →", {
-          entity: { entity_type: subject.entityType, entity_id: subject.entityId, name: subject.title },
+          entity: subject ? { entity_type: subject.entityType, entity_id: subject.entityId, name: subject.title } : null,
           ...selection,
           derived_spine: [...derivedTypeIds].map((id) => typeById(id)?.label_plural).filter(Boolean).concat(org?.name ?? []),
         });
@@ -442,7 +483,7 @@ export function ContextAssignmentField({
       if (selection.projectIds.length > 0 || selection.taskIds.length > 0) {
         // Loud until ctx_associations lands — never a silent partial save.
         console.warn("[context-assignment] project/task associations await the ctx_associations migration — logged only", {
-          entity: { entity_type: subject.entityType, entity_id: subject.entityId },
+          entity: subject ? { entity_type: subject.entityType, entity_id: subject.entityId } : null,
           projectIds: selection.projectIds, taskIds: selection.taskIds,
         });
         toast.info("Scopes saved. Project/task links recorded for the upcoming migration.");
@@ -455,20 +496,24 @@ export function ContextAssignmentField({
     }
   }
 
-  const totalSelected = selScopes.size + selProjects.size + selTasks.size;
-  const SubIcon = subject.icon ?? FileText;
+  const totalSelected = selScopes.size + selOrgs.size + selProjects.size + selTasks.size;
+  const SubIcon = subject?.icon ?? FileText;
   const loadingTree = organizations.length === 0;
+  const showOrgSection = mode !== "assignment";
+  const allowCreate = mode !== "filter";
 
   return (
     <div className={cn("overflow-hidden rounded-xl border border-border bg-card", className)}>
       {/* subject */}
-      <div className="flex items-center gap-3 border-b border-border p-4">
-        <div className="rounded-lg bg-muted p-2 text-muted-foreground"><SubIcon className="h-5 w-5" /></div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold">{subject.title}</div>
-          {subject.subtitle && <div className="truncate text-xs text-muted-foreground">{subject.subtitle}</div>}
+      {subject && !hideSubject && (
+        <div className="flex items-center gap-3 border-b border-border p-4">
+          <div className="rounded-lg bg-muted p-2 text-muted-foreground"><SubIcon className="h-5 w-5" /></div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold">{subject.title}</div>
+            {subject.subtitle && <div className="truncate text-xs text-muted-foreground">{subject.subtitle}</div>}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="space-y-3 p-4">
         {/* org + search */}
@@ -498,12 +543,22 @@ export function ContextAssignmentField({
             <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading your context…</div>
           ) : (
             <>
+              {/* Explicit org membership (active/filter): a scope never drags
+                  its org along — the org is context only when checked here. */}
+              {showOrgSection && (
+                <SectionShell icon={Building2} title="Organization" count={organizations.length}>
+                  {organizations.filter((o) => match(o.name)).map((o) => (
+                    <CheckRow key={o.id} on={selOrgs.has(o.id)} label={o.name} right={o.is_personal ? <span className="shrink-0 text-[11px] text-muted-foreground">personal</span> : undefined} onClick={() => toggleOrg(o.id)} />
+                  ))}
+                </SectionShell>
+              )}
+
               {scopeTypes.length === 0 && <div className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">This organization has no scopes yet.</div>}
               {scopeTypes.map(({ type, scopes, total }) => {
                 const Icon = resolveIcon(type.icon);
                 const c = resolveColor(type);
                 return (
-                  <SectionShell key={type.id} icon={Icon} iconClass={c.fg} borderClass={c.border} title={type.label_plural} count={total} addLabel={`New ${type.label_singular}`} onAdd={() => setAdding(type.id)}>
+                  <SectionShell key={type.id} icon={Icon} iconClass={c.fg} borderClass={c.border} title={type.label_plural} count={total} addLabel={allowCreate ? `New ${type.label_singular}` : undefined} onAdd={allowCreate ? () => setAdding(type.id) : undefined}>
                     {adding === type.id && <InlineAdd placeholder={`New ${type.label_singular.toLowerCase()} name`} onCommit={(v) => void addScope(type.id, v)} onCancel={() => setAdding(null)} />}
                     {scopes.length === 0 ? (
                       <div className="px-2.5 py-1.5 text-xs text-muted-foreground">{q ? "No matches." : `No ${type.label_plural.toLowerCase()} yet.`}</div>
@@ -512,14 +567,14 @@ export function ContextAssignmentField({
                 );
               })}
 
-              <SectionShell icon={Briefcase} title="Projects" count={projects.length} addLabel="New project" onAdd={() => setAdding("project")}
+              <SectionShell icon={Briefcase} title="Projects" count={projects.length} addLabel={allowCreate ? "New project" : undefined} onAdd={allowCreate ? () => setAdding("project") : undefined}
                 headerExtra={hiddenProjects > 0 || showAllProjects ? <MiniToggle on={showAllProjects} onChange={setShowAllProjects} label={showAllProjects ? "All orgs" : `Show all (${hiddenProjects})`} /> : undefined}>
                 {adding === "project" && <InlineAdd placeholder="New project name" onCommit={addProject} onCancel={() => setAdding(null)} />}
                 {projects.length === 0 ? <div className="px-2.5 py-1.5 text-xs text-muted-foreground">{q ? "No matches." : "No projects yet."}</div>
                   : projects.map((p) => <CheckRow key={p.id} on={selProjects.has(p.id)} label={p.name} right={<span className="max-w-[45%] shrink-0 truncate text-[11px] text-muted-foreground">{orgLabel(p.orgId)}</span>} onClick={() => toggleProject(p.id)} />)}
               </SectionShell>
 
-              <SectionShell icon={FolderOpen} title="Tasks" count={tasks.length} addLabel="New task" onAdd={() => setAdding("task")}
+              <SectionShell icon={FolderOpen} title="Tasks" count={tasks.length} addLabel={allowCreate ? "New task" : undefined} onAdd={allowCreate ? () => setAdding("task") : undefined}
                 headerExtra={hiddenTasks > 0 || showAllTasks ? <MiniToggle on={showAllTasks} onChange={setShowAllTasks} label={showAllTasks ? "All orgs" : `Show all (${hiddenTasks})`} /> : undefined}>
                 {adding === "task" && <InlineAdd placeholder="New task title" onCommit={(v) => void addTask(v)} onCancel={() => setAdding(null)} />}
                 {tasks.length === 0 ? <div className="px-2.5 py-1.5 text-xs text-muted-foreground">{q ? "No matches." : "No tasks yet."}</div>
@@ -533,14 +588,15 @@ export function ContextAssignmentField({
         <div className="flex items-start justify-between gap-3 border-t border-border pt-3">
           <div className="max-h-16 min-w-0 flex-1 overflow-y-auto">
             {totalSelected === 0 ? (
-              <span className="text-xs text-muted-foreground">{mode === "active" ? "No active context set — the agent gets none." : "Nothing selected — saving with no associations is fine."}</span>
+              <span className="text-xs text-muted-foreground">{mode === "active" ? "No active context set — the agent gets none." : mode === "filter" ? "No filters — showing everything." : "Nothing selected — saving with no associations is fine."}</span>
             ) : (
               <div className="flex flex-wrap items-center gap-1.5">
-                {[...selScopes].map((id) => { const name = [...(org?.scope_types.flatMap((x) => x.scopes) ?? []), ...addedScopes].find((s) => s.id === id)?.name ?? id; const t = typeOfScope(id); const c = t ? resolveColor(t) : undefined; return <Chip key={id} label={name} fg={c?.fg} border={c?.border} onRemove={() => toggle(setSelScopes, id)} />; })}
+                {showOrgSection && [...selOrgs].map((id) => <Chip key={id} label={organizations.find((o) => o.id === id)?.name ?? id} onRemove={() => toggleOrg(id)} />)}
+                {[...selScopes].map((id) => { const name = [...(org?.scope_types.flatMap((x) => x.scopes) ?? []), ...addedScopes].find((s) => s.id === id)?.name ?? id; const t = typeOfScope(id); const c = t ? resolveColor(t) : undefined; return <Chip key={id} label={t ? `${t.label_singular}: ${name}` : name} fg={c?.fg} border={c?.border} onRemove={() => toggle(setSelScopes, id)} />; })}
                 {[...selProjects].map((id) => <Chip key={id} label={projName(id)} onRemove={() => toggle(setSelProjects, id)} />)}
                 {[...selTasks].map((id) => <Chip key={id} label={[...allTasks, ...addedTasks].find((t) => t.id === id)?.title ?? id} onRemove={() => toggle(setSelTasks, id)} />)}
-                {[...derivedTypeIds].map((tid) => <span key={tid} className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">{typeById(tid)?.label_plural}<span className="text-[9px] uppercase opacity-70">auto</span></span>)}
-                {org && <span className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">{org.name}<span className="text-[9px] uppercase opacity-70">auto</span></span>}
+                {mode === "assignment" && [...derivedTypeIds].map((tid) => <span key={tid} className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">{typeById(tid)?.label_plural}<span className="text-[9px] uppercase opacity-70">auto</span></span>)}
+                {mode === "assignment" && org && <span className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">{org.name}<span className="text-[9px] uppercase opacity-70">auto</span></span>}
                 {suggestions.map((s) => (
                   <button key={s.id} onClick={() => (s.kind === "project" ? toggleProject(s.id) : toggleScope(s.id))} title={s.kind === "project" ? "This scope is in this project — attach there too?" : "This project is linked to this scope — file it scope-wide?"} className="inline-flex items-center gap-1 rounded-md border border-dashed border-amber-400/60 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/40">
                     <Wand2 className="h-3 w-3" />{s.label}<Plus className="h-3 w-3" />
@@ -549,10 +605,12 @@ export function ContextAssignmentField({
               </div>
             )}
           </div>
-          <Button size="sm" onClick={() => void save()} disabled={busy || loadingTree} className="shrink-0">
-            {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
-            {mode === "active" ? "Set context" : "Save"}
-          </Button>
+          {mode !== "filter" && (
+            <Button size="sm" onClick={() => void save()} disabled={busy || loadingTree} className="shrink-0">
+              {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
+              {mode === "active" ? "Set context" : "Save"}
+            </Button>
+          )}
         </div>
       </div>
     </div>

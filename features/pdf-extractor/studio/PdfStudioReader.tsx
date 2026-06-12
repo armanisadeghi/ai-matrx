@@ -104,7 +104,7 @@ function PdfPaneLoading() {
  * let it do progressive Range fetches (the blob-cache Service Worker
  * fills in 206 from IDB when the file is already cached locally).
  */
-function PdfCldFileViewer({
+export function PdfCldFileViewer({
   fileId,
   fileName,
   pageNumber,
