@@ -62,7 +62,7 @@ export type CleanRecordingResult =
 export const cleanRecordingThunk = createAsyncThunk<
   CleanRecordingResult,
   CleanRecordingArgs,
-  { state: RootState }
+  { state: RootState; dispatch: AppDispatch }
 >("transcriptStudio/cleanRecording", async (args, { dispatch, getState }) => {
   const { sessionId, recordingSegmentId, triggerCause } = args;
   const shortcutId = args.shortcutId ?? DEFAULT_CLEANING_SHORTCUT_ID;
