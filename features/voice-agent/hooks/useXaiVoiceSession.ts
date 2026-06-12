@@ -51,6 +51,21 @@ import { createAudioPlayback } from "../audio/audioPlayback";
 import { createTokenManager, type TokenError } from "../transport/tokenManager";
 import { createXaiClient, type XaiClientError } from "../transport/xaiClient";
 import type { XaiServerEvent } from "../transport/serverEvents";
+import {
+  voiceDebugLog,
+  voiceDebugSetFlags,
+  voiceDebugIncr,
+  type MicPermissionState,
+} from "../debug/voiceDebugBus";
+
+/** Server-event types too high-frequency to record individually in the debug log. */
+const HIGH_FREQ_EVENTS = new Set([
+  "response.output_audio.delta",
+  "response.audio.delta",
+  "response.output_audio_transcript.delta",
+  "response.audio_transcript.delta",
+  "conversation.item.input_audio_transcription.delta",
+]);
 
 interface UseXaiVoiceSessionOpts {
   instanceId: string;
@@ -163,9 +178,9 @@ export function useXaiVoiceSession(
       // stop scanning at the first one past the cutoff.
       const turn = store
         .getState()
-        .voiceAgent.instances[instanceId]?.turns.find(
-          (t) => t.id === turnId && t.role === "assistant",
-        );
+        .voiceAgent.instances[
+          instanceId
+        ]?.turns.find((t) => t.id === turnId && t.role === "assistant");
       if (turn && turn.text_delta_arrivals.length > 0) {
         let revealIndex = turn.text_reveal_index;
         for (const arr of turn.text_delta_arrivals) {
@@ -186,6 +201,34 @@ export function useXaiVoiceSession(
     };
     revealRafIdRef.current = requestAnimationFrame(tick);
   }, [dispatch, instanceId, store]);
+
+  // ─── Debug instrumentation ─────────────────────────────────────────────
+  // Pushes a live snapshot of the imperative connection state (ws / mic /
+  // token) to the debug bus. Cheap; called on every lifecycle transition and
+  // by the watchdog tick. `mic-*` permission is updated separately by the probe.
+  const micPermissionRef = useRef<MicPermissionState>("unknown");
+  const mirrorFlags = useCallback(() => {
+    const tokenMgr = tokenManagerRef.current;
+    const expiresAt = tokenMgr?.expiresAt() ?? null;
+    const stats = captureRef.current?.getStats();
+    voiceDebugSetFlags(instanceId, {
+      status:
+        store.getState().voiceAgent.instances[instanceId]?.status ?? "idle",
+      wsOpen: xaiClientRef.current?.isOpen() ?? false,
+      streamingReady: xaiClientRef.current?.isStreamingReady() ?? false,
+      captureActive: captureRef.current?.isActive() ?? false,
+      micFramesCaptured: stats?.framesCaptured ?? 0,
+      micFramesSent: stats?.framesSent ?? 0,
+      micRms: stats?.lastRms ?? 0,
+      micCtxState: stats?.ctxState ?? "none",
+      micProcessCalls: stats?.processCalls ?? 0,
+      micHasInput: stats?.hasInput ?? false,
+      tokenPresent: !!tokenMgr?.peek(),
+      tokenExpiresInS:
+        expiresAt !== null ? Math.round(expiresAt - Date.now() / 1000) : null,
+      micPermission: micPermissionRef.current,
+    });
+  }, [instanceId, store]);
 
   // Active xaiClient subscriptions for the current session. Tracked so a clean
   // `stop()` can tear them down — otherwise every restart layers a new set on
@@ -209,6 +252,7 @@ export function useXaiVoiceSession(
         devTtlSeconds: devTokenTtlSeconds,
       });
       tokenManagerRef.current.onError((err: TokenError) => {
+        voiceDebugLog(instanceId, "error", `token.${err.code}`, err.message);
         dispatch(
           setError({
             instanceId,
@@ -223,6 +267,7 @@ export function useXaiVoiceSession(
     if (!captureRef.current) {
       captureRef.current = createAudioCapture();
       captureRef.current.onError((err: CaptureError) => {
+        voiceDebugLog(instanceId, "error", `mic.${err.code}`, err.message);
         dispatch(
           setError({
             instanceId,
@@ -248,21 +293,38 @@ export function useXaiVoiceSession(
   // ─── Wire xaiClient event stream → slice + audio ───────────────────────
   const handleServerEvent = useCallback(
     (event: XaiServerEvent) => {
+      // Record the latest server event for the debug panel (skip the
+      // high-frequency audio/transcript deltas to avoid log spam).
+      if (!HIGH_FREQ_EVENTS.has(event.type)) {
+        voiceDebugSetFlags(instanceId, {
+          lastEventAt: Date.now(),
+          lastEventType: event.type,
+        });
+      }
       switch (event.type) {
         case "session.created":
+          voiceDebugLog(instanceId, "info", "ws.session.created");
           // Wait for session.updated — sending audio now would race.
           break;
 
         case "session.updated": {
+          voiceDebugLog(
+            instanceId,
+            "info",
+            "ws.session.updated",
+            "handshake complete — streaming live",
+          );
           dispatch(setStatus({ instanceId, status: "listening" }));
           dispatch(
             setSessionStartedAt({ instanceId, startedAtMs: Date.now() }),
           );
+          voiceDebugSetFlags(instanceId, { sessionStartedAt: Date.now() });
           // Flush the pre-connect buffer and route subsequent frames live.
           const send = (frame: ArrayBuffer) => {
             xaiClientRef.current?.sendInputAudio(frame);
           };
           captureRef.current?.setLive(send);
+          mirrorFlags();
           break;
         }
 
@@ -491,6 +553,12 @@ export function useXaiVoiceSession(
         }
 
         case "error": {
+          voiceDebugLog(
+            instanceId,
+            "error",
+            "ws.server-error",
+            `[${event.code}] ${event.message}`,
+          );
           // The xaiClient already surfaced this via onError; nothing extra.
           break;
         }
@@ -513,11 +581,12 @@ export function useXaiVoiceSession(
         }
       }
     },
-    [dispatch, instanceId],
+    [dispatch, instanceId, mirrorFlags, startRevealLoop, stopRevealLoop],
   );
 
   const handleClientError = useCallback(
     (err: XaiClientError) => {
+      voiceDebugLog(instanceId, "error", `ws.${err.code}`, err.message);
       dispatch(
         setError({
           instanceId,
@@ -530,6 +599,7 @@ export function useXaiVoiceSession(
 
   // ─── start / stop ──────────────────────────────────────────────────────
   const stop = useCallback(async (): Promise<void> => {
+    voiceDebugLog(instanceId, "info", "stop", "tearing down session");
     stopRevealLoop();
     pendingUserTurnIdRef.current = null;
     pendingAssistantTurnIdRef.current = null;
@@ -557,9 +627,12 @@ export function useXaiVoiceSession(
     }
 
     dispatch(setStatus({ instanceId, status: "idle" }));
-  }, [dispatch, instanceId, stopRevealLoop]);
+    mirrorFlags();
+  }, [dispatch, instanceId, stopRevealLoop, mirrorFlags]);
 
   const start = useCallback(async (): Promise<void> => {
+    voiceDebugLog(instanceId, "info", "start", "user tapped mic");
+    voiceDebugIncr(instanceId, "startCount");
     ensureModules();
     const client = xaiClientRef.current!;
     const capture = captureRef.current!;
@@ -572,7 +645,19 @@ export function useXaiVoiceSession(
     try {
       capture.warmupSync();
       playback.warmupSync();
+      voiceDebugLog(
+        instanceId,
+        "info",
+        "audio.warmup",
+        "AudioContexts resumed",
+      );
     } catch (err) {
+      voiceDebugLog(
+        instanceId,
+        "error",
+        "audio.warmup-failed",
+        err instanceof Error ? err.message : "unknown",
+      );
       dispatch(
         setError({
           instanceId,
@@ -601,16 +686,53 @@ export function useXaiVoiceSession(
     const unsubEvent = client.onEvent(handleServerEvent);
     const unsubError = client.onError(handleClientError);
     const unsubClose = client.onClose((info) => {
+      voiceDebugIncr(instanceId, "closeCount");
+      voiceDebugSetFlags(instanceId, {
+        lastCloseIntentional: info.intentional,
+        lastCloseCode: info.code,
+      });
+      voiceDebugLog(
+        instanceId,
+        info.intentional ? "info" : "warn",
+        info.intentional ? "ws.close" : "ws.close.network",
+        info.intentional
+          ? `client disconnected (code ${info.code ?? "?"})`
+          : `connection dropped (code ${info.code ?? "?"}) — flipping to idle so the next tap reconnects`,
+      );
       if (info.intentional) return;
-      // Network close mid-session — flip to idle so the mic button reads "start again".
+      // Network close mid-session — surface it and flip to idle so the mic
+      // button reads "start again" with a freshly-primed token.
+      dispatch(
+        setError({
+          instanceId,
+          error: {
+            code: "ws-connection-dropped",
+            message:
+              "Voice connection dropped. Tap the mic to reconnect — a fresh token is ready.",
+          },
+        }),
+      );
       void stop();
     });
     sessionUnsubsRef.current.push(unsubEvent, unsubError, unsubClose);
 
     try {
       const token = await tokens.getCurrent();
+      voiceDebugLog(
+        instanceId,
+        "info",
+        "token.ready",
+        "ephemeral secret minted",
+      );
       // After token fetch, briefly flip status to 'connecting' for the UI.
       dispatch(setStatus({ instanceId, status: "connecting" }));
+      voiceDebugLog(
+        instanceId,
+        "info",
+        "ws.connecting",
+        "opening socket + mic",
+      );
+      mirrorFlags();
 
       // PARALLEL: open WS and start mic at the same time.
       await Promise.all([
@@ -621,8 +743,17 @@ export function useXaiVoiceSession(
         }),
         capture.start(),
       ]);
+      voiceDebugLog(instanceId, "info", "ws.open", "socket open, mic started");
+      voiceDebugIncr(instanceId, "connectOkCount");
+      mirrorFlags();
       // status flips to 'listening' from inside handleServerEvent on session.updated.
     } catch (err) {
+      voiceDebugLog(
+        instanceId,
+        "error",
+        "start.failed",
+        err instanceof Error ? err.message : String(err),
+      );
       clearSessionSubscriptions();
       const message =
         err instanceof Error
@@ -644,6 +775,7 @@ export function useXaiVoiceSession(
     handleServerEvent,
     instanceId,
     stop,
+    mirrorFlags,
   ]);
 
   const toggle = useCallback(() => {
@@ -655,6 +787,119 @@ export function useXaiVoiceSession(
       void stop();
     }
   }, [status, start, stop]);
+
+  // ─── Mic permission probe (non-prompting) ─────────────────────────────
+  // Reads the browser's stored mic permission so the debug panel can show
+  // whether the OS will re-prompt ("prompt") or not ("granted"). This is the
+  // single most useful signal for the "asked to verify every time" report.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.permissions) return;
+    let live: PermissionStatus | null = null;
+    let cancelled = false;
+    navigator.permissions
+      .query({ name: "microphone" as PermissionName })
+      .then((res) => {
+        if (cancelled) return;
+        live = res;
+        micPermissionRef.current = res.state as MicPermissionState;
+        voiceDebugLog(
+          instanceId,
+          res.state === "denied" ? "warn" : "info",
+          "mic.permission",
+          res.state,
+        );
+        mirrorFlags();
+        res.onchange = () => {
+          micPermissionRef.current = res.state as MicPermissionState;
+          voiceDebugLog(instanceId, "info", "mic.permission-change", res.state);
+          mirrorFlags();
+        };
+      })
+      .catch(() => {
+        // microphone not queryable (e.g. Firefox) — leave as "unknown"
+      });
+    return () => {
+      cancelled = true;
+      if (live) live.onchange = null;
+    };
+  }, [instanceId, mirrorFlags]);
+
+  // ─── Connection watchdog + live flag refresh ──────────────────────────
+  // Every second we (a) refresh the debug flags so the panel stays live, and
+  // (b) detect the "UI says connected but the socket is gone" state. That
+  // silent-death case is exactly the "works sometimes / dies after idle"
+  // symptom: the close slipped past our handler, status stayed `listening`,
+  // and tapping the mic did nothing. When detected we recover LOUDLY — error +
+  // stop — so the next tap mints a fresh token and reconnects cleanly.
+  useEffect(() => {
+    const ESTABLISHED = new Set([
+      "listening",
+      "thinking",
+      "speaking",
+      "interrupting",
+    ]);
+    const id = setInterval(() => {
+      mirrorFlags();
+      const st = store.getState().voiceAgent.instances[instanceId]?.status;
+      if (!st || !ESTABLISHED.has(st)) return;
+      const client = xaiClientRef.current;
+      if (client && !client.isOpen()) {
+        voiceDebugLog(
+          instanceId,
+          "error",
+          "watchdog.connection-lost",
+          `status="${st}" but WebSocket is closed — recovering`,
+        );
+        dispatch(
+          setError({
+            instanceId,
+            error: {
+              code: "ws-stale",
+              message: "Voice connection was lost. Tap the mic to reconnect.",
+            },
+          }),
+        );
+        void stop();
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [dispatch, instanceId, mirrorFlags, stop, store]);
+
+  // ─── Re-prime token on tab-visible / network-online ───────────────────
+  // A backgrounded tab throttles the token refresh timer, so a long-idle
+  // session can come back to a stale/absent token and the first tap fails.
+  // When the tab returns to the foreground (or the network comes back) and we
+  // are idle, warm a fresh token so the next start is instant AND valid.
+  useEffect(() => {
+    const reprime = () => {
+      const st = store.getState().voiceAgent.instances[instanceId]?.status;
+      // An active session manages its own token via the refresh schedule.
+      if (st && st !== "idle" && st !== "error") {
+        mirrorFlags();
+        return;
+      }
+      const tokens = tokenManagerRef.current;
+      if (tokens && !tokens.peek()) {
+        voiceDebugLog(
+          instanceId,
+          "info",
+          "token.reprime",
+          "tab visible / online — warming a fresh token",
+        );
+        void tokens.prime().catch(() => {});
+      }
+      mirrorFlags();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") reprime();
+    };
+    window.addEventListener("online", reprime);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("online", reprime);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [instanceId, mirrorFlags, store]);
 
   // ─── Cleanup on unmount ───────────────────────────────────────────────
   useEffect(() => {

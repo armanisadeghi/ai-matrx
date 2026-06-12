@@ -25,11 +25,28 @@ class PcmProcessor extends AudioWorkletProcessor {
     this._bufIdx = 0;
     this._rmsAccum = 0;
     this._rmsCount = 0;
+    // Diagnostics: count process() invocations and emit a heartbeat even when
+    // there is no input channel, so the main thread can distinguish "process()
+    // never runs" (worklet not scheduled) from "process() runs but input is
+    // empty" (source not feeding the worklet). Throttled to ~every 64 calls.
+    this._calls = 0;
   }
 
   process(inputs) {
+    this._calls++;
     const ch = inputs[0] && inputs[0][0];
-    if (!ch) return true;
+    if (!ch) {
+      // Heartbeat with no input — confirms process() is scheduled but the mic
+      // source isn't delivering channel data into this node.
+      if (this._calls % 64 === 0) {
+        this.port.postMessage({
+          type: "diag",
+          calls: this._calls,
+          hasInput: false,
+        });
+      }
+      return true;
+    }
 
     for (let i = 0; i < ch.length; i++) {
       const s = Math.max(-1, Math.min(1, ch[i]));
@@ -56,6 +73,14 @@ class PcmProcessor extends AudioWorkletProcessor {
       this.port.postMessage({ type: "rms", value: rms });
       this._rmsAccum = 0;
       this._rmsCount = 0;
+    }
+
+    if (this._calls % 64 === 0) {
+      this.port.postMessage({
+        type: "diag",
+        calls: this._calls,
+        hasInput: true,
+      });
     }
 
     return true;

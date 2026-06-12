@@ -58,7 +58,15 @@ function resolveRowTier(row: SandboxRowMin): SandboxTier {
   const cfg = row.config as SandboxConfig | null;
   const cfgTier =
     cfg?.tier === "ec2" || cfg?.tier === "hosted" ? cfg.tier : null;
-  return colTier ?? cfgTier ?? "ec2";
+  const resolved = colTier ?? cfgTier ?? null;
+  if (resolved === null) {
+    console.error(
+      `[reconcile] sandbox row ${row.id} (sandbox_id: ${row.sandbox_id}) has no tier in column or config. ` +
+        "Falling back to 'ec2' for reconciliation. Update the row to suppress this error.",
+    );
+    return "ec2";
+  }
+  return resolved;
 }
 
 /**

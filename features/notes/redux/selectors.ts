@@ -6,6 +6,7 @@
 // useAppSelector would create a new selector on every render → infinite loop.
 
 import { createSelector } from "@reduxjs/toolkit";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import type { RootState } from "@/lib/redux/store";
 import type {
   NoteRecord,
@@ -381,7 +382,8 @@ export const selectFilteredNotes = (
           (n) =>
             n.label.toLowerCase().includes(q) ||
             (n.content ?? "").toLowerCase().includes(q) ||
-            n.tags.some((t) => t.toLowerCase().includes(q)),
+            n.tags.some((t) => t.toLowerCase().includes(q)) ||
+            idMatchesQuery(n, q),
         );
       }
       return result;

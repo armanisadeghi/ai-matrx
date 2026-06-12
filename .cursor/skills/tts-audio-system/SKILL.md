@@ -169,7 +169,7 @@ Uses `TapTargetButton` / `TapTargetButtonGroup` from `app/(ssr)/_components/core
 ### POST /api/audio/transcribe-url
 
 **Auth:** Required
-**Body:** `{ url: string; language?; prompt? }` — URL must be Supabase Storage domain
+**Body:** `{ url: string; language?; prompt? }` — URL must be on the route's allowlist (Python backend tiers + AWS S3 hostnames; signed cld_files URLs qualify)
 **Response:** Same as /transcribe
 **Limits:** 100 MB via Groq URL parameter
 

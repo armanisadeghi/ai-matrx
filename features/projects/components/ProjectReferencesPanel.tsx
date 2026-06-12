@@ -31,9 +31,9 @@ import {
   type LucideIcon
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/utils/cn";
 import { useProjectReferences } from "../hooks";
 import type { ProjectReference } from "../types";
 
@@ -316,12 +316,14 @@ function ReferenceRow({ ref: r }: { ref: ProjectReference }) {
     >
       <Icon className={`h-3.5 w-3.5 flex-shrink-0 ${meta.categoryColor}`} />
       <span className="text-sm flex-1 min-w-0 truncate">{meta.label}</span>
-      <Badge
-        variant={isEmpty ? "outline" : "secondary"}
-        className="text-xs font-mono tabular-nums min-w-[2rem] justify-center"
+      <span
+        className={cn(
+          "text-xs font-mono tabular-nums min-w-[2rem] text-right",
+          isEmpty ? "text-muted-foreground/60" : "text-muted-foreground",
+        )}
       >
         {r.rowCount.toLocaleString()}
-      </Badge>
+      </span>
     </div>
   );
 }
@@ -392,10 +394,16 @@ function LoadingSkeleton() {
 
 interface ProjectReferencesPanelProps {
   projectId: string;
+  /**
+   * When the panel is rendered inside a section that already supplies a Card +
+   * heading, set this to drop the panel's own outer Card and title chrome.
+   */
+  embedded?: boolean;
 }
 
 export function ProjectReferencesPanel({
   projectId,
+  embedded = false,
 }: ProjectReferencesPanelProps) {
   const { references, loading, error, refresh } =
     useProjectReferences(projectId);
@@ -446,14 +454,19 @@ export function ProjectReferencesPanel({
     return { groups: orderedGroups, totalItems, populatedCount, emptyCount };
   }, [references]);
 
-  return (
-    <Card className="p-4 space-y-3">
+  const body = (
+    <>
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h3 className="text-sm font-semibold">Associated Content</h3>
+          {!embedded && (
+            <h3 className="text-sm font-semibold">Details &amp; references</h3>
+          )}
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Every table in the database that references this project.
+          </p>
           {!loading && references.length > 0 && (
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground/80 mt-0.5">
               {populatedCount > 0
                 ? `${totalItems.toLocaleString()} item${totalItems !== 1 ? "s" : ""} across ${populatedCount} entity type${populatedCount !== 1 ? "s" : ""}`
                 : "No items associated with this project yet"}
@@ -517,6 +530,12 @@ export function ProjectReferencesPanel({
           )}
         </div>
       )}
-    </Card>
+    </>
   );
+
+  if (embedded) {
+    return <div className="space-y-3">{body}</div>;
+  }
+
+  return <Card className="p-4 space-y-3">{body}</Card>;
 }

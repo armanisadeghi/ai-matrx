@@ -5,6 +5,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { buildSearchOr } from "@/utils/supabase-search";
 import type { Database } from "@/types/database.types";
 import type {
   PromptAction,
@@ -452,7 +453,7 @@ export async function searchActions(
     const { data, error } = await supabase
       .from("prompt_actions")
       .select("*")
-      .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+      .or(buildSearchOr(query, ["name", "description"]))
       .or(`user_id.eq.${userId},is_public.eq.true`)
       .eq("is_active", true)
       .order("name")

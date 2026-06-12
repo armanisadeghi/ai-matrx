@@ -80,7 +80,12 @@ export interface ShareWithOrgOptions {
   resourceType: ResourceType;
   resourceId: string;
   organizationId: string;
-  permissionLevel: PermissionLevel;
+  /**
+   * Explicit level. Omit to let the server apply the org module's
+   * `default_permission` (falls back to 'viewer'). Pickers pass a level; the
+   * "contribute" flow omits it.
+   */
+  permissionLevel?: PermissionLevel;
 }
 
 export interface MakePublicOptions {

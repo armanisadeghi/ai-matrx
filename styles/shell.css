@@ -11,6 +11,8 @@
 
 :root {
   --shell-header-h: 2.75rem;
+  /* Marketing pages: right inset so scroll content clears the header user avatar. */
+  --shell-marketing-pr: 3.5rem;
   --shell-sidebar-w: 2.75rem;
   --shell-sidebar-w-expanded: 13rem;
   --shell-dock-h: 3.75rem;
@@ -55,8 +57,9 @@
 
   --shell-nav-text: rgba(0, 0, 0, 0.82);
   --shell-nav-text-hover: rgba(0, 0, 0, 1);
-  --shell-nav-icon: rgba(0, 0, 0, 0.68);
-  --shell-nav-icon-hover: rgba(0, 0, 0, 0.9);
+  /* Match label brightness — dimmer icons read as disabled (esp. route-menu chrome). */
+  --shell-nav-icon: rgba(0, 0, 0, 0.82);
+  --shell-nav-icon-hover: rgba(0, 0, 0, 1);
 
   --shell-auth-text: rgba(0, 0, 0, 0.7);
 }
@@ -83,8 +86,8 @@
 
   --shell-nav-text: rgba(255, 255, 255, 0.55);
   --shell-nav-text-hover: rgba(255, 255, 255, 0.9);
-  --shell-nav-icon: rgba(255, 255, 255, 0.45);
-  --shell-nav-icon-hover: rgba(255, 255, 255, 0.8);
+  --shell-nav-icon: rgba(255, 255, 255, 0.55);
+  --shell-nav-icon-hover: rgba(255, 255, 255, 0.9);
 
   --shell-auth-text: rgba(255, 255, 255, 0.75);
 }
@@ -250,6 +253,7 @@
   .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href^="/agents"],
   .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/organizations"] .shell-nav-item[data-nav-href="/organizations"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/notes"]        .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
@@ -270,6 +274,7 @@
   .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href^="/agents"],
   .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/organizations"] .shell-nav-item[data-nav-href="/organizations"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/notes"]        .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
@@ -285,6 +290,7 @@
   .shell-root[data-pathname^="/agents"]       .shell-nav-item[data-nav-href^="/agents"],
   .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/organizations"] .shell-nav-item[data-nav-href="/organizations"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/notes"]        .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
@@ -300,6 +306,7 @@
   .shell-root[data-pathname="/ssr"]           .shell-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname^="/ssr/chat"]     .shell-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/chat"]         .shell-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/organizations"] .shell-nav-item[data-nav-href="/organizations"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/notes"]        .shell-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/tasks"]        .shell-nav-item[data-nav-href="/tasks"],
@@ -524,6 +531,22 @@
     background var(--shell-duration-fast) var(--shell-ease-smooth),
     color var(--shell-duration-fast) var(--shell-ease-smooth);
   position: relative;
+}
+
+/* Route-menu chrome rows (New chat, Search chats, …) are <button>s — reset
+   UA styles so icon/label colors match Link-based nav items. */
+button.shell-nav-item {
+  appearance: none;
+  background: transparent;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.shell-nav-icon svg {
+  color: inherit;
 }
 
 .shell-nav-item:hover {
@@ -1112,18 +1135,27 @@
    padding so the route's own h-dvh layout fits exactly. The dock is portaled
    into #glass-layer outside .shell-root, so it needs body:has() to cross the
    portal (same pattern noted in section 11). */
-.shell-root[data-pathname^="/transcription/scribe"] {
+.shell-root[data-pathname^="/transcripts/scribe"] {
   grid-template-rows: 0 1fr;
 }
-.shell-root[data-pathname^="/transcription/scribe"] .shell-header {
+.shell-root[data-pathname^="/transcripts/scribe"] .shell-header {
   display: none;
 }
-.shell-root[data-pathname^="/transcription/scribe"] .shell-main {
+.shell-root[data-pathname^="/transcripts/scribe"] .shell-main {
   margin-top: 0;
   padding-bottom: 0;
 }
-body:has(.shell-root[data-pathname^="/transcription/scribe"]) .shell-dock {
+body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   display: none;
+}
+
+/* Transcript Studio: shell-main pulls up under the transparent header row, so
+   the studio sidebar's top bar (New / collapse) sits beneath
+   #shell-header-center. Pass clicks through the header shell; interactive
+   portal controls opt back in via pointer-events-auto in StudioHeaderPortal. */
+.shell-root[data-pathname^="/transcripts/studio"] .shell-header > .shell-header-center,
+.shell-root[data-pathname^="/transcripts/studio"] .shell-header-inject {
+  pointer-events: none;
 }
 
 /* ---------------------------------------------------------------------------
@@ -1178,6 +1210,7 @@ body:has(.shell-root[data-pathname^="/transcription/scribe"]) .shell-dock {
   body:has(.shell-root[data-pathname="/ssr"])           .shell-dock-item[data-nav-href="/dashboard"],
   body:has(.shell-root[data-pathname^="/ssr/chat"])     .shell-dock-item[data-nav-href^="/chat"],
   body:has(.shell-root[data-pathname^="/chat"])         .shell-dock-item[data-nav-href^="/chat"],
+  body:has(.shell-root[data-pathname^="/organizations"]) .shell-dock-item[data-nav-href="/organizations"],
   body:has(.shell-root[data-pathname^="/ssr/notes"])    .shell-dock-item[data-nav-href="/notes"],
   body:has(.shell-root[data-pathname^="/notes"])        .shell-dock-item[data-nav-href="/notes"],
   body:has(.shell-root[data-pathname^="/tasks"])        .shell-dock-item[data-nav-href="/tasks"],
@@ -1301,6 +1334,7 @@ body:has(.shell-root[data-pathname^="/transcription/scribe"]) .shell-dock {
   .shell-root[data-pathname="/ssr"]           .shell-mobile-nav-item[data-nav-href="/dashboard"],
   .shell-root[data-pathname^="/ssr/chat"]     .shell-mobile-nav-item[data-nav-href^="/chat"],
   .shell-root[data-pathname^="/chat"]         .shell-mobile-nav-item[data-nav-href^="/chat"],
+  .shell-root[data-pathname^="/organizations"] .shell-mobile-nav-item[data-nav-href="/organizations"],
   .shell-root[data-pathname^="/ssr/notes"]    .shell-mobile-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/notes"]        .shell-mobile-nav-item[data-nav-href="/notes"],
   .shell-root[data-pathname^="/tasks"]        .shell-mobile-nav-item[data-nav-href="/tasks"],
@@ -1439,6 +1473,30 @@ body:has(.shell-root[data-pathname^="/transcription/scribe"]) .shell-dock {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+.shell-header-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.shell-header-right-inject {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* Chat incognito — visually mute identity chrome (sidebar + avatar). */
+.shell-root[data-chat-incognito="true"] .shell-sidebar,
+.shell-root[data-chat-incognito="true"] .shell-user-menu-wrapper,
+.shell-root[data-chat-incognito="true"] .shell-mobile-sheet {
+  filter: brightness(0);
+  opacity: 0.35;
+  pointer-events: none;
+  transition:
+    filter var(--shell-duration-fast) var(--shell-ease-smooth),
+    opacity var(--shell-duration-fast) var(--shell-ease-smooth);
 }
 
 .shell-user-menu-wrapper {

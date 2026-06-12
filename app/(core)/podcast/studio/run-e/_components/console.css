@@ -1,0 +1,76 @@
+/* app/(core)/podcast/studio/run-e/_components/console.css
+ *
+ * Animations local to the run-e production console. Color comes from
+ * currentColor / tokens at the callsite — these only animate geometry/opacity.
+ */
+
+/* Equalizer bars for the "producing audio" + now-playing states. */
+@keyframes runE-eq {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.runE-eq-bar {
+  transform-origin: bottom;
+  animation: runE-eq 1s ease-in-out infinite;
+}
+
+/* Soft sweeping shimmer over a producing asset slot. */
+@keyframes runE-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.runE-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    hsl(var(--foreground) / 0.08) 50%,
+    transparent 70%
+  );
+  animation: runE-shimmer 1.6s ease-in-out infinite;
+}
+
+/* A gentle pulse for the active-stage dot. */
+@keyframes runE-pulse-ring {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.runE-pulse-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: runE-pulse-ring 1.8s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .runE-eq-bar,
+  .runE-shimmer::after,
+  .runE-pulse-ring::before {
+    animation: none;
+  }
+}

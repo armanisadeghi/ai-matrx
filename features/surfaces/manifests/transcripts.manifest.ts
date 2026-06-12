@@ -1,7 +1,7 @@
 /**
  * Surface manifest — Transcripts viewer (`matrx-user/transcripts`).
  *
- * The legacy read-only / lightly-editable transcript viewer at `/transcription`.
+ * The legacy read-only / lightly-editable transcript viewer at `/transcripts`.
  * One transcript is "active" at a time (owned by `TranscriptsContext`); the
  * user reads through speaker-labelled segments with timecodes, plays the
  * source audio, and (occasionally) edits segment text.

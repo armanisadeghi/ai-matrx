@@ -1,19 +1,10 @@
 import { createClient } from '@/utils/supabase/server';
-import type { Metadata } from 'next';
 import { Mic } from 'lucide-react';
 import type { PcShow } from '@/features/podcasts/types';
 import { PodcastGrid } from './PodcastGrid';
 
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-    title: 'Podcasts',
-    description: 'Browse all podcast shows.',
-    openGraph: {
-        title: 'Podcasts',
-        description: 'Browse all podcast shows.',
-    },
-};
 
 export default async function PodcastsIndexPage() {
     const supabase = await createClient();

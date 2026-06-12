@@ -1,21 +1,49 @@
 // features/kg-suggestions/types.ts
 //
-// TS mirror of the aidream /kg-suggestions wire shapes
-// (aidream/api/schemas/kg_suggestions.py). React → Python directly; these
-// types must stay in sync with the Pydantic models. There is no generated
-// OpenAPI types file for this surface yet (the kg-inspector sibling — Phase
-// C.5 — hand-mirrors its shapes the same way; we follow that convention),
-// so the inspector-specific shapes are declared here.
+// FE model for KG → scope suggestions. As of 2026-06-07 the aidream HTTP API
+// (`/api/kg-suggestions`) is DELETED — the frontend reads and decides DIRECTLY
+// against Supabase (RLS-scoped tables + the `set_context_value` RPC). See
+// `/Users/armanisadeghi/code/aidream/docs/rag_and_ner/handoffs/scope_suggestions_direct_supabase.md`.
 //
-// A suggestion is a proposal to fill ONE scope-item slot (slot-fill) OR — for
-// match_kind === "heavy_hitter" — to create a brand-new scope from a
-// recurring unaffiliated entity. Suggestions are NEVER auto-applied: accept
-// is the explicit user action.
+// There are now TWO ledgers (migration kg_013), each RLS-scoped to
+// `auth.uid() = user_id`:
+//
+//   - `scope_association_suggestions` (Stage A) — "this document belongs to
+//     scope X". Produced by the orienter agent, the pure matchers, and the
+//     heavy-hitter detector. Accepting = tag the source to the scope (or, for
+//     `heavy_hitter`, create a brand-new scope from a recurring entity).
+//   - `scope_item_value_suggestions`  (Stage B) — "scope X's slot K should hold
+//     value V". Produced by the slot_filler / deep_extractor agents. Accepting
+//     = write the value through `set_context_value`.
+//
+// The two raw rows have DIFFERENT column names (Stage A: target_scope_item_id /
+// target_slot_name — both always null for links; Stage B: target_context_item_id
+// / target_slot_key). We DON'T share a raw row type across them. Instead the
+// service normalizes both into the single `KgSuggestionRow` below, discriminated
+// by `stage`, so every existing surface keeps consuming one shape. Suggestions
+// are NEVER auto-applied: accept is the explicit user action.
 
-/** Mirrors `MatchKind` Literal in the Python schema. */
-export type KgMatchKind = "exact" | "fuzzy" | "semantic" | "heavy_hitter";
+/** Which ledger a normalized row came from. */
+export type KgSuggestionStage = "association" | "value";
 
-/** Mirrors `SuggestionStatus` Literal in the Python schema. */
+/** Stage-A (scope-link) match kinds. */
+export type KgAssociationMatchKind =
+  | "exact"
+  | "fuzzy"
+  | "semantic"
+  | "heavy_hitter"
+  | "agent.orienter.association"
+  | "agent.orienter.uncertain";
+
+/** Stage-B (slot-value) match kinds. */
+export type KgValueMatchKind =
+  | "agent.slot_filler.fill_empty"
+  | "agent.slot_filler.improve"
+  | "agent.slot_filler.flag_conflict"
+  | "agent.deep_extractor.extracted";
+
+export type KgMatchKind = KgAssociationMatchKind | KgValueMatchKind;
+
 export type KgSuggestionStatus =
   | "pending"
   | "accepted"
@@ -23,124 +51,151 @@ export type KgSuggestionStatus =
   | "deferred"
   | "expired";
 
-/** The KG entity a suggestion points at (`SuggestionEntity`). */
+/** The KG entity a suggestion points at (only `id` survives the new schema). */
 export interface KgSuggestionEntity {
   id: string | null;
   kind: string | null;
   name: string | null;
 }
 
-/** The scope-item slot a suggestion proposes to fill (`SuggestionTarget`). */
+/**
+ * The scope target. For Stage B (value) `scope_item_id` carries the CONTEXT
+ * ITEM id (the slot definition, `target_context_item_id`) and `slot_name` the
+ * slot key — the same semantics the enrichment + decision UI already use. For
+ * Stage A (link) both are null; `scope_id` may also be null for `heavy_hitter`
+ * (no scope exists yet — `suggested_value` is the proposed new scope name).
+ */
 export interface KgSuggestionTarget {
   scope_id: string | null;
   scope_item_id: string | null;
   slot_name: string | null;
 }
 
-/** One suggestion row (`SuggestionRow`). */
+/** One normalized suggestion row, the single shape every surface consumes. */
 export interface KgSuggestionRow {
   id: string;
+  /** Which ledger this came from — drives the accept path. */
+  stage: KgSuggestionStage;
+  organization_id: string | null;
   source_kind: string;
   source_id: string;
   entity: KgSuggestionEntity;
   target: KgSuggestionTarget;
   suggested_value: string | null;
+  /** Stage B only: the cell's value at suggestion time (improve/flag_conflict). */
+  current_value_snapshot: string | null;
   match_kind: KgMatchKind;
   confidence: number;
   status: KgSuggestionStatus;
   context_snippet: string | null;
+  /** A note the user attached when deferring/rejecting/accepting (manager). */
+  decision_note: string | null;
+  /** User-flagged for follow-up (manager star column / filter). */
+  is_starred: boolean;
+  /** When the user first saw this row (FE-stamped); drives "new/unseen". */
+  viewed_at: string | null;
   created_at: string;
   decided_at: string | null;
   suppressed_until: string | null;
 }
 
-/** Paginated suggestion list (`SuggestionsPage`). */
-export interface KgSuggestionsPage {
-  suggestions: KgSuggestionRow[];
-  total: number;
-  limit: number;
-  offset: number;
+// ── Enriched row (the `v_scope_suggestions` view shape) ──────────────────────
+//
+// The management table reads the denormalized, RLS-respecting view so it can
+// sort/filter/paginate by human-readable names SERVER-SIDE. The enriched row
+// extends the normalized `KgSuggestionRow` (so the shared decision card accepts
+// it unchanged) with the joined org / scope-type / scope / item labels.
+
+export interface KgEnrichedSuggestionRow extends KgSuggestionRow {
+  orgName: string | null;
+  orgSlug: string | null;
+  scopeTypeId: string | null;
+  scopeTypeLabel: string | null;
+  scopeTypeSlug: string | null;
+  scopeTypeIcon: string | null;
+  scopeName: string | null;
+  scopeSlug: string | null;
+  itemLabel: string | null;
+  itemKey: string | null;
 }
 
-/** The scope-item cell value written on accept (`AcceptedValue`). */
-export interface KgAcceptedValue {
-  id: string;
-  context_item_id: string;
-  scope_id: string;
-  version: number;
-  value_text: string | null;
-  source_type: string;
+// ── Management query (the power-user table read) ─────────────────────────────
+//
+// Distinct from the three cache-keyed `KgSuggestionsFilter` views: the manager
+// is a free-form, multi-dimension table with server-side sort + pagination, so
+// it has its own query params shape and its own (non-cached) read path.
+
+export type KgSuggestionSortField =
+  | "created_at"
+  | "confidence"
+  | "status"
+  | "scope_name"
+  | "item_label"
+  | "org_name";
+
+export interface KgSuggestionsQuery {
+  /** Empty / undefined = every status. */
+  statuses?: KgSuggestionStatus[];
+  stage?: KgSuggestionStage | "all";
+  orgId?: string | null;
+  scopeTypeId?: string | null;
+  scopeId?: string | null;
+  itemId?: string | null;
+  sourceKind?: string | null;
+  matchKind?: KgMatchKind | null;
+  minConfidence?: number | null;
+  starredOnly?: boolean;
+  unseenOnly?: boolean;
+  /** ilike across item_label / scope_name / suggested_value. */
+  search?: string | null;
+  sortBy?: KgSuggestionSortField;
+  sortDir?: "asc" | "desc";
+  /** 0-based page index. */
+  page?: number;
+  pageSize?: number;
 }
 
-/**
- * `POST /{id}/accept` response for a cell-value (slot-fill) suggestion
- * (`AcceptResponse`). Distinguished from the heavy-hitter plan below by the
- * presence of `value` (the heavy-hitter plan has none).
- */
-export interface KgAcceptResponse {
-  suggestion: KgSuggestionRow;
-  value: KgAcceptedValue;
+// ── Row predicates ───────────────────────────────────────────────────────────
+
+/** `heavy_hitter`: no scope yet — accepting creates one (HeavyHitterAcceptDialog). */
+export function isHeavyHitter(row: KgSuggestionRow): boolean {
+  return row.stage === "association" && row.match_kind === "heavy_hitter";
 }
 
-/**
- * One source the heavy-hitter entity was mentioned in (`HeavyHitterSource`).
- * The FE tags each of these to the newly-created scope via
- * ctx_scope_assignments after creation. `source_kind` is a RAG source kind
- * (note | task | project | cld_file | transcript | scraped | code_file |
- * repository | library_doc) — only a subset maps to a taggable
- * `ScopeAssignmentEntityType`; see `kgSourceKindToEntityType`.
- */
-export interface KgHeavyHitterSource {
-  source_kind: string;
-  source_id: string;
-  mention_count: number;
+/** A Stage-A link to an EXISTING scope — accepting tags the source to it. */
+export function isAssociationLink(row: KgSuggestionRow): boolean {
+  return (
+    row.stage === "association" &&
+    row.match_kind !== "heavy_hitter" &&
+    !!row.target.scope_id
+  );
 }
 
-/**
- * `POST /{id}/accept` response for a `match_kind="heavy_hitter"` suggestion
- * (`HeavyHitterAcceptPlan`). Heavy-hitter acceptance CREATES A NEW SCOPE
- * (not a cell value): the backend flips the suggestion to `accepted` and
- * returns this plan; the FE creates the scope (canonical `create_scope` RPC)
- * and tags every `sources` mention to it via `ctx_scope_assignments`.
- *
- * The discriminator `kind === "heavy_hitter_plan"` lets the accept caller
- * branch without inspecting other fields.
- */
-export interface KgHeavyHitterAcceptPlan {
-  kind: "heavy_hitter_plan";
-  suggestion: KgSuggestionRow;
-  entity_id: string;
-  entity_kind: string;
-  suggested_scope_name: string;
-  sources: KgHeavyHitterSource[];
+/** A Stage-B slot-value proposal — accepting writes the cell. */
+export function isValueSuggestion(row: KgSuggestionRow): boolean {
+  return row.stage === "value";
 }
 
-/**
- * Union returned by `POST /{id}/accept`. A slot-fill accept yields
- * `KgAcceptResponse`; a heavy-hitter accept yields `KgHeavyHitterAcceptPlan`.
- * Narrow on the `"kind"` discriminator (only the plan carries it).
- */
-export type KgAcceptResult = KgAcceptResponse | KgHeavyHitterAcceptPlan;
+// ── Decision result aliases ──────────────────────────────────────────────────
+//
+// Decisions now write directly to Supabase and resolve to nothing meaningful
+// for the caller (the optimistic slice update is what the UI reacts to). These
+// aliases keep the long-standing `(id) => Promise<KgAcceptResult>` prop
+// signatures across surfaces intact without each one importing `void`.
 
-/** Type guard: is this accept response the heavy-hitter scope-creation plan? */
-export function isHeavyHitterPlan(
-  res: KgAcceptResult,
-): res is KgHeavyHitterAcceptPlan {
-  return "kind" in res && res.kind === "heavy_hitter_plan";
-}
+export type KgAcceptResult = void;
+export type KgDecisionResponse = void;
 
 // ── Source-kind → taggable entity-type mapping ───────────────────────────────
 //
-// Heavy-hitter sources carry a RAG `source_kind` (note | task | project |
-// cld_file | transcript | scraped | code_file | repository | library_doc —
-// matrx-rag/sources.py). Only a subset corresponds to a taggable
-// `ScopeAssignmentEntityType` (features/scopes/types.ts). Sources without a
-// taggable counterpart are NOT silently dropped — the accept flow counts and
-// reports them so the user knows N mentions couldn't be tagged. The string
-// values below MUST match the `ScopeAssignmentEntityType` union; we keep this
-// as a plain record (not importing the union here) to avoid a cross-feature
-// type cycle — the caller passes the result straight into `setEntityScopes`,
-// which validates against the union at its own boundary.
+// A suggestion's `source_kind` is a RAG source kind (note | task | project |
+// cld_file | transcript | scraped | code_file | …). Only a subset maps to a
+// taggable `ScopeAssignmentEntityType` (features/scopes/types.ts). Used by both
+// the Stage-A link accept (tag the source to its target scope) and the
+// heavy-hitter accept (tag the source to the freshly-created scope). The string
+// values MUST match the `ScopeAssignmentEntityType` union; kept as a plain
+// record (not importing the union) to avoid a cross-feature type cycle — the
+// caller validates at the `setEntityScopes` boundary.
 
 export const KG_SOURCE_KIND_TO_ENTITY_TYPE: Record<string, string> = {
   note: "note",
@@ -155,19 +210,13 @@ export function kgSourceKindToEntityType(sourceKind: string): string | null {
   return KG_SOURCE_KIND_TO_ENTITY_TYPE[sourceKind] ?? null;
 }
 
-/** `POST /{id}/reject` and `/defer` response (`DecisionResponse`). */
-export interface KgDecisionResponse {
-  suggestion: KgSuggestionRow;
-}
-
 // ── Filters ────────────────────────────────────────────────────────────────
 //
 // A suggestion list is always scoped to ONE of three views. The discriminated
 // union below is the public addressing scheme the hook + chip + drawer share.
-// `sourceKind` mirrors the backend `source_kind` (note | task | project |
-// transcript | scraped | cld_file | conversation | …) — it is deliberately a
-// broad string, NOT the narrower `ScopeAssignmentEntityType` union, because a
-// suggestion's source is broader than the set of taggable entities.
+// `sourceKind` mirrors the row `source_kind` (a broad string, NOT the narrower
+// `ScopeAssignmentEntityType` union — a suggestion's source is broader than the
+// set of taggable entities).
 
 export interface KgSourceFilter {
   /** Suggestions whose source is this entity (chip drop-in surfaces). */
@@ -177,7 +226,7 @@ export interface KgSourceFilter {
 }
 
 export interface KgScopeItemFilter {
-  /** Suggestions targeting one scope-item slot (the per-slot panel). */
+  /** Suggestions targeting one context-item slot (the per-slot panel; Stage B). */
   scopeItemId: string;
   status?: KgSuggestionStatus | "all";
 }
@@ -193,36 +242,16 @@ export type KgSuggestionsFilter =
   | KgScopeItemFilter
   | KgGlobalFilter;
 
-/** Server-side query params for `GET /kg-suggestions`. */
-export interface KgSuggestionsListParams {
-  status?: KgSuggestionStatus | "all";
-  scopeItemId?: string | null;
-  sourceKind?: string | null;
-  sourceId?: string | null;
-  limit?: number;
-  offset?: number;
-}
-
 // ── Filter-key derivation ────────────────────────────────────────────────────
 //
 // The slice caches lists keyed by a stable string derived from the filter.
 // Every consumer (slice, hook, selector) derives the same key from the same
-// filter so reads and writes line up. Heavy-hitter accept takes no request
-// body — it returns a KgHeavyHitterAcceptPlan the FE drives (create scope +
-// tag sources). See service + useHeavyHitterAccept for the flow.
+// filter so reads and writes line up.
 
 export function kgFilterKey(filter: KgSuggestionsFilter): string {
   const status = filter.status ?? "pending";
   if ("global" in filter) return `global:${status}`;
-  if ("scopeItemId" in filter) return `scopeItem:${filter.scopeItemId}:${status}`;
+  if ("scopeItemId" in filter)
+    return `scopeItem:${filter.scopeItemId}:${status}`;
   return `source:${filter.sourceKind}:${filter.sourceId}:${status}`;
-}
-
-export function kgFilterToParams(
-  filter: KgSuggestionsFilter,
-): KgSuggestionsListParams {
-  const status = filter.status ?? "pending";
-  if ("global" in filter) return { status };
-  if ("scopeItemId" in filter) return { status, scopeItemId: filter.scopeItemId };
-  return { status, sourceKind: filter.sourceKind, sourceId: filter.sourceId };
 }

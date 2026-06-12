@@ -426,7 +426,7 @@ const DashboardPage = () => {
                       Use an audio file to convert your speech into a structured
                       plan and task list
                     </p>
-                    <Link href="/chat">
+                    <Link href="/chat/new">
                       <button className="w-full py-2 rounded-lg font-medium text-center transition bg-indigo-500 hover:bg-indigo-600 text-white">
                         Try Now
                       </button>

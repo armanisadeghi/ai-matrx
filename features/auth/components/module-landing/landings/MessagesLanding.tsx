@@ -169,6 +169,7 @@ export default function MessagesLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Stop losing decisions in DMs"
       finalCtaDescription="A messaging system where conversations turn into work — tracked, replayable, agent-assisted. Free to start, no credit card."
+      relatedModules={["/chat", "/agents", "/notes"]}
     />
   );
 }

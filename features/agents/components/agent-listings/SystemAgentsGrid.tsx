@@ -11,6 +11,7 @@ import { toast } from "@/lib/toast-service";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AgentCard } from "./AgentCard";
 import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
+import { filterAndSortBySearch } from "@/utils/search-scoring";
 import {
   deleteAgent,
   duplicateAgent,
@@ -58,16 +59,18 @@ export function SystemAgentsGrid() {
     name: string;
   } | null>(null);
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return agents;
-    const q = search.toLowerCase();
-    return agents.filter((a) => {
-      const name = (a.name ?? "").toLowerCase();
-      const desc = (a.description ?? "").toLowerCase();
-      const cat = (a.category ?? "").toLowerCase();
-      return name.includes(q) || desc.includes(q) || cat.includes(q);
-    });
-  }, [agents, search]);
+  const filtered = useMemo(
+    () =>
+      // `filterAndSortBySearch` auto-matches the row's UUID `id`, so pasting a
+      // full or partial agent id into the search box finds the record — no
+      // explicit id field needed.
+      filterAndSortBySearch(agents, search, [
+        { get: (a) => a.name, weight: "title" },
+        { get: (a) => a.category, weight: "tag" },
+        { get: (a) => a.description, weight: "body" },
+      ]),
+    [agents, search],
+  );
 
   const navigationIds = useMemo(() => filtered.map((a) => a.id), [filtered]);
 

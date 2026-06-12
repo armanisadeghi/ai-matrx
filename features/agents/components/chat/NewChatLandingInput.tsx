@@ -5,7 +5,7 @@ import { ArrowUp, CircleStop } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { AgentMicrophoneButton } from "@/features/agents/components/inputs/smart-input/AgentMicrophoneButton";
-import { LandingPlusMenu } from "./LandingPlusMenu";
+import { RunControlsMenu } from "@/features/agents/components/inputs/smart-input/RunControlsMenu";
 import {
   smartExecute,
   cancelExecution,
@@ -38,7 +38,7 @@ const MAX_TEXTAREA_HEIGHT = 220; // px — beyond this the textarea scrolls
  * so submitting here flows through the identical `smartExecute` path and the
  * conversation is already streaming by the time the URL promotes.
  *
- * Controls: a single `+` button that opens the unified LandingPlusMenu
+ * Controls: a single `+` button that opens the unified RunControlsMenu
  * (Attach + Model + Tools + Sandbox + Settings — same panels the production
  * SmartAgentInputStacked toolbar uses, just folded behind one trigger),
  * voice (AgentMicrophoneButton), and send. No variables, no Creator Panel,
@@ -91,7 +91,7 @@ export function NewChatLandingInput({
   const submit = useAuthGuardedAction(rawSubmit, {
     featureName: "Chat",
     featureDescription:
-      "Sign in to send your message. Your draft will be right here when you get back.",
+      "Send your message, get an agent on it, save the conversation. Free account, 30 seconds, no credit card — your draft is right here when you sign back in.",
   });
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -119,7 +119,7 @@ export function NewChatLandingInput({
     >
       {/* Leading — unified `+` popover (Attach / Model / Tools / Sandbox / Settings) */}
       <div className="[grid-area:leading]" onClick={(e) => e.stopPropagation()}>
-        <LandingPlusMenu conversationId={conversationId} />
+        <RunControlsMenu conversationId={conversationId} variant="plus" />
       </div>
 
       {/* Primary — textarea */}

@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft, Wrench } from "lucide-react";
 import { AgentBuilderPicker } from "@/features/agents/agent-creators/interactive-builder/AgentBuilderPicker";
 
-export const metadata = { title: "Interactive Agent Builder | AI Matrx" };
 
 export default function InteractiveBuilderPage() {
   return (

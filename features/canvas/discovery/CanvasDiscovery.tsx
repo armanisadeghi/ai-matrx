@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/utils/supabase/client';
+import { buildSearchOr } from '@/utils/supabase-search';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -44,7 +45,7 @@ export function CanvasDiscovery() {
 
             // Apply search
             if (searchTerm) {
-                query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,tags.cs.{${searchTerm}}`);
+                query = query.or(`${buildSearchOr(searchTerm, ["title", "description"])},tags.cs.{${searchTerm}}`);
             }
 
             // Apply sorting

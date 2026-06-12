@@ -30,6 +30,7 @@ import {
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 
 export interface PdfStudioToolbarProps {
@@ -138,6 +139,12 @@ export function PdfStudioToolbar({
 
         {/* Actions */}
         <div className="flex items-center gap-1.5 shrink-0">
+          <PdfSurfaceSwitcher
+            current="extractor-studio"
+            fileId={doc.sourceKind === "cld_file" ? doc.sourceId : null}
+            processedDocumentId={doc.id}
+            size="icon"
+          />
           <Button
             size="sm"
             variant="outline"

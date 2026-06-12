@@ -52,35 +52,22 @@ import type { TaskLabel } from "@/features/tasks/services/taskService";
 import TaskScopeTags from "./TaskScopeTags";
 import TaskAssigneePicker from "./TaskAssigneePicker";
 import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
+import { TaskAssociatedResources } from "./TaskAssociatedResources";
 import { Textarea } from "@/components/ui/textarea";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  TaskPriorityPicker,
+  TASK_PRIORITY_META,
+  type TaskPriority,
+} from "./TaskPriorityPicker";
+import { TaskDueDatePicker } from "./TaskDueDatePicker";
+import { formatDateOnly } from "@/utils/dateOnly";
 import { cn } from "@/utils/cn";
 
-type Priority = "low" | "medium" | "high" | null;
-
-const PRIORITY_STYLES: Record<
-  string,
-  { bg: string; text: string; label: string }
-> = {
-  high: {
-    bg: "bg-red-500/10 border-red-500/40",
-    text: "text-red-600 dark:text-red-400",
-    label: "High",
-  },
-  medium: {
-    bg: "bg-amber-500/10 border-amber-500/40",
-    text: "text-amber-600 dark:text-amber-400",
-    label: "Medium",
-  },
-  low: {
-    bg: "bg-green-500/10 border-green-500/40",
-    text: "text-green-600 dark:text-green-400",
-    label: "Low",
-  },
-};
+type Priority = TaskPriority;
 
 export default function TaskEditor() {
   const taskId = useAppSelector(selectSelectedTaskId);
@@ -417,18 +404,18 @@ function TaskEditorInner({ taskId }: { taskId: string }) {
                 <span
                   className={cn(
                     "inline-flex items-center gap-1 h-5 px-1.5 rounded-md border text-[10px] font-medium",
-                    PRIORITY_STYLES[effective.priority].bg,
-                    PRIORITY_STYLES[effective.priority].text,
+                    TASK_PRIORITY_META[effective.priority].fill,
+                    TASK_PRIORITY_META[effective.priority].text,
                   )}
                 >
                   <Flag className="w-2.5 h-2.5" />
-                  {PRIORITY_STYLES[effective.priority].label}
+                  {TASK_PRIORITY_META[effective.priority].label}
                 </span>
               )}
               {effective.dueDate && (
                 <span className="inline-flex items-center gap-1 h-5 px-1.5 rounded-md bg-muted/60 text-[10px] font-medium text-foreground">
                   <Calendar className="w-2.5 h-2.5" />
-                  {new Date(effective.dueDate).toLocaleDateString("en-US", {
+                  {formatDateOnly(effective.dueDate, {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
@@ -471,18 +458,18 @@ function TaskEditorInner({ taskId }: { taskId: string }) {
             </PropertyRow>
 
             <PropertyRow icon={Flag} label="Priority">
-              <PrioritySegmented
+              <TaskPriorityPicker
+                variant="segmented"
                 value={effective.priority ?? null}
                 onChange={(v) => patch("priority", v)}
               />
             </PropertyRow>
 
             <PropertyRow icon={Calendar} label="Due date" last>
-              <input
-                type="date"
-                value={effective.dueDate ?? ""}
-                onChange={(e) => patch("due_date", e.target.value || null)}
-                className="h-8 w-full bg-card border border-border rounded-md px-2 text-xs outline-none hover:border-foreground/30 focus:border-primary/60 transition-colors"
+              <TaskDueDatePicker
+                variant="field"
+                value={effective.dueDate ?? null}
+                onChange={(v) => patch("due_date", v)}
               />
             </PropertyRow>
           </section>
@@ -610,6 +597,9 @@ function TaskEditorInner({ taskId }: { taskId: string }) {
           <section>
             <TaskAttachmentsPanel taskId={taskId} />
           </section>
+
+          {/* Associated resources — anything FK-linked to this task (task_id) */}
+          <TaskAssociatedResources taskId={taskId} />
 
           {/* Comments */}
           <section>
@@ -841,46 +831,6 @@ function PropertyRow({
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
-
-function PrioritySegmented({
-  value,
-  onChange,
-}: {
-  value: Priority;
-  onChange: (v: Priority) => void;
-}) {
-  const options: { val: "low" | "medium" | "high" | null; label: string }[] = [
-    { val: null, label: "None" },
-    { val: "low", label: "Low" },
-    { val: "medium", label: "Med" },
-    { val: "high", label: "High" },
-  ];
-  return (
-    <div className="inline-flex items-center gap-0.5 p-0.5 rounded-md bg-muted/50 border border-border/60 w-fit">
-      {options.map((opt) => {
-        const active = value === opt.val;
-        const style = opt.val ? PRIORITY_STYLES[opt.val] : null;
-        return (
-          <button
-            key={opt.val ?? "none"}
-            type="button"
-            onClick={() => onChange(opt.val)}
-            className={cn(
-              "h-6 px-2 rounded text-[11px] font-medium transition-colors",
-              active
-                ? style
-                  ? `${style.bg} ${style.text}`
-                  : "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 function ProjectSelect({
   value,

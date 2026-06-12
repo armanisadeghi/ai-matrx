@@ -94,8 +94,15 @@ export async function GET() {
   for (const row of sandboxResult.data ?? []) {
     if (!RENDERABLE_SANDBOX_STATUSES.has(row.status ?? "")) continue;
     const config = (row.config as { template?: string } | null) ?? {};
+    if (row.tier !== "ec2" && row.tier !== "hosted") {
+      console.error(
+        `[GET /api/compute-targets] sandbox row ${row.id} has no valid tier (got: ${JSON.stringify(row.tier)}). ` +
+          "This row predates the tier column or was created without an explicit tier. " +
+          "Falling back to 'ec2' — update the row to suppress this error.",
+      );
+    }
     const tier: "ec2" | "hosted" =
-      row.tier === "ec2" ? "ec2" : "hosted";
+      row.tier === "ec2" || row.tier === "hosted" ? row.tier : "ec2";
     sandboxes.push({
       id: String(row.id),
       kind: tier,
@@ -118,9 +125,7 @@ export async function GET() {
   const computers: ComputeTarget[] = [];
   for (const row of appInstanceResult.data ?? []) {
     if (row.is_active === false) continue;
-    const lastSeenMs = row.last_seen
-      ? new Date(row.last_seen).getTime()
-      : 0;
+    const lastSeenMs = row.last_seen ? new Date(row.last_seen).getTime() : 0;
     const isOnline =
       !!row.tunnel_active &&
       lastSeenMs > 0 &&
@@ -137,7 +142,7 @@ export async function GET() {
       template: null,
       expires_at: null,
       instance_id: row.instance_id ?? null,
-      tunnel_url: isOnline ? row.tunnel_url ?? null : null,
+      tunnel_url: isOnline ? (row.tunnel_url ?? null) : null,
       platform: row.platform ?? null,
       last_seen: row.last_seen ?? null,
     });
@@ -190,7 +195,8 @@ async function resolveMaxSandboxes(
     .select("features")
     .eq("id", tierId)
     .maybeSingle();
-  const features = (tier?.features as { max_sandboxes?: number } | null) ?? null;
+  const features =
+    (tier?.features as { max_sandboxes?: number } | null) ?? null;
   if (
     features &&
     typeof features.max_sandboxes === "number" &&

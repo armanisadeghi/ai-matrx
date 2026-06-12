@@ -19,7 +19,7 @@
  * or update extracted text against the new boundaries.
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ArrowDownToLine,
   ChevronDown,
@@ -41,12 +41,19 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
-import type { BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
+import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
+import { saveDerivative as saveDerivativeCanonical } from "@/features/pdf/services/saveDerivative";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
+import {
+  buildPdfSource,
+  parsePdfSourceInput,
+  toInsertSourceWire,
+  type PdfSourceWire,
+} from "@/features/pdf/utils/source";
 import { cn } from "@/lib/utils";
-import { parsePagesInput } from "@/features/pdf-demo/utils/pages";
-import { fileHandler } from "@/features/files";
-import { supabase } from "@/utils/supabase/client";
+import { parsePagesInput } from "@/features/pdf/utils/pages";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
@@ -72,11 +79,16 @@ function useOpState() {
     savedDocId: null,
     error: null,
   });
+  // Same-tick double-submit guard: `running` state only disables the button
+  // after a re-render, so a fast double-click fires two requests. The ref
+  // flips synchronously.
+  const runningRef = useRef(false);
   return {
     running,
     result,
     error,
     save,
+    runningRef,
     setRunning,
     setResult,
     setError,
@@ -87,6 +99,8 @@ function useOpState() {
 type OpState = ReturnType<typeof useOpState>;
 
 // ─── Save-as-derivative ───────────────────────────────────────────────────────
+// Thin adapter over the canonical features/pdf service (one persist path
+// for every surface); keeps this file's call sites unchanged.
 
 async function saveDerivative(params: {
   doc: PdfDocument;
@@ -95,72 +109,15 @@ async function saveDerivative(params: {
   derivationKind: string;
   derivationMetadata: Record<string, unknown>;
 }): Promise<{ docId: string | null; error: string | null }> {
-  const { doc, userId, result, derivationKind, derivationMetadata } = params;
-
-  // 1. Upload blob to cld_files
-  const file = new File([result.blob], result.filename, {
-    type: result.contentType || "application/pdf",
+  return saveDerivativeCanonical({
+    parent: { id: params.doc.id, name: params.doc.name, totalPages: params.doc.totalPages },
+    userId: params.userId,
+    result: params.result,
+    derivationKind: params.derivationKind,
+    derivationMetadata: params.derivationMetadata,
   });
-  let fileId: string;
-  let storageUri: string;
-  try {
-    const normalized = await fileHandler.upload(
-      { kind: "file", file },
-      { folderPath: `derivatives/${doc.id}` },
-    );
-    if (!normalized.fileId || !normalized.fileUri) {
-      throw new Error("Upload returned no fileId/fileUri");
-    }
-    fileId = normalized.fileId;
-    storageUri = normalized.fileUri;
-  } catch (err) {
-    return {
-      docId: null,
-      error: err instanceof Error ? err.message : String(err),
-    };
-  }
-
-  // 2. Create a derivative processed_documents row with lineage
-  const { data: newDoc, error: insertError } = await supabase
-    .from("processed_documents")
-    .insert({
-      name: result.filename.replace(/\.pdf$/i, ""),
-      storage_uri: storageUri,
-      source_kind: "cld_file",
-      source_id: fileId,
-      source_hash: "",
-      owner_id: userId,
-      parent_processed_id: doc.id,
-      derivation_kind: derivationKind,
-      derivation_metadata: {
-        ...derivationMetadata,
-        original_name: doc.name,
-        original_total_pages: doc.totalPages,
-      },
-      mime_type: "application/pdf",
-    })
-    .select("id")
-    .single();
-
-  if (insertError) {
-    return { docId: null, error: insertError.message };
-  }
-
-  return { docId: (newDoc as { id: string }).id, error: null };
 }
 
-// ─── Download helper ──────────────────────────────────────────────────────────
-
-function downloadBlob({ blob, filename }: BinaryResult) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
 
 // ─── Result bar ───────────────────────────────────────────────────────────────
 
@@ -173,6 +130,7 @@ function ResultBar({
   saveState: DerivativeSave;
   onSave: () => Promise<void>;
 }) {
+  const downloadBlob = useDownloadBlob();
   return (
     <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
       <Button
@@ -330,14 +288,8 @@ function Row({
   );
 }
 
-// ─── Second-source parser (merge / insert) ────────────────────────────────────
-
-function parseSecondSrc(v: string): Record<string, unknown> | null {
-  const t = v.trim();
-  if (!t) return null;
-  if (t.startsWith("http")) return { url: t };
-  return { cld_id: t };
-}
+// Second-source parsing (merge / insert) lives in the canonical builder:
+// `parsePdfSourceInput` from @/features/pdf/utils/source.
 
 // ─── Visual tool card ─────────────────────────────────────────────────────────
 //
@@ -357,6 +309,8 @@ function VisualToolCard({
   activeLabel,
   hint,
   children,
+  available = true,
+  unavailableNote,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -368,6 +322,11 @@ function VisualToolCard({
   activeLabel: string;
   hint?: string;
   children?: React.ReactNode;
+  /** False when the host surface can't run this visual tool (no PDF pane
+   *  — mobile shell, floating workspace). Button disables with a note
+   *  instead of silently doing nothing. */
+  available?: boolean;
+  unavailableNote?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -436,11 +395,18 @@ function VisualToolCard({
               variant="secondary"
               className="h-7 text-[10px] px-2.5 w-full"
               onClick={onLaunch}
+              disabled={!available}
             >
               {launchLabel}
             </Button>
           )}
 
+          {!available && (
+            <p className="text-[9px] text-amber-600 dark:text-amber-400 leading-snug">
+              {unavailableNote ??
+                "This visual tool needs the PDF reading pane — open the document in the desktop studio."}
+            </p>
+          )}
           {hint && (
             <p className="text-[9px] text-muted-foreground/60 leading-snug">
               {hint}
@@ -474,13 +440,12 @@ export function ManipulationPanel({
   const api = usePdfDemoApi();
   const userId = useAppSelector(selectUserId) ?? "";
 
-  // ── Source payload ─────────────────────────────────────────────────────────
-  const src: Record<string, unknown> | null =
-    doc.sourceKind === "cld_file" && doc.sourceId
-      ? { cld_id: doc.sourceId }
-      : doc.source && !doc.source.startsWith("s3://")
-        ? { url: doc.source }
-        : null;
+  // ── Source payload (canonical wire — media.file_id / url / file_uri) ──────
+  const src: PdfSourceWire | null = buildPdfSource({
+    sourceKind: doc.sourceKind,
+    sourceId: doc.sourceId,
+    sourceUrl: doc.source,
+  });
 
   // ── Per-op state ───────────────────────────────────────────────────────────
   const scrub = useOpState();
@@ -540,6 +505,10 @@ export function ManipulationPanel({
     key: Parameters<typeof api.postPdfBlob>[0],
     body: Record<string, unknown>,
   ) {
+    // Synchronous double-submit guard — `disabled={op.running}` only takes
+    // effect after a re-render; the ref blocks the same-tick second click.
+    if (op.runningRef.current) return;
+    op.runningRef.current = true;
     op.setRunning(true);
     op.setResult(null);
     op.setError(null);
@@ -549,6 +518,7 @@ export function ManipulationPanel({
     } catch (err) {
       op.setError(err instanceof Error ? err.message : String(err));
     } finally {
+      op.runningRef.current = false;
       op.setRunning(false);
     }
   }
@@ -739,6 +709,14 @@ export function ManipulationPanel({
             del.setError("Enter at least one page.");
             return;
           }
+          const ok = await confirm({
+            title: `Delete ${pages.length} page${pages.length === 1 ? "" : "s"}?`,
+            description:
+              "This creates a new PDF without those pages — the original document is unchanged.",
+            confirmLabel: "Delete pages",
+            variant: "destructive",
+          });
+          if (!ok) return;
           await run(del, "deletePages", { ...src, pages });
         }}
         onSave={() => {
@@ -864,6 +842,7 @@ export function ManipulationPanel({
         description="Drag page tiles to rearrange the document order"
         isActive={pdfPaneEditMode === "reorder"}
         onLaunch={() => onStartReorder?.()}
+        available={!!onStartReorder}
         onCancel={() => onEditModeCancel?.()}
         launchLabel="Reorder in PDF pane →"
         activeLabel="Reordering — drag tiles in the PDF pane"
@@ -910,6 +889,7 @@ export function ManipulationPanel({
         description="Draw a selection on the PDF to trim content"
         isActive={pdfPaneEditMode === "crop"}
         onLaunch={() => onStartCrop?.(cropPages)}
+        available={!!onStartCrop}
         onCancel={() => onEditModeCancel?.()}
         launchLabel="Draw crop area in PDF →"
         activeLabel="Crop mode — drag to select area in PDF pane"
@@ -938,7 +918,7 @@ export function ManipulationPanel({
         description="Concatenate this doc with a second PDF"
         op={merge}
         onRun={async () => {
-          const src2 = parseSecondSrc(mergeSrc2);
+          const src2 = parsePdfSourceInput(mergeSrc2);
           if (!src2) {
             merge.setError("Enter a second PDF source (cld file ID or URL).");
             return;
@@ -975,7 +955,7 @@ export function ManipulationPanel({
         description="Splice pages from another PDF into this one"
         op={insert}
         onRun={async () => {
-          const src2 = parseSecondSrc(insertSrc);
+          const src2 = parsePdfSourceInput(insertSrc);
           if (!src2) {
             insert.setError("Enter a source PDF (cld file ID or URL).");
             return;
@@ -983,12 +963,9 @@ export function ManipulationPanel({
           const srcPages = insertSrcPages.trim()
             ? parsePagesInput(insertSrcPages)
             : undefined;
-          const sourceWire = src2.url
-            ? { source_url: src2.url }
-            : { source_cld_id: src2.cld_id };
           await run(insert, "insertPages", {
             ...src,
-            ...sourceWire,
+            ...toInsertSourceWire(src2),
             after_page: insertAt,
             ...(srcPages ? { source_pages: srcPages } : {}),
           });
@@ -1041,6 +1018,14 @@ export function ManipulationPanel({
             redact.setError("Reason is required.");
             return;
           }
+          const ok = await confirm({
+            title: "Redact every match?",
+            description:
+              "Blacks out all matches in a NEW redacted copy — the original file stays unchanged. Redacted content in the copy cannot be recovered.",
+            confirmLabel: "Redact",
+            variant: "destructive",
+          });
+          if (!ok) return;
           await run(redact, "redactPattern", {
             ...src,
             pattern: redactPattern,
@@ -1065,8 +1050,13 @@ export function ManipulationPanel({
                     : "__custom__"
                 }
                 onChange={(e) => {
-                  if (e.target.value !== "__custom__")
-                    setRedactPattern(e.target.value);
+                  // Selecting "Custom regex…" clears the field so the select
+                  // stays on Custom and the user types their pattern —
+                  // previously this was a no-op that snapped back to the
+                  // prior preset while users believed Custom was active.
+                  setRedactPattern(
+                    e.target.value === "__custom__" ? "" : e.target.value,
+                  );
                 }}
                 className="w-full rounded border border-border bg-background px-2 py-0.5 text-[11px]"
               >

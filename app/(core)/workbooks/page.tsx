@@ -6,6 +6,7 @@ import {
   FileSpreadsheet,
   Loader2,
   Plus,
+  Sparkles,
   Trash,
   Upload,
 } from "lucide-react";
@@ -23,6 +24,40 @@ import {
 } from "@/features/data-tables/workbook-service";
 import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
 import { xlsxToUniverWorkbook } from "@/features/data-tables/xlsx-to-univer";
+import { fileHandler } from "@/features/files/handler/handler";
+import {
+  detectImportRoute,
+  type ImportRouteDetection,
+  type ImportRouting,
+} from "@/features/data-tables/smart-importer";
+import { ImportRouteDialog } from "@/features/data-tables/components/ImportRouteDialog";
+import { smartImportPickupSlot } from "@/features/data-tables/smart-import-pickup";
+
+/**
+ * Pre-flight import file check. We deliberately do NOT use the `accept`
+ * attribute on the picker (it greys out everything in Drive / Google
+ * Sheets pickers on iOS and many Android pickers), so we validate after
+ * pick. Returns null when the file is accepted, or a short user-facing
+ * reason string when it isn't.
+ */
+function unsupportedFileReason(file: File): string | null {
+  const name = file.name.toLowerCase();
+  // Native, parseable formats.
+  if (name.endsWith(".xlsx") || name.endsWith(".xls") || name.endsWith(".csv")) {
+    return null;
+  }
+  if (name.endsWith(".tsv") || name.endsWith(".txt")) return null; // SheetJS parses these too
+
+  // Drive's "Google Sheets" shortcut is a tiny JSON pointer file that
+  // browsers cannot resolve into the underlying sheet — Drive only exposes
+  // the real content via its API. The user has to "Download as .xlsx" from
+  // Sheets first.
+  if (name.endsWith(".gsheet")) {
+    return "Google Sheets shortcuts can't be imported directly. In Google Sheets choose File → Download → Microsoft Excel (.xlsx), then upload that.";
+  }
+  // Anything else.
+  return `"${file.name}" doesn't look like a spreadsheet. Supported: .xlsx, .xls, .csv. If you're importing from Google Sheets, use File → Download → Microsoft Excel (.xlsx) first.`;
+}
 
 export default function WorkbooksLandingPage() {
   const router = useRouter();
@@ -32,6 +67,15 @@ export default function WorkbooksLandingPage() {
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Smart-import state: separate file picker pointed at the same accept set
+  // but funnels through detectImportRoute() before committing.
+  const smartFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [smartDetection, setSmartDetection] =
+    useState<ImportRouteDetection | null>(null);
+  const [smartFile, setSmartFile] = useState<File | null>(null);
+  const [smartDialogOpen, setSmartDialogOpen] = useState(false);
+  const [smartCommitting, setSmartCommitting] = useState(false);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -67,11 +111,44 @@ export default function WorkbooksLandingPage() {
 
   const handleImportXlsx = useCallback(
     async (file: File) => {
+      // The file input has no `accept` filter (so Drive / Google Sheets
+      // pickers don't grey everything out) — validate here. Drive's
+      // ".gsheet" shortcuts and Google-only mime types can't be parsed
+      // client-side: give a clear, actionable error instead of a stack
+      // trace from SheetJS.
+      const reason = unsupportedFileReason(file);
+      if (reason) {
+        toast({
+          title: "Can't import that file",
+          description: reason,
+          variant: "destructive",
+        });
+        return;
+      }
       setImporting(true);
       try {
         // Parse first — if the file is malformed, we surface the error
         // BEFORE creating an empty workbook the user would have to delete.
         const snapshot = await xlsxToUniverWorkbook(file);
+
+        // Stash the lossless original in cld_files so users can download or
+        // re-import the source later. Failure here is non-fatal — the workbook
+        // import path is the primary deliverable, the original-file link is
+        // a recoverability nicety (FK is ON DELETE SET NULL, so we'd nil out
+        // the link if the file went away anyway). Log + continue on failure.
+        let originalFileId: string | undefined;
+        try {
+          const uploaded = await fileHandler.upload(
+            { kind: "file", file },
+            { folderPath: "Workbooks/Imports" },
+          );
+          originalFileId = uploaded.fileId;
+        } catch (uploadErr) {
+          console.warn(
+            "Workbook import: stashing original failed; continuing without link.",
+            uploadErr,
+          );
+        }
 
         const cleanName = file.name.replace(/\.[^.]+$/, "") || "Imported workbook";
         const created = await createWorkbook({
@@ -80,6 +157,7 @@ export default function WorkbooksLandingPage() {
           source: file.name.toLowerCase().endsWith(".csv")
             ? "imported_csv"
             : "imported_xlsx",
+          originalFileId,
         });
         if (isServiceFailure(created)) throw new Error(created.error);
 
@@ -117,6 +195,68 @@ export default function WorkbooksLandingPage() {
     [router],
   );
 
+  const handleSmartImport = useCallback(async (file: File) => {
+    // Reset the input so picking the same file again still fires onChange.
+    if (smartFileInputRef.current) smartFileInputRef.current.value = "";
+    setSmartCommitting(false);
+
+    const reason = unsupportedFileReason(file);
+    if (reason) {
+      toast({
+        title: "Can't analyze that file",
+        description: reason,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const detection = await detectImportRoute(file);
+      setSmartFile(file);
+      setSmartDetection(detection);
+      setSmartDialogOpen(true);
+    } catch (err) {
+      toast({
+        title: "Could not analyze file",
+        description: err instanceof Error ? err.message : String(err),
+        variant: "destructive",
+      });
+    }
+  }, []);
+
+  const handleSmartCommit = useCallback(
+    async (routing: ImportRouting) => {
+      if (!smartFile) return;
+      setSmartCommitting(true);
+      try {
+        if (routing === "workbook") {
+          setSmartDialogOpen(false);
+          await handleImportXlsx(smartFile);
+        } else {
+          // Typed-dataset routing — the rich import/preview/column-config
+          // flow lives at /data. Stash the file briefly on the window so
+          // /data can pick it up (sessionStorage holds the filename and a
+          // pickup token; the actual File is non-serializable so it rides
+          // on a global module-level slot).
+          smartImportPickupSlot.file = smartFile;
+          smartImportPickupSlot.takenAt = Date.now();
+          setSmartDialogOpen(false);
+          toast({
+            title: "Opening in typed-data import",
+            description: smartFile.name,
+            variant: "default",
+          });
+          router.push("/data?smartImport=1");
+        }
+      } finally {
+        setSmartCommitting(false);
+        setSmartFile(null);
+        setSmartDetection(null);
+      }
+    },
+    [smartFile, router],
+  );
+
   const handleDelete = useCallback(
     async (wb: Workbook) => {
       const ok = await confirm({
@@ -143,44 +283,73 @@ export default function WorkbooksLandingPage() {
 
   return (
     <div className="w-full h-page p-4 space-y-4 overflow-y-auto scrollbar-none">
-      <div className="flex items-center justify-between pr-10">
-        <div>
-          <h1 className="text-2xl font-bold">Workbooks</h1>
-          <p className="text-sm text-muted-foreground">
-            Lossless spreadsheets — multi-sheet, formulas, formatting. Each
-            workbook autosaves and syncs in realtime to anyone with access.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      {/* Mobile: title row stacks above a single button row that wraps
+          cleanly. The wide `pr-10` reservation existed for a desktop side
+          drawer hit-area; on small screens it crushed the button row. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:pr-10">
+        <h1 className="text-2xl font-bold">Workbooks</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          {/*
+            No `accept` filter — Drive / Google Sheets shortcuts and many
+            mobile pickers grey out everything when an accept whitelist is
+            set. We validate by extension/parse after the user picks so the
+            error message is friendly + actionable.
+          */}
           <input
             ref={fileInputRef}
             type="file"
-            accept=".xlsx,.xls,.csv"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) void handleImportXlsx(f);
             }}
           />
+          <input
+            ref={smartFileInputRef}
+            type="file"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handleSmartImport(f);
+            }}
+          />
           <Button
             variant="outline"
-            disabled={importing || creating}
+            size="sm"
+            disabled={importing || creating || smartCommitting}
+            onClick={() => smartFileInputRef.current?.click()}
+            title="Auto-detect whether your file is a typed dataset or a workbook"
+          >
+            <Sparkles className="h-4 w-4 sm:mr-2" />
+            {/* Hide labels on phones; keep icons + tooltips. */}
+            <span className="hidden sm:inline">Smart import</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={importing || creating || smartCommitting}
             onClick={() => fileInputRef.current?.click()}
+            title="Import XLSX or CSV"
           >
             {importing ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
             ) : (
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 sm:mr-2" />
             )}
-            Import XLSX / CSV
+            <span className="hidden sm:inline">Import XLSX / CSV</span>
           </Button>
-          <Button onClick={handleCreate} disabled={creating || importing}>
+          <Button
+            size="sm"
+            onClick={handleCreate}
+            disabled={creating || importing || smartCommitting}
+            title="New workbook"
+          >
             {creating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
             ) : (
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 sm:mr-2" />
             )}
-            New workbook
+            <span className="hidden sm:inline">New workbook</span>
           </Button>
         </div>
       </div>
@@ -254,6 +423,21 @@ export default function WorkbooksLandingPage() {
           ))}
         </div>
       )}
+
+      <ImportRouteDialog
+        isOpen={smartDialogOpen}
+        onClose={() => {
+          if (!smartCommitting) {
+            setSmartDialogOpen(false);
+            setSmartFile(null);
+            setSmartDetection(null);
+          }
+        }}
+        detection={smartDetection}
+        fileName={smartFile?.name ?? ""}
+        onCommit={handleSmartCommit}
+        isCommitting={smartCommitting}
+      />
     </div>
   );
 }

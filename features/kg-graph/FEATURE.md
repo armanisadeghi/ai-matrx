@@ -163,6 +163,30 @@ NER entities once backfill runs).
 
 ## Change log
 
+- 2026-06-04 — Org picker + bigger card + org-page card. Toolbar now has an
+  always-visible **organization picker** (`KgOrgFilter`) beside the scope picker,
+  so org → scope-type → scope are manually changeable even when arriving via a
+  route filter (the canvas owns `orgFilter`, re-synced from the prop; switching org
+  resets the scope) — the "never feel stuck" fix. The preview card is ~2× taller
+  (elliptical spiral fills the space). The org workspace's plain "Knowledge graph"
+  CTA is replaced by the live `<KgGraphCard variant="org">` preview.
+- 2026-06-04 — Option A: scope filtering + mini graph card. **Filter** the org
+  graph to one scope (Client/Case/Kid) via a toolbar picker (`KgScopeFilter`,
+  reuses `useScopeTree`) **or** the route — `/knowledge-graph?org=&scope=&scopeType=`
+  (so org/scope pages deep-link a pre-filtered graph; backend resolves `scope_id`
+  → tagged sources → entities). **`KgGraphCard`** — a lazy, cached, click-through
+  mini preview (lightweight SVG, phyllotaxis layout, real top-N + decorative
+  filler, fake-graph-while-loading) embedded on the scope page; cached/deduped via
+  `service/graphPreview.ts`. (Org/scope-type page embeds: drop-in snippets provided
+  — OrgWorkspace left untouched as it was mid-edit; scope-type card needs a backend
+  `scope_type_id` filter, see 05.)
+- 2026-06-04 — Encoding + evidence tweaks. New **hierarchy ("tier") colour** mode
+  (`analysis.ensureTier`: BFS depth from each cluster's local importance peaks;
+  `KG_TIER_PALETTE`) — now the **default colour** (entity-kind colouring demoted to
+  opt-in). **Default size = importance** (PageRank), not raw connections. Evidence
+  panel now shows the **source's name** (note label, resolved via
+  `service/sourceNames.ts`), not just the kind; the **Open link opens in a new tab**
+  (`target=_blank`) so it doesn't disturb the slow graph load.
 - 2026-06-04 — Phase 1: de-noise + evidence drill-down (see
   `docs/PRODUCT_DIRECTION.md` + `docs/knowledge/04_CURRENT_STATE_AND_PATH.md`).
   Co-occurrence edges recede to a faint baseline (they're noise until typed); the

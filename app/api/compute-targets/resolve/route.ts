@@ -72,9 +72,15 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     }
-    const orchestrator = resolveOrchestratorByTier(
-      (row.tier as "ec2" | "hosted") ?? "hosted",
-    );
+    const resolvedTier: "ec2" | "hosted" =
+      row.tier === "ec2" || row.tier === "hosted" ? row.tier : "ec2";
+    if (row.tier !== "ec2" && row.tier !== "hosted") {
+      console.error(
+        `[POST /api/compute-targets/resolve] sandbox row ${id} has no valid tier (got: ${JSON.stringify(row.tier)}). ` +
+          "Falling back to 'ec2'. This sandbox was created without an explicit tier — update the row.",
+      );
+    }
+    const orchestrator = resolveOrchestratorByTier(resolvedTier);
     if (!orchestrator.url || !orchestrator.apiKey) {
       return NextResponse.json(
         { error: "orchestrator_not_configured" },
@@ -110,7 +116,9 @@ export async function POST(request: Request) {
     if (!resp.ok) {
       const text = await resp.text().catch(() => "");
       return NextResponse.json(
-        { error: `orchestrator_error: HTTP ${resp.status} ${text.slice(0, 200)}` },
+        {
+          error: `orchestrator_error: HTTP ${resp.status} ${text.slice(0, 200)}`,
+        },
         { status: 502 },
       );
     }
@@ -139,17 +147,11 @@ export async function POST(request: Request) {
     const lastSeenMs = row.last_seen ? Date.parse(row.last_seen) : 0;
     const stale = !lastSeenMs || Date.now() - lastSeenMs > 10 * 60 * 1000;
     if (!row.tunnel_active || stale || !row.tunnel_url) {
-      return NextResponse.json(
-        { error: "device_offline" },
-        { status: 410 },
-      );
+      return NextResponse.json({ error: "device_offline" }, { status: 410 });
     }
     const accessToken = session?.access_token ?? "";
     if (!accessToken) {
-      return NextResponse.json(
-        { error: "no_session_token" },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: "no_session_token" }, { status: 401 });
     }
     const aidreamBase =
       process.env.AIDREAM_PUBLIC_URL ||
@@ -165,8 +167,5 @@ export async function POST(request: Request) {
     return NextResponse.json(payload);
   }
 
-  return NextResponse.json(
-    { error: `unknown_kind: ${kind}` },
-    { status: 400 },
-  );
+  return NextResponse.json({ error: `unknown_kind: ${kind}` }, { status: 400 });
 }

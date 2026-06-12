@@ -21,6 +21,12 @@ import {
   selectIsOverlayOpen,
   toggleOverlay,
 } from "@/lib/redux/slices/overlaySlice";
+import {
+  setCompareBase,
+  openCompareWithBase,
+  selectHasCompareBase,
+} from "@/lib/redux/slices/diffCompareSlice";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { TextActionResultModal } from "@/components/modals/TextActionResultModal";
 import { FindReplaceModal } from "@/components/modals/FindReplaceModal";
 import { ContextDebugModal } from "@/components/debug/ContextDebugModal";
@@ -40,6 +46,7 @@ import {
   type AgentMenuEntry,
 } from "./hooks/useUnifiedAgentContextMenu";
 import { MenuBody } from "./components/MenuBody";
+import type { ContextMenuExtraSection } from "./extraSections";
 import {
   FloatingSelectionIcon,
   shouldRenderFloatingIcon,
@@ -141,6 +148,12 @@ export interface UnifiedAgentContextMenuProps {
   hasHistory?: boolean;
   scope?: Scope;
   scopeId?: string | null;
+  /**
+   * Surface-specific menu items injected by a thin wrapper. The core renders
+   * them at the requested anchor — wrappers describe, they don't reimplement.
+   * See `features/context-menu-v2/extraSections.ts`.
+   */
+  extraSections?: ContextMenuExtraSection[];
 }
 
 const DEFAULT_PLACEMENT_MODE: Required<PlacementMode> = {
@@ -182,7 +195,7 @@ function resolvePlacementMode(
   return DEFAULT_PLACEMENT_MODE;
 }
 
-export function UnifiedAgentContextMenu({
+export function UniversalContextMenuV2({
   children,
   sourceFeature,
   surfaceName,
@@ -210,6 +223,7 @@ export function UnifiedAgentContextMenu({
   hasHistory = false,
   scope = "global",
   scopeId = null,
+  extraSections,
 }: UnifiedAgentContextMenuProps) {
   const dispatch = useAppDispatch();
 
@@ -263,6 +277,9 @@ export function UnifiedAgentContextMenu({
     openVoicePad,
   } = useQuickActions();
 
+  const openDiffWindow = useOpenDiffViewerWindow();
+  const hasCompareBase = useAppSelector(selectHasCompareBase);
+
   const isAdmin = useAppSelector(selectIsSuperAdmin);
   const isDebugMode = useAppSelector(selectIsDebugMode);
   const isAdminIndicatorOpen = useAppSelector((state) =>
@@ -295,6 +312,67 @@ export function UnifiedAgentContextMenu({
   const [showFloatingIcon, setShowFloatingIcon] = useState(false);
 
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
+
+  // The content a Compare action operates on: the current selection if there
+  // is one, otherwise the whole field/content passed via contextData.content.
+  const getCompareContent = useCallback((): {
+    content: string;
+    label: string;
+  } => {
+    const sel = capturedSelection.current?.text || selectedText || "";
+    if (sel.trim()) return { content: sel, label: "Selection" };
+    const content =
+      typeof contextData?.content === "string" ? contextData.content : "";
+    return { content, label: "Current" };
+  }, [selectedText, contextData]);
+
+  const handleCompareClipboard = useCallback(async () => {
+    const { content, label } = getCompareContent();
+    let clip = "";
+    try {
+      clip = await navigator.clipboard.readText();
+    } catch {
+      toast({
+        title: "Couldn't read the clipboard",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!clip) {
+      toast({ title: "Clipboard is empty" });
+      return;
+    }
+    openDiffWindow({
+      original: clip,
+      modified: content,
+      originalLabel: "Clipboard",
+      modifiedLabel: label,
+      title: "Compare with clipboard",
+      engine: "light",
+    });
+  }, [getCompareContent, openDiffWindow]);
+
+  const handleSetCompareBase = useCallback(() => {
+    const { content, label } = getCompareContent();
+    dispatch(setCompareBase({ content, label, language: null }));
+    toast({
+      title: "Set as compare base",
+      description: "Open another item and choose “Compare with base”.",
+    });
+  }, [getCompareContent, dispatch]);
+
+  const handleCompareWithBase = useCallback(async () => {
+    const { content, label } = getCompareContent();
+    const opened = await dispatch(
+      openCompareWithBase({ current: content, currentLabel: label }),
+    ).unwrap();
+    if (!opened) {
+      toast({
+        title: "No compare base set",
+        description: "Choose “Set as compare base” on another item first.",
+      });
+    }
+  }, [getCompareContent, dispatch]);
 
   React.useEffect(() => {
     const handleSelection = () => {
@@ -760,6 +838,11 @@ export function UnifiedAgentContextMenu({
     redoHint,
     onViewHistory,
     hasHistory,
+    onCompareClipboard: handleCompareClipboard,
+    onSetCompareBase: handleSetCompareBase,
+    onCompareWithBase: handleCompareWithBase,
+    hasCompareBase,
+    extraSections,
     isAdmin,
     isDebugMode,
     isAdminIndicatorOpen,
@@ -908,3 +991,11 @@ export function UnifiedAgentContextMenu({
     </>
   );
 }
+
+/**
+ * Back-compat alias. `UniversalContextMenuV2` is the canonical name — this
+ * component is NOT agent-specific; "Agent" referred only to the shortcut/AI
+ * engine that powers AI Actions on every surface. Existing call sites import
+ * `UnifiedAgentContextMenu`; keep this export until they're migrated.
+ */
+export const UnifiedAgentContextMenu = UniversalContextMenuV2;

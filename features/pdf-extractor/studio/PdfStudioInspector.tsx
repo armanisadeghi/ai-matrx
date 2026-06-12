@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 import type { PdfPaneEditMode } from "./PdfStudioReader";
-import { parsePagesInput } from "@/features/pdf-demo/utils/pages";
+import { parsePagesInput } from "@/features/pdf/utils/pages";
 import { LineageTreeView } from "../components/LineageTreeView";
 import { ManipulationPanel } from "../components/ManipulationPanel";
 import { DataStoreBindPanel } from "@/features/rag/components/data-stores/DataStoreBindPanel";

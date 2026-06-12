@@ -10,7 +10,7 @@ import {
   getFileDetailsByUrl,
   type EnhancedFileDetails,
 } from "@/utils/file-operations/constants";
-import { CloudFolders } from "@/features/files";
+import { composeLegacyFolderPath } from "@/features/files";
 import type { Visibility } from "@/features/files";
 import type { NormalizedFile } from "@/features/files";
 import type { StorageMetadata } from "@/utils/file-operations/types";
@@ -32,46 +32,9 @@ type FileUploadWithStorageProps = {
   initialFiles?: UploadedFileResult[]; // Add initialFiles prop
 };
 
-// Legacy bucket-name → cloud-files folder path mapping. Used to keep the
-// `bucket` / `path` / `saveTo` props working for the dozen-plus consumers
-// of this component while the underlying upload goes through the universal
-// handler. Mirrors what the deleted useFileUploadWithStorage shim used to do.
-function mapLegacyBucket(bucket: string): string {
-  switch (bucket) {
-    case "user-public-assets":
-      return "Shared Assets";
-    case "user-private-assets":
-      return "Private Assets";
-    case "images":
-    case "Images":
-      return CloudFolders.IMAGES;
-    case "audio":
-    case "Audio":
-      return CloudFolders.AUDIO;
-    case "audio-recordings":
-      return CloudFolders.AUDIO_RECORDINGS;
-    case "documents":
-    case "Documents":
-      return CloudFolders.DOCUMENTS;
-    case "code":
-    case "Code":
-      return CloudFolders.CODE;
-    case "userContent":
-      return "My Files";
-    case "any-file":
-      return "Uploads";
-    case "attachments":
-      return CloudFolders.CHAT_ATTACHMENTS;
-    default:
-      return bucket;
-  }
-}
-
-function composeFolderPath(bucket: string, path?: string): string {
-  const top = mapLegacyBucket(bucket).replace(/^\/+|\/+$/g, "");
-  const sub = (path ?? "").replace(/^\/+|\/+$/g, "");
-  return sub ? `${top}/${sub}` : top;
-}
+// Legacy bucket-name → cloud-files folder path mapping shared with paste
+// handlers and chat-input components. See features/files/handler/utils/legacy-bucket-map.ts.
+const composeFolderPath = composeLegacyFolderPath;
 
 function classifyFileType(mimeType: string): string {
   if (!mimeType) return "unknown";

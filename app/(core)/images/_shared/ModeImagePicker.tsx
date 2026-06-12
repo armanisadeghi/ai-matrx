@@ -101,7 +101,7 @@ export function ModeImagePicker({ title, onPick }: Props) {
           <ImageIcon className="h-3.5 w-3.5" />
           <span>or</span>
           <Link
-            href="/files"
+            href="/files/all"
             className="underline hover:text-foreground"
           >
             pick from your Cloud Files

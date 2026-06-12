@@ -54,6 +54,10 @@ export const dispatchWidgetAction = createAsyncThunk<
       ? callbackManager.get<WidgetHandle>(handleId)
       : null;
 
+    // Client-measured execution time, persisted to cx_tool_call.duration_ms —
+    // without it every client-delegated call lands as duration_ms=0.
+    const startedAt = performance.now();
+
     let result: WidgetActionResult;
 
     if (!handle) {
@@ -121,6 +125,7 @@ export const dispatchWidgetAction = createAsyncThunk<
           tool_name: toolName,
           is_error: false,
           output: { ok: true, applied: finalResult.applied },
+          duration_ms: Math.round(performance.now() - startedAt),
         }),
       );
     } else {
@@ -152,6 +157,7 @@ export const dispatchWidgetAction = createAsyncThunk<
             message: finalResult.message,
           },
           error_message: finalResult.message ?? finalResult.reason,
+          duration_ms: Math.round(performance.now() - startedAt),
         }),
       );
     }

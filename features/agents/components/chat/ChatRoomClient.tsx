@@ -17,6 +17,8 @@ import {
   clearFocus,
 } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { consumeChatDraftTransfer } from "./chat-draft-transfer";
+import { selectChatIncognitoActive } from "./chat-incognito.slice";
+import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import {
   registerSurface,
   unregisterSurface,
@@ -68,6 +70,7 @@ export function ChatRoomClient({
 
   const surfaceKey = `${SOURCE_FEATURE}:${agentId}`;
   const authReady = useAppSelector(selectAuthReady);
+  const isIncognito = useAppSelector(selectChatIncognitoActive);
   useCreatorOwnershipSync(agentId);
 
   // Register this client as a `page` surface so action bars can route
@@ -140,12 +143,25 @@ export function ChatRoomClient({
     sourceFeature: SOURCE_FEATURE,
     ready: !isInitializing && !conversationIdProp,
     config: { responseDensity: "compact" },
+    isEphemeral: isIncognito,
     // The chat route promotes /chat/new → /chat/[conversationId] right after
     // the first submit, which unmounts this launcher mid-stream. Retain the
     // started conversation so the destination route re-attaches to the live
     // instance instead of re-fetching (and clobbering the stream).
     retainOnUnmount: true,
   });
+
+  // Keep the live instance aligned with the incognito toggle so execute thunks
+  // send store:false and sandbox binding stays off for the whole session.
+  useEffect(() => {
+    if (!liveConversationId || conversationIdProp) return;
+    dispatch(
+      patchConversation({
+        conversationId: liveConversationId,
+        isEphemeral: isIncognito,
+      }),
+    );
+  }, [conversationIdProp, dispatch, isIncognito, liveConversationId]);
 
   // ── Existing-conversation load (only on /chat/[conversationId]) ──────────
   // One in-flight load at a time, cancelled on prop change.
@@ -182,7 +198,9 @@ export function ChatRoomClient({
           // this load was already superseded by a navigation (don't revert the
           // surface back to the conversation the user just left).
           if (ctrl.signal.aborted) return;
-          dispatch(setFocus({ surfaceKey, conversationId: conversationIdProp }));
+          dispatch(
+            setFocus({ surfaceKey, conversationId: conversationIdProp }),
+          );
           return;
         }
         if (ctrl.signal.aborted) return;
@@ -323,7 +341,8 @@ export function ChatRoomClient({
           constrainWidth
           smartInputProps={{
             sendButtonVariant: "blue",
-            showSubmitOnEnterToggle: true,
+            // Lives in the Chat Options (+) → Preferences tab now.
+            showSubmitOnEnterToggle: false,
           }}
           landingContent={landingContent}
         />

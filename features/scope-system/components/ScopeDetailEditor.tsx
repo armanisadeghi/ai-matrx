@@ -2,15 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Loader2,
-  Pencil,
-  Check,
-  X as XIcon,
-  Trash2,
-  Settings,
-} from "lucide-react";
+import Link from "next/link";
+import { Check, Loader2, Pencil, Trash2, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,11 +12,16 @@ import { toast } from "sonner";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectScopeById,
+  fetchScopes,
+  selectScopeBySlugOrId,
+  selectScopesLoadedForType,
   updateScope,
   deleteScope,
 } from "@/features/agent-context/redux/scope/scopesSlice";
-import { selectScopeTypeById } from "@/features/agent-context/redux/scope/scopeTypesSlice";
+import {
+  selectScopeTypeBySlugOrId,
+  selectScopeTypesLoadedForOrg,
+} from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import {
   getScopeContext,
   selectValuesByScope,
@@ -31,27 +29,71 @@ import {
 } from "@/features/scope-system/redux/scopeValuesSlice";
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
-import { EditScopeTypeSheet } from "./EditScopeTypeSheet";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
+import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
+import { ScopeGlyph } from "./ScopeGlyph";
+import { ScopeNotFound } from "./ScopeNotFound";
+import {
+  resolveColor,
+  SCOPE_ICON_SURFACE,
+} from "@/features/scope-system/constants/scope-colors";
+import { KgGraphCard } from "@/features/kg-graph/components/KgGraphCard";
+import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
+import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
+import {
+  orgScopesHref,
+  scopeTypeHref,
+  scopeItemHref,
+  scopeContextItemsHref,
+  scopeEditHref,
+} from "@/features/scope-system/utils/scopeRoutes";
 
 interface ScopeDetailEditorProps {
+  orgId: string;
   orgSlugOrId: string;
-  scopeId: string;
+  orgName: string;
+  orgIsPersonal: boolean;
+  /** Route segment for the scope type — UUID or kebab slug. */
+  typeParam: string;
+  /** Route segment for the scope — UUID or kebab slug. */
+  scopeParam: string;
+  /** Owner/admin: may add type-level fields and delete this scope. */
+  canManage: boolean;
 }
 
 export function ScopeDetailEditor({
+  orgId,
   orgSlugOrId,
-  scopeId,
+  orgName,
+  orgIsPersonal,
+  typeParam,
+  scopeParam,
+  canManage,
 }: ScopeDetailEditorProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const scope = useAppSelector((s) => selectScopeById(s, scopeId));
+  // Both route segments resolve by UUID or kebab slug.
   const scopeType = useAppSelector((s) =>
-    scope ? selectScopeTypeById(s, scope.scope_type_id) : undefined,
+    selectScopeTypeBySlugOrId(s, orgId, typeParam),
   );
-  const rows = useAppSelector((s) => selectValuesByScope(s, scopeId));
-  const loading = useAppSelector((s) => selectScopeValuesLoading(s, scopeId));
+  const resolvedTypeId = scopeType?.id;
+  const typesLoaded = useAppSelector((s) =>
+    selectScopeTypesLoadedForOrg(s, orgId),
+  );
+  const scope = useAppSelector((s) =>
+    selectScopeBySlugOrId(s, resolvedTypeId, scopeParam),
+  );
+  const scopesLoaded = useAppSelector((s) =>
+    resolvedTypeId
+      ? selectScopesLoadedForType(s, orgId, resolvedTypeId)
+      : false,
+  );
+  const scopeId = scope?.id;
+  const rows = useAppSelector((s) => selectValuesByScope(s, scopeId ?? ""));
+  const loading = useAppSelector((s) =>
+    selectScopeValuesLoading(s, scopeId ?? ""),
+  );
+  const suggestions = useScopeSuggestions();
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
@@ -61,10 +103,15 @@ export function ScopeDetailEditor({
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [savingDescription, setSavingDescription] = useState(false);
 
-  const [editingType, setEditingType] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
+    if (!resolvedTypeId) return;
+    dispatch(fetchScopes({ org_id: orgId, type_id: resolvedTypeId }));
+  }, [dispatch, orgId, resolvedTypeId]);
+
+  useEffect(() => {
+    if (!scopeId) return;
     dispatch(getScopeContext({ scope_id: scopeId, include_empty: true }));
   }, [dispatch, scopeId]);
 
@@ -75,15 +122,32 @@ export function ScopeDetailEditor({
     }
   }, [scope]);
 
-  if (!scope || !scopeType) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
+  // Not found vs still loading.
+  if (!scopeType) {
+    return typesLoaded ? (
+      <ScopeNotFound
+        title="Scope type not found"
+        message={`No scope type matches "${typeParam}" in this organization.`}
+        backHref={orgScopesHref(orgSlugOrId)}
+        backLabel="Back to scopes"
+      />
+    ) : (
+      <CenteredSpinner />
+    );
+  }
+  if (!scope) {
+    return scopesLoaded ? (
+      <ScopeNotFound
+        title={`${scopeType.label_singular} not found`}
+        message={`No ${scopeType.label_singular.toLowerCase()} matches "${scopeParam}".`}
+        backHref={scopeTypeHref(orgSlugOrId, scopeType)}
+        backLabel={`Back to ${scopeType.label_plural}`}
+      />
+    ) : (
+      <CenteredSpinner />
     );
   }
 
-  const Icon = resolveIcon(scopeType.icon);
   const color = resolveColor(scopeType);
 
   async function saveName() {
@@ -96,7 +160,7 @@ export function ScopeDetailEditor({
     }
     setSavingName(true);
     try {
-      await dispatch(updateScope({ scope_id: scopeId, name: next })).unwrap();
+      await dispatch(updateScope({ scope_id: scope.id, name: next })).unwrap();
       toast.success("Renamed");
       setEditingName(false);
     } catch (err) {
@@ -116,7 +180,7 @@ export function ScopeDetailEditor({
     setSavingDescription(true);
     try {
       await dispatch(
-        updateScope({ scope_id: scopeId, description: next }),
+        updateScope({ scope_id: scope.id, description: next }),
       ).unwrap();
       toast.success("Description updated");
       setEditingDescription(false);
@@ -140,9 +204,9 @@ export function ScopeDetailEditor({
     if (!ok) return;
     setDeleting(true);
     try {
-      await dispatch(deleteScope(scopeId)).unwrap();
+      await dispatch(deleteScope(scope.id)).unwrap();
       toast.success(`Deleted “${scope.name}”`);
-      router.push(`/organizations/${orgSlugOrId}/scopes/${scopeType.id}`);
+      router.push(scopeTypeHref(orgSlugOrId, scopeType));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete");
       setDeleting(false);
@@ -153,44 +217,53 @@ export function ScopeDetailEditor({
   const total = rows?.length ?? 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-2">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
-        </Button>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditingType(true)}
-          >
-            <Settings className="h-3.5 w-3.5 mr-1.5" />
-            Edit scope type
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-          >
-            {deleting ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+    <div className="space-y-6 pr-14">
+      <ScopeBreadcrumb
+        orgSlugOrId={orgSlugOrId}
+        orgName={orgName}
+        orgIsPersonal={orgIsPersonal}
+        backHref={scopeTypeHref(orgSlugOrId, scopeType)}
+        trail={[
+          {
+            label: scopeType.label_plural,
+            href: scopeTypeHref(orgSlugOrId, scopeType),
+          },
+          { label: scope.name },
+        ]}
+        actions={
+          <>
+            <Button asChild variant="outline" size="sm">
+              <Link href={scopeEditHref(orgSlugOrId, scopeType, scope)}>
+                <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                Edit settings
+              </Link>
+            </Button>
+            {canManage && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+              >
+                {deleting ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Delete
+              </Button>
             )}
-            Delete
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <Card className="p-6">
         <div className="flex items-start gap-4">
           <div
-            className={`w-12 h-12 rounded-lg ${color.fg} flex items-center justify-center shrink-0`}
+            className={`w-12 h-12 rounded-lg ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
           >
-            <Icon className="h-7 w-7" />
+            <ScopeGlyph icon={scopeType.icon} className="h-7 w-7" />
           </div>
           <div className="flex-1 min-w-0">
             {editingName ? (
@@ -313,7 +386,48 @@ export function ScopeDetailEditor({
         </div>
       </Card>
 
+      {/* Knowledge-graph suggestions targeting this scope's fields. */}
+      {suggestions.forScope(scope.id).length > 0 && (
+        <KgSuggestionHint
+          variant="banner"
+          rows={suggestions.forScope(scope.id)}
+          accept={suggestions.accept}
+          reject={suggestions.reject}
+          defer={suggestions.defer}
+          label={scope.name}
+          align="start"
+        />
+      )}
+
+      {/* Live preview of this scope's slice of the knowledge graph (lazy, cached). */}
+      <KgGraphCard
+        variant="scope"
+        id={scope.id}
+        orgSlugOrId={orgSlugOrId}
+        title={`${scope.name} · knowledge graph`}
+      />
+
       <Card className="p-6 space-y-5">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-base font-semibold text-foreground">
+            Context items
+            {total > 0 && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                {filled}/{total} filled
+              </span>
+            )}
+          </h2>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+          >
+            <Link href={scopeContextItemsHref(orgSlugOrId, scopeType, scope)}>
+              Open full page
+            </Link>
+          </Button>
+        </div>
         {loading && !rows && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -322,32 +436,56 @@ export function ScopeDetailEditor({
         )}
         {rows && rows.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-6">
-            No context items yet. Add your first one below.
+            No context items defined for {scopeType.label_plural.toLowerCase()}{" "}
+            yet.
           </p>
         )}
         {rows && rows.length > 0 && (
           <div className="space-y-5">
             {rows.map((row) => (
-              <ScopeFieldInput key={row.item_id} scopeId={scopeId} row={row} />
+              <ScopeFieldInput
+                key={row.item_id}
+                scopeId={scope.id}
+                row={row}
+                itemHref={scopeItemHref(orgSlugOrId, scopeType, scope, {
+                  id: row.item_id,
+                  slug: row.slug,
+                })}
+                headerSlot={
+                  <KgSuggestionHint
+                    variant="dot"
+                    rows={suggestions.forScopeItem(scope.id, row.item_id)}
+                    accept={suggestions.accept}
+                    reject={suggestions.reject}
+                    defer={suggestions.defer}
+                    label={row.display_name}
+                  />
+                }
+              />
             ))}
           </div>
         )}
-        <div className="pt-2 border-t">
-          <AddContextItemInline
-            scopeId={scopeId}
-            scopeTypeId={scopeType.id}
-            labelPlural={scopeType.label_plural}
-          />
-        </div>
+        {/* Adding a context item defines a field for ALL scopes of this type — admin only. */}
+        {canManage && (
+          <div className="pt-2 border-t">
+            <AddContextItemInline
+              scopeId={scope.id}
+              scopeTypeId={scopeType.id}
+              labelPlural={scopeType.label_plural}
+            />
+          </div>
+        )}
       </Card>
 
-      <EditScopeTypeSheet
-        open={editingType}
-        onOpenChange={setEditingType}
-        orgId={scopeType.organization_id}
-        typeId={scopeType.id}
-        onDeleted={() => router.push(`/organizations/${orgSlugOrId}/scopes`)}
-      />
+      <ScopeAdvancedSection scope={scope} />
+    </div>
+  );
+}
+
+function CenteredSpinner() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
     </div>
   );
 }

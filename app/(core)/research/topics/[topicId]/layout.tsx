@@ -1,14 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import type { Metadata } from "next";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
   getTopicServer,
   getTopicOverviewServer,
 } from "@/features/research/service/server";
 import ResearchTopicShell from "./ResearchTopicShell";
-import { generateFaviconMetadata } from "@/utils/favicon-utils";
+import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -17,37 +16,31 @@ export async function generateMetadata({
   params,
 }: {
   params: Promise<{ topicId: string }>;
-}): Promise<Metadata> {
+}) {
   const { topicId } = await params;
-  if (!UUID_RE.test(topicId)) return { title: "Topic Not Found" };
+  if (!UUID_RE.test(topicId)) {
+    return createDynamicRouteMetadata("/research", {
+      title: "Topic Not Found",
+      description: "The requested research topic could not be found.",
+      letter: "Rs",
+    });
+  }
 
   const topic = await getTopicServer(topicId);
-  if (!topic) return { title: "Topic Not Found" };
+  if (!topic) {
+    return createDynamicRouteMetadata("/research", {
+      title: "Topic Not Found",
+      description: "The requested research topic could not be found.",
+      letter: "Rs",
+    });
+  }
 
-  const title = topic.name;
-  const description = topic.description || `Research topic: ${topic.name}`;
-  const socialTitle = `${title} | AI Matrx Research`;
-
-  return generateFaviconMetadata(
-    "/research",
-    {
-      title: `${title} — AI Matrx`,
-      description,
-      alternates: { canonical: `/research/topics/${topicId}` },
-      openGraph: {
-        title: socialTitle,
-        description,
-        type: "website",
-        siteName: "AI Matrx",
-      },
-      twitter: {
-        card: "summary",
-        title: socialTitle,
-        description,
-      },
-    },
-    "Rs",
-  );
+  return createDynamicRouteMetadata("/research", {
+    title: topic.name,
+    description:
+      topic.description?.slice(0, 120) || `Research topic: ${topic.name}`,
+    letter: "Rs",
+  });
 }
 
 export default async function ResearchTopicLayout({

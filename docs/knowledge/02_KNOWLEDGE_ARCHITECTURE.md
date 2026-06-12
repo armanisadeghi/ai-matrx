@@ -6,7 +6,7 @@
 
 ## 0 · Core purpose
 
-Ingest **any** content → understand it (entities + concepts) → **tag it to the org's own scopes** (Client Ava, Case 123, Patient X) → so users and agents can search **semantically** ("back pain") *and* **structurally** ("everything for Client Ava, Case 123"), trust results **by provenance**, and keep raw data **forever**, re-processable when instructions change.
+Ingest **any** content → understand it (entities + concepts) → **tag it to the org's own scopes** (Client Ava, Case 123, Patient X) → so users and agents can search **semantically** ("back pain") *and* **structurally** ("everything for Client Ava, Case 123"), trust results **by provenance**, and **retain raw data by default** (never auto-dropped; always user-deletable), re-processable when instructions change.
 
 **The One Principle:** *Clean, trustworthy data is earned, not given.* Every real source arrives messy. The system's value **is** the chain of transformations that turns that mess into knowledge.
 
@@ -79,7 +79,7 @@ Each phase lists its goal, the concrete inventory, and the **Agents** hook — w
 ### Phase 5 · Admit to Hub — *the boundary*
 - **Goal:** permitted content enters the **Central Hub** with lineage preserved.
 - **Hub representations:** text · chunks · summaries · strings · structured schemas · vectors · indices · scoped items.
-- **Note:** this is where a future **seeding guard** would decide what becomes a seed — *undecided*, see §5.
+- **Note:** this is where the **seeding guard** decides what becomes a seed — governed by `04` (`seed_policy` / `can_be_seeded`; derived artifacts never auto-seed), see §5.
 - **Agents:** triage/gate agents that decide admission and tag known metadata on the way in.
 
 ### Phase 6 · Structure & associate — *(zoom-in: the 5-stage NER pipeline)*
@@ -96,7 +96,7 @@ Each phase lists its goal, the concrete inventory, and the **Agents** hook — w
 - **Tools:** agents, functions, structured tools.
 - **Output integrations:** export (xlsx), WordPress, Shopify, custom solutions, artifacts, render blocks (charts, flashcards, quizzes, tasks).
 - **Apps:** chat, voice chat, custom agent apps/widgets, mobile, Chrome extension, desktop.
-- **Reprocess loop ↻:** reach into the Hub, have an agent transform something, **put the result back** in a retained format — nothing consumed-and-lost.
+- **Reprocess loop ↻:** reach into the Hub, have an agent transform something, **put the result back** in a retained format — nothing is *consumed-and-lost* (auto-dropped). The user may still explicitly delete anything (warn + tombstone on anchors; §5).
 - **Agents:** generators (artifacts/flashcards/quizzes), publishers (Shopify/WordPress via MCP), reprocessing jobs, search agents.
 
 ---
@@ -118,14 +118,17 @@ User-defined dimensions — never hardcoded like Salesforce.
 ## 5 · Provenance & authority — the trust layer
 
 - **Content roles:** **Source** (knowledge enters) · **Destination** (knowledge produced) · **Utility** (operates/transforms, no truth of its own) · **Container** (operational — holds/groups other entities like tasks & projects, no truth of its own). Many are dual.
-- **Authority tiers:** `primary` (assumed factual) · `derived` (trusted process) · `unvalidated` (raw).
-- **Transformation rule:** `input_authority × utility_transformation = output_authority`.
+- **Authority tiers:** `primary` (assumed factual) · `derived` (trusted process) · `unvalidated` (raw) — a coarse lens over the canonical `04` Quality Vector.
+- **Transformation rule (intuition):** `input_authority × utility_transformation = output_authority`. The real math (log-odds, `preserve`/`additive_impact`/`targeted_transform`) is in `04`.
+- **Source of truth = two roles (DECIDED):** **provenance root** (immutable original; anchors `source_quality`; what verification trusts) + **canonical working copy** (the promoted derived artifact retrieval *prefers*; a flag, not a rewrite). Lineage is a **DAG** (`artifact_lineage_edges`), every chunk an artifact node; entities **anchor** to one artifact. Detail: [`04`](04_matrx_quality_model.md) §22.
 
-### `UNDECIDED` / future — do not encode yet
-Two things we *want* but have **not** decided. Don't build either as settled.
+### Scoring — DEFINED in [`04_matrx_quality_model.md`](04_matrx_quality_model.md)
+The single source of truth for all quality/trust/authority scoring. **Refer to `04`; never re-explain it here.** What it settles:
 
-1. **Trust / quality scoring.** Today we conflate distinct signals into one "confidence": **Source Prior**, **Extraction Confidence**, **Validation Deltas**, and the **Composite Trust** they should feed. **Extraction confidence is mechanical certainty, not truth.** Likely future state: keep extraction quality as a *gate only*; compute trust separately as source prior moved by validation deltas.
-2. **Seeding control (anti-sprouting).** We'd like a guard so a low-authority derived item (e.g. an AI-generated flashcard) can't be re-ingested as if it were an authoritative source and propagate errors. The mechanism (a seeding gate / promotion step / authority threshold) is undecided and depends on (1) — you can't gate on authority you can't score. *Suggestion:* gate on an explicit human-set `can_be_seeded` flag, not an auto score.
+1. **Quality / trust scoring — DECIDED.** Not one number — a **Quality Vector** (`source_quality`, `capture_quality`, `faithfulness`, `alignment`, `coverage`, `utility_value`) + purpose-dependent **`composite_quality`**, propagated in log-odds space. **Extraction confidence stays a mechanical capture gate, never the composite.**
+2. **Seeding control (anti-sprouting) — GOVERNED by `04`.** Hard rule: derived artifacts do **not** auto-become trusted seed sources; seeding requires explicit `seed_policy` / validation / human approval (`can_be_seeded`).
+
+> **Three score types, never conflated:** **Quality** (`04`) · **scope match confidence** ([`scope-association-pipeline.md`](scope-association-pipeline.md)) · **NER extraction confidence** (mechanical). What's left is *rollout* (engine, schema, default profiles, backfill — see `04` TASKS + [`00_MASTER_TASKLIST.md`](00_MASTER_TASKLIST.md)), not design.
 
 ---
 
@@ -142,8 +145,8 @@ Two things we *want* but have **not** decided. Don't build either as settled.
 
 STOP and flag for human review if code does any of the following:
 
-1. Treats a single confidence/trust number as a settled contract.
-2. Uses **extraction confidence** as if it were **trust/truth**.
+1. Explains or computes scoring **anywhere but [`04_matrx_quality_model.md`](04_matrx_quality_model.md)**, or collapses the Quality Vector into one overloaded number internally.
+2. Conflates the **three score types** — Quality (`04`) · scope match confidence · **extraction confidence** (mechanical certainty, *not* trust/quality).
 3. Writes a scope link straight into `ctx_context_item_values` **without** human confirmation (bypassing `scope_association_suggestions`).
 4. Tags an entity to a scope **type** instead of a scope **instance**.
 5. Defines scope items on a **scope** instead of on the **type**.
@@ -162,7 +165,7 @@ STOP and flag for human review if code does any of the following:
 2. **No-fit = red flag.** A module that maps nowhere means the map is missing something (tell us) or the module is doing something it shouldn't.
 3. **Respect the boundary (Phase 5).** Raw→text utilities live in 1–3; scope-linking/indexing in 6; retrieval/generation/egress in 7. Crossing concerns across the boundary is the most common drift.
 4. **Carry lineage everywhere** — including out through MCP egress. Dropping the origin record breaks the trust story.
-5. **Decide trust before encoding it** (§5 `UNDECIDED`).
+5. **Encode scoring per [`04_matrx_quality_model.md`](04_matrx_quality_model.md)** (§5) — it is the single source of truth; don't re-derive it.
 
 ---
 
@@ -173,4 +176,4 @@ The pipeline shape is settled; the **per-phase module inventory is not yet fille
 - **Map real modules to each phase** — name the actual packages/files (Python server, Admin, Local, Code, Chrome, Mobile, and the Matrx packages) that serve each of Phases 1–7.
 - **Assign phase ownership** — decide which package *owns* each phase and where the seams between them are.
 - **Map Hub representations to storage** — tie each Phase 5 representation (text · chunks · summaries · schemas · vectors · indices · scoped items) to its actual store.
-- **Resolve the trust-scoring question** (§5 `UNDECIDED`) before encoding any of it into schema or code.
+- **Roll out the quality model** (§5 → [`04_matrx_quality_model.md`](04_matrx_quality_model.md)) — design is settled; what's left is the engine module, DB schema, default utility profiles, and backfill.

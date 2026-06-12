@@ -38,6 +38,12 @@ export type CreateWorkbookArgs = {
   projectId?: string | null;
   taskId?: string | null;
   isPublic?: boolean;
+  /**
+   * cld_files.id of the source upload (XLSX / CSV blob). Set on the import
+   * flow so the lossless original is recoverable; FK is ON DELETE SET NULL,
+   * so deleting the file just nulls the link — the workbook survives.
+   */
+  originalFileId?: string | null;
 };
 
 export async function createWorkbook(
@@ -61,6 +67,7 @@ export async function createWorkbook(
       project_id: args.projectId ?? null,
       task_id: args.taskId ?? null,
       is_public: args.isPublic ?? false,
+      original_file_id: args.originalFileId ?? null,
       user_id: userData.user.id,
     })
     .select("*")

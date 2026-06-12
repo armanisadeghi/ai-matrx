@@ -7,6 +7,7 @@ import {
   TemplatesByRole,
 } from "@/features/content-templates/types/content-templates-db";
 import { createClient } from "@/utils/supabase/client";
+import { buildSearchOr } from "@/utils/supabase-search";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 
@@ -38,9 +39,7 @@ export async function fetchContentTemplates(
   }
 
   if (options.search) {
-    query = query.or(
-      `label.ilike.%${options.search}%,content.ilike.%${options.search}%`,
-    );
+    query = query.or(buildSearchOr(options.search, ["label", "content"]));
   }
 
   // Filter by tags if provided

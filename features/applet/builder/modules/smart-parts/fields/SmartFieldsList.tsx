@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -201,7 +202,8 @@ const SmartFieldsList = forwardRef<
           (field) =>
             field.label?.toLowerCase().includes(lowercaseTerm) ||
             field.description?.toLowerCase().includes(lowercaseTerm) ||
-            field.component?.toLowerCase().includes(lowercaseTerm),
+            field.component?.toLowerCase().includes(lowercaseTerm) ||
+            idMatchesQuery(field, lowercaseTerm),
         );
       }
 

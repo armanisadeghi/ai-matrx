@@ -1,7 +1,6 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { BattlePage } from "@/features/agent-comparison/components/BattlePage";
 
-export const metadata = { title: "Agent Battle | AI Matrx" };
 
 export default function AgentComparisonRoute() {
   return (

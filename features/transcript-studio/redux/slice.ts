@@ -117,6 +117,12 @@ export interface TranscriptStudioState {
    * conversation survives screen swaps within a session.
    */
   assistantConversationIdBySession: Record<string, string>;
+  /**
+   * Monotonic counter bumped only when a recording is KEPT (finalized, not
+   * discarded as too-short). UI watches this to offer the "send to agent"
+   * follow-up — so a discarded clip never triggers that prompt.
+   */
+  keptRecordingTick: number;
 }
 
 const DEFAULT_UI: StudioUiState = {
@@ -152,6 +158,7 @@ const initialState: TranscriptStudioState = {
   documentsById: {},
   documentIdsBySession: {},
   assistantConversationIdBySession: {},
+  keptRecordingTick: 0,
 };
 
 // ── Slice ─────────────────────────────────────────────────────────────
@@ -163,6 +170,9 @@ const slice = createSlice({
     sessionsListLoading(state) {
       state.fetchStatus = "loading";
       state.fetchError = null;
+    },
+    recordingKept(state) {
+      state.keptRecordingTick += 1;
     },
     sessionsListLoaded(state, action: PayloadAction<StudioSession[]>) {
       state.fetchStatus = "ready";
@@ -248,11 +258,12 @@ const slice = createSlice({
     ) {
       const { sessionId, segments } = action.payload;
       if (!state.rawById[sessionId]) state.rawById[sessionId] = {};
-      if (!state.rawIdsBySession[sessionId]) state.rawIdsBySession[sessionId] = [];
+      if (!state.rawIdsBySession[sessionId])
+        state.rawIdsBySession[sessionId] = [];
       const ids = state.rawIdsBySession[sessionId]!;
       const byId = state.rawById[sessionId]!;
       for (const seg of segments) {
-        if (byId[seg.id]) continue;          // de-duplicate (race on retry)
+        if (byId[seg.id]) continue; // de-duplicate (race on retry)
         byId[seg.id] = seg;
         ids.push(seg.id);
       }
@@ -474,10 +485,7 @@ const slice = createSlice({
         ids.push(s.id);
       }
     },
-    moduleSegmentsCleared(
-      state,
-      action: PayloadAction<{ sessionId: string }>,
-    ) {
+    moduleSegmentsCleared(state, action: PayloadAction<{ sessionId: string }>) {
       delete state.moduleSegmentsById[action.payload.sessionId];
       delete state.moduleSegmentIdsBySession[action.payload.sessionId];
     },
@@ -617,8 +625,7 @@ const slice = createSlice({
       action: PayloadAction<{ sessionId: string; document: StudioDocument }>,
     ) {
       const { sessionId, document } = action.payload;
-      if (!state.documentsById[sessionId])
-        state.documentsById[sessionId] = {};
+      if (!state.documentsById[sessionId]) state.documentsById[sessionId] = {};
       if (!state.documentIdsBySession[sessionId])
         state.documentIdsBySession[sessionId] = [];
       const byId = state.documentsById[sessionId]!;
@@ -641,6 +648,7 @@ export const {
   sessionsListLoading,
   sessionsListLoaded,
   sessionsListFailed,
+  recordingKept,
   sessionUpserted,
   sessionRemoved,
   activeSessionIdSet,

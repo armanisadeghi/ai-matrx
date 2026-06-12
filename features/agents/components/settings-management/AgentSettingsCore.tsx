@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,6 +70,7 @@ import {
   type ModelChangePlan,
 } from "./reconciliation/analyze";
 import { ModelChangeReconciliation } from "./reconciliation/ModelChangeReconciliation";
+import { NumberInput } from "./controls/NumberInput";
 import { SettingsJsonEditor } from "./json/SettingsJsonEditor";
 import { OutputSchemaTab } from "./output-schema/OutputSchemaTab";
 import { validateOutputSchema } from "./output-schema/validateOutputSchema";
@@ -103,19 +103,6 @@ type SettingsTab =
 // the architecture. The AgentSettingMediaPicker component is kept as a
 // building block for the user-input side (where the engineer-overridable
 // equivalents will be configured), not used here.
-
-// ── NumberInput ──────────────────────────────────────────────────────────────
-interface NumberInputProps {
-  value: number;
-  onChange: (val: number) => void;
-  onSliderChange?: (val: number) => void;
-  min?: number;
-  max?: number;
-  step?: number;
-  isInteger?: boolean;
-  disabled?: boolean;
-  withSlider?: boolean;
-}
 
 // ── FallbackValueInput ───────────────────────────────────────────────────────
 // Used when the selected model has no control schema for a key but the key
@@ -244,78 +231,6 @@ function FallbackValueInput({
       className="h-7 text-xs"
       placeholder={`Value for ${settingKey}`}
       style={{ fontSize: "16px" }}
-    />
-  );
-}
-
-function NumberInput({
-  value,
-  onChange,
-  onSliderChange,
-  min,
-  max,
-  step = 1,
-  isInteger = false,
-  disabled = false,
-  withSlider = false,
-}: NumberInputProps) {
-  const [draft, setDraft] = useState<string>(() => String(value));
-
-  useEffect(() => {
-    setDraft(String(value));
-  }, [value]);
-
-  const commit = (raw: string) => {
-    if (raw === "" || raw === "-") return;
-    const parsed = isInteger ? parseInt(raw, 10) : parseFloat(raw);
-    if (!isNaN(parsed)) onChange(parsed);
-    else setDraft(String(value));
-  };
-
-  if (withSlider) {
-    return (
-      <div className="grid grid-cols-[1fr_4rem] items-center gap-2">
-        <Slider
-          min={min}
-          max={max}
-          step={step}
-          value={[value]}
-          onValueChange={(val) => {
-            onSliderChange?.(val[0]);
-            setDraft(String(val[0]));
-          }}
-          disabled={disabled}
-        />
-        <Input
-          type="text"
-          inputMode="decimal"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={(e) => commit(e.target.value)}
-          onFocus={(e) => e.target.select()}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
-          }}
-          disabled={disabled}
-          className="h-7 px-2 text-xs"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <Input
-      type="text"
-      inputMode="decimal"
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={(e) => commit(e.target.value)}
-      onFocus={(e) => e.target.select()}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") e.currentTarget.blur();
-      }}
-      disabled={disabled}
-      className="h-7 px-2 text-xs w-full"
     />
   );
 }

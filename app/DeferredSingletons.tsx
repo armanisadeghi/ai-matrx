@@ -32,6 +32,7 @@
 import "@/features/window-panels/utils/lazy-bundle-guard";
 
 import dynamic from "next/dynamic";
+import { installThirdPartyNoiseFilter } from "@/lib/console-noise";
 import { useIdleReady, useIdleTask } from "@/utils/idle-scheduler";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { OverlayState } from "@/lib/redux/slices/overlaySlice";
@@ -49,6 +50,14 @@ import AdminFeatureProvider from "@/features/admin/AdminFeatureProvider";
 
 const LazyMessagingIsland = dynamic(
   () => import("@/features/shell/islands/LazyMessagingIsland"),
+  { ssr: false, loading: () => null },
+);
+
+// Global "you have a new knowledge-graph suggestion" nudge. Returns null until
+// it has something genuinely new (unacknowledged) to say, then fires a single
+// delayed sonner toast. Kept out of this file's static graph via next/dynamic.
+const LazyKgNewSuggestionNotifier = dynamic(
+  () => import("@/features/kg-suggestions/components/KgNewSuggestionNotifier"),
   { ssr: false, loading: () => null },
 );
 
@@ -116,6 +125,14 @@ const SYSTEM_BROKERS = [
 ];
 
 export default function DeferredSingletons() {
+  // Install the third-party dev-noise filter as early as possible on every
+  // authenticated route. The Filerobot image editor (which leaks
+  // styled-components props onto the DOM) mounts via several entry points —
+  // not just its edit-mode shell — so installing the filter only inside that
+  // shell missed the file-preview / org pages. Installing here covers them
+  // all. Idempotent + SSR-safe; see lib/console-noise.ts.
+  installThirdPartyNoiseFilter();
+
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
@@ -225,6 +242,7 @@ export default function DeferredSingletons() {
       <LegacyPromptOverlaysController />
       <LazyMessagingIsland />
       <AudioRecoveryToast />
+      <LazyKgNewSuggestionNotifier />
       <AuthSessionWatcher />
       <AnnouncementProvider />
       <AdminFeatureProvider />

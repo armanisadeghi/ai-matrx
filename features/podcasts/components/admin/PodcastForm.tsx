@@ -389,45 +389,11 @@ export function EpisodeForm({
       if (episode) {
         const updated = await podcastService.updateEpisode(episode.id, payload);
         const show = shows.find((s) => s.id === updated.show_id) ?? null;
-        saved = {
-          ...updated,
-          show: show
-            ? {
-                id: show.id,
-                slug: show.slug,
-                title: show.title,
-                image_url: show.image_url,
-                og_image_url: show.og_image_url,
-                thumbnail_url: show.thumbnail_url,
-                description: show.description,
-                author: show.author,
-                is_published: show.is_published,
-                created_at: show.created_at,
-                updated_at: show.updated_at,
-              }
-            : null,
-        };
+        saved = { ...updated, show };
       } else {
         const created = await podcastService.createEpisode(payload);
         const show = shows.find((s) => s.id === created.show_id) ?? null;
-        saved = {
-          ...created,
-          show: show
-            ? {
-                id: show.id,
-                slug: show.slug,
-                title: show.title,
-                image_url: show.image_url,
-                og_image_url: show.og_image_url,
-                thumbnail_url: show.thumbnail_url,
-                description: show.description,
-                author: show.author,
-                is_published: show.is_published,
-                created_at: show.created_at,
-                updated_at: show.updated_at,
-              }
-            : null,
-        };
+        saved = { ...created, show };
       }
       onSaved(saved);
     } catch (err: unknown) {

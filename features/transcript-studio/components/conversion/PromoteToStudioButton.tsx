@@ -47,7 +47,7 @@ export function PromoteToStudioButton({
         result.payload?.sessionId
       ) {
         router.push(
-          `/transcription/studio?session=${result.payload.sessionId}`,
+          `/transcripts/studio?session=${result.payload.sessionId}`,
         );
       }
     } finally {

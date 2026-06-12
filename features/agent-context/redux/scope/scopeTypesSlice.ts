@@ -9,6 +9,7 @@ import {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { ScopeType } from "./types";
+import { isUuid } from "@/features/scope-system/utils/slugify";
 
 const scopeTypesAdapter = createEntityAdapter<ScopeType>({
   sortComparer: (a, b) => a.sort_order - b.sort_order,
@@ -49,6 +50,8 @@ export const createScopeType = createAsyncThunk(
     sort_order?: number;
     max_assignments?: number;
     default_variable_keys?: string[];
+    color?: string;
+    slug?: string;
   }) => {
     const { data, error } = await supabase.rpc("create_scope_type", {
       p_org_id: params.org_id,
@@ -60,6 +63,8 @@ export const createScopeType = createAsyncThunk(
       p_sort_order: params.sort_order ?? 0,
       p_max_assignments: params.max_assignments ?? undefined,
       p_default_variable_keys: params.default_variable_keys ?? [],
+      p_color: params.color ?? undefined,
+      p_slug: params.slug ?? undefined,
     });
     if (error) throw error;
     return data as ScopeType;
@@ -76,6 +81,8 @@ export const updateScopeType = createAsyncThunk(
     description?: string;
     sort_order?: number;
     max_assignments?: number;
+    color?: string;
+    slug?: string;
   }) => {
     const { data, error } = await supabase.rpc("update_scope_type", {
       p_type_id: params.type_id,
@@ -85,6 +92,8 @@ export const updateScopeType = createAsyncThunk(
       p_description: params.description,
       p_sort_order: params.sort_order,
       p_max_assignments: params.max_assignments,
+      p_color: params.color,
+      p_slug: params.slug,
     });
     if (error) throw error;
     return data as ScopeType;
@@ -170,12 +179,34 @@ export const selectScopeTypeIds = adapterSelectors.selectIds;
 
 export const selectScopeTypesLoading = (state: StateWithScopeTypes) =>
   state.scopeTypes.loading;
+
+/** True once `fetchScopeTypes(orgId)` has completed — lets callers tell "loading" from "not found". */
+export const selectScopeTypesLoadedForOrg = (
+  state: StateWithScopeTypes,
+  orgId: string,
+) => state.scopeTypes.loadedOrgs.includes(orgId);
 export const selectScopeTypesError = (state: StateWithScopeTypes) =>
   state.scopeTypes.error;
 
 export const selectScopeTypesByOrg = createSelector(
   [selectAllScopeTypes, (_state: StateWithScopeTypes, orgId: string) => orgId],
   (types, orgId) => types.filter((t) => t.organization_id === orgId),
+);
+
+/**
+ * Resolve a route segment that is EITHER a UUID or a kebab slug to a scope type
+ * within the given org. Slugs are unique per org; ids are globally unique.
+ */
+export const selectScopeTypeBySlugOrId = createSelector(
+  [
+    selectAllScopeTypes,
+    (_s: StateWithScopeTypes, orgId: string) => orgId,
+    (_s: StateWithScopeTypes, _orgId: string, slugOrId: string) => slugOrId,
+  ],
+  (types, orgId, slugOrId) =>
+    isUuid(slugOrId)
+      ? types.find((t) => t.id === slugOrId)
+      : types.find((t) => t.organization_id === orgId && t.slug === slugOrId),
 );
 
 export const selectTopLevelScopeTypes = createSelector(

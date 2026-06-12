@@ -12,6 +12,7 @@
 import type { CloudFile } from "@/features/files/types";
 import { classify } from "../utils/classify";
 import { pythonShareUrl } from "../utils/python-base";
+import { createTrackedObjectUrl } from "../utils/object-url-registry";
 import {
   EPHEMERAL_CAPS,
   EXTERNAL_CAPS,
@@ -68,7 +69,7 @@ export function normalize(source: FileSource): NormalizedFile {
 // ---------------------------------------------------------------------------
 
 function fromBlob(source: Extract<FileSource, { kind: "blob" }>): NormalizedFile {
-  const url = URL.createObjectURL(source.blob);
+  const url = createTrackedObjectUrl(source.blob);
   const meta = classify({
     fileName: source.fileName,
     mime: source.mime ?? source.blob.type,
@@ -86,7 +87,7 @@ function fromBlob(source: Extract<FileSource, { kind: "blob" }>): NormalizedFile
 }
 
 function fromFile(source: Extract<FileSource, { kind: "file" }>): NormalizedFile {
-  const url = URL.createObjectURL(source.file);
+  const url = createTrackedObjectUrl(source.file);
   const meta = classify({
     fileName: source.file.name,
     mime: source.file.type,
@@ -107,7 +108,7 @@ function fromBuffer(
   source: Extract<FileSource, { kind: "buffer" }>,
 ): NormalizedFile {
   const blob = bufferToBlob(source.buffer, source.mime);
-  const url = URL.createObjectURL(blob);
+  const url = createTrackedObjectUrl(blob);
   const meta = classify({
     fileName: source.fileName,
     mime: source.mime,

@@ -475,6 +475,10 @@ const MultiFileSmartCodeEditorWindow = dynamic(
     ),
   { ssr: false },
 );
+const DiffViewerWindow = dynamic(
+  () => import("@/features/window-panels/windows/DiffViewerWindow"),
+  { ssr: false },
+);
 const NewsWindow = dynamic(
   () => import("@/features/window-panels/windows/NewsWindow"),
   { ssr: false },
@@ -1222,6 +1226,9 @@ export default function OverlayController() {
     ),
     curatedIconPickerWindow: useAppSelector((s) =>
       selectOpenInstances(s, "curatedIconPickerWindow"),
+    ),
+    diffViewerWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "diffViewerWindow"),
     ),
     fullScreenEditor: useAppSelector((s) =>
       selectOpenInstances(s, "fullScreenEditor"),
@@ -3190,6 +3197,53 @@ export default function OverlayController() {
         );
       })}
 
+      {/* diffViewerWindow — multi-instance */}
+      {instancesById.diffViewerWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        return (
+          <DiffViewerWindow
+            key={inst.instanceId}
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : inst.instanceId
+            }
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "diffViewerWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            original={typeof data?.original === "string" ? data.original : ""}
+            modified={typeof data?.modified === "string" ? data.modified : ""}
+            originalLabel={
+              typeof data?.originalLabel === "string"
+                ? data.originalLabel
+                : undefined
+            }
+            modifiedLabel={
+              typeof data?.modifiedLabel === "string"
+                ? data.modifiedLabel
+                : undefined
+            }
+            title={typeof data?.title === "string" ? data.title : null}
+            engine={
+              data?.engine === "light" ||
+              data?.engine === "monaco" ||
+              data?.engine === "auto"
+                ? data.engine
+                : "auto"
+            }
+            language={
+              typeof data?.language === "string" ? data.language : undefined
+            }
+            defaultView={data?.defaultView === "inline" ? "inline" : "split"}
+          />
+        );
+      })}
+
       {/* newsWindow */}
       {(() => {
         const isOpen = isOpenById.newsWindow;
@@ -3212,6 +3266,14 @@ export default function OverlayController() {
         return (
           <NotesBetaWindow
             key={inst.instanceId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "notesBetaWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
             title={typeof data?.title === "string" ? data.title : undefined}
             windowInstanceId={
               typeof data?.windowInstanceId === "string"
@@ -3233,6 +3295,7 @@ export default function OverlayController() {
         return (
           <NotesWindow
             title={typeof data?.title === "string" ? data.title : undefined}
+            onClose={() => dispatch(closeOverlay({ overlayId: "notesWindow" }))}
             initialTabs={
               Array.isArray(data?.initialTabs) &&
               data.initialTabs.every((v) => typeof v === "string")

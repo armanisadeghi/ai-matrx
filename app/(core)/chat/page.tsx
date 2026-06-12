@@ -1,17 +1,4 @@
-import type { Metadata } from "next";
 import ChatLanding from "@/features/auth/components/module-landing/landings/ChatLanding";
-
-export const metadata: Metadata = {
-  title: "Chat — AI Matrx",
-  description:
-    "Chat with real agents — not just a chat box. Drop in files, run agentic workflows, branch and fork, replay every step. Free to start.",
-  openGraph: {
-    title: "Chat with real agents — AI Matrx",
-    description:
-      "Drop in files, run agentic workflows, branch and fork, replay every step.",
-    type: "website",
-  },
-};
 
 /**
  * `/chat` is the public-facing marketing surface for the Chat module. The
@@ -25,10 +12,5 @@ export const metadata: Metadata = {
  * meaningful interaction.
  */
 export default function ChatPage() {
-  return (
-    <div className="h-dvh w-full overflow-y-auto bg-textured">
-      <div style={{ height: "var(--shell-header-h, 2.75rem)" }} />
-      <ChatLanding />
-    </div>
-  );
+  return <ChatLanding />;
 }

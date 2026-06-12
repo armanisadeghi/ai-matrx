@@ -40,6 +40,11 @@ export async function POST(
         {
           method: "POST",
           headers: orchestratorJsonHeaders(lookup.orchestrator),
+          // Bounded: an orchestrator hang must surface as our structured 502
+          // below — NOT as Vercel's plain-text runtime-timeout page, which
+          // breaks every JSON-parsing client (observed 2026-06-10, 504 on
+          // this route → "Unexpected token 'A'… is not valid JSON" in the UI).
+          signal: AbortSignal.timeout(25_000),
         },
       );
 
@@ -62,8 +67,16 @@ export async function POST(
       return NextResponse.json({ ...result, sandbox_id: lookup.sandboxId });
     } catch (fetchError) {
       console.error("Orchestrator connection failed:", fetchError);
+      const timedOut =
+        fetchError instanceof Error &&
+        (fetchError.name === "TimeoutError" ||
+          fetchError.name === "AbortError");
       return NextResponse.json(
-        { error: "Sandbox orchestrator is not reachable" },
+        {
+          error: timedOut
+            ? "The sandbox orchestrator timed out generating SSH credentials — try again."
+            : "Sandbox orchestrator is not reachable",
+        },
         { status: 502 },
       );
     }

@@ -6,9 +6,21 @@ description: Wire matrx-frontend into the matrx-extend Chrome extension's bridge
 # Connect matrx-extend (frontend side)
 
 This skill is the matrx-frontend-side how-to for the cross-repo bridge to
-matrx-extend. The runtime channel does not exist yet — Phase 2 of the
-master plan ships it. For the full architectural reference and master
-spec, see [`docs/MATRX_EXTEND_CONNECTION.md`](../../../docs/MATRX_EXTEND_CONNECTION.md).
+matrx-extend. The runtime channel **has shipped** (Phase 2): the Supabase
+Broadcast subscriber, the `openPanel` handler, and the reference inbound
+API route all exist (see [§ File index](#file-index)). For the full
+architectural reference and master spec, see
+[`docs/MATRX_EXTEND_CONNECTION.md`](../../../docs/MATRX_EXTEND_CONNECTION.md).
+
+> **Wire contract — do not drift.** The Supabase Broadcast `event` field
+> is `"FRONTEND_RPC"` (`BRIDGE_BROADCAST_EVENT` in
+> `lib/types/bridge-envelope.ts`). The extension MUST listen/publish on
+> the exact same event string (`BROADCAST_EVENT_NAME` in
+> `matrx-extend/src/lib/frontend-bridge/broadcast.ts`). These two
+> constants once disagreed (`"FRONTEND_RPC"` vs `"rpc"`), which silently
+> dropped every cross-machine envelope — both sides joined the same
+> channel but listened on different events. If a round-trip goes silent,
+> check this first.
 
 ---
 
@@ -56,7 +68,7 @@ bespoke RPC.
 
 ## Quick start — adding a new `FRONTEND_RPC` action
 
-The bridge ships in Phase 2; this is the planned shape.
+The bridge has shipped; this is the live shape.
 
 1. **Pick a dot-namespaced action name** —
    `conversation.appendMessage`, `panel.open`, `task.create`. Treat
@@ -95,18 +107,20 @@ The bridge ships in Phase 2; this is the planned shape.
 | `features/window-panels/url-sync/initUrlHydration.ts` | `registerPanelHydrator(...)` for each `urlSync.key`. |
 | `app/api/agent/feedback/route.ts` | Reference Bearer-`AGENT_API_KEY` route for headless calls. |
 | `app/api/mcp/[transport]/route.ts` | Reference dual-auth route (cookie OR Bearer, with `?token=` fallback). |
-| `app/api/extension/append-message/route.ts` | **Planned (Phase 2 — does not exist).** First headless route the bridge will add. |
+| `app/api/extension/append-message/route.ts` | **Live.** Reference headless inbound route for the extension. |
+| `lib/extension-bridge/ExtensionBridgeSubscriber.tsx` | **Live.** Top-level subscriber mounted in `app/Providers.tsx`; routes inbound `openPanel` envelopes to the handler and replies on the same channel. |
+| `lib/extension-bridge/openPanelHandler.ts` | **Live.** Validates `openPanel` payloads and dispatches `openOverlay`. |
+| `lib/types/bridge-envelope.ts` | **Live.** Canonical wire-format module — channel name, `BRIDGE_BROADCAST_EVENT`, envelope/response schemas. Import from here, never re-declare. |
 
-### Known dead references (do NOT build on these)
+### Dead reference (do NOT build on this)
 
-These two fragments mention `chrome-extension` but are not the bridge.
-Future agents see them and think the bridge already exists; it does
-not. Leave them alone in unrelated PRs.
+`utils/errorContext.ts:10` is a defensive stack-frame filter that strips
+`chrome-extension://` URLs from reported errors. It is not part of the
+bridge — leave it alone in unrelated PRs.
 
-- `features/surfaces/data/surface-candidates.ts:24` —
-  `chrome-extension` in the `client_name` type union, no surface declared.
-- `utils/errorContext.ts:10` — defensive stack-frame filter for
-  `chrome-extension://` URLs in reported errors.
+(The `chrome-extension` entry in
+`features/surfaces/data/surface-candidates.ts` is now a real surface
+candidate — `chrome-extension/agent-bridge` — not a dead reference.)
 
 ---
 
@@ -131,9 +145,14 @@ Channel name typo or the receiver isn't subscribed. Verify by:
 
 1. Both sides MUST use the exact same channel string —
    `matrx-extension-bridge:<userId>`. No prefix drift.
-2. Run `client.getChannels()` on both sides to confirm the channel is
+2. Both sides MUST use the exact same Broadcast `event` string —
+   `"FRONTEND_RPC"` (`BRIDGE_BROADCAST_EVENT` here /
+   `BROADCAST_EVENT_NAME` in the extension). Supabase filters delivery by
+   `event`, so a mismatch drops every message even though the channel is
+   shared. This is the bug that kept Phase 2 dark until 2026-06.
+3. Run `client.getChannels()` on both sides to confirm the channel is
    joined. Broadcast silently drops messages with no subscribers.
-3. The subscriber must call `.subscribe()` after `.on('broadcast', ...)`.
+4. The subscriber must call `.subscribe()` after `.on('broadcast', ...)`.
    Forgetting this is a common silent failure.
 
 ### Loud — 401 Unauthorized on the planned headless API route

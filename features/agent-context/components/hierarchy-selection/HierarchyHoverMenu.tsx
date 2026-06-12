@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import * as icons from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/utils/cn";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -344,7 +345,8 @@ export function HierarchyHoverMenu({
           item.name.toLowerCase().includes(q) ||
           item.scopeTypeLabel?.toLowerCase().includes(q) ||
           item.orgName.toLowerCase().includes(q) ||
-          item.projectName?.toLowerCase().includes(q),
+          item.projectName?.toLowerCase().includes(q) ||
+          idMatchesQuery(item, q),
       )
     : flatItems;
 

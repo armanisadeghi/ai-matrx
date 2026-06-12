@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/utils/supabase/client";
+import { buildSearchOr } from "@/utils/supabase-search";
 import type { Database } from "@/types/database.types";
 
 type Tables = Database["public"]["Tables"];
@@ -116,7 +117,7 @@ export async function searchToolsForBundle(query: string): Promise<
 > {
   let q = sb().from("tool_def").select("id, name, description").eq("is_active", true);
   if (query.trim()) {
-    q = q.ilike("name", `%${query.trim()}%`);
+    q = q.or(buildSearchOr(query, ["name"]));
   }
   const { data, error } = await q.order("name", { ascending: true }).limit(50);
   if (error) throw error;

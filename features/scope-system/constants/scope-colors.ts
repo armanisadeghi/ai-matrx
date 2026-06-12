@@ -1,68 +1,194 @@
 /**
  * Tinted color palette used to render scope-type icon pills.
- * Each entry pairs a tailwind background tint and a text/icon foreground
- * that works in both light and dark mode.
+ * Each entry pairs a tailwind background tint, a text/icon foreground, and a
+ * ring tint — all working in both light and dark mode.
  *
- * Color picker in AddScopeModal lets users override; otherwise we hash the
- * scope-type id into a deterministic color so each scope reads distinctly.
+ * This is the single source of truth for scope-type colors: the `ScopeColorPicker`
+ * iterates exactly this list, so every color a user can pick is guaranteed to
+ * resolve here (no silent fallback to a hashed color). The class strings are
+ * written as literals on purpose so Tailwind's scanner generates them.
+ *
+ * If no color is stored, `resolveColor` hashes the scope-type id into a
+ * deterministic color so each scope reads distinctly.
  */
 export interface ScopeColor {
   key: string;
+  /** Human label shown in the picker. */
+  label: string;
+  /** Solid swatch fill (the dot shown in the picker). */
+  swatch: string;
   bg: string;
   fg: string;
   ring: string;
+  /** Tinted border (stronger than `ring`) for outlining a card by scope type. */
+  border: string;
 }
 
 export const SCOPE_COLORS: ScopeColor[] = [
   {
-    key: "teal",
-    bg: "bg-teal-50 dark:bg-teal-950/40",
-    fg: "text-teal-600 dark:text-teal-400",
-    ring: "ring-teal-500/20",
-  },
-  {
-    key: "violet",
-    bg: "bg-violet-50 dark:bg-violet-950/40",
-    fg: "text-violet-600 dark:text-violet-400",
-    ring: "ring-violet-500/20",
-  },
-  {
-    key: "amber",
-    bg: "bg-amber-50 dark:bg-amber-950/40",
-    fg: "text-amber-600 dark:text-amber-400",
-    ring: "ring-amber-500/20",
+    key: "blue",
+    label: "Blue",
+    swatch: "bg-blue-500",
+    bg: "bg-blue-50 dark:bg-blue-950/40",
+    fg: "text-blue-600 dark:text-blue-400",
+    ring: "ring-blue-500/20",
+    border: "border-blue-500/40",
   },
   {
     key: "sky",
+    label: "Sky",
+    swatch: "bg-sky-500",
     bg: "bg-sky-50 dark:bg-sky-950/40",
     fg: "text-sky-600 dark:text-sky-400",
     ring: "ring-sky-500/20",
+    border: "border-sky-500/40",
+  },
+  {
+    key: "cyan",
+    label: "Cyan",
+    swatch: "bg-cyan-500",
+    bg: "bg-cyan-50 dark:bg-cyan-950/40",
+    fg: "text-cyan-600 dark:text-cyan-400",
+    ring: "ring-cyan-500/20",
+    border: "border-cyan-500/40",
+  },
+  {
+    key: "teal",
+    label: "Teal",
+    swatch: "bg-teal-500",
+    bg: "bg-teal-50 dark:bg-teal-950/40",
+    fg: "text-teal-600 dark:text-teal-400",
+    ring: "ring-teal-500/20",
+    border: "border-teal-500/40",
   },
   {
     key: "emerald",
+    label: "Emerald",
+    swatch: "bg-emerald-500",
     bg: "bg-emerald-50 dark:bg-emerald-950/40",
     fg: "text-emerald-600 dark:text-emerald-400",
     ring: "ring-emerald-500/20",
+    border: "border-emerald-500/40",
+  },
+  {
+    key: "green",
+    label: "Green",
+    swatch: "bg-green-500",
+    bg: "bg-green-50 dark:bg-green-950/40",
+    fg: "text-green-600 dark:text-green-400",
+    ring: "ring-green-500/20",
+    border: "border-green-500/40",
+  },
+  {
+    key: "lime",
+    label: "Lime",
+    swatch: "bg-lime-500",
+    bg: "bg-lime-50 dark:bg-lime-950/40",
+    fg: "text-lime-600 dark:text-lime-400",
+    ring: "ring-lime-500/20",
+    border: "border-lime-500/40",
+  },
+  {
+    key: "amber",
+    label: "Amber",
+    swatch: "bg-amber-500",
+    bg: "bg-amber-50 dark:bg-amber-950/40",
+    fg: "text-amber-600 dark:text-amber-400",
+    ring: "ring-amber-500/20",
+    border: "border-amber-500/40",
+  },
+  {
+    key: "orange",
+    label: "Orange",
+    swatch: "bg-orange-500",
+    bg: "bg-orange-50 dark:bg-orange-950/40",
+    fg: "text-orange-600 dark:text-orange-400",
+    ring: "ring-orange-500/20",
+    border: "border-orange-500/40",
+  },
+  {
+    key: "red",
+    label: "Red",
+    swatch: "bg-red-500",
+    bg: "bg-red-50 dark:bg-red-950/40",
+    fg: "text-red-600 dark:text-red-400",
+    ring: "ring-red-500/20",
+    border: "border-red-500/40",
   },
   {
     key: "rose",
+    label: "Rose",
+    swatch: "bg-rose-500",
     bg: "bg-rose-50 dark:bg-rose-950/40",
     fg: "text-rose-600 dark:text-rose-400",
     ring: "ring-rose-500/20",
+    border: "border-rose-500/40",
   },
   {
-    key: "indigo",
-    bg: "bg-indigo-50 dark:bg-indigo-950/40",
-    fg: "text-indigo-600 dark:text-indigo-400",
-    ring: "ring-indigo-500/20",
+    key: "pink",
+    label: "Pink",
+    swatch: "bg-pink-500",
+    bg: "bg-pink-50 dark:bg-pink-950/40",
+    fg: "text-pink-600 dark:text-pink-400",
+    ring: "ring-pink-500/20",
+    border: "border-pink-500/40",
+  },
+  {
+    key: "fuchsia",
+    label: "Fuchsia",
+    swatch: "bg-fuchsia-500",
+    bg: "bg-fuchsia-50 dark:bg-fuchsia-950/40",
+    fg: "text-fuchsia-600 dark:text-fuchsia-400",
+    ring: "ring-fuchsia-500/20",
+    border: "border-fuchsia-500/40",
+  },
+  {
+    key: "violet",
+    label: "Violet",
+    swatch: "bg-violet-500",
+    bg: "bg-violet-50 dark:bg-violet-950/40",
+    fg: "text-violet-600 dark:text-violet-400",
+    ring: "ring-violet-500/20",
+    border: "border-violet-500/40",
   },
   {
     key: "purple",
+    label: "Purple",
+    swatch: "bg-purple-500",
     bg: "bg-purple-50 dark:bg-purple-950/40",
     fg: "text-purple-600 dark:text-purple-400",
     ring: "ring-purple-500/20",
+    border: "border-purple-500/40",
+  },
+  {
+    key: "indigo",
+    label: "Indigo",
+    swatch: "bg-indigo-500",
+    bg: "bg-indigo-50 dark:bg-indigo-950/40",
+    fg: "text-indigo-600 dark:text-indigo-400",
+    ring: "ring-indigo-500/20",
+    border: "border-indigo-500/40",
+  },
+  {
+    key: "slate",
+    label: "Slate",
+    swatch: "bg-slate-500",
+    bg: "bg-slate-100 dark:bg-slate-800/50",
+    fg: "text-slate-600 dark:text-slate-300",
+    ring: "ring-slate-500/20",
+    border: "border-slate-500/40",
   },
 ];
+
+/**
+ * Universal surface for scope-type / context-item icon pills.
+ *
+ * We deliberately do NOT tint the icon container with the scope color — the
+ * color lives on the icon glyph (`fg`) and the ring (`ring`). The background
+ * stays neutral and predictable everywhere this concept appears, so a colored
+ * icon reads clearly instead of fighting a same-hue background tint.
+ */
+export const SCOPE_ICON_SURFACE = "bg-muted";
 
 export function pickColorForId(id: string): ScopeColor {
   let hash = 0;

@@ -37,8 +37,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
-import type { BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
+import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
+import { PdfPresetPicker } from "@/features/pdf/components/PdfPresetPicker";
+import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
+import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 
 interface Props {
   fileId: string;
@@ -53,6 +56,7 @@ type OpKey =
 
 export function DocumentOpsPanel({ fileId }: Props) {
   const api = usePdfDemoApi();
+  const downloadBlob = useDownloadBlob();
   const [busy, setBusy] = useState<OpKey | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ op: OpKey; result: BinaryResult } | null>(null);
@@ -69,7 +73,10 @@ export function DocumentOpsPanel({ fileId }: Props) {
     setError(null);
     setResult(null);
     try {
-      const r = await api.postPdfBlob(endpoint, { cld_id: fileId, ...body });
+      const r = await api.postPdfBlob(endpoint, {
+        ...buildPdfSourceFromFileId(fileId),
+        ...body,
+      });
       setResult({ op, result: r });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -80,14 +87,7 @@ export function DocumentOpsPanel({ fileId }: Props) {
 
   function downloadResult() {
     if (!result) return;
-    const url = URL.createObjectURL(result.result.blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = result.result.filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(result.result);
   }
 
   return (
@@ -227,6 +227,8 @@ export function DocumentOpsPanel({ fileId }: Props) {
             {error}
           </div>
         ) : null}
+
+        <PdfPresetPicker fileId={fileId} className="pt-1" />
       </div>
     </div>
   );

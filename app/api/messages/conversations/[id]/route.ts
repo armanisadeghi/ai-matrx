@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { z } from 'zod';
+import { isDurableMediaUrl } from '@/lib/media/durability';
 
 // ============================================
 // Validation Schemas
@@ -20,7 +21,17 @@ const updateConversationSchema = z.object({
   is_muted: z.boolean().optional(),
   is_archived: z.boolean().optional(),
   group_name: z.string().optional(),
-  group_image_url: z.string().url().optional(),
+  // A group image is rendered for every OTHER member — a signed, expiring S3
+  // link would break for them days later. Reject it at the edge; callers must
+  // pass a durable CDN/public URL (or upload via the file handler first).
+  group_image_url: z
+    .string()
+    .url()
+    .refine(isDurableMediaUrl, {
+      message:
+        'group_image_url must be a durable public/CDN URL, not an expiring signed S3 link.',
+    })
+    .optional(),
 });
 
 // ============================================

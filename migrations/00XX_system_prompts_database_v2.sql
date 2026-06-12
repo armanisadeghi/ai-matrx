@@ -1,3 +1,4 @@
+-- migrate: skip: ABANDONED design — the DB-driven system-prompt hierarchy (system_prompt_categories / system_prompt_functionalities / system_prompts_with_hierarchy) was never adopted. Verified 2026-06-08: 0 code references, none of these objects exist in the live DB, and the live lib/services/system-prompts-service.ts uses the flat system_prompts table instead. Do not apply.
 -- =====================================================
 -- System Prompts Database V2: Visual Hierarchy & Database-Driven Functionalities
 -- =====================================================

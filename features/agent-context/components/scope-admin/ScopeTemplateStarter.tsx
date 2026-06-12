@@ -117,14 +117,6 @@ const SCOPE_TYPE_PRESETS: Record<string, ScopeTypePreset[]> = {
       color: "#8b5cf6",
       scopes: ["Core Team", "Support Team", "Leadership"],
     },
-    {
-      label_singular: "Priority",
-      label_plural: "Priorities",
-      icon: "Flag",
-      color: "#ef4444",
-      max_assignments: 1,
-      scopes: ["Critical", "High", "Medium", "Low"],
-    },
   ],
   web_development_agency: [
     {
@@ -240,14 +232,6 @@ const SCOPE_TYPE_PRESETS: Record<string, ScopeTypePreset[]> = {
       color: "#8b5cf6",
       max_assignments: 1,
       scopes: ["Individual", "Small Business", "Corporation", "Government"],
-    },
-    {
-      label_singular: "Priority",
-      label_plural: "Priorities",
-      icon: "Flag",
-      color: "#ef4444",
-      max_assignments: 1,
-      scopes: ["Urgent", "High", "Normal", "Low"],
     },
   ],
   workers_comp: [

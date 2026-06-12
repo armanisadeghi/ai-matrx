@@ -52,6 +52,8 @@ import type { KgColorBy, KgSizeBy } from "../cytoscape/analysis";
 import { KG_LAYOUTS, type KgLayoutId } from "../cytoscape/layouts";
 import { KgGraphSidePanel } from "./KgGraphSidePanel";
 import { KgGraphLegend } from "./KgGraphLegend";
+import { KgScopeFilter } from "./KgScopeFilter";
+import { KgOrgFilter } from "./KgOrgFilter";
 
 // cytoscape + extensions touch window at import → must be client-only.
 const KgGraphCytoscape = dynamic(() => import("./KgGraphCytoscape"), {
@@ -67,6 +69,10 @@ export interface KgGraphCanvasProps {
   mode: KgGraphMode;
   scopeId?: string;
   organizationId?: string | null;
+  /** Org mode only: seed the scope filter from the route (`?scope=`). */
+  initialScopeId?: string | null;
+  /** Org mode only: restrict the scope picker to one type (`?scopeType=`). */
+  initialScopeTypeId?: string | null;
 }
 
 const ALL_KINDS = "__all__";
@@ -89,6 +95,8 @@ export function KgGraphCanvas({
   mode,
   scopeId,
   organizationId,
+  initialScopeId = null,
+  initialScopeTypeId = null,
 }: KgGraphCanvasProps) {
   const isMobile = useIsMobile();
   const [payload, setPayload] = useState<GraphPayload | null>(null);
@@ -103,13 +111,33 @@ export function KgGraphCanvas({
   // Visualization controls.
   const [detail, setDetail] = useState<KgDetailId>(KG_DEFAULT_DETAIL);
   const [layoutId, setLayoutId] = useState<KgLayoutId>("fcose");
-  const [colorBy, setColorBy] = useState<KgColorBy>("kind");
-  const [sizeBy, setSizeBy] = useState<KgSizeBy>("connections");
+  // Default to the structural encodings: colour by cluster tier (the tree), size
+  // by importance (PageRank). Entity-kind colouring (concept/date/person…) is
+  // rarely what matters, so it's an opt-in alternative, not the default.
+  const [colorBy, setColorBy] = useState<KgColorBy>("tier");
+  const [sizeBy, setSizeBy] = useState<KgSizeBy>("importance");
   const [search, setSearch] = useState("");
   const [communityCount, setCommunityCount] = useState(0);
   // Hide low-value scaffolding kinds (phone/email/url/address) by default so the
   // signal isn't drowned in document noise — toggleable.
   const [hideNoise, setHideNoise] = useState(true);
+  // Org filter (org mode): always visible + changeable so the user is never stuck
+  // on a route-provided org. Seeded from the prop (route `?org=` / active org),
+  // re-synced when that changes.
+  const [orgFilter, setOrgFilter] = useState<string | null>(
+    organizationId ?? null,
+  );
+  useEffect(() => {
+    setOrgFilter(organizationId ?? null);
+  }, [organizationId]);
+
+  // Org mode: narrow the graph to one scope's tagged sources (manual picker or
+  // the `?scope=` route param). In scope mode the route's scope is fixed.
+  const [scopeFilter, setScopeFilter] = useState<string | null>(initialScopeId);
+
+  // The scope actually driving the fetch: the route's fixed scope in scope mode,
+  // else the user/route-selected filter (null = org-wide).
+  const effectiveScopeId = mode === "scope" ? (scopeId ?? null) : scopeFilter;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -118,8 +146,10 @@ export function KgGraphCanvas({
     setSelected(null);
     fetchKgGraph(
       {
-        organizationId: mode === "org" ? organizationId : undefined,
-        scopeId: mode === "scope" ? scopeId : undefined,
+        // scope_id wins when set (backend resolves scope → tagged sources →
+        // entities); otherwise the (user-selectable) org's corpus.
+        organizationId: effectiveScopeId ? undefined : orgFilter,
+        scopeId: effectiveScopeId ?? undefined,
         depth: KG_DEFAULT_DEPTH,
         // Only the top-N most-connected nodes — a smaller budget = a far faster
         // first paint. The user dials in more via the "Detail" control.
@@ -137,7 +167,7 @@ export function KgGraphCanvas({
         setStatus("error");
       });
     return () => controller.abort();
-  }, [mode, scopeId, organizationId, reloadKey, detail]);
+  }, [mode, orgFilter, effectiveScopeId, reloadKey, detail]);
 
   // Available kinds for the filter dropdown.
   const kinds = useMemo(() => {
@@ -183,15 +213,17 @@ export function KgGraphCanvas({
 
   return (
     <div className="flex h-full w-full flex-col">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-3 py-2">
+      {/* Toolbar — no flex-wrap + fixed-width controls so changing a value never
+          reflows the row; the variable node/edge count truncates instead of
+          pushing the controls. Overflows to a horizontal scroll on narrow widths. */}
+      <div className="flex items-center gap-2 overflow-x-auto border-b border-border bg-card px-3 py-2">
         <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
           <Network className="h-4 w-4 text-primary" />
           {mode === "org" ? "Knowledge graph" : "Scope neighborhood"}
         </div>
 
         {status === "ready" ? (
-          <span className="text-xs text-muted-foreground">
+          <span className="min-w-0 shrink truncate whitespace-nowrap text-xs text-muted-foreground">
             {nodeCount} node{nodeCount === 1 ? "" : "s"} · {edgeCount} edge
             {edgeCount === 1 ? "" : "s"}
             {payload?.truncated ? (
@@ -206,7 +238,30 @@ export function KgGraphCanvas({
           </span>
         ) : null}
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
+        <div className="ml-auto flex flex-none items-center gap-2">
+          {/* Org + scope filters (org graph only): always visible + changeable so
+              the user is never stuck on a route-provided org/scope. Switching org
+              resets the scope (scopes belong to an org). */}
+          {mode === "org" ? (
+            <>
+              <KgOrgFilter
+                value={orgFilter}
+                onChange={(id) => {
+                  setOrgFilter(id);
+                  setScopeFilter(null);
+                }}
+                className={cn(SELECT_TRIGGER, "w-[160px]")}
+              />
+              <KgScopeFilter
+                organizationId={orgFilter}
+                value={scopeFilter}
+                onChange={setScopeFilter}
+                scopeTypeId={initialScopeTypeId}
+                className={cn(SELECT_TRIGGER, "w-[180px]")}
+              />
+            </>
+          ) : null}
+
           {/* Search */}
           <div className="relative">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -271,11 +326,14 @@ export function KgGraphCanvas({
               </span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="kind" className="text-xs">
-                Colour: kind
+              <SelectItem value="tier" className="text-xs">
+                Colour: hierarchy
               </SelectItem>
               <SelectItem value="community" className="text-xs">
                 Colour: community
+              </SelectItem>
+              <SelectItem value="kind" className="text-xs">
+                Colour: kind
               </SelectItem>
             </SelectContent>
           </Select>

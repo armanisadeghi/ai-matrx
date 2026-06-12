@@ -59,6 +59,7 @@ import {
   selectTreeStatus,
 } from "@/features/scopes/redux/selectors/tree";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { ensureScopeTasks } from "@/features/scopes/redux/thunks/ensureScopeTasks";
 import { ensureOrphanProjects } from "@/features/scopes/redux/thunks/ensureOrphanProjects";
 import { selectDefaultContextPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
@@ -409,6 +410,13 @@ export function ActiveScopePicker({
             <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] text-destructive">
               <AlertTriangle className="h-3 w-3 flex-shrink-0" />
               Failed to load context tree.
+              <button
+                type="button"
+                className="ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium text-foreground bg-muted hover:bg-accent"
+                onClick={() => void dispatch(ensureScopeTree({ refresh: true }))}
+              >
+                Retry
+              </button>
             </div>
           )}
 

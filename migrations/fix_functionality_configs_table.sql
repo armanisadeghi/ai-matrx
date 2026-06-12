@@ -1,3 +1,4 @@
+-- migrate: skip: ABANDONED design — system_prompt_functionality_configs belongs to the never-adopted System Prompts V2 (see 00XX_system_prompts_database_v2.sql). Verified 2026-06-08: 0 code references, table absent in live DB. Do not apply.
 -- Fix: Create the correct system_prompt_functionality_configs table
 -- This table stores UI configuration for functionalities (labels, icons, categories)
 -- while keeping the hardcoded SYSTEM_FUNCTIONALITIES for variable definitions

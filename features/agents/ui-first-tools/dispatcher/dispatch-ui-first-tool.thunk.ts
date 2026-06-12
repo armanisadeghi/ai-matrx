@@ -146,6 +146,10 @@ export const dispatchUiFirstTool = createAsyncThunk<
     // running) — a single tick of flicker — which beats lying about state.
     dispatch(setInstanceStatus({ conversationId, status: "paused" }));
 
+    // Client-measured execution time, persisted to cx_tool_call.duration_ms —
+    // without it every client-delegated call lands as duration_ms=0.
+    const startedAt = performance.now();
+
     try {
       const result = await entry.handler.run(parsed.data, {
         conversationId,
@@ -171,6 +175,7 @@ export const dispatchUiFirstTool = createAsyncThunk<
           tool_name: toolName,
           is_error: false,
           output: result as Record<string, unknown>,
+          duration_ms: Math.round(performance.now() - startedAt),
         }),
       );
     } catch (cause) {
@@ -195,6 +200,7 @@ export const dispatchUiFirstTool = createAsyncThunk<
           is_error: true,
           output: { ok: false, reason: "handler_threw", message },
           error_message: message,
+          duration_ms: Math.round(performance.now() - startedAt),
         }),
       );
     }

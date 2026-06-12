@@ -10,6 +10,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import BasicMarkdownContent from "../../chat-markdown/BasicMarkdownContent";
 import { safeJsonParse } from "../../chat-markdown/block-registry/json-parse-utils";
 import { InlineMediaRef } from "@/features/files";
+import SandboxedHtml from "../common/SandboxedHtml";
 
 // Lazy load block renderers — only the ones that accept raw content strings
 const CodeBlock = lazy(() => import("@/features/code-editor/components/code-block/CodeBlock"));
@@ -137,22 +138,27 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
             // ---- Direct rendering types (no parsing needed) ----
 
             case "iframe":
+                // allow-scripts WITHOUT allow-same-origin: interactive app
+                // artifacts run in a unique opaque origin and cannot reach the
+                // parent (aimatrx.com) origin. Combining the two would let the
+                // framed content remove its own sandbox = XSS in shared/forked
+                // conversations.
                 return (
                     <iframe
                         srcDoc={content}
                         className="w-full border-0"
                         style={{ minHeight: "300px", height: "400px" }}
                         title={artifactTitle}
-                        sandbox="allow-scripts allow-same-origin allow-forms"
+                        sandbox="allow-scripts allow-forms"
                     />
                 );
 
             case "html":
+                // Model/user-authored HTML → fully sandboxed iframe, never
+                // dangerouslySetInnerHTML (conversations can be shared/forked,
+                // making this cross-user stored XSS).
                 return (
-                    <div
-                        className="p-4 prose dark:prose-invert max-w-none"
-                        dangerouslySetInnerHTML={{ __html: content }}
-                    />
+                    <SandboxedHtml html={content} title={artifactTitle} height={400} />
                 );
 
             case "code":

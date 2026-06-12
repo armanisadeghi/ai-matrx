@@ -41,6 +41,9 @@ import {
   Undo2,
   Redo2,
   History,
+  GitCompareArrows,
+  Clipboard as ClipboardIcon,
+  Pin,
 } from "lucide-react";
 import { getIconComponent } from "@/components/official/icons/IconResolver";
 import {
@@ -51,6 +54,11 @@ import type {
   AgentMenuCategoryGroup,
   AgentMenuEntry,
 } from "../hooks/useUnifiedAgentContextMenu";
+import type {
+  ContextMenuExtraSection,
+  ContextMenuExtraItem,
+  ExtraSectionAnchor,
+} from "../extraSections";
 
 export type MenuVariant = "context" | "dropdown";
 
@@ -66,7 +74,11 @@ export interface MenuBodyRenderProps {
    *   - "disable" → render greyed out, not clickable
    */
   placementMode: Record<
-    "ai-action" | "content-block" | "organization-tool" | "user-tool" | "quick-action",
+    | "ai-action"
+    | "content-block"
+    | "organization-tool"
+    | "user-tool"
+    | "quick-action",
     "show" | "hide" | "disable"
   >;
   categoryGroups: AgentMenuCategoryGroup[];
@@ -84,6 +96,12 @@ export interface MenuBodyRenderProps {
   redoHint?: string;
   onViewHistory?: () => void;
   hasHistory: boolean;
+  onCompareClipboard: () => void;
+  onSetCompareBase: () => void;
+  onCompareWithBase: () => void;
+  hasCompareBase: boolean;
+  /** Surface-specific items injected by a thin wrapper. */
+  extraSections?: ContextMenuExtraSection[];
   isAdmin: boolean;
   isDebugMode: boolean;
   isAdminIndicatorOpen: boolean;
@@ -98,7 +116,10 @@ export interface MenuBodyRenderProps {
   onOpenVoicePad: () => void;
 }
 
-function resolveIcon(iconName: string | null | undefined, fallback: string = "FileText") {
+function resolveIcon(
+  iconName: string | null | undefined,
+  fallback: string = "FileText",
+) {
   if (!iconName) return getIconComponent(fallback, fallback);
   return getIconComponent(iconName, fallback);
 }
@@ -119,6 +140,15 @@ function getPlacementIcon(placementType: string) {
       return FileText;
   }
 }
+
+/** Top-level icon colors so the menu reads at a glance (light + dark safe). */
+const PLACEMENT_COLOR: Record<string, string> = {
+  [PLACEMENT_TYPES.AI_ACTION]: "#0ea5e9", // sky
+  [PLACEMENT_TYPES.CONTENT_BLOCK]: "#8b5cf6", // violet
+  [PLACEMENT_TYPES.ORGANIZATION_TOOL]: "#f59e0b", // amber
+  [PLACEMENT_TYPES.USER_TOOL]: "#10b981", // emerald
+  "quick-action": "#ec4899", // pink
+};
 
 function groupsByPlacement(
   groups: AgentMenuCategoryGroup[],
@@ -159,6 +189,11 @@ export function MenuBody(props: MenuBodyRenderProps) {
     redoHint,
     onViewHistory,
     hasHistory,
+    onCompareClipboard,
+    onSetCompareBase,
+    onCompareWithBase,
+    hasCompareBase,
+    extraSections,
     isAdmin,
     isDebugMode,
     isAdminIndicatorOpen,
@@ -184,6 +219,77 @@ export function MenuBody(props: MenuBodyRenderProps) {
   const Label = variant === "context" ? ContextMenuLabel : DropdownMenuLabel;
 
   const grouped = groupsByPlacement(categoryGroups);
+
+  const renderExtraItem = (item: ContextMenuExtraItem): React.ReactElement => {
+    if (item.kind === "separator") return <Separator key={item.id} />;
+    if (item.kind === "submenu") {
+      return (
+        <Sub key={item.id}>
+          <SubTrigger
+            disabled={item.disabled}
+            className={item.disabled ? "opacity-50 cursor-not-allowed" : ""}
+          >
+            {item.icon && <item.icon className="h-4 w-4 mr-2" />}
+            {item.label}
+          </SubTrigger>
+          <SubContent className="w-60">
+            {item.children.map(renderExtraItem)}
+          </SubContent>
+        </Sub>
+      );
+    }
+    return (
+      <Item
+        key={item.id}
+        onSelect={item.onSelect}
+        disabled={item.disabled}
+        className={
+          item.destructive
+            ? "text-destructive focus:text-destructive"
+            : undefined
+        }
+      >
+        {item.icon && <item.icon className="h-4 w-4 mr-2" />}
+        {item.description ? (
+          <div className="flex flex-col">
+            <span>{item.label}</span>
+            <span className="text-xs text-muted-foreground">
+              {item.description}
+            </span>
+          </div>
+        ) : (
+          item.label
+        )}
+        {item.hint && (
+          <span className="ml-auto text-xs text-muted-foreground">
+            {item.hint}
+          </span>
+        )}
+      </Item>
+    );
+  };
+
+  const renderExtraSections = (anchor: ExtraSectionAnchor) => {
+    const sections = (extraSections ?? []).filter(
+      (s) => (s.anchor ?? "after-compare") === anchor,
+    );
+    if (sections.length === 0) return null;
+    return (
+      <>
+        {sections.map((section) => (
+          <React.Fragment key={section.id}>
+            {section.label && (
+              <Label className="text-xs text-muted-foreground">
+                {section.label}
+              </Label>
+            )}
+            {section.items.map(renderExtraItem)}
+          </React.Fragment>
+        ))}
+        <Separator />
+      </>
+    );
+  };
 
   const renderCategoryGroup = (
     group: AgentMenuCategoryGroup,
@@ -260,10 +366,6 @@ export function MenuBody(props: MenuBodyRenderProps) {
 
   return (
     <>
-      {loading && (
-        <Label className="text-xs text-muted-foreground">Loading...</Label>
-      )}
-
       {selectedText && (
         <div className="px-2 py-2 border-b border-border bg-primary/5">
           <div className="flex items-start gap-2">
@@ -285,61 +387,94 @@ export function MenuBody(props: MenuBodyRenderProps) {
         </div>
       )}
 
-      {(onUndo || onRedo) && (
-        <>
-          {onUndo && (
-            <Item onSelect={onUndo} disabled={!canUndo}>
-              <Undo2 className="h-4 w-4 mr-2" />
-              Undo
-              {undoHint && (
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {undoHint}
-                </span>
-              )}
-            </Item>
-          )}
-          {onRedo && (
-            <Item onSelect={onRedo} disabled={!canRedo}>
-              <Redo2 className="h-4 w-4 mr-2" />
-              Redo
-              {redoHint && (
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {redoHint}
-                </span>
-              )}
-            </Item>
-          )}
-          {onViewHistory && (
-            <Item onSelect={onViewHistory} disabled={!hasHistory}>
-              <History className="h-4 w-4 mr-2" />
-              View History
-            </Item>
-          )}
-          <Separator />
-        </>
-      )}
+      {/* Stable shell: Undo / Redo / View History always render so the menu
+          never reflows; they're disabled when the surface can't act. */}
+      <Item onSelect={() => onUndo?.()} disabled={!onUndo || !canUndo}>
+        <Undo2 className="h-4 w-4 mr-2 text-sky-500" />
+        Undo
+        {undoHint && (
+          <span className="ml-auto text-xs text-muted-foreground">
+            {undoHint}
+          </span>
+        )}
+      </Item>
+      <Item onSelect={() => onRedo?.()} disabled={!onRedo || !canRedo}>
+        <Redo2 className="h-4 w-4 mr-2 text-sky-500" />
+        Redo
+        {redoHint && (
+          <span className="ml-auto text-xs text-muted-foreground">
+            {redoHint}
+          </span>
+        )}
+      </Item>
+      <Item
+        onSelect={() => onViewHistory?.()}
+        disabled={!onViewHistory || !hasHistory}
+      >
+        <History className="h-4 w-4 mr-2 text-violet-500" />
+        View History
+      </Item>
+      <Separator />
 
       <Item onSelect={onCopy} disabled={!selectedText}>
-        <Copy className="h-4 w-4 mr-2" />
+        <Copy className="h-4 w-4 mr-2 text-emerald-500" />
         Copy
       </Item>
       <Item onSelect={onCut} disabled={!selectedText || !isEditable}>
-        <Scissors className="h-4 w-4 mr-2" />
+        <Scissors className="h-4 w-4 mr-2 text-emerald-500" />
         Cut
       </Item>
       <Item onSelect={onPaste} disabled={!isEditable}>
-        <Clipboard className="h-4 w-4 mr-2" />
+        <Clipboard className="h-4 w-4 mr-2 text-emerald-500" />
         Paste
       </Item>
       <Item onSelect={onSelectAll}>
-        <Type className="h-4 w-4 mr-2" />
+        <Type className="h-4 w-4 mr-2 text-muted-foreground" />
         Select All
       </Item>
       <Item onSelect={onFind}>
-        <Search className="h-4 w-4 mr-2" />
+        <Search className="h-4 w-4 mr-2 text-muted-foreground" />
         Find...
       </Item>
+
+      {renderExtraSections("after-clipboard")}
+
+      <Sub>
+        <SubTrigger>
+          <GitCompareArrows className="h-4 w-4 mr-2 text-amber-500" />
+          Compare
+        </SubTrigger>
+        <SubContent className="w-60">
+          <Item onSelect={onCompareClipboard}>
+            <ClipboardIcon className="h-4 w-4 mr-2" />
+            Compare with clipboard
+          </Item>
+          <Item onSelect={onSetCompareBase}>
+            <Pin className="h-4 w-4 mr-2" />
+            <div className="flex flex-col">
+              <span>Set as compare base</span>
+              <span className="text-xs text-muted-foreground">
+                {selectedText ? "Use selection" : "Use full content"}
+              </span>
+            </div>
+          </Item>
+          <Item onSelect={onCompareWithBase} disabled={!hasCompareBase}>
+            <GitCompareArrows className="h-4 w-4 mr-2" />
+            <div className="flex flex-col">
+              <span>Compare with base</span>
+              {!hasCompareBase && (
+                <span className="text-xs text-muted-foreground">
+                  No base set yet
+                </span>
+              )}
+            </div>
+          </Item>
+        </SubContent>
+      </Sub>
+
       <Separator />
+
+      {renderExtraSections("after-compare")}
 
       {(
         [
@@ -356,8 +491,9 @@ export function MenuBody(props: MenuBodyRenderProps) {
           const hasItems =
             groups.length > 0 && groups.some((g) => hasItemsRecursive(g));
           const forcedDisabled = mode === "disable";
-          const isDisabled = forcedDisabled || !hasItems;
+          const isDisabled = forcedDisabled || !hasItems || loading;
           const PlacementIcon = getPlacementIcon(placementType);
+          const placementColor = PLACEMENT_COLOR[placementType];
           const placementMeta =
             PLACEMENT_TYPE_META[
               placementType as keyof typeof PLACEMENT_TYPE_META
@@ -370,7 +506,10 @@ export function MenuBody(props: MenuBodyRenderProps) {
                 disabled={isDisabled}
                 className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
               >
-                <PlacementIcon className="h-4 w-4 mr-2" />
+                <PlacementIcon
+                  className="h-4 w-4 mr-2"
+                  style={placementColor ? { color: placementColor } : undefined}
+                />
                 {label}
               </SubTrigger>
               <SubContent className="w-64">
@@ -386,6 +525,8 @@ export function MenuBody(props: MenuBodyRenderProps) {
           );
         })}
 
+      {renderExtraSections("after-placements")}
+
       {placementMode["quick-action"] !== "hide" && (
         <Sub>
           <SubTrigger
@@ -396,7 +537,7 @@ export function MenuBody(props: MenuBodyRenderProps) {
                 : ""
             }
           >
-            <Zap className="h-4 w-4 mr-2" />
+            <Zap className="h-4 w-4 mr-2 text-pink-500" />
             Quick Actions
           </SubTrigger>
           <SubContent className="w-56">
@@ -463,7 +604,7 @@ export function MenuBody(props: MenuBodyRenderProps) {
           <Separator />
           <Sub>
             <SubTrigger>
-              <Shield className="h-4 w-4 mr-2" />
+              <Shield className="h-4 w-4 mr-2 text-rose-500" />
               Admin Tools
             </SubTrigger>
             <SubContent className="w-56">

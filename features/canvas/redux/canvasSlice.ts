@@ -23,6 +23,22 @@ export type CanvasContentType =
   | "progress"
   | "math_problem";
 
+/**
+ * Canvas content types that hold live, non-serializable runtime state —
+ * callbacks like `onApply` / `onDiscard` / `onCloseModal`. They are ephemeral
+ * editor surfaces, NOT artifacts. Persisting them serializes the callbacks to
+ * `null` and produces a corrupt, dead row that renders with no handlers, so
+ * saving them must be refused loudly rather than silently writing junk.
+ */
+export const NON_PERSISTABLE_CANVAS_TYPES: ReadonlySet<string> = new Set([
+  "code_preview",
+  "code_edit_error",
+]);
+
+export function isPersistableCanvasType(type: string): boolean {
+  return !NON_PERSISTABLE_CANVAS_TYPES.has(type);
+}
+
 export interface CanvasContent {
   type: CanvasContentType;
   data: any; // Flexible data structure - each block handles its own data

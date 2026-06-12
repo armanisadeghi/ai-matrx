@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import MarkdownStream from '@/components/Markdown';
+import MarkdownStream from '@/components/MarkdownStream';
 
 export default function FlashcardGenerator({ onExecute, response, isExecuting, isStreaming, error, rateLimitInfo }) {
   const [variables, setVariables] = useState({

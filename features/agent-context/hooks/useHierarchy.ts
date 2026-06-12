@@ -165,7 +165,10 @@ export function useCreateProject() {
             name: proj.name,
             slug: proj.slug,
             organization_id: proj.organization_id,
-            is_personal: proj.is_personal ?? false,
+            // Personal-ness is org-derived and no longer on HierarchyProject;
+            // the invalidateAndRefetchFullContext below re-hydrates the correct
+            // value from the nav tree (RPC-derived). Default false until then.
+            is_personal: false,
             open_task_count: 0,
             total_task_count: 0,
             scope_tags: [],

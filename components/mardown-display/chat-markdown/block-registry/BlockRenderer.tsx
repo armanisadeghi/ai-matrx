@@ -1373,6 +1373,16 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         />
       );
 
+    case "artifact_ref":
+      return (
+        <BlockComponents.ArtifactRefBlock
+          key={index}
+          serverData={block.serverData}
+          messageId={messageId}
+          taskId={taskId}
+        />
+      );
+
     case "editor_error":
       return (
         <BlockComponents.EditorErrorBlock

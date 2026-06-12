@@ -32,8 +32,8 @@ import { createClient as createBrowserSupabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 import { isValueMappingMap } from "@/features/surfaces/types";
 import type { ValueMappingMap } from "@/features/surfaces/types";
-import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
 import {
@@ -296,18 +296,25 @@ export const launchAgentExecution = createAsyncThunk<
   let resolvedDisplayMode: ResultDisplayMode = displayModeOverride ?? "direct";
 
   // =========================================================================
-  // Step 0.5: Ensure the agent's execution payload is in Redux — but only
-  // for the DIRECT-AGENT path. Shortcuts are self-sufficient: they carry
+  // Step 0.5: Ensure the agent's FULL execution payload is in Redux — but
+  // only for the DIRECT-AGENT path. Shortcuts are self-sufficient: they carry
   // their own variableDefinitions + contextSlots pinned to the frozen
   // version, and `createInstanceFromShortcut` reads them off the shortcut
   // record. Calling an agent fetch on the shortcut path would risk loading
   // the WRONG (current) version of the agent.
+  //
+  // Full (not minimal) is required here: `createManualInstance` immediately
+  // snapshots `baseSettings` from agent.settings + agent.modelId
+  // (buildInstanceBaseSettings). The minimal payload carries neither, so a
+  // cold launch (e.g. /chat/new with no prior agent fetch) would seed an
+  // instance whose base model is empty — breaking the model picker and the
+  // override delta guard. See base-settings.ts for the invariant.
   // =========================================================================
   if (agentId && !shortcutId) {
     const preState = getState() as RootState;
-    const payload = selectAgentExecutionPayload(preState, agentId);
+    const payload = selectAgentCustomExecutionPayload(preState, agentId);
     if (!payload.isReady) {
-      await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
+      await dispatch(fetchAgentExecutionFull(agentId)).unwrap();
     }
   }
 

@@ -114,6 +114,7 @@ export default function ScopesLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Make context structural, not ad-hoc"
       finalCtaDescription="Define your org's dimensions once; AI Matrx threads them everywhere. Free to start, no credit card."
+      relatedModules={["/agent-context", "/agents", "/tasks"]}
     />
   );
 }

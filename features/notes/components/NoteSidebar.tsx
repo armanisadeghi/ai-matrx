@@ -55,6 +55,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import {
   selectOrganizationId,
@@ -336,7 +337,8 @@ export function NoteSidebar({
       (n) =>
         n.label.toLowerCase().includes(q) ||
         n.content?.toLowerCase().includes(q) ||
-        n.tags?.some((t) => t.toLowerCase().includes(q)),
+        n.tags?.some((t) => t.toLowerCase().includes(q)) ||
+        idMatchesQuery(n, q),
     );
   }, [contextFiltered, searchQuery]);
 

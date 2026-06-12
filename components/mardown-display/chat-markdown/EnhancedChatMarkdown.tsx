@@ -192,6 +192,15 @@ export const EnhancedChatMarkdownInternal: React.FC<
     (s) => s.type === "db_tool" || s.type === "thinking",
   );
 
+  // A reloaded message carrying a materialized artifact reference must render
+  // through the interleaved-segment path (the artifact_ref is a structured
+  // content block, not part of the message text — the plain-text/processedBlocks
+  // path would silently drop it). Scoped to artifact_ref only so existing
+  // text/media messages are unaffected.
+  const hasDbArtifactRef = messageInterleavedContent.some(
+    (s) => s.type === "render_block" && s.blockType === "artifact_ref",
+  );
+
   useEffect(() => {
     if (isStreamActive) {
       setEditedContent(null);
@@ -618,7 +627,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                 }
                 return null;
               })
-            : hasDbInterleavedSpecial
+            : hasDbInterleavedSpecial || hasDbArtifactRef
               ? messageInterleavedContent.map((segment, segIdx) => {
                   if (segment.type === "db_tool") {
                     return (

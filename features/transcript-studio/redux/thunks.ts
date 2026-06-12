@@ -39,6 +39,7 @@ import {
   upsertSessionSettings,
   upsertStudioDocument,
   type ConceptItemPatch,
+  type SessionListFilter,
   type UpsertSessionSettingsInput,
 } from "../service/studioService";
 import type {
@@ -95,12 +96,17 @@ interface CreateSessionThunkArg extends CreateSessionInput {
   activate?: boolean;
 }
 
-export const fetchSessionsThunk = createAsyncThunk<StudioSession[], void>(
+export const fetchSessionsThunk = createAsyncThunk<
+  StudioSession[],
+  SessionListFilter | void
+>(
   "transcriptStudio/fetchSessions",
-  async (_, { dispatch, rejectWithValue }) => {
+  async (filter, { dispatch, rejectWithValue }) => {
     dispatch(sessionsListLoading());
     try {
-      const sessions = await listSessions();
+      const sessions = await listSessions(
+        typeof filter === "object" && filter !== null ? filter : undefined,
+      );
       dispatch(sessionsListLoaded(sessions));
       return sessions;
     } catch (err) {
@@ -134,13 +140,14 @@ export const createSessionThunk = createAsyncThunk<
 );
 
 export const updateSessionThunk = createAsyncThunk<
-  StudioSession,
+  StudioSession | null,
   { id: string; patch: UpdateSessionInput }
 >(
   "transcriptStudio/updateSession",
   async ({ id, patch }, { dispatch, rejectWithValue }) => {
     try {
       const session = await updateSession(id, patch);
+      if (!session) return null; // row gone — benign no-op
       dispatch(sessionUpserted(session));
       return session;
     } catch (err) {
@@ -171,7 +178,7 @@ export const deleteSessionThunk = createAsyncThunk<string, string>(
 // ── Recording lifecycle ──────────────────────────────────────────────
 
 export const startSessionRecordingThunk = createAsyncThunk<
-  StudioSession,
+  StudioSession | null,
   { id: string }
 >(
   "transcriptStudio/startSessionRecording",
@@ -180,6 +187,7 @@ export const startSessionRecordingThunk = createAsyncThunk<
       const session = await updateSession(id, {
         status: "recording",
       });
+      if (!session) return null; // row gone — benign no-op
       dispatch(sessionUpserted(session));
       return session;
     } catch (err) {
@@ -192,7 +200,7 @@ export const startSessionRecordingThunk = createAsyncThunk<
 );
 
 export const stopSessionRecordingThunk = createAsyncThunk<
-  StudioSession,
+  StudioSession | null,
   { id: string; totalDurationMs: number }
 >(
   "transcriptStudio/stopSessionRecording",
@@ -203,6 +211,7 @@ export const stopSessionRecordingThunk = createAsyncThunk<
         endedAt: new Date().toISOString(),
         totalDurationMs,
       });
+      if (!session) return null; // row gone — benign no-op
       dispatch(sessionUpserted(session));
       return session;
     } catch (err) {
@@ -259,8 +268,11 @@ export const fetchCleanedSegmentsThunk = createAsyncThunk<
 // Re-export per-column pipelines so callers don't have to know which file
 // each thunk lives in. The implementations live in dedicated files to keep
 // this file focused on session + raw CRUD.
+export { ensureAssistantConversationThunk } from "./ensureAssistantConversation.thunk";
 export { runCleaningPassThunk } from "./runCleaningPass.thunk";
 export type { RunCleaningPassResult } from "./runCleaningPass.thunk";
+export { cleanRecordingThunk } from "./cleanRecording.thunk";
+export type { CleanRecordingResult } from "./cleanRecording.thunk";
 export { runConceptPassThunk } from "./runConceptPass.thunk";
 export type { RunConceptPassResult } from "./runConceptPass.thunk";
 export { runModulePassThunk } from "./runModulePass.thunk";
@@ -482,6 +494,8 @@ export const finalizeRecordingSegmentThunk = createAsyncThunk<
         tEnd,
         endedAt: new Date().toISOString(),
       });
+      // Row removed mid-finalize (deleted / discarded) — benign no-op.
+      if (!segment) return null;
       dispatch(recordingSegmentUpserted({ sessionId, segment }));
       return segment;
     } catch (err) {
@@ -529,7 +543,8 @@ export const uploadRecordingAudioThunk = createAsyncThunk<
       const segment = await updateRecordingSegment(recordingSegmentId, {
         audioPath: upload.fileId,
       });
-      dispatch(recordingSegmentUpserted({ sessionId, segment }));
+      // Recording was deleted/discarded before the upload landed — drop it.
+      if (segment) dispatch(recordingSegmentUpserted({ sessionId, segment }));
     } catch (err) {
       // Audio is still safe in IndexedDB; surface quietly and continue.
       // eslint-disable-next-line no-console
@@ -537,6 +552,126 @@ export const uploadRecordingAudioThunk = createAsyncThunk<
     } finally {
       dispatch(recordingAudioUploadFinished({ recordingSegmentId }));
     }
+  },
+);
+
+/**
+ * Self-heal stranded recording segments.
+ *
+ * A recording is "finalized" when its `endedAt` is written by the live stop
+ * flow (finalizeRecordingSegmentThunk). That write can be lost when the single
+ * shared recorder is stomped by a back-to-back start, or when the page reloads
+ * / crashes / hides mid-finalize. The result is a segment with `endedAt == null`
+ * that spins "Saving…" forever even though its transcript chunks are safely in
+ * the DB.
+ *
+ * This runs on session load. For every segment that is NOT the currently-active
+ * live recording and has no `endedAt`, it derives `tEnd` from the segment's raw
+ * chunks (the last chunk's `tEnd`, falling back to its own `tStart`) and stamps
+ * `endedAt = now`, so the card leaves its stuck state and becomes usable.
+ *
+ * It is LOUD on purpose (console.warn + toast): a recovery firing means the
+ * proactive stop flow failed and a real bug got past it.
+ */
+export const reconcileStuckRecordingsThunk = createAsyncThunk<
+  number,
+  { sessionId: string }
+>(
+  "transcriptStudio/reconcileStuckRecordings",
+  async ({ sessionId }, { dispatch, getState }) => {
+    interface ReconcileState {
+      transcriptStudio: {
+        recordingSegmentIdsBySession: Record<string, string[]>;
+        recordingSegmentsById: Record<string, Record<string, RecordingSegment>>;
+        rawIdsBySession: Record<string, string[]>;
+        rawById: Record<string, Record<string, RawSegment>>;
+        byId: Record<string, StudioSession>;
+      };
+      recordings: {
+        isRecording: boolean;
+        isTranscribing: boolean;
+        context: { kind: string; sessionId?: string } | null;
+      };
+    }
+    const root = getState() as ReconcileState;
+
+    // If this exact session is mid-recording (or still finalizing), its
+    // newest open segment is legitimately un-ended — leave the live flow alone.
+    const rec = root.recordings;
+    const liveForThisSession =
+      (rec.isRecording || rec.isTranscribing) &&
+      rec.context?.kind === "studio" &&
+      rec.context.sessionId === sessionId;
+    if (liveForThisSession) return 0;
+
+    const ids =
+      root.transcriptStudio.recordingSegmentIdsBySession[sessionId] ?? [];
+    const byId = root.transcriptStudio.recordingSegmentsById[sessionId] ?? {};
+    const rawIds = root.transcriptStudio.rawIdsBySession[sessionId] ?? [];
+    const rawById = root.transcriptStudio.rawById[sessionId] ?? {};
+
+    const stranded = ids
+      .map((id) => byId[id])
+      .filter((seg): seg is RecordingSegment => Boolean(seg) && !seg!.endedAt);
+
+    if (stranded.length === 0) return 0;
+
+    let healed = 0;
+    for (const seg of stranded) {
+      // Derive tEnd from this segment's raw chunks (last chunk's tEnd).
+      let tEnd = seg.tEnd ?? seg.tStart ?? 0;
+      for (const rawId of rawIds) {
+        const raw = rawById[rawId];
+        if (raw?.recordingSegmentId === seg.id && raw.tEnd > tEnd) {
+          tEnd = raw.tEnd;
+        }
+      }
+      try {
+        const updated = await updateRecordingSegment(seg.id, {
+          tEnd,
+          endedAt: new Date().toISOString(),
+        });
+        if (!updated) continue; // removed while reconciling — skip
+        dispatch(recordingSegmentUpserted({ sessionId, segment: updated }));
+        healed += 1;
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error(
+          "[studio] reconcile: failed to finalize stranded recording",
+          seg.id,
+          err,
+        );
+      }
+    }
+
+    // Un-stick the session row if it's still flagged "recording" with nothing
+    // actually in flight.
+    const session = root.transcriptStudio.byId[sessionId];
+    if (session && session.status === "recording") {
+      try {
+        const fixedSession = await updateSession(sessionId, {
+          status: "stopped",
+          endedAt: session.endedAt ?? new Date().toISOString(),
+        });
+        if (fixedSession) dispatch(sessionUpserted(fixedSession));
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("[studio] reconcile: failed to unstick session", err);
+      }
+    }
+
+    if (healed > 0) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[studio] reconcile: recovered ${healed} stranded recording(s) in session ${sessionId}. ` +
+          "A recording's stop-finalize was lost (likely a back-to-back start or a reload mid-save).",
+      );
+      toast.success(
+        `Recovered ${healed} unfinished recording${healed === 1 ? "" : "s"}.`,
+      );
+    }
+
+    return healed;
   },
 );
 
@@ -593,7 +728,7 @@ export const archiveRecordingThunk = createAsyncThunk<
       const segment = await setRecordingSegmentState(recordingSegmentId, {
         archivedAt: archived ? new Date().toISOString() : null,
       });
-      dispatch(recordingSegmentUpserted({ sessionId, segment }));
+      if (segment) dispatch(recordingSegmentUpserted({ sessionId, segment }));
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to archive recording";
@@ -614,7 +749,7 @@ export const detachRecordingThunk = createAsyncThunk<
       const segment = await setRecordingSegmentState(recordingSegmentId, {
         detachedAt: new Date().toISOString(),
       });
-      dispatch(recordingSegmentUpserted({ sessionId, segment }));
+      if (segment) dispatch(recordingSegmentUpserted({ sessionId, segment }));
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to remove recording";
@@ -635,6 +770,7 @@ export const restoreRecordingThunk = createAsyncThunk<
       const segment = await setRecordingSegmentState(recordingSegmentId, {
         detachedAt: null,
       });
+      if (!segment) return; // row gone — nothing to restore
       dispatch(
         recordingSegmentUpserted({ sessionId: segment.sessionId, segment }),
       );

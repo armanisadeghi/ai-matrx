@@ -28,6 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
   makeSelectOrphanProjects,
@@ -241,10 +242,10 @@ export function EntityTargetPicker(props: EntityTargetPickerProps) {
 
   const q = search.toLowerCase();
   const filteredMain = q
-    ? options.filter((o) => o.name.toLowerCase().includes(q))
+    ? options.filter((o) => o.name.toLowerCase().includes(q) || idMatchesQuery(o, q))
     : options;
   const filteredOrphans = q
-    ? orphanOptions.filter((o) => o.name.toLowerCase().includes(q))
+    ? orphanOptions.filter((o) => o.name.toLowerCase().includes(q) || idMatchesQuery(o, q))
     : orphanOptions;
 
   const handlePick = (id: string | null, name: string | null) => {

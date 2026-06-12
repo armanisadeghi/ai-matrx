@@ -25,7 +25,9 @@ import {
   hydrateConversation,
   setConversationLabel,
 } from "../conversations/conversations.slice";
-import { hydrateMessages } from "../messages/messages.slice";
+import { hydrateMessages, updateMessageRecord } from "../messages/messages.slice";
+import { reconcileMessagesArtifacts } from "@/features/canvas/materialization/reconcileArtifacts";
+import type { Json } from "@/types/database.types";
 import { hydrateObservability } from "../observability/observability.slice";
 import { hydrateRequestsFromObservability } from "../active-requests/active-requests.slice";
 import {
@@ -118,12 +120,14 @@ export const loadConversation = createAsyncThunk<
     // Auth diagnostics — RLS-denied reads return as `PGRST116` with
     // empty-looking errors. Most common root cause: browser session
     // not hydrated when the thunk fires.
+    let authedUserId: string | null = null;
     try {
       const { data: authData } = await supabase.auth.getUser();
+      authedUserId = authData?.user?.id ?? null;
       // eslint-disable-next-line no-console
       console.log(
         "[loadConversation] auth at fetch time: userId=%s conversationId=%s",
-        authData?.user?.id ?? "(none)",
+        authedUserId ?? "(none)",
         conversationId,
       );
     } catch (authErr) {
@@ -255,6 +259,38 @@ export const loadConversation = createAsyncThunk<
           : undefined,
       }),
     );
+
+    // ── Artifact reconciliation (owner-only, fire-and-forget) ───────────────
+    // Materialize any assistant messages that still carry raw artifact markup
+    // (historical messages, or live materialization that didn't finish). Idempotent
+    // + recoverable (cx_message_edit archives the original into content_history),
+    // so it's safe to run on every load. Owner-only: a viewer must never mint
+    // canvas_items rows for someone else's conversation.
+    if (authedUserId && conv.user_id === authedUserId) {
+      void reconcileMessagesArtifacts(
+        messageRecords
+          .filter((r) => r.role === "assistant" || (r.role as string) === "output")
+          .map((r) => ({
+            id: r.id,
+            conversationId,
+            content: r.content,
+          })),
+      )
+        .then((rewrites) => {
+          for (const { messageId, rewrittenContent } of rewrites) {
+            dispatch(
+              updateMessageRecord({
+                conversationId,
+                messageId,
+                patch: { content: rewrittenContent as unknown as Json },
+              }),
+            );
+          }
+        })
+        .catch((err) => {
+          console.error("[loadConversation] artifact reconcile failed:", err);
+        });
+    }
 
     // ── 3. Variables — stamp the DB `variables` JSON into userValues so the
     // user picks up right where they left off. A future pass can introduce a

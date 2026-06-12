@@ -1,10 +1,2 @@
-export { PdfAnnotationLayer } from "./PdfAnnotationLayer";
-export type { PdfAnnotationLayerProps } from "./PdfAnnotationLayer";
-export type {
-  AnnotationLayerMode,
-  PdfBbox,
-  PdfRegion,
-  PendingDraw,
-  RegionKind,
-} from "./types";
-export { colorsFor } from "./colors";
+/** Moved to features/pdf/components/viewer/annotation-layer (2026-06 consolidation). Transitional shim. */
+export * from "@/features/pdf/components/viewer/annotation-layer/index";

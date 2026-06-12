@@ -21,12 +21,11 @@ organizations → projects → project_members → auth.users
 | `name` | text | Required |
 | `slug` | text | URL-safe, unique per org |
 | `description` | text | Optional |
-| `organization_id` | uuid \| null | FK → organizations. **`NULL` ⇒ personal project** |
+| `organization_id` | uuid \| null | FK → organizations. Every project now has a non-null org (backfilled) |
 | `created_by` | uuid | FK → auth.users |
-| `is_personal` | boolean | Mirrors `organization_id IS NULL` — must always match |
 | `settings` | jsonb | Extensible config |
 
-> **Personal projects** have `organization_id = NULL` and `is_personal = true`. The canonical `createProject` service in `features/projects/service.ts` enforces this invariant (and accepts the UI sentinel `PERSONAL_PSEUDO_ORG_ID = '00000000-0000-0000-0000-000000000001'` as input — it normalizes the sentinel to `NULL` before insert). All other write paths (`features/agent-context/service/hierarchyService.createProject`) delegate here so the row + member entry + flag are always written together.
+> **Personal-ness is org-derived.** `ctx_projects.is_personal` was **dropped** — a project is "personal" **iff its owning organization's `organizations.is_personal` is true** (every user has exactly one personal org). Never treat `organization_id IS NULL` as "personal" anymore (it's always false after the backfill). Read personal-ness from the org: join `organizations(is_personal)`, or use the RPC-derived `NavProject.is_personal` (`get_user_full_context` / `get_user_nav_tree` still emit it). The canonical `createProject` service in `features/projects/service.ts` writes the row + `ctx_project_members` owner entry (and accepts the UI sentinel `PERSONAL_PSEUDO_ORG_ID = '00000000-0000-0000-0000-000000000001'` as input — it normalizes the sentinel to `NULL` before insert). All other write paths (`features/agent-context/service/hierarchyService.createProject`) delegate here.
 
 ### `project_members`
 | Column | Type | Notes |
@@ -123,7 +122,7 @@ Every project write path dispatches `invalidateAndRefetchFullContext()` from `fe
 
 | Write path | Where | Notes |
 |------------|-------|-------|
-| Create (canonical) | `features/projects/service.ts createProject` | Always writes `ctx_projects` row + `ctx_project_members` owner row + `is_personal` flag |
+| Create (canonical) | `features/projects/service.ts createProject` | Always writes `ctx_projects` row + `ctx_project_members` owner row (no `is_personal` — personal-ness is org-derived) |
 | Create modal | `CreateProjectModal` | Dispatches invalidation. New `redirectOnSuccess` prop (default `true`) — set to `false` when embedded in a wizard so the user stays in place; the modal hands the new project to `onSuccess(project)` for inline auto-selection |
 | Create sheet | `ProjectFormSheet` | Dispatches invalidation; redirects personal projects to `/projects/...` (no `/org/personal/...` route exists) |
 | Update settings | `GeneralSettings` | Dispatches invalidation on save |

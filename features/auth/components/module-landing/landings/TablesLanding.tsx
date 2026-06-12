@@ -115,6 +115,7 @@ export default function TablesLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Structure without the database setup"
       finalCtaDescription="Tables that feel like spreadsheets and act like databases — built for agents. Free to start, no credit card."
+      relatedModules={["/workbooks", "/chat", "/agents"]}
     />
   );
 }

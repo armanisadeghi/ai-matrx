@@ -791,49 +791,46 @@ export async function acceptInvitation(
   try {
     const currentUserId = requireUserId();
 
-    // Find valid invitation
-    const { data: invitation, error: inviteError } = await supabase
-      .from("organization_invitations")
-      .select("*, organizations(*)")
-      .eq("token", token)
-      .eq("email", getUserEmail())
-      .gt("expires_at", new Date().toISOString())
+    // One atomic RPC: validates token + expiry + email match, upserts the
+    // member row, and deletes the invitation in a single transaction.
+    // (Replaced a client-side select → insert → unchecked delete sequence
+    // that could strand a member row with a live, re-acceptable invite.)
+    const { data: orgId, error: rpcError } = await supabase.rpc(
+      "accept_organization_invitation",
+      {
+        invitation_token: token,
+        accepting_user_id: currentUserId,
+      },
+    );
+
+    if (rpcError || !orgId) {
+      console.error("Error accepting invitation:", rpcError);
+      const message = rpcError?.message ?? "";
+      const friendly = message.includes("Invalid or expired")
+        ? "Invalid or expired invitation"
+        : message.includes("does not match")
+          ? "This invitation was sent to a different email address"
+          : message || "Failed to accept invitation";
+      return { success: false, error: friendly };
+    }
+
+    // Fetch the joined org for the success payload (membership now exists,
+    // so RLS allows the read).
+    const { data: org, error: orgError } = await supabase
+      .from("organizations")
+      .select("*")
+      .eq("id", orgId as string)
       .single();
-
-    if (inviteError || !invitation) {
-      return { success: false, error: "Invalid or expired invitation" };
+    if (orgError) {
+      // Membership landed; only the display fetch failed. Still a success.
+      console.error("Joined org but failed to load it:", orgError);
+      return { success: true, message: "Successfully joined organization" };
     }
-
-    // Add user as member
-    const { error: memberError } = await supabase
-      .from("organization_members")
-      .insert({
-        organization_id: invitation.organization_id,
-        user_id: currentUserId,
-        role: invitation.role,
-        invited_by: invitation.invited_by,
-      });
-
-    if (memberError) {
-      if (memberError.code === "23505") {
-        return {
-          success: false,
-          error: "You are already a member of this organization",
-        };
-      }
-      throw memberError;
-    }
-
-    // Delete the invitation
-    await supabase
-      .from("organization_invitations")
-      .delete()
-      .eq("id", invitation.id);
 
     return {
       success: true,
       message: "Successfully joined organization",
-      organization: transformOrganizationFromDb(invitation.organizations),
+      organization: transformOrganizationFromDb(org),
     };
   } catch (error: any) {
     console.error("Error accepting invitation:", error);

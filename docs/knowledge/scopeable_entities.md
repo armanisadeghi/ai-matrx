@@ -40,8 +40,8 @@ Multi-role is fine and expected. A **compound transform** like `D --U--> S` mean
 
 Notes on the tricky ones:
 - **Research** is the canonical dual: scrapes (S) feed it, it synthesizes (D), then
-  the synthesis can become a secondary source (S) — but promoting derived → source is a *future / undecided* control (see `knowledge_provenance_model.md`).
-- **Agent Chats** (`cx_conversation` + `cx_messages`) are the human↔AI conversations — the system's most dynamic transformer: through tools and instructions an agent turns sources into new destinations *and* can push destinations back toward sources, sometimes raising truth (validation), sometimes lowering it. Hence the dual `D --U--> S` / `S --U--> D`. (Whether a derived chat may be *promoted* back to a seedable source is the *undecided* seeding control — see `knowledge_provenance_model.md`.)
+  the synthesis can become a secondary source (S) — but promoting derived → source is governed by the seeding controls in [`04_matrx_quality_model.md`](04_matrx_quality_model.md) (`seed_policy` / `can_be_seeded`; never automatic).
+- **Agent Chats** (`cx_conversation` + `cx_messages`) are the human↔AI conversations — the system's most dynamic transformer: through tools and instructions an agent turns sources into new destinations *and* can push destinations back toward sources, sometimes raising truth (validation), sometimes lowering it. Hence the dual `D --U--> S` / `S --U--> D`. (Whether a derived chat may be *promoted* back to a seedable source is governed by `04`'s seeding controls — never automatic.)
 - **Communication / Messaging** (`dm_conversations`) is **person-to-person** messaging — a *different concept* from Agent Chats (human↔AI). Listed for completeness; its scoping/role model is still open.
 - **Scrapes** are sources but default to `unvalidated` authority.
 - **Notes / UDT data** swing both ways by instance, not by type.

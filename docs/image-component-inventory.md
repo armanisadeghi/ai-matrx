@@ -109,7 +109,7 @@ These compose the layers above. Modifying lower layers flows up here automatical
 | `features/files/handler/upload.ts` (`uploadInternal`) | `cloudUpload` | Non-hook imperative wrapper used by `fileHandler.upload()`. Stamps org/project/task scope onto metadata. | Active |
 | `features/files/hooks/useGuardedFileUpload.ts` | `useFileUpload` + duplicate-detect | Wraps `useFileUpload` with file-hash duplicate detection before committing upload. Used by the main dropzone. | Active |
 | `components/ui/file-upload/usePasteImageUpload.ts` | (clipboard API + upload) | Hook for clipboard paste → upload. Verify whether it routes through `useFileUpload` or the legacy path. | Verify |
-| `components/ui/file-upload/useFileUploadWithStorage.ts` | Supabase storage directly | **Legacy.** Bypasses the canonical `cloudUpload` path; writes to Supabase Storage instead of cld_files via Python. Needs migration. | ⚠️ Legacy — bypasses handler |
+| `components/ui/file-upload/useFileUploadWithStorage.ts` | **DELETED.** The hook was removed; callers now use `useFileUpload` from `@/features/files` directly. | ✅ Migrated |
 
 ---
 
@@ -212,8 +212,8 @@ These compose the layers above. Modifying lower layers flows up here automatical
 | `components/advanced-image-editor/**` | fabric.js — dead under Turbopack. Dead code in bundle. |
 | `app/(authenticated)/image-editing/**` | Disabled routes (depend on dead editor). |
 | `types/imageEditorTypes.ts` | Unused schema placeholder. |
-| `components/ui/file-upload/useFileUploadWithStorage.ts` | Bypasses canonical upload path — writes to Supabase Storage directly. Callers need migration to `useFileUpload`. |
-| `components/ui/file-upload/FileUploadWithStorage.tsx` | Uses the legacy hook above. |
+| `components/ui/file-upload/useFileUploadWithStorage.ts` | **DELETED.** Migrated; callers now import `useFileUpload` from `@/features/files`. |
+| `components/ui/file-upload/FileUploadWithStorage.tsx` | Dropzone component — rewritten to call the universal file handler internally; the legacy `bucket`/`path` props are translated via `composeLegacyFolderPath`. |
 | `components/ui/file-upload/ImageUploadField.tsx` | Uses the legacy hook above. |
 | `components/matrx/parallax-scroll/**` | Only used by the dead `/image-editing/gallery` route. |
 | `components/matrx/image-gallery.tsx` | Demo component — verify if any live surface still imports it. |

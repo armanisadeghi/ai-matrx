@@ -29,12 +29,17 @@ import type {
   ContextTemplate,
   OrgNode,
   ProjectNode,
+  ResolvedSuggestionItem,
+  ResolvedSuggestionTarget,
+  ResolvedSuggestionValue,
   ScopeAssignmentEntityType,
   ScopeNode,
   ScopeTreeResponse,
   ScopeTypeNode,
   ScopesRpcError,
   ScopesRpcResult,
+  SetContextValuePayload,
+  SetContextValueResult,
   TaskBucketLevel,
   TaskNode,
 } from "@/features/scopes/types";
@@ -54,6 +59,12 @@ function ok<T>(data: T): { ok: true; data: T } {
 }
 
 function mapPgError(e: unknown): ScopesRpcError {
+  // Loud before lossy: the friendly mapping below discards the PG error
+  // code / constraint / hint that production debugging needs. Log the raw
+  // error with full context HERE — the single funnel every ctx_* failure
+  // passes through — so "my scope didn't save" is diagnosable from the
+  // console instead of vanishing into a generic message.
+  console.error("[scopesService] supabase error", e);
   if (e && typeof e === "object" && "code" in e) {
     const code = String((e as { code: string }).code);
     if (code === "PGRST116") return { code: "not_found", message: "Not found" };
@@ -201,7 +212,8 @@ export const scopesService = {
         name: row.organizations.name,
         slug: row.organizations.slug,
         is_personal: !!row.organizations.is_personal,
-        role: (row.role as OrgNode["role"]) ?? "viewer",
+        // organization_members.role is NOT NULL — no fallback needed.
+        role: row.role as OrgNode["role"],
         scope_types: scopeTypesByOrg.get(row.organizations.id) ?? [],
         projects: projectsByOrg.get(row.organizations.id) ?? [],
       }));
@@ -362,7 +374,7 @@ export const scopesService = {
         .from("ctx_context_item_values")
         .select(
           `context_item_id, id, version, is_current,
-           value_text, value_number, value_boolean, value_json,
+           value_text, value_number, value_boolean, value_date, value_json,
            value_document_url, value_document_size_bytes,
            value_reference_id, value_reference_type,
            source_type, authored_by, created_at`,
@@ -371,6 +383,129 @@ export const scopesService = {
         .eq("is_current", true);
       if (error) return err(...mapPgErrorPair(error));
       return ok({ values: (data ?? []) as ContextItemValue[] });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  // ──────────────────────────────────────────────────────────────────
+  //  READ — SUGGESTION TARGET RESOLUTION
+  //
+  //  Given a KG suggestion's target (`scope_id` + the proposed
+  //  `context_item_id`), resolve the FULL human-readable picture the
+  //  decision UI needs: the org / scope-type / scope / item path, every
+  //  context item defined on that scope type, and the CURRENT value for
+  //  each item on this scope (so the UI can show what a suggestion would
+  //  overwrite). Read-only; one logical "resolve" RPC's worth of joins.
+  // ──────────────────────────────────────────────────────────────────
+
+  async resolveSuggestionTarget(args: {
+    scopeId: string;
+    contextItemId: string | null;
+  }): Promise<ScopesRpcResult<ResolvedSuggestionTarget>> {
+    try {
+      requireUserId();
+
+      const { data: scope, error: scopeErr } = await supabase
+        .from("ctx_scopes")
+        .select("id, slug, name, description, scope_type_id, organization_id")
+        .eq("id", args.scopeId)
+        .single();
+      if (scopeErr) return err(...mapPgErrorPair(scopeErr));
+      if (!scope) return err("not_found", "Scope not found");
+
+      const scopeTypeP = supabase
+        .from("ctx_scope_types")
+        .select("id, slug, label_singular, label_plural, icon, color")
+        .eq("id", scope.scope_type_id)
+        .single();
+
+      const orgP = supabase
+        .from("organizations")
+        .select("id, name, slug, is_personal")
+        .eq("id", scope.organization_id)
+        .single();
+
+      const itemsP = supabase
+        .from("ctx_context_items")
+        .select("id, slug, key, display_name, value_type, sort_order")
+        .eq("scope_type_id", scope.scope_type_id)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+
+      const valuesP = supabase
+        .from("ctx_context_item_values")
+        .select(
+          "context_item_id, value_text, value_number, value_boolean, value_json, source_type, version, created_at",
+        )
+        .eq("scope_id", args.scopeId)
+        .eq("is_current", true);
+
+      const [scopeTypeRes, orgRes, itemsRes, valuesRes] = await Promise.all([
+        scopeTypeP,
+        orgP,
+        itemsP,
+        valuesP,
+      ]);
+
+      if (scopeTypeRes.error) return err(...mapPgErrorPair(scopeTypeRes.error));
+      if (orgRes.error) return err(...mapPgErrorPair(orgRes.error));
+      if (itemsRes.error) return err(...mapPgErrorPair(itemsRes.error));
+      if (valuesRes.error) return err(...mapPgErrorPair(valuesRes.error));
+
+      const valuesByItem = new Map<string, ResolvedSuggestionValue>();
+      for (const v of valuesRes.data ?? []) {
+        valuesByItem.set(v.context_item_id, {
+          value_text: v.value_text ?? null,
+          value_number: v.value_number ?? null,
+          value_boolean: v.value_boolean ?? null,
+          value_json: v.value_json ?? null,
+          source_type: v.source_type ?? null,
+          version: v.version ?? null,
+          created_at: v.created_at ?? null,
+        });
+      }
+
+      const items: ResolvedSuggestionItem[] = (itemsRes.data ?? []).map(
+        (it) => ({
+          id: it.id,
+          slug: it.slug ?? null,
+          key: it.key,
+          display_name: it.display_name,
+          value_type: it.value_type,
+          sort_order: it.sort_order ?? 0,
+          current: valuesByItem.get(it.id) ?? null,
+        }),
+      );
+
+      const targetItem = args.contextItemId
+        ? (items.find((it) => it.id === args.contextItemId) ?? null)
+        : null;
+
+      return ok({
+        org: {
+          id: orgRes.data.id,
+          name: orgRes.data.name,
+          slug: orgRes.data.slug,
+          is_personal: !!orgRes.data.is_personal,
+        },
+        scope_type: {
+          id: scopeTypeRes.data.id,
+          slug: scopeTypeRes.data.slug ?? null,
+          label_singular: scopeTypeRes.data.label_singular,
+          label_plural: scopeTypeRes.data.label_plural,
+          icon: scopeTypeRes.data.icon ?? null,
+          color: scopeTypeRes.data.color ?? null,
+        },
+        scope: {
+          id: scope.id,
+          slug: scope.slug ?? null,
+          name: scope.name,
+          description: scope.description ?? null,
+        },
+        target_item: targetItem,
+        items,
+      });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }
@@ -538,9 +673,13 @@ export const scopesService = {
   // ──────────────────────────────────────────────────────────────────
   //  WRITE — ENTITY ASSIGNMENTS (M2M tagging)
   //
-  //  This is the ONE mutation Phase 1 wires up because every entity-tagging
-  //  consumer in Phases 2-5 depends on it. Set-semantics: replaces the
-  //  entity's assignment list atomically with the input.
+  //  Set-semantics via the `set_entity_scopes` SECURITY DEFINER RPC: one
+  //  transaction that validates `max_assignments_per_entity`, checks the
+  //  caller's org membership (migration ctx_set_entity_scopes_auth),
+  //  delete-alls, inserts, and returns the authoritative final state.
+  //  Replaced the previous client-side read→insert→delete (3 round-trips,
+  //  no transaction): partial failures stranded a union of old+new tags,
+  //  two tabs could interleave to a wrong set, and the cap was unenforced.
   // ──────────────────────────────────────────────────────────────────
 
   async setEntityScopes(
@@ -549,48 +688,82 @@ export const scopesService = {
     scopeIds: string[],
   ): Promise<ScopesRpcResult<{ scope_ids: string[] }>> {
     try {
-      const userId = requireUserId();
+      requireUserId();
       const target = Array.from(new Set(scopeIds));
 
-      const { data: existingRows, error: readErr } = await supabase
-        .from("ctx_scope_assignments")
-        .select("scope_id")
-        .eq("entity_type", entityType)
-        .eq("entity_id", entityId);
-      if (readErr) return err(...mapPgErrorPair(readErr));
+      const { data, error } = await supabase.rpc("set_entity_scopes", {
+        p_entity_type: entityType,
+        p_entity_id: entityId,
+        p_scope_ids: target,
+      });
+      if (error) return err(...mapPgErrorPair(error));
 
-      const existing = new Set((existingRows ?? []).map((r) => r.scope_id));
-      const targetSet = new Set(target);
-      const toAdd = target.filter((s) => !existing.has(s));
-      const toRemove = (existingRows ?? [])
+      // The RPC returns the final DB state as
+      // [{ scope_id, scope_name, type_label, type_icon, type_color }] — use
+      // it as the authoritative result rather than echoing the input.
+      const rows = (Array.isArray(data) ? data : []) as Array<{
+        scope_id?: string;
+      }>;
+      const scope_ids = rows
         .map((r) => r.scope_id)
-        .filter((s) => !targetSet.has(s));
+        .filter((id): id is string => !!id);
 
-      if (toAdd.length > 0) {
-        const { error: insErr } = await supabase
-          .from("ctx_scope_assignments")
-          .insert(
-            toAdd.map((scope_id) => ({
-              entity_type: entityType,
-              entity_id: entityId,
-              scope_id,
-              created_by: userId,
-            })),
-          );
-        if (insErr) return err(...mapPgErrorPair(insErr));
-      }
+      return ok({ scope_ids });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
 
-      if (toRemove.length > 0) {
-        const { error: delErr } = await supabase
-          .from("ctx_scope_assignments")
-          .delete()
-          .eq("entity_type", entityType)
-          .eq("entity_id", entityId)
-          .in("scope_id", toRemove);
-        if (delErr) return err(...mapPgErrorPair(delErr));
-      }
+  /**
+   * An org-less container adopts the org of its first assigned scope.
+   *
+   * Rule (user-defined): a project/task with NO organization inherits the org
+   * of a scope it's tagged with; a project/task that ALREADY has an org is
+   * never changed. The "never overwrite" half is enforced at the DB with an
+   * `organization_id IS NULL` predicate on the UPDATE — so this is safe to call
+   * unconditionally; if the entity already has an org, zero rows change.
+   *
+   * Only entity types that own an `organization_id` column participate.
+   * NOTE: this writes an entity column, not appContextSlice — it does NOT
+   * violate the Surface A/B global-context invariant.
+   */
+  async adoptEntityOrgFromScopes(
+    entityType: ScopeAssignmentEntityType,
+    entityId: string,
+    scopeIds: string[],
+  ): Promise<ScopesRpcResult<{ organization_id: string | null }>> {
+    const ENTITY_ORG_TABLE: Partial<Record<ScopeAssignmentEntityType, string>> =
+      {
+        project: "ctx_projects",
+        task: "ctx_tasks",
+      };
+    try {
+      const table = ENTITY_ORG_TABLE[entityType];
+      if (!table || scopeIds.length === 0) return ok({ organization_id: null });
 
-      return ok({ scope_ids: target });
+      // The org of the first assigned scope (scopes carry organization_id).
+      const { data: scopeRow, error: sErr } = await supabase
+        .from("ctx_scopes")
+        .select("organization_id")
+        .eq("id", scopeIds[0])
+        .maybeSingle();
+      if (sErr) return err(...mapPgErrorPair(sErr));
+      const orgId =
+        (scopeRow as { organization_id?: string | null } | null)
+          ?.organization_id ?? null;
+      if (!orgId) return ok({ organization_id: null });
+
+      // Adopt ONLY when the container currently has no org (DB-enforced).
+      const { data: updated, error: uErr } = await supabase
+        .from(table as never)
+        .update({ organization_id: orgId } as never)
+        .eq("id", entityId)
+        .is("organization_id", null)
+        .select("id");
+      if (uErr) return err(...mapPgErrorPair(uErr));
+
+      const didUpdate = Array.isArray(updated) && updated.length > 0;
+      return ok({ organization_id: didUpdate ? orgId : null });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }
@@ -614,7 +787,60 @@ export const scopesService = {
   updateContextItem: notYetImplemented("update_context_item"),
   deleteContextItem: notYetImplemented("delete_context_item"),
 
-  setContextValue: notYetImplemented("set_context_value"),
+  /**
+   * Write a value into a scope cell via the `set_context_value` SECURITY
+   * DEFINER RPC — the only sanctioned mutation path for
+   * `ctx_context_item_values` (atomic version-flip-then-insert, scope
+   * write-access checked inside the function). `auth.uid()` is the live user
+   * when called from the FE, so we never pass `acting_user_id`. Defaults
+   * `source_type` to `ai_enriched` (the RPC also defaults it, but we make the
+   * common KG-suggestion intent explicit).
+   */
+  async setContextValue(
+    payload: SetContextValuePayload,
+  ): Promise<ScopesRpcResult<SetContextValueResult>> {
+    try {
+      requireUserId();
+      const { data, error } = await supabase.rpc("set_context_value", {
+        p_payload: {
+          source_type: "ai_enriched",
+          ...payload,
+        } as never,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+
+      // `set_context_value` returns `Json` (i.e. `unknown`) in the generated
+      // types, so decode through a single optional-field shape rather than a
+      // discriminated union (the latter doesn't narrow off an `unknown` cast).
+      const envelope = data as {
+        ok?: boolean;
+        data?: SetContextValueResult;
+        error?: { code?: string; message?: string };
+      } | null;
+
+      if (!envelope || typeof envelope !== "object") {
+        return err("internal", "set_context_value returned no result");
+      }
+      if (!envelope.ok) {
+        const code = envelope.error?.code;
+        const mapped: ScopesRpcError["code"] =
+          code === "unauthorized"
+            ? "unauthorized"
+            : code === "forbidden_org"
+              ? "forbidden_org"
+              : code === "not_found"
+                ? "not_found"
+                : code === "invalid_argument"
+                  ? "invalid_argument"
+                  : "internal";
+        return err(mapped, envelope.error?.message ?? "Could not set value");
+      }
+      return ok(envelope.data as SetContextValueResult);
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
   revertContextValue: notYetImplemented("revert_context_value"),
   deleteContextValue: notYetImplemented("delete_context_value"),
 

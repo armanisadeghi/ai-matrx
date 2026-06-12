@@ -26,10 +26,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SharedRunsWindow } from "@/features/agent-comparison/components/SharedRunsWindow";
 import { ModePicker } from "@/features/agent-comparison/shared/ModePicker";
-import {
-  reorderModelColumns,
-  setModelColumnCollapsed,
-} from "../redux/slice";
+import { reorderModelColumns, setModelColumnCollapsed } from "../redux/slice";
 import {
   selectLockedAgentId,
   selectModelColumnIds,
@@ -128,6 +125,7 @@ function ColumnGroup({ columns }: { columns: ModelColumnType[] }) {
           column={col}
           defaultSize={equalSize}
           showHandle={idx > 0}
+          isBaseline={idx === 0}
         />
       ))}
     </ResizablePanelGroup>
@@ -138,10 +136,12 @@ function ColumnSegment({
   column,
   defaultSize,
   showHandle,
+  isBaseline,
 }: {
   column: ModelColumnType;
   defaultSize: string;
   showHandle: boolean;
+  isBaseline: boolean;
 }) {
   const dispatch = useAppDispatch();
   const panelRef = useRef<PanelImperativeHandle>(null);
@@ -177,7 +177,11 @@ function ColumnSegment({
           transition: "flex-grow 220ms ease, flex-basis 220ms ease",
         }}
       >
-        <ModelColumn column={column} onToggleCollapse={handleToggleCollapse} />
+        <ModelColumn
+          column={column}
+          onToggleCollapse={handleToggleCollapse}
+          isBaseline={isBaseline}
+        />
       </ResizablePanel>
     </>
   );

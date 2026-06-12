@@ -17,6 +17,7 @@ import {
   type BinaryResult,
   usePdfDemoApi,
 } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { parsePagesInput } from "@/features/pdf-demo/utils/pages";
 
 interface MergeSource {
   state: PdfSourceState;
@@ -57,9 +58,10 @@ export default function MergeDemo() {
       const ready = sources.filter((s) => s.state.payload);
       if (ready.length < 1) throw new Error("Add at least one source PDF.");
       const sourcesWire = ready.map((s) => {
-        const pages = s.pagesInput.trim()
-          ? s.pagesInput.split(",").map((t) => Number(t.trim())).filter((n) => Number.isFinite(n) && n >= 1)
-          : null;
+        // parsePagesInput supports range syntax ("1-3,7") and throws with a
+        // precise message — the previous bare split(",") silently dropped
+        // ranges (Number("1-3") → NaN → filtered out → whole PDF merged).
+        const pages = s.pagesInput.trim() ? parsePagesInput(s.pagesInput) : null;
         return {
           ...s.state.payload,
           ...(pages && pages.length ? { pages } : {}),

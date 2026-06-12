@@ -1,7 +1,6 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { SystemPromptBattlePage } from "@/features/agent-comparison/modes/system-prompt/components/SystemPromptBattlePage";
 
-export const metadata = { title: "System Prompt Battle | AI Matrx" };
 
 export default function SystemPromptBattleRoute() {
   return (

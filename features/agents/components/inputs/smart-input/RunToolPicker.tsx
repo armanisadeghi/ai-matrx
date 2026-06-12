@@ -10,7 +10,8 @@
  */
 
 import { useEffect, useState } from "react";
-import { Search, X, Check } from "lucide-react";
+import { Search, X, Check, ChevronDown } from "lucide-react";
+import type { DatabaseTool } from "@/utils/supabase/tools-service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,8 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
   const addedList = settings.addedTools ?? [];
   const added = new Set(addedList);
   const [search, setSearch] = useState("");
+  // Accordion: one description open at a time keeps the list scannable.
+  const [expandedToolId, setExpandedToolId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status !== "succeeded" && status !== "loading") {
@@ -112,41 +115,18 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
             {search ? `No tools match "${search}"` : "No tools available."}
           </p>
         ) : (
-          visible.map((t) => {
-            const on = added.has(t.id);
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => toggle(t.id)}
-                className={cn(
-                  "flex w-full items-start gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-accent/60",
-                  on && "bg-primary/5",
-                )}
-              >
-                <span
-                  className={cn(
-                    "mt-0.5 flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border",
-                    on
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-muted-foreground/40",
-                  )}
-                >
-                  {on && <Check className="h-2.5 w-2.5" />}
-                </span>
-                <span className="min-w-0">
-                  <span className="text-xs font-medium text-foreground">
-                    {t.name}
-                  </span>
-                  {t.description && (
-                    <span className="line-clamp-2 block text-[10px] leading-tight text-muted-foreground">
-                      {t.description}
-                    </span>
-                  )}
-                </span>
-              </button>
-            );
-          })
+          visible.map((t) => (
+            <ToolRow
+              key={t.id}
+              tool={t}
+              selected={added.has(t.id)}
+              expanded={expandedToolId === t.id}
+              onToggle={() => toggle(t.id)}
+              onToggleExpand={() =>
+                setExpandedToolId((cur) => (cur === t.id ? null : t.id))
+              }
+            />
+          ))
         )}
       </div>
 
@@ -160,6 +140,82 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
             Clear {added.size} added tool{added.size === 1 ? "" : "s"}
           </button>
         </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Single-line tool row: checkbox + name + expand chevron. Clicking the row
+ * toggles selection; the chevron expands the full description below. The row
+ * is a div[role=button] (not <button>) so the chevron can be a real button —
+ * nested buttons are invalid HTML.
+ */
+function ToolRow({
+  tool,
+  selected,
+  expanded,
+  onToggle,
+  onToggleExpand,
+}: {
+  tool: DatabaseTool;
+  selected: boolean;
+  expanded: boolean;
+  onToggle: () => void;
+  onToggleExpand: () => void;
+}) {
+  return (
+    <div className={cn(selected && "bg-primary/5")}>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-pressed={selected}
+        onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+        className="flex h-8 w-full cursor-pointer items-center gap-2 px-2.5 text-left transition-colors hover:bg-accent/60"
+      >
+        <span
+          className={cn(
+            "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border",
+            selected
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-muted-foreground/40",
+          )}
+        >
+          {selected && <Check className="h-2.5 w-2.5" />}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+          {tool.name}
+        </span>
+        {tool.description && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleExpand();
+            }}
+            aria-expanded={expanded}
+            aria-label={expanded ? "Hide description" : "Show description"}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 transition-transform",
+                expanded && "rotate-180",
+              )}
+            />
+          </button>
+        )}
+      </div>
+      {expanded && tool.description && (
+        <p className="px-2.5 pb-1.5 pl-8 text-[11px] leading-snug text-muted-foreground">
+          {tool.description}
+        </p>
       )}
     </div>
   );

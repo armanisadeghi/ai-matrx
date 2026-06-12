@@ -6,6 +6,7 @@ import type { AgentDefinitionRecord } from "@/features/agents/types/agent-defini
 import type { RightPanel } from "./types";
 import { SearchInput } from "./primitives";
 import { AgentFilterBar } from "./AgentFilterBar";
+import { AgentListTabs, type AgentListTabCounts } from "./AgentListTabs";
 import { AgentRow } from "./AgentRow";
 
 export interface AgentListContentProps {
@@ -26,6 +27,7 @@ export interface AgentListContentProps {
   onDetailPress: (a: AgentDefinitionRecord) => void;
   onFilterChipClick: (panel: "sort" | "categories" | "tags") => void;
   rightPanel: RightPanel;
+  tabCounts: AgentListTabCounts;
 }
 
 export function AgentListContent({
@@ -46,7 +48,17 @@ export function AgentListContent({
   onDetailPress,
   onFilterChipClick,
   rightPanel,
+  tabCounts,
 }: AgentListContentProps) {
+  const isSystemTab = consumer.tab === "system";
+
+  const emptyLabel =
+    consumer.tab === "system"
+      ? "No system agents found"
+      : consumer.tab === "shared"
+        ? "No shared agents found"
+        : "No agents found";
+
   return (
     <div className="flex flex-col h-full">
       {/* Search */}
@@ -59,6 +71,8 @@ export function AgentListContent({
         />
       </div>
 
+      <AgentListTabs consumer={consumer} tabCounts={tabCounts} />
+
       {/* Filter bar */}
       <AgentFilterBar
         consumer={consumer}
@@ -69,6 +83,7 @@ export function AgentListContent({
         rightPanel={rightPanel}
         onFilterChipClick={onFilterChipClick}
         onReset={onReset}
+        systemTab={isSystemTab}
       />
 
       <div className="h-px bg-border shrink-0" />
@@ -82,7 +97,7 @@ export function AgentListContent({
           </div>
         ) : agents.length === 0 ? (
           <div className="flex flex-col items-center py-8 text-muted-foreground">
-            <span className="text-xs">No agents found</span>
+            <span className="text-xs">{emptyLabel}</span>
           </div>
         ) : (
           <div className="py-0.5">

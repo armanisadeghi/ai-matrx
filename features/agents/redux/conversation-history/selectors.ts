@@ -1,4 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import type { RootState } from "@/lib/redux/store";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
@@ -34,7 +35,7 @@ export const makeSelectConversationHistoryItems = (scopeId: string) => {
     return scope.items.filter((item) => {
       const title = (item.title ?? "").toLowerCase();
       const desc = (item.description ?? "").toLowerCase();
-      return title.includes(term) || desc.includes(term);
+      return title.includes(term) || desc.includes(term) || idMatchesQuery(item, term);
     });
   });
 };

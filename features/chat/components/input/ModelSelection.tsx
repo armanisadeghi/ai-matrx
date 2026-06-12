@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { ChevronDown, X } from "lucide-react";
 import { MatrxRecordId } from "@/types/entityTypes";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import {
     DeepSeek,
     Gemini,
@@ -218,7 +219,7 @@ const ModelSelection: React.FC<ModelSelectionProps> = React.memo(
                               const searchLower = searchTerm.toLowerCase();
                               const nameMatch = (model.commonName || model.name || "").toLowerCase().includes(searchLower);
                               const providerMatch = (model.provider || model.modelProvider || "").toLowerCase().includes(searchLower);
-                              return nameMatch || providerMatch;
+                              return nameMatch || providerMatch || idMatchesQuery(model, searchLower);
                           })
                     : [],
             [models, searchTerm]

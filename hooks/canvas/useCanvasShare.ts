@@ -17,11 +17,10 @@ export function useCanvasShare() {
   const supabase = createClient();
 
   const generateShareToken = () => {
-    // Generate URL-safe token
-    return (
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15)
-    );
+    // Cryptographically secure, URL-safe token (UUIDv4 → 122 bits of entropy).
+    // Never use Math.random() for share tokens — its output is predictable and
+    // the token is the only thing gating access to a public/unlisted canvas.
+    return crypto.randomUUID().replace(/-/g, "");
   };
 
   const shareMutation = useMutation({

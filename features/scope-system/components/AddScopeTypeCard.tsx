@@ -32,10 +32,10 @@ export function AddScopeTypeCard({
           >
             <span className="text-sm font-semibold text-foreground group-hover:text-primary inline-flex items-center gap-1.5">
               <Plus className="h-3.5 w-3.5" />
-              Add scope
+              Add Scope Type
             </span>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Define a fresh group from scratch
+              Define a fresh dimension from scratch
             </p>
           </button>
           <button

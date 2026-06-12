@@ -15,7 +15,15 @@
  */
 
 import { useEffect, useState } from "react";
-import { Plus, Loader2, X, Check, GitBranch, Monitor, Server } from "lucide-react";
+import {
+  Plus,
+  Loader2,
+  X,
+  Check,
+  GitBranch,
+  Monitor,
+  Server,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
@@ -24,6 +32,7 @@ import {
   selectConversationIsEphemeral,
 } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { setConversationSandboxOverride } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { selectChatIncognitoActive } from "@/features/agents/components/chat/chat-incognito.slice";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { useComputeTargets } from "@/hooks/sandbox/use-compute-targets";
 import type { ComputeTarget } from "@/hooks/sandbox/use-compute-targets";
@@ -78,19 +87,25 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
   // etc.). See active-binding.ts#resolveAgentSandboxRef.
   const sourceFeature = useAppSelector((s) =>
     conversationId
-      ? (s.conversations.byConversationId[conversationId]?.sourceFeature ?? null)
+      ? (s.conversations.byConversationId[conversationId]?.sourceFeature ??
+        null)
       : null,
   );
   const bySurface = useAppSelector(
     (s) => s.userPreferences.coding.activeAgentSandboxBySurface,
   );
-  const surfaceBound = sourceFeature ? (bySurface[sourceFeature] ?? null) : null;
+  const surfaceBound = sourceFeature
+    ? (bySurface[sourceFeature] ?? null)
+    : null;
   const override = useAppSelector(
     selectConversationSandboxOverride(conversationId ?? ""),
   );
   const isEphemeral = useAppSelector(
     selectConversationIsEphemeral(conversationId ?? ""),
   );
+  const chatIncognito = useAppSelector(selectChatIncognitoActive);
+  const sandboxBlocked =
+    isEphemeral || (chatIncognito && sourceFeature === "chat-route");
 
   // Resolution mirrors active-binding.ts: conversation override wins over the
   // per-surface binding.
@@ -133,8 +148,20 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
     ACTIVE_EFFECTIVE_STATUSES.includes(getEffectiveStatus(i)),
   );
 
-  const canOverride = !!conversationId && !isEphemeral;
+  const canOverride = !!conversationId && !sandboxBlocked;
   const effectiveOverrideMode = overrideMode && canOverride;
+
+  if (sandboxBlocked) {
+    return (
+      <div className="px-3 py-4">
+        <p className="text-sm font-medium text-foreground">Agent sandbox</p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Unavailable in incognito mode. Your org sandbox, local PC, and surface
+          defaults are not attached — the agent runs without a bound filesystem.
+        </p>
+      </div>
+    );
+  }
 
   const applyRef = (ref: SandboxRef | null) => {
     if (effectiveOverrideMode && conversationId) {
@@ -146,7 +173,9 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
       );
     } else {
       if (!sourceFeature) {
-        toast.error("This conversation has no surface yet — try again in a moment.");
+        toast.error(
+          "This conversation has no surface yet — try again in a moment.",
+        );
         return;
       }
       // Read-modify-write the per-surface map so we only touch THIS surface.
@@ -187,9 +216,7 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
           ...(sandboxPrefs.default_git_branch
             ? { default_git_branch: sandboxPrefs.default_git_branch }
             : {}),
-          ...(sandboxPrefs.auto_clone_on_create
-            ? { auto_clone: "true" }
-            : {}),
+          ...(sandboxPrefs.auto_clone_on_create ? { auto_clone: "true" } : {}),
         },
         config: {
           // Forward env vars so the orchestrator can materialise them on
@@ -271,13 +298,18 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
               {localPcs.map((pc) => {
                 const isBound =
                   resolved?.rowId === pc.id ||
-                  resolved?.kind === "local-pc" && (resolved as SandboxRef).rowId === pc.id;
+                  (resolved?.kind === "local-pc" &&
+                    (resolved as SandboxRef).rowId === pc.id);
                 return (
                   <button
                     key={pc.id}
                     onClick={() => handlePickLocalPc(pc)}
                     className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-accent/60 transition-colors"
-                    title={pc.is_online ? "Online" : "Offline — start matrx-local on this device"}
+                    title={
+                      pc.is_online
+                        ? "Online"
+                        : "Offline — start matrx-local on this device"
+                    }
                   >
                     <span className="min-w-0 flex items-center gap-2">
                       {isBound && (
@@ -285,7 +317,9 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
                       )}
                       <span
                         className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
-                          pc.is_online ? "bg-emerald-500" : "bg-muted-foreground/40"
+                          pc.is_online
+                            ? "bg-emerald-500"
+                            : "bg-muted-foreground/40"
                         }`}
                       />
                       <Monitor className="h-3 w-3 shrink-0 text-muted-foreground" />

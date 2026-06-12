@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ShareModal } from "@/features/sharing";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { idMatchesQuery } from "@/utils/search-scoring";
 // ── Legacy cx-conversation slice stubs ────────────────────────────────────────
 // cx-chat is deprecated (rebuild in progress on `conversation-list/` slice).
 // During the Redux unification we kept this component rendering but inert:
@@ -490,7 +491,8 @@ function SharedChatsSection({
     return sharedChats.filter(
       (c) =>
         c.title?.toLowerCase().includes(q) ||
-        c.owner_email?.toLowerCase().includes(q),
+        c.owner_email?.toLowerCase().includes(q) ||
+        idMatchesQuery(c, q),
     );
   }, [sharedChats, searchQuery]);
 
@@ -616,7 +618,9 @@ export function SsrSidebarChats({
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return items;
     const q = searchQuery.toLowerCase();
-    return items.filter((h) => h.title?.toLowerCase().includes(q));
+    return items.filter(
+      (h) => h.title?.toLowerCase().includes(q) || idMatchesQuery(h, q),
+    );
   }, [items, searchQuery]);
 
   const grouped = useMemo(() => groupByTime(filtered), [filtered]);

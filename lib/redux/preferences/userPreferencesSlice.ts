@@ -537,7 +537,7 @@ export const initializeUserPreferencesState = (
       // the Sandbox admin page's "New sandbox" button creates by default
       // and is the template the auto-provision-on-sign-in flow uses.
       template: "slim",
-      tier: "hosted",
+      tier: "ec2",
       // null = use the orchestrator's max (24h); user wants "never auto-stop"
       // and heartbeats roll expires_at forward while the box is being used.
       ttl_seconds: null,

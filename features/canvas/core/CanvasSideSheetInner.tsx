@@ -1,140 +1,241 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { 
-  selectCanvasIsOpen, 
+/**
+ * CanvasSideSheet — the global right-side canvas surface.
+ *
+ * Modeled on the Claude.ai canvas: a slide-in panel anchored to the right
+ * edge of the viewport, available on every route (mounted once via
+ * `DeferredIslands` for `(a)/*` and directly in `(public)/layout.tsx`).
+ *
+ * Responsibilities owned here:
+ *  - Slide-in container with backdrop-free overlay (does not dim the page).
+ *  - Resizable WIDTH via a glass drag handle on the left edge.
+ *  - Optional VERTICAL SPLIT — when `secondaryItemId` is set in Redux,
+ *    renders two panes stacked with a draggable horizontal handle, each
+ *    pane independently rendering its own canvas item.
+ *  - Mobile: fullscreen overlay, drops the split (single pane only — split
+ *    is desktop-only because the panes need real estate to be useful).
+ *  - Listens for the global ⌘\ shortcut → toggles open/closed.
+ *
+ * The actual content of each pane (header chrome + body) lives in
+ * `CanvasPane.tsx`, so this shell stays purely about layout / placement.
+ */
+
+import React, { useCallback, useEffect, useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectCanvasIsOpen,
   selectCurrentCanvasItem,
+  selectSecondaryCanvasItem,
+  selectCanvasSplitRatio,
   selectCanvasWidth,
   closeCanvas,
+  toggleCanvas,
   setCanvasWidth,
+  setCanvasSplitRatio,
 } from "@/features/canvas/redux/canvasSlice";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { CanvasRenderer } from "./CanvasRenderer";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
+import { CanvasPane } from "./CanvasPane";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
-/**
- * CanvasSideSheet - Global canvas side sheet component
- * 
- * Features:
- * - Always available (works in routes, modals, sheets)
- * - High z-index (10000) to appear above modals
- * - Resizable width with drag handle
- * - Mobile: fullscreen overlay
- * - Subscribes to Redux canvas state
- * 
- * This component should be rendered once at the root layout level.
- */
+const MIN_WIDTH = 480;
+const MAX_WIDTH = 1400;
+const DEFAULT_WIDTH = 768;
+const CANVAS_TOP_PANEL_ID = "canvas-top";
+const CANVAS_BOTTOM_PANEL_ID = "canvas-bottom";
+
 export function CanvasSideSheetInner() {
   const dispatch = useAppDispatch();
   const isOpen = useAppSelector(selectCanvasIsOpen);
   const currentItem = useAppSelector(selectCurrentCanvasItem);
-  const canvasWidth = useAppSelector(selectCanvasWidth);
+  const secondaryItem = useAppSelector(selectSecondaryCanvasItem);
+  const splitRatio = useAppSelector(selectCanvasSplitRatio);
+  const storedWidth = useAppSelector(selectCanvasWidth);
   const isMobile = useIsMobile();
-  
+
+  // Width-resize from the left edge ────────────────────────────────────────
   const [isResizing, setIsResizing] = useState(false);
 
   const handleClose = useCallback(() => {
     dispatch(closeCanvas());
   }, [dispatch]);
 
-  // Handle resize - Desktop only
-  const handleMouseMove = useCallback((e: MouseEvent) => {
+  useEffect(() => {
     if (!isResizing) return;
-    
-    // Calculate width from the right edge
-    const newWidth = window.innerWidth - e.clientX;
-    
-    // Constrain canvas width between 500px min and 1200px max
-    const minWidth = 500;
-    const maxWidth = 1200;
-    const constrainedWidth = Math.min(Math.max(newWidth, minWidth), maxWidth);
-    
-    dispatch(setCanvasWidth(constrainedWidth));
+    const onMove = (e: MouseEvent) => {
+      const next = window.innerWidth - e.clientX;
+      const clamped = Math.min(Math.max(next, MIN_WIDTH), MAX_WIDTH);
+      dispatch(setCanvasWidth(clamped));
+    };
+    const onUp = () => setIsResizing(false);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
   }, [isResizing, dispatch]);
 
-  const handleMouseUp = useCallback(() => {
-    setIsResizing(false);
-  }, []);
-
-  // Setup mouse event listeners for resizing
-  useEffect(() => {
-    if (!isResizing) return;
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isResizing, handleMouseMove, handleMouseUp]);
-
-  // Prevent text selection during resize
   useEffect(() => {
     if (isResizing) {
-      document.body.style.userSelect = 'none';
-      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = "none";
+      document.body.style.cursor = "col-resize";
     } else {
-      document.body.style.userSelect = '';
-      document.body.style.cursor = '';
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
     }
   }, [isResizing]);
 
+  // Global keyboard shortcut: ⌘\ / Ctrl+\ toggles the canvas if there's
+  // anything to show. Bound here so every authenticated + public surface
+  // gets it for free. Ignored when focus is in a text field, so users mid-
+  // typing don't get yanked into / out of the canvas accidentally.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "\\") return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const t = e.target as HTMLElement | null;
+      const typing =
+        t?.tagName === "INPUT" ||
+        t?.tagName === "TEXTAREA" ||
+        t?.isContentEditable;
+      if (typing) return;
+      e.preventDefault();
+      dispatch(toggleCanvas());
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dispatch]);
+
   if (!currentItem) return null;
 
-  // Extract title for accessibility (visually hidden)
-  // Handle both string and ReactNode titles
-  const canvasTitle = typeof currentItem.content.metadata?.title === 'string'
-    ? currentItem.content.metadata.title
-    : currentItem.content.metadata?.title
-      ? 'Canvas Content'
-      : 'Canvas';
+  const canvasTitle =
+    typeof currentItem.content.metadata?.title === "string"
+      ? currentItem.content.metadata.title
+      : "Canvas";
+
+  const width = Math.min(
+    Math.max(storedWidth || DEFAULT_WIDTH, MIN_WIDTH),
+    MAX_WIDTH,
+  );
+  const showSplit = !!secondaryItem && !isMobile;
 
   return (
-    <Sheet open={isOpen} onOpenChange={handleClose}>
+    <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <SheetContent
         side="right"
         hideCloseButton
-        className="p-0 gap-0 overflow-hidden border-l border-zinc-200 dark:border-zinc-800"
+        // Two-layer chrome:
+        //   1. outer SheetContent: positions on the right, owns width, owns
+        //      the z-index that puts the canvas above modals (10000).
+        //   2. inner glass card: bg + border + shadow — read as one
+        //      continuous floating surface against the page.
+        // No backdrop blur on the page — the canvas overlays without dimming.
+        className={cn(
+          "p-0 gap-0 overflow-visible border-l-0 bg-transparent shadow-none",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out",
+        )}
         style={{
-          width: isMobile ? '100%' : `${canvasWidth}px`,
-          maxWidth: isMobile ? '100%' : `${canvasWidth}px`,
-          height: isMobile ? '100dvh' : '100vh',
-          zIndex: 10000, // Above modals (9999)
+          width: isMobile ? "100%" : `${width}px`,
+          maxWidth: isMobile ? "100%" : `${width}px`,
+          height: isMobile ? "100dvh" : "100vh",
+          zIndex: 10000,
         }}
-        // Disable default close button, CanvasRenderer has its own
         onPointerDownOutside={(e) => {
-          // Allow closing by clicking overlay
-          if (e.target === e.currentTarget) {
-            handleClose();
-          }
+          // Don't close from arbitrary clicks elsewhere — too easy to lose
+          // the canvas accidentally while interacting with other UI.
+          e.preventDefault();
         }}
       >
-        {/* Visually hidden title for accessibility */}
         <SheetTitle className="sr-only">{canvasTitle}</SheetTitle>
-        
-        {/* Resize Handle - Desktop only */}
+
+        {/* Left-edge resize handle — only on desktop. Sits OUTSIDE the
+            visual card so the hit target extends slightly into the page. */}
         {!isMobile && (
           <div
-            className="absolute top-0 bottom-0 left-0 w-4 cursor-col-resize z-20 flex items-center justify-center hover:bg-primary/5 transition-colors"
-            onMouseDown={() => setIsResizing(true)}
-            style={{ marginLeft: '-4px' }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setIsResizing(true);
+            }}
+            className={cn(
+              "group absolute top-0 bottom-0 left-0 z-30 w-2 -translate-x-1/2",
+              "cursor-col-resize flex items-center justify-center",
+            )}
+            aria-label="Resize canvas width"
+            role="separator"
           >
-            {/* Visual drag handle */}
-            <div className="w-1 h-16 rounded-full bg-zinc-300 dark:bg-zinc-700 hover:bg-primary transition-colors" />
+            <div
+              className={cn(
+                "w-1 h-12 rounded-full transition-colors",
+                isResizing
+                  ? "bg-primary"
+                  : "bg-border group-hover:bg-primary/70",
+              )}
+            />
           </div>
         )}
 
-        {/* Canvas Content */}
-        <div className="h-full w-full overflow-hidden">
-          <CanvasRenderer 
-            content={currentItem.content}
-            variant="default"
-          />
+        {/* Visual card. Padding outside the card so the rounded corners feel
+            inset from the viewport edge — matches the floating chat header
+            language. Mobile: edge-to-edge (no padding, no rounding). */}
+        <div className={cn("h-full", isMobile ? "" : "p-1.5 pl-1")}>
+          <div
+            className={cn(
+              "h-full w-full flex flex-col overflow-hidden",
+              "bg-card text-card-foreground",
+              isMobile
+                ? "border-l border-border"
+                : "rounded-xl border border-border shadow-[0_8px_32px_-12px_rgba(0,0,0,0.2)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]",
+            )}
+          >
+            {showSplit ? (
+              <ResizablePanelGroup
+                orientation="vertical"
+                // v4: Layout is a {panelId: flexGrow} map (not number[]) and
+                // the settle-time callback is onLayoutChanged. Normalize to a
+                // percentage so the stored ratio is stable regardless of how
+                // flexGrow values are scaled.
+                onLayoutChanged={(layout) => {
+                  const top = layout[CANVAS_TOP_PANEL_ID];
+                  const bottom = layout[CANVAS_BOTTOM_PANEL_ID];
+                  if (Number.isFinite(top) && Number.isFinite(bottom) && top + bottom > 0) {
+                    dispatch(setCanvasSplitRatio(Math.round((top / (top + bottom)) * 100)));
+                  }
+                }}
+              >
+                <ResizablePanel
+                  id={CANVAS_TOP_PANEL_ID}
+                  defaultSize={splitRatio}
+                  minSize={20}
+                  style={{ overflow: "hidden", height: "100%" }}
+                >
+                  <CanvasPane paneRole="top" />
+                </ResizablePanel>
+                {/* Cursor override: the wrapper hard-codes col-resize for
+                    horizontal groups. In a vertical group the handle runs
+                    horizontally so the user expects row-resize. */}
+                <ResizableHandle style={{ cursor: "row-resize" }} />
+                <ResizablePanel
+                  id={CANVAS_BOTTOM_PANEL_ID}
+                  defaultSize={100 - splitRatio}
+                  minSize={20}
+                  style={{ overflow: "hidden", height: "100%" }}
+                >
+                  <CanvasPane paneRole="bottom" />
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            ) : (
+              <CanvasPane paneRole="single" />
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>
   );
 }
-

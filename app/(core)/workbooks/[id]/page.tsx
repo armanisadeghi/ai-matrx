@@ -147,6 +147,7 @@ export default function WorkbookPage({
           workbookId={id}
           workbookName={workbook?.workbook_name ?? undefined}
           editable={canEdit}
+          collab
         />
       </div>
     </div>

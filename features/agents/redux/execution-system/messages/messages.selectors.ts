@@ -209,6 +209,25 @@ export const selectIsLatestAssistantMessage =
     return false;
   };
 
+/**
+ * Id of the latest assistant message in the conversation, or undefined.
+ * Primitive return — safe to subscribe to without memoization. Used by the
+ * auto-voice hook to know which assistant turn to read aloud on completion.
+ */
+export const selectLatestAssistantMessageId =
+  (conversationId: string) =>
+  (state: RootState): string | undefined => {
+    const entry = state.messages.byConversationId[conversationId];
+    const ordered = entry?.orderedIds;
+    const byId = entry?.byId;
+    if (!ordered || !byId) return undefined;
+    for (let i = ordered.length - 1; i >= 0; i--) {
+      const id = ordered[i];
+      if (byId[id]?.role === "assistant") return id;
+    }
+    return undefined;
+  };
+
 // ---------------------------------------------------------------------------
 // Conversation-level fields
 // ---------------------------------------------------------------------------
@@ -431,6 +450,35 @@ export const selectMessageInterleavedContent = (
 
       const segments: ContentSegment[] = [];
       for (const part of parts) {
+        // `artifact_ref` is a client-side materialization content block that is
+        // not part of the python-generated MessagePart union, so it's handled
+        // before the typed switch. Emitting a render_block segment routes it
+        // through BlockRenderer → ArtifactRefBlock, which loads the persisted
+        // canvas_items row by id (no raw re-parse → no regeneration on reload).
+        if ((part as { type?: string }).type === "artifact_ref") {
+          const ref = part as unknown as {
+            artifact_id?: string;
+            artifact_type?: string;
+            version?: number;
+            artifact_index?: number;
+            title?: string;
+          };
+          if (ref.artifact_id) {
+            segments.push({
+              type: "render_block",
+              blockType: "artifact_ref",
+              content: null,
+              data: {
+                artifact_id: ref.artifact_id,
+                artifact_type: ref.artifact_type ?? "html",
+                version: ref.version ?? 1,
+                artifact_index: ref.artifact_index ?? 0,
+                title: ref.title ?? "",
+              },
+            } satisfies ContentSegmentRenderBlock);
+          }
+          continue;
+        }
         switch (part.type) {
           case "text": {
             const text = (part as { text?: string }).text;

@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, AlertCircle, Pencil, Maximize2 } from "lucide-react";
+import Link from "next/link";
+import {
+  Check,
+  Loader2,
+  AlertCircle,
+  Pencil,
+  Maximize2,
+  ArrowUpRight,
+} from "lucide-react";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useScopeAutoSave } from "@/features/scope-system/hooks/useScopeAutoSave";
 import type { ScopeContextRow } from "@/features/scope-system/redux/scopeValuesSlice";
@@ -12,12 +21,27 @@ import { EditScopeValueSheet } from "./EditScopeValueSheet";
 interface ScopeFieldInputProps {
   scopeId: string;
   row: ScopeContextRow;
+  /** When provided, shows a link to the item's dedicated page (the ↗). */
+  itemHref?: string;
+  /**
+   * Override the field's title (defaults to the item's display_name). Used on the
+   * Context Item Hub, where each row is the SAME item across different scopes, so
+   * the row title should be the scope name instead.
+   */
+  nameLabel?: string;
+  /** When set, the title becomes a link here (e.g. to the scope hub) instead of
+   * the edit-item drawer trigger. */
+  nameHref?: string;
+  /** Optional node rendered in the field header's right cluster (e.g. a
+   * knowledge-graph suggestion hint for this item). */
+  headerSlot?: React.ReactNode;
 }
 
 function rowToString(row: ScopeContextRow): string {
   if (row.value_text != null) return row.value_text;
   if (row.value_number != null) return String(row.value_number);
   if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
+  if (row.value_date != null) return row.value_date;
   if (row.value_document_url != null) return row.value_document_url;
   if (row.value_json != null) {
     try {
@@ -29,7 +53,14 @@ function rowToString(row: ScopeContextRow): string {
   return "";
 }
 
-export function ScopeFieldInput({ scopeId, row }: ScopeFieldInputProps) {
+export function ScopeFieldInput({
+  scopeId,
+  row,
+  itemHref,
+  nameLabel,
+  nameHref,
+  headerSlot,
+}: ScopeFieldInputProps) {
   const initial = rowToString(row);
   const [value, setValue] = useState(initial);
   const [editingItem, setEditingItem] = useState(false);
@@ -52,6 +83,8 @@ export function ScopeFieldInput({ scopeId, row }: ScopeFieldInputProps) {
   // effect on every keystroke, wiping the value back to `initial`.
   useEffect(() => {
     if (isDirtyRef.current) return;
+    // Intentional store→input sync when not mid-edit; see the comment above.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setValue(initial);
   }, [initial]);
 
@@ -61,16 +94,37 @@ export function ScopeFieldInput({ scopeId, row }: ScopeFieldInputProps) {
     <>
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => setEditingItem(true)}
-            className="group inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary"
-            title="Edit this context item"
-          >
-            {row.display_name}
-            <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
+          <div className="inline-flex items-center gap-1">
+            {nameHref ? (
+              <Link
+                href={nameHref}
+                className="text-sm font-medium text-foreground hover:text-primary"
+              >
+                {nameLabel ?? row.display_name}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditingItem(true)}
+                className="group inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary"
+                title="Edit this context item"
+              >
+                {nameLabel ?? row.display_name}
+                <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            )}
+            {itemHref && (
+              <Link
+                href={itemHref}
+                title="Open page"
+                className="text-muted-foreground hover:text-primary"
+              >
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            )}
+          </div>
           <div className="flex items-center gap-1">
+            {headerSlot}
             <FieldStatus
               status={status}
               hasValue={row.has_value || value.trim().length > 0}
@@ -88,22 +142,39 @@ export function ScopeFieldInput({ scopeId, row }: ScopeFieldInputProps) {
             </Button>
           </div>
         </div>
-        <ProTextarea
-          id={`field-${row.item_id}`}
-          value={value}
-          onChange={(e) => {
-            isDirtyRef.current = true;
-            setValue(e.target.value);
-          }}
-          onBlur={(e) => {
-            isDirtyRef.current = false;
-            commit(e.target.value);
-          }}
-          placeholder={placeholderForType(row.value_type)}
-          minHeight={80}
-          className={isJsonType ? "font-mono text-sm" : undefined}
-          autoGrow
-        />
+        {row.value_type === "date" ? (
+          <Input
+            id={`field-${row.item_id}`}
+            type="date"
+            value={value}
+            onChange={(e) => {
+              isDirtyRef.current = true;
+              setValue(e.target.value);
+            }}
+            onBlur={(e) => {
+              isDirtyRef.current = false;
+              commit(e.target.value);
+            }}
+            style={{ fontSize: "16px" }}
+          />
+        ) : (
+          <ProTextarea
+            id={`field-${row.item_id}`}
+            value={value}
+            onChange={(e) => {
+              isDirtyRef.current = true;
+              setValue(e.target.value);
+            }}
+            onBlur={(e) => {
+              isDirtyRef.current = false;
+              commit(e.target.value);
+            }}
+            placeholder={placeholderForType(row.value_type)}
+            minHeight={80}
+            className={isJsonType ? "font-mono text-sm" : undefined}
+            autoGrow
+          />
+        )}
         {row.description && (
           <p className="text-xs text-muted-foreground">{row.description}</p>
         )}

@@ -156,6 +156,7 @@ import { default as instanceVariableValuesReducer } from "@/features/agents/redu
 import { default as instanceResourcesReducer } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { default as instanceUserInputReducer } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { default as conversationsReducer } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+import chatIncognitoReducer from "@/features/agents/components/chat/chat-incognito.slice";
 import { default as activeRequestsReducer } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { default as observabilityReducer } from "@/features/agents/redux/execution-system/observability/observability.slice";
 import { default as contextStateReducer } from "@/features/agents/redux/execution-system/context-state/context-state.slice";
@@ -172,6 +173,7 @@ import { default as netHealthReducer } from "@/lib/redux/net/netHealthSlice";
 import markdownSamplesReducer from "@/lib/redux/slices/markdownSamples/slice";
 import userMarkdownSamplesReducer from "@/lib/redux/slices/userMarkdownSamples/slice";
 import richDocumentActionSurfacesReducer from "@/features/rich-document/redux/actionSurfacesSlice";
+import diffCompareReducer from "@/lib/redux/slices/diffCompareSlice";
 
 const featureReducers = Object.keys(featureSchemas).reduce(
   (acc, featureName) => {
@@ -244,7 +246,9 @@ export const slimReducerMap = {
   codePatches: codePatchesReducer,
   codeEditHistory: codeEditHistoryReducer,
   fsChanges: fsChangesReducer,
-  // New cloud-files system (migration from Supabase Storage buckets).
+  // cld_files — the single file system. Backed by the Python `/files/*`
+  // API (AWS S3 storage). All file flows funnel through `features/files`
+  // (the universal file handler).
   cloudFiles: cloudFilesReducer,
   // SMS integration
   sms: smsReducer,
@@ -351,6 +355,7 @@ export const slimReducerMap = {
   taskAssociations: taskAssociationsReducer,
 
   conversations: conversationsReducer,
+  chatIncognito: chatIncognitoReducer,
   instanceModelOverrides: instanceModelOverridesReducer,
   instanceVariableValues: instanceVariableValuesReducer,
   instanceResources: instanceResourcesReducer,
@@ -411,6 +416,10 @@ export const slimReducerMap = {
   // can render actions for whichever document is currently on top.
   // See features/rich-document/FEATURE.md.
   richDocumentActionSurfaces: richDocumentActionSurfacesReducer,
+
+  // Canonical diff system — pinned "comparison base" for the pick-two
+  // compare flow (components/diff). See components/diff/FEATURE.md.
+  diffCompare: diffCompareReducer,
 };
 
 export const createSlimRootReducer = () => combineReducers(slimReducerMap);

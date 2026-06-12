@@ -3,20 +3,20 @@
 /**
  * AgentConvertSystemWindow
  *
- * Floating window wrapping `ConvertAgentToSystemBody`. Lets an admin promote
- * the active agent to a system ("builtin") agent, or refresh an existing
- * system agent with the current definition.
+ * Floating window wrapping `AgentSyncBody` — the unified link surface between a
+ * user agent and its system ("builtin") twin. From either side it offers:
+ * pull (system → my copy), push (user → system), create-my-personal-copy, and
+ * the convert-to-new-system bootstrap when a user agent has no twin yet.
  *
- * Replaces the previous `AgentConvertSystemWindow` placeholder — the overlay
- * id (`agentConvertSystemWindow`) and registry slug (`agent-convert-system-window`)
- * are preserved so the menu dispatcher (`openAgentConvertSystemWindow`) and
- * existing persisted sessions keep working.
+ * The overlay id (`agentConvertSystemWindow`) and registry slug
+ * (`agent-convert-system-window`) are preserved so the menu dispatcher
+ * (`openAgentConvertSystemWindow`) and existing persisted sessions keep working.
  */
 
 import { Link2 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentComingSoonContent } from "@/features/agents/components/coming-soon/AgentComingSoonContent";
-import { ConvertAgentToSystemBody } from "@/features/agents/components/admin/ConvertAgentToSystemBody";
+import { AgentSyncBody } from "@/features/agents/components/admin/AgentSyncBody";
 
 interface AgentConvertSystemWindowProps {
   isOpen: boolean;
@@ -38,7 +38,7 @@ export default function AgentConvertSystemWindow({
     return (
       <WindowPanel
         id={WINDOW_ID}
-        title="Convert to System Agent"
+        title="Linked Agent Sync"
         onClose={onClose}
         width={520}
         height={360}
@@ -49,7 +49,7 @@ export default function AgentConvertSystemWindow({
         <AgentComingSoonContent
           icon={Link2}
           title="No agent selected"
-          description="Open this window from an agent's actions menu to promote it to a system agent."
+          description="Open this window from an agent's actions menu to sync it with its linked system or user agent."
           agentId={null}
         />
       </WindowPanel>
@@ -59,16 +59,16 @@ export default function AgentConvertSystemWindow({
   return (
     <WindowPanel
       id={WINDOW_ID}
-      title="Convert to System Agent"
+      title="Linked Agent Sync"
       onClose={onClose}
       width={620}
       height={580}
       minWidth={480}
       minHeight={420}
       overlayId={OVERLAY_ID}
-      bodyClassName="p-0"
+      bodyClassName="p-4"
     >
-      <ConvertAgentToSystemBody agentId={agentId} onClose={onClose} />
+      <AgentSyncBody agentId={agentId} onClose={onClose} />
     </WindowPanel>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import {
   Loader2,
   Package,
@@ -79,7 +80,8 @@ export function BundlesAdminPage() {
     return bundles.filter(
       (b) =>
         b.name.toLowerCase().includes(q) ||
-        (b.description ?? "").toLowerCase().includes(q),
+        (b.description ?? "").toLowerCase().includes(q) ||
+        idMatchesQuery(b, q),
     );
   })();
 

@@ -51,6 +51,15 @@ const pageExtensions =
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     pageExtensions,
+    // Build output directory. Defaults to ".next". Overridable via NEXT_DISTDIR
+    // so a SECOND `next dev` (e.g. an agent's preview server on another port)
+    // can run alongside your own without colliding. Next 16's per-distDir lock
+    // (`<distDir>/dev/lock`) otherwise aborts any second dev server for the same
+    // project — keyed on the directory, not the port — so two servers sharing
+    // ".next" is both blocked AND unsafe (concurrent writes corrupt the build).
+    // Giving the second instance its own distDir gives it its own lock, so they
+    // coexist safely. Unset in production / normal dev → ".next" as before.
+    distDir: process.env.NEXT_DISTDIR || ".next",
     // Vercel Skew Protection: when enabled in the Vercel project settings,
     // Vercel injects NEXT_DEPLOYMENT_ID at build time. Setting `deploymentId`
     // makes Next.js append `?dpl=<id>` to every chunk fetch, and Vercel routes
@@ -132,6 +141,15 @@ const nextConfig = {
     headers: getHeaders,
     async redirects() {
         return [
+            // 2026-06-08: Transcripts consolidation. Renamed `/transcription/*`
+            // route group to `/transcripts/*` so the feature has ONE canonical
+            // URL with slash-versioned sub-routes (studio, scribe, admin).
+            // Also lifted the processor up so `/transcripts` IS the workspace
+            // (no `/processor` sub-route — matches the "one thing with slashes"
+            // structure). Permanent so search indexes update.
+            { source: '/transcription', destination: '/transcripts', permanent: true },
+            { source: '/transcription/processor', destination: '/transcripts/processor', permanent: true },
+            { source: '/transcription/:path*', destination: '/transcripts/:path*', permanent: true },
             // 2026-05-28: SSR experiment consolidation. The (ssr) route group
             // moved from URL /ssr/* to /demos/ssr/* so every demo/test surface
             // shares the unified /demos/* prefix. The (ssr) layout (LiteStoreProvider
@@ -158,13 +176,17 @@ const nextConfig = {
             { source: '/org/:orgId/:path*', destination: '/organizations/:orgId/:path*', permanent: true },
             { source: '/org/:orgId', destination: '/organizations/:orgId', permanent: true },
             { source: '/org', destination: '/organizations', permanent: true },
-            // Transcription hub: legacy transcript URLs → app/(core)/transcription/*
-            { source: '/transcript-studio/:path*', destination: '/transcription/studio/:path*', permanent: true },
-            { source: '/transcript-studio', destination: '/transcription/studio', permanent: true },
-            { source: '/transcripts/:path*', destination: '/transcription/processor/:path*', permanent: true },
-            { source: '/transcripts', destination: '/transcription/processor', permanent: true },
-            { source: '/transcription/mobile/:path*', destination: '/transcription/scribe/:path*', permanent: true },
-            { source: '/transcription/mobile', destination: '/transcription/scribe', permanent: true },
+            // Legacy Transcripts deep-link redirects. The canonical URL is now
+            // `/transcripts/*` (see the 2026-06-08 block at the top of this
+            // list). These rules normalize OLDER aliases that pre-dated the
+            // 2026-06-08 consolidation. NOTE: do NOT re-add the pre-consolidation
+            // rules that pointed `/transcripts*` → `/transcription/processor*` —
+            // they will cause an infinite redirect loop with the consolidation
+            // block.
+            { source: '/transcript-studio/:path*', destination: '/transcripts/studio/:path*', permanent: true },
+            { source: '/transcript-studio', destination: '/transcripts/studio', permanent: true },
+            { source: '/transcription/mobile/:path*', destination: '/transcripts/scribe/:path*', permanent: true },
+            { source: '/transcription/mobile', destination: '/transcripts/scribe', permanent: true },
             // Entity-isolation migration (Phase 2+): legacy entity-bound routes
             // moved under /legacy/* so they can boot through the entity-aware
             // store/providers without bloating slim chunks. Old URLs are 307'd
@@ -218,9 +240,8 @@ const nextConfig = {
             // (no auth). Originals lived in (authenticated)/tests, (authenticated)/demo,
             // (authenticated)/settings-*-demo, (authenticated)/layout-tests,
             // (authenticated)/dynamic-imports, (authenticated)/lists-junk,
-            // (authenticated)/lists-explorer, (authenticated)/preview,
-            // (public)/google-auth-demo. 307 for now so we can
-            // promote to 308 once internal links are audited.
+            // (authenticated)/lists-explorer, (authenticated)/preview.
+            // 307 for now so we can promote to 308 once internal links are audited.
             //
             // IMPORTANT: these are ordered AFTER the entity-isolation redirects
             // above so the more-specific /tests/advanced-data-table → /legacy/...
@@ -246,7 +267,6 @@ const nextConfig = {
                 { source: '/lists-junk', destination: '/demos/lists-junk', permanent: false },
                 { source: '/lists-explorer', destination: '/demos/lists-explorer', permanent: false },
                 { source: '/preview', destination: '/demos/preview', permanent: false },
-                { source: '/google-auth-demo', destination: '/demos/google-auth', permanent: false },
             ] : []),
             // Public demos that used to live at /demos/* (under (public)/demos)
             // shifted one segment deeper to /demos/public/* so the internal

@@ -171,6 +171,7 @@ export default function FilesLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="The file system your AI agents already understand"
       finalCtaDescription="Real-time sync, content search, fine-grained sharing, version history. Free to start, no credit card required."
+      relatedModules={["/knowledge", "/notes", "/tools/pdf-extractor"]}
     />
   );
 }

@@ -24,6 +24,15 @@ export type TriggerCause =
 
 export type ModuleId = "tasks" | "flashcards" | "decisions" | "quiz" | string;
 
+/**
+ * Which surface created (and primarily owns) a session. Both surfaces share
+ * the same tables — `source` only scopes each surface's DEFAULT session list.
+ * Either view may opt into showing all sources; nothing else keys off it.
+ *   - "studio"  — the 4-column transcript studio (sophisticated sessions)
+ *   - "cleanup" — the high-volume transcription cleanup page
+ */
+export type SessionSource = "studio" | "cleanup" | (string & {});
+
 export type RawSegmentSource = "chunk" | "fallback" | "imported" | "manual";
 
 export type ConceptKind =
@@ -46,11 +55,19 @@ export interface StudioSession {
   title: string;
   status: SessionStatus;
   moduleId: ModuleId;
+  /** Origin surface — scopes each surface's default session list. */
+  source: SessionSource;
   startedAt: string;
   endedAt: string | null;
   totalDurationMs: number;
   audioStoragePath: string | null;
   isDeleted: boolean;
+  /**
+   * The audio-first assistant's persisted conversation id (cx_conversation.id).
+   * Durable so the Assistant screen reuses one conversation across refreshes
+   * and rehydrates its history instead of starting fresh each mount.
+   */
+  assistantConversationId: string | null;
 
   createdAt: string;
   updatedAt: string;
@@ -95,6 +112,17 @@ export interface CleanedSegment {
   text: string;
   triggerCause: TriggerCause;
   supersededAt: string | null;
+  /**
+   * Source recording this clean was derived from (recording-aligned cleaning).
+   * NULL for Studio time-windowed passes not tied to a single recording.
+   */
+  recordingSegmentId: string | null;
+  /**
+   * Which per-segment processor produced this row. 'clean' = built-in cleaning
+   * (the default, and the only key that feeds the canonical session clean).
+   * Custom per-segment processors use their own slot key.
+   */
+  processorKey: string;
 }
 
 export interface ConceptItem {
@@ -174,6 +202,39 @@ export interface StudioDocument {
   updatedAt: string;
 }
 
+/**
+ * One user-authored context item for a session. Items are passed to agents as
+ * proper context entries at invocation time (key → context slot when the key
+ * matches an agent-declared slot; ad-hoc otherwise). `key` is derived from
+ * `label` (slugified) unless the user names it explicitly.
+ */
+export interface SessionContextItem {
+  id: string;
+  key: string;
+  label: string;
+  value: string;
+  /** Optional link back to a Note (the cleanup page's notes-backed blocks). */
+  noteId?: string | null;
+  noteLabel?: string | null;
+}
+
+/**
+ * One "custom" output slot on the cleanup page. The output text lives in
+ * `studio_documents` under `docKind` (UNIQUE(session_id, kind)); this record
+ * tracks WHICH agent fills it and how it auto-runs.
+ *   - source "raw"   → autorun fires alongside the cleaning pass
+ *   - source "clean" → autorun fires when the cleaned result lands
+ */
+export interface CleanupCustomSlot {
+  id: string;
+  agentId: string | null;
+  label?: string;
+  source: "raw" | "clean";
+  autoRun: boolean;
+  /** studio_documents.kind for this slot ('cleanup_custom' for the first). */
+  docKind: string;
+}
+
 export interface SessionSettings {
   sessionId: string;
   cleaningShortcutId: string | null;
@@ -187,6 +248,10 @@ export interface SessionSettings {
   /** Column 4 history visibility — when true, shows prior module segments
    * in addition to the active module's segments. */
   showPriorModules: boolean;
+  /** Per-session user context items, passed to agents as context entries. */
+  contextItems: SessionContextItem[] | null;
+  /** Cleanup-page custom output slots. Null = single legacy slot. */
+  customSlots: CleanupCustomSlot[] | null;
 }
 
 // ── Inputs for service layer ──────────────────────────────────────────
@@ -197,6 +262,8 @@ export interface CreateSessionInput {
   projectId?: string | null;
   transcriptId?: string | null;
   moduleId?: ModuleId;
+  /** Origin surface. Defaults to "studio" (DB default). */
+  source?: SessionSource;
 }
 
 export interface UpdateSessionInput {
@@ -208,6 +275,7 @@ export interface UpdateSessionInput {
   audioStoragePath?: string | null;
   transcriptId?: string | null;
   isDeleted?: boolean;
+  assistantConversationId?: string | null;
 }
 
 export interface CreateRecordingSegmentInput {

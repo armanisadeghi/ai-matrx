@@ -3,6 +3,18 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 import type { CanvasContent } from '@/features/canvas/redux/canvasSlice';
+import SandboxedHtml from '@/components/mardown-display/blocks/common/SandboxedHtml';
+
+/** Only http(s) embeds are allowed for iframe `src` — blocks javascript:/data: URIs. */
+function safeEmbedUrl(value: unknown): string | null {
+    if (typeof value !== 'string') return null;
+    try {
+        const u = new URL(value, 'https://invalid.local');
+        return u.protocol === 'http:' || u.protocol === 'https:' ? value : null;
+    } catch {
+        return null;
+    }
+}
 
 // next/dynamic with ssr:false — blocks are excluded from SSR module analysis.
 // None are needed until the canvas content type is determined on the client.
@@ -153,22 +165,38 @@ function renderContent(content: CanvasContent | any): React.ReactNode {
                 </div>
             );
 
-        case 'iframe':
+        case 'iframe': {
+            // Public page: never grant allow-same-origin to author-supplied
+            // embeds (it would give the framed page access to aimatrx.com).
+            // Restrict to http(s) URLs to block javascript:/data: payloads.
+            const src = safeEmbedUrl(data?.url ?? data);
+            if (!src) {
+                return (
+                    <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-600 p-4 text-sm">
+                        This embed URL is not allowed.
+                    </div>
+                );
+            }
             return (
                 <iframe
-                    src={data?.url || data}
+                    src={src}
                     className="w-full h-full border-0"
                     title={content.metadata?.title || 'Canvas Content'}
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                    sandbox="allow-scripts allow-popups allow-forms"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 />
             );
+        }
 
         case 'html':
+            // Author-supplied HTML on a PUBLIC page → fully sandboxed iframe,
+            // never dangerouslySetInnerHTML (stored XSS).
             return (
-                <div
-                    className="p-4 prose dark:prose-invert max-w-none"
-                    dangerouslySetInnerHTML={{ __html: data?.html || data }}
+                <SandboxedHtml
+                    html={data?.html || data}
+                    title={content.metadata?.title || 'Canvas Content'}
+                    height="100%"
+                    className="w-full h-full"
                 />
             );
 
@@ -184,24 +212,27 @@ function renderContent(content: CanvasContent | any): React.ReactNode {
             );
 
         default: {
-            // Try to render as iframe if it looks like a URL
-            if (typeof data === 'string' && (data.startsWith('http') || data.startsWith('//'))) {
+            // Try to render as iframe if it looks like a safe http(s) URL
+            const maybeUrl = safeEmbedUrl(data);
+            if (maybeUrl) {
                 return (
                     <iframe
-                        src={data}
+                        src={maybeUrl}
                         className="w-full h-full border-0"
                         title={content.metadata?.title || 'Canvas Content'}
-                        sandbox="allow-scripts allow-same-origin allow-forms"
+                        sandbox="allow-scripts allow-popups allow-forms"
                     />
                 );
             }
 
-            // Try to render as HTML if it contains HTML tags
+            // Try to render as HTML if it contains HTML tags — sandboxed (no XSS)
             if (typeof data === 'string' && (data.includes('<') || data.includes('>'))) {
                 return (
-                    <div
-                        className="p-4 prose dark:prose-invert max-w-none"
-                        dangerouslySetInnerHTML={{ __html: data }}
+                    <SandboxedHtml
+                        html={data}
+                        title={content.metadata?.title || 'Canvas Content'}
+                        height="100%"
+                        className="w-full h-full"
                     />
                 );
             }

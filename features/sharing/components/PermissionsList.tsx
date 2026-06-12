@@ -1,18 +1,22 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { X, Mail, Building2, Globe, Loader2, Lock } from 'lucide-react';
-import { PermissionBadge, PublicBadge } from './PermissionBadge';
-import type { PermissionWithDetails, PermissionLevel } from '@/utils/permissions';
+} from "@/components/ui/select";
+import { X, Mail, Building2, Globe, Loader2, Lock } from "lucide-react";
+import { PermissionBadge, PublicBadge } from "./PermissionBadge";
+import { UserAvatarDisplay } from "@/components/user/UserIdentity";
+import type {
+  PermissionWithDetails,
+  PermissionLevel,
+} from "@/utils/permissions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,14 +26,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 
 interface PermissionsListProps {
   permissions: PermissionWithDetails[];
   isOwner: boolean;
   onUpdateLevel: (
     options: { userId?: string; organizationId?: string; isPublic?: boolean },
-    newLevel: PermissionLevel
+    newLevel: PermissionLevel,
   ) => Promise<any>;
   onRevoke: (options: {
     userId?: string;
@@ -41,10 +45,10 @@ interface PermissionsListProps {
 
 /**
  * PermissionsList - Display and manage current permissions
- * 
+ *
  * Shows all users, organizations, and public access for a resource.
  * Allows owners to update permission levels or revoke access.
- * 
+ *
  * @example
  * <PermissionsList
  *   permissions={permissions}
@@ -87,7 +91,7 @@ export function PermissionsList({
 
   const handleUpdateLevel = async (
     permission: PermissionWithDetails,
-    newLevel: PermissionLevel
+    newLevel: PermissionLevel,
   ) => {
     if (newLevel === permission.permissionLevel) return;
 
@@ -99,7 +103,7 @@ export function PermissionsList({
           organizationId: permission.grantedToOrganizationId || undefined,
           isPublic: permission.isPublic || undefined,
         },
-        newLevel
+        newLevel,
       );
     } finally {
       setUpdatingId(null);
@@ -121,12 +125,15 @@ export function PermissionsList({
   };
 
   const getPermissionLabel = (permission: PermissionWithDetails) => {
-    if (permission.isPublic) return 'Everyone';
+    if (permission.isPublic) return "Everyone";
     if (permission.grantedToUser) {
-      return permission.grantedToUser.displayName || permission.grantedToUser.email;
+      return (
+        permission.grantedToUser.displayName || permission.grantedToUser.email
+      );
     }
-    if (permission.grantedToOrganization) return permission.grantedToOrganization.name;
-    return 'Unknown';
+    if (permission.grantedToOrganization)
+      return permission.grantedToOrganization.name;
+    return "Unknown";
   };
 
   const getPermissionSecondaryLabel = (permission: PermissionWithDetails) => {
@@ -154,11 +161,19 @@ export function PermissionsList({
         return (
           <Card key={permission.id} className="px-2 py-2">
             <div className="flex items-center gap-2">
-              {/* Left: Icon inline with text */}
+              {/* Left: avatar for user grants, icon otherwise */}
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 flex-shrink-0">
-                  <Icon className="w-3 h-3 text-primary" />
-                </div>
+                {permission.grantedToUser && !permission.isPublic ? (
+                  <UserAvatarDisplay
+                    user={permission.grantedToUser}
+                    size="xs"
+                    className="flex-shrink-0"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 flex-shrink-0">
+                    <Icon className="w-3 h-3 text-primary" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0 flex items-center gap-1.5">
                   <p className="text-sm font-semibold truncate leading-none">
                     {getPermissionLabel(permission)}
@@ -213,7 +228,10 @@ export function PermissionsList({
                     {permission.isPublic ? (
                       <PublicBadge variant="compact" />
                     ) : (
-                      <PermissionBadge level={permission.permissionLevel} variant="compact" />
+                      <PermissionBadge
+                        level={permission.permissionLevel}
+                        variant="compact"
+                      />
                     )}
                   </>
                 )}
@@ -234,9 +252,13 @@ export function PermissionsList({
           <AlertDialogHeader>
             <AlertDialogTitle>Revoke Access?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to revoke access for{' '}
-              <strong>{confirmRevoke.permission ? getPermissionLabel(confirmRevoke.permission) : ''}</strong>?
-              They will no longer be able to access this resource.
+              Are you sure you want to revoke access for{" "}
+              <strong>
+                {confirmRevoke.permission
+                  ? getPermissionLabel(confirmRevoke.permission)
+                  : ""}
+              </strong>
+              ? They will no longer be able to access this resource.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -257,4 +279,3 @@ export function PermissionsList({
     </div>
   );
 }
-

@@ -18,6 +18,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -104,7 +105,8 @@ export function ImportShortcutsBrowserModal({
         r.label?.toLowerCase().includes(q) ||
         r.description?.toLowerCase().includes(q) ||
         r.owner_display?.toLowerCase().includes(q) ||
-        r.owner_email?.toLowerCase().includes(q)
+        r.owner_email?.toLowerCase().includes(q) ||
+        idMatchesQuery(r, q)
       );
     });
   }, [rows, search, scopeFilter]);

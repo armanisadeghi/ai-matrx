@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from "react";
 import { ChevronLeft, Upload, Image as ImageIcon, File as FileIcon2, Loader2, AlertCircle, CheckCircle2, X, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useFileUpload } from "@/features/files";
+import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
 import { compressPdfMultipart, materializeAssetResult } from "@/features/files/api/assets";
 import { getFileDetailsByUrl, EnhancedFileDetails } from "@/utils/file-operations/constants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -187,13 +187,22 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
 
         setFileStatuses([...updatedStatuses]);
 
-        try {
-            const results: UploadedFile[] = [];
-            for (const file of filesToUpload) {
+        const results: UploadedFile[] = [];
+        let firstError: string | null = null;
+        const folderPath = composeLegacyFolderPath(
+            "userContent",
+            "prompt-attachments",
+        );
+
+        for (const file of filesToUpload) {
+            const statusIdx = updatedStatuses.findIndex(
+                (s) => s.file === file && s.status === "uploading",
+            );
+            try {
                 const normalized = await upload(
                     { kind: "file", file },
                     {
-                        folderPath: "Shared Assets/prompt-attachments",
+                        folderPath,
                         visibility: "private",
                         createShareLink: true,
                         shareLinkPermissionLevel: "read",
@@ -218,26 +227,31 @@ export function UploadResourcePicker({ onBack, onSelect }: UploadResourcePickerP
                         normalized.fileId,
                     ),
                 });
-            }
-
-            for (let i = 0; i < updatedStatuses.length; i++) {
-                updatedStatuses[i] = { ...updatedStatuses[i], status: "done" };
-            }
-            setFileStatuses([...updatedStatuses]);
-            onSelect(results);
-        } catch (error) {
-            const errMsg = error instanceof Error
-                ? error.message
-                : "Upload failed. The file may be too large or the server rejected it.";
-
-            for (let i = 0; i < updatedStatuses.length; i++) {
-                if (updatedStatuses[i].status !== "done") {
-                    updatedStatuses[i] = { ...updatedStatuses[i], status: "error", errorMessage: errMsg };
+                if (statusIdx >= 0) {
+                    updatedStatuses[statusIdx] = {
+                        ...updatedStatuses[statusIdx],
+                        status: "done",
+                    };
+                }
+            } catch (err) {
+                const errMsg =
+                    err instanceof Error
+                        ? err.message
+                        : "Upload failed. The file may be too large or the server rejected it.";
+                if (!firstError) firstError = errMsg;
+                if (statusIdx >= 0) {
+                    updatedStatuses[statusIdx] = {
+                        ...updatedStatuses[statusIdx],
+                        status: "error",
+                        errorMessage: errMsg,
+                    };
                 }
             }
             setFileStatuses([...updatedStatuses]);
-            setUploadError(errMsg);
         }
+
+        if (firstError) setUploadError(firstError);
+        if (results.length > 0) onSelect(results);
     }, [upload, onSelect]);
 
     const handleDrop = useCallback((e: React.DragEvent) => {

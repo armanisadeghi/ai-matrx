@@ -97,7 +97,6 @@ export async function createProject(
         organization_id: organizationId,
         description: description ?? null,
         created_by: currentUserId,
-        is_personal: !organizationId,
         settings: settings ?? {},
       })
       .select()
@@ -160,6 +159,18 @@ export async function updateProject(
     if (updates.description !== undefined)
       updateData.description = updates.description;
     if (updates.settings !== undefined) updateData.settings = updates.settings;
+    // Move to a different org (its owner's personal org is a valid target).
+    // Never persist a null org — every project belongs to one.
+    if (updates.organizationId !== undefined) {
+      const orgId = normalizeOrgId(updates.organizationId);
+      if (orgId) updateData.organization_id = orgId;
+    }
+    if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.priority !== undefined) updateData.priority = updates.priority;
+    if (updates.startDate !== undefined)
+      updateData.start_date = updates.startDate || null;
+    if (updates.targetDate !== undefined)
+      updateData.target_date = updates.targetDate || null;
 
     const { data, error } = await supabase
       .from("ctx_projects")
@@ -388,7 +399,7 @@ export async function getPersonalProjects(): Promise<ProjectWithRole[]> {
 
     const { data, error } = await supabase
       .from("ctx_project_members")
-      .select(`role, ctx_projects(*)`)
+      .select(`role, ctx_projects(*, organizations(is_personal))`)
       .eq("user_id", currentUserId);
 
     if (error) {
@@ -399,10 +410,14 @@ export async function getPersonalProjects(): Promise<ProjectWithRole[]> {
     const projects: ProjectWithRole[] = await Promise.all(
       (data ?? [])
         .filter((item: Record<string, unknown>) => {
+          // A project is personal iff its owning org is the user's personal org
+          // (organizations.is_personal). ctx_projects no longer stores is_personal.
           const proj = item.ctx_projects as Record<string, unknown> | null;
-          return (
-            proj && (proj.is_personal === true || proj.organization_id === null)
-          );
+          const org = proj?.organizations as
+            | { is_personal?: boolean | null }
+            | null
+            | undefined;
+          return org?.is_personal === true;
         })
         .map(async (item: Record<string, unknown>) => {
           const proj = transformProjectFromDb(
@@ -863,6 +878,13 @@ export async function getProjectReferencesDetailed(
 // ============================================================================
 
 function transformProjectFromDb(dbRecord: Record<string, unknown>): Project {
+  // Personal-ness is org-derived (organizations.is_personal); ctx_projects no
+  // longer stores it. If the caller joined `organizations(is_personal)` we read
+  // it; otherwise we default to false (callers that need it must join the org).
+  const org = dbRecord.organizations as
+    | { is_personal?: boolean | null }
+    | null
+    | undefined;
   return {
     id: dbRecord.id as string,
     name: dbRecord.name as string,
@@ -870,7 +892,11 @@ function transformProjectFromDb(dbRecord: Record<string, unknown>): Project {
     description: (dbRecord.description as string) ?? null,
     organizationId: (dbRecord.organization_id as string) ?? null,
     createdBy: (dbRecord.created_by as string) ?? null,
-    isPersonal: (dbRecord.is_personal as boolean) ?? false,
+    isPersonal: org?.is_personal === true,
+    status: ((dbRecord.status as string) ?? "active") as Project["status"],
+    priority: (dbRecord.priority as Project["priority"]) ?? null,
+    startDate: (dbRecord.start_date as string) ?? null,
+    targetDate: (dbRecord.target_date as string) ?? null,
     settings: (dbRecord.settings as Record<string, unknown>) ?? {},
     createdAt: dbRecord.created_at as string,
     updatedAt: dbRecord.updated_at as string,

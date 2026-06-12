@@ -59,7 +59,7 @@ export default function ShareModalWindow({
       canvas_items: `/canvas/${resourceId}`,
       udt_datasets: `/data/${resourceId}`,
       udt_picklists: `/lists/${resourceId}`,
-      transcripts: `/transcription/processor/${resourceId}`,
+      transcripts: `/transcripts/${resourceId}`,
       quiz_sessions: `/quizzes/${resourceId}`,
       sandbox_instances: `/sandbox/${resourceId}`,
       user_files: `/files/${resourceId}`,

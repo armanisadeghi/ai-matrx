@@ -1,0 +1,13 @@
+-- Org module settings + registry content_role/is_scopeable
+-- Applied to Matrx Main (txzxabzwovsujtloxrus) via apply_migration on 2026-06-06.
+-- See features/organizations/FEATURE.md + features/sharing/FEATURE.md.
+--
+-- Part 1: shareable_resource_registry gains content_role + is_scopeable (seeded
+--         from the FE catalogue classification).
+-- Part 2: org_module_settings (per-org per-module rules) + RLS + admin-gated
+--         set_org_module_setting RPC.
+-- Part 3: share_resource_with_org enforces members_can_add (block) +
+--         requires_approval (pending). Defaults preserve prior behavior.
+--
+-- NOTE: full statements live in the applied migration; this file documents the
+-- change. Regenerate types with `pnpm db-types` after applying.

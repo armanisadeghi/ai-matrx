@@ -2,11 +2,6 @@ import { ScopesHub } from "@/features/scopes/components/management/ScopesHub";
 import ScopesLanding from "@/features/auth/components/module-landing/landings/ScopesLanding";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
-export const metadata = {
-  title: "Scopes",
-  description:
-    "Define the dimensions your team works in — clients, products, teams, repos, anything. Scopes carry context into every agent run.",
-};
 
 export default async function ScopesIndexPage() {
   const { isAuthenticated } = await getServerAuth();

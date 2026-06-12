@@ -32,6 +32,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
 import {
   Tooltip,
   TooltipContent,
@@ -93,7 +94,7 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
   const ancestorHrefs = useMemo(() => {
     return ancestors.map((folder) => {
       const encoded = encodeFolderPathSegments(folder.folderPath);
-      return encoded.length > 0 ? `/files/${encoded}` : "/files";
+      return encoded.length > 0 ? `/files/all/${encoded}` : "/files/all";
     });
   }, [ancestors]);
 
@@ -133,7 +134,7 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
         <TooltipTrigger asChild>
           <button
             type="button"
-            onClick={() => router.push("/files")}
+            onClick={() => router.push("/files/all")}
             aria-label="Back to all files"
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
@@ -151,7 +152,7 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
         className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
       >
         <Link
-          href="/files"
+          href="/files/all"
           className="inline-flex items-center rounded p-1 hover:bg-accent hover:text-foreground"
           title="Home"
         >
@@ -208,6 +209,14 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
 
       {/* Right-side actions */}
       <div className="flex items-center gap-0.5 shrink-0 mr-2">
+        {file?.mimeType === "application/pdf" && (
+          <PdfSurfaceSwitcher
+            current="file-viewer"
+            fileId={fileId}
+            size="icon"
+            className="h-7 w-7 border-0"
+          />
+        )}
         {/* Show files — opens NavSidebar in a slide-out Sheet so the user
          * can hop between files without leaving the single-file shell. */}
         <Sheet open={showFiles} onOpenChange={setShowFiles}>

@@ -30,6 +30,7 @@ import {
 } from "@/features/window-panels/windows/icons/useOpenCuratedIconPickerWindow";
 import type { UserListItem } from "@/features/user-lists/types";
 import { usePicklists, type PicklistSummary } from "./usePicklists";
+import { idMatchesQuery } from "@/utils/search-scoring";
 
 interface PicklistManagerV2Props {
   /** Pin to a specific list and hide the switcher (e.g. in a modal). */
@@ -362,7 +363,7 @@ function ListSwitcher({
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     if (!s) return lists;
-    return lists.filter((l) => (l.list_name ?? "").toLowerCase().includes(s));
+    return lists.filter((l) => (l.list_name ?? "").toLowerCase().includes(s) || idMatchesQuery(l, s));
   }, [lists, search]);
 
   return (

@@ -2,6 +2,7 @@
 // Server-side only - do not import in client components
 
 import { getScriptSupabaseClient } from './getScriptClient';
+import { buildSearchOr } from '@/utils/supabase-search';
 import { DatabaseTool } from './tools-service';
 
 /**
@@ -70,7 +71,7 @@ export class ServerToolsService {
         .from('tool_def')
         .select('*')
         .eq('is_active', true)
-        .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+        .or(buildSearchOr(query, ["name", "description"]))
         .order('category', { ascending: true })
         .order('name', { ascending: true });
 

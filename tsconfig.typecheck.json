@@ -1,0 +1,33 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
+    "tests/**/*",
+    "scripts/**/*",
+    "node_modules/flowbite-react/lib/esm/index.d.ts",
+    "global.d.ts",
+    "cartesia.d.ts",
+    "types/typecheck-env.d.ts",
+    "components/**/*",
+    "features/**/*",
+    "app/**/*",
+    "packages/**/*.ts",
+    "packages/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "_armani",
+    "_dev",
+    ".next",
+    ".claude",
+    "out",
+    "utils/schema/schemaUtils.ts",
+    "next-env.d.ts"
+  ]
+}

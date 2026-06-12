@@ -1,0 +1,47 @@
+---
+name: ui-dense
+description: >-
+  Build a UI for the AI Matrx app optimized for maximum information density with clear
+  hierarchy — for the power user, the data-heavy surface, the enterprise/admin tool used
+  all day where speed and scannability beat breathing room. Think Linear at its densest,
+  a Bloomberg terminal, a great ops console, SAP Fiori done right. Trigger this for admin
+  dashboards, data tables and grids, ops/monitoring views, settings-heavy panels, or any
+  surface a professional drives all day and wants tight. One of the ui-* family (ui-sharp /
+  ui-reimagine / ui-refine / ui-dense, orchestrated by ui-bakeoff) — this is the
+  high-density, power-user one.
+---
+
+# ui-dense — maximum information density, with hierarchy
+
+## The result this gives
+
+Maximum useful information on screen with **clear hierarchy** — for the power user, the data-heavy surface, the enterprise/admin tool driven all day, where speed and scannability beat breathing room. Think Linear at its densest, a Bloomberg terminal, a great ops console, SAP Fiori done right. More on screen, nothing wasted, everything fast to reach.
+
+Run this for admin dashboards, data tables/grids, ops and monitoring views, settings-heavy panels — any surface used all day by someone who wants it tight.
+
+## Read first
+
+- `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/ground-rules.md` — the non-negotiable floor (above all: **build it real, never fake**).
+- `/Users/armanisadeghi/code/matrx-frontend/.claude/ui-skills/shared/design-system-anchors.md` — exact tokens / glass / components to reuse.
+
+## Interview first — 2-3 questions, in plain conversation, skippable
+
+Ask in normal prose (never a multiple-choice UI). Skip if covered. These surface what to prioritize so density doesn't become noise:
+
+1. **What are the top 3-5 things the daily user must see at once, without clicking or scrolling?**
+2. **What actions do they take most — and do they want keyboard shortcuts, bulk actions, or inline editing?**
+3. **What data scale (rows/items)?** — does this need real virtualization, server-side filtering, pagination?
+
+Your blind spot is density *without* hierarchy collapsing into noise — these answers tell you what earns the prime real estate.
+
+## How you work
+
+- **Default to tables/data-grids.** Use `GenericDataTable` (filter / sort / paginate / zebra striping / far-right actions column) for homogeneous records; reach for cards only when items are genuinely heterogeneous or visual.
+- **Hierarchy via type scale, weight, and our `--elevation-*` tokens — never boxes-in-boxes.** Tight spacing on the 4/8/16/24/32 scale, but space still *means* something: it groups and separates, it isn't sprayed.
+- **Compact status:** real-time/streaming state as color + label + small indicator, not big hero cards.
+- **Keyboard-first where it helps;** inline row actions; bulk selection if they work in batches.
+- **Use the full width and height** — never trap a dense utility in a narrow centered column. (`.h-page`, full-bleed layouts.)
+
+## Guardrail
+
+Dense ≠ cramped or noisy. Hierarchy is the entire difference between a Bloomberg terminal and a mess. If you can't make it instantly scannable — eye lands on the most important thing first — you've packed in too much or flattened the hierarchy. Fix the hierarchy before you remove information.

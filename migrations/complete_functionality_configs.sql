@@ -1,4 +1,4 @@
-
+-- migrate: skip: ABANDONED design — depends on system_prompt_functionality_configs from the never-adopted System Prompts V2 (see 00XX_system_prompts_database_v2.sql). Verified 2026-06-08: 0 code references, table absent in live DB. Do not apply.
 -- =========================== DONE - NO ERRORS ==========================
 
 

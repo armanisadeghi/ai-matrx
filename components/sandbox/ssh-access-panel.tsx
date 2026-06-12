@@ -38,12 +38,31 @@ export function SshAccessPanel({
       const resp = await fetch(`${apiBasePath}/${sandboxId}/access`, {
         method: "POST",
       });
-      if (!resp.ok) {
-        const body = await resp.json();
-        throw new Error(body.error || "Failed to generate SSH credentials");
+      // Read as text first: platform-level failures (Vercel function crash /
+      // timeout pages, proxy errors) return plain text, and a blind
+      // resp.json() turns the real error into "Unexpected token … is not
+      // valid JSON" — useless to the user.
+      const raw = await resp.text();
+      let body: Record<string, unknown> | null = null;
+      try {
+        body = raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
+      } catch {
+        body = null;
       }
-      const data: SandboxAccessResponse = await resp.json();
-      setAccess(data);
+      if (!resp.ok) {
+        const message =
+          (typeof body?.error === "string" && body.error) ||
+          (typeof body?.message === "string" && body.message) ||
+          (raw ? raw.slice(0, 200) : "") ||
+          `Failed to generate SSH credentials (HTTP ${resp.status})`;
+        throw new Error(message);
+      }
+      if (!body || typeof body.private_key !== "string") {
+        throw new Error(
+          "SSH service returned an unexpected response — try again.",
+        );
+      }
+      setAccess(body as unknown as SandboxAccessResponse);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {

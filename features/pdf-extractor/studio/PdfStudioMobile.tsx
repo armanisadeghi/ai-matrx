@@ -159,7 +159,6 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
       const { success, childDocId } = await extractor.runFullPipeline(
         activeDoc.id,
         {
-          persist_output: true,
           onProgress: setLiveStatus,
           onTextDelta: setStreamingCleanText,
         },
@@ -490,8 +489,8 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
                   onRunPipeline={handleRunPipeline}
                   pipelineRunning={pipelineRunning}
                   pdfPaneEditMode={null}
-                  onStartCrop={() => {}}
-                  onStartReorder={() => {}}
+                  onStartCrop={undefined}
+                  onStartReorder={undefined}
                   onEditModeCancel={() => {}}
                 />
               </div>

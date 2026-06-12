@@ -30,6 +30,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectActiveUserId } from "@/lib/redux/selectors/userSelectors";
 import {
@@ -134,11 +135,11 @@ export function CloudFilesTab({
     const folders = sorted.folderIds
       .map((id) => foldersById[id])
       .filter((f): f is CloudFolderRecord => Boolean(f && !f.deletedAt))
-      .filter((f) => !q || f.folderName.toLowerCase().includes(q));
+      .filter((f) => !q || f.folderName.toLowerCase().includes(q) || idMatchesQuery(f, q));
     const files = sorted.fileIds
       .map((id) => filesById[id])
       .filter((f): f is CloudFileRecord => Boolean(f && !f.deletedAt))
-      .filter((f) => !q || f.fileName.toLowerCase().includes(q));
+      .filter((f) => !q || f.fileName.toLowerCase().includes(q) || idMatchesQuery(f, q));
     return { folderRows: folders, fileRows: files };
   }, [sorted, foldersById, filesById, query]);
 

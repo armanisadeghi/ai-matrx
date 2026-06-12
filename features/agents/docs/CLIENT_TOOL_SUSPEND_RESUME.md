@@ -73,9 +73,16 @@ Authorization: Bearer <jwt>   (or X-Fingerprint-ID for guests)
 
 { "results": [
     { "call_id": "...", "tool_name": "...",
-      "output": <any>, "is_error": false, "error_message": null }
+      "output": <any>, "is_error": false, "error_message": null,
+      "duration_ms": 1240 }
   ] }
 ```
+
+**`duration_ms` is required practice** — client-measured handler execution
+time, persisted to `cx_tool_call.duration_ms`. Omitting it leaves every
+delegated call recorded as 0ms. Both dispatchers
+(`dispatch-ui-first-tool.thunk.ts`, `dispatch-widget-action.thunk.ts`)
+measure and send it.
 
 Server response (200):
 
@@ -106,7 +113,8 @@ a capability tool — the same flag answers "resume now?" for all of them.
 
 ### 2.3 Resume phase (client → server)
 
-When `continuation_needed === true`, the client MUST:
+When `continuation_needed === true`, the client MUST — **at most once per
+`user_request_id`** (see §2.6) —:
 
 ```
 POST /ai/conversations/{conversation_id}/resume
@@ -114,13 +122,23 @@ Content-Type: application/json
 Authorization: Bearer <jwt>   (or X-Fingerprint-ID for guests)
 
 { "user_request_id": "4e43…",
+  "context": { ... },         // REQUIRED practice — see below
   "client": { "capabilities": [...], "state": { ... } },
   "tools":  [...],            // optional, additive
   "tools_replace": [...],     // optional, replace
   "config_overrides": {...},  // optional
+  "writable_variables": [...],// optional, same contract as start/continue
+  "allow_context_create": false, // optional
   "debug": false              // optional
 }
 ```
+
+**Re-send fresh `context`.** A suspended run's context objects lived only in
+the original request's scope; the server re-applies the resume body's
+`context` via `apply_context_objects`. Omit it and the resumed loop is
+context-blind — `ctx_get` answers "No context objects are available"
+mid-conversation. Rebuild from cached client state (no heavy pre-send
+refresh — the resume must open fast).
 
 The server:
 
@@ -128,13 +146,18 @@ The server:
 2. Checks `cx_tl_call` for any rows still in `status='delegated'` for this
    `user_request_id`. If any remain, returns **409**
    `{code: "outstanding_delegated_calls", outstanding_call_ids: [...]}`.
-3. Reuses the original `user_request_id` (idempotent) so token / cost
+3. **Takes an atomic run claim** on the `user_request_id` — exactly one
+   resume per request may run. Losers get **409** `resume_conflict` (a run
+   is still live; retryable) or `not_resumable` (terminal request; never
+   retry). See §2.5.
+4. Reuses the original `user_request_id` (idempotent) so token / cost
    aggregation stays under the same row.
-4. `ConversationResolver.from_conversation_id` reconstructs the full
+5. `ConversationResolver.from_conversation_id` reconstructs the full
    history from `cx_message` + `cx_tl_call`. The answer the client just
    POSTed is already embedded — the server reads it from the resolved
    conversation, not from the request body.
-5. Streams the continuation through `run_ai_task` — same NDJSON event
+6. Re-applies `context` / `writable_variables` / `allow_context_create`,
+   then streams the continuation through `run_ai_task` — same NDJSON event
    stream as a normal turn. The first events are `init` / `phase=processing`,
    then the model's next iteration.
 
@@ -151,13 +174,37 @@ chain continues until the model emits its final assistant message.
 | Endpoint | 200 | 4xx |
 |---|---|---|
 | `POST .../tool_results` | `ToolResultsResponse` with `continuation_needed` | 404 ⟺ every call_id was genuinely unknown (partial success returns 200 with `not_found` populated) |
-| `POST .../resume` | NDJSON stream of the continuation | **409** `outstanding_delegated_calls`; **404** conversation not found / not owned |
+| `POST .../resume` | NDJSON stream of the continuation | **409** structured (below); **404** `{code: "conversation_not_found"}` or `{code: "user_request_not_found"}` |
 
-The 409 is the only "expected" non-2xx on resume and is **benign** — it
-means more client-tool calls remain unanswered. The client should NOT
-treat it as an error; instead reset the instance to `paused` and wait for
-the next `tool_results` POST to clear the remaining calls (which will
-re-trigger resume).
+Every `/resume` 409 carries a structured code. **Wire shape caveat:** aidream's
+global exception envelope (`api/errors.py`) rewrites `HTTPException.detail` to
+a TOP-LEVEL `{error, message, details}` — the code arrives in `error`, as a
+`message` prefix (`"resume_conflict: …"`), and in `details.code`; only a raw
+FastAPI deployment nests it under `detail.code`. Parse all of them (the
+frontend's `runAiStream` does). A bare `detail["code"]` key does NOT survive
+the envelope — that bug shipped once (DELEGATION_LOOP_BUGS.md Problem 11).
+**None of these is a user-facing stream error** — never render one as a
+failure:
+
+| `code` | Meaning | Client action |
+|---|---|---|
+| `outstanding_delegated_calls` | More client-tool calls remain unanswered | No retry. Reset instance to `paused`; the next `tool_results` POST re-triggers resume. |
+| `resume_conflict` (`retryable: true`, `status: "pending"\|"processing"`) | A run is still live for this request — usually the suspending run hasn't persisted `status='paused'` yet (a fast tool's result POST can beat that write) | **Retry with backoff, bounded** (700ms × attempt, max 4, attempts keyed per `user_request_id` across retries). |
+| `not_resumable` (`retryable: false`, `status: "completed"\|…`) | Terminal request | **Never retry.** Log as benign; settle the instance. |
+
+### 2.6 Single-flight: at most one resume per `user_request_id`
+
+`continuation_needed` is **best-effort**: when the model issued PARALLEL
+delegated calls, concurrent `tool_results` POSTs can BOTH return `true`.
+Two resumes racing one conversation produced the 2026-06-09 incident —
+duplicate `cx_message` positions, the model re-calling the same tool until
+the duplicate-call guard errored. The server's atomic claim 409s the loser,
+but **the client must still single-flight**: claim per `user_request_id`
+*synchronously, before the first `await`* in the resume path; clear the
+claim when a stream actually opens (re-entrancy needs a fresh claim) and
+after a ~10s TTL (so a never-opened resume can't suppress recovery
+forever). Frontend: `resume-claims.ts`. Extension:
+`recentContinueBroadcasts` in `src/lib/tools/dispatch.ts`.
 
 ---
 
@@ -217,20 +264,34 @@ catch block can short-circuit instead of double-cleaning.
 `features/agents/redux/execution-system/thunks/resume-instance.thunk.ts` —
 `resumeInstance({ conversationId, userRequestId })`:
 
-1. Bails if `hasAbortController(conversationId)` returns true
-   (double-resume guard).
-2. Bails if the instance is `cancelled` or `error` (silent restart after
+1. **`claimResume(userRequestId)` — synchronously, before the first
+   `await`** (`resume-claims.ts`). The §2.6 single-flight guard. Every
+   bail path after a successful claim releases it explicitly.
+2. Bails if `hasAbortController(conversationId)` returns true
+   (double-resume guard — necessary but NOT sufficient: the controller
+   isn't registered until after `await buildToolInjection`, which is why
+   the claim in step 1 exists).
+3. Bails if the instance is `cancelled` or `error` (silent restart after
    user cancel is surprising).
-3. `resolveBackendForConversation` → same server + auth as the turn.
-4. `buildToolInjection(state, conversationId, {mode: "additive"})` →
+4. `resolveBackendForConversation` → same server + auth as the turn.
+5. `buildToolInjection(state, conversationId, {mode: "additive"})` →
    mirrors the launch capability surface.
-5. Builds the body — `{user_request_id, ...tools, ...client, debug?}`.
-   No optimistic user message. No top-level `sandbox` (rides on
+6. Builds the body — `{user_request_id, context, ...tools, ...client,
+   debug?}`. `context` = the conversation's context chips
+   (`selectContextPayload`) merged over the ambient snapshot
+   (`buildAmbientContext`) — cached Redux state only, no pre-send refresh
+   (§2.3). No optimistic user message. No top-level `sandbox` (rides on
    `client.state["sandbox-fs"]`).
-6. Flips the instance status: `paused` → `running`. `runAiStream` will
+7. Flips the instance status: `paused` → `running`. `runAiStream` will
    advance to `streaming` once the response opens.
-7. Hits `POST /ai/conversations/{conversationId}/resume` (canonical plural
-   path) through `runAiStream` with `kind: "resume"`.
+8. Hits `POST /ai/conversations/{conversationId}/resume` (canonical plural
+   path) through `runAiStream` with `kind: "resume"`, passing
+   `onStreamOpen` to clear the claim the moment the stream opens.
+9. On 409 `resume_conflict` (`ResumeConflictError` from `runAiStream`):
+   bounded retry — re-dispatches itself after `700ms × attempt`, max 4
+   attempts per `user_request_id`; exhausted → settle to `paused`, log
+   benign. `not_resumable` / `outstanding_delegated_calls` are handled
+   inside `runAiStream`'s 409-resume branch and never retry.
 
 ### 3.4 Honest status during the wait
 
@@ -283,7 +344,9 @@ SW → sidepanel.
 `src/lib/tools/dispatch.ts::postResult` now captures the `postToolResults`
 return value. On `r.ok && r.data.continuation_needed &&
 r.data.user_request_id`, it broadcasts the new
-`CHANNELS.STREAM_CONTINUE` channel with `{conversationId, userRequestId}`.
+`CHANNELS.STREAM_CONTINUE` channel with `{conversationId, userRequestId}` —
+single-flighted per `user_request_id` via the `recentContinueBroadcasts`
+map (§2.6), re-armed in the STREAM_OPENED handler.
 
 ### 4.2 Sidepanel consumer
 
@@ -294,16 +357,23 @@ r.data.user_request_id`, it broadcasts the new
    runId/targetId can only hold one run at a time; redirecting them would
    race the live run if any). Per-conversation state is a future
    improvement.
-2. Bails if a run is already active (defensive — shouldn't happen since
-   the server flagged us idle).
-3. Pushes a fresh pending assistant message and allocates a new `runId`.
+2. If a run is still finalizing, **queues** the continue
+   (`pendingContinueRef`) and drains it on the `done` chunk — a fast tool's
+   result POST can beat the offscreen→sidepanel `done`; bailing would drop
+   the resume on the floor.
+3. Claims `runIdRef` **synchronously before any `await`** (§2.6 ordering —
+   awaiting `resolveActiveTab` first let two triggers race two resumes).
+   Pushes a fresh pending assistant message and allocates a new `runId`.
 4. Rebuilds the `client.state["browser-dom"]` capability state via
-   `buildBrowserDomState` against the user's CURRENT active tab — the
-   resumed loop's tools target current page state, not a stale snapshot.
+   `buildBrowserDomState` against the user's CURRENT active tab, and the
+   `context` bundle via `buildChatContext` (no pre-send page refresh) —
+   the resumed loop targets current page state, not a stale snapshot.
 5. Sends `STREAM_START` with `endpoint: conversationResumePath(conversationId)`
-   and `body: {user_request_id, client: {...}}`.
+   and `body: {user_request_id, context, client: {...}}`.
 6. The existing `STREAM_CHUNK` consumer then routes continuation chunks
-   into the new bubble. No new rendering code.
+   into the new bubble. No new rendering code. Its 409 error branch
+   implements the §2.5 table (`resumeRetryRef` bounds `resume_conflict`
+   retries).
 
 ### 4.3 The cursor-replay scaffold is a different feature
 
@@ -366,6 +436,16 @@ class of failure this document exists to kill.
    completing inline.** That is the original bug. The server's job is to
    suspend cleanly; the client's job is to resume cleanly. No middle
    ground.
+8. **Firing resume without the synchronous single-flight claim** — or
+   claiming it after an `await`. Two `continuation_needed=true` responses
+   for parallel tool calls then race two model loops onto one conversation
+   (duplicate `cx_message` positions — the 2026-06-09 incident). The claim
+   in `resume-claims.ts` must be taken before the first `await`.
+9. **Resuming without `context`.** The resumed loop runs context-blind
+   (`ctx_get` → "No context objects are available"). Rebuild from cached
+   state and send it (§2.3).
+10. **Rendering a 409-on-resume as a stream error.** All three codes are
+    benign protocol states (§2.5); surface nothing to the user.
 
 ---
 
@@ -421,6 +501,8 @@ conflate.
     shared runner.
   - `features/agents/redux/execution-system/thunks/resume-instance.thunk.ts`
     — the resume thunk.
+  - `features/agents/redux/execution-system/thunks/resume-claims.ts` —
+    single-flight claim + `resume_conflict` retry budget.
   - `features/agents/redux/execution-system/thunks/process-stream.ts`
     `:1356-1374` and `:1529-1543` — the `paused` guards.
   - `features/agents/ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk.ts`
@@ -438,3 +520,4 @@ conflate.
 | Date | Change |
 |---|---|
 | 2026-05-25 | Initial — captures the suspend → submit → resume protocol; supersedes `DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md` and clarifies the boundary against `PYTHON_RESUME_SPEC.md` and the extension's cursor-replay scaffold. Both clients ship the wiring; ESLint chokepoint protects the frontend funnel. |
+| 2026-06-09 | Concurrent-resume incident fixes (aidream `65fa0d4`, matrx-extend `c04ccf8`, frontend this change): structured 409 codes on `/resume` (`resume_conflict` retryable / `not_resumable` terminal), client single-flight per `user_request_id` (§2.6, `resume-claims.ts`), `context`/`writable_variables`/`allow_context_create` on `ResumeRequest` (re-sent by both clients), `duration_ms` on `ClientToolResult`. |

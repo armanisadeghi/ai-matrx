@@ -3,7 +3,6 @@ import { AgentAppOverviewContent } from "@/features/agent-apps/route/AgentAppOve
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentAppHeader } from "@/features/agent-apps/components/route-header/AgentAppHeader";
 
-export const metadata = { title: "Manage" };
 
 interface AgentAppPageProps {
   params: Promise<{ id: string }>;

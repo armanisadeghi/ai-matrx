@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useMemo, useRef, useEffect } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -405,7 +406,8 @@ export default function TopicList() {
     return (topics ?? []).filter(
       (t) =>
         t.name.toLowerCase().includes(q) ||
-        (t.description ?? "").toLowerCase().includes(q),
+        (t.description ?? "").toLowerCase().includes(q) ||
+        idMatchesQuery(t, q),
     );
   }, [topics, searchQuery]);
 

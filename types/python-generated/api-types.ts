@@ -915,19 +915,27 @@ export interface paths {
          * Submit Tool Results
          * @description Submit client-side tool execution results back to the AI loop — durable.
          *
-         *     There are two paths:
+         *     Protocol (suspend-on-delegate — see ``_execute_delegated`` /
+         *     ``_suspend_for_delegation``): a delegated tool call HARD-SUSPENDS the
+         *     loop after durably committing the assistant message and the
+         *     status='delegated' cx_tool_call row. This endpoint flips the row to
+         *     'completed'/'error' (resolution_source='client_post'); when the last
+         *     outstanding delegated row for the user_request resolves,
+         *     ``continuation_needed=true`` tells the caller to open POST /resume,
+         *     which reconstructs the conversation (tool results included) and
+         *     continues the loop.
          *
-         *     1. **Live fast path:** the originating SSE task is still running and holds
-         *        an in-memory asyncio.Future for the call_id. We update the cx_tool_call
-         *        row to status='completed'/'error' AND wake the future (resolution_source
-         *        = 'inline_waiter'). The existing loop continues streaming on its SSE.
+         *     The old in-memory ``ClientToolWaiter`` "live fast path" is GONE — no
+         *     code creates waiter futures anymore (it was the source of the runaway
+         *     tool-call loop; docs/tool_delegation/DELEGATION_LOOP_BUGS.md). The row
+         *     is guaranteed to be on disk before the client ever sees the
+         *     ``tool_delegated`` event (pre-suspend finalize), so the durable path is
+         *     the only path.
          *
-         *     2. **Recovery path:** the originating loop is gone (SSE disconnected, server
-         *        restarted, etc.). The in-memory waiter has no future — that's fine; the
-         *        cx_tool_call row is still status='delegated' from log_delegated(). We
-         *        update the row to status='completed'/'error' (resolution_source =
-         *        'client_post') and return continuation_needed=true so the caller knows
-         *        to open a /resume stream to continue the loop.
+         *     NOTE: ``continuation_needed`` is intentionally best-effort — concurrent
+         *     POSTs for parallel tool calls can BOTH observe "no remaining delegated
+         *     rows" and both return true. That is safe: /resume takes an atomic
+         *     per-user_request run claim and the losing resume gets a 409.
          *
          *     Idempotent: duplicate POSTs for an already-resolved call return 200 with
          *     the call_id in ``already_resolved`` and no side effects.
@@ -952,19 +960,27 @@ export interface paths {
          * Submit Tool Results
          * @description Submit client-side tool execution results back to the AI loop — durable.
          *
-         *     There are two paths:
+         *     Protocol (suspend-on-delegate — see ``_execute_delegated`` /
+         *     ``_suspend_for_delegation``): a delegated tool call HARD-SUSPENDS the
+         *     loop after durably committing the assistant message and the
+         *     status='delegated' cx_tool_call row. This endpoint flips the row to
+         *     'completed'/'error' (resolution_source='client_post'); when the last
+         *     outstanding delegated row for the user_request resolves,
+         *     ``continuation_needed=true`` tells the caller to open POST /resume,
+         *     which reconstructs the conversation (tool results included) and
+         *     continues the loop.
          *
-         *     1. **Live fast path:** the originating SSE task is still running and holds
-         *        an in-memory asyncio.Future for the call_id. We update the cx_tool_call
-         *        row to status='completed'/'error' AND wake the future (resolution_source
-         *        = 'inline_waiter'). The existing loop continues streaming on its SSE.
+         *     The old in-memory ``ClientToolWaiter`` "live fast path" is GONE — no
+         *     code creates waiter futures anymore (it was the source of the runaway
+         *     tool-call loop; docs/tool_delegation/DELEGATION_LOOP_BUGS.md). The row
+         *     is guaranteed to be on disk before the client ever sees the
+         *     ``tool_delegated`` event (pre-suspend finalize), so the durable path is
+         *     the only path.
          *
-         *     2. **Recovery path:** the originating loop is gone (SSE disconnected, server
-         *        restarted, etc.). The in-memory waiter has no future — that's fine; the
-         *        cx_tool_call row is still status='delegated' from log_delegated(). We
-         *        update the row to status='completed'/'error' (resolution_source =
-         *        'client_post') and return continuation_needed=true so the caller knows
-         *        to open a /resume stream to continue the loop.
+         *     NOTE: ``continuation_needed`` is intentionally best-effort — concurrent
+         *     POSTs for parallel tool calls can BOTH observe "no remaining delegated
+         *     rows" and both return true. That is safe: /resume takes an atomic
+         *     per-user_request run claim and the losing resume gets a 409.
          *
          *     Idempotent: duplicate POSTs for an already-resolved call return 200 with
          *     the call_id in ``already_resolved`` and no side effects.
@@ -2523,6 +2539,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/user-secrets/bulk-env": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Import Env
+         * @description Paste a .env body (or upload one — the FE submits its text content here).
+         *     Every well-formed line upserts a secret. Malformed lines are skipped
+         *     with a server-side log; the response lists the rows that landed.
+         */
+        post: operations["bulk_import_env_user_secrets_bulk_env_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/user-secrets/internal/sandbox-env-for-user": {
         parameters: {
             query?: never;
@@ -2546,28 +2584,6 @@ export interface paths {
         get: operations["get_sandbox_env_for_user_user_secrets_internal_sandbox_env_for_user_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/user-secrets/bulk-env": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Bulk Import Env
-         * @description Paste a .env body (or upload one — the FE submits its text content here).
-         *     Every well-formed line upserts a secret. Malformed lines are skipped
-         *     with a server-side log; the response lists the rows that landed.
-         */
-        post: operations["bulk_import_env_user_secrets_bulk_env_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3939,6 +3955,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/system-errors/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent Errors
+         * @description Most-recent ``system_error`` rows, newest first.
+         *
+         *     The default window (last 6h) makes "what just broke?" a one-call query.
+         *     Each row carries the full ``traceback`` + request context.
+         */
+        get: operations["recent_errors_admin_system_errors_recent_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/system-errors/{error_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Error
+         * @description Full single ``system_error`` row by id — including the traceback.
+         */
+        get: operations["get_error_admin_system_errors__error_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-factory/build": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build One
+         * @description Non-streaming build of exactly one agent. Convenience for the script /
+         *     integration tests; the streaming variant below is the FE path.
+         */
+        post: operations["build_one_agent_factory_build_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-factory/build-stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Build Stream Endpoint
+         * @description Streaming build of one or more agents. Emits `BuildEvent`s to the FE.
+         */
+        post: operations["build_stream_endpoint_agent_factory_build_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/tools": {
         parameters: {
             query?: never;
@@ -4039,6 +4139,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6135,6 +6259,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rag/conversations/{conversation_id}/ingest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rag Ingest Conversation
+         * @description Ingest a conversation into the knowledge graph by conversation id.
+         *
+         *     Thin wrapper around ``POST /rag/ingest`` so callers can ingest a whole
+         *     conversation without knowing the ``source_kind='cx_message'`` plumbing.
+         *     The resolver is fail-closed on ownership: a conversation the caller
+         *     does not own resolves to nothing and returns a clean "source_not_found"
+         *     response rather than an error or a cross-tenant leak.
+         *
+         *     The effective org is resolved (personal-org fallback) before the ingest
+         *     call so the written kg_chunks are always org-scoped (non-NULL invariant).
+         */
+        post: operations["rag_ingest_conversation_rag_conversations__conversation_id__ingest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rag/ingest/stream": {
         parameters: {
             query?: never;
@@ -7024,74 +7177,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/kg-suggestions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Suggestions */
-        get: operations["list_suggestions_kg_suggestions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/kg-suggestions/{suggestion_id}/accept": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Accept Suggestion */
-        post: operations["accept_suggestion_kg_suggestions__suggestion_id__accept_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/kg-suggestions/{suggestion_id}/reject": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reject Suggestion */
-        post: operations["reject_suggestion_kg_suggestions__suggestion_id__reject_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/kg-suggestions/{suggestion_id}/defer": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Defer Suggestion */
-        post: operations["defer_suggestion_kg_suggestions__suggestion_id__defer_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/kg/graph": {
         parameters: {
             query?: never;
@@ -7824,8 +7909,9 @@ export interface paths {
          *
          *     Convenience entry point when the user knows the failure was transient
          *     and just wants to re-run from where it stopped without modifying
-         *     anything. Equivalent to calling /retry on every failed node, but
-         *     today only the first failing node per super-step is captured.
+         *     anything. Retries EVERY failed node in the parked super-step
+         *     (audit P1-19) — parallel sibling failures no longer stay silently
+         *     stuck behind the first one.
          */
         post: operations["resume_errored_run_runs__run_id__resume_errored_post"];
         delete?: never;
@@ -7846,9 +7932,14 @@ export interface paths {
          * @description Server-Sent Events feed of wf_node_events for one run (Phase 4.3).
          *
          *     Powers the canvas's push-based delivery path. On connect we replay any
-         *     events newer than ``Last-Event-ID`` (an ISO-8601 ts on reconnect), then
-         *     subscribe to the LISTEN/NOTIFY fan-out and forward each notification
-         *     as a fresh SSE event with the event_ts as the SSE id (for resume).
+         *     events newer than ``Last-Event-ID``, then subscribe to the
+         *     LISTEN/NOTIFY fan-out and forward each notification as a fresh SSE
+         *     event.
+         *
+         *     The SSE ``id`` is the per-run ``seq`` (audit P1-5) — an integer
+         *     cursor that can never skip a row (seq assignment serializes on the
+         *     wf_run row lock). A legacy ISO-8601 ``Last-Event-ID`` from an old
+         *     client is still honored as a timestamp cursor for one release.
          *
          *     Closes the stream when the run reaches a terminal status so the FE
          *     cleanly stops the EventSource without retrying.
@@ -10271,6 +10362,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/podcast/resume/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume Podcast Endpoint
+         * @description Resume a previously-failed generation from its last good stage.
+         *
+         *     Replays the original request stored on the ``agent_run`` row; every
+         *     completed stage (research, script, metadata, already-rendered paid
+         *     images/videos, audio) is reused from its checkpoint, so only the missing
+         *     tail re-runs. The stream is identical to ``/generate`` — same events — but
+         *     the early ``podcast_run`` event echoes the same ``run_id``.
+         */
+        post: operations["resume_podcast_endpoint_podcast_resume__run_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/podcast/runs/{run_id}/assets/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate Asset
+         * @description Re-render one image/video in place with a chosen model (or custom prompt).
+         */
+        post: operations["regenerate_asset_podcast_runs__run_id__assets_regenerate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/podcast/runs/{run_id}/assets/add": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Asset
+         * @description Add a brand-new asset from the user's own description (also how you go
+         *     beyond the default 5 images / 2 videos).
+         */
+        post: operations["add_asset_podcast_runs__run_id__assets_add_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tests/examples": {
         parameters: {
             query?: never;
@@ -12001,39 +12159,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/content-label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Label content with GLiNER2
+         * @description Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id.
+         */
+        post: operations["label_content_label_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AcceptResponse */
-        AcceptResponse: {
-            suggestion: components["schemas"]["SuggestionRow"];
-            value: components["schemas"]["AcceptedValue"];
-        };
-        /**
-         * AcceptedValue
-         * @description The scope-item cell value written when a suggestion is accepted.
-         */
-        AcceptedValue: {
-            /** Id */
-            id: string;
-            /** Context Item Id */
-            context_item_id: string;
-            /** Scope Id */
-            scope_id: string;
-            /** Version */
-            version: number;
-            /** Value Text */
-            value_text: string | null;
-            /** Source Type */
-            source_type: string;
-        };
         /** ActivePageIdsResponse */
         ActivePageIdsResponse: {
             /** File Id */
             file_id: string;
             /** Page Ids */
             page_ids: string[];
+        };
+        /** AddAssetRequest */
+        AddAssetRequest: {
+            /**
+             * Asset Kind
+             * @enum {string}
+             */
+            asset_kind: "image" | "video";
+            /** Description */
+            description: string;
+            /** Model Alias */
+            model_alias?: string | null;
         };
         /** AddFieldResponse */
         AddFieldResponse: {
@@ -12309,6 +12476,8 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -12964,6 +13133,28 @@ export interface components {
             data_url?: string | null;
             /** Signed Url */
             signed_url?: string | null;
+            /**
+             * Expires In
+             * @description Seconds until signed_url expires (signed_url mode only).
+             */
+            expires_in?: number | null;
+            /** Level Requested */
+            level_requested?: number | null;
+            /**
+             * Level Used
+             * @description Compression tier that produced the output (may exceed the requested tier when a size cap forces escalation).
+             */
+            level_used?: number | null;
+            /**
+             * Cap Satisfied
+             * @description True when max_size_bytes was met (or no cap given); False when even the max tier exceeded it.
+             */
+            cap_satisfied?: boolean | null;
+            /**
+             * Strategy Used
+             * @description "inplace" or "raster" — which compression path produced the output.
+             */
+            strategy_used?: string | null;
         };
         /**
          * AssetPreviewRequest
@@ -13677,6 +13868,46 @@ export interface components {
             /** Files Count */
             files_count: number;
         };
+        /** BuildOnceResponse */
+        BuildOnceResponse: {
+            /** Name */
+            name: string;
+            /** Agent Id */
+            agent_id: string;
+            /** Version Id */
+            version_id: string;
+            /** Runner Path */
+            runner_path: string;
+            /** Spec Path */
+            spec_path: string;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+        };
+        /**
+         * BuildRequest
+         * @description Body for `POST /agent-factory/build`.
+         *
+         *     Three trigger modes (callers pick one):
+         *       * `names` — list of `internal_agents/<name>.md` specs to build
+         *       * `name` (alone) — single spec to build
+         *       * `name` + `contents` — write the spec file first, then build
+         */
+        BuildRequest: {
+            /** Names */
+            names?: string[];
+            /** Name */
+            name?: string | null;
+            /** Contents */
+            contents?: string | null;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+        };
         /** BulkCandidateAction */
         BulkCandidateAction: {
             /** Result Id */
@@ -14277,6 +14508,8 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -14751,6 +14984,8 @@ export interface components {
             is_error: boolean;
             /** Error Message */
             error_message?: string | null;
+            /** Duration Ms */
+            duration_ms?: number | null;
         };
         /** CloneTemplateResponse */
         CloneTemplateResponse: {
@@ -15126,6 +15361,11 @@ export interface components {
             char_count: number;
         };
         /**
+         * ContentType
+         * @enum {string}
+         */
+        ContentType: "generic" | "transcript" | "conversation" | "document";
+        /**
          * ContextStateResponse
          * @description Same shape as the CONTEXT_STATE stream event payload.
          *
@@ -15187,6 +15427,8 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -15264,6 +15506,14 @@ export interface components {
              */
             memory_scope: string;
             cache_bypass?: components["schemas"]["CacheBypass"] | null;
+        };
+        /** ConversationIngestRequest */
+        ConversationIngestRequest: {
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
         };
         /**
          * ConversationRecord
@@ -15949,13 +16199,6 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * DecisionResponse
-         * @description Returned by reject / defer — the updated suggestion.
-         */
-        DecisionResponse: {
-            suggestion: components["schemas"]["SuggestionRow"];
-        };
         /** DedupResponse */
         DedupResponse: {
             /**
@@ -16071,6 +16314,8 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -16221,6 +16466,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -17373,7 +17645,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "pending" | "running" | "partial" | "complete" | "failed" | "not_applicable";
+            status: "pending" | "running" | "partial" | "complete" | "failed" | "not_applicable" | "abandoned";
             /** Analyzer Version */
             analyzer_version: string;
             /**
@@ -17971,6 +18243,8 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -18278,50 +18552,6 @@ export interface components {
             embeddings_in_scope: number;
             /** Distinct Sources */
             distinct_sources: number;
-        };
-        /**
-         * HeavyHitterAcceptPlan
-         * @description Returned when a ``heavy_hitter`` suggestion is accepted. Heavy-hitter
-         *     acceptance CREATES A NEW SCOPE (not a cell value), and scope creation is a
-         *     frontend-owned write path (React → Supabase direct, per the scopes
-         *     invariant). The backend cannot safely hand-roll scope creation without
-         *     forking that mutation path, so it returns this typed plan and flips the
-         *     suggestion to ``accepted``; the FE drives scope creation + source tagging in
-         *     Phase F.
-         *
-         *     ``entity_kind`` maps to the scope-type the FE should offer (e.g.
-         *     organization → a Client/Org scope). ``sources`` are the mentions to tag to
-         *     the new scope via ctx_scope_assignments once it exists.
-         */
-        HeavyHitterAcceptPlan: {
-            /**
-             * Kind
-             * @default heavy_hitter_plan
-             * @constant
-             */
-            kind: "heavy_hitter_plan";
-            suggestion: components["schemas"]["SuggestionRow"];
-            /** Entity Id */
-            entity_id: string;
-            /** Entity Kind */
-            entity_kind: string;
-            /** Suggested Scope Name */
-            suggested_scope_name: string;
-            /** Sources */
-            sources: components["schemas"]["HeavyHitterSource"][];
-        };
-        /**
-         * HeavyHitterSource
-         * @description One source the heavy-hitter entity was mentioned in — the FE tags each of
-         *     these to the newly-created scope via ctx_scope_assignments after creation.
-         */
-        HeavyHitterSource: {
-            /** Source Kind */
-            source_kind: string;
-            /** Source Id */
-            source_id: string;
-            /** Mention Count */
-            mention_count: number;
         };
         /** HideRequest */
         HideRequest: {
@@ -18667,12 +18897,19 @@ export interface components {
             field_id: string | null;
             /** Chunks Written */
             chunks_written: number;
+            /**
+             * Chunks Reused
+             * @default 0
+             */
+            chunks_reused: number;
             /** Embeddings Written */
             embeddings_written: number;
             /** Skipped Unchanged */
             skipped_unchanged: boolean;
             /** Embedding Model */
             embedding_model: string;
+            /** Skipped Reason */
+            skipped_reason?: string | null;
             /** Error */
             error?: string | null;
         };
@@ -19168,6 +19405,13 @@ export interface components {
                 [key: string]: components["schemas"]["KeyFindingEntry"][];
             };
         };
+        /** Keyword */
+        Keyword: {
+            /** Text */
+            text: string;
+            /** Count */
+            count: number;
+        };
         /** KeywordCreate */
         KeywordCreate: {
             /** Keywords */
@@ -19203,6 +19447,8 @@ export interface components {
             orgs_over_80pct: number;
             /** Pending Batches */
             pending_batches: number;
+            /** Ner Coverage Pct */
+            ner_coverage_pct: number;
         };
         /** LLMParams */
         LLMParams: {
@@ -19369,6 +19615,53 @@ export interface components {
             };
             /** Labels */
             labels: components["schemas"]["LabelCatalogEntry"][];
+        };
+        /** LabelMetadata */
+        LabelMetadata: {
+            /** Label */
+            label: string;
+            /** Keywords */
+            keywords: components["schemas"]["Keyword"][];
+            content_type: components["schemas"]["ContentType"];
+            /** Char Count */
+            char_count: number;
+            /** Token Count */
+            token_count: number;
+            /** Cost Usd */
+            cost_usd: number;
+        };
+        /** LabelRequest */
+        LabelRequest: {
+            /** Text */
+            text?: string | null;
+            /** Transcript Id */
+            transcript_id?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** @default generic */
+            content_type: components["schemas"]["ContentType"];
+            /**
+             * Max Chars
+             * @default 8000
+             */
+            max_chars: number;
+            /**
+             * Label Max Chars
+             * @default 50
+             */
+            label_max_chars: number;
+            /**
+             * Top N
+             * @default 5
+             */
+            top_n: number;
+            /** Forbidden Words */
+            forbidden_words?: string[];
+            /**
+             * Debug
+             * @default false
+             */
+            debug: boolean;
         };
         /** LayoutClassificationReport */
         LayoutClassificationReport: {
@@ -19788,6 +20081,17 @@ export interface components {
              * @default []
              */
             processing_descendants: components["schemas"]["LineageNode"][];
+        };
+        /** LinkedEntityOut */
+        LinkedEntityOut: {
+            /** Entity Id */
+            entity_id: string;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /** Weight */
+            weight: number;
         };
         /** ListConversationsResponse */
         ListConversationsResponse: {
@@ -21318,7 +21622,7 @@ export interface components {
         /** PodcastGenerateRequest */
         PodcastGenerateRequest: {
             /** Show Id */
-            show_id: string;
+            show_id?: string | null;
             input_data_type: components["schemas"]["InputDataType"];
             /**
              * Input Data
@@ -21338,6 +21642,28 @@ export interface components {
              * @default 2
              */
             number_of_speakers: number;
+            /** Host Count */
+            host_count?: number | null;
+            /**
+             * Format
+             * @default
+             */
+            format: string;
+            /**
+             * Theme
+             * @default
+             */
+            theme: string;
+            /**
+             * Language
+             * @default
+             */
+            language: string;
+            /**
+             * Speakers
+             * @default []
+             */
+            speakers: components["schemas"]["SpeakerSpec"][];
             /** First Show Info Text */
             first_show_info_text?: string | null;
             audio_style?: components["schemas"]["AudioStyle"] | null;
@@ -21646,6 +21972,8 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
             /** Source App */
             source_app?: string | null;
             /** Source Feature */
@@ -22077,6 +22405,20 @@ export interface components {
             refreshed: boolean;
             /** Node Type Count */
             node_type_count: number;
+        };
+        /** RegenerateAssetRequest */
+        RegenerateAssetRequest: {
+            /**
+             * Asset Kind
+             * @enum {string}
+             */
+            asset_kind: "image" | "video";
+            /** Slot */
+            slot: number;
+            /** Model Alias */
+            model_alias?: string | null;
+            /** Custom Prompt */
+            custom_prompt?: string | null;
         };
         /** RegionBbox */
         RegionBbox: {
@@ -22626,6 +22968,23 @@ export interface components {
             tools_replace?: (components["schemas"]["RegisteredToolSpec"] | components["schemas"]["InlineToolSpec"] | components["schemas"]["AgentToolSpec"])[] | null;
             client?: components["schemas"]["ClientContext"] | null;
             user?: components["schemas"]["UserOverrides"] | null;
+            /**
+             * Context
+             * @default {}
+             */
+            context: {
+                [key: string]: unknown;
+            };
+            /**
+             * Writable Variables
+             * @default []
+             */
+            writable_variables: string[];
+            /**
+             * Allow Context Create
+             * @default false
+             */
+            allow_context_create: boolean;
         };
         /** ResumeRunRequest */
         ResumeRunRequest: {
@@ -22812,6 +23171,31 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** RunAsset */
+        RunAsset: {
+            /**
+             * Asset Kind
+             * @enum {string}
+             */
+            asset_kind: "image" | "video";
+            /** Slot */
+            slot: number;
+            /** Status */
+            status: string;
+            /** Url */
+            url?: string | null;
+            /** File Id */
+            file_id?: string | null;
+            /** Prompt */
+            prompt?: string | null;
+            /** Model Alias */
+            model_alias?: string | null;
+            /**
+             * Is Manual
+             * @default false
+             */
+            is_manual: boolean;
+        };
         /** RunBatchDeleteRequest */
         RunBatchDeleteRequest: {
             /** Run Ids */
@@ -22901,6 +23285,8 @@ export interface components {
             };
             /** Event Ts */
             event_ts: unknown;
+            /** Seq */
+            seq?: number | null;
         } & {
             [key: string]: unknown;
         };
@@ -23090,6 +23476,11 @@ export interface components {
              */
             max_steps: number;
             /**
+             * Step Concurrency
+             * @description Max node invocations of one super-step executing at once (BS-6 bounded fan-out). A 50-item map with step_concurrency=3 runs 3 at a time instead of all 50 — the declarative form of rate-limited fan-out (analysis semaphores, TTS quotas, scrape politeness). None = unbounded. Persisted on the run so resume/queued execution honors it too.
+             */
+            step_concurrency?: number | null;
+            /**
              * Mode
              * @description 'inline' streams the run through this HTTP response as NDJSON. 'queued' enqueues a wf_job row and returns immediately with the run_id — a worker process picks it up. Use queued for anything expected to run longer than a typical HTTP request, for long scrape+LLM chains, or when the caller doesn't need streaming.
              * @default inline
@@ -23194,6 +23585,8 @@ export interface components {
             name?: string | null;
             /** Description */
             description?: string | null;
+            /** Expected Updated At */
+            expected_updated_at?: string | null;
         };
         /** SavedViewCreate */
         SavedViewCreate: {
@@ -23489,6 +23882,34 @@ export interface components {
             /** Y1 */
             y1: number;
         };
+        /** SearchEntityOut */
+        SearchEntityOut: {
+            /** Entity Id */
+            entity_id: string;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /** Mention Count */
+            mention_count: number;
+            /** Artifact Count */
+            artifact_count: number;
+            /** Source Kind Counts */
+            source_kind_counts: {
+                [key: string]: number;
+            };
+            /** Top Chunk Id */
+            top_chunk_id?: string | null;
+            /** Importance */
+            importance?: number | null;
+            /**
+             * Is Concept
+             * @default false
+             */
+            is_concept: boolean;
+            /** Linked */
+            linked?: components["schemas"]["LinkedEntityOut"][];
+        };
         /** SearchExamplesResponse */
         SearchExamplesResponse: {
             /** Query */
@@ -23538,6 +23959,11 @@ export interface components {
              * @description Override the active org for this query — only honored for admins. Non-admin callers always retrieve in their AppContext.organization_id scope.
              */
             organization_id?: string | null;
+            /**
+             * Scope Ids
+             * @description Restrict hits to sources tagged to these scope ids — structural filter; combines with the semantic query.
+             */
+            scope_ids?: string[] | null;
         };
         /** SearchResponse */
         SearchResponse: {
@@ -23568,6 +23994,10 @@ export interface components {
             reranker_model: string | null;
             /** Latency Ms */
             latency_ms: number;
+            /** Entity Map */
+            entity_map?: components["schemas"]["SearchEntityOut"][];
+            /** Matched Entities */
+            matched_entities?: string[];
         };
         /** SearchSourceRef */
         SearchSourceRef: {
@@ -24017,6 +24447,21 @@ export interface components {
             is_stale?: boolean | null;
             /** Scrape Status */
             scrape_status?: ("pending" | "success" | "thin" | "failed" | "manual" | "skipped" | "complete" | "dead_link" | "gated") | null;
+        };
+        /**
+         * SpeakerSpec
+         * @description One requested speaker. `voice` is provider-appropriate: a Gemini
+         *     prebuilt voice name for 1–2 hosts (Google TTS), an ElevenLabs voice_id for
+         *     3+ hosts (dialogue TTS). Empty voice → filled from the default palette.
+         */
+        SpeakerSpec: {
+            /** Name */
+            name: string;
+            /**
+             * Voice
+             * @default
+             */
+            voice: string;
         };
         /** SplitPartRequest */
         SplitPartRequest: {
@@ -24475,83 +24920,6 @@ export interface components {
             topic_id?: string | null;
         };
         /**
-         * SuggestionEntity
-         * @description The KG entity a suggestion points at.
-         */
-        SuggestionEntity: {
-            /** Id */
-            id: string | null;
-            /** Kind */
-            kind?: string | null;
-            /** Name */
-            name?: string | null;
-        };
-        /**
-         * SuggestionRow
-         * @description One suggestion as returned to the owning user.
-         */
-        SuggestionRow: {
-            /** Id */
-            id: string;
-            /** Source Kind */
-            source_kind: string;
-            /** Source Id */
-            source_id: string;
-            entity: components["schemas"]["SuggestionEntity"];
-            target: components["schemas"]["SuggestionTarget"];
-            /** Suggested Value */
-            suggested_value: string | null;
-            /**
-             * Match Kind
-             * @enum {string}
-             */
-            match_kind: "exact" | "fuzzy" | "semantic" | "heavy_hitter";
-            /** Confidence */
-            confidence: number;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "pending" | "accepted" | "rejected" | "deferred" | "expired";
-            /** Context Snippet */
-            context_snippet?: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Decided At */
-            decided_at?: string | null;
-            /** Suppressed Until */
-            suppressed_until?: string | null;
-        };
-        /**
-         * SuggestionTarget
-         * @description The scope-item slot a suggestion proposes to fill.
-         */
-        SuggestionTarget: {
-            /** Scope Id */
-            scope_id: string | null;
-            /** Scope Item Id */
-            scope_item_id: string | null;
-            /** Slot Name */
-            slot_name: string | null;
-        };
-        /**
-         * SuggestionsPage
-         * @description Paginated suggestion list.
-         */
-        SuggestionsPage: {
-            /** Suggestions */
-            suggestions: components["schemas"]["SuggestionRow"][];
-            /** Total */
-            total: number;
-            /** Limit */
-            limit: number;
-            /** Offset */
-            offset: number;
-        };
-        /**
          * SupabaseAuthWebhookPayload
          * @description Supabase Auth webhook envelope.
          *
@@ -24746,16 +25114,38 @@ export interface components {
             /** Resolution Note */
             resolution_note: string | null;
         };
-        /** SystemErrorListResponse */
-        SystemErrorListResponse: {
-            /** Rows */
-            rows: components["schemas"]["SystemErrorSummary"][];
-            /** Total */
-            total: number;
-            /** Limit */
-            limit: number;
-            /** Offset */
-            offset: number;
+        /** SystemErrorRecord */
+        SystemErrorRecord: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind?: string | null;
+            /** Request Id */
+            request_id?: string | null;
+            /** User Id */
+            user_id?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Source App */
+            source_app?: string | null;
+            /** Route */
+            route?: string | null;
+            /** Error Type */
+            error_type?: string | null;
+            /** Error Text */
+            error_text?: string | null;
+            /** Traceback */
+            traceback?: string | null;
+            payload?: components["schemas"]["JsonValue"];
+            context?: components["schemas"]["JsonValue"];
+            /** Occurred At */
+            occurred_at?: string | null;
+            /** Resolved At */
+            resolved_at?: string | null;
+            /** Resolution Note */
+            resolution_note?: string | null;
         };
         /** SystemErrorSummary */
         SystemErrorSummary: {
@@ -26656,6 +27046,26 @@ export interface components {
             /** Expected Updated At */
             expected_updated_at?: string | null;
         };
+        /** SystemErrorListResponse */
+        aidream__api__routers__admin_persistence__SystemErrorListResponse: {
+            /** Rows */
+            rows: components["schemas"]["SystemErrorSummary"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /** SystemErrorListResponse */
+        aidream__api__routers__admin_system_errors__SystemErrorListResponse: {
+            /** Errors */
+            errors: components["schemas"]["SystemErrorRecord"][];
+            /** Count */
+            count: number;
+            /** Filter Summary */
+            filter_summary: string;
+        };
         /** WarmRequest */
         aidream__api__routers__agents__WarmRequest: {
             /**
@@ -26739,7 +27149,7 @@ export interface components {
              * Source Kind
              * @enum {string}
              */
-            source_kind: "note" | "code_file" | "cld_file" | "transcript" | "scraped" | "repository" | "library_doc" | "task" | "project";
+            source_kind: "note" | "code_file" | "cld_file" | "transcript" | "scraped" | "repository" | "library_doc" | "task" | "project" | "cx_message";
             /** Source Id */
             source_id: string;
             /** Field Id */
@@ -26782,6 +27192,10 @@ export interface components {
             source_ref?: {
                 [key: string]: unknown;
             } | null;
+            /** Entities */
+            entities?: string[];
+            /** Entity Rank */
+            entity_rank?: number | null;
         };
         /** SearchRequest */
         aidream__api__routers__rag__SearchRequest: {
@@ -26842,6 +27256,11 @@ export interface components {
              * @default true
              */
             use_mmr: boolean;
+            /**
+             * Scope Ids
+             * @description Restrict hits to sources tagged to these scope ids — structural filter; combines with the semantic query.
+             */
+            scope_ids?: string[] | null;
         };
         /** ScannerStatusResponse */
         aidream__api__routers__scheduling__ScannerStatusResponse: {
@@ -31226,38 +31645,6 @@ export interface operations {
             };
         };
     };
-    get_sandbox_env_for_user_user_secrets_internal_sandbox_env_for_user_get: {
-        parameters: {
-            query?: never;
-            header?: {
-                authorization?: string | null;
-                "X-Matrx-User-Id"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SandboxEnvResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     bulk_import_env_user_secrets_bulk_env_post: {
         parameters: {
             query?: never;
@@ -31278,6 +31665,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserSecretBulkEnvResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_sandbox_env_for_user_user_secrets_internal_sandbox_env_for_user_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+                "X-Matrx-User-Id"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SandboxEnvResponse"];
                 };
             };
             /** @description Validation Error */
@@ -33783,6 +34202,142 @@ export interface operations {
             };
         };
     };
+    recent_errors_admin_system_errors_recent_get: {
+        parameters: {
+            query?: {
+                /** @description ISO-8601 lower bound on occurred_at. Defaults to 6 hours ago. */
+                since?: string | null;
+                limit?: number;
+                /** @description Optional exact route filter, e.g. 'POST /assets'. */
+                route?: string | null;
+                /** @description Optional error_type filter, e.g. 'SvgRasterizerUnavailable'. */
+                error_type?: string | null;
+                /** @description When true, only rows with resolved_at IS NULL. */
+                unresolved_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__api__routers__admin_system_errors__SystemErrorListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_error_admin_system_errors__error_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                error_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemErrorRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_one_agent_factory_build_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuildRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuildOnceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_stream_endpoint_agent_factory_build_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuildRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_admin_tools_get: {
         parameters: {
             query?: never;
@@ -33976,6 +34531,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -38119,6 +38709,41 @@ export interface operations {
             };
         };
     };
+    rag_ingest_conversation_rag_conversations__conversation_id__ingest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConversationIngestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     rag_ingest_stream_rag_ingest_stream_post: {
         parameters: {
             query?: never;
@@ -39834,135 +40459,6 @@ export interface operations {
             };
         };
     };
-    list_suggestions_kg_suggestions_get: {
-        parameters: {
-            query?: {
-                status?: string;
-                scope_item_id?: string | null;
-                source_kind?: string | null;
-                source_id?: string | null;
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SuggestionsPage"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    accept_suggestion_kg_suggestions__suggestion_id__accept_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                suggestion_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptResponse"] | components["schemas"]["HeavyHitterAcceptPlan"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reject_suggestion_kg_suggestions__suggestion_id__reject_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                suggestion_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DecisionResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    defer_suggestion_kg_suggestions__suggestion_id__defer_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                suggestion_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DecisionResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_graph_kg_graph_get: {
         parameters: {
             query?: {
@@ -41201,6 +41697,8 @@ export interface operations {
                 after_event_ts?: string | null;
                 /** @description Restrict to one or more event_type values (repeat the query param to add multiple). e.g. ?event_type=node_failed&event_type=run_errored */
                 event_type?: string[] | null;
+                /** @description Per-run sequence cursor — only events with seq strictly greater are returned. PREFER this over after_event_ts: seq assignment serializes on the wf_run row lock, so the cursor can never skip a row (millisecond timestamps could). */
+                after_seq?: number | null;
             };
             header?: never;
             path: {
@@ -45548,6 +46046,107 @@ export interface operations {
             };
         };
     };
+    resume_podcast_endpoint_podcast_resume__run_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    regenerate_asset_podcast_runs__run_id__assets_regenerate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegenerateAssetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunAsset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_asset_podcast_runs__run_id__assets_add_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddAssetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunAsset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_examples_tests_examples_get: {
         parameters: {
             query?: never;
@@ -46697,7 +47296,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SystemErrorListResponse"];
+                    "application/json": components["schemas"]["aidream__api__routers__admin_persistence__SystemErrorListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -49056,6 +49655,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FindSimilarResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    label_content_label_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabelMetadata"];
                 };
             };
             /** @description Validation Error */

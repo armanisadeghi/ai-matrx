@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
-import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
+import { ScopeColorPicker } from "./ScopeColorPicker";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -39,8 +39,7 @@ import {
   deleteContextItem,
   selectItemsByType,
 } from "@/features/scope-system/redux/contextItemsSlice";
-import { slugifyKey } from "@/features/scope-system/utils/slugify";
-import { supabase } from "@/utils/supabase/client";
+import { slugifyKey, toSlug } from "@/features/scope-system/utils/slugify";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 
@@ -86,8 +85,8 @@ export function EditScopeTypeSheet({
   const [labelPlural, setLabelPlural] = useState("");
   const [icon, setIcon] = useState("Folder");
   const [color, setColor] = useState("blue");
-  const [initialColor, setInitialColor] = useState("blue");
   const [description, setDescription] = useState("");
+  const [slug, setSlug] = useState("");
   const [items, setItems] = useState<ItemDraft[]>([]);
 
   // Advanced
@@ -106,10 +105,9 @@ export function EditScopeTypeSheet({
     setLabelSingular(scopeType.label_singular);
     setLabelPlural(scopeType.label_plural);
     setIcon(scopeType.icon || "Folder");
-    const c = scopeType.color || "blue";
-    setColor(c);
-    setInitialColor(c);
+    setColor(scopeType.color || "blue");
     setDescription(scopeType.description);
+    setSlug(scopeType.slug ?? "");
     setSortOrder(scopeType.sort_order);
     setMaxAssignments(
       scopeType.max_assignments_per_entity != null
@@ -185,23 +183,17 @@ export function EditScopeTypeSheet({
     }
   }
 
-  async function persistColorIfChanged(typeIdToUpdate: string) {
-    if (color === initialColor) return;
-    const { error } = await supabase
-      .from("ctx_scope_types")
-      .update({ color })
-      .eq("id", typeIdToUpdate);
-    if (error) {
-      console.warn("Failed to update scope_type color", error);
-    }
-  }
-
   async function handleSave() {
     if (!scopeType) return;
     const trimmedSingular = labelSingular.trim();
     const trimmedPlural = labelPlural.trim() || trimmedSingular;
     if (!trimmedSingular) {
       toast.error("Name is required");
+      return;
+    }
+    const trimmedSlug = slug.trim();
+    if (trimmedSlug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(trimmedSlug)) {
+      toast.error("URL slug must be lowercase letters, numbers, and hyphens");
       return;
     }
     setBusy(true);
@@ -211,6 +203,8 @@ export function EditScopeTypeSheet({
         trimmedPlural !== scopeType.label_plural;
       const iconChanged = (icon || "Folder") !== scopeType.icon;
       const descriptionChanged = description !== scopeType.description;
+      const colorChanged = color !== scopeType.color;
+      const slugChanged = trimmedSlug !== (scopeType.slug ?? "");
       const sortChanged = sortOrder !== scopeType.sort_order;
       const maxChanged =
         (maxAssignments ? parseInt(maxAssignments, 10) : null) !==
@@ -220,6 +214,8 @@ export function EditScopeTypeSheet({
         labelChanged ||
         iconChanged ||
         descriptionChanged ||
+        colorChanged ||
+        slugChanged ||
         sortChanged ||
         maxChanged
       ) {
@@ -230,6 +226,8 @@ export function EditScopeTypeSheet({
             label_plural: trimmedPlural,
             icon: icon || "Folder",
             description,
+            color,
+            slug: slugChanged ? trimmedSlug || undefined : undefined,
             sort_order: sortOrder,
             max_assignments: maxAssignments
               ? parseInt(maxAssignments, 10)
@@ -237,8 +235,6 @@ export function EditScopeTypeSheet({
           }),
         ).unwrap();
       }
-
-      await persistColorIfChanged(scopeType.id);
 
       // Context items: delete, rename, create
       for (const row of items) {
@@ -253,6 +249,7 @@ export function EditScopeTypeSheet({
             createContextItem({
               scope_type_id: scopeType.id,
               key: slugifyKey(trimmedName) || trimmedName.toLowerCase(),
+              slug: toSlug(trimmedName) || undefined,
               display_name: trimmedName,
             }),
           ).unwrap();
@@ -355,10 +352,10 @@ export function EditScopeTypeSheet({
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Color</Label>
-                <TailwindColorPicker
-                  selectedColor={color}
-                  onColorChange={setColor}
-                  size="md"
+                <ScopeColorPicker
+                  value={color}
+                  onChange={setColor}
+                  disabled={busy}
                 />
               </div>
             </div>
@@ -478,13 +475,42 @@ export function EditScopeTypeSheet({
                 )}
                 Advanced
                 <span className="text-xs font-normal">
-                  sort order, max assignments
+                  URL slug, sort order, max assignments
                 </span>
               </button>
             </div>
 
             {advancedOpen && (
               <div className="space-y-5">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">URL slug</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={slug}
+                      onChange={(e) => setSlug(e.target.value)}
+                      placeholder={toSlug(labelPlural) || "url-slug"}
+                      style={{ fontSize: "16px" }}
+                      disabled={busy}
+                      className="flex-1 font-mono"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSlug(toSlug(labelPlural))}
+                      disabled={busy || !labelPlural.trim()}
+                    >
+                      Auto
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Used in the page URL, e.g. /organizations/acme/scopes/
+                    <span className="font-mono">
+                      {slug || toSlug(labelPlural) || "url-slug"}
+                    </span>
+                    . Must be unique in this organization.
+                  </p>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Sort order</Label>

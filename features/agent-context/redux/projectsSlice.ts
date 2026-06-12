@@ -65,7 +65,7 @@ export const fetchProject = createAsyncThunk(
     const { data, error } = await supabase
       .from("ctx_projects")
       .select(
-        "id, name, slug, description, organization_id, is_personal, settings, created_at, created_by",
+        "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
       .eq("id", projectId)
       .single();
@@ -73,8 +73,12 @@ export const fetchProject = createAsyncThunk(
     return {
       ...(data as Omit<
         ProjectRecord,
-        "open_task_count" | "total_task_count" | "scope_tags"
+        "is_personal" | "open_task_count" | "total_task_count" | "scope_tags"
       >),
+      // Personal-ness is derived from the project's org (organizations.is_personal),
+      // not stored on ctx_projects. Raw record fetches default to false; the
+      // org-derived value flows in via hydrateProjectsFromContext (nav tree).
+      is_personal: false,
       open_task_count: 0,
       total_task_count: 0,
       scope_tags: [],
@@ -92,7 +96,7 @@ export const fetchOrgProjects = createAsyncThunk(
     const { data, error } = await supabase
       .from("ctx_projects")
       .select(
-        "id, name, slug, description, organization_id, is_personal, settings, created_at, created_by",
+        "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
       .eq("organization_id", orgId)
       .order("name");
@@ -102,8 +106,10 @@ export const fetchOrgProjects = createAsyncThunk(
       projects: (data ?? []).map((p) => ({
         ...(p as Omit<
           ProjectRecord,
-          "open_task_count" | "total_task_count" | "scope_tags"
+          "is_personal" | "open_task_count" | "total_task_count" | "scope_tags"
         >),
+        // Org-derived; see fetchProject note.
+        is_personal: false,
         open_task_count: 0,
         total_task_count: 0,
         scope_tags: [],
@@ -124,15 +130,17 @@ export const createProjectThunk = createAsyncThunk(
       .from("ctx_projects")
       .insert({ ...data, created_by: userId })
       .select(
-        "id, name, slug, description, organization_id, is_personal, settings, created_at, created_by",
+        "id, name, slug, description, organization_id, settings, created_at, created_by",
       )
       .single();
     if (error) throw error;
     return {
       ...(proj as Omit<
         ProjectRecord,
-        "open_task_count" | "total_task_count" | "scope_tags"
+        "is_personal" | "open_task_count" | "total_task_count" | "scope_tags"
       >),
+      // Org-derived; see fetchProject note.
+      is_personal: false,
       open_task_count: 0,
       total_task_count: 0,
       scope_tags: [],

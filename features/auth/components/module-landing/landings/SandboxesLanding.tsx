@@ -115,6 +115,7 @@ export default function SandboxesLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Give your agents real hands"
       finalCtaDescription="Stop chaining agents through APIs. Drop them into a sandbox, watch them work. Free to start, no credit card."
+      relatedModules={["/code", "/agents", "/files"]}
     />
   );
 }

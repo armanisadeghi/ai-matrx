@@ -12,10 +12,11 @@ import { enableMapSet } from "immer";
 import { socketMiddleware } from "./socket-io/connection/socketMiddleware";
 import { autoSaveMiddleware } from "@/features/notes/redux/autoSaveMiddleware";
 import { codeFilesAutoSaveMiddleware } from "@/features/code-files/redux/autoSaveMiddleware";
-import { cloudFilesRealtimeMiddleware } from "@/features/files";
+import { cloudFilesRealtimeMiddleware, cloudFilesMutationToastMiddleware } from "@/features/files";
 import { transcriptStudioRealtimeMiddleware } from "@/features/transcript-studio/redux/realtimeMiddleware";
 import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/persistence";
 import { agentCacheBustMiddleware } from "@/features/agents/redux/agent-definition/cache-bust-middleware";
+import { scopeTreeInvalidationMiddleware } from "@/features/scopes/redux/scopeTreeInvalidationMiddleware";
 import {
   createSyncMiddleware,
   type SyncEngineApi,
@@ -198,9 +199,11 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         autoSaveMiddleware,
         codeFilesAutoSaveMiddleware,
         cloudFilesRealtimeMiddleware,
+        cloudFilesMutationToastMiddleware,
         transcriptStudioRealtimeMiddleware,
         pdfStudioPersistenceMiddleware,
         agentCacheBustMiddleware,
+        scopeTreeInvalidationMiddleware,
       ),
     devTools: process.env.NODE_ENV !== "production",
   });

@@ -17,23 +17,26 @@ export default function Header({ userData, isAuthenticated }: HeaderProps) {
 
       <div className="shell-header-center" id="shell-header-center" />
 
-      <div className="shell-user-menu-wrapper">
-        {isAuthenticated ? (
-          <UserMenuTrigger userData={userData} />
-        ) : (
-          <GuestUserMenuTrigger />
-        )}
-        <label
-          htmlFor="shell-user-menu"
-          className="shell-user-menu-backdrop"
-          aria-hidden="true"
-        />
-        <div className="shell-user-menu-panel">
+      <div className="shell-header-right">
+        <div className="shell-header-right-inject" id="shell-header-right" />
+        <div className="shell-user-menu-wrapper">
           {isAuthenticated ? (
-            <UserMenuPanel userData={userData} />
+            <UserMenuTrigger userData={userData} />
           ) : (
-            <GuestUserMenuPanel />
+            <GuestUserMenuTrigger />
           )}
+          <label
+            htmlFor="shell-user-menu"
+            className="shell-user-menu-backdrop"
+            aria-hidden="true"
+          />
+          <div className="shell-user-menu-panel">
+            {isAuthenticated ? (
+              <UserMenuPanel userData={userData} />
+            ) : (
+              <GuestUserMenuPanel />
+            )}
+          </div>
         </div>
       </div>
     </header>

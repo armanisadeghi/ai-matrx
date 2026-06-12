@@ -5,11 +5,11 @@
 // promoting to a new scope ("Acme Corp appears in 5 places — make it a
 // Client?"). Drops into the /scopes hub.
 //
-// Heavy-hitter ACCEPT is fully wired (2026-06-02): the row's "Create scope"
+// Heavy-hitter ACCEPT (2026-06-07, direct-Supabase): the row's "Create scope"
 // button opens HeavyHitterAcceptDialog (confirm name + pick scope type), and
-// confirming runs accept → create scope → tag the entity's source mentions.
-// The accept contract (aidream Phase E) returns a KgHeavyHitterAcceptPlan that
-// useHeavyHitterAccept consumes. All of that lives inside KgSuggestionRowItem,
+// confirming runs create scope (create_scope RPC) → tag the originating source
+// → mark the suggestion accepted, all via useHeavyHitterAccept. There is no
+// backend accept endpoint anymore. All of that lives inside KgSuggestionRowItem,
 // so this inbox just lists the rows and an easy Reject/Defer.
 //
 // Hidden entirely when there are no heavy-hitter suggestions, so it costs zero

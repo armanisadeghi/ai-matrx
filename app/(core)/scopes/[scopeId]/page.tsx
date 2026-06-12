@@ -4,9 +4,6 @@ interface ScopeDetailPageProps {
   params: Promise<{ scopeId: string }>;
 }
 
-export const metadata = {
-  title: "Scope detail",
-};
 
 export default async function ScopeDetailPage({
   params,

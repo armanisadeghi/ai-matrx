@@ -28,6 +28,7 @@ import {
   SAMPLE_RATE_HZ,
 } from "../constants";
 import { writeAmplitude } from "./amplitudeBus";
+import { acquireMicStream, releaseMicStream } from "@/features/audio/micStream";
 
 const WORKLET_PATH = "/pcm-processor-worklet.js";
 
@@ -46,6 +47,25 @@ export interface CaptureError {
   cause?: unknown;
 }
 
+export interface CaptureStats {
+  /** PCM frames produced by the worklet since start(). */
+  framesCaptured: number;
+  /** Frames handed to the live sink (i.e. sent to the WebSocket) since start(). */
+  framesSent: number;
+  /** Frames currently held in the pre-connect buffer (pre session.updated). */
+  framesBuffered: number;
+  /** Most recent mic RMS [0..1] reported by the worklet. */
+  lastRms: number;
+  /** Date.now() of the last PCM frame, or null. */
+  lastFrameAt: number | null;
+  /** AudioContext state — "running" is required for process() to fire. */
+  ctxState: AudioContextState | "none";
+  /** Worklet process() invocation count — 0 means the worklet isn't scheduled. */
+  processCalls: number;
+  /** Whether the worklet's last heartbeat saw input channel data. */
+  hasInput: boolean;
+}
+
 export interface AudioCaptureHandle {
   warmupSync: () => void;
   start: () => Promise<void>;
@@ -55,6 +75,8 @@ export interface AudioCaptureHandle {
   /** Listen for unrecoverable capture errors (mic disconnect, permission revoked). */
   onError: (cb: (err: CaptureError) => void) => () => void;
   isActive: () => boolean;
+  /** Live diagnostics — frame flow + amplitude. For the debug panel. */
+  getStats: () => CaptureStats;
 }
 
 export function createAudioCapture(): AudioCaptureHandle {
@@ -62,15 +84,35 @@ export function createAudioCapture(): AudioCaptureHandle {
   let stream: MediaStream | null = null;
   let source: MediaStreamAudioSourceNode | null = null;
   let workletNode: AudioWorkletNode | null = null;
+  // Muted tap into the destination. A capture-only worklet has 0 outputs, so it
+  // is never connected to ctx.destination — and on Chrome a graph with NO path
+  // to the destination is not pulled by the render thread, so the mic source
+  // (and the worklet sharing it) never receives audio: process() runs with
+  // empty inputs forever (captured=0, rms=0). Routing the source through a
+  // gain=0 node to the destination keeps the source actively rendered, which
+  // feeds the worklet its channel data without any audible playback/feedback.
+  let keepAliveGain: GainNode | null = null;
   let trackEndedHandler: (() => void) | null = null;
 
   let prebuffer: ArrayBuffer[] = [];
   let prebufferedSamples = 0;
   let bufferOverflowedReported = false;
+  // Whether we currently hold a ref on the shared mic stream — so release is
+  // balanced exactly once across the abort/stop paths.
+  let holdingMic = false;
 
   let liveSink: ((pcm: ArrayBuffer) => void) | null = null;
   let active = false;
   const errorCallbacks = new Set<(err: CaptureError) => void>();
+
+  // Live diagnostics.
+  let framesCaptured = 0;
+  let framesSent = 0;
+  let lastRms = 0;
+  let lastFrameAt: number | null = null;
+  // Worklet heartbeat — distinguishes "process() never runs" from "runs but no input".
+  let processCalls = 0;
+  let hasInput = false;
 
   function emitError(err: CaptureError): void {
     for (const cb of errorCallbacks) {
@@ -105,29 +147,62 @@ export function createAudioCapture(): AudioCaptureHandle {
     }
   }
 
+  /**
+   * Abort guard for the async `start()` path. `start()` has two awaits (mic
+   * permission, worklet module). If `stop()` runs during either — toggle spam,
+   * tab/route change, unmount — it sets `ctx = null`, which previously made the
+   * post-await `ctx.createMediaStreamSource(...)` throw
+   * "Cannot read properties of null". We snapshot the context at entry and, after
+   * each await, bail out cleanly (releasing any half-acquired mic stream) if the
+   * live `ctx` is no longer the one we started with.
+   */
   async function start(): Promise<void> {
     if (active) return;
+    framesCaptured = 0;
+    framesSent = 0;
+    lastRms = 0;
+    lastFrameAt = null;
+    processCalls = 0;
+    hasInput = false;
     if (!ctx) warmupSync();
-    if (!ctx) throw { code: "unsupported", message: "No AudioContext" } satisfies CaptureError;
+    if (!ctx)
+      throw {
+        code: "unsupported",
+        message: "No AudioContext",
+      } satisfies CaptureError;
+    const localCtx = ctx;
 
-    // 1. Mic permission + stream
+    const abortIfTornDown = (): boolean => {
+      if (ctx === localCtx) return false;
+      // stop() ran while we awaited — release our shared-mic hold and bail.
+      if (holdingMic) {
+        releaseMicStream();
+        holdingMic = false;
+      }
+      stream = null;
+      return true;
+    };
+
+    // 1. Mic permission + stream (via the shared manager so we don't re-prompt
+    //    on every session — it keeps the grant warm between uses).
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: SAMPLE_RATE_HZ,
-        },
+      stream = await acquireMicStream({
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: SAMPLE_RATE_HZ,
       });
+      holdingMic = true;
     } catch (err: unknown) {
-      const code = ((err as { name?: string })?.name === "NotAllowedError"
-        ? "permission-denied"
-        : (err as { name?: string })?.name === "NotFoundError"
-          ? "no-microphone"
-          : (err as { name?: string })?.name === "NotReadableError"
-            ? "device-busy"
-            : "unknown") satisfies CaptureErrorCode;
+      const code = (
+        (err as { name?: string })?.name === "NotAllowedError"
+          ? "permission-denied"
+          : (err as { name?: string })?.name === "NotFoundError"
+            ? "no-microphone"
+            : (err as { name?: string })?.name === "NotReadableError"
+              ? "device-busy"
+              : "unknown"
+      ) satisfies CaptureErrorCode;
       const message =
         code === "permission-denied"
           ? "Microphone access denied — check browser permissions."
@@ -138,6 +213,8 @@ export function createAudioCapture(): AudioCaptureHandle {
               : "Unable to access microphone.";
       throw { code, message, cause: err } satisfies CaptureError;
     }
+
+    if (abortIfTornDown()) return;
 
     // Detect mid-session disconnect (unplugging, OS-level revoke).
     const [track] = stream.getAudioTracks();
@@ -153,7 +230,7 @@ export function createAudioCapture(): AudioCaptureHandle {
 
     // 2. Worklet
     try {
-      await ctx.audioWorklet.addModule(WORKLET_PATH);
+      await localCtx.audioWorklet.addModule(WORKLET_PATH);
     } catch (err) {
       throw {
         code: "worklet-load-failed",
@@ -163,9 +240,11 @@ export function createAudioCapture(): AudioCaptureHandle {
       } satisfies CaptureError;
     }
 
+    if (abortIfTornDown()) return;
+
     // 3. Wire the graph
-    source = ctx.createMediaStreamSource(stream);
-    workletNode = new AudioWorkletNode(ctx, "pcm-processor", {
+    source = localCtx.createMediaStreamSource(stream);
+    workletNode = new AudioWorkletNode(localCtx, "pcm-processor", {
       numberOfInputs: 1,
       numberOfOutputs: 0,
       channelCount: 1,
@@ -176,10 +255,14 @@ export function createAudioCapture(): AudioCaptureHandle {
     workletNode.port.onmessage = (event: MessageEvent) => {
       const msg = event.data as
         | { type: "pcm"; payload: ArrayBuffer }
-        | { type: "rms"; value: number };
+        | { type: "rms"; value: number }
+        | { type: "diag"; calls: number; hasInput: boolean };
 
       if (msg.type === "pcm") {
+        framesCaptured += 1;
+        lastFrameAt = Date.now();
         if (liveSink) {
+          framesSent += 1;
           liveSink(msg.payload);
         } else {
           // Pre-connect buffering with a safety cap.
@@ -196,11 +279,36 @@ export function createAudioCapture(): AudioCaptureHandle {
           }
         }
       } else if (msg.type === "rms") {
+        lastRms = msg.value;
         writeAmplitude("mic", msg.value);
+      } else if (msg.type === "diag") {
+        processCalls = msg.calls;
+        hasInput = msg.hasInput;
       }
     };
 
     source.connect(workletNode);
+
+    // Muted keepalive path → destination so the render thread actually pulls
+    // the source chain (see keepAliveGain comment above). gain=0 = silent.
+    keepAliveGain = localCtx.createGain();
+    keepAliveGain.gain.value = 0;
+    source.connect(keepAliveGain);
+    keepAliveGain.connect(localCtx.destination);
+
+    // A context created via `new AudioContext()` can come up "suspended" even
+    // after a synchronous warmup resume() — especially when the mic stream was
+    // reused warm (no getUserMedia await gave resume() time to settle). Await
+    // it here so process() actually starts; otherwise frames never flow.
+    if (localCtx.state === "suspended") {
+      try {
+        await localCtx.resume();
+      } catch {
+        // ignore — if it can't resume we surface zero frames in the debug panel
+      }
+    }
+    if (abortIfTornDown()) return;
+
     active = true;
   }
 
@@ -239,17 +347,28 @@ export function createAudioCapture(): AudioCaptureHandle {
       }
       source = null;
     }
+    if (keepAliveGain) {
+      try {
+        keepAliveGain.disconnect();
+      } catch {
+        // already disconnected
+      }
+      keepAliveGain = null;
+    }
     if (stream) {
-      for (const t of stream.getTracks()) {
-        if (trackEndedHandler) t.removeEventListener("ended", trackEndedHandler);
-        try {
-          t.stop();
-        } catch {
-          // ignore
+      if (trackEndedHandler) {
+        for (const t of stream.getAudioTracks()) {
+          t.removeEventListener("ended", trackEndedHandler);
         }
       }
       stream = null;
       trackEndedHandler = null;
+    }
+    // Release our hold on the shared mic (does NOT stop tracks immediately —
+    // the manager keeps the grant warm so the next session won't re-prompt).
+    if (holdingMic) {
+      releaseMicStream();
+      holdingMic = false;
     }
     if (ctx) {
       try {
@@ -276,5 +395,18 @@ export function createAudioCapture(): AudioCaptureHandle {
     return active;
   }
 
-  return { warmupSync, start, setLive, stop, onError, isActive };
+  function getStats(): CaptureStats {
+    return {
+      framesCaptured,
+      framesSent,
+      framesBuffered: prebuffer.length,
+      lastRms,
+      lastFrameAt,
+      ctxState: ctx?.state ?? "none",
+      processCalls,
+      hasInput,
+    };
+  }
+
+  return { warmupSync, start, setLive, stop, onError, isActive, getStats };
 }

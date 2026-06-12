@@ -14,11 +14,14 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowUpDown,
   FolderTree,
   LayoutTemplate,
+  ListChecks,
   Plus,
   Settings as SettingsIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,14 +30,21 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchScopeTypes,
   selectScopeTypesByOrg,
+  updateScopeType,
 } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import {
   fetchScopes,
   selectScopesByOrg,
 } from "@/features/agent-context/redux/scope/scopesSlice";
 import { OrgHomeScopeSection } from "@/features/scope-system/components/OrgHomeScopeSection";
+import { ScopeBreadcrumb } from "@/features/scope-system/components/ScopeBreadcrumb";
+import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
+import { orgHref } from "@/features/scope-system/utils/scopeRoutes";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
 import { TemplateGalleryDrawer } from "@/features/scope-system/components/TemplateGalleryDrawer";
+import { ReorderDialog } from "@/features/scope-system/components/ReorderDialog";
+import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
+import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
 import type { Organization } from "@/features/organizations/types";
 
 interface ScopesManagerProps {
@@ -55,6 +65,9 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
   );
   const [addScopeOpen, setAddScopeOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [reorderTypesOpen, setReorderTypesOpen] = useState(false);
+  const suggestions = useScopeSuggestions();
+  const orgSuggestions = orgScopes.flatMap((sc) => suggestions.forScope(sc.id));
 
   useEffect(() => {
     dispatch(fetchScopeTypes(organization.id));
@@ -63,9 +76,30 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
 
   const slug = organization.slug ?? organization.id;
   const totalScopes = orgScopes.length;
+  const canManage = role === "owner" || role === "admin";
+
+  async function saveTypeOrder(orderedIds: string[]) {
+    await Promise.all(
+      orderedIds.map((id, i) =>
+        dispatch(updateScopeType({ type_id: id, sort_order: i + 1 })).unwrap(),
+      ),
+    );
+    toast.success("Order saved");
+  }
+
+  const orgOverviewHref = orgHref(slug);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pr-14">
+      <ScopeBreadcrumb
+        orgSlugOrId={slug}
+        orgName={organization.name}
+        orgIsPersonal={organization.isPersonal ?? false}
+        backHref={orgOverviewHref}
+        orgLinkHref={orgOverviewHref}
+        trail={[{ label: "Scopes" }]}
+      />
+
       <Card className="p-4 md:p-5">
         <div className="flex items-start gap-4">
           {organization.logoUrl ? (
@@ -127,6 +161,13 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
                 Org settings
               </Link>
               <Link
+                href={`/organizations/${slug}/context-items`}
+                className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+              >
+                <ListChecks className="h-3 w-3" />
+                All context items
+              </Link>
+              <Link
                 href="/scopes"
                 className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
               >
@@ -138,35 +179,28 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
         </div>
       </Card>
 
+      {orgSuggestions.length > 0 && (
+        <KgSuggestionHint
+          variant="banner"
+          rows={orgSuggestions}
+          accept={suggestions.accept}
+          reject={suggestions.reject}
+          defer={suggestions.defer}
+          label={organization.name}
+          align="start"
+        />
+      )}
+
       {scopeTypes.length === 0 ? (
-        <Card className="p-6 md:p-8 space-y-4">
-          <div className="flex items-start gap-4">
-            <div className="text-sky-600 dark:text-sky-400 shrink-0">
-              <FolderTree className="h-7 w-7" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold mb-1">Set up your scopes</h2>
-              <p className="text-sm text-muted-foreground">
-                Scopes group what your team works on — clients, products, teams,
-                anything. Define a few and they'll show up here with all their
-                details.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 pt-2 border-t border-border">
-            <Button size="sm" onClick={() => setAddScopeOpen(true)}>
-              <Plus className="h-4 w-4 mr-1.5" />
-              Add a scope
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setGalleryOpen(true)}
-            >
-              <LayoutTemplate className="h-4 w-4 mr-1.5" />
-              Browse templates
-            </Button>
-          </div>
+        <Card className="p-6 md:p-8">
+          <ScopeOnboarding
+            orgId={organization.id}
+            isPersonal={organization.isPersonal ?? undefined}
+            onChanged={() => {
+              dispatch(fetchScopeTypes(organization.id));
+              dispatch(fetchScopes({ org_id: organization.id }));
+            }}
+          />
         </Card>
       ) : (
         <>
@@ -187,7 +221,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
               className="text-muted-foreground hover:text-foreground"
             >
               <Plus className="h-4 w-4 mr-1.5" />
-              Add scope
+              Add Scope Type
             </Button>
             <span className="text-muted-foreground/50">·</span>
             <Button
@@ -199,6 +233,20 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
               <LayoutTemplate className="h-4 w-4 mr-1.5" />
               Add from template
             </Button>
+            {canManage && scopeTypes.length > 1 && (
+              <>
+                <span className="text-muted-foreground/50">·</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setReorderTypesOpen(true)}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowUpDown className="h-4 w-4 mr-1.5" />
+                  Reorder types
+                </Button>
+              </>
+            )}
           </div>
         </>
       )}
@@ -213,6 +261,18 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
         onOpenChange={setGalleryOpen}
         orgId={organization.id}
         personalOnly={organization.isPersonal ? true : undefined}
+      />
+      <ReorderDialog
+        open={reorderTypesOpen}
+        onOpenChange={setReorderTypesOpen}
+        title="Reorder scope types"
+        description="Drag the handle or use the arrows, then save."
+        items={scopeTypes.map((t) => ({
+          id: t.id,
+          label: t.label_plural,
+          sublabel: t.label_singular,
+        }))}
+        onSave={saveTypeOrder}
       />
     </div>
   );

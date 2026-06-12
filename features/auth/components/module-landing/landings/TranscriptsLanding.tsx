@@ -69,25 +69,37 @@ const STEPS: ModuleStep[] = [
 
 const SUB_AREAS: ModuleSubArea[] = [
   {
-    title: "Transcript processor",
+    title: "Processor",
     status: "Live",
-    href: "/transcription/processor",
+    href: "/transcripts",
     items: ["Upload + paste URL", "Live transcription", "Speaker diarization", "Multi-language"],
   },
   {
-    title: "Library",
+    title: "Studio",
     status: "Live",
-    items: ["Every past transcript", "Search across all", "Group by source", "Tag by topic"],
+    href: "/transcripts/studio",
+    items: [
+      "Live 4-column workspace",
+      "Raw → cleaned → concepts → modules",
+      "Long-form (1-3 hr) safe",
+      "Crash-safe via IndexedDB",
+    ],
+  },
+  {
+    title: "Scribe (mobile)",
+    status: "Live",
+    href: "/transcripts/scribe",
+    items: [
+      "Big record button + live strip",
+      "AI assistant panel",
+      "Cleanup sheet",
+      "Per-session unsorted pool",
+    ],
   },
   {
     title: "Meeting bot",
     status: "Coming soon",
     items: ["Auto-join calendar meetings", "Zoom / Meet / Teams", "Live transcripts", "Post-meeting summaries"],
-  },
-  {
-    title: "Podcast pipeline",
-    status: "Live",
-    items: ["Episode-level intake", "Show-notes generation", "Chapter detection", "Multi-channel export"],
   },
 ];
 
@@ -102,7 +114,7 @@ export default function TranscriptsLanding() {
       description="Meetings, calls, podcasts — turn every recording into a speaker-attributed transcript, an action-item list, and a searchable archive. Audio stops being something you have to relisten to."
       primaryCtaHref="/sign-up?source=transcripts-landing"
       primaryCtaLabel="Transcribe Your First Recording Free"
-      workspaceHref="/transcription/processor"
+      workspaceHref="/transcripts"
       workspaceLabel="Transcripts"
       capabilitiesHeading="More than speech-to-text"
       capabilitiesDescription="Five capabilities turn raw audio into a structured artifact your team can actually use."
@@ -114,6 +126,7 @@ export default function TranscriptsLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Stop re-listening to your own meetings"
       finalCtaDescription="Transcribe once, search forever, push to action. Free to start, no credit card."
+      relatedModules={["/notes", "/tasks", "/chat"]}
     />
   );
 }

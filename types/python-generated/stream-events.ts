@@ -140,6 +140,8 @@ export interface BrokerPayload {
 
 export interface HeartbeatPayload {
   timestamp?: number;
+  seq?: number | null;
+  late_by_seconds?: number | null;
 }
 
 export interface EndPayload {
@@ -343,6 +345,34 @@ export interface AudioOutputData {
   cdn_url?: string | null;
   signed_url?: string | null;
   download_url?: string | null;
+}
+
+export interface AudioStreamChunkData {
+  type?: "audio_stream_chunk";
+  stream_id: string;
+  seq: number;
+  audio_base64: string;
+  mime_type?: string;
+  encoding?: "pcm_s16le";
+  sample_rate?: number;
+  bits_per_sample?: number;
+  channels?: number;
+}
+
+export interface AudioStreamEndData {
+  type?: "audio_stream_end";
+  stream_id: string;
+  total_chunks: number;
+  url?: string;
+  mime_type?: string;
+  file_id?: string | null;
+  cdn_url?: string | null;
+  signed_url?: string | null;
+  download_url?: string | null;
+  duration_ms?: number | null;
+  sample_rate?: number;
+  bits_per_sample?: number;
+  channels?: number;
 }
 
 export interface CategorizationResultData {
@@ -706,6 +736,8 @@ export interface WorkflowStepData {
 
 export type TypedDataPayload =
   | AudioOutputData
+  | AudioStreamChunkData
+  | AudioStreamEndData
   | CategorizationResultData
   | ContextChangedData
   | ContextPersistFailedData
@@ -2174,47 +2206,73 @@ export interface ToolResultPart {
 
 export interface ImageMediaPart {
   metadata?: Record<string, unknown>;
-  type?: "media";
-  kind?: "image";
+  origin?: "matrx" | "external" | null;
+  file_id?: string | null;
   url?: string | null;
   file_uri?: string | null;
   mime_type?: string | null;
+  size_bytes?: number | null;
+  type?: "media";
+  kind?: "image";
+  width?: number | null;
+  height?: number | null;
 }
 
 export interface AudioMediaPart {
   metadata?: Record<string, unknown>;
-  type?: "media";
-  kind?: "audio";
+  origin?: "matrx" | "external" | null;
+  file_id?: string | null;
   url?: string | null;
   file_uri?: string | null;
   mime_type?: string | null;
+  size_bytes?: number | null;
+  type?: "media";
+  kind?: "audio";
+  duration_ms?: number | null;
   transcription_result?: string | null;
 }
 
 export interface VideoMediaPart {
   metadata?: Record<string, unknown>;
-  type?: "media";
-  kind?: "video";
+  origin?: "matrx" | "external" | null;
+  file_id?: string | null;
   url?: string | null;
   file_uri?: string | null;
   mime_type?: string | null;
+  size_bytes?: number | null;
+  type?: "media";
+  kind?: "video";
+  width?: number | null;
+  height?: number | null;
+  duration_ms?: number | null;
 }
 
 export interface DocumentMediaPart {
   metadata?: Record<string, unknown>;
-  type?: "media";
-  kind?: "document";
+  origin?: "matrx" | "external" | null;
+  file_id?: string | null;
   url?: string | null;
   file_uri?: string | null;
   mime_type?: string | null;
+  size_bytes?: number | null;
+  type?: "media";
+  kind?: "document";
+  width?: number | null;
+  height?: number | null;
+  page_count?: number | null;
 }
 
 export interface YouTubeMediaPart {
   metadata?: Record<string, unknown>;
+  origin?: "external";
+  file_id?: string | null;
+  url: string;
+  file_uri?: string | null;
+  mime_type?: string | null;
+  size_bytes?: number | null;
   type?: "media";
   kind?: "youtube";
-  url: string;
-  mime_type?: string | null;
+  external_url?: string | null;
 }
 
 export interface CodeExecPart {

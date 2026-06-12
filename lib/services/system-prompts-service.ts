@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { requireUserId } from "@/utils/auth/getUserId";
+import { buildSearchOr } from "@/utils/supabase-search";
 /**
  * System Prompts Service
  *
@@ -60,7 +61,7 @@ export async function fetchSystemPrompts(
 
   if (options.search) {
     query = query.or(
-      `name.ilike.%${options.search}%,description.ilike.%${options.search}%,system_prompt_id.ilike.%${options.search}%`,
+      buildSearchOr(options.search, ["name", "description", "system_prompt_id"]),
     );
   }
 

@@ -166,6 +166,32 @@ export const canvasArtifactService = {
     },
 
     /**
+     * Get a single canvas item by id. RLS scopes this to the owner, public
+     * items, or items the caller has explicit permission on — so it safely
+     * resolves an artifact_ref both for the author and for shared views.
+     * Returns null when not found / not accessible.
+     */
+    async getById(canvasId: string): Promise<CanvasArtifactRow | null> {
+        try {
+            const { data, error } = await supabase
+                .from("canvas_items")
+                .select("*")
+                .eq("id", canvasId)
+                .maybeSingle();
+
+            if (error) {
+                console.error("[canvasArtifactService.getById] error:", error);
+                return null;
+            }
+
+            return (data as CanvasArtifactRow | null) ?? null;
+        } catch (err) {
+            console.error("[canvasArtifactService.getById] Error:", err);
+            return null;
+        }
+    },
+
+    /**
      * Get all versions of an artifact given any version's ID.
      */
     async getVersionHistory(canvasId: string): Promise<CanvasArtifactRow[]> {

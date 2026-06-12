@@ -44,9 +44,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { usePages } from "@/features/file-analysis/hooks/usePages";
 import { usePageThumbnail } from "@/features/file-analysis/hooks/usePageThumbnail";
-import { usePdfDemoApi } from "@/features/pdf-demo/hooks/usePdfDemoApi";
-import type { BinaryResult } from "@/features/pdf-demo/hooks/usePdfDemoApi";
+import { usePdfClient as usePdfDemoApi } from "@/features/pdf/api/client";
+import type { PdfBinaryResult as BinaryResult } from "@/features/pdf/api/client";
 import * as Api from "@/features/file-analysis/api/file-analysis";
+import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 
 interface Props {
   fileId: string;
@@ -57,6 +60,7 @@ interface Props {
 export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
   const { pages, loading, refetch } = usePages(fileId);
   const pdfApi = usePdfDemoApi();
+  const downloadBlob = useDownloadBlob();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +96,7 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
     setLastResult(null);
     try {
       const result = await pdfApi.postPdfBlob(endpoint, {
-        cld_id: fileId,
+        ...buildPdfSourceFromFileId(fileId),
         ...body,
       });
       setLastResult(result);
@@ -105,12 +109,13 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
 
   // ── In-place ops (file_pages mutation, no derivative) ──────────────────
   async function inPlaceRotate(pageId: string, currentRotation: number) {
-    setBusy("rotate");
+    setBusy(`rotate:${pageId}`);
     setError(null);
     try {
       await Api.rotatePage(fileId, pageId, {
         rotation: (((currentRotation + 90) % 360) as 0 | 90 | 180 | 270),
       });
+      await refetch();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -119,10 +124,11 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
   }
 
   async function inPlaceExclude(pageId: string) {
-    setBusy("exclude");
+    setBusy(`exclude:${pageId}`);
     setError(null);
     try {
       await Api.excludePage(fileId, pageId, { reason: null });
+      await refetch();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -131,10 +137,11 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
   }
 
   async function inPlaceInclude(pageId: string) {
-    setBusy("include");
+    setBusy(`include:${pageId}`);
     setError(null);
     try {
       await Api.includePage(fileId, pageId);
+      await refetch();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -151,9 +158,19 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
   }
   function bulkDelete() {
     if (!selectedPageNumbers.length) return;
-    void runDerivativeOp("delete", "deletePages", {
-      pages: selectedPageNumbers,
-    });
+    void (async () => {
+      const ok = await confirm({
+        title: `Delete ${selectedPageNumbers.length} page${selectedPageNumbers.length === 1 ? "" : "s"}?`,
+        description:
+          "Creates a new PDF without those pages — this source file is unchanged.",
+        confirmLabel: "Delete pages",
+        variant: "destructive",
+      });
+      if (!ok) return;
+      await runDerivativeOp("delete", "deletePages", {
+        pages: selectedPageNumbers,
+      });
+    })();
   }
   function bulkDuplicate() {
     if (!selectedPageNumbers.length) return;
@@ -171,14 +188,7 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
 
   function downloadResult() {
     if (!lastResult) return;
-    const url = URL.createObjectURL(lastResult.blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = lastResult.filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(lastResult);
   }
 
   if (loading && !pages.length) {
@@ -270,6 +280,10 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
             <Download className="h-3 w-3 mr-1" /> {lastResult.filename}
           </Button>
         ) : null}
+        <span className="basis-full text-[10px] leading-tight text-muted-foreground">
+          Extract / Delete / Duplicate / Rotate produce a NEW PDF download —
+          the source file is unchanged.
+        </span>
       </div>
 
       {error ? (
@@ -393,21 +407,28 @@ function PageCard({
         )}
       </button>
 
+      {/* Per-page scoping: only THIS page's buttons dim while its own op
+          runs (busy = "op:pageId"); bulk ops (no ":") still disable all. */}
       <div className="flex items-center gap-0.5 border-t border-border bg-card/40 px-1 py-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
         <TinyBtn
           icon={RotateCw}
           label="Rotate"
           onClick={onRotate}
-          disabled={!!busy}
+          disabled={!!busy && (busy.includes(page.id) || !busy.includes(":"))}
         />
         {excluded ? (
-          <TinyBtn icon={Eye} label="Include" onClick={onInclude} disabled={!!busy} />
+          <TinyBtn
+            icon={Eye}
+            label="Include"
+            onClick={onInclude}
+            disabled={!!busy && (busy.includes(page.id) || !busy.includes(":"))}
+          />
         ) : (
           <TinyBtn
             icon={EyeOff}
             label="Exclude"
             onClick={onExclude}
-            disabled={!!busy}
+            disabled={!!busy && (busy.includes(page.id) || !busy.includes(":"))}
           />
         )}
       </div>

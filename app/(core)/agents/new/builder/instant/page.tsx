@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Zap } from "lucide-react";
 import { InstantAssistantBuilder } from "@/features/agents/agent-creators/interactive-builder/InstantAssistantBuilder";
 
-export const metadata = { title: "Instant Chat Assistant Builder | AI Matrx" };
 
 export default function InstantBuilderPage() {
   return (

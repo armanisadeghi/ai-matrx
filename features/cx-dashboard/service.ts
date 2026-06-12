@@ -13,6 +13,7 @@ import type {
   CxCostVerification,
 } from "./types/cxDashboardTypes";
 import { getTimeframeRange } from "./utils/filters";
+import { buildSearchOr } from "@/utils/supabase-search";
 
 function buildTimeframeCondition(filters: CxFilters, col: string): string {
   if (filters.timeframe === "all") return "";
@@ -173,7 +174,7 @@ export async function fetchConversations(filters: CxFilters): Promise<CxPaginate
 
   if (filters.user_id) query = query.eq("user_id", filters.user_id);
   if (filters.status) query = query.eq("status", filters.status);
-  if (filters.search) query = query.ilike("title", `%${filters.search}%`);
+  if (filters.search) query = query.or(buildSearchOr(filters.search, ["title"]));
 
   if (filters.timeframe !== "all" && filters.timeframe !== "custom") {
     const range = getTimeframeRange(filters.timeframe as any);

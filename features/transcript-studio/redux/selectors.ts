@@ -138,6 +138,63 @@ export function selectCleanedSegments(sessionId: string | null) {
   };
 }
 
+/**
+ * The active cleaned segment for a single recording (recording-aligned model),
+ * or null if that recording hasn't been cleaned yet. Returns the latest
+ * (highest passIndex) when more than one is somehow active. The returned object
+ * is a stable reference from the cleaned list, so it is safe for useAppSelector.
+ */
+export function selectCleanedSegmentForRecording(
+  sessionId: string | null,
+  recordingSegmentId: string | null,
+) {
+  return (state: RootState): CleanedSegment | null => {
+    if (!sessionId || !recordingSegmentId) return null;
+    const cleaned = selectCleanedSegments(sessionId)(state);
+    let best: CleanedSegment | null = null;
+    for (const c of cleaned) {
+      if (c.recordingSegmentId !== recordingSegmentId) continue;
+      if (c.processorKey !== "clean") continue;
+      if (!best || c.passIndex > best.passIndex) best = c;
+    }
+    return best;
+  };
+}
+
+/**
+ * Full-session cleaned transcript = ordered concatenation of all active cleaned
+ * segments (recording-aligned, by tStart). This is the single source of truth
+ * for "all clean" — there is no separate monolithic clean document. Returns a
+ * primitive string, so it is reference-stable for useAppSelector.
+ */
+export function selectSessionCleanedText(sessionId: string | null) {
+  return (state: RootState): string => {
+    if (!sessionId) return "";
+    return [...selectCleanedSegments(sessionId)(state)]
+      .filter((c) => c.processorKey === "clean")
+      .sort((a, b) => a.tStart - b.tStart)
+      .map((c) => c.text.trim())
+      .filter(Boolean)
+      .join("\n\n")
+      .trim();
+  };
+}
+
+/**
+ * Full-session raw transcript = all raw chunks across recordings, in order.
+ * Primitive string return → reference-stable for useAppSelector.
+ */
+export function selectSessionRawText(sessionId: string | null) {
+  return (state: RootState): string => {
+    if (!sessionId) return "";
+    return selectRawSegments(sessionId)(state)
+      .map((r) => r.text.trim())
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+  };
+}
+
 // ── Recording segments (mobile cards) ───────────────────────────────
 
 const EMPTY_RECORDING: RecordingSegment[] = [];
@@ -228,6 +285,15 @@ export function selectUnsortedRecordings(state: RootState): RecordingSegment[] {
 export const selectUnsortedCount = (state: RootState): number =>
   state.transcriptStudio.unsortedIds.length;
 
+/**
+ * Memoize per-recording raw-chunk slices off the stable `selectRawSegments`
+ * result so `useAppSelector` keeps the same reference when nothing changed.
+ */
+const rawForRecordingCache = new WeakMap<
+  RawSegment[],
+  Map<string, RawSegment[]>
+>();
+
 /** Raw chunks belonging to one recording cycle, ordered by tStart. */
 export function selectRawSegmentsForRecording(
   sessionId: string | null,
@@ -236,10 +302,23 @@ export function selectRawSegmentsForRecording(
   return (state: RootState): RawSegment[] => {
     if (!sessionId || !recordingSegmentId) return EMPTY_RAW;
     const all = selectRawSegments(sessionId)(state);
+    if (all.length === 0) return EMPTY_RAW;
+
+    let byRecordingId = rawForRecordingCache.get(all);
+    if (!byRecordingId) {
+      byRecordingId = new Map();
+      rawForRecordingCache.set(all, byRecordingId);
+    }
+
+    const cached = byRecordingId.get(recordingSegmentId);
+    if (cached) return cached;
+
     const filtered = all.filter(
       (s) => s.recordingSegmentId === recordingSegmentId,
     );
-    return filtered.length === 0 ? EMPTY_RAW : filtered;
+    const result = filtered.length === 0 ? EMPTY_RAW : filtered;
+    byRecordingId.set(recordingSegmentId, result);
+    return result;
   };
 }
 

@@ -150,7 +150,21 @@ attributable to this page in analytics.
 
 ## Change Log
 
+- 2026-06-05 — **De-forked the per-column results display.** `shared/BoundColumn`
+  (the single body used by all 8 battle surfaces — model, settings, tools,
+  tuning, system-prompt, request-mod, variations, open battle) was a parallel
+  reimplementation of the canonical `AgentConversationColumn` and had drifted
+  (unconditional Creator Panel, missing `PendingAsksZone`/`TaskPanelChip`/
+  landing transition, separate scroll scaffolding). `BoundColumn` is now a thin
+  wrapper that delegates to `AgentConversationColumn`, layering only two deltas:
+  the `ResponseFeedbackBar` (via a new generic `afterMessages` scroll slot) and
+  `hideInput` for locked-input modes. `AgentConversationColumn` gained three
+  additive, default-safe props (`hideInput`, `hideCreatorPanel`, `afterMessages`)
+  — `/run`, `/build`, `/chat` are unchanged. Any future change to the results
+  display now reaches every battle mode automatically; no second display system
+  to keep in sync.
 - 2026-05-17 — Initial scaffold (Phase 1).
+- 2026-06-07 — **Model mode baseline column:** picking a locked agent auto-adds the first column pre-filled with that agent's default model (via instance `baseSettings`, not a redundant override). `ModelColumnHeader` baseline column falls back to the agent model in the picker; `SmartModelSelect` accepts `priorityValues` to pin the default at the top of the dropdown.
 - 2026-05-24 — Added **Variations** mode (`/agents/battle/variations`): start
   from a template agent, edit the FULL agent definition per variation in a
   tabbed floating editor window (reuses the Agent Builder's `AgentBuilderLeftPanel`),

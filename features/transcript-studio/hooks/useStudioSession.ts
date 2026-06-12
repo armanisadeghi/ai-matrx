@@ -20,14 +20,25 @@ import {
   type StartRecordingArgs,
 } from "@/providers/GlobalRecordingProvider";
 import {
+  cleanRecordingThunk,
+  deleteRecordingSegmentThunk,
   finalizeRecordingSegmentThunk,
   ingestRawChunkThunk,
-  runCleaningPassThunk,
   startRecordingSegmentThunk,
   startSessionRecordingThunk,
   stopSessionRecordingThunk,
   uploadRecordingAudioThunk,
 } from "../redux/thunks";
+import { selectRawSegmentsForRecording } from "../redux/selectors";
+import { recordingKept } from "../redux/slice";
+
+// A start→immediate-stop produces a near-silent clip that Whisper almost always
+// hallucinates as "Thank you" / "you" etc. Discard a recording when it's both
+// very short AND has negligible transcript, so we never create an empty card or
+// fire a pointless cleaning pass. Tuned to keep genuine short notes (a 2s "call
+// Bob back" survives on text length even though it's brief).
+const MIN_KEEP_DURATION_MS = 1500;
+const MIN_KEEP_TEXT_CHARS = 12;
 
 interface UseStudioSessionOptions {
   sessionId: string | null;
@@ -38,6 +49,8 @@ interface UseStudioSessionReturn {
   isOwnedRecording: boolean;
   /** True iff some recording is in flight, not necessarily this session. */
   isAnyRecording: boolean;
+  /** True while the just-stopped recording is still saving its transcript/audio. */
+  isFinalizing: boolean;
   isPaused: boolean;
   audioLevel: number;
   durationSec: number;
@@ -126,9 +139,39 @@ export function useStudioSession({
       onComplete: (_result, audioBlob) => {
         const recordingSegmentId = recordingSegmentIdRef.current;
         if (recordingSegmentId) {
-          // Finalize the row instantly (card leaves "processing"), then run the
-          // cleaning pass. The audio file uploads in the background so the user
-          // never waits on the network.
+          // Discard guard: a too-short clip with negligible transcript is almost
+          // always silence Whisper hallucinated into "Thank you". Drop it rather
+          // than create an empty card + waste a cleaning pass.
+          const rawText = selectRawSegmentsForRecording(
+            sessionId,
+            recordingSegmentId,
+          )(store.getState())
+            .map((r) => r.text)
+            .join(" ")
+            .trim();
+          const durationMs = lastTEndRef.current * 1000;
+          const tooShort =
+            rawText.length === 0 ||
+            (durationMs < MIN_KEEP_DURATION_MS &&
+              rawText.length < MIN_KEEP_TEXT_CHARS);
+          if (tooShort) {
+            void dispatch(
+              deleteRecordingSegmentThunk({ sessionId, recordingSegmentId }),
+            );
+            toast("Discarded — recording was too short to keep.", {
+              closeButton: true,
+            });
+            recordingSegmentIdRef.current = null;
+            safetyIdRef.current = null;
+            return;
+          }
+          // Kept — signal the UI so it can offer the "send to agent" follow-up
+          // (a discarded clip never reaches here, so it never prompts).
+          dispatch(recordingKept());
+          // Finalize the row instantly (card leaves "processing"), then clean
+          // THIS recording into one cleaned segment anchored to it
+          // (recording-aligned). The full-session clean is the concatenation of
+          // those rows. Audio uploads in the background so the user never waits.
           void dispatch(
             finalizeRecordingSegmentThunk({
               sessionId,
@@ -137,7 +180,11 @@ export function useStudioSession({
             }),
           ).finally(() => {
             void dispatch(
-              runCleaningPassThunk({ sessionId, triggerCause: "session-stop" }),
+              cleanRecordingThunk({
+                sessionId,
+                recordingSegmentId,
+                triggerCause: "session-stop",
+              }),
             );
           });
           void dispatch(
@@ -203,6 +250,7 @@ export function useStudioSession({
     () => ({
       isOwnedRecording,
       isAnyRecording,
+      isFinalizing: recording.isFinalizing,
       isPaused: recordings.isPaused,
       audioLevel: recordings.audioLevel,
       durationSec: recordings.durationSec,
@@ -215,6 +263,7 @@ export function useStudioSession({
     [
       isOwnedRecording,
       isAnyRecording,
+      recording.isFinalizing,
       recordings.isPaused,
       recordings.audioLevel,
       recordings.durationSec,

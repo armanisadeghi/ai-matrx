@@ -3,6 +3,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import {
   selectAllContainers,
   selectContainerLoading,
@@ -150,7 +151,8 @@ export default function ContainerListTable({
             .includes(searchTerm.toLowerCase()) ||
           container.shortLabel
             ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()),
+            .includes(searchTerm.toLowerCase()) ||
+          idMatchesQuery(container, searchTerm),
       );
     }
 

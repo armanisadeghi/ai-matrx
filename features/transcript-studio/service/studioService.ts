@@ -12,7 +12,10 @@
 import { supabase } from "@/utils/supabase/client";
 import { NEW_SESSION_DEFAULT_TITLE, DEFAULT_MODULE_ID } from "../constants";
 import type {
+  CleanupCustomSlot,
   CreateSessionInput,
+  SessionContextItem,
+  SessionSource,
   StudioSession,
   UpdateSessionInput,
 } from "../types";
@@ -39,11 +42,13 @@ export interface SessionRow {
   title: string;
   status: StudioSession["status"];
   module_id: string;
+  source: SessionSource;
   started_at: string;
   ended_at: string | null;
   total_duration_ms: number;
   audio_storage_path: string | null;
   is_deleted: boolean;
+  assistant_conversation_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -59,11 +64,13 @@ export function rowToSession(row: SessionRow): StudioSession {
     title: row.title,
     status: row.status,
     moduleId: row.module_id,
+    source: row.source ?? "studio",
     startedAt: row.started_at,
     endedAt: row.ended_at,
     totalDurationMs: row.total_duration_ms,
     audioStoragePath: row.audio_storage_path,
     isDeleted: row.is_deleted,
+    assistantConversationId: row.assistant_conversation_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -71,18 +78,40 @@ export function rowToSession(row: SessionRow): StudioSession {
 
 // ── studio_sessions ───────────────────────────────────────────────────
 
-export async function listSessions(): Promise<StudioSession[]> {
-  const { data, error } = await db
-    .from("studio_sessions")
-    .select("*")
-    .eq("is_deleted", false)
+/**
+ * Source scoping for session lists. Each surface lists its own sessions by
+ * default — the studio hides the high-volume cleanup sessions and vice versa.
+ *   - omitted / "studio" → everything EXCEPT cleanup (`source <> 'cleanup'`,
+ *     so future sources surface in the studio rather than vanish)
+ *   - "cleanup"          → only cleanup sessions
+ *   - "all"              → no source filter (either surface's "show all")
+ */
+export interface SessionListFilter {
+  source?: SessionSource | "all";
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applySourceFilter(query: any, filter?: SessionListFilter) {
+  const source = filter?.source ?? "studio";
+  if (source === "all") return query;
+  if (source === "studio") return query.neq("source", "cleanup");
+  return query.eq("source", source);
+}
+
+export async function listSessions(
+  filter?: SessionListFilter,
+): Promise<StudioSession[]> {
+  const { data, error } = await applySourceFilter(
+    db.from("studio_sessions").select("*").eq("is_deleted", false),
+    filter,
+  )
     .order("updated_at", { ascending: false })
     .limit(200);
 
   if (error) {
     throw new Error(`[studio] listSessions failed: ${error.message}`);
   }
-  return (data ?? []).map((row) => rowToSession(row as SessionRow));
+  return (data ?? []).map((row: SessionRow) => rowToSession(row));
 }
 
 export async function getSession(id: string): Promise<StudioSession | null> {
@@ -109,6 +138,7 @@ export async function createSession(
     transcript_id: input.transcriptId ?? null,
     title: input.title?.trim() || NEW_SESSION_DEFAULT_TITLE,
     module_id: input.moduleId ?? DEFAULT_MODULE_ID,
+    source: input.source ?? "studio",
   };
 
   const { data, error } = await db
@@ -128,7 +158,7 @@ export async function createSession(
 export async function updateSession(
   id: string,
   patch: UpdateSessionInput,
-): Promise<StudioSession> {
+): Promise<StudioSession | null> {
   const update: Record<string, unknown> = {};
   if (patch.title !== undefined) update.title = patch.title;
   if (patch.status !== undefined) update.status = patch.status;
@@ -141,19 +171,25 @@ export async function updateSession(
   if (patch.transcriptId !== undefined)
     update.transcript_id = patch.transcriptId;
   if (patch.isDeleted !== undefined) update.is_deleted = patch.isDeleted;
+  if (patch.assistantConversationId !== undefined)
+    update.assistant_conversation_id = patch.assistantConversationId;
 
+  // maybeSingle (not single): the session row may be gone (deleted, or a
+  // local/optimistic session never persisted) when a background update lands —
+  // e.g. persisting the assistant conversation id. A real error still throws;
+  // a missing row returns null so callers no-op instead of surfacing
+  // PostgREST's "Cannot coerce the result to a single JSON object".
   const { data, error } = await db
     .from("studio_sessions")
     .update(update)
     .eq("id", id)
     .select("*")
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
-    throw new Error(
-      `[studio] updateSession failed: ${error?.message ?? "no row returned"}`,
-    );
+  if (error) {
+    throw new Error(`[studio] updateSession failed: ${error.message}`);
   }
+  if (!data) return null;
   return rowToSession(data as SessionRow);
 }
 
@@ -172,20 +208,42 @@ export async function softDeleteSession(id: string): Promise<void> {
 
 // Server-side fetch for SSR hydration. Pass a server Supabase client built
 // via utils/supabase/server.ts.
-export async function listSessionsServer(serverClient: {
-  from: (table: string) => unknown;
-}): Promise<StudioSession[]> {
+export async function listSessionsServer(
+  serverClient: {
+    from: (table: string) => unknown;
+  },
+  filter?: SessionListFilter,
+): Promise<StudioSession[]> {
   const looseClient = serverClient as unknown as LooseSupabase;
-  const { data, error } = await looseClient
-    .from("studio_sessions")
-    .select("*")
-    .eq("is_deleted", false)
+  const { data, error } = await applySourceFilter(
+    looseClient.from("studio_sessions").select("*").eq("is_deleted", false),
+    filter,
+  )
     .order("updated_at", { ascending: false })
     .limit(200);
   if (error) {
     throw new Error(`[studio] listSessionsServer failed: ${error.message}`);
   }
   return ((data ?? []) as SessionRow[]).map(rowToSession);
+}
+
+export async function getSessionServer(
+  serverClient: {
+    from: (table: string) => unknown;
+  },
+  id: string,
+): Promise<StudioSession | null> {
+  const looseClient = serverClient as unknown as LooseSupabase;
+  const { data, error } = await looseClient
+    .from("studio_sessions")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`[studio] getSessionServer failed: ${error.message}`);
+  }
+  return data ? rowToSession(data as SessionRow) : null;
 }
 
 // ── studio_raw_segments ───────────────────────────────────────────────
@@ -361,21 +419,26 @@ export function rowToRecordingSegment(
 export async function setRecordingSegmentState(
   id: string,
   patch: { archivedAt?: string | null; detachedAt?: string | null },
-): Promise<import("../types").RecordingSegment> {
+): Promise<import("../types").RecordingSegment | null> {
   const update: Record<string, unknown> = {};
   if (patch.archivedAt !== undefined) update.archived_at = patch.archivedAt;
   if (patch.detachedAt !== undefined) update.detached_at = patch.detachedAt;
+  // maybeSingle (not single): the row may have been deleted out from under us
+  // (manual delete / discard race). A real error still throws; a gone row
+  // returns null so callers can no-op instead of surfacing PostgREST's cryptic
+  // "Cannot coerce the result to a single JSON object".
   const { data, error } = await db
     .from("studio_recording_segments")
     .update(update)
     .eq("id", id)
     .select("*")
-    .single();
-  if (error || !data) {
+    .maybeSingle();
+  if (error) {
     throw new Error(
-      `[studio] setRecordingSegmentState failed: ${error?.message ?? "no row"}`,
+      `[studio] setRecordingSegmentState failed: ${error.message}`,
     );
   }
+  if (!data) return null;
   return rowToRecordingSegment(data as RecordingSegmentRow);
 }
 
@@ -421,22 +484,25 @@ export async function insertRecordingSegment(
 export async function updateRecordingSegment(
   id: string,
   patch: import("../types").UpdateRecordingSegmentInput,
-): Promise<import("../types").RecordingSegment> {
+): Promise<import("../types").RecordingSegment | null> {
   const update: Record<string, unknown> = {};
   if (patch.audioPath !== undefined) update.audio_path = patch.audioPath;
   if (patch.tEnd !== undefined) update.t_end = patch.tEnd;
   if (patch.endedAt !== undefined) update.ended_at = patch.endedAt;
+  // maybeSingle (not single): a background finalize / audio-upload can land
+  // after the recording was deleted or discarded. A gone row returns null
+  // (callers no-op) rather than throwing PostgREST's "Cannot coerce the result
+  // to a single JSON object"; genuine errors still throw.
   const { data, error } = await db
     .from("studio_recording_segments")
     .update(update)
     .eq("id", id)
     .select("*")
-    .single();
-  if (error || !data) {
-    throw new Error(
-      `[studio] updateRecordingSegment failed: ${error?.message ?? "no row"}`,
-    );
+    .maybeSingle();
+  if (error) {
+    throw new Error(`[studio] updateRecordingSegment failed: ${error.message}`);
   }
+  if (!data) return null;
   return rowToRecordingSegment(data as RecordingSegmentRow);
 }
 
@@ -765,6 +831,8 @@ export interface CleanedSegmentRow {
   text: string;
   trigger_cause: import("../types").TriggerCause;
   superseded_at: string | null;
+  recording_segment_id: string | null;
+  processor_key?: string | null;
 }
 
 export function rowToCleanedSegment(
@@ -780,6 +848,8 @@ export function rowToCleanedSegment(
     text: row.text,
     triggerCause: row.trigger_cause,
     supersededAt: row.superseded_at,
+    recordingSegmentId: row.recording_segment_id ?? null,
+    processorKey: row.processor_key ?? "clean",
   };
 }
 
@@ -837,20 +907,45 @@ export interface ApplyCleanupRunInput {
   tEnd: number;
   text: string;
   triggerCause: import("../types").TriggerCause;
+  /**
+   * Recording-aligned cleaning: anchor this clean to its source recording.
+   * When set, supersession is scoped to the SAME recording (re-running a
+   * recording's clean replaces only that recording's prior clean) instead of
+   * the time-based `t_start >=` window used by the Studio's interval cleaner.
+   */
+  recordingSegmentId?: string | null;
+  /**
+   * Per-segment processor key. Defaults to 'clean' (built-in cleaning). Custom
+   * per-segment processors pass their own key; supersession and the row are
+   * scoped to that key so processors never overwrite each other or the clean.
+   */
+  processorKey?: string;
 }
 
 export async function applyCleanupRun(
   input: ApplyCleanupRunInput,
 ): Promise<import("../types").CleanedSegment> {
   const supersedeAt = new Date().toISOString();
+  const recordingAligned =
+    input.recordingSegmentId !== undefined && input.recordingSegmentId !== null;
+  const processorKey = input.processorKey ?? "clean";
 
-  // Step 1: stamp prior overlapping rows as superseded.
-  const { error: supersedeError } = await db
+  // Step 1: stamp prior rows as superseded — always scoped to this processor key.
+  //  - Recording-aligned: only this recording's prior output for this processor.
+  //  - Time-windowed (Studio): any active row at/after this window's start.
+  let supersedeQuery = db
     .from("studio_cleaned_segments")
     .update({ superseded_at: supersedeAt })
     .eq("session_id", input.sessionId)
-    .is("superseded_at", null)
-    .gte("t_start", input.tStart);
+    .eq("processor_key", processorKey)
+    .is("superseded_at", null);
+  supersedeQuery = recordingAligned
+    ? supersedeQuery.eq(
+        "recording_segment_id",
+        input.recordingSegmentId as string,
+      )
+    : supersedeQuery.gte("t_start", input.tStart);
+  const { error: supersedeError } = await supersedeQuery;
   if (supersedeError) {
     throw new Error(
       `[studio] applyCleanupRun supersede failed: ${supersedeError.message}`,
@@ -858,17 +953,21 @@ export async function applyCleanupRun(
   }
 
   // Step 2: insert the new active row.
+  const insertRow: Record<string, unknown> = {
+    session_id: input.sessionId,
+    run_id: input.runId,
+    pass_index: input.passIndex,
+    t_start: input.tStart,
+    t_end: input.tEnd,
+    text: input.text,
+    trigger_cause: input.triggerCause,
+    processor_key: processorKey,
+  };
+  if (recordingAligned)
+    insertRow.recording_segment_id = input.recordingSegmentId;
   const { data, error: insertError } = await db
     .from("studio_cleaned_segments")
-    .insert({
-      session_id: input.sessionId,
-      run_id: input.runId,
-      pass_index: input.passIndex,
-      t_start: input.tStart,
-      t_end: input.tEnd,
-      text: input.text,
-      trigger_cause: input.triggerCause,
-    })
+    .insert(insertRow)
     .select("*")
     .single();
   if (insertError || !data) {
@@ -1210,6 +1309,8 @@ interface SessionSettingsRow {
   module_interval_ms: number | null;
   column_widths: number[] | null;
   show_prior_modules: boolean;
+  context_items: SessionContextItem[] | null;
+  custom_slots: CleanupCustomSlot[] | null;
 }
 
 function rowToSessionSettings(
@@ -1226,6 +1327,8 @@ function rowToSessionSettings(
     moduleIntervalMs: row.module_interval_ms,
     columnWidths: row.column_widths,
     showPriorModules: row.show_prior_modules,
+    contextItems: Array.isArray(row.context_items) ? row.context_items : null,
+    customSlots: Array.isArray(row.custom_slots) ? row.custom_slots : null,
   };
 }
 
@@ -1256,6 +1359,8 @@ export interface UpsertSessionSettingsInput {
   moduleIntervalMs?: number | null;
   columnWidths?: number[] | null;
   showPriorModules?: boolean;
+  contextItems?: SessionContextItem[] | null;
+  customSlots?: CleanupCustomSlot[] | null;
 }
 
 /**
@@ -1290,6 +1395,9 @@ export async function upsertSessionSettings(
     update.column_widths = input.columnWidths;
   if (input.showPriorModules !== undefined)
     update.show_prior_modules = input.showPriorModules;
+  if (input.contextItems !== undefined)
+    update.context_items = input.contextItems;
+  if (input.customSlots !== undefined) update.custom_slots = input.customSlots;
 
   const { data, error } = await db
     .from("studio_session_settings")

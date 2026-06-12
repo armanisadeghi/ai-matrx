@@ -1,35 +1,18 @@
-import type { Metadata } from "next";
+import { createRouteMetadata } from "@/utils/route-metadata";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-export const metadata: Metadata = {
-  title: {
-    default: "Research",
-    template: "%s | AI Matrx Research",
-  },
+export const metadata = createRouteMetadata("/research", {
+  title: "Research",
   description:
-    "AI-powered research pipeline. Gather web content, analyze sources, and generate comprehensive research reports with human-in-the-loop curation.",
-  alternates: {
-    canonical: "/research",
+    "AI-powered research pipeline — gather web content, analyze sources, and synthesize reports.",
+  letter: "Rs",
+  additionalMetadata: {
+    alternates: { canonical: "/research" },
+    robots: { index: true, follow: true },
   },
-  openGraph: {
-    title: "AI Matrx Research",
-    description:
-      "AI-powered research pipeline for comprehensive topic analysis. Search, scrape, analyze, and synthesize — with you in control at every step.",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "AI Matrx Research",
-    description:
-      "AI-powered research pipeline for comprehensive topic analysis.",
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+});
 
 export default function ResearchLayout({
   children,

@@ -79,6 +79,9 @@ function projectsFromOrg(org: NavOrganization): ProjectWithRole[] {
     organizationId: isPersonalOrg ? null : org.id,
     createdBy: null,
     isPersonal: !!p.is_personal,
+    // Nav-tree projects don't carry status/priority/dates; default until the
+    // workspace fetches the full row. Consumers here don't render them.
+    status: "active",
     settings: {},
     createdAt: "",
     updatedAt: "",

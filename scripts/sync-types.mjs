@@ -10,7 +10,8 @@
  * Steps:
  *   1. Update Supabase database types          → `pnpm db-types`
  *   2. Update Python API types (paths/schemas) → via aidream/scripts/sync-types.mjs
- *   3. Type-check the codebase                 → `tsc --noEmit`
+ *   3. Type-check the codebase                 → `tsc --noEmit -p tsconfig.typecheck.json`
+ *      (source + generated DB/API types only — not .next route artifacts)
  *
  * Step 1 must run first so that any new database columns are available to the
  * type-check in step 3. The fast mode is for iterating against a local backend
@@ -101,10 +102,13 @@ if (fastMode) {
 } else {
     console.log('\n  Step 3: Running TypeScript type-check...\n');
     try {
-        execSync('node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit', {
-            stdio: 'inherit',
-            cwd: PROJECT_ROOT,
-        });
+        execSync(
+            'node --max-old-space-size=8192 ./node_modules/typescript/bin/tsc --noEmit -p tsconfig.typecheck.json',
+            {
+                stdio: 'inherit',
+                cwd: PROJECT_ROOT,
+            },
+        );
         console.log('\n  ✓ Type-check passed — all types are aligned.\n');
     } catch {
         console.error('\n  ✗ TYPE ERRORS DETECTED');

@@ -1,6 +1,7 @@
 // utils/supabase/tools-service.ts
 
 import type { Database } from "@/types/database.types";
+import { buildSearchOr } from "@/utils/supabase-search";
 import { createClient } from "./client";
 
 // Source of truth: the DB row. Any schema change surfaces here automatically.
@@ -141,7 +142,7 @@ export class ToolsService {
         .from("tool_def")
         .select("*")
         .eq("is_active", true)
-        .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+        .or(buildSearchOr(query, ["name", "description"]))
         .order("category", { ascending: true })
         .order("name", { ascending: true });
 

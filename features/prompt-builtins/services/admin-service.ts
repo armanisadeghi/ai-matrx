@@ -1,4 +1,5 @@
 import { getAdminSupabaseClient } from '@/utils/supabase/getScriptClient';
+import { buildSearchOr } from '@/utils/supabase-search';
 import { requireUserId } from '@/utils/auth/getUserId';
 import {
   ShortcutCategory,
@@ -374,7 +375,7 @@ export async function fetchPromptBuiltins(filters?: {
   }
 
   if (filters?.search) {
-    query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    query = query.or(buildSearchOr(filters.search, ["name", "description"]));
   }
 
   if (filters?.limit) {
@@ -413,7 +414,7 @@ export async function fetchPromptBuiltinsWithSource(filters?: {
   }
 
   if (filters?.search) {
-    query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    query = query.or(buildSearchOr(filters.search, ["name", "description"]));
   }
 
   if (filters?.limit) {

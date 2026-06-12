@@ -103,11 +103,23 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "indigo",
   },
   {
+    label: "My Orgs",
+    href: "/organizations",
+    iconName: "Building2",
+    section: "primary",
+    dockOrder: 3,
+    profileMenu: true,
+    dashboard: true,
+    description: "Your teams and shared workspaces",
+    color: "sky",
+    guestHidden: true,
+  },
+  {
     label: "Notes",
     href: "/notes",
     iconName: "NotebookPen",
     section: "primary",
-    dockOrder: 3,
+    dockOrder: 4,
     profileMenu: true,
     dashboard: true,
     description: "Create and manage your notes and documents",
@@ -127,7 +139,12 @@ export const primaryNavItems: ShellNavItem[] = [
     description: "AI Agent Harness Management",
     color: "blue",
     children: [
-      { label: "All Agents", href: "/agents/all", iconName: "List", exact: true },
+      {
+        label: "All Agents",
+        href: "/agents/all",
+        iconName: "List",
+        exact: true,
+      },
       {
         label: "Templates",
         href: "/agents/templates",
@@ -169,7 +186,7 @@ export const primaryNavItems: ShellNavItem[] = [
     href: "/tasks",
     iconName: "ListTodo",
     section: "primary",
-    dockOrder: 4,
+    dockOrder: 5,
     profileMenu: true,
     dashboard: true,
     description: "Organize and track your tasks and projects",
@@ -180,7 +197,7 @@ export const primaryNavItems: ShellNavItem[] = [
     href: "/projects",
     iconName: "Puzzle",
     section: "primary",
-    dockOrder: 5,
+    dockOrder: 6,
     profileMenu: true,
     dashboard: true,
     description: "Create and manage projects, collaborate with teams",
@@ -194,7 +211,7 @@ export const primaryNavItems: ShellNavItem[] = [
     guestHref: "/files",
     iconName: "FolderOpen",
     section: "primary",
-    dockOrder: 6,
+    dockOrder: 7,
     profileMenu: true,
     dashboard: true,
     description: "Browse and manage your files and documents",
@@ -217,19 +234,41 @@ export const primaryNavItems: ShellNavItem[] = [
     section: "primary",
     profileMenu: true,
     dashboard: true,
-    description:
-      "Browse, generate, edit, annotate, convert — every image tool in one place",
+    description: "Browse, generate, edit, annotate, and convert images",
     color: "pink",
   },
   {
+    // Transcripts umbrella — one feature, slash-versioned sub-routes.
+    // `/transcripts` is BOTH the public landing (for guests) AND the
+    // canonical processor workspace (for authed users); server-side
+    // branched in `app/(core)/transcripts/page.tsx`. Studio + Scribe
+    // live as sub-routes. Old `/transcription/*` URLs redirect via
+    // `next.config.js`.
     label: "Transcripts",
-    href: "/transcription/processor",
+    href: "/transcripts",
     iconName: "Mic",
     section: "primary",
     profileMenu: true,
     dashboard: true,
-    description: "Record, transcribe and manage audio content",
+    description: "Record, transcribe, and manage audio.",
     color: "rose",
+    children: [
+      {
+        label: "All Transcripts",
+        href: "/transcripts",
+        iconName: "List",
+        exact: true,
+      },
+      { label: "New Transcript", href: "/transcripts/new", iconName: "Plus" },
+      {
+        label: "Processor",
+        href: "/transcripts/processor",
+        iconName: "FileText",
+      },
+      { label: "Studio", href: "/transcripts/studio", iconName: "Columns2" },
+      { label: "Scribe", href: "/transcripts/scribe", iconName: "Mic" },
+      { label: "Cleanup", href: "/transcripts/cleanup", iconName: "Eraser" },
+    ],
   },
   {
     label: "Tables",
@@ -252,8 +291,15 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "emerald",
   },
   {
+    // `/scraper` lives in `(transitional)` and that group's layout
+    // hard-redirects guests to `/login`. We don't have a dedicated
+    // scraper landing yet, so guests in the sidebar go to `/features`
+    // (browse the platform) instead of bouncing through login. The
+    // middleware also locks `/scraper` for guests — see
+    // `utils/supabase/middleware.ts`.
     label: "Webscraper",
     href: "/scraper",
+    guestHref: "/features",
     iconName: "Globe",
     section: "primary",
     profileMenu: true,
@@ -327,14 +373,19 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "cyan",
   },
   {
+    // Knowledge umbrella. Authed users jump straight to the live
+    // workspace at `/rag/data-stores`; guests hit `/knowledge` (the
+    // KnowledgeShowcasePage — an informational map of the system, no
+    // auth required). `/knowledge/graph` is the graph sub-route.
     label: "Knowledge",
     href: "/rag/data-stores",
+    guestHref: "/knowledge",
     iconName: "Database",
     section: "primary",
     profileMenu: true,
     dashboard: true,
     description:
-      "Documents, data stores, and RAG search across your indexed content",
+      "Documents, data stores, RAG search, and the org-wide knowledge graph",
     color: "amber",
     children: [
       {
@@ -356,6 +407,11 @@ export const primaryNavItems: ShellNavItem[] = [
         label: "Repositories",
         href: "/rag/repositories",
         iconName: "Code2",
+      },
+      {
+        label: "Knowledge Graph",
+        href: "/knowledge/graph",
+        iconName: "Network",
       },
     ],
   },

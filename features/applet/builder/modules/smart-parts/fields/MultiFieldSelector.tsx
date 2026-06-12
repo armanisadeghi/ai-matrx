@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Plus, Check, ChevronDown, RefreshCw, LayoutIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { idMatchesQuery } from '@/utils/search-scoring';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -93,10 +94,11 @@ const MultiFieldSelector: React.FC<MultiFieldSelectorProps> & {
     }
     
     const term = searchTerm.toLowerCase();
-    const filtered = fields.filter(field => 
-      field.label?.toLowerCase().includes(term) || 
+    const filtered = fields.filter(field =>
+      field.label?.toLowerCase().includes(term) ||
       field.description?.toLowerCase().includes(term) ||
-      field.component?.toLowerCase().includes(term)
+      field.component?.toLowerCase().includes(term) ||
+      idMatchesQuery(field, term)
     );
     
     setFilteredFields(filtered);

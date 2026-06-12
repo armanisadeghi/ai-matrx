@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 1060" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" role="img" aria-label="The Matrx Knowledge System, source to answer">
+  <title>The Matrx Knowledge System — source to answer</title>
+  <desc>Sources funnel into a 7-phase pipeline (acquire+convert, clean, enrich+branch), through an ingestion gate into the Knowledge Hub (representations plus NER, scopes, trust, lineage), out through retrieval, and into a worked attorney deposition-prep example. An agent-fabric rail spans the right edge.</desc>
+  <defs>
+    <marker id="aS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#475569"/></marker>
+  </defs>
+
+  <rect x="0" y="0" width="1040" height="1060" fill="#FFFFFF"/>
+
+  <!-- TITLE -->
+  <text x="30" y="36" font-size="22" font-weight="700" fill="#0F172A">The Matrx Knowledge System</text>
+  <text x="30" y="57" font-size="13" fill="#475569">Source &#8594; Knowledge &#8594; Answer — one continuous system</text>
+
+  <!-- SOURCES -->
+  <text x="30" y="84" font-size="11" font-weight="700" fill="#64748B" letter-spacing="1">SOURCES</text>
+  <g font-size="12" fill="#0F172A" text-anchor="middle">
+    <rect x="30"  y="92" width="125" height="46" rx="9" fill="#F1F5F9" stroke="#64748B" stroke-width="1.4"/><text x="92"  y="119">PDF · scans</text>
+    <rect x="171" y="92" width="125" height="46" rx="9" fill="#F1F5F9" stroke="#64748B" stroke-width="1.4"/><text x="233" y="119">audio · video</text>
+    <rect x="312" y="92" width="125" height="46" rx="9" fill="#F1F5F9" stroke="#64748B" stroke-width="1.4"/><text x="374" y="119">web scrape</text>
+    <rect x="453" y="92" width="125" height="46" rx="9" fill="#F1F5F9" stroke="#64748B" stroke-width="1.4"/><text x="515" y="119">social</text>
+    <rect x="594" y="92" width="125" height="46" rx="9" fill="#F1F5F9" stroke="#64748B" stroke-width="1.4"/><text x="656" y="119">native files</text>
+    <rect x="735" y="92" width="125" height="46" rx="9" fill="#F1F5F9" stroke="#64748B" stroke-width="1.4"/><text x="797" y="119">API feeds</text>
+  </g>
+  <g stroke="#475569" stroke-width="1.4">
+    <line x1="92"  y1="138" x2="92"  y2="168" marker-end="url(#aS)"/>
+    <line x1="233" y1="138" x2="233" y2="168" marker-end="url(#aS)"/>
+    <line x1="374" y1="138" x2="374" y2="168" marker-end="url(#aS)"/>
+    <line x1="515" y1="138" x2="515" y2="168" marker-end="url(#aS)"/>
+    <line x1="656" y1="138" x2="656" y2="168" marker-end="url(#aS)"/>
+    <line x1="797" y1="138" x2="797" y2="168" marker-end="url(#aS)"/>
+  </g>
+
+  <!-- BAND B: ACQUIRE + CONVERT -->
+  <rect x="30" y="170" width="830" height="72" rx="12" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+  <rect x="42" y="182" width="46" height="22" rx="6" fill="#0E7490"/><text x="65" y="197" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">1·2</text>
+  <text x="100" y="194" font-size="14" font-weight="600" fill="#0F172A">Acquire + Convert</text>
+  <text x="100" y="215" font-size="11" fill="#475569">stamp origin lineage · PDF parse · transcribe · OCR · scrape-extract</text>
+  <rect x="700" y="184" width="146" height="44" rx="8" fill="#FFFFFF" stroke="#94A3B8"/><text x="773" y="203" font-size="12" font-weight="600" fill="#0F172A" text-anchor="middle">raw text</text><text x="773" y="218" font-size="10" fill="#475569" text-anchor="middle">(messy)</text>
+  <line x1="445" y1="242" x2="445" y2="258" stroke="#475569" stroke-width="1.4" marker-end="url(#aS)"/>
+
+  <!-- BAND C: CLEAN -->
+  <rect x="30" y="260" width="830" height="88" rx="12" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+  <rect x="42" y="274" width="40" height="22" rx="6" fill="#0E7490"/><text x="62" y="289" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+  <text x="94" y="286" font-size="14" font-weight="600" fill="#0F172A">Clean</text>
+  <text x="94" y="306" font-size="11" fill="#475569">earn quality</text>
+  <rect x="300" y="276" width="255" height="56" rx="8" fill="#ECFEFF" stroke="#0E7490"/><text x="427" y="300" font-size="12" font-weight="600" fill="#0F172A" text-anchor="middle">Tier A · generic clean</text><text x="427" y="318" font-size="10" fill="#475569" text-anchor="middle">fix OCR · structure · speakers</text>
+  <rect x="575" y="276" width="265" height="56" rx="8" fill="#F5F3FF" stroke="#7C3AED"/><text x="707" y="300" font-size="12" font-weight="600" fill="#0F172A" text-anchor="middle">Tier B · known-type agent</text><text x="707" y="318" font-size="10" fill="#6B21A8" text-anchor="middle">org rules &#8594; structured JSON</text>
+  <line x1="445" y1="348" x2="445" y2="362" stroke="#475569" stroke-width="1.4" marker-end="url(#aS)"/>
+
+  <!-- BAND D: ENRICH + BRANCH -->
+  <rect x="30" y="364" width="830" height="72" rx="12" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+  <rect x="42" y="376" width="40" height="22" rx="6" fill="#0E7490"/><text x="62" y="391" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">4</text>
+  <text x="94" y="388" font-size="14" font-weight="600" fill="#0F172A">Enrich + branch</text>
+  <text x="94" y="409" font-size="11" fill="#475569">validate vs world / known data · one &#8594; many filters</text>
+  <g font-size="11" fill="#0F172A" text-anchor="middle">
+    <rect x="470" y="378" width="120" height="42" rx="8" fill="#ECFEFF" stroke="#0E7490"/><text x="530" y="404">fact-check</text>
+    <rect x="602" y="378" width="100" height="42" rx="8" fill="#ECFEFF" stroke="#0E7490"/><text x="652" y="404">refine</text>
+    <rect x="714" y="378" width="126" height="42" rx="8" fill="#ECFEFF" stroke="#0E7490"/><text x="777" y="404">branch &#8649;</text>
+  </g>
+  <line x1="445" y1="436" x2="445" y2="444" stroke="#475569" stroke-width="1.4" marker-end="url(#aS)"/>
+
+  <!-- INGESTION GATE -->
+  <rect x="320" y="444" width="290" height="24" rx="12" fill="#FFFBEB" stroke="#D97706"/><text x="465" y="460" font-size="11" font-weight="700" fill="#92400E" text-anchor="middle">INGESTION GATE · sources only</text>
+  <line x1="445" y1="468" x2="445" y2="476" stroke="#475569" stroke-width="1.4" marker-end="url(#aS)"/>
+
+  <!-- BAND E: KNOWLEDGE HUB -->
+  <rect x="30" y="476" width="830" height="216" rx="14" fill="#FBFAFF" stroke="#7C3AED" stroke-width="2.5"/>
+  <text x="50" y="503" font-size="16" font-weight="700" fill="#4C1D95">5 · KNOWLEDGE HUB</text>
+  <text x="50" y="521" font-size="11" fill="#6B21A8">admitted knowledge — retained · versioned · traceable</text>
+  <rect x="640" y="490" width="200" height="24" rx="12" fill="#F5F3FF" stroke="#7C3AED"/><text x="740" y="506" font-size="10" fill="#6B21A8" text-anchor="middle">&#8635; reprocess · derive &#8594; return</text>
+  <text x="50" y="540" font-size="10" font-weight="700" fill="#64748B" letter-spacing="0.5">REPRESENTATIONS</text>
+  <g font-size="11" fill="#4C1D95" text-anchor="middle">
+    <rect x="50"  y="546" width="104" height="32" rx="7" fill="#FFFFFF" stroke="#C4B5FD"/><text x="102" y="566">text</text>
+    <rect x="164" y="546" width="104" height="32" rx="7" fill="#FFFFFF" stroke="#C4B5FD"/><text x="216" y="566">chunks</text>
+    <rect x="278" y="546" width="104" height="32" rx="7" fill="#FFFFFF" stroke="#C4B5FD"/><text x="330" y="566">vectors</text>
+    <rect x="392" y="546" width="104" height="32" rx="7" fill="#FFFFFF" stroke="#C4B5FD"/><text x="444" y="566">summaries</text>
+    <rect x="506" y="546" width="104" height="32" rx="7" fill="#FFFFFF" stroke="#C4B5FD"/><text x="558" y="566">schemas</text>
+    <rect x="620" y="546" width="104" height="32" rx="7" fill="#FFFFFF" stroke="#C4B5FD"/><text x="672" y="566">indices</text>
+    <rect x="734" y="546" width="104" height="32" rx="7" fill="#FFFFFF" stroke="#C4B5FD"/><text x="786" y="566">scoped</text>
+  </g>
+  <text x="50" y="596" font-size="10" font-weight="700" fill="#64748B" letter-spacing="0.5">STRUCTURE · SCOPE · TRUST · LINEAGE</text>
+  <g text-anchor="middle">
+    <rect x="50"  y="604" width="185" height="70" rx="9" fill="#ECFEFF" stroke="#0E7490"/><text x="142" y="630" font-size="13" font-weight="600" fill="#0F172A">NER</text><text x="142" y="649" font-size="10" fill="#475569">entities + concepts</text>
+    <rect x="251" y="604" width="185" height="70" rx="9" fill="#ECFDF5" stroke="#059669"/><text x="343" y="630" font-size="13" font-weight="600" fill="#0F172A">Scopes</text><text x="343" y="649" font-size="9.5" fill="#475569">type&#8594;scope&#8594;item&#8594;value</text>
+    <rect x="452" y="604" width="185" height="70" rx="9" fill="#FFFBEB" stroke="#D97706"/><text x="544" y="630" font-size="13" font-weight="600" fill="#0F172A">Trust</text><text x="544" y="649" font-size="10" fill="#475569">quality vector · 6 dims</text>
+    <rect x="653" y="604" width="185" height="70" rx="9" fill="#F5F3FF" stroke="#7C3AED"/><text x="745" y="630" font-size="13" font-weight="600" fill="#0F172A">Lineage</text><text x="745" y="649" font-size="10" fill="#475569">DAG · root &#8596; canonical</text>
+  </g>
+  <line x1="445" y1="692" x2="445" y2="708" stroke="#475569" stroke-width="1.4" marker-end="url(#aS)"/>
+
+  <!-- BAND F: RETRIEVE -->
+  <rect x="30" y="708" width="830" height="86" rx="12" fill="#ECFEFF" stroke="#0E7490" stroke-width="1.5"/>
+  <rect x="42" y="720" width="52" height="22" rx="6" fill="#0E7490"/><text x="68" y="735" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">6·7</text>
+  <text x="106" y="732" font-size="14" font-weight="600" fill="#0F172A">Retrieve</text>
+  <text x="106" y="753" font-size="11" fill="#475569">semantic + structural + trust-weighted · best-source · drill-down to provenance</text>
+  <g font-size="10" fill="#0F172A" text-anchor="middle">
+    <rect x="566" y="764" width="86" height="22" rx="8" fill="#FFFFFF" stroke="#0E7490"/><text x="609" y="779">semantic</text>
+    <rect x="660" y="764" width="86" height="22" rx="8" fill="#FFFFFF" stroke="#0E7490"/><text x="703" y="779">structural</text>
+    <rect x="754" y="764" width="86" height="22" rx="8" fill="#FFFFFF" stroke="#0E7490"/><text x="797" y="779">trust</text>
+  </g>
+  <line x1="445" y1="794" x2="445" y2="810" stroke="#475569" stroke-width="1.4" marker-end="url(#aS)"/>
+
+  <!-- BAND G: THE ASK -->
+  <rect x="30" y="810" width="830" height="208" rx="14" fill="#FFFDF7" stroke="#D97706" stroke-width="2"/>
+  <text x="50" y="836" font-size="16" font-weight="700" fill="#92400E">THE ASK — what it&#8217;s all for</text>
+
+  <rect x="46" y="848" width="400" height="162" rx="10" fill="#FFFFFF" stroke="#FCD34D"/>
+  <text x="64" y="872" font-size="11" font-weight="700" fill="#92400E">Attorney &#8594; agent (Opus 4.8):</text>
+  <g font-size="11" fill="#334155" font-style="italic">
+    <text x="64" y="894">&#8220;Depose Dr. Smith tomorrow. Find where he didn&#8217;t</text>
+    <text x="64" y="912">follow AMA guidelines for John Doe, case #123456,</text>
+    <text x="64" y="930">and flag prior injuries (preexisting conditions).</text>
+    <text x="64" y="948">Settle the case — hit hard, but get every fact right.&#8221;</text>
+  </g>
+  <rect x="64" y="962" width="364" height="40" rx="8" fill="#ECFDF5" stroke="#059669"/><text x="246" y="980" font-size="12" font-weight="700" fill="#065F46" text-anchor="middle">&#10003; Verified deposition brief</text><text x="246" y="995" font-size="10" fill="#047857" text-anchor="middle">cited · accurate · traceable</text>
+
+  <text x="466" y="872" font-size="11" font-weight="700" fill="#0F172A">The agent resolves it:</text>
+  <g font-size="10.5" fill="#334155">
+    <rect x="466" y="880" width="374" height="23" rx="6" fill="#FFFFFF" stroke="#94A3B8"/><text x="476" y="896">1 · structural filter &#8594; case #123456 · Dr. Smith</text>
+    <rect x="466" y="908" width="374" height="23" rx="6" fill="#FFFFFF" stroke="#94A3B8"/><text x="476" y="924">2 · semantic search &#8594; &#8216;AMA deviations&#8217; · &#8216;prior injuries&#8217;</text>
+    <rect x="466" y="936" width="374" height="23" rx="6" fill="#FFFFFF" stroke="#94A3B8"/><text x="476" y="952">3 · pull canonical &#8594; medical reports (JSON) + AMA guide</text>
+    <rect x="466" y="964" width="374" height="23" rx="6" fill="#FFFFFF" stroke="#94A3B8"/><text x="476" y="980">4 · verify &#8594; trace each fact to provenance root</text>
+    <rect x="466" y="992" width="374" height="23" rx="6" fill="#FFFFFF" stroke="#94A3B8"/><text x="476" y="1008">5 · apply Skill &#8594; &#8216;how to depose a doctor&#8217;</text>
+  </g>
+
+  <!-- AGENT FABRIC RAIL -->
+  <rect x="880" y="170" width="130" height="848" rx="12" fill="#F5F3FF" stroke="#7C3AED" stroke-width="1.5"/>
+  <text x="945" y="196" font-size="13" font-weight="700" fill="#4C1D95" text-anchor="middle">AGENT FABRIC</text>
+  <g font-size="10" fill="#6B21A8" text-anchor="middle">
+    <text x="945" y="226">attach at ANY</text>
+    <text x="945" y="242">node or edge</text>
+    <text x="945" y="270" font-weight="700">forms</text>
+    <text x="945" y="286">chatbot · button</text>
+    <text x="945" y="302">form · app</text>
+    <text x="945" y="318">automation</text>
+    <text x="945" y="334">scheduled job</text>
+    <text x="945" y="362" font-weight="700">MCP egress &#8594;</text>
+    <text x="945" y="378">external systems</text>
+  </g>
+  <g font-size="10" fill="#7C3AED" text-anchor="middle" font-weight="700">
+    <text x="945" y="892">the attorney&#8217;s</text>
+    <text x="945" y="908">agent runs HERE</text>
+  </g>
+  <!-- rail connectors -->
+  <g stroke="#C4B5FD" stroke-width="1.3" stroke-dasharray="4 3">
+    <line x1="880" y1="206" x2="860" y2="206"/>
+    <line x1="880" y1="304" x2="860" y2="304"/>
+    <line x1="880" y1="400" x2="860" y2="400"/>
+    <line x1="880" y1="584" x2="860" y2="584"/>
+    <line x1="880" y1="751" x2="860" y2="751"/>
+    <line x1="880" y1="930" x2="860" y2="930"/>
+  </g>
+  <g fill="#7C3AED">
+    <circle cx="860" cy="206" r="2.6"/><circle cx="860" cy="304" r="2.6"/><circle cx="860" cy="400" r="2.6"/><circle cx="860" cy="584" r="2.6"/><circle cx="860" cy="751" r="2.6"/><circle cx="860" cy="930" r="2.6"/>
+  </g>
+
+  <!-- FOOTER -->
+  <text x="30" y="1044" font-size="10" fill="#94A3B8">Phases 1–7 flow top to bottom · the agent fabric overlays every stage · the hub retains everything · retrieval = semantic + structural + trust-weighted, traceable to source.</text>
+</svg>

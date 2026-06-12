@@ -6,7 +6,11 @@
 
 "use client";
 
-import { colorForKind } from "../constants";
+import {
+  KG_TIER_LABELS,
+  KG_TIER_PALETTE,
+  colorForKind,
+} from "../constants";
 import type { KgColorBy } from "../cytoscape/analysis";
 
 interface KgGraphLegendProps {
@@ -24,7 +28,20 @@ export function KgGraphLegend({
 }: KgGraphLegendProps) {
   return (
     <div className="pointer-events-none absolute left-3 top-3 max-w-[60%] rounded-md border border-border bg-card/80 px-2.5 py-1.5 text-[11px] shadow-sm backdrop-blur">
-      {colorBy === "kind" ? (
+      {colorBy === "tier" ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="text-muted-foreground">Tier:</span>
+          {KG_TIER_PALETTE.map((c, i) => (
+            <span key={c} className="flex items-center gap-1.5">
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: c }}
+              />
+              <span className="text-muted-foreground">{KG_TIER_LABELS[i]}</span>
+            </span>
+          ))}
+        </div>
+      ) : colorBy === "kind" ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {kinds.map((k) => (
             <span key={k} className="flex items-center gap-1.5">

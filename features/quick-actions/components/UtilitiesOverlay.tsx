@@ -119,7 +119,7 @@ export function UtilitiesOverlay({
             Browse, upload, and share files from the dedicated Cloud Files page.
           </p>
           <Link
-            href="/files"
+            href="/files/all"
             className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
           >
             Open Files

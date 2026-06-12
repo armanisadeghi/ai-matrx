@@ -1716,7 +1716,7 @@
           "AI"
         ],
         "summary": "Submit Tool Results",
-        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nThere are two paths:\n\n1. **Live fast path:** the originating SSE task is still running and holds\n   an in-memory asyncio.Future for the call_id. We update the cx_tool_call\n   row to status='completed'/'error' AND wake the future (resolution_source\n   = 'inline_waiter'). The existing loop continues streaming on its SSE.\n\n2. **Recovery path:** the originating loop is gone (SSE disconnected, server\n   restarted, etc.). The in-memory waiter has no future — that's fine; the\n   cx_tool_call row is still status='delegated' from log_delegated(). We\n   update the row to status='completed'/'error' (resolution_source =\n   'client_post') and return continuation_needed=true so the caller knows\n   to open a /resume stream to continue the loop.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
+        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nProtocol (suspend-on-delegate — see ``_execute_delegated`` /\n``_suspend_for_delegation``): a delegated tool call HARD-SUSPENDS the\nloop after durably committing the assistant message and the\nstatus='delegated' cx_tool_call row. This endpoint flips the row to\n'completed'/'error' (resolution_source='client_post'); when the last\noutstanding delegated row for the user_request resolves,\n``continuation_needed=true`` tells the caller to open POST /resume,\nwhich reconstructs the conversation (tool results included) and\ncontinues the loop.\n\nThe old in-memory ``ClientToolWaiter`` \"live fast path\" is GONE — no\ncode creates waiter futures anymore (it was the source of the runaway\ntool-call loop; docs/tool_delegation/DELEGATION_LOOP_BUGS.md). The row\nis guaranteed to be on disk before the client ever sees the\n``tool_delegated`` event (pre-suspend finalize), so the durable path is\nthe only path.\n\nNOTE: ``continuation_needed`` is intentionally best-effort — concurrent\nPOSTs for parallel tool calls can BOTH observe \"no remaining delegated\nrows\" and both return true. That is safe: /resume takes an atomic\nper-user_request run claim and the losing resume gets a 409.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
         "operationId": "submit_tool_results_ai_conversation__conversation_id__tool_results_post",
         "parameters": [
           {
@@ -1769,7 +1769,7 @@
           "AI"
         ],
         "summary": "Submit Tool Results",
-        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nThere are two paths:\n\n1. **Live fast path:** the originating SSE task is still running and holds\n   an in-memory asyncio.Future for the call_id. We update the cx_tool_call\n   row to status='completed'/'error' AND wake the future (resolution_source\n   = 'inline_waiter'). The existing loop continues streaming on its SSE.\n\n2. **Recovery path:** the originating loop is gone (SSE disconnected, server\n   restarted, etc.). The in-memory waiter has no future — that's fine; the\n   cx_tool_call row is still status='delegated' from log_delegated(). We\n   update the row to status='completed'/'error' (resolution_source =\n   'client_post') and return continuation_needed=true so the caller knows\n   to open a /resume stream to continue the loop.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
+        "description": "Submit client-side tool execution results back to the AI loop — durable.\n\nProtocol (suspend-on-delegate — see ``_execute_delegated`` /\n``_suspend_for_delegation``): a delegated tool call HARD-SUSPENDS the\nloop after durably committing the assistant message and the\nstatus='delegated' cx_tool_call row. This endpoint flips the row to\n'completed'/'error' (resolution_source='client_post'); when the last\noutstanding delegated row for the user_request resolves,\n``continuation_needed=true`` tells the caller to open POST /resume,\nwhich reconstructs the conversation (tool results included) and\ncontinues the loop.\n\nThe old in-memory ``ClientToolWaiter`` \"live fast path\" is GONE — no\ncode creates waiter futures anymore (it was the source of the runaway\ntool-call loop; docs/tool_delegation/DELEGATION_LOOP_BUGS.md). The row\nis guaranteed to be on disk before the client ever sees the\n``tool_delegated`` event (pre-suspend finalize), so the durable path is\nthe only path.\n\nNOTE: ``continuation_needed`` is intentionally best-effort — concurrent\nPOSTs for parallel tool calls can BOTH observe \"no remaining delegated\nrows\" and both return true. That is safe: /resume takes an atomic\nper-user_request run claim and the losing resume gets a 409.\n\nIdempotent: duplicate POSTs for an already-resolved call return 200 with\nthe call_id in ``already_resolved`` and no side effects.",
         "operationId": "submit_tool_results_ai_conversations__conversation_id__tool_results_post",
         "parameters": [
           {
@@ -6192,10 +6192,52 @@
         }
       }
     },
+    "/user-secrets/bulk-env": {
+      "post": {
+        "tags": [
+          "User Secrets"
+        ],
+        "summary": "Bulk Import Env",
+        "description": "Paste a .env body (or upload one — the FE submits its text content here).\nEvery well-formed line upserts a secret. Malformed lines are skipped\nwith a server-side log; the response lists the rows that landed.",
+        "operationId": "bulk_import_env_user_secrets_bulk_env_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserSecretBulkEnvRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSecretBulkEnvResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/user-secrets/internal/sandbox-env-for-user": {
       "get": {
         "tags": [
-          "User Secrets"
+          "User Secrets (internal)"
         ],
         "summary": "Get Sandbox Env For User",
         "description": "Return the decrypted sandbox env for `user_id`. Service-token-authed\nvia the existing sandbox-bridge auth path (X-Matrx-User-Id header is\nUUID-validated; Authorization: Bearer <AIDREAM_SANDBOX_SERVICE_TOKEN>\nis constant-time compared).\n\nCalled by the matrx-sandbox orchestrator at sandbox-create time so the\nuser's vaulted secrets land in `docker run -e KEY=value` regardless\nof how the sandbox was created (browser, Ship portal, agent tool,\nautomation). The browser-facing `/sandbox-env` above stays unchanged\nfor in-browser callers.",
@@ -6241,48 +6283,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SandboxEnvResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/user-secrets/bulk-env": {
-      "post": {
-        "tags": [
-          "User Secrets"
-        ],
-        "summary": "Bulk Import Env",
-        "description": "Paste a .env body (or upload one — the FE submits its text content here).\nEvery well-formed line upserts a secret. Malformed lines are skipped\nwith a server-side log; the response lists the rows that landed.",
-        "operationId": "bulk_import_env_user_secrets_bulk_env_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserSecretBulkEnvRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserSecretBulkEnvResponse"
                 }
               }
             }
@@ -10026,6 +10026,243 @@
         }
       }
     },
+    "/admin/system-errors/recent": {
+      "get": {
+        "tags": [
+          "Admin / System Errors"
+        ],
+        "summary": "Recent Errors",
+        "description": "Most-recent ``system_error`` rows, newest first.\n\nThe default window (last 6h) makes \"what just broke?\" a one-call query.\nEach row carries the full ``traceback`` + request context.",
+        "operationId": "recent_errors_admin_system_errors_recent_get",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO-8601 lower bound on occurred_at. Defaults to 6 hours ago.",
+              "title": "Since"
+            },
+            "description": "ISO-8601 lower bound on occurred_at. Defaults to 6 hours ago."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "route",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional exact route filter, e.g. 'POST /assets'.",
+              "title": "Route"
+            },
+            "description": "Optional exact route filter, e.g. 'POST /assets'."
+          },
+          {
+            "name": "error_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional error_type filter, e.g. 'SvgRasterizerUnavailable'.",
+              "title": "Error Type"
+            },
+            "description": "Optional error_type filter, e.g. 'SvgRasterizerUnavailable'."
+          },
+          {
+            "name": "unresolved_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "When true, only rows with resolved_at IS NULL.",
+              "default": false,
+              "title": "Unresolved Only"
+            },
+            "description": "When true, only rows with resolved_at IS NULL."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__api__routers__admin_system_errors__SystemErrorListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/system-errors/{error_id}": {
+      "get": {
+        "tags": [
+          "Admin / System Errors"
+        ],
+        "summary": "Get Error",
+        "description": "Full single ``system_error`` row by id — including the traceback.",
+        "operationId": "get_error_admin_system_errors__error_id__get",
+        "parameters": [
+          {
+            "name": "error_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Error Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemErrorRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-factory/build": {
+      "post": {
+        "tags": [
+          "Admin / Agent Factory"
+        ],
+        "summary": "Build One",
+        "description": "Non-streaming build of exactly one agent. Convenience for the script /\nintegration tests; the streaming variant below is the FE path.",
+        "operationId": "build_one_agent_factory_build_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuildOnceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-factory/build-stream": {
+      "post": {
+        "tags": [
+          "Admin / Agent Factory"
+        ],
+        "summary": "Build Stream Endpoint",
+        "description": "Streaming build of one or more agents. Emits `BuildEvent`s to the FE.",
+        "operationId": "build_stream_endpoint_agent_factory_build_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/tools": {
       "get": {
         "tags": [
@@ -10339,6 +10576,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -16405,6 +16702,61 @@
         }
       }
     },
+    "/rag/conversations/{conversation_id}/ingest": {
+      "post": {
+        "tags": [
+          "RAG"
+        ],
+        "summary": "Rag Ingest Conversation",
+        "description": "Ingest a conversation into the knowledge graph by conversation id.\n\nThin wrapper around ``POST /rag/ingest`` so callers can ingest a whole\nconversation without knowing the ``source_kind='cx_message'`` plumbing.\nThe resolver is fail-closed on ownership: a conversation the caller\ndoes not own resolves to nothing and returns a clean \"source_not_found\"\nresponse rather than an error or a cross-tenant leak.\n\nThe effective org is resolved (personal-org fallback) before the ingest\ncall so the written kg_chunks are always org-scoped (non-NULL invariant).",
+        "operationId": "rag_ingest_conversation_rag_conversations__conversation_id__ingest_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationIngestRequest",
+                "default": {
+                  "force": false
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/rag/ingest/stream": {
       "post": {
         "tags": [
@@ -19241,254 +19593,6 @@
         }
       }
     },
-    "/kg-suggestions": {
-      "get": {
-        "tags": [
-          "KG Suggestions"
-        ],
-        "summary": "List Suggestions",
-        "operationId": "list_suggestions_kg_suggestions_get",
-        "parameters": [
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "default": "pending",
-              "title": "Status"
-            }
-          },
-          {
-            "name": "scope_item_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Scope Item Id"
-            }
-          },
-          {
-            "name": "source_kind",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Source Kind"
-            }
-          },
-          {
-            "name": "source_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Source Id"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 200,
-              "minimum": 1,
-              "default": 50,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SuggestionsPage"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/kg-suggestions/{suggestion_id}/accept": {
-      "post": {
-        "tags": [
-          "KG Suggestions"
-        ],
-        "summary": "Accept Suggestion",
-        "operationId": "accept_suggestion_kg_suggestions__suggestion_id__accept_post",
-        "parameters": [
-          {
-            "name": "suggestion_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Suggestion Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/AcceptResponse"
-                    },
-                    {
-                      "$ref": "#/components/schemas/HeavyHitterAcceptPlan"
-                    }
-                  ],
-                  "title": "Response Accept Suggestion Kg Suggestions  Suggestion Id  Accept Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/kg-suggestions/{suggestion_id}/reject": {
-      "post": {
-        "tags": [
-          "KG Suggestions"
-        ],
-        "summary": "Reject Suggestion",
-        "operationId": "reject_suggestion_kg_suggestions__suggestion_id__reject_post",
-        "parameters": [
-          {
-            "name": "suggestion_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Suggestion Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DecisionResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/kg-suggestions/{suggestion_id}/defer": {
-      "post": {
-        "tags": [
-          "KG Suggestions"
-        ],
-        "summary": "Defer Suggestion",
-        "operationId": "defer_suggestion_kg_suggestions__suggestion_id__defer_post",
-        "parameters": [
-          {
-            "name": "suggestion_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Suggestion Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DecisionResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/kg/graph": {
       "get": {
         "tags": [
@@ -21365,7 +21469,7 @@
           "Workflow"
         ],
         "summary": "Resume Errored Run",
-        "description": "Resume an errored run as-is — retries the failed node with the same\ninputs (attempt bumped so the prior failure stays as history).\n\nConvenience entry point when the user knows the failure was transient\nand just wants to re-run from where it stopped without modifying\nanything. Equivalent to calling /retry on every failed node, but\ntoday only the first failing node per super-step is captured.",
+        "description": "Resume an errored run as-is — retries the failed node with the same\ninputs (attempt bumped so the prior failure stays as history).\n\nConvenience entry point when the user knows the failure was transient\nand just wants to re-run from where it stopped without modifying\nanything. Retries EVERY failed node in the parked super-step\n(audit P1-19) — parallel sibling failures no longer stay silently\nstuck behind the first one.",
         "operationId": "resume_errored_run_runs__run_id__resume_errored_post",
         "parameters": [
           {
@@ -21406,7 +21510,7 @@
           "Workflow"
         ],
         "summary": "Stream Run Events",
-        "description": "Server-Sent Events feed of wf_node_events for one run (Phase 4.3).\n\nPowers the canvas's push-based delivery path. On connect we replay any\nevents newer than ``Last-Event-ID`` (an ISO-8601 ts on reconnect), then\nsubscribe to the LISTEN/NOTIFY fan-out and forward each notification\nas a fresh SSE event with the event_ts as the SSE id (for resume).\n\nCloses the stream when the run reaches a terminal status so the FE\ncleanly stops the EventSource without retrying.",
+        "description": "Server-Sent Events feed of wf_node_events for one run (Phase 4.3).\n\nPowers the canvas's push-based delivery path. On connect we replay any\nevents newer than ``Last-Event-ID``, then subscribe to the\nLISTEN/NOTIFY fan-out and forward each notification as a fresh SSE\nevent.\n\nThe SSE ``id`` is the per-run ``seq`` (audit P1-5) — an integer\ncursor that can never skip a row (seq assignment serializes on the\nwf_run row lock). A legacy ISO-8601 ``Last-Event-ID`` from an old\nclient is still honored as a timestamp cursor for one release.\n\nCloses the stream when the run reaches a terminal status so the FE\ncleanly stops the EventSource without retrying.",
         "operationId": "stream_run_events_runs__run_id__events_stream_get",
         "parameters": [
           {
@@ -21531,6 +21635,25 @@
               "title": "Event Type"
             },
             "description": "Restrict to one or more event_type values (repeat the query param to add multiple). e.g. ?event_type=node_failed&event_type=run_errored"
+          },
+          {
+            "name": "after_seq",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Per-run sequence cursor — only events with seq strictly greater are returned. PREFER this over after_event_ts: seq assignment serializes on the wf_run row lock, so the cursor can never skip a row (millisecond timestamps could).",
+              "title": "After Seq"
+            },
+            "description": "Per-run sequence cursor — only events with seq strictly greater are returned. PREFER this over after_event_ts: seq assignment serializes on the wf_run row lock, so the cursor can never skip a row (millisecond timestamps could)."
           }
         ],
         "responses": {
@@ -28383,6 +28506,153 @@
         }
       }
     },
+    "/podcast/resume/{run_id}": {
+      "post": {
+        "tags": [
+          "Podcast"
+        ],
+        "summary": "Resume Podcast Endpoint",
+        "description": "Resume a previously-failed generation from its last good stage.\n\nReplays the original request stored on the ``agent_run`` row; every\ncompleted stage (research, script, metadata, already-rendered paid\nimages/videos, audio) is reused from its checkpoint, so only the missing\ntail re-runs. The stream is identical to ``/generate`` — same events — but\nthe early ``podcast_run`` event echoes the same ``run_id``.",
+        "operationId": "resume_podcast_endpoint_podcast_resume__run_id__post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/podcast/runs/{run_id}/assets/regenerate": {
+      "post": {
+        "tags": [
+          "Podcast"
+        ],
+        "summary": "Regenerate Asset",
+        "description": "Re-render one image/video in place with a chosen model (or custom prompt).",
+        "operationId": "regenerate_asset_podcast_runs__run_id__assets_regenerate_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegenerateAssetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunAsset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/podcast/runs/{run_id}/assets/add": {
+      "post": {
+        "tags": [
+          "Podcast"
+        ],
+        "summary": "Add Asset",
+        "description": "Add a brand-new asset from the user's own description (also how you go\nbeyond the default 5 images / 2 videos).",
+        "operationId": "add_asset_podcast_runs__run_id__assets_add_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAssetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunAsset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tests/examples": {
       "get": {
         "tags": [
@@ -30242,7 +30512,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SystemErrorListResponse"
+                  "$ref": "#/components/schemas/aidream__api__routers__admin_persistence__SystemErrorListResponse"
                 }
               }
             }
@@ -33725,74 +33995,52 @@
           }
         }
       }
+    },
+    "/content-label": {
+      "post": {
+        "tags": [
+          "Content Labeling (GLiNER2)"
+        ],
+        "summary": "Label content with GLiNER2",
+        "description": "Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id.",
+        "operationId": "label_content_label_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LabelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LabelMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
-      "AcceptResponse": {
-        "properties": {
-          "suggestion": {
-            "$ref": "#/components/schemas/SuggestionRow"
-          },
-          "value": {
-            "$ref": "#/components/schemas/AcceptedValue"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "suggestion",
-          "value"
-        ],
-        "title": "AcceptResponse"
-      },
-      "AcceptedValue": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "context_item_id": {
-            "type": "string",
-            "title": "Context Item Id"
-          },
-          "scope_id": {
-            "type": "string",
-            "title": "Scope Id"
-          },
-          "version": {
-            "type": "integer",
-            "title": "Version"
-          },
-          "value_text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Value Text"
-          },
-          "source_type": {
-            "type": "string",
-            "title": "Source Type"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "id",
-          "context_item_id",
-          "scope_id",
-          "version",
-          "value_text",
-          "source_type"
-        ],
-        "title": "AcceptedValue",
-        "description": "The scope-item cell value written when a suggestion is accepted."
-      },
       "ActivePageIdsResponse": {
         "properties": {
           "file_id": {
@@ -33813,6 +34061,39 @@
           "page_ids"
         ],
         "title": "ActivePageIdsResponse"
+      },
+      "AddAssetRequest": {
+        "properties": {
+          "asset_kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Asset Kind"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "model_alias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Alias"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset_kind",
+          "description"
+        ],
+        "title": "AddAssetRequest"
       },
       "AddFieldResponse": {
         "properties": {
@@ -34534,6 +34815,20 @@
               }
             ],
             "title": "Task Id"
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
           },
           "source_app": {
             "anyOf": [
@@ -36275,6 +36570,65 @@
               }
             ],
             "title": "Signed Url"
+          },
+          "expires_in": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires In",
+            "description": "Seconds until signed_url expires (signed_url mode only)."
+          },
+          "level_requested": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level Requested"
+          },
+          "level_used": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level Used",
+            "description": "Compression tier that produced the output (may exceed the requested tier when a size cap forces escalation)."
+          },
+          "cap_satisfied": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cap Satisfied",
+            "description": "True when max_size_bytes was met (or no cap given); False when even the max tier exceeded it."
+          },
+          "strategy_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strategy Used",
+            "description": "\"inplace\" or \"raster\" — which compression path produced the output."
           }
         },
         "type": "object",
@@ -38152,6 +38506,85 @@
           "files_count"
         ],
         "title": "BridgeQuotaResponse"
+      },
+      "BuildOnceResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "version_id": {
+            "type": "string",
+            "title": "Version Id"
+          },
+          "runner_path": {
+            "type": "string",
+            "title": "Runner Path"
+          },
+          "spec_path": {
+            "type": "string",
+            "title": "Spec Path"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "agent_id",
+          "version_id",
+          "runner_path",
+          "spec_path"
+        ],
+        "title": "BuildOnceResponse"
+      },
+      "BuildRequest": {
+        "properties": {
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Names"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "contents": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contents"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "BuildRequest",
+        "description": "Body for `POST /agent-factory/build`.\n\nThree trigger modes (callers pick one):\n  * `names` — list of `internal_agents/<name>.md` specs to build\n  * `name` (alone) — single spec to build\n  * `name` + `contents` — write the spec file first, then build"
       },
       "BulkCandidateAction": {
         "properties": {
@@ -40185,6 +40618,20 @@
             ],
             "title": "Task Id"
           },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
+          },
           "source_app": {
             "anyOf": [
               {
@@ -41697,6 +42144,17 @@
               }
             ],
             "title": "Error Message"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
           }
         },
         "type": "object",
@@ -42771,6 +43229,16 @@
         ],
         "title": "ContentSaveRequest"
       },
+      "ContentType": {
+        "type": "string",
+        "enum": [
+          "generic",
+          "transcript",
+          "conversation",
+          "document"
+        ],
+        "title": "ContentType"
+      },
       "ContextStateResponse": {
         "properties": {
           "conversation_id": {
@@ -42886,6 +43354,20 @@
               }
             ],
             "title": "Task Id"
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
           },
           "source_app": {
             "anyOf": [
@@ -43124,6 +43606,17 @@
         },
         "type": "object",
         "title": "ConversationContinueRequest"
+      },
+      "ConversationIngestRequest": {
+        "properties": {
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ConversationIngestRequest"
       },
       "ConversationRecord": {
         "properties": {
@@ -44932,20 +45425,6 @@
         "title": "DatasetSummary",
         "description": "The metadata-only projection of a dataset row.\n\nExtra keys are tolerated because the user_data SQL projections can add\ncolumns (counts, flags) without bumping this wire shape."
       },
-      "DecisionResponse": {
-        "properties": {
-          "suggestion": {
-            "$ref": "#/components/schemas/SuggestionRow"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "suggestion"
-        ],
-        "title": "DecisionResponse",
-        "description": "Returned by reject / defer — the updated suggestion."
-      },
       "DedupResponse": {
         "properties": {
           "outcome": {
@@ -45257,6 +45736,18 @@
               }
             ],
             "title": "Task Id"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
           }
         },
         "additionalProperties": true,
@@ -45724,6 +46215,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -46697,6 +47243,8 @@
           },
           "count": {
             "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
             "title": "Count",
             "default": 1
           }
@@ -48922,7 +49470,8 @@
               "partial",
               "complete",
               "failed",
-              "not_applicable"
+              "not_applicable",
+              "abandoned"
             ],
             "title": "Status"
           },
@@ -50553,6 +51102,20 @@
             ],
             "title": "Task Id"
           },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
+          },
           "source_app": {
             "anyOf": [
               {
@@ -51294,74 +51857,6 @@
           "distinct_sources"
         ],
         "title": "HealthResponse"
-      },
-      "HeavyHitterAcceptPlan": {
-        "properties": {
-          "kind": {
-            "type": "string",
-            "const": "heavy_hitter_plan",
-            "title": "Kind",
-            "default": "heavy_hitter_plan"
-          },
-          "suggestion": {
-            "$ref": "#/components/schemas/SuggestionRow"
-          },
-          "entity_id": {
-            "type": "string",
-            "title": "Entity Id"
-          },
-          "entity_kind": {
-            "type": "string",
-            "title": "Entity Kind"
-          },
-          "suggested_scope_name": {
-            "type": "string",
-            "title": "Suggested Scope Name"
-          },
-          "sources": {
-            "items": {
-              "$ref": "#/components/schemas/HeavyHitterSource"
-            },
-            "type": "array",
-            "title": "Sources"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "suggestion",
-          "entity_id",
-          "entity_kind",
-          "suggested_scope_name",
-          "sources"
-        ],
-        "title": "HeavyHitterAcceptPlan",
-        "description": "Returned when a ``heavy_hitter`` suggestion is accepted. Heavy-hitter\nacceptance CREATES A NEW SCOPE (not a cell value), and scope creation is a\nfrontend-owned write path (React → Supabase direct, per the scopes\ninvariant). The backend cannot safely hand-roll scope creation without\nforking that mutation path, so it returns this typed plan and flips the\nsuggestion to ``accepted``; the FE drives scope creation + source tagging in\nPhase F.\n\n``entity_kind`` maps to the scope-type the FE should offer (e.g.\norganization → a Client/Org scope). ``sources`` are the mentions to tag to\nthe new scope via ctx_scope_assignments once it exists."
-      },
-      "HeavyHitterSource": {
-        "properties": {
-          "source_kind": {
-            "type": "string",
-            "title": "Source Kind"
-          },
-          "source_id": {
-            "type": "string",
-            "title": "Source Id"
-          },
-          "mention_count": {
-            "type": "integer",
-            "title": "Mention Count"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "source_kind",
-          "source_id",
-          "mention_count"
-        ],
-        "title": "HeavyHitterSource",
-        "description": "One source the heavy-hitter entity was mentioned in — the FE tags each of\nthese to the newly-created scope via ctx_scope_assignments after creation."
       },
       "HideRequest": {
         "properties": {
@@ -52197,6 +52692,11 @@
             "type": "integer",
             "title": "Chunks Written"
           },
+          "chunks_reused": {
+            "type": "integer",
+            "title": "Chunks Reused",
+            "default": 0
+          },
           "embeddings_written": {
             "type": "integer",
             "title": "Embeddings Written"
@@ -52208,6 +52708,17 @@
           "embedding_model": {
             "type": "string",
             "title": "Embedding Model"
+          },
+          "skipped_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Reason"
           },
           "error": {
             "anyOf": [
@@ -53584,6 +54095,24 @@
         ],
         "title": "KeyFindingsResponse"
       },
+      "Keyword": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "count"
+        ],
+        "title": "Keyword"
+      },
       "KeywordCreate": {
         "properties": {
           "keywords": {
@@ -53649,6 +54178,10 @@
           "pending_batches": {
             "type": "integer",
             "title": "Pending Batches"
+          },
+          "ner_coverage_pct": {
+            "type": "number",
+            "title": "Ner Coverage Pct"
           }
         },
         "additionalProperties": false,
@@ -53657,7 +54190,8 @@
           "spend_today_usd",
           "spend_7d_usd",
           "orgs_over_80pct",
-          "pending_batches"
+          "pending_batches",
+          "ner_coverage_pct"
         ],
         "title": "KgCostSummaryResponse"
       },
@@ -54513,6 +55047,117 @@
           "labels"
         ],
         "title": "LabelCatalogResponse"
+      },
+      "LabelMetadata": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "keywords": {
+            "items": {
+              "$ref": "#/components/schemas/Keyword"
+            },
+            "type": "array",
+            "title": "Keywords"
+          },
+          "content_type": {
+            "$ref": "#/components/schemas/ContentType"
+          },
+          "char_count": {
+            "type": "integer",
+            "title": "Char Count"
+          },
+          "token_count": {
+            "type": "integer",
+            "title": "Token Count"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "keywords",
+          "content_type",
+          "char_count",
+          "token_count",
+          "cost_usd"
+        ],
+        "title": "LabelMetadata"
+      },
+      "LabelRequest": {
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "transcript_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "content_type": {
+            "$ref": "#/components/schemas/ContentType",
+            "default": "generic"
+          },
+          "max_chars": {
+            "type": "integer",
+            "title": "Max Chars",
+            "default": 8000
+          },
+          "label_max_chars": {
+            "type": "integer",
+            "title": "Label Max Chars",
+            "default": 50
+          },
+          "top_n": {
+            "type": "integer",
+            "title": "Top N",
+            "default": 5
+          },
+          "forbidden_words": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true,
+            "title": "Forbidden Words"
+          },
+          "debug": {
+            "type": "boolean",
+            "title": "Debug",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "LabelRequest"
       },
       "LayoutClassificationReport": {
         "properties": {
@@ -55873,6 +56518,35 @@
           "document_id"
         ],
         "title": "LineageTree"
+      },
+      "LinkedEntityOut": {
+        "properties": {
+          "entity_id": {
+            "type": "string",
+            "title": "Entity Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entity_id",
+          "name",
+          "kind",
+          "weight"
+        ],
+        "title": "LinkedEntityOut"
       },
       "ListConversationsResponse": {
         "properties": {
@@ -60039,7 +60713,14 @@
       "PodcastGenerateRequest": {
         "properties": {
           "show_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Show Id"
           },
           "input_data_type": {
@@ -60069,6 +60750,42 @@
             "type": "integer",
             "title": "Number Of Speakers",
             "default": 2
+          },
+          "host_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 20,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Count"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format",
+            "default": ""
+          },
+          "theme": {
+            "type": "string",
+            "title": "Theme",
+            "default": ""
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "default": ""
+          },
+          "speakers": {
+            "items": {
+              "$ref": "#/components/schemas/SpeakerSpec"
+            },
+            "type": "array",
+            "title": "Speakers",
+            "default": []
           },
           "first_show_info_text": {
             "anyOf": [
@@ -60121,7 +60838,6 @@
         },
         "type": "object",
         "required": [
-          "show_id",
           "input_data_type",
           "podcast_type"
         ],
@@ -60817,6 +61533,20 @@
               }
             ],
             "title": "Task Id"
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
           },
           "source_app": {
             "anyOf": [
@@ -61910,6 +62640,50 @@
         ],
         "title": "RefreshNodeTypesResponse"
       },
+      "RegenerateAssetRequest": {
+        "properties": {
+          "asset_kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Asset Kind"
+          },
+          "slot": {
+            "type": "integer",
+            "title": "Slot"
+          },
+          "model_alias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Alias"
+          },
+          "custom_prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Prompt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset_kind",
+          "slot"
+        ],
+        "title": "RegenerateAssetRequest"
+      },
       "RegionBbox": {
         "properties": {
           "x0": {
@@ -62212,6 +62986,8 @@
           },
           "dpi": {
             "type": "integer",
+            "maximum": 300,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -62229,6 +63005,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -62298,11 +63076,14 @@
           },
           "page": {
             "type": "integer",
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "dpi": {
             "type": "integer",
+            "maximum": 600,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -62320,6 +63101,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -62482,11 +63265,14 @@
           },
           "page": {
             "type": "integer",
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "max_side": {
             "type": "integer",
+            "maximum": 2048,
+            "minimum": 16,
             "title": "Max Side",
             "default": 256
           },
@@ -62503,6 +63289,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 80
           }
@@ -63341,6 +64129,25 @@
                 "type": "null"
               }
             ]
+          },
+          "context": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Context",
+            "default": {}
+          },
+          "writable_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Writable Variables",
+            "default": []
+          },
+          "allow_context_create": {
+            "type": "boolean",
+            "title": "Allow Context Create",
+            "default": false
           }
         },
         "type": "object",
@@ -63821,6 +64628,82 @@
         ],
         "title": "RowUpdate"
       },
+      "RunAsset": {
+        "properties": {
+          "asset_kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Asset Kind"
+          },
+          "slot": {
+            "type": "integer",
+            "title": "Slot"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt"
+          },
+          "model_alias": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Alias"
+          },
+          "is_manual": {
+            "type": "boolean",
+            "title": "Is Manual",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset_kind",
+          "slot",
+          "status"
+        ],
+        "title": "RunAsset"
+      },
       "RunBatchDeleteRequest": {
         "properties": {
           "run_ids": {
@@ -64024,6 +64907,17 @@
           },
           "event_ts": {
             "title": "Event Ts"
+          },
+          "seq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seq"
           }
         },
         "additionalProperties": true,
@@ -64625,6 +65519,20 @@
             "title": "Max Steps",
             "default": 1000
           },
+          "step_concurrency": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 256,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Concurrency",
+            "description": "Max node invocations of one super-step executing at once (BS-6 bounded fan-out). A 50-item map with step_concurrency=3 runs 3 at a time instead of all 50 — the declarative form of rate-limited fan-out (analysis semaphores, TTS quotas, scrape politeness). None = unbounded. Persisted on the run so resume/queued execution honors it too."
+          },
           "mode": {
             "type": "string",
             "enum": [
@@ -64864,6 +65772,18 @@
               }
             ],
             "title": "Description"
+          },
+          "expected_updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Updated At"
           }
         },
         "type": "object",
@@ -65384,6 +66304,82 @@
         ],
         "title": "SearchBboxOut"
       },
+      "SearchEntityOut": {
+        "properties": {
+          "entity_id": {
+            "type": "string",
+            "title": "Entity Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "mention_count": {
+            "type": "integer",
+            "title": "Mention Count"
+          },
+          "artifact_count": {
+            "type": "integer",
+            "title": "Artifact Count"
+          },
+          "source_kind_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Source Kind Counts"
+          },
+          "top_chunk_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Chunk Id"
+          },
+          "importance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Importance"
+          },
+          "is_concept": {
+            "type": "boolean",
+            "title": "Is Concept",
+            "default": false
+          },
+          "linked": {
+            "items": {
+              "$ref": "#/components/schemas/LinkedEntityOut"
+            },
+            "type": "array",
+            "title": "Linked"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entity_id",
+          "name",
+          "kind",
+          "mention_count",
+          "artifact_count",
+          "source_kind_counts"
+        ],
+        "title": "SearchEntityOut"
+      },
       "SearchExamplesResponse": {
         "properties": {
           "query": {
@@ -65501,6 +66497,21 @@
             ],
             "title": "Organization Id",
             "description": "Override the active org for this query — only honored for admins. Non-admin callers always retrieve in their AppContext.organization_id scope."
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids",
+            "description": "Restrict hits to sources tagged to these scope ids — structural filter; combines with the semantic query."
           }
         },
         "type": "object",
@@ -65582,6 +66593,20 @@
           "latency_ms": {
             "type": "integer",
             "title": "Latency Ms"
+          },
+          "entity_map": {
+            "items": {
+              "$ref": "#/components/schemas/SearchEntityOut"
+            },
+            "type": "array",
+            "title": "Entity Map"
+          },
+          "matched_entities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Matched Entities"
           }
         },
         "additionalProperties": false,
@@ -67019,6 +68044,25 @@
         "type": "object",
         "title": "SourceUpdate"
       },
+      "SpeakerSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "voice": {
+            "type": "string",
+            "title": "Voice",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "SpeakerSpec",
+        "description": "One requested speaker. `voice` is provider-appropriate: a Gemini\nprebuilt voice name for 1–2 hosts (Google TTS), an ElevenLabs voice_id for\n3+ hosts (dialogue TTS). Empty voice → filled from the default palette."
+      },
       "SplitPartRequest": {
         "properties": {
           "pages": {
@@ -68395,243 +69439,6 @@
         "title": "SuggestRequest",
         "description": "Wizard input for the Research Setup Suggest Agent.\n\nThe agent (`prompt_builtins.id = 4f802fd1-…`) takes ONE variable —\n`subject_name_or_description`. The frontend wizard's single textarea\nfeeds this directly. The user can paste a short name (\"Arman Sadeghi\"),\na paragraph (\"everything we know about photosynthesis cycles…\"), or\nanything in between. The agent decides how to title and describe the\nproject from that one string.\n\nThe legacy two-field shape (`topic_name` + `topic_description`) is\naccepted via the validator below so old clients don't 422; they are\nconcatenated with a space. New clients should send only\n`subject_name_or_description`."
       },
-      "SuggestionEntity": {
-        "properties": {
-          "id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id"
-          },
-          "kind": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Kind"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "id"
-        ],
-        "title": "SuggestionEntity",
-        "description": "The KG entity a suggestion points at."
-      },
-      "SuggestionRow": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "source_kind": {
-            "type": "string",
-            "title": "Source Kind"
-          },
-          "source_id": {
-            "type": "string",
-            "title": "Source Id"
-          },
-          "entity": {
-            "$ref": "#/components/schemas/SuggestionEntity"
-          },
-          "target": {
-            "$ref": "#/components/schemas/SuggestionTarget"
-          },
-          "suggested_value": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Suggested Value"
-          },
-          "match_kind": {
-            "type": "string",
-            "enum": [
-              "exact",
-              "fuzzy",
-              "semantic",
-              "heavy_hitter"
-            ],
-            "title": "Match Kind"
-          },
-          "confidence": {
-            "type": "number",
-            "title": "Confidence"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "pending",
-              "accepted",
-              "rejected",
-              "deferred",
-              "expired"
-            ],
-            "title": "Status"
-          },
-          "context_snippet": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Context Snippet"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "decided_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Decided At"
-          },
-          "suppressed_until": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Suppressed Until"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "id",
-          "source_kind",
-          "source_id",
-          "entity",
-          "target",
-          "suggested_value",
-          "match_kind",
-          "confidence",
-          "status",
-          "created_at"
-        ],
-        "title": "SuggestionRow",
-        "description": "One suggestion as returned to the owning user."
-      },
-      "SuggestionTarget": {
-        "properties": {
-          "scope_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scope Id"
-          },
-          "scope_item_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scope Item Id"
-          },
-          "slot_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Slot Name"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "scope_id",
-          "scope_item_id",
-          "slot_name"
-        ],
-        "title": "SuggestionTarget",
-        "description": "The scope-item slot a suggestion proposes to fill."
-      },
-      "SuggestionsPage": {
-        "properties": {
-          "suggestions": {
-            "items": {
-              "$ref": "#/components/schemas/SuggestionRow"
-            },
-            "type": "array",
-            "title": "Suggestions"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total"
-          },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
-          },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "suggestions",
-          "total",
-          "limit",
-          "offset"
-        ],
-        "title": "SuggestionsPage",
-        "description": "Paginated suggestion list."
-      },
       "SupabaseAuthWebhookPayload": {
         "properties": {
           "type": {
@@ -69116,37 +69923,169 @@
         ],
         "title": "SystemErrorDetail"
       },
-      "SystemErrorListResponse": {
+      "SystemErrorRecord": {
         "properties": {
-          "rows": {
-            "items": {
-              "$ref": "#/components/schemas/SystemErrorSummary"
-            },
-            "type": "array",
-            "title": "Rows"
+          "id": {
+            "type": "string",
+            "title": "Id"
           },
-          "total": {
-            "type": "integer",
-            "title": "Total"
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
           },
-          "limit": {
-            "type": "integer",
-            "title": "Limit"
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
           },
-          "offset": {
-            "type": "integer",
-            "title": "Offset"
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          },
+          "error_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Text"
+          },
+          "traceback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Traceback"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "context": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurred At"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "resolution_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Note"
           }
         },
-        "additionalProperties": false,
         "type": "object",
         "required": [
-          "rows",
-          "total",
-          "limit",
-          "offset"
+          "id"
         ],
-        "title": "SystemErrorListResponse"
+        "title": "SystemErrorRecord"
       },
       "SystemErrorSummary": {
         "properties": {
@@ -74772,6 +75711,64 @@
         ],
         "title": "WriteArgs"
       },
+      "aidream__api__routers__admin_persistence__SystemErrorListResponse": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SystemErrorSummary"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rows",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "SystemErrorListResponse"
+      },
+      "aidream__api__routers__admin_system_errors__SystemErrorListResponse": {
+        "properties": {
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/SystemErrorRecord"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "filter_summary": {
+            "type": "string",
+            "title": "Filter Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "errors",
+          "count",
+          "filter_summary"
+        ],
+        "title": "SystemErrorListResponse"
+      },
       "aidream__api__routers__agents__WarmRequest": {
         "properties": {
           "is_version": {
@@ -74982,7 +75979,8 @@
               "repository",
               "library_doc",
               "task",
-              "project"
+              "project",
+              "cx_message"
             ],
             "title": "Source Kind"
           },
@@ -75111,6 +76109,24 @@
               }
             ],
             "title": "Source Ref"
+          },
+          "entities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Entities"
+          },
+          "entity_rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Rank"
           }
         },
         "type": "object",
@@ -75231,6 +76247,21 @@
             "title": "Use Mmr",
             "description": "Drop near-duplicate hits from the result set.",
             "default": true
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids",
+            "description": "Restrict hits to sources tagged to these scope ids — structural filter; combines with the semantic query."
           }
         },
         "type": "object",

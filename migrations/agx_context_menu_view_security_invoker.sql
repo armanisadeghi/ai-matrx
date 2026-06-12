@@ -1,0 +1,13 @@
+-- Fix cross-user leak in the unified context menu.
+--
+-- agx_context_menu_view was created without security_invoker, so it executed
+-- with the view owner's (postgres) rights and BYPASSED RLS on agx_shortcut,
+-- shortcut_categories, agx_agent, agx_version, and skl_render_definitions.
+-- Result: every authenticated user saw every other user's user-scoped
+-- shortcuts in their context menus — including private agents' names and
+-- variable_definitions embedded in the item JSON.
+--
+-- The underlying tables already carry correct read policies
+-- (global rows OR own rows OR org-member rows), so flipping the view to
+-- security_invoker enforces per-user scoping with no view-body changes.
+alter view public.agx_context_menu_view set (security_invoker = true);

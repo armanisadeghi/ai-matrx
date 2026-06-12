@@ -14,10 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  selectActiveSession,
-  selectFetchStatus,
-} from "../redux/selectors";
+import { selectActiveSession, selectFetchStatus } from "../redux/selectors";
 import { ActiveSessionView } from "./ActiveSessionView";
 import { EmptySessionState } from "./EmptySessionState";
 import { StudioSidebar } from "./StudioSidebar";
@@ -33,6 +30,8 @@ interface StudioLayoutProps {
   showSidebar?: boolean;
   defaultColumnLayout?: Record<string, number>;
   defaultSidebarLayout?: Layout;
+  /** When set, session pick/create/delete updates the page URL (`?session=`). */
+  navigateToSession?: (sessionId: string | null) => void;
 }
 
 export function StudioLayout({
@@ -40,6 +39,7 @@ export function StudioLayout({
   showSidebar = true,
   defaultColumnLayout,
   defaultSidebarLayout,
+  navigateToSession,
 }: StudioLayoutProps) {
   const activeSession = useAppSelector(selectActiveSession);
   const fetchStatus = useAppSelector(selectFetchStatus);
@@ -67,10 +67,7 @@ export function StudioLayout({
     <main className="flex h-full flex-1 min-w-0 flex-col">
       {showSidebar && (
         <div className="flex shrink-0 items-center border-b border-border bg-textured h-9 md:hidden">
-          <Sheet
-            open={mobileSidebarOpen}
-            onOpenChange={setMobileSidebarOpen}
-          >
+          <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
@@ -86,6 +83,7 @@ export function StudioLayout({
                 className="h-full"
                 onPickSession={closeMobileSidebar}
                 onCreateSession={closeMobileSidebar}
+                navigateToSession={navigateToSession}
               />
             </SheetContent>
           </Sheet>
@@ -109,27 +107,25 @@ export function StudioLayout({
         <ActiveSessionView
           session={activeSession}
           defaultColumnLayout={defaultColumnLayout}
+          onSessionDeleted={
+            navigateToSession ? () => navigateToSession(null) : undefined
+          }
         />
       ) : (
-        <EmptySessionState />
+        <EmptySessionState navigateToSession={navigateToSession} />
       )}
     </main>
   );
 
   return (
     <div
-      className={cn(
-        "flex h-page min-h-0 w-full overflow-hidden",
-        className,
-      )}
+      className={cn("flex h-page min-h-0 w-full overflow-hidden", className)}
     >
       {showSidebar && !isMobile ? (
         <Group
           id={STUDIO_SIDEBAR_GROUP_ID}
           orientation="horizontal"
-          defaultLayout={
-            defaultSidebarLayout ?? STUDIO_SIDEBAR_DEFAULT_LAYOUT
-          }
+          defaultLayout={defaultSidebarLayout ?? STUDIO_SIDEBAR_DEFAULT_LAYOUT}
           onLayoutChanged={(layout) => {
             const value = encodeURIComponent(JSON.stringify(layout));
             document.cookie = `${STUDIO_SIDEBAR_COOKIE_NAME}=${value}; path=/; max-age=31536000; SameSite=Lax`;
@@ -156,6 +152,7 @@ export function StudioLayout({
               onPickSession={closeMobileSidebar}
               onCreateSession={closeMobileSidebar}
               onCollapse={() => sidebarPanelRef.current?.collapse()}
+              navigateToSession={navigateToSession}
             />
           </Panel>
           <Separator

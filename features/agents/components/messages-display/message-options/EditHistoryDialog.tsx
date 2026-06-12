@@ -17,7 +17,13 @@
  */
 
 import { useState } from "react";
-import { History, RotateCcw, Clock, ChevronRight } from "lucide-react";
+import {
+  History,
+  RotateCcw,
+  Clock,
+  ChevronRight,
+  GitCompareArrows,
+} from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -37,7 +43,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { selectMessageContentHistory } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import {
+  selectMessageContentHistory,
+  selectMessageContent,
+} from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { editMessage } from "@/features/agents/redux/execution-system/message-crud/edit-message.thunk";
 import { setRequestEditedText } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { selectMessageStreamRequestId } from "@/features/agents/redux/execution-system/messages/messages.selectors";
@@ -84,19 +94,22 @@ function HistoryEntryCard({
   total,
   isRestoring,
   onRestore,
+  onCompare,
 }: {
   entry: HistoryEntry;
   index: number;
   total: number;
   isRestoring: boolean;
   onRestore: () => void;
+  onCompare: () => void;
 }) {
   const [expanded, setExpanded] = useState(index === 0);
   const preview = previewOf(entry.content);
   const truncated =
     preview.length > 400 ? `${preview.slice(0, 400)}…` : preview || "(empty)";
   const savedAt = new Date(entry.saved_at);
-  const versionLabel = total > 1 ? `Version ${total - index}` : "Previous version";
+  const versionLabel =
+    total > 1 ? `Version ${total - index}` : "Previous version";
 
   return (
     <div className="border border-border rounded-md overflow-hidden bg-card">
@@ -126,7 +139,16 @@ function HistoryEntryCard({
           <div className="mt-2 text-xs text-foreground/80 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto bg-muted/30 rounded p-2 font-mono">
             {truncated}
           </div>
-          <div className="mt-2 flex justify-end">
+          <div className="mt-2 flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs gap-1"
+              onClick={onCompare}
+            >
+              <GitCompareArrows className="w-3 h-3" />
+              Compare with current
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -160,10 +182,28 @@ function HistoryContent({
   const streamRequestId = useAppSelector(
     selectMessageStreamRequestId(conversationId, messageId),
   );
+  const currentContent = useAppSelector(
+    selectMessageContent(conversationId, messageId),
+  );
+  const openDiff = useOpenDiffViewerWindow();
   const history = parseHistory(raw);
   // Most recent edit first.
   const ordered = [...history].reverse();
   const [restoringIndex, setRestoringIndex] = useState<number | null>(null);
+
+  const handleCompare = (entry: HistoryEntry, index: number) => {
+    const versionLabel =
+      ordered.length > 1 ? `Version ${ordered.length - index}` : "Previous";
+    openDiff({
+      original: previewOf(entry.content),
+      modified: previewOf(Array.isArray(currentContent) ? currentContent : []),
+      originalLabel: versionLabel,
+      modifiedLabel: "Current",
+      title: "Compare versions",
+      engine: "light",
+      defaultView: "split",
+    });
+  };
 
   const handleRestore = async (entry: HistoryEntry, index: number) => {
     setRestoringIndex(index);
@@ -220,6 +260,7 @@ function HistoryContent({
             total={ordered.length}
             isRestoring={restoringIndex === i}
             onRestore={() => handleRestore(entry, i)}
+            onCompare={() => handleCompare(entry, i)}
           />
         ))}
       </div>

@@ -614,6 +614,31 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
   },
 
+  // ── Diff Viewer ───────────────────────────────────────────────────────────
+  // Canonical diff core (components/diff/DiffViewer) in a movable window.
+  // Multi-instance + ephemeral: spawn one per "Compare …" action; live
+  // comparisons are not restored across reloads.
+  {
+    slug: "diff-viewer-window",
+    overlayId: "diffViewerWindow",
+    kind: "window",
+    label: "Compare",
+    defaultData: {
+      windowInstanceId: "",
+      original: "",
+      modified: "",
+      originalLabel: "Original",
+      modifiedLabel: "Modified",
+      title: null as string | null,
+      engine: "auto",
+      language: null as string | null,
+      defaultView: "split",
+    },
+    mobilePresentation: "fullscreen",
+    instanceMode: "multi",
+    ephemeral: true,
+  },
+
   // ── Crop Studio ───────────────────────────────────────────────────────────
   {
     slug: "crop-studio-window",

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import type { ClientPageSummary } from "@/features/cms/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,7 +97,8 @@ export default function PageListView({
         (p) =>
           p.title.toLowerCase().includes(q) ||
           p.slug.toLowerCase().includes(q) ||
-          (p.category ?? "").toLowerCase().includes(q),
+          (p.category ?? "").toLowerCase().includes(q) ||
+          idMatchesQuery(p, q),
       );
     }
 

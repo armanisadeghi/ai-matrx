@@ -305,7 +305,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
 
   const createSandbox = useCallback(
     async (
-      request: SandboxCreateRequest = {},
+      request: SandboxCreateRequest,
     ): Promise<SandboxInstance | undefined> => {
       setCreating(true);
       setError(null);

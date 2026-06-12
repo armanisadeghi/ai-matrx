@@ -5,11 +5,6 @@ import {
   SURFACES_ADMIN_COOKIE,
 } from "@/features/surfaces/admin/SurfacesAdminShell";
 
-export const metadata = {
-  title: "Agent Surfaces | AI Matrx",
-  description:
-    "Bind this agent to UI surfaces and configure how surface-provided values map to its variables and context slots.",
-};
 
 export default async function AgentSurfacesRoute({
   params,

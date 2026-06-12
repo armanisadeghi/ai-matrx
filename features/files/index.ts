@@ -99,6 +99,10 @@ export { fileHandler } from "@/features/files/handler/handler";
 export { normalize } from "@/features/files/handler/input/normalize";
 export { preferIdentityLocator } from "@/features/files/handler/utils/prefer-locator";
 export { toMediaRef } from "@/features/files/handler/output/target";
+export {
+  mapLegacyBucket,
+  composeLegacyFolderPath,
+} from "@/features/files/handler/utils/legacy-bucket-map";
 
 // ---------------------------------------------------------------------------
 // 3. Components — the canonical render / upload / pick surface
@@ -222,6 +226,7 @@ export { UploadGuardHost } from "@/features/files/upload/UploadGuardHost";
 // the redux/* ESLint ban can flip to error with no allowlist.
 export { cloudFilesReducer } from "@/features/files/redux/slice";
 export { cloudFilesRealtimeMiddleware } from "@/features/files/redux/realtime-middleware";
+export { cloudFilesMutationToastMiddleware } from "@/features/files/redux/mutation-toast-middleware";
 
 // Explorer-side state — driven by the cloud-files side panel in the code
 // workspace and the `/files` selection model. These slice actions / selector

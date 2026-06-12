@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import {
   Loader2,
   Server,
@@ -103,7 +104,8 @@ export function McpServersAdminPage() {
       (s) =>
         s.slug.toLowerCase().includes(q) ||
         s.name.toLowerCase().includes(q) ||
-        s.vendor.toLowerCase().includes(q),
+        s.vendor.toLowerCase().includes(q) ||
+        idMatchesQuery(s, q),
     );
   })();
 

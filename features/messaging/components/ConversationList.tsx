@@ -4,6 +4,7 @@ import React, { useState, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { selectConversations, selectMessagingIsLoading } from "../redux/messagingSlice";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -59,7 +60,8 @@ export function ConversationList({
     return (
       conv.display_name?.toLowerCase().includes(query) ||
       conv.group_name?.toLowerCase().includes(query) ||
-      conv.last_message?.content?.toLowerCase().includes(query)
+      conv.last_message?.content?.toLowerCase().includes(query) ||
+      idMatchesQuery(conv, query)
     );
   });
 

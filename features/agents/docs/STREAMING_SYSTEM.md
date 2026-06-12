@@ -2,7 +2,7 @@
 
 **Status:** `active` — canonical contract
 **Tier:** 1 (cross-cutting; anchored here because the agents system owns the canonical implementation)
-**Last updated:** `2026-05-25`
+**Last updated:** `2026-06-10`
 
 > This is the **single source of truth** for streaming across the app. Chat, conversation, artifacts, tool calls, and every long-running endpoint must conform. The detailed event-type and phase-value reference lives in [`STREAM_STATUS_LIFECYCLE.md`](./STREAM_STATUS_LIFECYCLE.md) — this doc is the higher-level contract and usage guide.
 
@@ -48,10 +48,10 @@ The contract is formalized because:
 
 ## Heartbeat + timeout contract
 
-- Server emits `heartbeat` at regular intervals (typically every 10s) during any long-running phase.
-- Client runs a timeout monitor (`lib/net/stream-monitor.ts`) that resets on every received event, including heartbeat.
-- Missing heartbeats beyond the threshold triggers a client-side timeout error — the stream is considered dead.
-- Reconnection is not automatic for in-flight streams. Conversation state is rehydrated via `resume-conversation.ts`.
+- Server emits `heartbeat` every **5s** (matrx-connect `StreamEmitter`, independent asyncio task) during the whole stream. Each beat carries `seq` (monotonic per stream — a mid-stream reset to 1 proves the heartbeat task died and auto-restarted) and `late_by_seconds` (set when the tick fired >2× late — event-loop starvation evidence).
+- Client runs a timeout monitor (`lib/net/stream-monitor.ts`) that resets on every received event, including heartbeat. Watchdog default: **30s** (`runAiStream.heartbeatTimeoutMs`).
+- Missing heartbeats beyond the threshold throws `HeartbeatTimeoutError` and aborts the fetch.
+- **A dead stream is a DISPLAY problem, not a data problem.** The server runs `detach_on_disconnect=True` — it finishes and persists the turn regardless. The client therefore: (1) flushes + commits everything already streamed (`process-stream` commit path runs even on failure — partial content NEVER vanishes); (2) renders the error **below** the streamed content, never instead of it (`AgentAssistantMessage`); (3) self-heals via `recover-dropped-stream.thunk.ts` — polls `cx_user_request` for terminal status, rehydrates via `loadConversation`, and clears the error when the server completed the turn.
 
 ---
 
@@ -175,6 +175,7 @@ If you build a new long-running endpoint, conform to this contract. Do not inven
 
 ## Change log
 
+- `2026-06-10` — claude: **Dropped-stream resilience — errors never wipe streamed content, and heartbeat timeouts self-heal.** Incident: a 31s server-side heartbeat gap during a 40s sandbox `shell_execute` made the client watchdog kill a healthy stream AND the error UI replaced the whole turn (the end-of-stream commit never ran, so every reserved assistant record stayed empty and was skipped as `isEmptyReservedAssistant`). Fixes: (1) `process-stream` wraps the event loop — on any stream failure it still flushes buffers and commits partial content to `messages.byId` (only the final iteration carries `_clientStatus:"error"`), then re-throws; (2) `AgentAssistantMessage` renders the error BELOW any existing content (error-only solely when nothing streamed); (3) new `recover-dropped-stream.thunk.ts` polls `cx_user_request` after a heartbeat timeout and rehydrates via `loadConversation` — completed turns clear the error with a "Connection recovered" toast; (4) server (aidream matrx-connect `StreamEmitter`): heartbeats now carry `seq` + `late_by_seconds`, scream to stderr on late ticks (loop starvation) or task death, and the heartbeat task auto-restarts if it dies mid-stream. Heartbeat interval documented as 5s (was wrongly noted as 10s).
 - `2026-05-25` — claude: **Thinking/reasoning and tool calls now render as inline text, unified across stream / static / DB.** Reasoning is a new canonical `ThinkingTrace` (`components/mardown-display/blocks/thinking-reasoning/ThinkingTrace.tsx`): a quiet, text-based, click-to-expand line — collapsed by default (no box/border/gradient), the live tail streams in on one line, expand for the full trace. The old boxes (`ThinkingVisualization` / `ReasoningVisualization` / `ConsolidatedReasoningVisualization`) are now thin adapters over it, so every render path (`BlockRenderer` live + DB, legacy chat stream, demos) shows the identical trace. Tool calls collapsed to a single inline line by default with a proper error state — see `features/tool-call-visualization/FEATURE.md`. No wire/data-contract changes; this is presentation only.
 - `2026-05-24` — claude: **Persisted failed turns now render identically to live errors.** A failed turn is kept in history (`cx_message.status='failed'`) and shown as a standalone error bubble with retry — see the chat route FEATURE.md Flow 4 and `CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md`. Streaming-side change: on a `record_update` for `cx_message` with `status:"failed"`, `process-stream` now also patches the row's `metadata` (not status-only) so an in-session failure carries `{failed,error}` exactly as the DB serves it on reload — the renderer reads `metadata.error`. The error event handling is otherwise unchanged (`error` events stay fatal; `selectRequestError` still feeds the live bubble's friendly line + Details). Note: as of this date the deployed backend does not yet populate `metadata.error` (it lives on `cx_request.error`) nor accept `retry:true`; the client degrades gracefully.
 - `2026-05-23` — claude: Status wording finalized (two distinct shimmer indicators). The **client pre-token** shimmer (`EnhancedChatMarkdown` `isWaitingForContent` branch) reads **"Processing…"** — the client handling/awaiting the request. The **server** `processing` phase label (`PHASE_LABELS` in `active-requests.selectors.ts`, rendered via `InlineStatusIndicator`) reads **"Planning…"** — the agent planning its response. On-screen order: client "Processing…" → server "Planning…" → "Generating…" / "Using tools…" / etc.

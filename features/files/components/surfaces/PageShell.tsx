@@ -40,6 +40,7 @@ import {
 } from "@dnd-kit/core";
 import {
   Activity,
+  Clock,
   FileInput,
   FileStack,
   Image as ImageIcon,
@@ -668,6 +669,7 @@ function PageShellDesktop({
                             emptyState={
                               section === "photos" ||
                               section === "shared" ||
+                              section === "recents" ||
                               section === "trash" ? (
                                 <SectionPlaceholder section={section} />
                               ) : undefined
@@ -687,6 +689,7 @@ function PageShellDesktop({
                             emptyState={
                               section === "photos" ||
                               section === "shared" ||
+                              section === "recents" ||
                               section === "trash" ? (
                                 <SectionPlaceholder section={section} />
                               ) : undefined
@@ -841,6 +844,15 @@ function SectionPlaceholder({ section }: { section: CloudFilesSection }) {
         icon={Trash2}
         title="Trash is empty"
         description="Deleted files stay here for 30 days before they're purged."
+      />
+    );
+  }
+  if (section === "recents") {
+    return (
+      <EmptyState
+        icon={Clock}
+        title="No recent activity"
+        description="Files you upload or edit will show up here, newest first."
       />
     );
   }

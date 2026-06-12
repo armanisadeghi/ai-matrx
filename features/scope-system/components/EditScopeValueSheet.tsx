@@ -41,6 +41,7 @@ function rowToString(row: ScopeContextRow): string {
   if (row.value_text != null) return row.value_text;
   if (row.value_number != null) return String(row.value_number);
   if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
+  if (row.value_date != null) return row.value_date;
   if (row.value_document_url != null) return row.value_document_url;
   if (row.value_json != null) {
     try {
@@ -106,6 +107,8 @@ export function EditScopeValueSheet({
       if (booleanValue === "true") payload.value_boolean = true;
       else if (booleanValue === "false") payload.value_boolean = false;
       else payload.value_text = null;
+    } else if (row.value_type === "date") {
+      payload.value_date = trimmed || null;
     } else if (row.value_type === "document") {
       payload.value_document_url = trimmed || null;
     } else if (row.value_type === "object" || row.value_type === "array") {
@@ -207,6 +210,17 @@ export function EditScopeValueSheet({
                     <SelectItem value="">— (empty)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            ) : row.value_type === "date" ? (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Value</Label>
+                <Input
+                  type="date"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  style={{ fontSize: "16px" }}
+                  disabled={busy}
+                />
               </div>
             ) : (
               <div className="space-y-1.5">

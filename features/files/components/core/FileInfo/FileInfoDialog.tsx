@@ -27,6 +27,8 @@ import { cn } from "@/lib/utils";
 import { selectAllFoldersMap, selectFileById } from "@/features/files/redux/selectors";
 import { formatFileSize } from "@/features/files/utils/format";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
+import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import type { Visibility } from "@/features/files/types";
 
 export interface FileInfoDialogProps {
@@ -44,6 +46,7 @@ export function FileInfoDialog({
     fileId ? selectFileById(s, fileId) : null,
   );
   const foldersById = useAppSelector(selectAllFoldersMap);
+  const activeContext = useActiveContext();
 
   // Resolve the parent-folder breadcrumb for context.
   let parentPath = "/";
@@ -109,6 +112,33 @@ export function FileInfoDialog({
         ) : (
           <p className="text-sm text-muted-foreground">No file selected.</p>
         )}
+
+        {/*
+         * Scopes — tag this file to the org's scopes (Client, Case, Patient…).
+         * Writes ctx_scope_assignments via the canonical EntityScopeTagger
+         * (local per-entity tagging, never appContext). Real files only.
+         */}
+        {file && file.source.kind === "real" ? (
+          <div className="mt-2 border-t border-border pt-3">
+            <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+              Scopes
+            </p>
+            {activeContext.organizationId ? (
+              <EntityScopeTagger
+                entityType="file"
+                entityId={file.id}
+                organizationId={activeContext.organizationId}
+                variant="compact"
+                showHeader={false}
+              />
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Select an organization in the context bar to tag this file to a
+                scope.
+              </p>
+            )}
+          </div>
+        ) : null}
       </DialogContent>
     </Dialog>
   );

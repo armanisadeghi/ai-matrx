@@ -2,9 +2,9 @@
 
 **Status:** `active` — both features in production
 **Tier:** `2`
-**Last updated:** `2026-04-25`
+**Last updated:** `2026-06-08`
 
-> Combined doc. Tasks live under projects; they share the org-scoped architecture documented in [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
+> Combined doc. **Projects and Tasks are first-class _containers_** (like orgs and scopes): nearly every resource table carries both a `project_id` and a `task_id` column, so "what belongs to this project/task" is a direct FK query — the same shape as the org workspace's `organization_id`. Tasks nest under projects (`project_id`) and under each other (`parent_task_id`). They share the org-scoped architecture documented in [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 
 ---
 
@@ -16,33 +16,41 @@ Org-scoped project management. Projects group work within an organization; tasks
 
 ## Entry points
 
-**Routes**
-- `app/(authenticated)/projects/` — project list + detail
-- `app/(authenticated)/tasks/` — task list + detail
-- `app/(authenticated)/invitations/project/` — project-scoped invitation accept page (org invitations live at `/invitations/organization/`)
+**Routes (canonical, top-level — un-nested from orgs)**
+- `app/(core)/projects/page.tsx` — **ProjectsHub** launcher; `?org=<slug|id>` / `?scope=<id>` filtered views. Self-fetches `ctx_projects` (RLS-filtered), not nav-tree-dependent.
+- `app/(core)/projects/[projectId]/page.tsx` — **ProjectWorkspace** (resolves by slug or UUID): hero + nested task list + associated resources + scopes + advanced references.
+- `app/(core)/projects/[projectId]/settings/page.tsx` — **ProjectManage** (single-page sectioned, no tabs): General / Scopes / Members / Invitations / Danger.
+- `app/(core)/tasks/page.tsx` — `TasksDesktopShell` (3-pane); `app/(core)/tasks/[id]/page.tsx` — `TaskEditor`.
+- **Legacy redirects:** `app/(core)/organizations/[orgId]/projects/**` → `/projects?org=` and `/projects/[id]`; `(transitional)/settings/projects` → `/projects`. `(transitional)/projects/**` removed.
 
 **Feature code — `features/projects/`**
-- `components/`, `hooks.ts`, `service.ts`, `types.ts`, `index.ts`
-- [`features/scopes/FEATURE.md`](../scopes/FEATURE.md) — the canonical scope architecture (replaces the legacy seed doc)
+- `service.ts` (canonical CRUD + members + invitations + `getProjectReferences`), `hooks.ts`, `types.ts`
+- `components/ProjectWorkspace.tsx`, `ProjectsHub.tsx`, `ProjectManage.tsx`, `ProjectTaskList.tsx` (new), plus `GeneralSettings`/`MemberManagement`/`InvitationManager`/`DangerZone`/`ProjectReferencesPanel`/`ProjectFormSheet`/`CreateProjectModal` (reused)
 - `README.md` — user-facing guide
 
 **Feature code — `features/tasks/`**
-- `components/`, `hooks/`, `services/`, `utils/`, `types/`, `index.ts`
-- `redux/` — slice + selectors
-- `sql/` — schema / migration artifacts
-- `widgets/` — task widgets (renderable mini-components within task detail)
+- `components/` (incl. `TaskEditor.tsx`, `TasksDesktopShell.tsx`, `TaskAssociatedResources.tsx` (new)), `hooks/`, `services/taskService.ts`, `utils/`, `types/`
+- `redux/` — `taskUiSlice`, `selectors`, `thunks`, `taskAssociationsSlice` (M2M engine: `associateWithTask`/`dissociateFromTask` — UI panel pending)
+- `widgets/` — task widgets
+
+**The container primitive (shared, in `features/organizations/`)**
+- `hooks/useContainerInventory.ts` — counts catalogue resources for any container by `{column: organization_id|project_id|task_id, value}`. `useOrgResourceInventory` delegates to it.
+- `components/ContainerResourceSheet.tsx` — lists a kind's FK-linked items with peek/open (reused by project workspace + task editor).
+- `resource-catalogue.ts` + `OrgResourceRoleSection.tsx` (now `onContribute` optional) — role-grouped tiles.
 
 ---
 
 ## Data model
 
-**DB tables** (verify in Supabase; names representative):
-- `projects` — `id`, `organization_id`, `name`, `description`, owner/roles, timestamps
-- `tasks` — `id`, `project_id`, `status`, `assignees[]`, `due_at`, content, links to `cx_conversation` rows
-- `project_members` / `task_assignments` — M2M membership
-- `project_invitations` — invitations scoped to a specific project
+**DB tables** (Supabase, project `txzxabzwovsujtloxrus`):
+- `ctx_projects` — `id`, `organization_id` (FK → organizations; non-null after the personal-org backfill), `name`, `slug`, `description`, `created_by`, `settings`, timestamps. **No `is_personal` column** — a project is "personal" iff its owning org's `organizations.is_personal` is true (derive via the org, or read RPC-derived `NavProject.is_personal`).
+- `ctx_tasks` — `id`, `title`, `description`, `project_id`, `parent_task_id` (subtasks), `status` (`incomplete`/`completed`), `priority` (enum), `due_date`, `assignee_id`, `organization_id`, `is_public`, `settings`
+- `ctx_project_members` / `ctx_project_invitations` — membership + invites
+- `ctx_task_comments` / `ctx_task_attachments` / `ctx_task_assignments` — task sub-records
+- `ctx_task_associations` — generic task↔entity M2M (`get_task_associations` / `get_tasks_for_entity` / `associate*` RPCs)
+- `getProjectReferences(projectId)` RPC — every table FK-referencing a project (`{schemaName, tableName, columnName, rowCount}`)
 
-The scope columns `organization_id` on projects, `project_id` on tasks, plus derived `organization_id` on tasks (via join) make these first-class citizens in the [scope system](../scopes/FEATURE.md).
+**Container insight:** nearly every resource table carries both `project_id` and `task_id`. FK-association is therefore universal and read via `useContainerInventory`. Projects/tasks are also scopeable (`ctx_scope_assignments`, entity types `project`/`task`) and counted in the org resource catalogue.
 
 ---
 
@@ -100,6 +108,13 @@ The scope columns `organization_id` on projects, `project_id` on tasks, plus der
 
 ## Change log
 
+- `2026-06-08` — claude: **Priority + due-date editing extracted into shared task primitives (doctrine: build the platform).** Two inline editors that had been re-implemented in two shapes are now ONE primitive each, consumed everywhere: `features/tasks/components/TaskPriorityPicker.tsx` (`variant="pill"` compact Popover for the project task table, `variant="segmented"` inline control for the full editor; exports the `TaskPriority` type + `TASK_PRIORITY_META` styling vocab so read-only chips stay in lockstep) and `features/tasks/components/TaskDueDatePicker.tsx` (`variant="pill"` for the table, `variant="field"` full-width form field replacing `TaskEditor`'s raw `<input type="date">` — every surface now gets the Calendar-popover + Clear + no-TZ-shift behavior). `ProjectTaskList` (project task table) and `TaskEditor` both consume them; the local `PriorityPicker` / `DueDatePicker` / `PrioritySegmented` / `PRIORITY_PILL` / `PRIORITY_STYLES` copies are deleted. Priority colors unified app-wide to red/amber/sky (editor's `low` was green). The `yyyy-mm-dd` no-TZ-shift date helpers (`parseDateOnly` / `toDateOnly` / `formatDateOnly` / `isDateOnlyOverdue`) now live in `@/utils/dateOnly` — the three duplicate copies (both task pickers + `features/projects/components/ProjectInlineEditors.tsx`) collapsed into the one shared util.
+- `2026-06-07` — claude: **Projects are now real PM containers + view==edit, no filter traps.** (1) Added `ctx_projects` columns `status` (planning/active/paused/completed/archived), `priority`, `start_date`, `target_date` — projects are no longer title-only. (2) New `ProjectInlineEditors` (`InlineProjectName`, `InlineProjectDescription`, `ProjectMetaRow`) — name/description/status/priority/dates/**organization** all edit IN PLACE and autosave via `updateProject` (no Edit/Save toggle, no separate edit page). Used on the workspace hero AND the Manage › General card (which is now directly editable). `UpdateProjectOptions` + service handle the new fields. (3) **Filter trap fixed:** `ProjectsHub` shows a visible, removable filter banner whenever `?org=`/`?scope=` is active (chip + X + "Show all projects" → `/projects`); `DangerZone` post-delete redirect now always goes to plain `/projects` (it used to send you to `/organizations/<slug>/projects`, which redirects to `/projects?org=` and silently trapped you in a filter).
+- `2026-06-07` — claude: **`ProjectTaskList` made fully inline-editable (Linear/Things style).** Every task field is now editable from the project-workspace table — not just the name on add. Title is click-to-edit (`InlineTitle`: Enter/blur saves, Escape cancels); Priority is an inline `Popover` picker (None/Low/Med/High colored pill, None→null); Due is an inline `Popover` + `Calendar` with a Clear option (overdue shown red). All edits go through one optimistic `patchField` → `updateTask` with revert + `toast.error`, and work on parent rows AND subtasks. Quick-add row now sets name + priority + due before adding and has an **Advanced** chevron revealing a Description textarea (`createTask` supports `description`). New trailing actions column with an "Open" affordance that navigates to `/tasks/[id]` (the full `TaskEditor` is Redux-coupled to `selectSelectedTaskId` and can't render standalone from a prop, so navigation is used rather than a half-wired drawer). Self-fetch / complete-toggle / nested subtasks / collapsible Done / `onCountsChange` all preserved.
+- `2026-06-06` — claude: **Project Manage › General redesigned + Organization made editable.** `GeneralSettings` is now a clean definition-row read view with inline edit (no nested header / double padding). Organization is a first-class **editable** field — an org picker over the user's orgs (incl. their personal org) that persists via `updateProject({ organizationId })` (added `organizationId` to `UpdateProjectOptions`; the service sets `organization_id`, never null). Slug + created stay read-only with reasons. Also widened the hub table's Organization column.
+- `2026-06-06` — claude: **`ctx_projects.is_personal` dropped → personal-ness is org-derived.** The DB column no longer exists; a project is "personal" iff its owning org's `organizations.is_personal` is true (every project now has a non-null org after backfill). Removed `is_personal` from all `ctx_projects` `.select(...)` / insert payloads across `features/agent-context/redux/projectsSlice.ts`, `features/agent-context/service/hierarchyService.ts` (+ `HierarchyProject` shape), `features/projects/service.ts` (`createProject` insert, `getPersonalProjects` filter now joins `organizations(is_personal)`, `transformProjectFromDb` reads org join), `features/projects/components/{ProjectsHub,ProjectWorkspace,ProjectFormSheet}.tsx`, `app/(core)/invitations/project/accept/[token]/page.tsx`, `features/tasks/services/projectService.ts`. `ProjectsHub`/`ProjectWorkspace` now compute the "Personal" badge from the org's `isPersonal` (no longer `!organizationId`). `NavProject.is_personal` / `NavOrganization.is_personal` (RPC-derived) and `organizations.is_personal` / `ctx_templates.is_personal` are unchanged.
+- `2026-06-06` — claude: **UX refinements.** (1) New `AssignedScopesDisplay` (read-only `Scope Type: Scope` + Organization line, resolving `ctx_scope_assignments → ctx_scopes → ctx_scope_types`) replaces the misused `EntityScopeTagger` on the project workspace — it now shows only *assigned* scopes by type, never the full available list. `EntityScopeTagger` remains the editor (Manage › Scopes). (2) Project workspace Tasks are now a table (Task/Priority/Due, subtasks indented). (3) Projects hub gained a Cards/Table dual view (sortable, searchable, full-width table) backed by one batched task-count query. **Note:** "Personal" badge keys off `is_personal` OR no org — a project can have both `organization_id` set AND `is_personal=true` (e.g. All Green Region Pages = Titanium + personal); the Scopes display correctly shows the real org regardless. Org-from-scope auto-assign is NOT implemented (the one project checked already had its org set).
+- `2026-06-06` — claude: **reimagined Projects + enhanced Tasks as containers.** New `useContainerInventory` primitive (org delegates). New canonical top-level **ProjectWorkspace** (`/projects/[id]` — hero, nested ProjectTaskList with subtasks + quick-add, role-grouped associated resources via `project_id`, scope tagging, ProjectReferencesPanel), **ProjectsHub** (`/projects` with `?org=`/`?scope=` filters + live task previews), and **ProjectManage** (`/projects/[id]/settings`, single-page sectioned — no tabs). Task editor gained an **Associated resources** section (FK by `task_id`). Legacy org-nested + transitional project routes now redirect; `createProjectThunk` migrated to the canonical `features/projects/service.ts`. **Pending:** a UI panel for `ctx_task_associations` (M2M linked items) — the redux engine exists; only the panel is unbuilt. Full `features/tasks/services/projectService.ts` dedup still pending (used by `useTaskManager`/`ImportTasksModal` for `getProjectsWithTasks`/`ensureDefaultProject`).
 - `2026-04-25` — Stopped using `features/projects/index.ts` and `features/tasks/redux/index.ts` as import entry points: call sites import from `service.ts` / `types.ts` / `hooks.ts` / `components/*` (projects) and from `taskUiSlice` / `selectors` / `thunks` / `taskAssociationsSlice` / `quickTasksWindowSlice` (tasks). Root `index.ts` files remain for re-exports only.
 - `2026-04-22` — claude: initial combined FEATURE.md for tasks + projects.
 

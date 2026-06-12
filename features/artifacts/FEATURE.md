@@ -117,6 +117,23 @@ Streamed as `content_block` NDJSON events (see [`features/agents/docs/STREAMING_
 
 ---
 
+## Materialization (render block → persistent artifact) — LIVE
+
+The conversion that makes an artifact durable + model-referenceable. Lives in `features/canvas/materialization/`.
+
+1. **Trigger** — at stream-end commit (`process-stream.ts`, per committed assistant turn) AND an owner-gated reconcile-on-load pass (`loadConversation` → `reconcileArtifacts.ts`) for historical / unfinished messages.
+2. **Persist** — each materializable block → a `canvas_items` row via `cx_canvas_upsert`, idempotent on the `(source_message_id, artifact_index)` natural key.
+3. **Rewrite** — the raw block in `cx_message.content` is replaced by a typed `CxArtifactRefContent` (`{type:"artifact_ref", artifact_id, artifact_type, version, artifact_index}`) and persisted via **`cx_message_set_content`** (SECURITY DEFINER, owner-checked, **status-preserving**, archives the raw original into `content_history`). NOT `cx_message_edit` (that marks status `'edited'`).
+4. **Render by id** — on reload the `artifact_ref` loads its `canvas_items` row (`useCanvasItem` → `ArtifactRefBlock`) and renders via `ArtifactBlock`. No raw re-parse → **no regeneration**.
+
+Pure planner: `planMaterialization.ts`. Orchestrator: `materializeMessageArtifacts.ts`. Type map (single source of truth): `materializable-types.ts`.
+
+**Invariants:**
+- **Idempotent + reversible.** The unique key prevents duplicate rows; `content_history` keeps the raw original. Reconcile-on-load retries anything the live commit didn't finish — nothing vanishes, nothing duplicates.
+- **Owner-only.** A viewer never mints `canvas_items` for someone else's conversation.
+- **Materialize against REAL message ids only** (never client-temp/optimistic ids).
+- A partial persistence failure **aborts the whole message rewrite** — never rewrite a block to a dangling ref; reconcile retries.
+
 ## The type registry pattern
 
 Adding a new artifact type:
@@ -174,6 +191,7 @@ Rules:
 
 ## Change log
 
+- `2026-06-10` — claude: **materialization pipeline LIVE + verified** — render blocks auto-persist to `canvas_items` (commit-path + owner-gated reconcile-on-load) and the message is rewritten to a typed `cx_artifact_ref` rendered by id (no regeneration). New `cx_message_set_content` RPC (status-preserving, archives raw); fixed `cx_message_status_check` to allow `'edited'` (was silently breaking every `cx_message_edit`). Wave 0 hardening: stored-XSS on public canvas (`SandboxedHtml`), html-pages GET IDOR, crypto share tokens, corrupt-save guard (`isPersistableCanvasType`), stream-commit never-drop.
 - `2026-05-19` — composer: new modern canvas shell (`CanvasSideSheetInner` + `CanvasPane` + `CanvasBody`). Vertical split via `react-resizable-panels` with persisted ratio. Floating `CanvasReopenChip` and global ⌘\ shortcut. Glass tap buttons throughout the header, matching the new chat input + sidebar language. Legacy `CanvasRenderer` / `CanvasHeader` retained for in-page surfaces.
 - `2026-04-22` — claude: initial combined FEATURE.md for artifacts + canvas.
 

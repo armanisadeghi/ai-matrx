@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, ShieldAlert } from "lucide-react";
+import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useOrganization, useUserRole } from "@/features/organizations/hooks";
@@ -52,10 +52,17 @@ export default function OrganizationScopesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Loading organization…</p>
+      <div className="p-4 md:p-6 space-y-4">
+        <div className="h-7 w-56 bg-muted animate-pulse rounded" />
+        <div className="h-4 w-80 bg-muted animate-pulse rounded" />
+        <div className="grid gap-3 md:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="p-4 space-y-2">
+              <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+              <div className="h-3 w-48 bg-muted animate-pulse rounded" />
+              <div className="h-3 w-40 bg-muted animate-pulse rounded" />
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -118,6 +125,7 @@ export default function OrganizationScopesPage() {
     <ScopeManagerPage
       organizationId={resolvedOrgId!}
       organizationName={organization.name}
+      isPersonal={organization.isPersonal}
     />
   );
 }

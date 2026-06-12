@@ -15,6 +15,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Edit3, MousePointer2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
 import { cn } from "@/lib/utils";
 import { AnnotatablePdfCanvas } from "@/features/file-analysis/components/AnnotatablePdfCanvas";
 import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
@@ -156,6 +157,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
           {file?.meta.fileName ?? "Document"}{" "}
           <span className="text-muted-foreground">— Analysis Studio</span>
         </h1>
+        <PdfSurfaceSwitcher current="analysis-studio" fileId={fileId} size="icon" />
         {annotationPages.length ? (
           <button
             type="button"
@@ -212,11 +214,11 @@ export function StudioShell({ fileId }: StudioShellProps) {
        * naturally wider than its allotment. `minmax(0, …)` clamps the
        * minimum so the fr-ratio is actually respected.
        */}
-      <div className="grid min-h-0 flex-1 grid-cols-[7rem_minmax(0,1fr)_minmax(0,1.4fr)] lg:grid-cols-[8rem_minmax(0,1fr)_minmax(0,1.4fr)] xl:grid-cols-[9rem_minmax(0,1fr)_minmax(0,1.5fr)]">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto md:grid md:overflow-visible md:grid-cols-[7rem_minmax(0,1fr)_minmax(0,1.4fr)] lg:grid-cols-[8rem_minmax(0,1fr)_minmax(0,1.4fr)] xl:grid-cols-[9rem_minmax(0,1fr)_minmax(0,1.5fr)]">
         {/* Left rail — thumbnails. Annotation counts surface as green
           * badges on each thumbnail so the user can scan + jump to pages
           * with pinned data. */}
-        <aside className="min-w-0 overflow-hidden border-r border-border bg-card/40">
+        <aside className="hidden min-w-0 overflow-hidden border-r border-border bg-card/40 md:block">
           <ThumbnailStrip
             fileId={fileId}
             activePageNumber={pageNumber}
@@ -226,7 +228,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
         </aside>
 
         {/* Center canvas */}
-        <main className="relative min-w-0 overflow-hidden border-r border-border">
+        <main className="relative h-[55dvh] shrink-0 min-w-0 overflow-hidden border-b border-border md:h-auto md:shrink md:border-b-0 md:border-r">
           <AnnotatablePdfCanvas
             fileId={fileId}
             pageNumber={pageNumber}
@@ -273,7 +275,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
          * most of their time. `overflow-hidden` belt-and-suspenders against
          * any internal content trying to push the cell wider than its
          * fr-allotment. */}
-        <aside className="min-w-0 overflow-hidden">
+        <aside className="min-h-[45dvh] min-w-0 md:min-h-0 md:overflow-hidden">
           <InspectorRail
             fileId={fileId}
             activeTab={activeTab}

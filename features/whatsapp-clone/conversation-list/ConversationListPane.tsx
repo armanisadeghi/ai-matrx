@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConversationListHeader } from "./ConversationListHeader";
 import { ConversationSearch } from "./ConversationSearch";
@@ -37,7 +38,8 @@ export function ConversationListPane({
       list = list.filter(
         (c) =>
           c.name.toLowerCase().includes(q) ||
-          (c.lastMessagePreview ?? "").toLowerCase().includes(q),
+          (c.lastMessagePreview ?? "").toLowerCase().includes(q) ||
+          idMatchesQuery(c, q),
       );
     }
     return list;

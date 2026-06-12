@@ -95,7 +95,7 @@ export function PreviewPane({
     // because reload or any soft navigation back here would re-open the
     // panel. Pop the user back to `/files` so the URL also resets.
     if (pathname?.startsWith("/files/f/")) {
-      router.push("/files");
+      router.push("/files/all");
     }
   }, [dispatch, onClose, pathname, router]);
 

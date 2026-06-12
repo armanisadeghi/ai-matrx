@@ -50,6 +50,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/use-toast";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import {
   fetchAgentAppErrors,
@@ -166,7 +167,8 @@ function ExecutionsTable() {
     return rows.filter(
       (r) =>
         r.app_name?.toLowerCase().includes(q) ||
-        r.app_slug?.toLowerCase().includes(q),
+        r.app_slug?.toLowerCase().includes(q) ||
+        idMatchesQuery(r, q),
     );
   }, [rows, appFilter]);
 
@@ -403,7 +405,8 @@ function ErrorsTable() {
       f = f.filter(
         (r) =>
           r.app_name?.toLowerCase().includes(q) ||
-          r.app_slug?.toLowerCase().includes(q),
+          r.app_slug?.toLowerCase().includes(q) ||
+          idMatchesQuery(r, q),
       );
     }
     return f;

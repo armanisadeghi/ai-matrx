@@ -109,7 +109,7 @@ export const defaultUserPreferences: UserPreferences = {
   // lib/redux/preferences/userPreferencesSlice.ts:535 — keep them in sync.
   sandbox: {
     template: "bare",
-    tier: "hosted",
+    tier: "ec2",
     ttl_seconds: null,
     default_git_repo: null,
     default_git_branch: null,

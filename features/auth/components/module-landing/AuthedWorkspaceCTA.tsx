@@ -43,7 +43,7 @@ export function AuthedWorkspaceCTA({
       className={cn(
         "sticky top-0 z-30 w-full",
         "bg-gradient-to-r from-primary/10 via-primary/5 to-transparent",
-        "border-b border-primary/20 backdrop-blur",
+        "backdrop-blur",
       )}
     >
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3">

@@ -30,7 +30,7 @@ interface AgentHeaderProps {
 export function AgentHeader({
   agentId,
   agentName,
-  backHref = "/agents",
+  backHref = "/agents/all",
   basePath = "/agents",
   currentPath,
 }: AgentHeaderProps) {

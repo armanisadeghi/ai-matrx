@@ -105,4 +105,46 @@ export function isOwnEcho(payload: {
 export function clearLedger(): void {
   for (const entry of ledger.values()) clearTimeout(entry._timer);
   ledger.clear();
+  resourceSeq.clear();
+}
+
+// ---------------------------------------------------------------------------
+// Per-resource operation sequencing (P1-1 double-submit, P1-2 out-of-order)
+// ---------------------------------------------------------------------------
+//
+// Each mutating thunk calls `beginResourceOp(resourceId)` at the start to get a
+// monotonically increasing sequence number for that resource, then — before
+// applying the authoritative server response — checks `isLatestResourceOp`.
+// If a newer op for the same resource has begun since, the older response is
+// stale and must NOT overwrite the newer optimistic state (rename A→B→C where
+// C resolves before B; or a double-click firing two writes). The newest op's
+// own optimistic update + response is the source of truth.
+
+const resourceSeq = new Map<string, number>();
+
+/** Begin an op on a resource; returns this op's sequence number. */
+export function beginResourceOp(resourceId: string): number {
+  const next = (resourceSeq.get(resourceId) ?? 0) + 1;
+  resourceSeq.set(resourceId, next);
+  return next;
+}
+
+/** True if `seq` is still the most recent op begun for `resourceId`. */
+export function isLatestResourceOp(resourceId: string, seq: number): boolean {
+  return (resourceSeq.get(resourceId) ?? 0) === seq;
+}
+
+/**
+ * True if a live ledger entry of `kind` already targets `resourceId` — used to
+ * suppress duplicate non-idempotent submits (e.g. a second "create share link"
+ * click that would mint a second token).
+ */
+export function hasInFlight(
+  resourceId: string,
+  kind: RequestKind,
+): boolean {
+  for (const e of ledger.values()) {
+    if (e.resourceId === resourceId && e.kind === kind) return true;
+  }
+  return false;
 }

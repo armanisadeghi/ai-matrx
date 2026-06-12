@@ -16,29 +16,24 @@ import React, { useCallback } from "react";
 import {
   ArrowUp,
   CornerDownLeft,
-  ChevronDown,
   RefreshCcw,
   Braces,
-  Bug,
   CircleStop,
+  AudioLines,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { SmartAgentResourcePickerButton } from "../resources/SmartAgentResourcePickerButton";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
-import { InputControlsMenu } from "./InputControlsMenu";
+import { RunControlsMenu } from "./RunControlsMenu";
 import {
   selectSubmitOnEnter,
   selectShowVariablePanel,
-  selectIsCreator,
-  selectShowCreatorDebug,
   selectShowAttachments,
   selectShowMicrophone,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   setSubmitOnEnter,
   setAutoClearConversation,
-  toggleCreatorDebug,
   toggleVariablePanel,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
@@ -47,9 +42,6 @@ import {
   selectAutoClearWithConversationHistory,
   selectShouldShowAutoClearToggle,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   smartExecute,
   cancelExecution,
@@ -77,7 +69,7 @@ export function InputButton({
       onClick={onClick}
       title={tooltip}
       className={`h-8 w-8 flex items-center justify-center rounded-full transition-colors
-        ${active ? "bg-muted/80 text-foreground" : "text-muted-foreground/70 hover:text-foreground hover:bg-muted/60"}
+        ${active ? "text-primary ring-1 ring-inset ring-primary/50 hover:bg-muted/40" : "text-muted-foreground/60 hover:text-foreground hover:bg-muted/60"}
         ${className}`}
     >
       <Icon className="w-4 h-4" />
@@ -104,8 +96,6 @@ interface InputActionButtonsProps {
 
 export function InputActionButtons({
   conversationId,
-  uploadBucket = "userContent",
-  uploadPath = "agent-attachments",
   showSendButton = true,
   showSubmitOnEnterToggle = true,
   showVariableIcon = true,
@@ -122,10 +112,6 @@ export function InputActionButtons({
   const showVariablePanel = useAppSelector(
     selectShowVariablePanel(conversationId),
   );
-  const isCreator = useAppSelector(selectIsCreator(conversationId));
-  const showCreatorDebug = useAppSelector(
-    selectShowCreatorDebug(conversationId),
-  );
   const shouldShowVariables = useAppSelector(
     selectShouldShowVariables(conversationId),
   );
@@ -137,8 +123,6 @@ export function InputActionButtons({
   );
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
   const showMicrophone = useAppSelector(selectShowMicrophone(conversationId));
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
-  const isDebugMode = useAppSelector(selectIsDebugMode);
 
   const isSendDisabled = disableSend;
 
@@ -158,51 +142,25 @@ export function InputActionButtons({
 
   return (
     <div className="flex items-center justify-between px-1 shrink-0">
-      {/* Left: resource picker / debug / variable toggle */}
+      {/* Left: consolidated run controls / debug / creator / variable toggle */}
       <div className="flex items-center gap-0.5">
-        {showAttachments && (
-          <SmartAgentResourcePickerButton
-            conversationId={conversationId}
-            uploadBucket={uploadBucket}
-            uploadPath={uploadPath}
-          />
-        )}
-
-        {/* Consolidated run controls — Model (per-conversation model override),
-            Tools (add tools to this run), Sandbox binding, and run Settings
-            (disable injection, Surface Simulator, …) in one tabbed popover. */}
-        <InputControlsMenu conversationId={conversationId} />
-
-        {isAdmin && isDebugMode && (
-          <InputButton
-            icon={Bug}
-            tooltip="Debug instance state"
-            onClick={() =>
-              dispatch(
-                openOverlay({
-                  overlayId: "chatDebugWindow",
-                  data: { sessionId: conversationId },
-                }),
-              )
-            }
-            className="text-orange-500"
-          />
-        )}
-
-        {isCreator && (
-          <InputButton
-            icon={ChevronDown}
-            tooltip={showCreatorDebug ? "Hide debug" : "Show debug"}
-            onClick={() => dispatch(toggleCreatorDebug(conversationId))}
-            active={showCreatorDebug}
-            className="text-amber-500"
-          />
-        )}
+        {/* Single shared popover — Attach, Model (per-conversation model
+            override), Tools (add tools to this run), Sandbox binding, and run
+            Settings (disable injection, Surface Simulator, …) — identical to
+            the `/chat/new` hero input's `+`. Attach is gated on the surface's
+            attachment capability. */}
+        <RunControlsMenu
+          conversationId={conversationId}
+          variant="plus"
+          includeAttach={showAttachments}
+        />
 
         {shouldShowVariables && showVariableIcon && (
           <InputButton
             icon={Braces}
-            tooltip={showVariablePanel ? "Hide variables" : "Show variables"}
+            tooltip={
+              showVariablePanel ? "Hide Form Inputs" : "Show Form Inputs"
+            }
             onClick={() => dispatch(toggleVariablePanel(conversationId))}
             active={showVariablePanel}
           />
@@ -254,7 +212,11 @@ export function InputActionButtons({
         )}
 
         {showMicrophone && (
-          <AgentMicrophoneButton conversationId={conversationId} size="md" />
+          <AgentMicrophoneButton
+            conversationId={conversationId}
+            size="md"
+            label="Record audio"
+          />
         )}
 
         {showSendButton && (
@@ -263,7 +225,7 @@ export function InputActionButtons({
             disabled={isSendDisabled}
             className={sendBtnClass}
             tabIndex={-1}
-            title={isExecuting ? "Stop" : "Send"}
+            title={isExecuting ? "Stop" : "Send Message"}
           >
             {isExecuting ? (
               <CircleStop className="w-4 h-4" />
@@ -271,6 +233,18 @@ export function InputActionButtons({
               <ArrowUp className="w-5 h-5" />
             )}
           </Button>
+        )}
+
+        {showSendButton && (
+          <button
+            type="button"
+            tabIndex={-1}
+            title="Live audio"
+            aria-label="Live audio"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <AudioLines className="h-4 w-4 text-muted-foreground" />
+          </button>
         )}
       </div>
     </div>

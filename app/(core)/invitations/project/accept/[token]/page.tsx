@@ -84,7 +84,7 @@ export default function AcceptProjectInvitationPage() {
 
       const { data: projectData, error: projectError } = await supabase
         .from('ctx_projects')
-        .select('*')
+        .select('*, organizations(is_personal)')
         .eq('id', invitationData.project_id)
         .single();
 
@@ -109,7 +109,9 @@ export default function AcceptProjectInvitationPage() {
           description: projectData.description,
           organizationId: projectData.organization_id,
           createdBy: projectData.created_by,
-          isPersonal: projectData.is_personal,
+          // Personal-ness is org-derived; ctx_projects no longer stores it.
+          isPersonal: projectData.organizations?.is_personal ?? false,
+          status: "active",
           settings: projectData.settings,
           createdAt: projectData.created_at,
           updatedAt: projectData.updated_at,

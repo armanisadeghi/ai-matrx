@@ -49,21 +49,23 @@ export function StageHero({ frame, className }: StageHeroProps) {
         className,
       )}
     >
-      {/* Stage-tinted gradient backdrop, smoothly transitions on stage change */}
-      <AnimatePresence mode="sync">
-        <motion.div
-          key={activeStage}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.6 }}
-          className={cn(
-            "pointer-events-none absolute inset-0 bg-gradient-to-br",
-            stageMeta.bgFrom,
-            stageMeta.bgTo,
-          )}
-        />
-      </AnimatePresence>
+      {/* Stage-tinted gradient backdrop, fades in on stage change. Rendered
+          as a plain keyed motion.div (NOT an AnimatePresence `mode="sync"`
+          swap): with React Compiler enabled the exiting child often never
+          completes, which would stack stale `absolute inset-0` stage tints on
+          top of each other. The `key` remount still plays the enter fade;
+          the old tint unmounts instantly. */}
+      <motion.div
+        key={activeStage}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+        className={cn(
+          "pointer-events-none absolute inset-0 bg-gradient-to-br",
+          stageMeta.bgFrom,
+          stageMeta.bgTo,
+        )}
+      />
 
       {/* Stage label + count, top-left over the animation */}
       <div className="absolute top-3 left-4 z-10 flex items-center gap-2 pointer-events-none">
@@ -98,21 +100,22 @@ export function StageHero({ frame, className }: StageHeroProps) {
 
       {/* The animation itself — fills the panel */}
       <div className="absolute inset-0 flex items-end justify-center pt-14 pb-3">
-        <AnimatePresence mode="sync">
-          <motion.div
-            key={activeStage}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full h-full flex items-center justify-center"
-          >
-            {activeStage === "extract" && <ExtractAnimation frame={frame} />}
-            {activeStage === "clean" && <CleanAnimation frame={frame} />}
-            {activeStage === "chunk" && <ChunkAnimation frame={frame} />}
-            {activeStage === "embed" && <EmbedAnimation frame={frame} />}
-          </motion.div>
-        </AnimatePresence>
+        {/* Per-stage hero animation. Plain keyed motion.div (NOT an
+            AnimatePresence `mode="sync"` swap) — same React-Compiler exit-stall
+            reason as the backdrop above; a stuck exit would leave the previous
+            stage's full-panel animation layered over the current one. */}
+        <motion.div
+          key={activeStage}
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full h-full flex items-center justify-center"
+        >
+          {activeStage === "extract" && <ExtractAnimation frame={frame} />}
+          {activeStage === "clean" && <CleanAnimation frame={frame} />}
+          {activeStage === "chunk" && <ChunkAnimation frame={frame} />}
+          {activeStage === "embed" && <EmbedAnimation frame={frame} />}
+        </motion.div>
       </div>
 
       {/* Heartbeat dot, bottom-right */}

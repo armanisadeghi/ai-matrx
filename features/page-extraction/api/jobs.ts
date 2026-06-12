@@ -108,29 +108,16 @@ export async function hardDeleteJob(jobId: string): Promise<void> {
 /**
  * Delete all extraction results for a template without touching the
  * template itself. Used by the "Clear data" affordance on the Results tab.
+ *
+ * Single transactional RPC (`page_extraction_clear_job_results`,
+ * migrations/page_extraction_clear_job_results_rpc.sql). The previous four
+ * sequential statements could fail mid-sequence — results deleted but runs
+ * intact, or `latest_run_id` left pointing at a deleted run (that final
+ * update's error was never even checked).
  */
 export async function clearJobResults(jobId: string): Promise<void> {
-  const { error: resultsErr } = await db
-    .from("page_extraction_results")
-    .delete()
-    .eq("job_id", jobId);
-  if (resultsErr) throw resultsErr;
-  // Page-runs + runs are deletable too — they only carry execution
-  // metadata + parsed_payload. Without them, the chunks tab shows the
-  // user's draft fresh again.
-  const { error: pageRunsErr } = await db
-    .from("page_extraction_page_runs")
-    .delete()
-    .eq("job_id", jobId);
-  if (pageRunsErr) throw pageRunsErr;
-  const { error: runsErr } = await db
-    .from("page_extraction_runs")
-    .delete()
-    .eq("job_id", jobId);
-  if (runsErr) throw runsErr;
-  // Clear latest_run_id since the run it pointed at no longer exists.
-  await db
-    .from(TABLE)
-    .update({ latest_run_id: null })
-    .eq("id", jobId);
+  const { error } = await db.rpc("page_extraction_clear_job_results", {
+    p_job_id: jobId,
+  });
+  if (error) throw error;
 }

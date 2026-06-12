@@ -7,6 +7,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { buildSearchOr } from "@/utils/supabase-search";
 import type {
   RunStatus,
   SchAgentTaskRow,
@@ -55,7 +56,7 @@ export async function fetchAllTasksAdmin(
     .limit(options.limit ?? 100);
 
   if (options.search) {
-    q = q.ilike("title", `%${options.search}%`);
+    q = q.or(buildSearchOr(options.search, ["title"]));
   }
   if (options.enabled === true || options.enabled === false) {
     q = q.eq("enabled", options.enabled);

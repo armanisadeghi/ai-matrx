@@ -12,7 +12,8 @@
  *     chunk so the UI shows text as the user speaks.
  *   - All audio chunks + text are persisted to IndexedDB via audioSafetyStore.
  *   - Failed chunks are tracked; on stop, if any failed, the full audio blob is
- *     uploaded to Supabase Storage and transcribed via the URL-based fallback.
+ *     uploaded to cld_files via the universal file handler and transcribed via
+ *     the URL-based fallback (Groq fetches the cld_files signed URL).
  *   - On clean completion, the IndexedDB entry is marked 'complete'.
  *   - On crash, the AudioRecoveryProvider detects orphaned entries on next load.
  */
@@ -28,6 +29,7 @@ import {
   uploadAndTranscribeFull,
   logClientError,
 } from "../services/audioFallbackUpload";
+import { acquireMicStream, releaseMicStream } from "../micStream";
 
 /**
  * Per-chunk timing + content payload. Fires once per chunk after a successful
@@ -89,6 +91,9 @@ export function useChunkedRecordAndTranscribe({
   const [failedChunkCount, setFailedChunkCount] = useState(0);
 
   const streamRef = useRef<MediaStream | null>(null);
+  // Whether we hold a ref on the shared mic stream — keeps acquire/release
+  // balanced exactly once across the cleanup / stop / pagehide paths.
+  const micHeldRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const accumulatedRef = useRef("");
   const pendingRef = useRef(0);
@@ -164,9 +169,10 @@ export function useChunkedRecordAndTranscribe({
       audioCtxRef.current = null;
     }
     analyserRef.current = null;
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
+    streamRef.current = null;
+    if (micHeldRef.current) {
+      releaseMicStream();
+      micHeldRef.current = false;
     }
     if (mediaRecorderRef.current?.state !== "inactive") {
       mediaRecorderRef.current?.stop();
@@ -216,10 +222,12 @@ export function useChunkedRecordAndTranscribe({
         rafRef.current = null;
       }
 
-      // Release the microphone immediately.
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
+      // Release the microphone (shared manager keeps the grant warm so a
+      // bfcache restore won't re-prompt; a real unload tears everything down).
+      streamRef.current = null;
+      if (micHeldRef.current) {
+        releaseMicStream();
+        micHeldRef.current = false;
       }
 
       // Stopping the recorder flushes its internal buffer → onstop fires →
@@ -418,10 +426,26 @@ export function useChunkedRecordAndTranscribe({
         if (opts?.language) form.append("language", opts.language);
         if (opts?.prompt) form.append("prompt", opts.prompt);
 
-        const res = await fetch(AUDIO_API_ROUTES.TRANSCRIBE, {
-          method: "POST",
-          body: form,
-        });
+        // Bound the request: on bad networks a chunk fetch can hang
+        // indefinitely, leaving `pendingRef` > 0 forever so `maybeFireFinal`
+        // never fires and the recording is never finalized (card stuck
+        // "Saving…"). An abort surfaces as a normal failed chunk — its audio is
+        // already in IndexedDB and the stop-time fallback re-transcribes it.
+        const ctrl = new AbortController();
+        const timeoutId = setTimeout(
+          () => ctrl.abort(),
+          AUDIO_LIMITS.CHUNK_FETCH_TIMEOUT_MS,
+        );
+        let res: Response;
+        try {
+          res = await fetch(AUDIO_API_ROUTES.TRANSCRIBE, {
+            method: "POST",
+            body: form,
+            signal: ctrl.signal,
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
         const data = await res.json();
 
         if (!res.ok) {
@@ -622,15 +646,16 @@ export function useChunkedRecordAndTranscribe({
       setLiveTranscript("");
       setFailedChunkCount(0);
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 16_000,
-          channelCount: 1,
-        },
+      // Shared mic manager: reuses a warm grant so mobile doesn't re-prompt
+      // on every recording. Released (not hard-stopped) on teardown.
+      const stream = await acquireMicStream({
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: 16_000,
+        channelCount: 1,
       });
+      micHeldRef.current = true;
       streamRef.current = stream;
 
       audioCtxRef.current = new AudioContext();
@@ -709,9 +734,10 @@ export function useChunkedRecordAndTranscribe({
       audioCtxRef.current = null;
     }
     analyserRef.current = null;
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
+    streamRef.current = null;
+    if (micHeldRef.current) {
+      releaseMicStream();
+      micHeldRef.current = false;
     }
 
     setIsRecording(false);

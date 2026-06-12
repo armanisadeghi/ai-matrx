@@ -4,11 +4,15 @@ import React from "react";
 import { useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { getOrganizationBySlugOrId } from "@/features/organizations/service";
+import {
+  getOrganizationBySlugOrId,
+  getUserRole,
+} from "@/features/organizations/service";
+import { canManageSettings } from "@/features/organizations/types";
+import type { Organization } from "@/features/organizations/types";
 import { ScopeDetailEditor } from "@/features/scope-system/components/ScopeDetailEditor";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { fetchScopeTypes } from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import { fetchScopes } from "@/features/agent-context/redux/scope/scopesSlice";
 
 export default function ScopeDetailPage() {
   const params = useParams();
@@ -17,21 +21,23 @@ export default function ScopeDetailPage() {
   const scopeId = params.scopeId as string;
   const dispatch = useAppDispatch();
 
-  const [orgId, setOrgId] = React.useState<string | null>(null);
+  const [org, setOrg] = React.useState<Organization | null>(null);
+  const [canManage, setCanManage] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     async function resolve() {
       try {
-        const org = await getOrganizationBySlugOrId(orgSlugOrId);
-        if (!org) {
+        const resolved = await getOrganizationBySlugOrId(orgSlugOrId);
+        if (!resolved) {
           setError("Organization not found");
           return;
         }
-        setOrgId(org.id);
-        dispatch(fetchScopeTypes(org.id));
-        dispatch(fetchScopes({ org_id: org.id, type_id: typeId }));
+        setOrg(resolved);
+        dispatch(fetchScopeTypes(resolved.id));
+        const role = await getUserRole(resolved.id);
+        setCanManage(role ? canManageSettings(role) : false);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load");
       } finally {
@@ -39,9 +45,9 @@ export default function ScopeDetailPage() {
       }
     }
     resolve();
-  }, [orgSlugOrId, typeId, dispatch]);
+  }, [orgSlugOrId, dispatch]);
 
-  if (loading || !orgId) {
+  if (loading || !org) {
     return (
       <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center bg-textured">
         {error ? (
@@ -58,7 +64,15 @@ export default function ScopeDetailPage() {
   return (
     <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
       <div className="max-w-4xl mx-auto p-6 md:p-8">
-        <ScopeDetailEditor orgSlugOrId={orgSlugOrId} scopeId={scopeId} />
+        <ScopeDetailEditor
+          orgId={org.id}
+          orgSlugOrId={orgSlugOrId}
+          orgName={org.name}
+          orgIsPersonal={org.isPersonal}
+          typeParam={typeId}
+          scopeParam={scopeId}
+          canManage={canManage}
+        />
       </div>
     </div>
   );

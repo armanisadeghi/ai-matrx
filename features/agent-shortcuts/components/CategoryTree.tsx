@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -100,7 +101,8 @@ export function CategoryTree({
       out = out.filter(
         (c) =>
           c.label.toLowerCase().includes(q) ||
-          (c.description?.toLowerCase() ?? "").includes(q),
+          (c.description?.toLowerCase() ?? "").includes(q) ||
+          idMatchesQuery(c, q),
       );
     }
     return out;

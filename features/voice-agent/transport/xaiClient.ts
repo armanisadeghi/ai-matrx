@@ -40,7 +40,10 @@ export interface XaiClientError {
 }
 
 export interface XaiClient {
-  connect: (token: string, sessionConfig: SessionUpdatePayload) => Promise<void>;
+  connect: (
+    token: string,
+    sessionConfig: SessionUpdatePayload,
+  ) => Promise<void>;
   sendInputAudio: (frame: ArrayBuffer) => void;
   cancelResponse: () => void;
   /** Send a pre-built JSON payload (escape hatch for function-call output, etc.). */
@@ -49,7 +52,9 @@ export interface XaiClient {
   disconnect: () => void;
   onEvent: (cb: (event: XaiServerEvent) => void) => () => void;
   onError: (cb: (err: XaiClientError) => void) => () => void;
-  onClose: (cb: (info: { intentional: boolean }) => void) => () => void;
+  onClose: (
+    cb: (info: { intentional: boolean; code: number | null }) => void,
+  ) => () => void;
   /** Returns true after the session.updated handshake completes. */
   isStreamingReady: () => boolean;
   isOpen: () => boolean;
@@ -62,7 +67,9 @@ export function createXaiClient(): XaiClient {
 
   const eventCallbacks = new Set<(e: XaiServerEvent) => void>();
   const errorCallbacks = new Set<(e: XaiClientError) => void>();
-  const closeCallbacks = new Set<(info: { intentional: boolean }) => void>();
+  const closeCallbacks = new Set<
+    (info: { intentional: boolean; code: number | null }) => void
+  >();
 
   function emitEvent(e: XaiServerEvent): void {
     for (const cb of eventCallbacks) {
@@ -82,7 +89,10 @@ export function createXaiClient(): XaiClient {
       }
     }
   }
-  function emitClose(info: { intentional: boolean }): void {
+  function emitClose(info: {
+    intentional: boolean;
+    code: number | null;
+  }): void {
     for (const cb of closeCallbacks) {
       try {
         cb(info);
@@ -96,7 +106,11 @@ export function createXaiClient(): XaiClient {
     token: string,
     sessionConfig: SessionUpdatePayload,
   ): Promise<void> {
-    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    if (
+      ws &&
+      (ws.readyState === WebSocket.OPEN ||
+        ws.readyState === WebSocket.CONNECTING)
+    ) {
       return Promise.resolve();
     }
     intentionalClose = false;
@@ -108,12 +122,16 @@ export function createXaiClient(): XaiClient {
 
       let socket: WebSocket;
       try {
-        socket = new WebSocket(XAI_REALTIME_URL, [`xai-client-secret.${token}`]);
+        socket = new WebSocket(XAI_REALTIME_URL, [
+          `xai-client-secret.${token}`,
+        ]);
       } catch (err) {
         const e: XaiClientError = {
           code: "connect-failed",
           message:
-            err instanceof Error ? err.message : "Failed to construct WebSocket",
+            err instanceof Error
+              ? err.message
+              : "Failed to construct WebSocket",
           cause: err,
         };
         emitError(e);
@@ -172,7 +190,10 @@ export function createXaiClient(): XaiClient {
             code: "server-error",
             message: `[${event.code}] ${event.message}`,
           });
-        } else if (event.type === "unknown" && process.env.NODE_ENV !== "production") {
+        } else if (
+          event.type === "unknown" &&
+          process.env.NODE_ENV !== "production"
+        ) {
           console.warn("[xaiClient] Unknown server event:", event.raw);
         }
         emitEvent(event);
@@ -203,11 +224,12 @@ export function createXaiClient(): XaiClient {
           if (event.code === 4001 || event.code === 4003) {
             emitError({
               code: "auth-failed",
-              message: "xAI rejected the client_secret. Refreshing token may help.",
+              message:
+                "xAI rejected the client_secret. Refreshing token may help.",
             });
           }
         }
-        emitClose({ intentional: intentionalClose });
+        emitClose({ intentional: intentionalClose, code: event.code });
         if (!resolved) {
           resolved = true;
           reject({
@@ -267,7 +289,9 @@ export function createXaiClient(): XaiClient {
     errorCallbacks.add(cb);
     return () => errorCallbacks.delete(cb);
   }
-  function onClose(cb: (info: { intentional: boolean }) => void): () => void {
+  function onClose(
+    cb: (info: { intentional: boolean; code: number | null }) => void,
+  ): () => void {
     closeCallbacks.add(cb);
     return () => closeCallbacks.delete(cb);
   }

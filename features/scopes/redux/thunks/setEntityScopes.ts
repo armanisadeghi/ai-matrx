@@ -29,6 +29,8 @@ export interface SetEntityScopesArgs {
 export interface SetEntityScopesResult {
   ok: boolean;
   scope_ids: string[];
+  /** Set when an org-less project/task adopted the org of its first scope. */
+  adoptedOrganizationId?: string | null;
   error?: string;
 }
 
@@ -67,6 +69,34 @@ export function setEntityScopes(
       );
     }
 
-    return { ok: true, scope_ids: res.data.scope_ids };
+    // An org-less container adopts the org of its first assigned scope.
+    // Skipped when the caller already knows the entity has an org; when the
+    // org is unknown the service's `organization_id IS NULL` guard makes this
+    // a no-op for already-org-bound entities (user rule: never overwrite).
+    let adoptedOrganizationId: string | null = null;
+    if (
+      (args.entityType === "project" || args.entityType === "task") &&
+      !args.organizationId &&
+      res.data.scope_ids.length > 0
+    ) {
+      const adopt = await scopesService.adoptEntityOrgFromScopes(
+        args.entityType,
+        args.entityId,
+        res.data.scope_ids,
+      );
+      if (isScopesRpcErr(adopt)) {
+        // Loud, not fatal: the tags landed; only the org adoption failed.
+        // The entity stays org-less and will retry on its next tag write.
+        console.error("[scopes] adoptEntityOrgFromScopes failed", {
+          entityType: args.entityType,
+          entityId: args.entityId,
+          error: adopt.error,
+        });
+      } else {
+        adoptedOrganizationId = adopt.data.organization_id;
+      }
+    }
+
+    return { ok: true, scope_ids: res.data.scope_ids, adoptedOrganizationId };
   };
 }

@@ -42,7 +42,14 @@ import {
   dbRowToCloudShareLink,
   parseCloudTreeRows,
 } from "./converters";
-import { registerRequest, releaseRequest } from "./request-ledger";
+import {
+  registerRequest,
+  releaseRequest,
+  beginResourceOp,
+  isLatestResourceOp,
+  hasInFlight,
+} from "./request-ledger";
+import { toast } from "sonner";
 import { buildTreeState } from "./tree-utils";
 import { isSystemPath } from "@/features/files/utils/folder-conventions";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
@@ -934,8 +941,13 @@ export const uploadFiles = createAsyncThunk<
               current_version: data.version_number,
               parent_folder_id: arg.parentFolderId ?? null,
               metadata: arg.metadata ?? {},
-              created_at: null,
-              updated_at: null,
+              // P1-7: stamp the optimistic row with the current time instead of
+              // null. The upload just happened, so "now" is accurate for the
+              // recents filter / "sort by modified" until the realtime echo
+              // delivers the authoritative server timestamp. Null sorted the
+              // freshly-uploaded file to the wrong end of the list.
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
               deleted_at: null,
             }),
           ),
@@ -1004,6 +1016,9 @@ export const renameFile = createAsyncThunk<void, RenameFileArg, ThunkApi>(
     if (!record) throw new Error(`File not found: ${fileId}`);
 
     const requestId = newRequestId();
+    // Per-resource op sequence — guards against an older response clobbering a
+    // newer optimistic state (rename A→B→C out of order, or a double-click).
+    const seq = beginResourceOp(fileId);
     const snapshot: CloudFileFieldSnapshot = {
       fileName: record.fileName,
       filePath: record.filePath,
@@ -1033,12 +1048,19 @@ export const renameFile = createAsyncThunk<void, RenameFileArg, ThunkApi>(
         { new_path: newPath },
         { requestId },
       );
-      dispatch(upsertFile(apiFileRecordToCloudFile(data)));
-      dispatch(markFileSaved({ id: fileId }));
+      // Only apply if no newer op for this file has begun since (out-of-order
+      // guard); otherwise the newer op owns the state.
+      if (isLatestResourceOp(fileId, seq)) {
+        dispatch(upsertFile(apiFileRecordToCloudFile(data)));
+        dispatch(markFileSaved({ id: fileId }));
+      }
     } catch (err) {
-      dispatch(rollbackFileOptimisticUpdate({ id: fileId, snapshot }));
-      const msg = extractErrorMessage(err);
-      dispatch(setFileError({ id: fileId, error: msg }));
+      // Don't roll back if a newer op has superseded this one.
+      if (isLatestResourceOp(fileId, seq)) {
+        dispatch(rollbackFileOptimisticUpdate({ id: fileId, snapshot }));
+        const msg = extractErrorMessage(err);
+        dispatch(setFileError({ id: fileId, error: msg }));
+      }
       throw err;
     } finally {
       dispatch(removeFilePendingRequest({ id: fileId, requestId }));
@@ -1054,6 +1076,7 @@ export const moveFile = createAsyncThunk<void, MoveFileArg, ThunkApi>(
     if (!record) throw new Error(`File not found: ${fileId}`);
     const oldParentId = record.parentFolderId;
     const requestId = newRequestId();
+    const seq = beginResourceOp(fileId);
     const snapshot: CloudFileFieldSnapshot = {
       parentFolderId: oldParentId,
     };
@@ -1104,27 +1127,31 @@ export const moveFile = createAsyncThunk<void, MoveFileArg, ThunkApi>(
         { new_path: newPath },
         { requestId },
       );
-      dispatch(upsertFile(apiFileRecordToCloudFile(data)));
-      dispatch(markFileSaved({ id: fileId }));
+      if (isLatestResourceOp(fileId, seq)) {
+        dispatch(upsertFile(apiFileRecordToCloudFile(data)));
+        dispatch(markFileSaved({ id: fileId }));
+      }
     } catch (err) {
-      // Rollback tree membership + field.
-      dispatch(
-        detachChildFromFolder({
-          parentFolderId: newParentFolderId,
-          kind: "file",
-          id: fileId,
-        }),
-      );
-      dispatch(
-        attachChildToFolder({
-          parentFolderId: oldParentId,
-          kind: "file",
-          id: fileId,
-        }),
-      );
-      dispatch(rollbackFileOptimisticUpdate({ id: fileId, snapshot }));
-      const msg = extractErrorMessage(err);
-      dispatch(setFileError({ id: fileId, error: msg }));
+      if (isLatestResourceOp(fileId, seq)) {
+        // Rollback tree membership + field.
+        dispatch(
+          detachChildFromFolder({
+            parentFolderId: newParentFolderId,
+            kind: "file",
+            id: fileId,
+          }),
+        );
+        dispatch(
+          attachChildToFolder({
+            parentFolderId: oldParentId,
+            kind: "file",
+            id: fileId,
+          }),
+        );
+        dispatch(rollbackFileOptimisticUpdate({ id: fileId, snapshot }));
+        const msg = extractErrorMessage(err);
+        dispatch(setFileError({ id: fileId, error: msg }));
+      }
       throw err;
     } finally {
       dispatch(removeFilePendingRequest({ id: fileId, requestId }));
@@ -1144,6 +1171,7 @@ export const updateFileMetadata = createAsyncThunk<
     if (!record) throw new Error(`File not found: ${fileId}`);
 
     const requestId = newRequestId();
+    const seq = beginResourceOp(fileId);
     const snapshot: CloudFileFieldSnapshot = {
       visibility: record.visibility,
       metadata: record.metadata,
@@ -1184,12 +1212,16 @@ export const updateFileMetadata = createAsyncThunk<
         },
         { requestId },
       );
-      dispatch(upsertFile(apiFileRecordToCloudFile(data)));
-      dispatch(markFileSaved({ id: fileId }));
+      if (isLatestResourceOp(fileId, seq)) {
+        dispatch(upsertFile(apiFileRecordToCloudFile(data)));
+        dispatch(markFileSaved({ id: fileId }));
+      }
     } catch (err) {
-      dispatch(rollbackFileOptimisticUpdate({ id: fileId, snapshot }));
-      const msg = extractErrorMessage(err);
-      dispatch(setFileError({ id: fileId, error: msg }));
+      if (isLatestResourceOp(fileId, seq)) {
+        dispatch(rollbackFileOptimisticUpdate({ id: fileId, snapshot }));
+        const msg = extractErrorMessage(err);
+        dispatch(setFileError({ id: fileId, error: msg }));
+      }
       throw err;
     } finally {
       dispatch(removeFilePendingRequest({ id: fileId, requestId }));
@@ -1327,8 +1359,10 @@ export const grantPermission = createAsyncThunk<
         permissions: [dbRowToCloudFilePermission(data)],
       }),
     );
-    // Full refresh to keep the list authoritative.
-    await dispatch(loadPermissions({ resourceId: arg.resourceId })).unwrap();
+    // P1-6: the returned row already makes the UI correct. Reconcile the full
+    // list in the BACKGROUND (don't await) so the dialog doesn't stall on a
+    // second round-trip after every grant.
+    void dispatch(loadPermissions({ resourceId: arg.resourceId }));
   } finally {
     releaseRequest(requestId);
   }
@@ -1388,6 +1422,11 @@ export const createShareLink = createAsyncThunk<
 >("cloudFiles/createShareLink", async (arg, { dispatch }) => {
   if (isVirtualResourceId(arg.resourceId)) {
     throw new Error("Share links aren't available for this source yet.");
+  }
+  // P1-1: a second click while the first create is in flight would mint a
+  // second token for the same resource. Suppress the duplicate submit.
+  if (hasInFlight(arg.resourceId, "create-share-link")) {
+    throw new Error("A share link is already being created for this item.");
   }
   const requestId = newRequestId();
   registerRequest({
@@ -1487,6 +1526,24 @@ export const getSignedUrl = createAsyncThunk<
  * Successful ids are removed from the local store immediately for
  * snappy UI; failed ids are restored from the pre-change snapshot.
  */
+/**
+ * P1-5: bulk ops resolve successfully even when some items fail (per-item
+ * results in the envelope), so the rejected-thunk toast middleware never sees
+ * them. Surface partial failures here so the user isn't left thinking every
+ * item succeeded. Full success stays silent (the rows visibly changed).
+ */
+function toastBulkPartialFailure(result: BulkResponse, verb: string): void {
+  if (result.failed > 0) {
+    const total = result.succeeded + result.failed;
+    toast.error(`Couldn't ${verb} ${result.failed} of ${total} items`, {
+      description:
+        result.succeeded > 0
+          ? `${result.succeeded} succeeded. The rest were restored.`
+          : "All items were restored.",
+    });
+  }
+}
+
 export const bulkDeleteFiles = createAsyncThunk<
   BulkResponse,
   BulkDeleteFilesArg,
@@ -1537,6 +1594,7 @@ export const bulkDeleteFiles = createAsyncThunk<
       const snap = snapshots.get(r.id);
       if (snap) dispatch(upsertFile(snap));
     }
+    toastBulkPartialFailure(result, "delete");
     return result;
   } catch (err) {
     // Whole-call failure — restore everything we removed.
@@ -1625,6 +1683,7 @@ export const bulkMoveFiles = createAsyncThunk<
       );
       dispatch(upsertFile(snap));
     }
+    toastBulkPartialFailure(data, "move");
     return data;
   } catch (err) {
     // Whole-call failure — restore everything.
@@ -1727,6 +1786,7 @@ export const bulkMoveFolders = createAsyncThunk<
       );
       dispatch(upsertFolder(snap));
     }
+    toastBulkPartialFailure(data, "move");
     return data;
   } catch (err) {
     for (const snap of snapshots.values()) {

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Rocket } from "lucide-react";
 import { AgentGenerator } from "@/features/agents/agent-creators/interactive-builder/AgentGenerator";
 
-export const metadata = { title: "Generate Agent with AI | AI Matrx" };
 
 export default function GenerateAgentPage() {
   return (

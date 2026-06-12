@@ -61,7 +61,7 @@ export default function NewAgentPage() {
     <Card className="h-full w-full bg-textured border-none shadow-lg">
       <div className="p-4 sm:p-6 md:p-8 lg:p-12">
         <div className="flex items-start gap-2.5 sm:gap-3 md:gap-4 mb-6 sm:mb-8">
-          <Link href="/agents">
+          <Link href="/agents/all">
             <Button
               variant="ghost"
               size="icon"

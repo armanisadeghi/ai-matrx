@@ -9,7 +9,8 @@ export const PLACEMENT_TYPES = {
   USER_TOOL: "user-tool",
 } as const;
 
-export type PlacementType = (typeof PLACEMENT_TYPES)[keyof typeof PLACEMENT_TYPES];
+export type PlacementType =
+  (typeof PLACEMENT_TYPES)[keyof typeof PLACEMENT_TYPES];
 
 export const PLACEMENT_TYPE_META = {
   [PLACEMENT_TYPES.AI_ACTION]: {
@@ -28,7 +29,7 @@ export const PLACEMENT_TYPE_META = {
     icon: "LayoutGrid",
   },
   [PLACEMENT_TYPES.QUICK_ACTION]: {
-    label: "Quick Action",
+    label: "Quick Actions",
     description: "Trigger specific functionality quickly",
     icon: "Zap",
   },
@@ -38,17 +39,17 @@ export const PLACEMENT_TYPE_META = {
     icon: "Square",
   },
   [PLACEMENT_TYPES.CONTENT_BLOCK]: {
-    label: "Content Block",
+    label: "Content Blocks",
     description: "Content blocks for insertion in editors",
     icon: "FileText",
   },
   [PLACEMENT_TYPES.ORGANIZATION_TOOL]: {
-    label: "Organization Tool",
+    label: "Organization Tools",
     description: "Organization tools",
     icon: "Building",
   },
   [PLACEMENT_TYPES.USER_TOOL]: {
-    label: "User Tool",
+    label: "User Tools",
     description: "User tools",
     icon: "User",
   },
@@ -196,7 +197,8 @@ export const SCOPE_LEVEL_META: Record<
   },
   [SCOPE_LEVELS.LANGUAGE]: {
     label: "Language",
-    description: "Language / mode of the active file (e.g. typescript, python).",
+    description:
+      "Language / mode of the active file (e.g. typescript, python).",
   },
 };
 

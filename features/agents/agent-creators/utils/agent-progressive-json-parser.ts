@@ -198,6 +198,21 @@ export function parsePartialAgentJson(text: string): PartialAgentData {
 
 // ── Normalizer — maps the complete object onto the typed shape ──────────
 
+/**
+ * Normalize an ALREADY-PARSED agent object onto the typed `PartialAgentData`
+ * shape. Use this when you hold a real object (e.g. the streaming JSON
+ * tracker's extracted value) — never re-stringify it back into a fenced
+ * block and re-parse, because a `messages[].content` string that itself
+ * contains a ``` fence (an embedded output-schema example) will make the
+ * fence scanner close the block early and truncate everything after the
+ * first message. Going object → object skips all fence detection.
+ */
+export function normalizeAgentObject(
+  raw: Record<string, unknown>,
+): PartialAgentData {
+  return normalizeAgentJson(raw, true);
+}
+
 function normalizeAgentJson(
   raw: Record<string, unknown>,
   isComplete: boolean,

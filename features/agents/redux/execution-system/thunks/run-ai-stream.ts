@@ -46,6 +46,7 @@ export type StreamDispatch = (action: unknown) => unknown;
 
 import { processStream } from "./process-stream";
 import type { JsonExtractionConfig } from "./process-stream";
+import { logApiTarget } from "@/lib/api/log-api-target";
 import {
   registerAbortController,
   unregisterAbortController,
@@ -70,6 +71,21 @@ export class StreamCancelledError extends Error {
   override name = "StreamCancelledError" as const;
   constructor() {
     super("Cancelled");
+  }
+}
+
+/**
+ * Thrown on a 409 `resume_conflict` from `/resume` (resume only). The server's
+ * atomic run claim says another run is still live for this user_request —
+ * usually the suspending run hasn't persisted `status='paused'` yet (a fast
+ * tool's result POST can beat that write). Retryable with backoff; the caller
+ * (`resumeInstance`) owns the bounded retry. NO error statuses are dispatched
+ * for this — a 409 on resume must never surface as a user-facing stream error.
+ */
+export class ResumeConflictError extends Error {
+  override name = "ResumeConflictError" as const;
+  constructor(message: string) {
+    super(message);
   }
 }
 
@@ -126,6 +142,13 @@ export interface RunAiStreamArgs {
    * `false` (it never read the input box).
    */
   clearInputOnError?: boolean;
+  /**
+   * Invoked once the HTTP response has opened OK (status 2xx, conversation-id
+   * asserted) — i.e. a stream genuinely started. `resumeInstance` uses it to
+   * clear its single-flight resume claim so the resumed loop's NEXT suspend
+   * can claim fresh (see resume-claims.ts).
+   */
+  onStreamOpen?: () => void;
   /** Only set by manual-execution path; mirrors `processStream`'s contract. */
   userMessageClientTempId?: string;
   /** Default 30_000 (≈ 3 missed heartbeats). */
@@ -163,9 +186,7 @@ export async function runAiStream(
   // Ground truth for the Creator Hub Routing tab. Derived from the resolved
   // request inputs so turns and resumes produce identical telemetry.
   {
-    const routedClient = body.client as
-      | { capabilities?: string[] }
-      | undefined;
+    const routedClient = body.client as { capabilities?: string[] } | undefined;
     const routedTools = (body.tools ?? body.tools_replace ?? []) as Array<{
       name?: string;
     }>;
@@ -191,6 +212,20 @@ export async function runAiStream(
   const abortController = new AbortController();
   registerAbortController(conversationId, abortController);
 
+  // Final resolved target for this AI stream — the URL was fully resolved by
+  // resolveBackendForConversation (incl. the EC2/sandbox override channel) and
+  // cannot change past this point. `channel` surfaces sandbox/override routing.
+  logApiTarget(url, {
+    source: "runAiStream",
+    method: "POST",
+    channel,
+    activeServer: selectActiveServer(getState()),
+    conversationId,
+    requestId,
+    kind,
+    sandboxAttached: body.sandbox != null,
+  });
+
   try {
     const response = await fetch(url, {
       method: "POST",
@@ -201,10 +236,38 @@ export async function runAiStream(
 
     if (!response.ok) {
       let serverMessage = `${response.status} ${response.statusText}`;
+      // Structured error code on /resume 409s and 404s — the server's atomic
+      // run claim (2026-06-09) emits {code, message, status, retryable, …}.
+      // TWO wire shapes exist: aidream's global exception envelope rewrites
+      // HTTPException detail to a TOP-LEVEL {error, message, details}
+      // (api/errors.py — this is what production sends), while a raw FastAPI
+      // deployment nests everything under {detail: {...}}. The specific code
+      // (resume_conflict / not_resumable / outstanding_delegated_calls)
+      // rides in envelope `error`, in `detail.code`, and as a message prefix
+      // — read all three so neither shape regresses silently.
+      let errorCode: string | null = null;
       try {
         const errBody = await response.json();
-        serverMessage =
-          errBody?.detail?.message ?? errBody?.detail ?? serverMessage;
+        const detail: unknown = errBody?.detail;
+        if (detail && typeof detail === "object") {
+          const d = detail as { code?: unknown; message?: unknown };
+          if (typeof d.code === "string") errorCode = d.code;
+          serverMessage =
+            typeof d.message === "string" ? d.message : JSON.stringify(detail);
+        } else if (typeof detail === "string") {
+          serverMessage = detail;
+        } else if (errBody && typeof errBody === "object") {
+          if (typeof errBody.message === "string") serverMessage = errBody.message;
+          if (typeof errBody.error === "string") errorCode = errBody.error;
+        }
+        // Message-prefix fallback ("resume_conflict: …") — covers an envelope
+        // that passes message but maps `error` to a generic status word.
+        if (!errorCode || errorCode === "conflict" || errorCode === "not_found") {
+          const m = /^(resume_conflict|not_resumable|outstanding_delegated_calls|user_request_not_found):/.exec(
+            serverMessage,
+          );
+          if (m) errorCode = m[1];
+        }
       } catch {
         /* non-JSON error body */
       }
@@ -212,12 +275,33 @@ export async function runAiStream(
       const code = response.status;
       if (code === 409) {
         if (kind === "resume") {
-          // Benign: ≥1 cx_tool_call rows are still in status='delegated' for
-          // this user_request — the user hasn't answered everything. The
-          // server returns 409 `outstanding_delegated_calls`. Keep the UI in
-          // its waiting-on-user affordance; the next /tool_results POST will
-          // re-trigger resume once the last call clears.
+          // Three structured 409 shapes from /resume — none of them is a
+          // user-facing stream error:
+          //   • resume_conflict (retryable) — another run is still live for
+          //     this user_request (the suspending run hasn't persisted
+          //     status='paused' yet, or a duplicate continuation lost the
+          //     server's atomic claim). Throw the marker; resumeInstance owns
+          //     the bounded backoff retry.
+          //   • not_resumable — the request is terminal
+          //     (completed/failed/cancelled). Never retry; the loop already
+          //     finished. Complete the request and settle the instance.
+          //   • outstanding_delegated_calls (or a legacy no-code body) —
+          //     ≥1 cx_tool_call rows still in status='delegated'; the user
+          //     hasn't answered everything. Keep the waiting-on-user
+          //     affordance; the next /tool_results POST re-triggers resume.
           unregisterAbortController(conversationId);
+          if (errorCode === "resume_conflict") {
+            throw new ResumeConflictError(serverMessage);
+          }
+          if (errorCode === "not_resumable") {
+            console.warn(
+              `[runAiStream] resume rejected — request is terminal (${serverMessage})`,
+              { conversationId, requestId },
+            );
+            dispatch(setInstanceStatus({ conversationId, status: "complete" }));
+            dispatch(setRequestStatus({ requestId, status: "complete" }));
+            return { requestId, conversationId };
+          }
           dispatch(setInstanceStatus({ conversationId, status: "paused" }));
           dispatch(setRequestStatus({ requestId, status: "complete" }));
           return { requestId, conversationId };
@@ -258,6 +342,10 @@ export async function runAiStream(
     );
     const conversationIdAt = headerConversationId ? performance.now() : null;
 
+    // A stream genuinely opened — let the caller release any single-flight
+    // claim (resume) so the loop's next suspend can claim fresh.
+    args.onStreamOpen?.();
+
     dispatch(setInstanceStatus({ conversationId, status: "streaming" }));
     dispatch(setRequestStatus({ requestId, status: "streaming" }));
 
@@ -292,6 +380,14 @@ export async function runAiStream(
     return { requestId, conversationId };
   } catch (error) {
     unregisterAbortController(conversationId);
+
+    // 409 resume_conflict — pass straight through to resumeInstance's bounded
+    // retry. Deliberately NO error statuses, no failPendingToolLifecycle, no
+    // user-facing surface: a conflicting live run means the conversation is
+    // (or is about to be) running fine without us.
+    if (error instanceof ResumeConflictError) {
+      throw error;
+    }
 
     if (error instanceof Error && error.name === "AbortError") {
       dispatch(setInstanceStatus({ conversationId, status: "cancelled" }));
@@ -330,10 +426,33 @@ export async function runAiStream(
       setRequestStatus({
         requestId,
         status: "error",
-        error: { error_type: errorType, message },
+        error: {
+          error_type: errorType,
+          message,
+          // Heartbeat loss means the CONNECTION died — the server detaches
+          // and finishes the turn regardless (detach_on_disconnect). Say so,
+          // instead of implying the response itself failed.
+          ...(isHeartbeat && {
+            user_message:
+              "Connection to the stream was lost. The server is still finishing the response — recovering it automatically.",
+          }),
+        },
       }),
     );
     dispatch(setInstanceStatus({ conversationId, status: "error" }));
+
+    // Self-heal: the server runs detached and persists the turn even though
+    // our connection died. Poll for the terminal status and rehydrate from
+    // the DB — for the common case (server finished fine) the user gets the
+    // full response without touching anything. Fire-and-forget; the thunk
+    // stands down by itself if the user retries or sends a new message.
+    if (isHeartbeat) {
+      void import("./recover-dropped-stream.thunk").then(
+        ({ recoverDroppedStream }) => {
+          dispatch(recoverDroppedStream({ conversationId, requestId }));
+        },
+      );
+    }
     // Force-terminal any tool that the stream left mid-flight. Without this,
     // LiveToolCallCard keeps shimmering "Using tool …" forever because the
     // toolLifecycle entry never receives its terminal event.
@@ -355,9 +474,8 @@ export async function runAiStream(
     // lost. (markInputPersisted, which normally clears it on success, never
     // ran on this path.) Resume never reads the input box, so it passes false.
     if (clearInputOnError) {
-      const { clearUserInput } = await import(
-        "../instance-user-input/instance-user-input.slice"
-      );
+      const { clearUserInput } =
+        await import("../instance-user-input/instance-user-input.slice");
       dispatch(clearUserInput(conversationId));
     }
 

@@ -130,6 +130,7 @@ fi
 # Nothing has been bumped, committed, or tagged yet, so any abort here leaves
 # the working tree exactly as the user left it. We only proceed past this block
 # if the local branch is in a state that will push cleanly.
+echo ""
 info "Fetching $REMOTE/$BRANCH to check sync state..."
 git fetch "$REMOTE" "$BRANCH" 2>/dev/null \
     || fail "Could not reach $REMOTE. Check your connection, then re-run. Nothing has been changed."
@@ -236,15 +237,18 @@ if $DRY_RUN; then
 fi
 
 # ── Update package.json (+ package-lock.json if present) ─────────────────────
-info "Bumping version in $VERSION_FILE..."
-npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version 2>/dev/null
+npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version >/dev/null 2>&1
 ok "$VERSION_FILE → $NEW_VERSION"
 
 # ── Commit ───────────────────────────────────────────────────────────────────
+# The release commit only bumps package.json — there is nothing for the doctrine
+# or migration gates to check. Skip the pre-commit hook so they don't run a second
+# time (your content commit already passed them).
 info "Committing..."
 git add package.json
 [[ -f package-lock.json ]] && git add package-lock.json
-git commit -m "$COMMIT_MSG"
+SKIP_SIMPLE_GIT_HOOKS=1 git commit -m "$COMMIT_MSG"
+echo ""
 ok "Committed: '$COMMIT_MSG'"
 
 # ── Tag ──────────────────────────────────────────────────────────────────────

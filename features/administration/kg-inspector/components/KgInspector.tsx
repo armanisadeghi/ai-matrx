@@ -561,7 +561,7 @@ function EntitiesTab({
                     </TableCell>
                     <TableCell className="text-right">
                       <Link
-                        href="/knowledge-graph"
+                        href="/knowledge/graph"
                         onClick={(e) => e.stopPropagation()}
                         className="inline-flex items-center text-muted-foreground hover:text-primary"
                         title="Open knowledge-graph canvas"

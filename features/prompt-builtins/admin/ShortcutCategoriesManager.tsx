@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { idMatchesQuery } from '@/utils/search-scoring';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -136,7 +137,8 @@ export function ShortcutCategoriesManager({ className }: ShortcutCategoriesManag
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(c =>
         c.label.toLowerCase().includes(query) ||
-        c.description?.toLowerCase().includes(query)
+        c.description?.toLowerCase().includes(query) ||
+        idMatchesQuery(c, query)
       );
     }
 

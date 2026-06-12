@@ -15,6 +15,7 @@
 //   consumerId) so React doesn't recreate it on every render.
 
 import { createSelector } from "@reduxjs/toolkit";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import type { RootState } from "@/lib/redux/store";
 import {
   selectAllUserPrompts,
@@ -259,7 +260,8 @@ export const makeSelectFilteredSharedPrompts = (consumerId: string) =>
           prompt.name.toLowerCase().includes(q) ||
           (prompt.description &&
             prompt.description.toLowerCase().includes(q)) ||
-          (prompt.ownerEmail && prompt.ownerEmail.toLowerCase().includes(q))
+          (prompt.ownerEmail && prompt.ownerEmail.toLowerCase().includes(q)) ||
+          idMatchesQuery(prompt, q)
         );
       });
 

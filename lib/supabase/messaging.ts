@@ -14,14 +14,17 @@
  * Uses dm_ prefixed tables and auth.users.id UUIDs
  */
 
-import { createClient } from '@/utils/supabase/client';
-import type { RealtimeChannel, RealtimePresenceState } from '@supabase/supabase-js';
-import type { Message, MessageType } from '@/features/messaging/types';
+import { createClient } from "@/utils/supabase/client";
+import type {
+  RealtimeChannel,
+  RealtimePresenceState,
+} from "@supabase/supabase-js";
+import type { Message, MessageType } from "@/features/messaging/types";
 import {
   BRIDGE_BROADCAST_EVENT,
   bridgeChannelName,
   type BridgeEnvelope,
-} from '@/lib/types/bridge-envelope';
+} from "@/lib/types/bridge-envelope";
 
 // Re-export the bridge envelope wire-format primitives so existing
 // `from '@/lib/supabase/messaging'` imports keep working. New consumers
@@ -31,8 +34,8 @@ export {
   BRIDGE_BROADCAST_EVENT,
   bridgeChannelName,
   type BridgeEnvelope,
-} from '@/lib/types/bridge-envelope';
-export type { BridgeDirection } from '@/lib/types/bridge-envelope';
+} from "@/lib/types/bridge-envelope";
+export type { BridgeDirection } from "@/lib/types/bridge-envelope";
 
 export type BridgeHandler = (envelope: BridgeEnvelope) => void;
 
@@ -101,7 +104,7 @@ export class MessagingService {
     // Verify auth on init - only log errors
     this.supabase.auth.getSession().then(({ error }) => {
       if (error) {
-        console.error('[DM] Auth error:', error);
+        console.error("[DM] Auth error:", error);
       }
     });
   }
@@ -112,7 +115,7 @@ export class MessagingService {
   private ensureChannelSubscribed(
     channelName: string,
     channel: RealtimeChannel,
-    onSubscribed?: () => void
+    onSubscribed?: () => void,
   ): void {
     // Increment ref count
     const currentCount = this.channelRefCount.get(channelName) || 0;
@@ -136,21 +139,27 @@ export class MessagingService {
 
     // Start subscribing
     this.subscribingChannels.add(channelName);
-    
+
     channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
+      if (status === "SUBSCRIBED") {
         this.subscribedChannels.add(channelName);
         this.subscribingChannels.delete(channelName);
-        
+
         // Call immediate callback
         onSubscribed?.();
-        
+
         // Call all queued callbacks
         const callbacks = this.subscribeCallbacks.get(channelName) || [];
-        callbacks.forEach(cb => cb());
+        callbacks.forEach((cb) => cb());
         this.subscribeCallbacks.delete(channelName);
-      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        console.error(`[DM] Channel error: ${status}`);
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        // Transient realtime hiccup (token refresh / reconnect / no
+        // subscribers). Not fatal — Supabase auto-retries. Log a single
+        // quiet line instead of a red console.error so it doesn't trip
+        // the dev error overlay or the admin debug collector.
+        console.warn(
+          `[DM] realtime ${status.toLowerCase()} on "${channelName}" — will retry`,
+        );
         this.subscribedChannels.delete(channelName);
         this.subscribingChannels.delete(channelName);
         this.subscribeCallbacks.delete(channelName);
@@ -165,7 +174,7 @@ export class MessagingService {
   private releaseChannel(conversationId: string): void {
     const channelName = `conversation:${conversationId}`;
     const currentCount = this.channelRefCount.get(channelName) || 0;
-    
+
     if (currentCount <= 1) {
       // Last reference - actually remove the channel
       this.channelRefCount.delete(channelName);
@@ -236,12 +245,12 @@ export class MessagingService {
   /**
    * Subscribe to messages in a conversation
    * Uses dual subscription: broadcast (immediate) + postgres_changes (reliable)
-   * 
+   *
    * @returns Unsubscribe function
    */
   subscribeToMessages(
     conversationId: string,
-    onMessage: MessageCallback
+    onMessage: MessageCallback,
   ): () => void {
     const channelName = `conversation:${conversationId}`;
     const channel = this.getOrCreateChannel(conversationId);
@@ -257,34 +266,42 @@ export class MessagingService {
     this.messageHandlersAdded.add(handlersKey);
 
     // BROADCAST subscription (immediate delivery)
-    channel.on('broadcast', { event: 'new_message' }, (payload) => {
+    channel.on("broadcast", { event: "new_message" }, (payload) => {
       if (payload.payload) {
-        console.log('[DM] 📥 realtime: message (broadcast)');
+        console.log("[DM] 📥 realtime: message (broadcast)");
         onMessage(payload.payload as Message);
       }
     });
 
     // POSTGRES_CHANGES for INSERT
-    channel.on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'dm_messages',
-      filter: `conversation_id=eq.${conversationId}`,
-    }, (payload) => {
-      console.log('[DM] 📥 realtime: message (db insert)');
-      onMessage(payload.new as Message);
-    });
+    channel.on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "dm_messages",
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      (payload) => {
+        console.log("[DM] 📥 realtime: message (db insert)");
+        onMessage(payload.new as Message);
+      },
+    );
 
     // POSTGRES_CHANGES for UPDATE
-    channel.on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'dm_messages',
-      filter: `conversation_id=eq.${conversationId}`,
-    }, (payload) => {
-      console.log('[DM] 📥 realtime: message (db update)');
-      onMessage(payload.new as Message);
-    });
+    channel.on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "dm_messages",
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      (payload) => {
+        console.log("[DM] 📥 realtime: message (db update)");
+        onMessage(payload.new as Message);
+      },
+    );
 
     // Subscribe channel
     this.ensureChannelSubscribed(channelName, channel);
@@ -307,17 +324,18 @@ export class MessagingService {
     conversationId: string,
     senderId: string,
     content: string,
-    options?: SendMessageOptions
+    options?: SendMessageOptions,
   ): Promise<Message> {
     // Generate client-side ID for deduplication if not provided
-    const clientMessageId = options?.clientMessageId ||
+    const clientMessageId =
+      options?.clientMessageId ||
       `${senderId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     const messageData: MessageInsert = {
       conversation_id: conversationId,
       sender_id: senderId,
       content: content.trim(),
-      message_type: options?.messageType || 'text',
+      message_type: options?.messageType || "text",
       media_url: options?.mediaUrl,
       media_thumbnail_url: options?.mediaThumbnailUrl,
       media_metadata: options?.mediaMetadata,
@@ -328,17 +346,17 @@ export class MessagingService {
     // 1. INSERT to database
     const supabase = this.getSupabase();
     const { data, error } = await supabase
-      .from('dm_messages')
+      .from("dm_messages")
       .insert(messageData)
       .select()
       .single();
 
     if (error) {
-      console.error('[DM] Failed to send message:', error);
+      console.error("[DM] Failed to send message:", error);
       throw error;
     }
 
-    console.log('[DM] 📤 sent: message');
+    console.log("[DM] 📤 sent: message");
 
     // BROADCAST to channel subscribers for immediate delivery
     const channelName = `conversation:${conversationId}`;
@@ -348,8 +366,8 @@ export class MessagingService {
     if (channel && isChannelSubscribed) {
       try {
         await channel.send({
-          type: 'broadcast',
-          event: 'new_message',
+          type: "broadcast",
+          event: "new_message",
           payload: data as Message,
         });
       } catch (err) {
@@ -372,7 +390,7 @@ export class MessagingService {
     conversationId: string,
     currentUserId: string,
     displayName: string,
-    onTypingUpdate: TypingCallback
+    onTypingUpdate: TypingCallback,
   ): {
     setTyping: (isTyping: boolean) => void;
     unsubscribe: () => void;
@@ -380,21 +398,23 @@ export class MessagingService {
     // Use a SEPARATE channel for presence to ensure handlers are attached before subscribe
     const presenceChannelName = `typing:${conversationId}`;
     let typingTimeout: ReturnType<typeof setTimeout> | null = null;
-    
+
     // Generate a unique subscriber ID for this hook instance
     const subscriberId = `${currentUserId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    
+
     // Initialize callback registry for this channel if needed
     if (!this.typingCallbacks.has(presenceChannelName)) {
       this.typingCallbacks.set(presenceChannelName, new Map());
     }
-    
+
     // Register this subscriber's callback
-    this.typingCallbacks.get(presenceChannelName)!.set(subscriberId, onTypingUpdate);
-    
+    this.typingCallbacks
+      .get(presenceChannelName)!
+      .set(subscriberId, onTypingUpdate);
+
     // Check if we already have this presence channel
     let presenceChannel = this.channels.get(presenceChannelName);
-    
+
     if (!presenceChannel) {
       // Create a NEW channel specifically for presence
       presenceChannel = this.supabase.channel(presenceChannelName, {
@@ -405,11 +425,12 @@ export class MessagingService {
         },
       });
       this.channels.set(presenceChannelName, presenceChannel);
-      
+
       // Attach handlers BEFORE subscribing (this is crucial!)
       // Use callback registry so all subscribers get updates
-      presenceChannel.on('presence', { event: 'sync' }, () => {
-        const presenceState = presenceChannel!.presenceState() as RealtimePresenceState<TypingUser>;
+      presenceChannel.on("presence", { event: "sync" }, () => {
+        const presenceState =
+          presenceChannel!.presenceState() as RealtimePresenceState<TypingUser>;
         const typingUsers: TypingUser[] = [];
 
         Object.values(presenceState).forEach((presences) => {
@@ -430,7 +451,9 @@ export class MessagingService {
         });
 
         if (typingUsers.length > 0) {
-          console.log(`[DM] 📥 realtime: typing (${typingUsers.map(u => u.display_name).join(', ')})`);
+          console.log(
+            `[DM] 📥 realtime: typing (${typingUsers.map((u) => u.display_name).join(", ")})`,
+          );
         }
 
         // Call ALL registered callbacks for this channel
@@ -442,7 +465,7 @@ export class MessagingService {
 
       // NOW subscribe (after handlers are attached)
       presenceChannel.subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
+        if (status === "SUBSCRIBED") {
           // Track initial presence
           await presenceChannel!.track({
             user_id: currentUserId,
@@ -471,7 +494,7 @@ export class MessagingService {
       }
 
       if (isTyping) {
-        console.log('[DM] 📤 sent: typing');
+        console.log("[DM] 📤 sent: typing");
       }
 
       await channel.track({
@@ -533,10 +556,10 @@ export class MessagingService {
     conversationId: string,
     currentUserId: string,
     displayName: string,
-    onPresenceUpdate: PresenceCallback
+    onPresenceUpdate: PresenceCallback,
   ): () => void {
     const channelName = `presence:${conversationId}`;
-    
+
     // Create a separate presence channel (not the message channel)
     let channel = this.channels.get(channelName);
     if (!channel) {
@@ -551,8 +574,9 @@ export class MessagingService {
     }
 
     // Listen to presence sync events
-    channel.on('presence', { event: 'sync' }, () => {
-      const presenceState = channel!.presenceState() as RealtimePresenceState<OnlineUser>;
+    channel.on("presence", { event: "sync" }, () => {
+      const presenceState =
+        channel!.presenceState() as RealtimePresenceState<OnlineUser>;
       const onlineUsers: OnlineUser[] = [];
 
       Object.values(presenceState).forEach((presences) => {
@@ -572,7 +596,7 @@ export class MessagingService {
 
     // Subscribe and track presence
     channel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
+      if (status === "SUBSCRIBED") {
         this.subscribedChannels.add(channelName);
         await channel!.track({
           user_id: currentUserId,
@@ -693,16 +717,16 @@ export class MessagingService {
     if (!this.messageHandlersAdded.has(handlersKey)) {
       this.messageHandlersAdded.add(handlersKey);
 
-      channel.on('broadcast', { event: BRIDGE_BROADCAST_EVENT }, (payload) => {
+      channel.on("broadcast", { event: BRIDGE_BROADCAST_EVENT }, (payload) => {
         const envelope = payload?.payload as BridgeEnvelope | undefined;
-        if (!envelope || typeof envelope !== 'object') return;
+        if (!envelope || typeof envelope !== "object") return;
         const listeners = this.bridgeListeners.get(channelName);
         if (!listeners) return;
         listeners.forEach((handler) => {
           try {
             handler(envelope);
           } catch (err) {
-            console.error('[Bridge] Handler threw:', err);
+            console.error("[Bridge] Handler threw:", err);
           }
         });
       });
@@ -738,13 +762,13 @@ export class MessagingService {
   ): Promise<{ requestId: string }>;
   async sendBridgeMessage(
     userId: string,
-    envelope: Pick<BridgeEnvelope, 'action' | 'payload' | 'requestId'>,
+    envelope: Pick<BridgeEnvelope, "action" | "payload" | "requestId">,
   ): Promise<{ requestId: string }>;
   async sendBridgeMessage(
     userId: string,
     actionOrEnvelope:
       | string
-      | Pick<BridgeEnvelope, 'action' | 'payload' | 'requestId'>,
+      | Pick<BridgeEnvelope, "action" | "payload" | "requestId">,
     payload?: unknown,
     requestId?: string,
   ): Promise<{ requestId: string }> {
@@ -758,20 +782,18 @@ export class MessagingService {
     }
 
     const action =
-      typeof actionOrEnvelope === 'string'
+      typeof actionOrEnvelope === "string"
         ? actionOrEnvelope
         : actionOrEnvelope.action;
     const resolvedPayload =
-      typeof actionOrEnvelope === 'string'
-        ? payload
-        : actionOrEnvelope.payload;
+      typeof actionOrEnvelope === "string" ? payload : actionOrEnvelope.payload;
     const resolvedRequestId =
-      typeof actionOrEnvelope === 'string'
-        ? requestId ?? crypto.randomUUID()
+      typeof actionOrEnvelope === "string"
+        ? (requestId ?? crypto.randomUUID())
         : actionOrEnvelope.requestId;
 
     const envelope: BridgeEnvelope = {
-      direction: 'frontend->extension',
+      direction: "frontend->extension",
       action,
       requestId: resolvedRequestId,
       payload: resolvedPayload,
@@ -779,7 +801,7 @@ export class MessagingService {
     };
 
     await channel.send({
-      type: 'broadcast',
+      type: "broadcast",
       event: BRIDGE_BROADCAST_EVENT,
       payload: envelope,
     });
@@ -793,17 +815,17 @@ export class MessagingService {
    */
   async markConversationAsRead(
     conversationId: string,
-    userId: string
+    userId: string,
   ): Promise<void> {
     const supabase = this.getSupabase();
     const { error } = await supabase
-      .from('dm_conversation_participants')
+      .from("dm_conversation_participants")
       .update({ last_read_at: new Date().toISOString() })
-      .eq('conversation_id', conversationId)
-      .eq('user_id', userId);
+      .eq("conversation_id", conversationId)
+      .eq("user_id", userId);
 
     if (error) {
-      console.error('[DM] Failed to mark conversation as read:', error);
+      console.error("[DM] Failed to mark conversation as read:", error);
       throw error;
     }
   }

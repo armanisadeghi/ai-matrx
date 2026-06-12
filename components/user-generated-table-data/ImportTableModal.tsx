@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/utils/supabase/client";
 import Papa from "papaparse";
 import {
@@ -53,6 +53,12 @@ interface ImportTableModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (tableId: string) => void;
+  /**
+   * Optional pre-loaded file (e.g. from the Smart Import handoff on
+   * /workbooks). When provided, the modal opens directly to the preview
+   * stage with this file already parsed.
+   */
+  prefilledFile?: File | null;
 }
 
 // Local alias preserved so existing JSX references continue to type-check.
@@ -62,6 +68,7 @@ export default function ImportTableModal({
   isOpen,
   onClose,
   onSuccess,
+  prefilledFile = null,
 }: ImportTableModalProps) {
   const [activeTab, setActiveTab] = useState<"upload" | "paste">("upload");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -92,15 +99,31 @@ export default function ImportTableModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Smart Import handoff — when /workbooks routes a typed-looking file here,
+  // it passes it as `prefilledFile`. We auto-process it the same way the
+  // file-picker change handler does, so the user lands on the preview/config
+  // stage without an extra click.
+  useEffect(() => {
+    if (isOpen && prefilledFile) {
+      handleFileSelect(prefilledFile);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, prefilledFile]);
+
   const handleFileSelect = (file: File) => {
     if (!file) return;
 
     const fileExt = file.name.toLowerCase();
     const isCSV = fileExt.endsWith(".csv");
     const isExcel = fileExt.endsWith(".xlsx") || fileExt.endsWith(".xls");
+    const isGoogleSheetsShortcut = fileExt.endsWith(".gsheet");
 
     if (!isCSV && !isExcel) {
-      setUploadError("Please upload a CSV or Excel file (.csv, .xlsx, .xls)");
+      setUploadError(
+        isGoogleSheetsShortcut
+          ? "Google Sheets shortcuts can't be imported directly. In Sheets choose File → Download → Microsoft Excel (.xlsx), then upload that."
+          : "Please upload a CSV or Excel file (.csv, .xlsx, .xls). If you're importing from Google Sheets, use File → Download → Microsoft Excel (.xlsx) first.",
+      );
       return;
     }
 
@@ -418,10 +441,16 @@ export default function ImportTableModal({
                       className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer"
                       onClick={() => fileInputRef.current?.click()}
                     >
+                      {/*
+                        No `accept` filter — Drive / Google Sheets pickers
+                        and many mobile pickers grey everything out when
+                        one is set. `handleFileSelect` validates by
+                        extension after pick and shows a clear error if
+                        it's not a CSV/XLSX.
+                      */}
                       <input
                         ref={fileInputRef}
                         type="file"
-                        accept=".csv,.xlsx,.xls"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) handleFileSelect(file);

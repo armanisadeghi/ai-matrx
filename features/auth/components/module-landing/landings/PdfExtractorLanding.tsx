@@ -114,6 +114,7 @@ export default function PdfExtractorLanding() {
       subAreas={SUB_AREAS}
       finalCtaHeading="Stop wrestling with PDFs"
       finalCtaDescription="Extract structure, not just text. Cite by page, query by content. Free to start, no credit card."
+      relatedModules={["/knowledge", "/files", "/data"]}
     />
   );
 }

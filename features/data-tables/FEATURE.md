@@ -45,12 +45,17 @@
 - ✅ **Snapshot history viewer + restore** — `WorkbookHistoryViewer` lists snapshots newest-first with origin badges (autosave / manual / imported / restored); Restore writes a NEW snapshot from the chosen one so the realtime hook hot-swaps automatically. Snapshots are append-only; restoring does not delete history.
 - ✅ **Export workbook → XLSX** — `univerSnapshotToXlsxBuffer` + `downloadUniverAsXlsx` (SheetJS). Symmetric to the import path; same scope (values + types + formula source per sheet). Wired as a toolbar button in `WorkbookEditor`; filename = workbook name.
 - ✅ **Share + permission gating** — `udt_workbooks` added to client-side `SHAREABLE_RESOURCE_REGISTRY` (DB registry had it from P1). `/workbooks/[id]` header gets the standard `<ShareButton>`. Page calls `has_permission(udt_workbooks, id, 'editor')` at mount to decide whether the editor mounts in editable or viewer-only mode (owner always edits; shared editors detected via the RPC; everyone else sees viewer mode).
-- ⏳ **V2 work — full CRDT collab** (per-cell deltas, presence cursors, formal conflict resolution). V1 is last-write-wins on the snapshot row, which is the standard MVP pattern. CRDT layer can build on the snapshot store without changing it.
+- ✅ **V2 — full CRDT collab is LIVE.** Yjs over Supabase Broadcast via the public `onMutationExecutedForCollab` hook; `collab` flag ON at `/workbooks/[id]`. Verified by `features/data-tables/collab/verify-collab.ts` (10/10, incl. real-Broadcast e2e). See `collab/FEATURE.md` — run the verify gate before touching the provider/session.
 
-**Pending — user decision blockers (🛑):**
-- 🛑 **Wave H — version-history retention policy.** 3 options listed below; pick one before agent-heavy workloads land.
-- 🛑 **aidream backend audit attribution.** aidream's pool writes record `changed_by = NULL` (no JWT). Decide: keep honest NULL, or attribute the originating user via `set_config('request.jwt.claims', ...)` before each write.
-- 🛑 **CRDT-collab commitment.** P4 v1 ships last-write-wins. The honest "full collab from day one" answer requires picking a CRDT (Yjs is the obvious choice via Univer's `@univerjs/sheets-collaboration` preset). Confirm intent before I integrate.
+**P5 — operational hardening (decided 2026-06-06):**
+- ✅ **Wave H retention policy — implemented.** Per-row: keep all versions ≤ 14 days; ALWAYS keep latest 2 regardless of age; delete only if both `recency_rank > 2` AND `older_than_14_days`. Trim function: `udt_dataset_row_versions_trim()` (SECURITY DEFINER, service_role only). pg_cron job `udt_dataset_row_versions_trim_weekly` scheduled `0 3 * * 0` (Sundays 03:00 UTC). Migration `udt_v2_retention_and_original_file_fk` (applied live 2026-06-06).
+- ✅ **aidream attribution — honest NULL.** Decided to keep `changed_by = NULL` for service_role / pool writes (no JWT). The audit trail honestly reports "system write" rather than misattributing to row owners. No code change required on aidream's side.
+- ✅ **`udt_workbooks.original_file_id` FK live.** `REFERENCES cld_files(id) ON DELETE SET NULL`. Workbook import path now uploads the source file via `fileHandler.upload(...)` first and stores the `cld_files.id` on the workbook row. Upload failure is non-fatal — workbook still imports without the link.
+- ✅ **Smart importer (P3) — shipped.** `features/data-tables/smart-importer.ts` detects routing via 7 weighted signals (merged cells / formula density / multi-sheet / column-type uniformity / header-row pattern / sparsity / styling). Dialog (`ImportRouteDialog`) shows the recommendation with reasons; user can override. Auto-route threshold `confidence > 0.6`. "Smart import" button on `/workbooks`; typed-routing hands off to `/data` via a single-shot module slot (`smart-import-pickup.ts`) so `ImportTableModal` can open pre-loaded.
+
+**Workbook collab v2 — ✅ DONE (2026-06-12):**
+- ✅ Implemented, verified (`collab/verify-collab.ts` 10/10 incl. real-Broadcast e2e), and flag flipped ON at `/workbooks/[id]`. Architecture + the three bugs the verify gate caught are documented in `collab/FEATURE.md`.
+- ⏳ v2.1 polish (optional): pixel-positioned cursor rings over the actual cell (currently a toolbar presence strip); repurpose `useWorkbookRealtime` to log-only.
 
 **Pending — needs UX design (⏳):**
 - ⏳ **Wave P3 — smart importer (XLSX → typed dataset vs workbook).** Detects "rational" (header-row + uniform-type columns) vs "look-sensitive" (merged cells, formulas, multi-region) and routes the upload to `udt_datasets` or `udt_workbooks` accordingly. P4 v1 makes this fully unblocked. Today the user picks the destination by entering via `/data` (typed) or `/workbooks` (lossless).
@@ -368,6 +373,17 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-06-06` — claude: **Final-pass closeout — retention policy + FK to cld_files + smart importer**.
+  Decisions locked with the user: Wave H = keep latest 2 OR within 14 days (weekly pg_cron);
+  aidream attribution stays NULL (honest); CRDT collab v2 green-lit but scoped to "after the
+  rest." Migrations: `udt_v2_retention_and_original_file_fk` applied live — trim function +
+  cron schedule + `udt_workbooks.original_file_id → cld_files(id) ON DELETE SET NULL`. Workbook
+  import now stashes the source XLSX/CSV via `fileHandler.upload()` and stores the `cld_files.id`
+  on the workbook row (failure non-fatal). Smart importer (P3) shipped:
+  `features/data-tables/smart-importer.ts` (7-signal heuristic) +
+  `components/ImportRouteDialog.tsx` + `smart-import-pickup.ts` (cross-route File handoff slot)
+  + `Sparkles`-icon "Smart import" button on `/workbooks` + receive-side wiring on `/data` +
+  `prefilledFile?: File` prop on `ImportTableModal` (auto-processes on open).
 - `2026-06-05` — claude: **Workbook share + permission gating**. Added `udt_workbooks` to
   `utils/permissions/registry.ts` so `<ShareButton resourceType="udt_workbooks" />` works
   (DB-side registry entry was already added in P1; the TS mirror was stale). `/workbooks/[id]`

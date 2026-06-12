@@ -20,9 +20,11 @@ type Schemas = components["schemas"];
 // ── Source contract (pick one of: media | file | url | local_path) ─────────
 
 /**
- * Reference to a media file. The preferred source — `cld_id` carries a
- * Cloud Files row id so the backend can look up the canonical record
- * without re-uploading bytes.
+ * Reference to a media file. Exactly ONE identifier on the wire:
+ * `file_id` (cld_files row id) | `url` (https://…) | `file_uri` (s3://…).
+ * There is NO `cld_id` field — the backend silently drops unknown keys,
+ * which used to 422 every cloud-sourced operation. Build sources with
+ * `buildPdfSource` from `@/features/pdf/utils/source`.
  */
 export type MediaRef = Schemas["MediaRef"];
 

@@ -6,28 +6,31 @@
  *
  * Naming contract (so the model understands the relationships):
  *   - `recording_NN_raw`     — verbatim transcript of recording cycle NN.
- *   - `session_cleaned`      — Studio auto-cleanup output (column 2) for the
- *                              whole session. Only present when the desktop
- *                              4-column Studio has run cleanup on this session.
- *   - `cleaned_transcripts`  — Scribe one-shot AI-cleaned version of the raw
- *                              recordings. SAME CONTENT as recording_NN_raw —
- *                              the model should treat this as a duplicate, not
- *                              new information. Persisted in studio_documents
- *                              with kind="scribe_cleanup".
+ *   - `recording_NN_clean`   — AI-cleaned transcript of recording cycle NN
+ *                              (recording-aligned). Same content as
+ *                              recording_NN_raw, just tidied. Only present once
+ *                              that recording has been cleaned.
+ *   - `all_raw`              — every recording's raw transcript concatenated in
+ *                              order. Convenience aggregate of recording_NN_raw.
+ *   - `session_cleaned`      — full-session AI-cleaned transcript = ordered
+ *                              concatenation of every recording_NN_clean. This
+ *                              is THE clean version of the whole session; prefer
+ *                              it for quoting/summarizing.
  *   - `working_document`     — the mutable, persisted document the assistant
  *                              builds with the user. Edited via `ctx_patch`;
  *                              writes land in `studio_documents` server-side.
  *
- * The raw entries group by `recordingSegmentId` (reliable, not time-based) so
- * each entry maps to exactly one card the user recorded.
+ * The raw + clean entries group by `recordingSegmentId` (reliable, not
+ * time-based) so each entry maps to exactly one card the user recorded.
  */
 
 import type { RootState } from "@/lib/redux/store";
 import {
-  selectCleanedSegments,
+  selectCleanedSegmentForRecording,
   selectRawSegmentsForRecording,
   selectRecordingSegments,
-  selectScribeCleanupDocument,
+  selectSessionCleanedText,
+  selectSessionRawText,
   selectWorkingDocument,
 } from "../redux/selectors";
 
@@ -80,52 +83,58 @@ export function buildAssistantContextEntries(
 
   const recordings = selectRecordingSegments(sessionId)(state);
   recordings.forEach((rec, idx) => {
+    const n = pad2(idx + 1);
+
     const raws = selectRawSegmentsForRecording(sessionId, rec.id)(state);
-    const text = raws
+    const rawText = raws
       .map((r) => r.text)
       .join(" ")
       .trim();
-    if (!text) return;
-    const n = pad2(idx + 1);
-    entries.push({
-      key: `recording_${n}_raw`,
-      value: text,
-      type: "text",
-      label: `Recording ${idx + 1} — raw transcript`,
-    });
+    if (rawText) {
+      entries.push({
+        key: `recording_${n}_raw`,
+        value: rawText,
+        type: "text",
+        label: `Recording ${idx + 1} — raw transcript`,
+      });
+    }
+
+    // Recording-aligned clean (same content as the raw above, just tidied).
+    const cleanSeg = selectCleanedSegmentForRecording(sessionId, rec.id)(state);
+    const cleanText = cleanSeg?.text?.trim() ?? "";
+    if (cleanText) {
+      entries.push({
+        key: `recording_${n}_clean`,
+        value: cleanText,
+        type: "text",
+        label: `Recording ${idx + 1} — AI-cleaned transcript`,
+      });
+    }
   });
 
-  // Whole-session cleaned transcript (all active cleaned segments in order).
-  const cleaned = selectCleanedSegments(sessionId)(state);
-  const cleanedText = cleaned
-    .map((c) => c.text)
-    .join("\n\n")
-    .trim();
-  if (cleanedText) {
+  // Aggregate raw across all recordings — convenience over recording_NN_raw.
+  const allRaw = selectSessionRawText(sessionId)(state);
+  if (allRaw) {
     entries.push({
-      key: "session_cleaned",
-      value: cleanedText,
+      key: "all_raw",
+      value: allRaw,
       type: "text",
-      label: "Session — AI-cleaned transcript (same content as recordings)",
+      label: "All recordings — raw transcript (concatenated)",
     });
   }
 
-  // Scribe one-shot cleanup output (`scribe_cleanup` studio_documents row).
-  // This is explicitly named and labeled as a DUPLICATE of the raw recordings
-  // so the model doesn't double-count it as new content. Only attached when
-  // the user has actually run a cleanup pass for this session.
-  const cleanupDoc = selectScribeCleanupDocument(sessionId)(state);
-  const cleanupText = cleanupDoc?.content?.trim() ?? "";
-  if (cleanupText) {
+  // Full-session clean = ordered concatenation of every recording_NN_clean.
+  // THE clean version of the whole session; prefer it for quoting/summarizing.
+  const sessionCleaned = selectSessionCleanedText(sessionId)(state);
+  if (sessionCleaned) {
     entries.push({
-      key: "cleaned_transcripts",
-      value: cleanupText,
+      key: "session_cleaned",
+      value: sessionCleaned,
       type: "text",
       label:
-        "Cleaned transcripts — AI-cleaned DUPLICATE of the recording_NN_raw entries " +
-        "above. Same content, just tidied. Prefer this over the raw versions when " +
-        "quoting or summarizing; only fall back to recording_NN_raw if you need the " +
-        "exact verbatim wording.",
+        "Session — full AI-cleaned transcript (same content as the recordings, " +
+        "tidied). Prefer this when quoting or summarizing; fall back to all_raw " +
+        "only when you need exact verbatim wording.",
     });
   }
 

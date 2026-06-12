@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.3.476",
+  "version": "0.3.506",
   "private": true,
   "scripts": {
     "dev": "set NODE_OPTIONS=--dns-result-order=ipv4first && next dev",
@@ -10,7 +10,7 @@
     "postinstall": "tsx scripts/copy-pdfjs-worker.ts && npx simple-git-hooks",
     "build:local": "powershell -ExecutionPolicy Bypass -File ./scripts/build-local.ps1",
     "build:types": "ts-node scripts/generate-manifest.ts && bash scripts/fix-encoding.sh && next build",
-    "type-check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit",
+    "type-check": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit -p tsconfig.typecheck.json",
     "start": "next start",
     "lint": "eslint .",
     "gate:tools": "tsx scripts/check-tool-db-drift.ts",
@@ -47,6 +47,8 @@
     "check:doctrine": "tsx scripts/check-doctrine.ts",
     "check:doctrine:staged": "tsx scripts/check-doctrine.ts --staged",
     "check:doctrine:strict": "tsx scripts/check-doctrine.ts --strict",
+    "check:migrations": "tsx scripts/check-migrations.ts",
+    "check:migrations:strict": "tsx scripts/check-migrations.ts --strict",
     "check:bundle": "tsx scripts/check-bundle-size.ts",
     "check:bundle:capture": "tsx scripts/check-bundle-size.ts --capture",
     "check:bundle:update": "tsx scripts/check-bundle-size.ts --update-baseline",
@@ -143,6 +145,8 @@
     "@types/vscode-webview": "^1.57.5",
     "@uidotdev/usehooks": "github:uidotdev/usehooks",
     "@uiw/react-codemirror": "^4.25.9",
+    "@univerjs/core": "^0.25.0",
+    "@univerjs/preset-sheets-core": "^0.25.0",
     "@univerjs/presets": "^0.25.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.36.3",
@@ -248,12 +252,14 @@
     "vaul": "latest",
     "web-vitals": "^5.1.0",
     "xlsx": "latest",
+    "y-protocols": "^1.0.7",
+    "yjs": "^13.6.31",
     "zod": "^4.3.6",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@iconify/react": "^6.0.2",
-    "@next/bundle-analyzer": "^16.2.0",
+    "@next/bundle-analyzer": "^16.2.7",
     "@tailwindcss/postcss": "^4.2.2",
     "@tailwindcss/typography": "0.5.19",
     "@types/chroma-js": "^3.1.2",
@@ -325,7 +331,7 @@
     ]
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm check:doctrine:staged"
+    "pre-commit": "pnpm -s check:doctrine:staged && pnpm -s check:migrations"
   },
   "packageManager": "pnpm@10.29.2+sha512.bef43fa759d91fd2da4b319a5a0d13ef7a45bb985a3d7342058470f9d2051a3ba8674e629672654686ef9443ad13a82da2beb9eeb3e0221c87b8154fff9d74b8"
 }

@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { ArrowDown } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
@@ -59,6 +59,26 @@ interface AgentConversationColumnProps {
    * lands in the messages slice.
    */
   landingContent?: React.ReactNode;
+  /**
+   * Hide the bottom SmartAgentInput. Used by locked-input surfaces (the
+   * agent-comparison battle modes) where the message is typed once in a
+   * page-level section and each column body is read-only. The transcript,
+   * Creator Panel, and UI-first tools stay intact.
+   */
+  hideInput?: boolean;
+  /**
+   * Force the Creator Panel off regardless of the `showCreatorPanel`
+   * preference. Defaults to false (preference-gated). Battle columns leave
+   * this false so engineers keep per-column telemetry.
+   */
+  hideCreatorPanel?: boolean;
+  /**
+   * Extra content rendered INSIDE the scroll area, flush under the
+   * transcript (after `AgentConversationDisplay`). Used by the battle
+   * columns to mount the per-response `ResponseFeedbackBar` directly below
+   * the last assistant message. Scrolls with the conversation.
+   */
+  afterMessages?: React.ReactNode;
 }
 
 export function AgentConversationColumn({
@@ -68,10 +88,14 @@ export function AgentConversationColumn({
   constrainWidth = false,
   smartInputProps,
   landingContent,
+  hideInput = false,
+  hideCreatorPanel = false,
+  afterMessages,
 }: AgentConversationColumnProps) {
   const displayId = displayConversationId ?? conversationId;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
+
   // Subscribed because we need to swap landing → message list the moment the
   // first message lands. `selectMessageCount` returns a primitive (number),
   // so re-renders are cheap.
@@ -101,47 +125,48 @@ export function AgentConversationColumn({
       )}
     >
       <div className="relative flex-1 min-h-0">
-        {/* Landing → conversation transition. When the first message lands,
-            the landing surface drops away (fade + slide down) while the
-            conversation view fades up — reads as the input dropping to the
-            bottom and the chat taking over. Both are absolutely positioned
-            during the overlap so there's no layout jump. */}
-        <AnimatePresence initial={false}>
-          {showLanding ? (
-            <motion.div
-              key="landing"
-              className="absolute inset-0 overflow-y-auto"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, y: 48 }}
-              transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-            >
-              {landingContent}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="conversation"
-              ref={scrollRef}
-              onScroll={handleScroll}
-              className="absolute inset-0 overflow-y-auto pt-12"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2, delay: 0.05 }}
-            >
-              {/* Older-history pagination trigger. Isolated component — */}
-              {/* subscribes only to the older-page flags so its re-renders */}
-              {/* never reach the message tree below. */}
-              <OlderMessagesSentinel
-                conversationId={displayId}
-                scrollRef={scrollRef}
-              />
-              <AgentConversationDisplay
-                conversationId={displayId}
-                surfaceKey={surfaceKey}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Landing → conversation swap. Rendered as a plain conditional (NOT
+            an AnimatePresence exit) so the landing surface unmounts the instant
+            the first message lands. AnimatePresence's exit animation was
+            unreliable here — with React Compiler enabled the exiting child
+            frequently never completed its exit, so the greeting + hero input
+            sat on top of the live conversation for seconds until the
+            /chat/new → /chat/[id] route promotion finally remounted the tree.
+            Each branch keeps an enter-only fade; removal is immediate. */}
+        {showLanding ? (
+          <motion.div
+            key="landing"
+            className="absolute inset-0 overflow-y-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            {landingContent}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="conversation"
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="absolute inset-0 overflow-y-auto pt-12"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, delay: 0.05 }}
+          >
+            {/* Older-history pagination trigger. Isolated component — */}
+            {/* subscribes only to the older-page flags so its re-renders */}
+            {/* never reach the message tree below. */}
+            <OlderMessagesSentinel
+              conversationId={displayId}
+              scrollRef={scrollRef}
+            />
+            <AgentConversationDisplay
+              conversationId={displayId}
+              surfaceKey={surfaceKey}
+            />
+            {afterMessages}
+          </motion.div>
+        )}
         <div
           className="pointer-events-none absolute bottom-0 left-0 right-0 h-3"
           style={{
@@ -176,7 +201,7 @@ export function AgentConversationColumn({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
         >
-          {showCreatorPanel && (
+          {!hideCreatorPanel && showCreatorPanel && (
             <CreatorRunPanel
               conversationId={conversationId}
               displayConversationId={displayId}
@@ -193,11 +218,13 @@ export function AgentConversationColumn({
           </div>
           <PendingAsksZone conversationId={displayId} />
 
-          <SmartAgentInput
-            conversationId={conversationId}
-            surfaceKey={surfaceKey}
-            {...smartInputProps}
-          />
+          {!hideInput && (
+            <SmartAgentInput
+              conversationId={conversationId}
+              surfaceKey={surfaceKey}
+              {...smartInputProps}
+            />
+          )}
         </motion.div>
       )}
     </div>

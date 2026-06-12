@@ -21,6 +21,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { RootState } from "../../store";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { parseHttpError } from "@/lib/api/errors";
+import { logApiTarget } from "@/lib/api/log-api-target";
 import { ENDPOINTS, BACKEND_URLS } from "@/lib/api/endpoints";
 import type {
   ChunkPayload,
@@ -292,9 +293,20 @@ export const submitChatFastAPI = createAsyncThunk<
       JSON.stringify(requestBody, null, 2),
     );
 
+    const chatUrl = `${BACKEND_URL}${ENDPOINTS.ai.chat}`;
+
+    // Final resolved target — BACKEND_URL is locked in above and cannot change.
+    logApiTarget(chatUrl, {
+      source: "submitChatFastAPI",
+      method: "POST",
+      channel: "global",
+      activeServer: (state as any)?.apiConfig?.activeServer,
+      callerContext,
+    });
+
     let response: Response;
     try {
-      response = await fetch(`${BACKEND_URL}${ENDPOINTS.ai.chat}`, {
+      response = await fetch(chatUrl, {
         method: "POST",
         headers,
         body: JSON.stringify(requestBody),

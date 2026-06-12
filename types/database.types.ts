@@ -478,6 +478,7 @@ export type Database = {
           fingerprint: string | null
           id: string
           ip_address: unknown
+          kind: string
           metadata: Json | null
           referer: string | null
           success: boolean | null
@@ -498,6 +499,7 @@ export type Database = {
           fingerprint?: string | null
           id?: string
           ip_address?: unknown
+          kind?: string
           metadata?: Json | null
           referer?: string | null
           success?: boolean | null
@@ -518,6 +520,7 @@ export type Database = {
           fingerprint?: string | null
           id?: string
           ip_address?: unknown
+          kind?: string
           metadata?: Json | null
           referer?: string | null
           success?: boolean | null
@@ -684,6 +687,106 @@ export type Database = {
             columns: ["app_id"]
             isOneToOne: false
             referencedRelation: "aga_apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_run: {
+        Row: {
+          created_at: string
+          episode_id: string | null
+          error: Json | null
+          id: string
+          input_fingerprint: string | null
+          kind: string
+          last_heartbeat_at: string | null
+          request: Json
+          result: Json | null
+          status: string
+          total_cost: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          episode_id?: string | null
+          error?: Json | null
+          id?: string
+          input_fingerprint?: string | null
+          kind: string
+          last_heartbeat_at?: string | null
+          request?: Json
+          result?: Json | null
+          status?: string
+          total_cost?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          episode_id?: string | null
+          error?: Json | null
+          id?: string
+          input_fingerprint?: string | null
+          kind?: string
+          last_heartbeat_at?: string | null
+          request?: Json
+          result?: Json | null
+          status?: string
+          total_cost?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_run_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "pc_episodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_run_stage: {
+        Row: {
+          cost: number | null
+          error: Json | null
+          finished_at: string | null
+          id: string
+          output: Json | null
+          run_id: string
+          stage_key: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          cost?: number | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          output?: Json | null
+          run_id: string
+          stage_key: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          cost?: number | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          output?: Json | null
+          run_id?: string
+          stage_key?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_run_stage_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_run"
             referencedColumns: ["id"]
           },
         ]
@@ -1314,6 +1417,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agx_version_corruption_backup_20260606: {
+        Row: {
+          agent_id: string | null
+          agent_type: string | null
+          category: string | null
+          change_note: string | null
+          changed_at: string | null
+          context_slots: Json | null
+          custom_tools: Json | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          mcp_servers: string[] | null
+          messages: Json | null
+          model_id: string | null
+          model_tiers: Json | null
+          name: string | null
+          output_schema: Json | null
+          settings: Json | null
+          tags: string[] | null
+          tool_config: Json | null
+          tools: string[] | null
+          variable_definitions: Json | null
+          version_number: number | null
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_type?: string | null
+          category?: string | null
+          change_note?: string | null
+          changed_at?: string | null
+          context_slots?: Json | null
+          custom_tools?: Json | null
+          description?: string | null
+          id: string
+          is_active?: boolean | null
+          mcp_servers?: string[] | null
+          messages?: Json | null
+          model_id?: string | null
+          model_tiers?: Json | null
+          name?: string | null
+          output_schema?: Json | null
+          settings?: Json | null
+          tags?: string[] | null
+          tool_config?: Json | null
+          tools?: string[] | null
+          variable_definitions?: Json | null
+          version_number?: number | null
+        }
+        Update: {
+          agent_id?: string | null
+          agent_type?: string | null
+          category?: string | null
+          change_note?: string | null
+          changed_at?: string | null
+          context_slots?: Json | null
+          custom_tools?: Json | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          mcp_servers?: string[] | null
+          messages?: Json | null
+          model_id?: string | null
+          model_tiers?: Json | null
+          name?: string | null
+          output_schema?: Json | null
+          settings?: Json | null
+          tags?: string[] | null
+          tool_config?: Json | null
+          tools?: string[] | null
+          variable_definitions?: Json | null
+          version_number?: number | null
+        }
+        Relationships: []
       }
       ai_agent: {
         Row: {
@@ -3691,6 +3869,13 @@ export type Database = {
             referencedRelation: "cld_files"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cld_file_versions_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
         ]
       }
       cld_files: {
@@ -3780,13 +3965,6 @@ export type Database = {
             foreignKeyName: "cld_files_canonical_processed_document_id_fkey"
             columns: ["canonical_processed_document_id"]
             isOneToOne: false
-            referencedRelation: "extracted_documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cld_files_canonical_processed_document_id_fkey"
-            columns: ["canonical_processed_document_id"]
-            isOneToOne: false
             referencedRelation: "processed_documents"
             referencedColumns: ["id"]
           },
@@ -3798,11 +3976,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "cld_files_duplicate_of_file_id_fkey"
+            columns: ["duplicate_of_file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "cld_files_parent_file_id_fkey"
             columns: ["parent_file_id"]
             isOneToOne: false
             referencedRelation: "cld_files"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cld_files_parent_file_id_fkey"
+            columns: ["parent_file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
           },
           {
             foreignKeyName: "cld_files_parent_folder_id_fkey"
@@ -5070,6 +5262,71 @@ export type Database = {
           },
         ]
       }
+      context_item_suggestions: {
+        Row: {
+          confidence: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          display_name: string
+          example_source_id: string | null
+          example_source_kind: string | null
+          example_value: string | null
+          id: string
+          organization_id: string | null
+          rationale: string | null
+          scope_type_id: string
+          status: string
+          suggested_key: string
+          suppressed_until: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          display_name: string
+          example_source_id?: string | null
+          example_source_kind?: string | null
+          example_value?: string | null
+          id?: string
+          organization_id?: string | null
+          rationale?: string | null
+          scope_type_id: string
+          status?: string
+          suggested_key: string
+          suppressed_until?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          display_name?: string
+          example_source_id?: string | null
+          example_source_kind?: string | null
+          example_value?: string | null
+          id?: string
+          organization_id?: string | null
+          rationale?: string | null
+          scope_type_id?: string
+          status?: string
+          suggested_key?: string
+          suppressed_until?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "context_item_suggestions_scope_type_id_fkey"
+            columns: ["scope_type_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scope_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation: {
         Row: {
           created_at: string
@@ -5279,6 +5536,7 @@ export type Database = {
           scope_id: string
           source_type: Database["public"]["Enums"]["context_source_type"]
           value_boolean: boolean | null
+          value_date: string | null
           value_document_size_bytes: number | null
           value_document_url: string | null
           value_json: Json | null
@@ -5301,6 +5559,7 @@ export type Database = {
           scope_id: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
           value_boolean?: boolean | null
+          value_date?: string | null
           value_document_size_bytes?: number | null
           value_document_url?: string | null
           value_json?: Json | null
@@ -5323,6 +5582,7 @@ export type Database = {
           scope_id?: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
           value_boolean?: boolean | null
+          value_date?: string | null
           value_document_size_bytes?: number | null
           value_document_url?: string | null
           value_json?: Json | null
@@ -5366,6 +5626,8 @@ export type Database = {
           review_interval_days: number | null
           scope_type_id: string
           sensitivity: Database["public"]["Enums"]["context_sensitivity"]
+          slug: string | null
+          sort_order: number
           source_type: Database["public"]["Enums"]["context_source_type"]
           status: Database["public"]["Enums"]["context_item_status"]
           status_note: string | null
@@ -5392,6 +5654,8 @@ export type Database = {
           review_interval_days?: number | null
           scope_type_id: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          slug?: string | null
+          sort_order?: number
           source_type?: Database["public"]["Enums"]["context_source_type"]
           status?: Database["public"]["Enums"]["context_item_status"]
           status_note?: string | null
@@ -5418,6 +5682,8 @@ export type Database = {
           review_interval_days?: number | null
           scope_type_id?: string
           sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          slug?: string | null
+          sort_order?: number
           source_type?: Database["public"]["Enums"]["context_source_type"]
           status?: Database["public"]["Enums"]["context_item_status"]
           status_note?: string | null
@@ -5621,11 +5887,14 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
-          is_personal: boolean | null
           name: string
           organization_id: string | null
+          priority: Database["public"]["Enums"]["task_priority"] | null
           settings: Json | null
           slug: string | null
+          start_date: string | null
+          status: string
+          target_date: string | null
           updated_at: string | null
         }
         Insert: {
@@ -5633,11 +5902,14 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          is_personal?: boolean | null
           name: string
           organization_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
           settings?: Json | null
           slug?: string | null
+          start_date?: string | null
+          status?: string
+          target_date?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -5645,11 +5917,14 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          is_personal?: boolean | null
           name?: string
           organization_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
           settings?: Json | null
           slug?: string | null
+          start_date?: string | null
+          status?: string
+          target_date?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -5710,6 +5985,7 @@ export type Database = {
           max_assignments_per_entity: number | null
           organization_id: string
           parent_type_id: string | null
+          slug: string | null
           sort_order: number
           updated_at: string
         }
@@ -5725,6 +6001,7 @@ export type Database = {
           max_assignments_per_entity?: number | null
           organization_id: string
           parent_type_id?: string | null
+          slug?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -5740,6 +6017,7 @@ export type Database = {
           max_assignments_per_entity?: number | null
           organization_id?: string
           parent_type_id?: string | null
+          slug?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -5771,6 +6049,8 @@ export type Database = {
           parent_scope_id: string | null
           scope_type_id: string
           settings: Json
+          slug: string | null
+          sort_order: number
           updated_at: string
         }
         Insert: {
@@ -5783,6 +6063,8 @@ export type Database = {
           parent_scope_id?: string | null
           scope_type_id: string
           settings?: Json
+          slug?: string | null
+          sort_order?: number
           updated_at?: string
         }
         Update: {
@@ -5795,6 +6077,8 @@ export type Database = {
           parent_scope_id?: string | null
           scope_type_id?: string
           settings?: Json
+          slug?: string | null
+          sort_order?: number
           updated_at?: string
         }
         Relationships: [
@@ -8561,39 +8845,6 @@ export type Database = {
         }
         Relationships: []
       }
-      extracted_documents_legacy: {
-        Row: {
-          clean_content: string | null
-          content: string | null
-          created_at: string
-          id: string
-          name: string
-          source: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          clean_content?: string | null
-          content?: string | null
-          created_at?: string
-          id?: string
-          name: string
-          source?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          clean_content?: string | null
-          content?: string | null
-          created_at?: string
-          id?: string
-          name?: string
-          source?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       extractor: {
         Row: {
           default_identifier: string | null
@@ -8853,6 +9104,13 @@ export type Database = {
             referencedRelation: "cld_files"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "file_analysis_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: true
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
         ]
       }
       file_analysis_result: {
@@ -8916,11 +9174,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "file_analysis_result_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "file_analysis_result_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "file_pages"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_analysis_result_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_page_id"]
           },
         ]
       }
@@ -8971,6 +9243,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cld_files"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_entities_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
           },
           {
             foreignKeyName: "file_entities_source_annotation_id_fkey"
@@ -9027,11 +9306,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "file_overrides_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "file_overrides_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "file_pages"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_overrides_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_page_id"]
           },
         ]
       }
@@ -9127,11 +9420,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "file_page_annotations_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "file_page_annotations_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "file_pages"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_page_annotations_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_page_id"]
           },
           {
             foreignKeyName: "file_page_annotations_parent_result_id_fkey"
@@ -9155,6 +9462,7 @@ export type Database = {
           ocr_confidence: number | null
           owner_id: string
           page_index: number
+          processed_document_page_id: string | null
           rotation: number
           source_page_index: number
           status: string
@@ -9176,6 +9484,7 @@ export type Database = {
           ocr_confidence?: number | null
           owner_id: string
           page_index: number
+          processed_document_page_id?: string | null
           rotation?: number
           source_page_index: number
           status?: string
@@ -9197,6 +9506,7 @@ export type Database = {
           ocr_confidence?: number | null
           owner_id?: string
           page_index?: number
+          processed_document_page_id?: string | null
           rotation?: number
           source_page_index?: number
           status?: string
@@ -9212,6 +9522,27 @@ export type Database = {
             columns: ["file_id"]
             isOneToOne: false
             referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_pages_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
+            foreignKeyName: "file_pages_processed_document_page_id_fkey"
+            columns: ["processed_document_page_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["page_id"]
+          },
+          {
+            foreignKeyName: "file_pages_processed_document_page_id_fkey"
+            columns: ["processed_document_page_id"]
+            isOneToOne: false
+            referencedRelation: "processed_document_pages"
             referencedColumns: ["id"]
           },
         ]
@@ -9896,6 +10227,149 @@ export type Database = {
         }
         Relationships: []
       }
+      kg_alerts: {
+        Row: {
+          confidence: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          description: string
+          evidence: string | null
+          id: string
+          kind: string
+          organization_id: string | null
+          severity: string
+          source_id: string
+          source_kind: string
+          status: string
+          suggested_action: string | null
+          target_scope_id: string
+          target_slot_key: string | null
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          description: string
+          evidence?: string | null
+          id?: string
+          kind: string
+          organization_id?: string | null
+          severity?: string
+          source_id: string
+          source_kind: string
+          status?: string
+          suggested_action?: string | null
+          target_scope_id: string
+          target_slot_key?: string | null
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          description?: string
+          evidence?: string | null
+          id?: string
+          kind?: string
+          organization_id?: string | null
+          severity?: string
+          source_id?: string
+          source_kind?: string
+          status?: string
+          suggested_action?: string | null
+          target_scope_id?: string
+          target_slot_key?: string | null
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kg_alerts_target_scope_id_fkey"
+            columns: ["target_scope_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kg_suggestion_ack: {
+        Row: {
+          created_at: string
+          suggestion_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          suggestion_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          suggestion_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      kg_value_matches: {
+        Row: {
+          confidence: number
+          created_at: string
+          current_value_snapshot: string | null
+          evidence_chunk_id: string | null
+          id: string
+          kg_entity_id: string | null
+          matched_value: string
+          mention_count: number
+          organization_id: string | null
+          source_id: string
+          source_kind: string
+          target_context_item_id: string
+          target_scope_id: string
+          target_slot_key: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          current_value_snapshot?: string | null
+          evidence_chunk_id?: string | null
+          id?: string
+          kg_entity_id?: string | null
+          matched_value: string
+          mention_count?: number
+          organization_id?: string | null
+          source_id: string
+          source_kind: string
+          target_context_item_id: string
+          target_scope_id: string
+          target_slot_key: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          current_value_snapshot?: string | null
+          evidence_chunk_id?: string | null
+          id?: string
+          kg_entity_id?: string | null
+          matched_value?: string
+          mention_count?: number
+          organization_id?: string | null
+          source_id?: string
+          source_kind?: string
+          target_context_item_id?: string
+          target_scope_id?: string
+          target_slot_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       math_course_structure: {
         Row: {
           course_name: string
@@ -10269,6 +10743,141 @@ export type Database = {
           repo_url?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      mtx_media_heal_queue: {
+        Row: {
+          bad_value: string | null
+          column_name: string
+          created_at: string
+          error: string | null
+          healed_at: string | null
+          id: string
+          row_id: string
+          status: string
+          table_name: string
+        }
+        Insert: {
+          bad_value?: string | null
+          column_name: string
+          created_at?: string
+          error?: string | null
+          healed_at?: string | null
+          id?: string
+          row_id: string
+          status?: string
+          table_name: string
+        }
+        Update: {
+          bad_value?: string | null
+          column_name?: string
+          created_at?: string
+          error?: string | null
+          healed_at?: string | null
+          id?: string
+          row_id?: string
+          status?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
+      mtx_public_url_guard: {
+        Row: {
+          column_name: string
+          created_at: string
+          id: string
+          note: string | null
+          table_name: string
+        }
+        Insert: {
+          column_name: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          table_name: string
+        }
+        Update: {
+          column_name?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
+      ner_canonicalizer_shadow: {
+        Row: {
+          agent_cost_usd: number | null
+          agent_elapsed_ms: number | null
+          agent_error: string | null
+          agent_input_json: Json | null
+          agent_merge_group_count: number
+          agent_model: string | null
+          agent_only_merge_surface_count: number
+          agent_output_json: Json | null
+          agreed_merge_surface_count: number
+          comparison_json: Json | null
+          created_at: string
+          deterministic_groups_json: Json | null
+          deterministic_merge_group_count: number
+          deterministic_only_merge_surface_count: number
+          id: string
+          input_pair_count: number
+          organization_id: string | null
+          run_id: string | null
+          source_id: string
+          source_kind: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          agent_cost_usd?: number | null
+          agent_elapsed_ms?: number | null
+          agent_error?: string | null
+          agent_input_json?: Json | null
+          agent_merge_group_count?: number
+          agent_model?: string | null
+          agent_only_merge_surface_count?: number
+          agent_output_json?: Json | null
+          agreed_merge_surface_count?: number
+          comparison_json?: Json | null
+          created_at?: string
+          deterministic_groups_json?: Json | null
+          deterministic_merge_group_count?: number
+          deterministic_only_merge_surface_count?: number
+          id?: string
+          input_pair_count?: number
+          organization_id?: string | null
+          run_id?: string | null
+          source_id: string
+          source_kind: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          agent_cost_usd?: number | null
+          agent_elapsed_ms?: number | null
+          agent_error?: string | null
+          agent_input_json?: Json | null
+          agent_merge_group_count?: number
+          agent_model?: string | null
+          agent_only_merge_surface_count?: number
+          agent_output_json?: Json | null
+          agreed_merge_surface_count?: number
+          comparison_json?: Json | null
+          created_at?: string
+          deterministic_groups_json?: Json | null
+          deterministic_merge_group_count?: number
+          deterministic_only_merge_surface_count?: number
+          id?: string
+          input_pair_count?: number
+          organization_id?: string | null
+          run_id?: string | null
+          source_id?: string
+          source_kind?: string
+          status?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -10804,6 +11413,56 @@ export type Database = {
           },
         ]
       }
+      org_module_settings: {
+        Row: {
+          auto_ingest: boolean
+          created_at: string | null
+          default_permission: Database["public"]["Enums"]["permission_level"]
+          id: string
+          is_scopeable: boolean
+          members_can_add: boolean
+          module_key: string
+          organization_id: string
+          requires_approval: boolean
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          auto_ingest?: boolean
+          created_at?: string | null
+          default_permission?: Database["public"]["Enums"]["permission_level"]
+          id?: string
+          is_scopeable?: boolean
+          members_can_add?: boolean
+          module_key: string
+          organization_id: string
+          requires_approval?: boolean
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          auto_ingest?: boolean
+          created_at?: string | null
+          default_permission?: Database["public"]["Enums"]["permission_level"]
+          id?: string
+          is_scopeable?: boolean
+          members_can_add?: boolean
+          module_key?: string
+          organization_id?: string
+          requires_approval?: boolean
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_module_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_invitations: {
         Row: {
           email: string
@@ -11079,6 +11738,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "page_extraction_jobs_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "page_extraction_jobs_latest_run_fk"
             columns: ["latest_run_id"]
             isOneToOne: false
@@ -11090,13 +11756,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "page_extraction_jobs_processed_document_id_fkey"
-            columns: ["processed_document_id"]
-            isOneToOne: false
-            referencedRelation: "extracted_documents"
             referencedColumns: ["id"]
           },
           {
@@ -11199,6 +11858,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "page_extraction_page_runs_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "page_extraction_page_runs_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
@@ -11255,6 +11921,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cld_files"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_extraction_results_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
           },
           {
             foreignKeyName: "page_extraction_results_job_id_fkey"
@@ -11344,6 +12017,69 @@ export type Database = {
           },
         ]
       }
+      pc_articles: {
+        Row: {
+          canonical_url: string | null
+          content_markdown: string
+          created_at: string
+          episode_id: string
+          id: string
+          kind: string
+          og_image_url: string | null
+          show_id: string | null
+          slug: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          canonical_url?: string | null
+          content_markdown?: string
+          created_at?: string
+          episode_id: string
+          id?: string
+          kind?: string
+          og_image_url?: string | null
+          show_id?: string | null
+          slug?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          canonical_url?: string | null
+          content_markdown?: string
+          created_at?: string
+          episode_id?: string
+          id?: string
+          kind?: string
+          og_image_url?: string | null
+          show_id?: string | null
+          slug?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pc_articles_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "pc_episodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pc_articles_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "pc_shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pc_episodes: {
         Row: {
           audio_url: string
@@ -11352,15 +12088,19 @@ export type Database = {
           display_mode: string
           duration_seconds: number | null
           episode_number: number | null
+          host_count: number | null
           id: string
           image_url: string | null
           is_published: boolean
           og_image_url: string | null
+          script: string | null
           show_id: string | null
           slug: string
+          speakers: Json | null
           thumbnail_url: string | null
           title: string
           updated_at: string
+          user_id: string | null
           video_url: string | null
         }
         Insert: {
@@ -11370,15 +12110,19 @@ export type Database = {
           display_mode?: string
           duration_seconds?: number | null
           episode_number?: number | null
+          host_count?: number | null
           id?: string
           image_url?: string | null
           is_published?: boolean
           og_image_url?: string | null
+          script?: string | null
           show_id?: string | null
           slug: string
+          speakers?: Json | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string
+          user_id?: string | null
           video_url?: string | null
         }
         Update: {
@@ -11388,15 +12132,19 @@ export type Database = {
           display_mode?: string
           duration_seconds?: number | null
           episode_number?: number | null
+          host_count?: number | null
           id?: string
           image_url?: string | null
           is_published?: boolean
           og_image_url?: string | null
+          script?: string | null
           show_id?: string | null
           slug?: string
+          speakers?: Json | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
+          user_id?: string | null
           video_url?: string | null
         }
         Relationships: [
@@ -11418,6 +12166,7 @@ export type Database = {
           image_url: string | null
           is_published: boolean
           og_image_url: string | null
+          rss_settings: Json | null
           slug: string
           thumbnail_url: string | null
           title: string
@@ -11431,6 +12180,7 @@ export type Database = {
           image_url?: string | null
           is_published?: boolean
           og_image_url?: string | null
+          rss_settings?: Json | null
           slug: string
           thumbnail_url?: string | null
           title: string
@@ -11444,12 +12194,334 @@ export type Database = {
           image_url?: string | null
           is_published?: boolean
           og_image_url?: string | null
+          rss_settings?: Json | null
           slug?: string
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      pc_studio_run_assets: {
+        Row: {
+          asset_kind: string
+          created_at: string
+          error: Json | null
+          id: string
+          is_manual: boolean
+          model_alias: string | null
+          prompt: string | null
+          run_id: string
+          slot: number
+          stage_id: string | null
+          status: string
+          superseded_by: string | null
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          asset_kind: string
+          created_at?: string
+          error?: Json | null
+          id?: string
+          is_manual?: boolean
+          model_alias?: string | null
+          prompt?: string | null
+          run_id: string
+          slot: number
+          stage_id?: string | null
+          status?: string
+          superseded_by?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          asset_kind?: string
+          created_at?: string
+          error?: Json | null
+          id?: string
+          is_manual?: boolean
+          model_alias?: string | null
+          prompt?: string | null
+          run_id?: string
+          slot?: number
+          stage_id?: string | null
+          status?: string
+          superseded_by?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pc_studio_run_assets_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pc_studio_run_assets_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "agent_run_stage"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pc_studio_run_assets_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "pc_studio_run_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pc_studio_runs: {
+        Row: {
+          audio_url: string | null
+          backend_run_id: string | null
+          created_at: string
+          description: string | null
+          episode_id: string | null
+          episode_slug: string | null
+          error: string | null
+          host_count: number | null
+          id: string
+          image_prompts: string[]
+          image_urls: string[]
+          input_data_type: string | null
+          podcast_type: string | null
+          request: Json
+          script: string | null
+          selected_cover_url: string | null
+          show_id: string | null
+          speakers: Json | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+          video_prompts: string[]
+          video_urls: string[]
+        }
+        Insert: {
+          audio_url?: string | null
+          backend_run_id?: string | null
+          created_at?: string
+          description?: string | null
+          episode_id?: string | null
+          episode_slug?: string | null
+          error?: string | null
+          host_count?: number | null
+          id?: string
+          image_prompts?: string[]
+          image_urls?: string[]
+          input_data_type?: string | null
+          podcast_type?: string | null
+          request?: Json
+          script?: string | null
+          selected_cover_url?: string | null
+          show_id?: string | null
+          speakers?: Json | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+          video_prompts?: string[]
+          video_urls?: string[]
+        }
+        Update: {
+          audio_url?: string | null
+          backend_run_id?: string | null
+          created_at?: string
+          description?: string | null
+          episode_id?: string | null
+          episode_slug?: string | null
+          error?: string | null
+          host_count?: number | null
+          id?: string
+          image_prompts?: string[]
+          image_urls?: string[]
+          input_data_type?: string | null
+          podcast_type?: string | null
+          request?: Json
+          script?: string | null
+          selected_cover_url?: string | null
+          show_id?: string | null
+          speakers?: Json | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          video_prompts?: string[]
+          video_urls?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pc_studio_runs_episode_id_fkey"
+            columns: ["episode_id"]
+            isOneToOne: false
+            referencedRelation: "pc_episodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pc_studio_runs_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "pc_shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pdf_consolidation_log: {
+        Row: {
+          chosen_id: string | null
+          cld_file_id: string | null
+          created_at: string
+          detail: Json
+          id: string
+          kind: string
+        }
+        Insert: {
+          chosen_id?: string | null
+          cld_file_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind: string
+        }
+        Update: {
+          chosen_id?: string | null
+          cld_file_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          kind?: string
+        }
+        Relationships: []
+      }
+      pdf_redaction_audits: {
+        Row: {
+          bytes_removed_estimate: number
+          created_at: string
+          file_id: string | null
+          id: string
+          parent_file_id: string | null
+          reason: string
+          redaction_kind: string
+          redaction_params: Json
+          regions_count: number
+          status: string
+          tier_used: string
+          user_id: string
+        }
+        Insert: {
+          bytes_removed_estimate?: number
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          parent_file_id?: string | null
+          reason: string
+          redaction_kind: string
+          redaction_params?: Json
+          regions_count?: number
+          status?: string
+          tier_used?: string
+          user_id: string
+        }
+        Update: {
+          bytes_removed_estimate?: number
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          parent_file_id?: string | null
+          reason?: string
+          redaction_kind?: string
+          redaction_params?: Json
+          regions_count?: number
+          status?: string
+          tier_used?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_redaction_audits_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdf_redaction_audits_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
+            foreignKeyName: "pdf_redaction_audits_parent_file_id_fkey"
+            columns: ["parent_file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdf_redaction_audits_parent_file_id_fkey"
+            columns: ["parent_file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+        ]
+      }
+      pdf_redaction_key_escrow: {
+        Row: {
+          created_at: string
+          file_id: string | null
+          id: string
+          organization_id: string | null
+          owner_id: string
+          revoked_at: string | null
+          session_id: string
+          wrap_alg: string
+          wrapped_key: string
+        }
+        Insert: {
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          organization_id?: string | null
+          owner_id: string
+          revoked_at?: string | null
+          session_id: string
+          wrap_alg: string
+          wrapped_key: string
+        }
+        Update: {
+          created_at?: string
+          file_id?: string | null
+          id?: string
+          organization_id?: string | null
+          owner_id?: string
+          revoked_at?: string | null
+          session_id?: string
+          wrap_alg?: string
+          wrapped_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_redaction_key_escrow_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdf_redaction_key_escrow_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+        ]
       }
       permissions: {
         Row: {
@@ -11462,6 +12534,10 @@ export type Database = {
           permission_level: Database["public"]["Enums"]["permission_level"]
           resource_id: string
           resource_type: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
         }
         Insert: {
           created_at?: string | null
@@ -11473,6 +12549,10 @@ export type Database = {
           permission_level?: Database["public"]["Enums"]["permission_level"]
           resource_id: string
           resource_type: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
         }
         Update: {
           created_at?: string | null
@@ -11484,6 +12564,10 @@ export type Database = {
           permission_level?: Database["public"]["Enums"]["permission_level"]
           resource_id?: string
           resource_type?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
         }
         Relationships: [
           {
@@ -11580,11 +12664,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "processed_document_pages_processed_document_id_fkey"
-            columns: ["processed_document_id"]
+            foreignKeyName: "processed_document_pages_image_cld_file_id_fkey"
+            columns: ["image_cld_file_id"]
             isOneToOne: false
-            referencedRelation: "extracted_documents"
-            referencedColumns: ["id"]
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
           },
           {
             foreignKeyName: "processed_document_pages_processed_document_id_fkey"
@@ -11703,21 +12787,7 @@ export type Database = {
             foreignKeyName: "processed_documents_canonical_clean_id_fkey"
             columns: ["canonical_clean_id"]
             isOneToOne: false
-            referencedRelation: "extracted_documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "processed_documents_canonical_clean_id_fkey"
-            columns: ["canonical_clean_id"]
-            isOneToOne: false
             referencedRelation: "processed_documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "processed_documents_parent_processed_id_fkey"
-            columns: ["parent_processed_id"]
-            isOneToOne: false
-            referencedRelation: "extracted_documents"
             referencedColumns: ["id"]
           },
           {
@@ -13372,11 +14442,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "redaction_mapping_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
             foreignKeyName: "redaction_mapping_page_id_fkey"
             columns: ["page_id"]
             isOneToOne: false
             referencedRelation: "file_pages"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "redaction_mapping_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_page_id"]
           },
         ]
       }
@@ -14731,6 +15815,21 @@ export type Database = {
           },
         ]
       }
+      schema_migrations: {
+        Row: {
+          applied_at: string
+          version: string
+        }
+        Insert: {
+          applied_at?: string
+          version: string
+        }
+        Update: {
+          applied_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
       schema_templates: {
         Row: {
           created_at: string | null
@@ -14765,7 +15864,9 @@ export type Database = {
           created_at: string
           decided_at: string | null
           decided_by: string | null
+          decision_note: string | null
           id: string
+          is_starred: boolean
           kg_chunk_entity_id: string | null
           kg_entity_id: string | null
           match_kind: string
@@ -14779,6 +15880,7 @@ export type Database = {
           target_scope_item_id: string | null
           target_slot_name: string | null
           user_id: string
+          viewed_at: string | null
         }
         Insert: {
           confidence: number
@@ -14786,7 +15888,9 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          decision_note?: string | null
           id?: string
+          is_starred?: boolean
           kg_chunk_entity_id?: string | null
           kg_entity_id?: string | null
           match_kind: string
@@ -14800,6 +15904,7 @@ export type Database = {
           target_scope_item_id?: string | null
           target_slot_name?: string | null
           user_id: string
+          viewed_at?: string | null
         }
         Update: {
           confidence?: number
@@ -14807,7 +15912,9 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          decision_note?: string | null
           id?: string
+          is_starred?: boolean
           kg_chunk_entity_id?: string | null
           kg_entity_id?: string | null
           match_kind?: string
@@ -14821,6 +15928,7 @@ export type Database = {
           target_scope_item_id?: string | null
           target_slot_name?: string | null
           user_id?: string
+          viewed_at?: string | null
         }
         Relationships: [
           {
@@ -14835,6 +15943,164 @@ export type Database = {
             columns: ["target_scope_item_id"]
             isOneToOne: false
             referencedRelation: "ctx_context_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scope_item_value_suggestions: {
+        Row: {
+          confidence: number
+          context_snippet: string | null
+          created_at: string
+          current_value_snapshot: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          evidence_chunk_id: string | null
+          id: string
+          is_starred: boolean
+          kg_entity_id: string | null
+          match_kind: string
+          organization_id: string | null
+          source_id: string
+          source_kind: string
+          status: string
+          suggested_value: string
+          suppressed_until: string | null
+          target_context_item_id: string
+          target_scope_id: string
+          target_slot_key: string
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          confidence: number
+          context_snippet?: string | null
+          created_at?: string
+          current_value_snapshot?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          evidence_chunk_id?: string | null
+          id?: string
+          is_starred?: boolean
+          kg_entity_id?: string | null
+          match_kind: string
+          organization_id?: string | null
+          source_id: string
+          source_kind: string
+          status?: string
+          suggested_value: string
+          suppressed_until?: string | null
+          target_context_item_id: string
+          target_scope_id: string
+          target_slot_key: string
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          confidence?: number
+          context_snippet?: string | null
+          created_at?: string
+          current_value_snapshot?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          evidence_chunk_id?: string | null
+          id?: string
+          is_starred?: boolean
+          kg_entity_id?: string | null
+          match_kind?: string
+          organization_id?: string | null
+          source_id?: string
+          source_kind?: string
+          status?: string
+          suggested_value?: string
+          suppressed_until?: string | null
+          target_context_item_id?: string
+          target_scope_id?: string
+          target_slot_key?: string
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scope_item_value_suggestions_target_context_item_id_fkey"
+            columns: ["target_context_item_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_context_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scope_item_value_suggestions_target_scope_id_fkey"
+            columns: ["target_scope_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scope_suggestions: {
+        Row: {
+          confidence: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          organization_id: string | null
+          reasoning: string | null
+          scope_type_id: string | null
+          scope_type_label: string
+          source_id: string
+          source_kind: string
+          status: string
+          suggested_name: string
+          suggested_slot_values: Json
+          suppressed_until: string | null
+          user_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          organization_id?: string | null
+          reasoning?: string | null
+          scope_type_id?: string | null
+          scope_type_label: string
+          source_id: string
+          source_kind: string
+          status?: string
+          suggested_name: string
+          suggested_slot_values?: Json
+          suppressed_until?: string | null
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          organization_id?: string | null
+          reasoning?: string | null
+          scope_type_id?: string | null
+          scope_type_label?: string
+          source_id?: string
+          source_kind?: string
+          status?: string
+          suggested_name?: string
+          suggested_slot_values?: Json
+          suppressed_until?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scope_suggestions_scope_type_id_fkey"
+            columns: ["scope_type_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scope_types"
             referencedColumns: ["id"]
           },
         ]
@@ -16074,11 +17340,13 @@ export type Database = {
       }
       shareable_resource_registry: {
         Row: {
+          content_role: string | null
           created_at: string
           display_label: string
           id_column: string
           is_active: boolean
           is_public_column: string | null
+          is_scopeable: boolean
           notes: string | null
           owner_column: string
           resource_type: string
@@ -16088,11 +17356,13 @@ export type Database = {
           url_path_template: string
         }
         Insert: {
+          content_role?: string | null
           created_at?: string
           display_label: string
           id_column?: string
           is_active?: boolean
           is_public_column?: string | null
+          is_scopeable?: boolean
           notes?: string | null
           owner_column?: string
           resource_type: string
@@ -16102,11 +17372,13 @@ export type Database = {
           url_path_template: string
         }
         Update: {
+          content_role?: string | null
           created_at?: string
           display_label?: string
           id_column?: string
           is_active?: boolean
           is_public_column?: string | null
+          is_scopeable?: boolean
           notes?: string | null
           owner_column?: string
           resource_type?: string
@@ -17273,6 +18545,8 @@ export type Database = {
           created_at: string
           id: string
           pass_index: number
+          processor_key: string
+          recording_segment_id: string | null
           run_id: string | null
           session_id: string
           superseded_at: string | null
@@ -17285,6 +18559,8 @@ export type Database = {
           created_at?: string
           id?: string
           pass_index: number
+          processor_key?: string
+          recording_segment_id?: string | null
           run_id?: string | null
           session_id: string
           superseded_at?: string | null
@@ -17297,6 +18573,8 @@ export type Database = {
           created_at?: string
           id?: string
           pass_index?: number
+          processor_key?: string
+          recording_segment_id?: string | null
           run_id?: string | null
           session_id?: string
           superseded_at?: string | null
@@ -17306,6 +18584,13 @@ export type Database = {
           trigger_cause?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "studio_cleaned_segments_recording_segment_id_fkey"
+            columns: ["recording_segment_id"]
+            isOneToOne: false
+            referencedRelation: "studio_recording_segments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "studio_cleaned_segments_run_id_fkey"
             columns: ["run_id"]
@@ -17647,7 +18932,9 @@ export type Database = {
           column_widths: Json | null
           concept_interval_ms: number
           concept_shortcut_id: string | null
+          context_items: Json | null
           created_at: string
+          custom_slots: Json | null
           module_id: string
           module_interval_ms: number | null
           module_shortcut_id: string | null
@@ -17661,7 +18948,9 @@ export type Database = {
           column_widths?: Json | null
           concept_interval_ms?: number
           concept_shortcut_id?: string | null
+          context_items?: Json | null
           created_at?: string
+          custom_slots?: Json | null
           module_id?: string
           module_interval_ms?: number | null
           module_shortcut_id?: string | null
@@ -17675,7 +18964,9 @@ export type Database = {
           column_widths?: Json | null
           concept_interval_ms?: number
           concept_shortcut_id?: string | null
+          context_items?: Json | null
           created_at?: string
+          custom_slots?: Json | null
           module_id?: string
           module_interval_ms?: number | null
           module_shortcut_id?: string | null
@@ -17695,6 +18986,7 @@ export type Database = {
       }
       studio_sessions: {
         Row: {
+          assistant_conversation_id: string | null
           audio_storage_path: string | null
           created_at: string
           ended_at: string | null
@@ -17704,6 +18996,7 @@ export type Database = {
           module_id: string
           organization_id: string | null
           project_id: string | null
+          source: string
           started_at: string
           status: string
           title: string
@@ -17713,6 +19006,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assistant_conversation_id?: string | null
           audio_storage_path?: string | null
           created_at?: string
           ended_at?: string | null
@@ -17722,6 +19016,7 @@ export type Database = {
           module_id?: string
           organization_id?: string | null
           project_id?: string | null
+          source?: string
           started_at?: string
           status?: string
           title?: string
@@ -17731,6 +19026,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assistant_conversation_id?: string | null
           audio_storage_path?: string | null
           created_at?: string
           ended_at?: string | null
@@ -17740,6 +19036,7 @@ export type Database = {
           module_id?: string
           organization_id?: string | null
           project_id?: string | null
+          source?: string
           started_at?: string
           status?: string
           title?: string
@@ -19818,7 +21115,22 @@ export type Database = {
           user_id?: string
           workbook_name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "udt_workbooks_original_file_id_fkey"
+            columns: ["original_file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "udt_workbooks_original_file_id_fkey"
+            columns: ["original_file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+        ]
       }
       ui_client: {
         Row: {
@@ -20815,6 +22127,45 @@ export type Database = {
           },
         ]
       }
+      wbx_guidance: {
+        Row: {
+          caption: string | null
+          created_at: string
+          data: Json
+          domain: string
+          id: string
+          is_deleted: boolean
+          kind: string
+          origin_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          data?: Json
+          domain: string
+          id: string
+          is_deleted?: boolean
+          kind: string
+          origin_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          data?: Json
+          domain?: string
+          id?: string
+          is_deleted?: boolean
+          kind?: string
+          origin_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wbx_highlight: {
         Row: {
           anchor: Json
@@ -20927,6 +22278,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wbx_recipe: {
+        Row: {
+          config: Json
+          created_at: string
+          description: string
+          hosts: string[]
+          id: string
+          is_active: boolean
+          kind: string
+          label: string
+          last_verified_at: string | null
+          routes: string[] | null
+          updated_at: string | null
+          yields_rows: boolean
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          description?: string
+          hosts: string[]
+          id: string
+          is_active?: boolean
+          kind: string
+          label: string
+          last_verified_at?: string | null
+          routes?: string[] | null
+          updated_at?: string | null
+          yields_rows?: boolean
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          description?: string
+          hosts?: string[]
+          id?: string
+          is_active?: boolean
+          kind?: string
+          label?: string
+          last_verified_at?: string | null
+          routes?: string[] | null
+          updated_at?: string | null
+          yields_rows?: boolean
+        }
+        Relationships: []
       }
       wbx_screenshot: {
         Row: {
@@ -21598,6 +22994,7 @@ export type Database = {
           node_id: string | null
           payload: Json
           run_id: string
+          seq: number | null
           spec_type: string | null
           step: number | null
         }
@@ -21614,6 +23011,7 @@ export type Database = {
           node_id?: string | null
           payload: Json
           run_id: string
+          seq?: number | null
           spec_type?: string | null
           step?: number | null
         }
@@ -21630,6 +23028,7 @@ export type Database = {
           node_id?: string | null
           payload?: Json
           run_id?: string
+          seq?: number | null
           spec_type?: string | null
           step?: number | null
         }
@@ -21767,6 +23166,7 @@ export type Database = {
           definition_id: string
           definition_version_id: string | null
           error: Json | null
+          event_seq: number
           id: string
           input: Json
           interrupt_payload: Json | null
@@ -21795,6 +23195,7 @@ export type Database = {
           definition_id: string
           definition_version_id?: string | null
           error?: Json | null
+          event_seq?: number
           id?: string
           input?: Json
           interrupt_payload?: Json | null
@@ -21823,6 +23224,7 @@ export type Database = {
           definition_id?: string
           definition_version_id?: string | null
           error?: Json | null
+          event_seq?: number
           id?: string
           input?: Json
           interrupt_payload?: Json | null
@@ -22803,38 +24205,53 @@ export type Database = {
           },
         ]
       }
-      extracted_documents: {
+      pdf_unified_pages: {
         Row: {
-          clean_content: string | null
-          content: string | null
-          created_at: string | null
-          id: string | null
-          name: string | null
-          source: string | null
-          updated_at: string | null
-          user_id: string | null
+          cleaned_text: string | null
+          excluded_at: string | null
+          extract_rotation: number | null
+          file_id: string | null
+          file_page_id: string | null
+          height: number | null
+          image_cld_file_id: string | null
+          is_continuation: boolean | null
+          page_id: string | null
+          page_index: number | null
+          page_number: number | null
+          processed_document_id: string | null
+          raw_text: string | null
+          section_kind: string | null
+          section_title: string | null
+          thumbnail_url: string | null
+          used_ocr: boolean | null
+          user_modified: boolean | null
+          user_rotation: number | null
+          user_status: string | null
+          width: number | null
         }
-        Insert: {
-          clean_content?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          source?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          clean_content?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          source?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "processed_document_pages_image_cld_file_id_fkey"
+            columns: ["image_cld_file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "processed_document_pages_image_cld_file_id_fkey"
+            columns: ["image_cld_file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
+            foreignKeyName: "processed_document_pages_processed_document_id_fkey"
+            columns: ["processed_document_id"]
+            isOneToOne: false
+            referencedRelation: "processed_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       prompt_app_analytics: {
         Row: {
@@ -23050,6 +24467,251 @@ export type Database = {
           },
         ]
       }
+      v_context_item_suggestions: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          decided_at: string | null
+          decided_by: string | null
+          display_name: string | null
+          example_source_id: string | null
+          example_source_kind: string | null
+          example_value: string | null
+          id: string | null
+          organization_id: string | null
+          rationale: string | null
+          scope_type_icon: string | null
+          scope_type_id: string | null
+          scope_type_label: string | null
+          scope_type_label_plural: string | null
+          scope_type_slug: string | null
+          status: string | null
+          suggested_key: string | null
+          suppressed_until: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "context_item_suggestions_scope_type_id_fkey"
+            columns: ["scope_type_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scope_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_kg_alerts: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          decided_at: string | null
+          decided_by: string | null
+          description: string | null
+          evidence: string | null
+          id: string | null
+          kind: string | null
+          organization_id: string | null
+          scope_name: string | null
+          severity: string | null
+          source_id: string | null
+          source_kind: string | null
+          status: string | null
+          suggested_action: string | null
+          target_scope_id: string | null
+          target_slot_key: string | null
+          user_id: string | null
+          viewed_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kg_alerts_target_scope_id_fkey"
+            columns: ["target_scope_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_kg_value_matches: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          current_value_snapshot: string | null
+          evidence_chunk_id: string | null
+          id: string | null
+          item_key: string | null
+          item_label: string | null
+          kg_entity_id: string | null
+          matched_value: string | null
+          mention_count: number | null
+          organization_id: string | null
+          scope_name: string | null
+          scope_slug: string | null
+          scope_type_icon: string | null
+          scope_type_label: string | null
+          source_id: string | null
+          source_kind: string | null
+          target_context_item_id: string | null
+          target_scope_id: string | null
+          target_slot_key: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      v_ner_canonicalizer_shadow: {
+        Row: {
+          agent_cost_usd: number | null
+          agent_elapsed_ms: number | null
+          agent_error: string | null
+          agent_input_json: Json | null
+          agent_merge_group_count: number | null
+          agent_model: string | null
+          agent_only_merge_surface_count: number | null
+          agent_output_json: Json | null
+          agreed_merge_surface_count: number | null
+          comparison_json: Json | null
+          created_at: string | null
+          deterministic_groups_json: Json | null
+          deterministic_merge_group_count: number | null
+          deterministic_only_merge_surface_count: number | null
+          id: string | null
+          input_pair_count: number | null
+          organization_id: string | null
+          run_id: string | null
+          source_id: string | null
+          source_kind: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agent_cost_usd?: number | null
+          agent_elapsed_ms?: number | null
+          agent_error?: string | null
+          agent_input_json?: Json | null
+          agent_merge_group_count?: number | null
+          agent_model?: string | null
+          agent_only_merge_surface_count?: number | null
+          agent_output_json?: Json | null
+          agreed_merge_surface_count?: number | null
+          comparison_json?: Json | null
+          created_at?: string | null
+          deterministic_groups_json?: Json | null
+          deterministic_merge_group_count?: number | null
+          deterministic_only_merge_surface_count?: number | null
+          id?: string | null
+          input_pair_count?: number | null
+          organization_id?: string | null
+          run_id?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agent_cost_usd?: number | null
+          agent_elapsed_ms?: number | null
+          agent_error?: string | null
+          agent_input_json?: Json | null
+          agent_merge_group_count?: number | null
+          agent_model?: string | null
+          agent_only_merge_surface_count?: number | null
+          agent_output_json?: Json | null
+          agreed_merge_surface_count?: number | null
+          comparison_json?: Json | null
+          created_at?: string | null
+          deterministic_groups_json?: Json | null
+          deterministic_merge_group_count?: number | null
+          deterministic_only_merge_surface_count?: number | null
+          id?: string | null
+          input_pair_count?: number | null
+          organization_id?: string | null
+          run_id?: string | null
+          source_id?: string | null
+          source_kind?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      v_scope_suggestion_stats: {
+        Row: {
+          is_starred: boolean | null
+          n: number | null
+          organization_id: string | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      v_scope_suggestions: {
+        Row: {
+          confidence: number | null
+          context_snippet: string | null
+          created_at: string | null
+          current_value_snapshot: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          id: string | null
+          is_starred: boolean | null
+          item_key: string | null
+          item_label: string | null
+          kg_entity_id: string | null
+          match_kind: string | null
+          org_name: string | null
+          org_slug: string | null
+          organization_id: string | null
+          scope_name: string | null
+          scope_slug: string | null
+          scope_type_icon: string | null
+          scope_type_id: string | null
+          scope_type_label: string | null
+          scope_type_slug: string | null
+          source_id: string | null
+          source_kind: string | null
+          stage: string | null
+          status: string | null
+          suggested_value: string | null
+          suppressed_until: string | null
+          target_item_id: string | null
+          target_scope_id: string | null
+          target_slot: string | null
+          user_id: string | null
+          viewed_at: string | null
+        }
+        Relationships: []
+      }
+      v_scope_suggestions_new: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          decided_at: string | null
+          decided_by: string | null
+          id: string | null
+          organization_id: string | null
+          reasoning: string | null
+          resolved_scope_type_label: string | null
+          scope_type_icon: string | null
+          scope_type_id: string | null
+          scope_type_label: string | null
+          scope_type_slug: string | null
+          source_id: string | null
+          source_kind: string | null
+          status: string | null
+          suggested_name: string | null
+          suggested_slot_values: Json | null
+          suppressed_until: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scope_suggestions_scope_type_id_fkey"
+            columns: ["scope_type_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scope_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       view_registered_function: {
         Row: {
           args: Json | null
@@ -23126,9 +24788,17 @@ export type Database = {
     }
     Functions: {
       _count_super_admins: { Args: never; Returns: number }
+      accept_context_item_suggestion: {
+        Args: { p_suggestion_id: string }
+        Returns: Json
+      }
       accept_organization_invitation: {
         Args: { accepting_user_id: string; invitation_token: string }
         Returns: string
+      }
+      accept_scope_suggestion: {
+        Args: { p_organization_id?: string; p_suggestion_id: string }
+        Returns: Json
       }
       add_column_to_user_table: {
         Args: {
@@ -24086,7 +25756,6 @@ export type Database = {
           variables_panel_style: string
         }[]
       }
-      agx_get_user_context_tree: { Args: never; Returns: Json }
       agx_get_user_shortcuts: {
         Args: never
         Returns: {
@@ -24226,6 +25895,14 @@ export type Database = {
       agx_purge_versions: {
         Args: { p_agent_id: string; p_keep_count?: number }
         Returns: Json
+      }
+      agx_sync_linked_agents: {
+        Args: {
+          p_from_id: string
+          p_include_identity?: boolean
+          p_to_id: string
+        }
+        Returns: string
       }
       agx_update_from_source: { Args: { p_agent_id: string }; Returns: Json }
       append_rows_to_user_table: {
@@ -24694,27 +26371,48 @@ export type Database = {
         }
         Returns: Json
       }
-      create_agent_task: {
-        Args: {
-          p_agent_id?: string
-          p_auth_mode?: string
-          p_description?: string
-          p_expires_at?: string
-          p_max_concurrent?: number
-          p_max_runtime_seconds?: number
-          p_next_due_at?: string
-          p_persistent_conversation_id?: string
-          p_prompt: string
-          p_queue?: string
-          p_surfaces?: string[]
-          p_tags?: string[]
-          p_title: string
-          p_trigger_config: Json
-          p_trigger_type: string
-          p_variables?: Json
-        }
-        Returns: string
-      }
+      create_agent_task:
+        | {
+            Args: {
+              p_agent_id?: string
+              p_auth_mode?: string
+              p_description?: string
+              p_expires_at?: string
+              p_max_concurrent?: number
+              p_max_runtime_seconds?: number
+              p_next_due_at?: string
+              p_persistent_conversation_id?: string
+              p_prompt: string
+              p_surfaces?: string[]
+              p_tags?: string[]
+              p_title: string
+              p_trigger_config: Json
+              p_trigger_type: string
+              p_variables?: Json
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_agent_id?: string
+              p_auth_mode?: string
+              p_description?: string
+              p_expires_at?: string
+              p_max_concurrent?: number
+              p_max_runtime_seconds?: number
+              p_next_due_at?: string
+              p_persistent_conversation_id?: string
+              p_prompt: string
+              p_queue?: string
+              p_surfaces?: string[]
+              p_tags?: string[]
+              p_title: string
+              p_trigger_config: Json
+              p_trigger_type: string
+              p_variables?: Json
+            }
+            Returns: string
+          }
       create_arg: {
         Args: {
           p_data_type: Database["public"]["Enums"]["data_type"]
@@ -24756,6 +26454,8 @@ export type Database = {
           p_key: string
           p_scope_type_id: string
           p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          p_slug?: string
+          p_sort_order?: number
           p_tags?: string[]
           p_value_type: Database["public"]["Enums"]["context_value_type"]
         }
@@ -24800,12 +26500,15 @@ export type Database = {
           p_org_id: string
           p_parent_scope_id?: string
           p_settings?: Json
+          p_slug?: string
+          p_sort_order?: number
           p_type_id: string
         }
         Returns: Json
       }
       create_scope_type: {
         Args: {
+          p_color?: string
           p_default_variable_keys?: string[]
           p_description?: string
           p_icon?: string
@@ -24814,6 +26517,7 @@ export type Database = {
           p_max_assignments?: number
           p_org_id: string
           p_parent_type_id?: string
+          p_slug?: string
           p_sort_order?: number
         }
         Returns: Json
@@ -25229,6 +26933,34 @@ export type Database = {
         Returns: Json
       }
       cx_message_edit: {
+        Args: { p_message_id: string; p_new_content: Json }
+        Returns: {
+          agent_id: string | null
+          content: Json
+          content_chars: number
+          content_history: Json | null
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_visible_to_model: boolean
+          is_visible_to_user: boolean
+          metadata: Json
+          position: number
+          role: string
+          source: string
+          status: string
+          tool_results_chars: number
+          user_content: Json | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cx_message"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cx_message_set_content: {
         Args: { p_message_id: string; p_new_content: Json }
         Returns: {
           agent_id: string | null
@@ -27165,28 +28897,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      get_user_projects: {
-        Args: { p_org_id?: string }
-        Returns: {
-          created_at: string
-          created_by: string
-          description: string
-          id: string
-          is_personal: boolean
-          member_count: number
-          name: string
-          organization_id: string
-          role: Database["public"]["Enums"]["project_role"]
-          settings: Json
-          slug: string
-          updated_at: string
-        }[]
-      }
       get_user_scopes: { Args: { p_user_id?: string }; Returns: Json }
-      get_user_scopes_with_projects: {
-        Args: { p_user_id?: string }
-        Returns: Json
-      }
       get_user_session_data: {
         Args: { p_user_id: string }
         Returns: {
@@ -27297,6 +29008,15 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }
+      kg_caller_can_target_scope: {
+        Args: { p_scope_id: string }
+        Returns: boolean
+      }
+      kg_heavy_hitter_accept_plan: {
+        Args: { p_suggestion_id: string }
+        Returns: Json
+      }
+      kg_simulated_scope_graph: { Args: { p_scope_id: string }; Returns: Json }
       list_entities_by_scopes: {
         Args: {
           p_entity_type?: string
@@ -27378,6 +29098,11 @@ export type Database = {
       }
       mark_user_message_emailed: {
         Args: { p_message_id: string }
+        Returns: undefined
+      }
+      mtx_is_durable_media_url: { Args: { url: string }; Returns: boolean }
+      page_extraction_clear_job_results: {
+        Args: { p_job_id: string }
         Returns: undefined
       }
       pin_prompt_app_to_version: {
@@ -27555,7 +29280,12 @@ export type Database = {
         }
       }
       resolve_full_context: {
-        Args: { p_entity_id: string; p_entity_type: string; p_user_id: string }
+        Args: {
+          p_entity_id: string
+          p_entity_type: string
+          p_scope_ids?: string[]
+          p_user_id: string
+        }
         Returns: Json
       }
       resolve_shareable_resource: {
@@ -27625,6 +29355,10 @@ export type Database = {
       restore_version: {
         Args: { p_entity_id: string; p_entity_type: string; p_version: number }
         Returns: number
+      }
+      review_org_share: {
+        Args: { p_note?: string; p_permission_id: string; p_status: string }
+        Returns: Json
       }
       revoke_resource_access: {
         Args: {
@@ -27763,12 +29497,25 @@ export type Database = {
         }
         Returns: Json
       }
+      set_org_module_setting: {
+        Args: {
+          p_auto_ingest: boolean
+          p_default_permission: string
+          p_is_scopeable: boolean
+          p_members_can_add: boolean
+          p_module_key: string
+          p_org_id: string
+          p_requires_approval: boolean
+        }
+        Returns: Json
+      }
       set_scope_context_value: {
         Args: {
           p_change_summary?: string
           p_context_item_id: string
           p_scope_id: string
           p_value_boolean?: boolean
+          p_value_date?: string
           p_value_document_url?: string
           p_value_json?: Json
           p_value_number?: number
@@ -28085,6 +29832,7 @@ export type Database = {
         }
         Returns: Json
       }
+      udt_dataset_row_versions_trim: { Args: never; Returns: Json }
       udt_upsert_cell: {
         Args: {
           p_field_name: string
@@ -28205,16 +29953,20 @@ export type Database = {
           p_name?: string
           p_scope_id: string
           p_settings?: Json
+          p_slug?: string
+          p_sort_order?: number
         }
         Returns: Json
       }
       update_scope_type: {
         Args: {
+          p_color?: string
           p_description?: string
           p_icon?: string
           p_label_plural?: string
           p_label_singular?: string
           p_max_assignments?: number
+          p_slug?: string
           p_sort_order?: number
           p_type_id: string
         }
@@ -28686,6 +30438,7 @@ export type Database = {
         | "array"
         | "document"
         | "reference"
+        | "date"
       cx_agent_task_creator: "agent" | "user"
       cx_agent_task_status:
         | "pending"
@@ -29434,6 +31187,7 @@ export const Constants = {
         "array",
         "document",
         "reference",
+        "date",
       ],
       cx_agent_task_creator: ["agent", "user"],
       cx_agent_task_status: [

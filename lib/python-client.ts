@@ -31,6 +31,7 @@ import { getStore } from "@/lib/redux/store-singleton";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { extractErrorMessage } from "@/utils/errors";
 import { getCachedFingerprint } from "@/lib/services/fingerprint-service";
+import { logApiTarget } from "@/lib/api/log-api-target";
 
 // ---------------------------------------------------------------------------
 // Request ID helper
@@ -99,6 +100,26 @@ export function resolveBaseUrl(override?: string): string {
     });
   }
   return configured.replace(/\/$/, "");
+}
+
+/**
+ * Resolve the base URL, join the path, and log the final target at the last
+ * moment before the request fires. Every method in this client routes its
+ * URL construction through here so no backend call escapes the target log.
+ */
+function buildAndLogTargetUrl(
+  path: string,
+  override: string | undefined,
+  source: string,
+  method: string,
+): string {
+  const url = `${resolveBaseUrl(override)}${path}`;
+  logApiTarget(url, {
+    source: `python-client.${source}`,
+    method,
+    channel: override ? "override" : "global",
+  });
+  return url;
 }
 
 // ---------------------------------------------------------------------------
@@ -214,7 +235,7 @@ export async function getJson<T>(
 ): Promise<{ data: T; meta: ResponseMeta }> {
   const { headers, requestId } = await buildHeaders(opts, false);
   const response = await fetch(
-    `${resolveBaseUrl(opts.baseUrlOverride)}${path}`,
+    buildAndLogTargetUrl(path, opts.baseUrlOverride, "getJson", "GET"),
     { method: "GET", headers, signal: opts.signal },
   );
   if (!response.ok) throw await parseHttpError(response);
@@ -230,7 +251,7 @@ export async function postJson<T, B = unknown>(
 ): Promise<{ data: T; meta: ResponseMeta }> {
   const { headers, requestId } = await buildHeaders(opts, true);
   const response = await fetch(
-    `${resolveBaseUrl(opts.baseUrlOverride)}${path}`,
+    buildAndLogTargetUrl(path, opts.baseUrlOverride, "postJson", "POST"),
     {
       method: "POST",
       headers,
@@ -251,7 +272,7 @@ export async function patchJson<T, B = unknown>(
 ): Promise<{ data: T; meta: ResponseMeta }> {
   const { headers, requestId } = await buildHeaders(opts, true);
   const response = await fetch(
-    `${resolveBaseUrl(opts.baseUrlOverride)}${path}`,
+    buildAndLogTargetUrl(path, opts.baseUrlOverride, "patchJson", "PATCH"),
     {
       method: "PATCH",
       headers,
@@ -273,7 +294,7 @@ export async function putJson<T, B = unknown>(
 ): Promise<{ data: T; meta: ResponseMeta }> {
   const { headers, requestId } = await buildHeaders(opts, true);
   const response = await fetch(
-    `${resolveBaseUrl(opts.baseUrlOverride)}${path}`,
+    buildAndLogTargetUrl(path, opts.baseUrlOverride, "putJson", "PUT"),
     {
       method: "PUT",
       headers,
@@ -293,7 +314,7 @@ export async function del<T = null>(
 ): Promise<{ data: T | null; meta: ResponseMeta }> {
   const { headers, requestId } = await buildHeaders(opts, false);
   const response = await fetch(
-    `${resolveBaseUrl(opts.baseUrlOverride)}${path}`,
+    buildAndLogTargetUrl(path, opts.baseUrlOverride, "del", "DELETE"),
     { method: "DELETE", headers, signal: opts.signal },
   );
   if (!response.ok) throw await parseHttpError(response);
@@ -314,7 +335,7 @@ export async function delJson<T = null, B = unknown>(
 ): Promise<{ data: T | null; meta: ResponseMeta }> {
   const { headers, requestId } = await buildHeaders(opts, true);
   const response = await fetch(
-    `${resolveBaseUrl(opts.baseUrlOverride)}${path}`,
+    buildAndLogTargetUrl(path, opts.baseUrlOverride, "delJson", "DELETE"),
     {
       method: "DELETE",
       headers,
@@ -339,7 +360,7 @@ export async function postMultipart<T>(
   const { headers, requestId } = await buildHeaders(opts, false);
   // Never set Content-Type for FormData — the browser adds the boundary.
   const response = await fetch(
-    `${resolveBaseUrl(opts.baseUrlOverride)}${path}`,
+    buildAndLogTargetUrl(path, opts.baseUrlOverride, "postMultipart", "POST"),
     { method: "POST", headers, body: form, signal: opts.signal },
   );
   if (!response.ok) throw await parseHttpError(response);
@@ -373,7 +394,12 @@ export async function uploadWithProgress<T>(
     });
   }
   const requestId = opts.requestId ?? newRequestId();
-  const url = `${resolveBaseUrl(opts.baseUrlOverride)}${path}`;
+  const url = buildAndLogTargetUrl(
+    path,
+    opts.baseUrlOverride,
+    "uploadWithProgress",
+    "POST",
+  );
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -402,8 +428,7 @@ export async function uploadWithProgress<T>(
             meta: {
               requestId,
               status: xhr.status,
-              serverRequestId:
-                xhr.getResponseHeader("x-request-id") ?? null,
+              serverRequestId: xhr.getResponseHeader("x-request-id") ?? null,
             },
           });
         } catch (err) {
@@ -429,9 +454,7 @@ export async function uploadWithProgress<T>(
       }
       reject(
         new BackendApiError({
-          code:
-            (body?.error as string) ??
-            statusToCloudFilesCode(xhr.status),
+          code: (body?.error as string) ?? statusToCloudFilesCode(xhr.status),
           detail: (body?.message as string) ?? `HTTP ${xhr.status}`,
           userMessage:
             (body?.user_message as string) ??
@@ -487,7 +510,7 @@ export async function downloadBlob(
 ): Promise<{ blob: Blob; meta: ResponseMeta; filename: string | null }> {
   const { headers, requestId } = await buildHeaders(opts, false);
   const response = await fetch(
-    `${resolveBaseUrl(opts.baseUrlOverride)}${path}`,
+    buildAndLogTargetUrl(path, opts.baseUrlOverride, "downloadBlob", "GET"),
     { method: "GET", headers, signal: opts.signal },
   );
   if (!response.ok) throw await parseHttpError(response);
@@ -541,7 +564,12 @@ export async function downloadBlobWithProgress(
     });
   }
   const requestId = opts.requestId ?? newRequestId();
-  const url = `${resolveBaseUrl(opts.baseUrlOverride)}${path}`;
+  const url = buildAndLogTargetUrl(
+    path,
+    opts.baseUrlOverride,
+    "downloadBlobWithProgress",
+    "GET",
+  );
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -577,8 +605,7 @@ export async function downloadBlobWithProgress(
           meta: {
             requestId,
             status: xhr.status,
-            serverRequestId:
-              xhr.getResponseHeader("x-request-id") ?? null,
+            serverRequestId: xhr.getResponseHeader("x-request-id") ?? null,
           },
           filename,
         });
@@ -686,8 +713,12 @@ export async function publicGetJson<T>(
   opts: { signal?: AbortSignal; baseUrlOverride?: string } = {},
 ): Promise<T> {
   const response = await fetch(
-    `${resolveBaseUrl(opts.baseUrlOverride)}${path}`,
-    { method: "GET", headers: { Accept: "application/json" }, signal: opts.signal },
+    buildAndLogTargetUrl(path, opts.baseUrlOverride, "publicGetJson", "GET"),
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal: opts.signal,
+    },
   );
   if (!response.ok) throw await parseHttpError(response);
   return (await response.json()) as T;
@@ -699,7 +730,12 @@ export async function publicDownloadBlob(
   opts: { signal?: AbortSignal; baseUrlOverride?: string } = {},
 ): Promise<{ blob: Blob; filename: string | null }> {
   const response = await fetch(
-    `${resolveBaseUrl(opts.baseUrlOverride)}${path}`,
+    buildAndLogTargetUrl(
+      path,
+      opts.baseUrlOverride,
+      "publicDownloadBlob",
+      "GET",
+    ),
     { method: "GET", signal: opts.signal },
   );
   if (!response.ok) throw await parseHttpError(response);

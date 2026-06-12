@@ -20,6 +20,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   ChevronDown,
   ChevronRight,
@@ -40,12 +41,24 @@ import type {
 } from "@/features/scopes/types";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/utils/cn";
+import { getEntry, moduleKey } from "@/features/organizations/resource-catalogue";
+import { getOrgModuleSetting } from "@/features/organizations/orgModuleSettings";
 
 type CommonProps = {
   className?: string;
-  /** Display variant. `sidebar` = collapsible sections; `compact` = flat chip row. */
-  variant?: "sidebar" | "compact";
+  /** Display variant. `sidebar` = collapsible sections; `compact` = flat chip row;
+   * `dropdown` = one single-select dropdown per scope type (best for forms / when a
+   * type has many scopes — pick at most one per type). */
+  variant?: "sidebar" | "compact" | "dropdown";
   /** Optional org override — defaults to the active org. Useful for cross-org views. */
   organizationId?: string | null;
   /** Limit visible scope types (by scope_type_id). Empty/undefined = all. */
@@ -123,16 +136,71 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
   const selected = isControlled ? props.value! : uncontrolledHook.scopeIds;
   const selectedSet = useMemo(() => new Set(selected), [selected]);
 
+  // ─── Per-org is_scopeable gate ─────────────────────────────────────────
+  // When an org admin turns OFF "Scopeable" for this kind (org_module_settings),
+  // block tagging it. Only applies to the uncontrolled (write) mode — controlled
+  // mode is a filter, never a write. Defaults to allowed (no settings row, or a
+  // kind not in the catalogue, e.g. agent_surface_binding).
+  const uncontrolledEntityType = isControlled
+    ? null
+    : ((props as UncontrolledProps).entityType ?? null);
+  // Derived default (allowed) + async-fetched per-(org, kind) results keyed
+  // so the effect only ever calls setState from the subscription callback —
+  // never synchronously (react-hooks/set-state-in-effect).
+  const gateKey =
+    !isControlled && orgId && uncontrolledEntityType && getEntry(uncontrolledEntityType)
+      ? `${orgId}:${uncontrolledEntityType}`
+      : null;
+  const [scopeableByKey, setScopeableByKey] = useState<Record<string, boolean>>(
+    {},
+  );
+  useEffect(() => {
+    if (!gateKey || !orgId || !uncontrolledEntityType) return;
+    const entry = getEntry(uncontrolledEntityType);
+    if (!entry) return;
+    let cancelled = false;
+    (async () => {
+      const setting = await getOrgModuleSetting(orgId, moduleKey(entry));
+      if (!cancelled) {
+        setScopeableByKey((prev) => ({
+          ...prev,
+          [gateKey]: setting.isScopeable,
+        }));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [gateKey, orgId, uncontrolledEntityType]);
+  const scopeableAllowed = gateKey ? (scopeableByKey[gateKey] ?? true) : true;
+
   // ─── Toggle handler with the cardinality rule ──────────────────────────
+  // In-flight guard: the write is an atomic replace of the FULL selection,
+  // so a second click computed from a stale baseline would silently undo
+  // the first. Clicks while saving are dropped (not queued).
+  const [saving, setSaving] = useState(false);
   const applyNext = (next: string[]) => {
     if (isControlled) {
       (props as ControlledProps).onChange(next);
       return;
     }
-    void uncontrolledHook.setScopes(next).then((res) => {
-      const uProps = props as UncontrolledProps;
-      if (res.ok && uProps.onAfterSave) uProps.onAfterSave(next);
-    });
+    if (!scopeableAllowed) return; // gated off for this kind in this org
+    if (saving) return;
+    setSaving(true);
+    void uncontrolledHook
+      .setScopes(next)
+      .then((res) => {
+        const uProps = props as UncontrolledProps;
+        if (res.ok) {
+          if (uProps.onAfterSave) uProps.onAfterSave(next);
+        } else {
+          // The Redux cache was not updated on failure, so the chips revert
+          // to the persisted state on their own — but the user must hear
+          // about it, loudly.
+          toast.error(res.error || "Could not update scopes");
+        }
+      })
+      .finally(() => setSaving(false));
   };
 
   const handleToggle = (scopeId: string, scopeTypeId: string) => {
@@ -151,6 +219,16 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
         ?.scopes.map((s) => s.id) ?? [],
     );
     applyNext([...selected.filter((sid) => !typeIds.has(sid)), scopeId]);
+  };
+
+  // Single-select per type (dropdown variant): replace whatever scope of this
+  // type is selected with the chosen one ("none" clears the type).
+  const setTypeScope = (scopeTypeId: string, scopeId: string) => {
+    const typeIds = new Set(
+      scopeTypesAll.find((t) => t.id === scopeTypeId)?.scopes.map((s) => s.id) ?? [],
+    );
+    const withoutType = selected.filter((sid) => !typeIds.has(sid));
+    applyNext(scopeId === "none" ? withoutType : [...withoutType, scopeId]);
   };
 
   const handleClearAll = () => applyNext([]);
@@ -186,6 +264,17 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
     );
   }
 
+  if (!isControlled && !scopeableAllowed) {
+    const label =
+      (uncontrolledEntityType && getEntry(uncontrolledEntityType)?.labelPlural) ??
+      "items of this kind";
+    return (
+      <div className={cn("text-xs text-muted-foreground px-3 py-2", className)}>
+        Scope tagging is turned off for {label.toLowerCase()} in this organization.
+      </div>
+    );
+  }
+
   return (
     <div className={cn("space-y-2", className)}>
       {showHeader && (
@@ -205,7 +294,37 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
         </div>
       )}
 
-      {variant === "compact" ? (
+      {variant === "dropdown" ? (
+        <div className="space-y-3 px-3">
+          {scopeTypes.map((type) => {
+            const current = type.scopes.find((s) => selectedSet.has(s.id));
+            return (
+              <div key={type.id} className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                  <DynamicIcon name={type.icon} color={type.color} className="h-3.5 w-3.5" />
+                  {type.label_singular}
+                </Label>
+                <Select
+                  value={current?.id ?? "none"}
+                  onValueChange={(v) => setTypeScope(type.id, v)}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder={`Select ${type.label_singular.toLowerCase()}…`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {type.scopes.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            );
+          })}
+        </div>
+      ) : variant === "compact" ? (
         <div className="flex flex-wrap gap-1 px-3">
           {scopeTypes.flatMap((type) =>
             type.scopes.map((scope) => (

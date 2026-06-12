@@ -79,7 +79,8 @@ export interface ProjectNode {
   scope_ids: string[];
 }
 
-export type OrgRole = "owner" | "admin" | "member" | "viewer";
+/** Mirrors the `public.org_role` enum exactly — there is no read-only role. */
+export type OrgRole = "owner" | "admin" | "member";
 
 export interface OrgNode {
   id: string;
@@ -149,13 +150,16 @@ export interface EntityScopesEntry {
 
 // ─── Context item values (high-churn sidecar slice) ───────────────────
 
+/** Mirrors the `public.context_value_type` enum exactly. */
 export type ContextItemValueType =
-  | "text"
+  | "string"
   | "number"
   | "boolean"
-  | "json"
+  | "object"
+  | "array"
   | "document"
-  | "reference";
+  | "reference"
+  | "date";
 
 export interface ContextItemValue {
   context_item_id: string;
@@ -165,6 +169,7 @@ export interface ContextItemValue {
   value_text: string | null;
   value_number: number | null;
   value_boolean: boolean | null;
+  value_date: string | null;
   value_json: Json | null;
   value_document_url: string | null;
   value_document_size_bytes: number | null;
@@ -239,6 +244,106 @@ export interface ResolvedContext {
   activeScopes: ContextSource[];
   organizationId: string | null;
   userId: string;
+}
+
+// ─── Suggestion target resolution ──────────────────────────────────────
+//
+// The fully-resolved, human-readable picture behind a KG suggestion's
+// target. Returned by `scopesService.resolveSuggestionTarget`; consumed by
+// the kg-suggestions decision UI so it can show the org → type → scope →
+// item path, every item on the scope, and the CURRENT value each item holds
+// (so a suggestion that would overwrite a manually-entered value is obvious).
+
+export interface ResolvedSuggestionValue {
+  value_text: string | null;
+  value_number: number | null;
+  value_boolean: boolean | null;
+  value_json: Json | null;
+  /** e.g. "manual" | "ai" | "import" — how the current value was authored. */
+  source_type: string | null;
+  version: number | null;
+  created_at: string | null;
+}
+
+export interface ResolvedSuggestionItem {
+  id: string;
+  slug: string | null;
+  key: string;
+  display_name: string;
+  value_type: string;
+  sort_order: number;
+  /** Current value on this scope, or null if the cell is empty. */
+  current: ResolvedSuggestionValue | null;
+}
+
+export interface ResolvedSuggestionTarget {
+  org: {
+    id: string;
+    name: string;
+    slug: string;
+    is_personal: boolean;
+  };
+  scope_type: {
+    id: string;
+    slug: string | null;
+    label_singular: string;
+    label_plural: string;
+    icon: string | null;
+    color: string | null;
+  };
+  scope: {
+    id: string;
+    slug: string | null;
+    name: string;
+    description: string | null;
+  };
+  /** The specific item the suggestion proposes to fill (null if unresolved). */
+  target_item: ResolvedSuggestionItem | null;
+  /** Every active item on the scope type, in sort order (for context). */
+  items: ResolvedSuggestionItem[];
+}
+
+// ─── set_context_value (the sanctioned ctx_context_item_values write) ──────
+//
+// `public.set_context_value` is the ONLY sanctioned mutation path for
+// `ctx_context_item_values` (atomic version-flip-then-insert with the scope
+// write-access check inside the SECURITY DEFINER function). EXECUTE is granted
+// to `authenticated`, so the chokepoint calls it directly. The suggestion
+// ledger only stores text, so callers typically send `value_text`; typed slots
+// may instead send the matching typed key.
+
+/** Mirrors the `public.context_source_type` enum. */
+export type ContextSourceType =
+  | "manual"
+  | "ai_generated"
+  | "ai_enriched"
+  | "imported"
+  | "scraped"
+  | "system";
+
+export interface SetContextValuePayload {
+  context_item_id: string;
+  scope_id: string;
+  value_text?: string | null;
+  value_number?: number | null;
+  value_boolean?: boolean | null;
+  value_date?: string | null;
+  value_json?: Json | null;
+  value_document_url?: string | null;
+  value_reference_id?: string | null;
+  /** Defaults to `ai_enriched` server-side when omitted. */
+  source_type?: ContextSourceType;
+  change_summary?: string;
+}
+
+/** The cell row `set_context_value` writes and returns on success. */
+export interface SetContextValueResult {
+  id: string;
+  context_item_id: string;
+  scope_id: string;
+  version: number;
+  value_text: string | null;
+  source_type: string;
 }
 
 // ─── Service result envelope ───────────────────────────────────────────

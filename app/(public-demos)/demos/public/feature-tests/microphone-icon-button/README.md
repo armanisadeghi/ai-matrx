@@ -31,7 +31,7 @@ Browser: MediaRecorder → 10s chunks (~160KB) → /api/audio/transcribe → Gro
 
 - **Chunk size:** ~160 KB per 10s (well under Vercel 4.5 MB body limit)
 - **Direct upload:** 25 MB max (4.5 MB through Vercel)
-- **URL upload:** 100 MB max (fallback path via Supabase Storage)
+- **URL upload:** 100 MB max (fallback path via cld_files; Groq fetches the signed URL)
 - **Rate:** 20 RPM, 7,200 audio seconds/hour
 - **API timeout:** 120s (chunks), 300s (URL-based)
 

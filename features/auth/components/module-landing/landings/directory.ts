@@ -15,6 +15,10 @@ import {
   Table,
   Mic,
   BookOpen,
+  FlaskConical,
+  Aperture,
+  FileSpreadsheet,
+  Network,
 } from "lucide-react";
 
 /**
@@ -95,10 +99,18 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
   },
   {
     label: "Knowledge",
-    href: "/rag/data-stores",
+    href: "/knowledge",
     icon: Database,
     teaser:
       "Typed data stores for retrieval — hybrid search, cited answers, scoped permissions.",
+    group: "Knowledge & Data",
+  },
+  {
+    label: "Knowledge Graph",
+    href: "/knowledge/graph",
+    icon: Network,
+    teaser:
+      "A live map of every entity and relationship across your org's content — drillable to source, agent-callable.",
     group: "Knowledge & Data",
   },
   {
@@ -107,6 +119,14 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     icon: Table,
     teaser:
       "Spreadsheets you build from chat, edit by hand, and hand to agents as structured memory.",
+    group: "Knowledge & Data",
+  },
+  {
+    label: "Workbooks",
+    href: "/workbooks",
+    icon: FileSpreadsheet,
+    teaser:
+      "Lossless XLSX in the browser — multi-sheet, formulas, realtime, autosave + snapshots.",
     group: "Knowledge & Data",
   },
   {
@@ -119,10 +139,20 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
   },
   {
     label: "Transcripts",
-    href: "/transcription/processor",
+    href: "/transcripts",
     icon: Mic,
     teaser:
       "Speaker-attributed, multilingual transcripts with action items and summaries.",
+    group: "Knowledge & Data",
+  },
+  {
+    // Routes to the feature's own legacy landing (features/research/...);
+    // pre-dates the `<ModuleLanding>` shell but still guest-safe.
+    label: "Research",
+    href: "/research",
+    icon: FlaskConical,
+    teaser:
+      "Deep, cited research runs across the web, your docs, and your knowledge bases.",
     group: "Knowledge & Data",
   },
 
@@ -149,6 +179,17 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
     icon: Container,
     teaser:
       "Linux containers your team and agents share. Spin up in seconds, persist for as long as needed.",
+    group: "Build & Run",
+  },
+  {
+    // Routes to the feature's own legacy landing (`app/(core)/images/
+    // _components/ImagesLandingHero`); pre-dates the `<ModuleLanding>`
+    // shell but still guest-safe.
+    label: "Images",
+    href: "/images",
+    icon: Aperture,
+    teaser:
+      "Browse, generate, edit, annotate, convert — every image tool in one place.",
     group: "Build & Run",
   },
 

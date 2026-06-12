@@ -30,6 +30,8 @@ export interface TokenManager {
   getCurrent: () => Promise<string>;
   /** Currently cached token value, or null. Cheap, non-async. */
   peek: () => string | null;
+  /** Unix-seconds expiry of the cached token, or null. For diagnostics. */
+  expiresAt: () => number | null;
   /**
    * Drop the cached token and cancel the pending refresh timer.
    *
@@ -215,6 +217,10 @@ export function createTokenManager(
     return null;
   }
 
+  function expiresAt(): number | null {
+    return current?.expires_at ?? null;
+  }
+
   function onError(cb: (err: TokenError) => void): () => void {
     errorCallbacks.add(cb);
     return () => errorCallbacks.delete(cb);
@@ -238,7 +244,7 @@ export function createTokenManager(
     current = null;
   }
 
-  return { prime, getCurrent, peek, invalidate, onError, dispose };
+  return { prime, getCurrent, peek, expiresAt, invalidate, onError, dispose };
 }
 
 function isExpired(token: VoiceAgentTokenResponse): boolean {

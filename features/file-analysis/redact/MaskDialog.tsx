@@ -34,6 +34,8 @@ import {
   type StoredSession,
 } from "./session-keys";
 import { KeyHandoff } from "./KeyHandoff";
+import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
 interface MaskDialogProps {
   fileId: string;
@@ -54,12 +56,23 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
   const [mode, setMode] = useState<Mode>("reversible");
   const [style, setStyle] = useState<Style>("bracket");
   const [running, setRunning] = useState(false);
+  const downloadBlob = useDownloadBlob();
   const [error, setError] = useState<string | null>(null);
   const [handoff, setHandoff] = useState<StoredSession | null>(null);
   const [maskedBlob, setMaskedBlob] = useState<Blob | null>(null);
 
   const handleRun = async () => {
     if (!candidates.length) return;
+    if (mode === "destructive") {
+      const ok = await confirm({
+        title: "Destructive masking?",
+        description:
+          "Destructive mode produces a masked copy with NO restore key — the masked values cannot be recovered from it later. The original file itself stays unchanged. Use reversible mode if you may need the originals back.",
+        confirmLabel: "Mask destructively",
+        variant: "destructive",
+      });
+      if (!ok) return;
+    }
     setRunning(true);
     setError(null);
     try {
@@ -112,14 +125,7 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
 
   const downloadMasked = () => {
     if (!maskedBlob) return;
-    const url = URL.createObjectURL(maskedBlob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${fileId}-masked.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob({ blob: maskedBlob, filename: `${fileId}-masked.pdf` });
   };
 
   return (

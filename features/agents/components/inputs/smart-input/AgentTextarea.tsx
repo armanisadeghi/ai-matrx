@@ -37,7 +37,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
-import { useFileUpload } from "@/features/files";
+import { useFileUpload, composeLegacyFolderPath } from "@/features/files";
 import { fileIdToMediaRef } from "@/features/files";
 import {
   addResource,
@@ -136,9 +136,7 @@ export function AgentTextarea({
         const normalized = await upload(
           { kind: "file", file },
           {
-            folderPath: uploadPath
-              ? `${uploadBucket}/${uploadPath}`
-              : uploadBucket,
+            folderPath: composeLegacyFolderPath(uploadBucket, uploadPath),
             visibility: "private",
             createShareLink: true,
             shareLinkPermissionLevel: "read",
@@ -198,10 +196,14 @@ export function AgentTextarea({
   // ── Key down ────────────────────────────────────────────────────────────────
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Enter" && !e.shiftKey && submitOnEnter) {
-        e.preventDefault();
-        if (!disableSend && !isExecuting) handleSend();
-      }
+      if (e.key !== "Enter") return;
+      const withCmd = e.metaKey || e.ctrlKey;
+      // submitOnEnter ON  → Enter sends, Shift+Enter is a newline.
+      // submitOnEnter OFF → Enter is a newline, ⌘/Ctrl+Enter sends.
+      const shouldSend = submitOnEnter ? !e.shiftKey && !withCmd : withCmd;
+      if (!shouldSend) return;
+      e.preventDefault();
+      if (!disableSend && !isExecuting) handleSend();
     },
     [submitOnEnter, disableSend, isExecuting, handleSend],
   );

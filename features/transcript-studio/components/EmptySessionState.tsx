@@ -9,11 +9,13 @@ import { createSessionThunk } from "../redux/thunks";
 interface EmptySessionStateProps {
   className?: string;
   onSessionCreated?: (sessionId: string) => void;
+  navigateToSession?: (sessionId: string | null) => void;
 }
 
 export function EmptySessionState({
   className,
   onSessionCreated,
+  navigateToSession,
 }: EmptySessionStateProps) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
@@ -21,12 +23,13 @@ export function EmptySessionState({
   const handleCreate = async () => {
     if (!userId) return;
     const result = await dispatch(
-      createSessionThunk({ userId, activate: true }),
+      createSessionThunk({
+        userId,
+        activate: !navigateToSession,
+      }),
     );
-    if (
-      createSessionThunk.fulfilled.match(result) &&
-      result.payload?.id
-    ) {
+    if (createSessionThunk.fulfilled.match(result) && result.payload?.id) {
+      navigateToSession?.(result.payload.id);
       onSessionCreated?.(result.payload.id);
     }
   };

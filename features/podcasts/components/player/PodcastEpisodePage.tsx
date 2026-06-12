@@ -1,20 +1,28 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
-import { Music, Share2, Link as LinkIcon } from 'lucide-react';
-import type { PcEpisodeWithShow } from '../../types';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Music, Share2, Link as LinkIcon, ListChecks, BookOpen, ChevronRight } from 'lucide-react';
+import type { PcArticle, PcEpisodeWithShow } from '../../types';
 import { PodcastAudioPlayer } from './PodcastAudioPlayer';
+import { EpisodeShowNotes } from './EpisodeShowNotes';
 import { useShare } from '../../hooks/useShare';
+import { InlineMediaRef } from '@/features/files';
+import { ComingSoonBadge } from '@/components/coming-soon/ComingSoonBadge';
 
 interface PodcastEpisodePageProps {
     episode: PcEpisodeWithShow;
+    /** Published companion articles for this episode (from the route). */
+    articles?: PcArticle[];
 }
 
-export function PodcastEpisodePage({ episode }: PodcastEpisodePageProps) {
+export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePageProps) {
+    const blog = articles.find((a) => a.kind === 'blog') ?? null;
+    const showNotes = articles.find((a) => a.kind === 'show_notes') ?? null;
+    const episodeHref = `/podcast/${episode.slug ?? episode.id}`;
     const coverImage = episode.image_url ?? episode.show?.image_url ?? null;
     const thumbnailImage = episode.thumbnail_url ?? episode.show?.thumbnail_url ?? coverImage;
     const [videoFailed, setVideoFailed] = useState(false);
-    const videoRef = useRef<HTMLVideoElement>(null);
     const [videoSrc, setVideoSrc] = useState<string | null>(null);
     const { share, copied, fallbackDialog } = useShare();
 
@@ -70,16 +78,22 @@ export function PodcastEpisodePage({ episode }: PodcastEpisodePageProps) {
     if (effectiveMode === 'with_video') {
         return (
             <div className="h-full w-full relative flex flex-col overflow-hidden bg-black">
-                <video
-                    ref={videoRef}
-                    src={videoSrc ?? undefined}
-                    className="absolute inset-0 w-full h-full object-cover"
+                <InlineMediaRef
+                    ref={videoSrc ?? null}
+                    as="video"
+                    size="fill"
+                    fit="cover"
+                    rounded="none"
                     autoPlay
                     muted
                     loop
                     playsInline
+                    controls={false}
                     preload="none"
+                    fallback={null}
+                    errorFallback={null}
                     onError={() => setVideoFailed(true)}
+                    className="absolute inset-0"
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/95 pointer-events-none" />
 
@@ -120,21 +134,26 @@ export function PodcastEpisodePage({ episode }: PodcastEpisodePageProps) {
                 <div className="relative shrink-0 overflow-hidden bg-zinc-900" style={{ height: '38%' }}>
                     {coverImage ? (
                         <>
-                            <img
-                                src={coverImage}
+                            {/* Blurred backdrop — decorative; durable via the handler. */}
+                            <InlineMediaRef
+                                ref={coverImage}
+                                size="fill"
+                                fit="cover"
+                                rounded="none"
+                                fallback={null}
+                                errorFallback={null}
+                                className="absolute inset-0 scale-110 blur-2xl opacity-60"
                                 alt=""
-                                aria-hidden
-                                className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60"
-                                loading="eager"
-                                decoding="async"
                             />
-                            <img
-                                src={coverImage}
+                            <InlineMediaRef
+                                ref={coverImage}
+                                size="fill"
+                                fit="contain"
+                                rounded="none"
+                                fallbackIcon={<Music className="h-20 w-20 text-white/20" />}
+                                errorFallback="icon"
+                                className="relative z-10"
                                 alt={episode.title}
-                                className="relative z-10 w-full h-full object-contain"
-                                loading="eager"
-                                decoding="async"
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                         </>
                     ) : (
@@ -157,6 +176,11 @@ export function PodcastEpisodePage({ episode }: PodcastEpisodePageProps) {
                                     <p className="text-xs text-muted-foreground mb-0.5">Episode {episode.episode_number}</p>
                                 )}
                                 <h1 className="text-foreground font-bold text-xl leading-tight">{episode.title}</h1>
+                                {(episode.speakers?.length ?? 0) > 0 && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Hosted by {episode.speakers!.map((s) => s.name).join(", ")}
+                                    </p>
+                                )}
                             </div>
                             <div className="shrink-0 pt-1">
                                 <ShareButtonLight />
@@ -176,6 +200,39 @@ export function PodcastEpisodePage({ episode }: PodcastEpisodePageProps) {
                                 <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line">{episode.description}</p>
                             </div>
                         )}
+
+                        {showNotes && <EpisodeShowNotes article={showNotes} className="mt-5" />}
+
+                        {/* Companion content — live links when published, else Coming soon. */}
+                        <div className="mt-5 space-y-2">
+                            {!showNotes && (
+                                <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-border bg-muted/20 px-3 py-2.5">
+                                    <ListChecks className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                                    <span className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
+                                        Chapters &amp; show notes
+                                        <ComingSoonBadge />
+                                    </span>
+                                </div>
+                            )}
+                            {blog ? (
+                                <Link
+                                    href={`${episodeHref}/blog`}
+                                    className="flex items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2.5 transition-colors hover:border-primary/40 hover:bg-accent/40"
+                                >
+                                    <BookOpen className="h-4 w-4 shrink-0 text-primary" />
+                                    <span className="flex-1 text-sm font-medium text-foreground">Read the blog post</span>
+                                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                </Link>
+                            ) : (
+                                <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-border bg-muted/20 px-3 py-2.5">
+                                    <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+                                    <span className="flex flex-1 items-center gap-2 text-sm text-muted-foreground">
+                                        Read the blog post
+                                        <ComingSoonBadge />
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
                 {fallbackDialog}

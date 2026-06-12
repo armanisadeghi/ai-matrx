@@ -153,6 +153,7 @@ function SidebarListDemo() {
     allCategories,
     allTags,
     consumer,
+    tabCounts,
     activeFilterCount,
     hoveredAgent,
     ensureLoaded,
@@ -210,6 +211,7 @@ function SidebarListDemo() {
       onDetailPress={setMobileDetailAgent}
       onFilterChipClick={onFilterChipClick}
       rightPanel={rightPanel}
+      tabCounts={tabCounts}
     />
   );
 

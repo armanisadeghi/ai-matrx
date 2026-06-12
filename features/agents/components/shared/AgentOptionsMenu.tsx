@@ -97,6 +97,11 @@ const THIS_AGENT_ITEMS: MenuItem[] = [
 const AGENT_MANAGEMENT_ITEMS: MenuItem[] = [
   { label: "Create Shortcut", icon: Link2 },
   { label: "Duplicate", icon: Copy },
+  // Unified link surface (user agent ⇄ system agent): create/open my personal
+  // copy, pull system updates, push to system, or convert a user agent into a
+  // new system agent. Valid on both user and builtin agents — the window
+  // resolves the relationship and gates each action.
+  { label: "Linked Agent Sync", icon: RefreshCw },
   { label: "Convert to Template", icon: Shield },
   { label: "Create App", icon: AppWindow },
   { label: "Add Data Storage Support", icon: Database },
@@ -138,7 +143,6 @@ const NEW_TAB_ITEMS: {
 ];
 
 const ADMIN_ITEMS: MenuItem[] = [
-  { label: "Convert/Update System Agent", icon: RefreshCw },
   { label: "Find Usages (Admin)", icon: Search },
 ];
 
@@ -235,9 +239,9 @@ export function AgentOptionsMenu({
   // - "Convert to Template" is meaningless — builtins ARE the templates users
   //   fork from. Showing it would just produce a confusing redundant row in
   //   the templates table.
-  // - "Convert/Update System Agent" promotes a user agent into a builtin;
-  //   running it on something that's already a builtin is a no-op category
-  //   error.
+  // "Linked Agent Sync" is intentionally NOT filtered for builtins: on a system
+  // agent it offers "create my personal copy" + pull/push, which is exactly the
+  // reverse-direction flow we want there.
   // We compute one filtered version of each item list per render rather than
   // sprinkling conditionals through the JSX.
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
@@ -309,9 +313,7 @@ export function AgentOptionsMenu({
       )
     : AGENT_MANAGEMENT_ITEMS;
 
-  const adminItems = isBuiltin
-    ? ADMIN_ITEMS.filter((item) => item.label !== "Convert/Update System Agent")
-    : ADMIN_ITEMS;
+  const adminItems = ADMIN_ITEMS;
 
   const handleDesktopItemClick = async (label: string) => {
     console.log("[AGENT OPTIONS MENU] Clicked item:", label);
@@ -372,9 +374,9 @@ export function AgentOptionsMenu({
       );
       openDataStorage({ agentId: agentId ?? null });
       setOpen(false);
-    } else if (label === "Convert/Update System Agent") {
+    } else if (label === "Linked Agent Sync") {
       console.log(
-        "[AGENT OPTIONS MENU] Converting/updating system agent, Agent ID:",
+        "[AGENT OPTIONS MENU] Opening linked agent sync, Agent ID:",
         agentId,
       );
       openConvertSystem({ agentId: agentId ?? null });
@@ -672,9 +674,7 @@ function MobileMenuContent({
         (item) => item.label !== "Convert to Template",
       )
     : AGENT_MANAGEMENT_ITEMS;
-  const adminItems = isBuiltin
-    ? ADMIN_ITEMS.filter((item) => item.label !== "Convert/Update System Agent")
-    : ADMIN_ITEMS;
+  const adminItems = ADMIN_ITEMS;
 
   const handleItem = async (label: string) => {
     if (label === "Edit Agent Info") {
@@ -711,7 +711,7 @@ function MobileMenuContent({
     } else if (label === "Add Data Storage Support") {
       openDataStorage({ agentId: agentId ?? null });
       onClose();
-    } else if (label === "Convert/Update System Agent") {
+    } else if (label === "Linked Agent Sync") {
       openConvertSystem({ agentId: agentId ?? null });
       onClose();
     } else if (label === "Create Shortcut") {

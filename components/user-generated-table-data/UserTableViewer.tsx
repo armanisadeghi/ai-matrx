@@ -153,6 +153,7 @@ const UserTableViewer = ({
   // Additional modals
   const [showAddColumnModal, setShowAddColumnModal] = useState(false);
   const [showAddRowModal, setShowAddRowModal] = useState(false);
+  const [showPasteRowsDialog, setShowPasteRowsDialog] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showTableSettingsModal, setShowTableSettingsModal] = useState(false);
   const [showReferenceOverlay, setShowReferenceOverlay] = useState(false);
@@ -1342,6 +1343,7 @@ const UserTableViewer = ({
         showTableSettingsModal={showTableSettingsModal}
         showReferenceOverlay={showReferenceOverlay}
         showRowOrderingModal={showRowOrderingModal}
+        showPasteRowsDialog={showPasteRowsDialog}
         // Modal visibility state setters
         setShowEditModal={setShowEditModal}
         setShowDeleteModal={setShowDeleteModal}
@@ -1351,6 +1353,7 @@ const UserTableViewer = ({
         setShowTableSettingsModal={setShowTableSettingsModal}
         setShowReferenceOverlay={setShowReferenceOverlay}
         setShowRowOrderingModal={setShowRowOrderingModal}
+        setShowPasteRowsDialog={setShowPasteRowsDialog}
         // Success callbacks
         onEditSuccess={() => {
           setShowEditModal(false);

@@ -1,13 +1,20 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import { useApiAuth } from "@/hooks/useApiAuth";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ENDPOINTS } from "@/lib/api/endpoints";
+import { buildPdfSource } from "@/features/pdf/utils/source";
+import {
+  createInactivityWatchdog,
+  withTimeout,
+} from "@/features/pdf/utils/inactivity";
 import { supabase } from "@/utils/supabase/client";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
+import { parseHttpError } from "@/lib/api/errors";
 import {
   streamPdfClean,
   streamPdfFullPipeline,
@@ -346,10 +353,21 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
   // ── File selection (for "New" tab) ─────────────────────────────────────────
 
+  // Mirrors the server's hard input cap — rejecting here saves the user a
+  // full upload + opaque 4xx for a file the backend will refuse anyway.
+  const MAX_UPLOAD_BYTES = 200 * 1024 * 1024;
+
   const addFiles = useCallback((files: File[]) => {
-    const valid = files.filter(
+    const typed = files.filter(
       (f) => f.type === "application/pdf" || f.type.startsWith("image/"),
     );
+    const oversize = typed.filter((f) => f.size > MAX_UPLOAD_BYTES);
+    if (oversize.length > 0) {
+      toast.error(
+        `${oversize.length === 1 ? `"${oversize[0].name}" is` : `${oversize.length} files are`} over the 200MB limit and ${oversize.length === 1 ? "was" : "were"} skipped.`,
+      );
+    }
+    const valid = typed.filter((f) => f.size <= MAX_UPLOAD_BYTES);
     if (valid.length === 0) return;
     setSelectedFiles((prev) => [...prev, ...valid]);
   }, []);
@@ -399,15 +417,16 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       );
 
       if (!response.ok) {
-        const errText = await response.text().catch(() => "");
-        // Mark all placeholder tabs as error
+        // Canonical error parsing — extracts the backend envelope's
+        // user_message instead of dumping the raw body into the tab.
+        const apiError = await parseHttpError(response);
         setTabs((prev) =>
           prev.map((tab) =>
             placeholderTabs.some((p) => p.id === tab.id)
               ? {
                   ...tab,
                   status: "error" as const,
-                  error: `HTTP ${response.status}: ${errText}`,
+                  error: apiError.userMessage,
                 }
               : tab,
           ),
@@ -710,14 +729,21 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         ),
       );
 
+      // Inactivity watchdog: aborts only when the stream stops EMITTING
+      // (stalled socket / hung server) — a stream that's actively working
+      // never trips it. Without this, a mid-stream network death stranded
+      // the tab on "cleaning" forever with no recovery short of a reload.
+      const watchdog = createInactivityWatchdog(90_000);
       try {
         const headers = await getAuthHeaders();
         const { cleanContent: streamedClean } = await streamPdfClean({
           docId,
           baseUrl: backendUrl,
           headers,
+          signal: watchdog.signal,
           callbacks: {
             onProgress: (msg) => {
+              watchdog.bump();
               opts.onProgress?.(msg);
               setTabs((prev) =>
                 prev.map((tab) =>
@@ -726,6 +752,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               );
             },
             onTextDelta: (accumulated) => {
+              watchdog.bump();
               opts.onTextDelta?.(accumulated);
               setTabs((prev) =>
                 prev.map((tab) =>
@@ -736,6 +763,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               );
             },
             onCleanContent: (text) => {
+              watchdog.bump();
               // Mirror the final payload into the live preview field so
               // legacy consumers (AiCleanView) see the final blob the same
               // way they saw the deltas.
@@ -748,6 +776,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
                 ),
               );
             },
+            onRecordUpdate: () => watchdog.bump(),
           },
         });
 
@@ -755,8 +784,13 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         // Even when the stream returned inline `clean_content`, we still
         // round-trip Supabase so the in-memory tab matches the DB exactly
         // (rules out drift if a parallel writer touched the row).
+        // Bounded: a hung Supabase fetch must not strand the tab either.
         invalidateProcessedDocumentCache(docId);
-        const fresh = await fetchDocument(docId);
+        const fresh = await withTimeout(
+          fetchDocument(docId),
+          15_000,
+          "Refreshing the cleaned document",
+        ).catch(() => null);
 
         setTabs((prev) =>
           prev.map((tab) => {
@@ -786,8 +820,11 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           );
         }
       } catch (err) {
-        const msg =
-          err instanceof Error ? err.message : "AI cleanup failed";
+        const msg = watchdog.timedOut
+          ? "No response from the server for 90s — the cleanup may still finish in the background. Refetch in a moment or retry."
+          : err instanceof Error
+            ? err.message
+            : "AI cleanup failed";
         setTabs((prev) =>
           prev.map((tab) =>
             tab.id === docId
@@ -801,7 +838,9 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               : tab,
           ),
         );
-        throw err;
+        throw err instanceof Error ? new Error(msg) : err;
+      } finally {
+        watchdog.dispose();
       }
     },
     [backendUrl, getAuthHeaders, fetchDocument],
@@ -870,7 +909,6 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
   interface RunFullPipelineOptions {
     force_ocr?: boolean;
-    persist_output?: boolean;
     onProgress?: (message: string) => void;
     onTextDelta?: (accumulated: string) => void;
   }
@@ -907,36 +945,40 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         ),
       );
 
+      // Same stall protection as cleanContent — see createInactivityWatchdog.
+      const watchdog = createInactivityWatchdog(90_000);
       try {
         const headers = await getAuthHeaders();
-        // Build a unified source. Prefer the cld_file id (the canonical
-        // pointer); fall back to a public URL if that's all we have.
+        // Canonical source wire — media.file_id / media.url / media.file_uri.
+        // The server's PdfRequest reads `options.force_ocr` (NOT top-level)
+        // and has no `persist_output` field (it always persists for signed-in
+        // users); both used to be sent at the top level and were silently
+        // dropped by Pydantic.
         const body: PdfFullPipelineBody = {
           options: {
             include_page_metadata: true,
             include_block_metadata: true,
             include_word_metadata: true,
             include_chunk_metadata: true,
+            force_ocr: options?.force_ocr ?? false,
           },
-          persist_output: options?.persist_output ?? true,
-          force_ocr: options?.force_ocr ?? false,
         };
-        if (sourceKind === "cld_file" && sourceId) {
-          body.media = { cld_id: sourceId };
-        } else if (sourceUrl) {
-          body.url = sourceUrl;
-        } else {
+        const wire = buildPdfSource({ sourceKind, sourceId, sourceUrl });
+        if (!wire) {
           throw new Error(
             "This document has no resolvable source — re-upload the PDF before re-processing.",
           );
         }
+        body.media = wire.media;
 
         const { childDocId } = await streamPdfFullPipeline({
           body,
           baseUrl: backendUrl,
           headers,
+          signal: watchdog.signal,
           callbacks: {
             onProgress: (msg) => {
+              watchdog.bump();
               options?.onProgress?.(msg);
               setTabs((prev) =>
                 prev.map((t) =>
@@ -945,6 +987,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               );
             },
             onTextDelta: (accumulated) => {
+              watchdog.bump();
               options?.onTextDelta?.(accumulated);
               setTabs((prev) =>
                 prev.map((t) =>
@@ -954,15 +997,22 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
                 ),
               );
             },
+            onChildDocId: () => watchdog.bump(),
+            onRecordUpdate: () => watchdog.bump(),
           },
         });
 
         // Finalize on whichever row the server actually wrote to. If a
         // child was created, refresh THAT — otherwise refresh the parent
         // we started from. Cache invalidation lives inside
-        // `refreshDocument` (one place, one rule).
+        // `refreshDocument` (one place, one rule). Bounded so a hung
+        // Supabase round-trip can't strand the tab on "cleaning".
         const finalizeId = childDocId ?? docId;
-        await refreshDocument(finalizeId);
+        await withTimeout(
+          refreshDocument(finalizeId),
+          15_000,
+          "Refreshing the processed document",
+        );
 
         // Reset the source tab's spinner. If we routed to a child, the
         // route will mount a new tab; the parent tab just needs to look
@@ -983,8 +1033,11 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
         return { success: true, childDocId };
       } catch (err) {
-        const msg =
-          err instanceof Error ? err.message : "Pipeline run failed";
+        const msg = watchdog.timedOut
+          ? "No response from the server for 90s — the pipeline may still finish in the background. Refetch in a moment or retry."
+          : err instanceof Error
+            ? err.message
+            : "Pipeline run failed";
         setTabs((prev) =>
           prev.map((t) =>
             t.id === docId
@@ -999,6 +1052,8 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           ),
         );
         return { success: false, childDocId: null };
+      } finally {
+        watchdog.dispose();
       }
     },
     [tabs, backendUrl, getAuthHeaders, refreshDocument],

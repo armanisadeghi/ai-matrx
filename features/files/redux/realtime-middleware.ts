@@ -44,7 +44,7 @@ import {
   dbRowToCloudFolder,
   dbRowToCloudShareLink,
 } from "./converters";
-import { isOwnEcho } from "./request-ledger";
+import { isOwnEcho, ledgerSize } from "./request-ledger";
 import { reconcileTree } from "./thunks";
 import { isSystemPath } from "@/features/files/utils/folder-conventions";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
@@ -138,6 +138,13 @@ function extractRequestId(
 // types are derived from configureStore's middleware list — which includes
 // this middleware. Local casts inside the body give us the strong typing
 // where it actually matters.
+// P1-10: debounce reconcile-on-(re)subscribe. A flapping connection fires
+// SUBSCRIBED repeatedly; without this each one re-runs the full-tree RPC and can
+// clobber in-flight optimistic edits. We skip a reconcile if one ran within the
+// cooldown OR if any mutation is currently in flight (the ledger is non-empty).
+const RECONCILE_COOLDOWN_MS = 10_000;
+let lastReconcileAt = 0;
+
 export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
   let channel: RealtimeChannel | null = null;
   let subscribedUserId: string | null = null;
@@ -169,27 +176,29 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
 
     channel = supabase
       .channel(`cloud-files:${userId}`)
-      // Files — owner_id filter. Files shared with the user show up via
-      // RLS on separate events; to keep the subscription broad yet bounded,
-      // we rely on RLS-filtered unscoped subscriptions elsewhere.
+      // Files — NO owner filter. We rely on Realtime RLS authorization (same
+      // pattern as cld_file_versions / cld_share_links below) so the user
+      // receives changes to every file they can SELECT: their own AND files
+      // shared WITH them. A column filter on owner_id would silently drop
+      // shared-with-me updates (the row's owner_id is someone else's id).
+      // handleFilePayload upserts/dedups by id and honors the request ledger,
+      // so receiving a shared file's change is safe and idempotent.
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "cld_files",
-          filter: `owner_id=eq.${userId}`,
         },
         (payload) => handleFilePayload(payload),
       )
-      // Folders.
+      // Folders — NO owner filter, same RLS-bounded rationale as files.
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "cld_folders",
-          filter: `owner_id=eq.${userId}`,
         },
         (payload) => handleFolderPayload(payload),
       )
@@ -232,8 +241,14 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
               userId: subscribedUserId,
             }),
           );
-          // On every (re)subscribe, reconcile. Cheap safety net.
-          void dispatch(reconcileTree({ userId }));
+          // On (re)subscribe, reconcile — but debounced (P1-10): skip if we
+          // reconciled recently or a mutation is in flight, so a flapping
+          // connection can't storm the RPC or revert optimistic edits.
+          const now = Date.now();
+          if (now - lastReconcileAt >= RECONCILE_COOLDOWN_MS && ledgerSize() === 0) {
+            lastReconcileAt = now;
+            void dispatch(reconcileTree({ userId }));
+          }
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
           dispatch(
             setRealtimeStatus({

@@ -239,23 +239,27 @@ function toResolvedValue(
 ): ResolvedValue | null {
   // The shape we hand back is intentionally untyped on the actual value —
   // callers expecting a specific value type look at `value_type` and the
-  // matching property. Drafts are never folded in here.
+  // matching property. Labels mirror the DB `context_value_type` enum.
+  // Drafts are never folded in here.
   let value: string | number | boolean | ReturnType<typeof JSON.parse> | null =
     null;
-  let value_type: ResolvedValue["value_type"] = "text";
+  let value_type: ResolvedValue["value_type"] = "string";
 
   if (v.value_text !== null) {
     value = v.value_text;
-    value_type = "text";
+    value_type = "string";
   } else if (v.value_number !== null) {
     value = v.value_number;
     value_type = "number";
   } else if (v.value_boolean !== null) {
     value = v.value_boolean;
     value_type = "boolean";
+  } else if (v.value_date !== null) {
+    value = v.value_date;
+    value_type = "date";
   } else if (v.value_json !== null) {
     value = v.value_json as ReturnType<typeof JSON.parse>;
-    value_type = "json";
+    value_type = Array.isArray(v.value_json) ? "array" : "object";
   } else if (v.value_document_url !== null) {
     value = v.value_document_url;
     value_type = "document";

@@ -1,9 +1,5 @@
 import { ScopesSettingsPanel } from "@/features/scopes/components/management/ScopesSettingsPanel";
 
-export const metadata = {
-  title: "Scope settings",
-  description: "Diagnostics and entry points for managing scopes.",
-};
 
 export default function ScopesSettingsPage() {
   return (

@@ -13,6 +13,7 @@ import "./save";
 import "./export";
 import "./print";
 import "./edit";
+import "./compare";
 import "./creator";
 import "./feedback";
 import "./fullscreen-editor";

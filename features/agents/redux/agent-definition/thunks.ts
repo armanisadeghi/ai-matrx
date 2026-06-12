@@ -49,6 +49,9 @@ import type {
   UpdateFromSourceResult,
   PromoteVersionResult,
   AgentVersionSnapshot,
+  LinkedAgentRef,
+  LinkedCounterpartResult,
+  PersonalCopyResult,
 } from "../../types/agent-definition.types";
 import { isSyntheticAgentId } from "./synthetic-id";
 import {
@@ -1084,3 +1087,165 @@ export const updateAgentFromSource = createAsyncThunk<
 
   return result;
 });
+
+// ---------------------------------------------------------------------------
+// Linked agents — bidirectional sync (user agent ⇄ system/builtin agent)
+// ---------------------------------------------------------------------------
+
+const LINKED_REF_COLS =
+  "id, agent_type, name, source_agent_id, source_snapshot_at, updated_at, user_id";
+
+interface LinkedRefRow {
+  id: string;
+  agent_type: "user" | "builtin";
+  name: string;
+  source_agent_id: string | null;
+  source_snapshot_at: string | null;
+  updated_at: string;
+  user_id: string | null;
+}
+
+function toLinkedRef(
+  row: LinkedRefRow,
+  currentUserId: string | null,
+): LinkedAgentRef {
+  return {
+    id: row.id,
+    agentType: row.agent_type,
+    name: row.name,
+    sourceAgentId: row.source_agent_id,
+    sourceSnapshotAt: row.source_snapshot_at,
+    updatedAt: row.updated_at,
+    isOwnedByMe: !!currentUserId && row.user_id === currentUserId,
+  };
+}
+
+/**
+ * Resolves the linkage around an agent: what it was copied from (`source`) and
+ * what was copied from it (`derived`). RLS limits `derived` to rows the caller
+ * can see — so from a system agent this surfaces the caller's own personal
+ * copies (plus the original maintainer agent if visible), never other users'
+ * private copies. Returns data only; nothing is written to the slice.
+ */
+export const fetchLinkedCounterpart = createAsyncThunk<
+  LinkedCounterpartResult | null,
+  string,
+  ThunkApi
+>("agentDefinition/fetchLinkedCounterpart", async (agentId, { getState }) => {
+  const uid = selectUserId(getState());
+
+  const { data: selfRow, error: selfErr } = await supabase
+    .from("agx_agent")
+    .select(LINKED_REF_COLS)
+    .eq("id", agentId)
+    .maybeSingle<LinkedRefRow>();
+  if (selfErr) throw pgErrorToError(selfErr);
+  if (!selfRow) return null;
+
+  let source: LinkedAgentRef | null = null;
+  if (selfRow.source_agent_id) {
+    const { data: srcRow, error: srcErr } = await supabase
+      .from("agx_agent")
+      .select(LINKED_REF_COLS)
+      .eq("id", selfRow.source_agent_id)
+      .maybeSingle<LinkedRefRow>();
+    if (srcErr) throw pgErrorToError(srcErr);
+    if (srcRow) source = toLinkedRef(srcRow, uid);
+  }
+
+  const { data: derivedRows, error: derErr } = await supabase
+    .from("agx_agent")
+    .select(LINKED_REF_COLS)
+    .eq("source_agent_id", agentId)
+    .eq("is_archived", false)
+    .order("updated_at", { ascending: false })
+    .returns<LinkedRefRow[]>();
+  if (derErr) throw pgErrorToError(derErr);
+
+  return {
+    self: toLinkedRef(selfRow, uid),
+    source,
+    derived: (derivedRows ?? []).map((r) => toLinkedRef(r, uid)),
+  };
+});
+
+export interface SyncLinkedAgentsArgs {
+  /** The agent whose config is the source of truth for this sync. */
+  fromId: string;
+  /** The agent being overwritten. */
+  toId: string;
+  /**
+   * When true (push/publish), the target also takes the source's
+   * name/description/category/tags. When false (pull into a personal copy),
+   * those identity fields are preserved. Defaults to true.
+   */
+  includeIdentity?: boolean;
+}
+
+/**
+ * Copies the canonical config from one agent of a linked pair to the other via
+ * `agx_sync_linked_agents`. Powers both Push (user → system, super-admin) and
+ * Pull (system → my copy, owner). The DB enforces linkage + write gating.
+ * Reloads the target row on success. Returns the target id.
+ */
+export const syncLinkedAgents = createAsyncThunk<
+  string,
+  SyncLinkedAgentsArgs,
+  ThunkApi
+>(
+  "agentDefinition/syncLinked",
+  async ({ fromId, toId, includeIdentity = true }, { dispatch }) => {
+    const { data, error } = await supabase.rpc("agx_sync_linked_agents", {
+      p_from_id: fromId,
+      p_to_id: toId,
+      p_include_identity: includeIdentity,
+    });
+    if (error) throw pgErrorToError(error);
+
+    const targetId = data as string;
+    await dispatch(fetchFullAgent(targetId));
+    return targetId;
+  },
+);
+
+/**
+ * Creates a personal (user-owned) copy of a system agent, linked back to it via
+ * `source_agent_id`. Idempotent: if the current user already has a non-archived
+ * personal copy of this system agent, that copy is returned instead of creating
+ * another — so the action doubles as "open my copy". The created/found copy is
+ * loaded into state.
+ */
+export const createPersonalCopy = createAsyncThunk<
+  PersonalCopyResult,
+  string,
+  ThunkApi
+>(
+  "agentDefinition/createPersonalCopy",
+  async (systemAgentId, { dispatch, getState }) => {
+    const uid = selectUserId(getState());
+
+    if (uid) {
+      const { data: existing, error: existErr } = await supabase
+        .from("agx_agent")
+        .select("id")
+        .eq("source_agent_id", systemAgentId)
+        .eq("user_id", uid)
+        .eq("agent_type", "user")
+        .eq("is_archived", false)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle<{ id: string }>();
+      if (existErr) throw pgErrorToError(existErr);
+
+      if (existing) {
+        await dispatch(fetchFullAgent(existing.id));
+        return { agentId: existing.id, alreadyExisted: true };
+      }
+    }
+
+    const newId = await dispatch(
+      duplicateAgent({ agentId: systemAgentId, asSystem: false }),
+    ).unwrap();
+    return { agentId: newId, alreadyExisted: false };
+  },
+);

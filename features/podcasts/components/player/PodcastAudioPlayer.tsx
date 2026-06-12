@@ -14,6 +14,7 @@ import {
   Check,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 import {
   Popover,
   PopoverContent,
@@ -28,6 +29,13 @@ interface PodcastAudioPlayerProps {
   onError?: () => void;
   /** Use white/light text for dark backgrounds (video mode) */
   dark?: boolean;
+  /** Start playback at this offset (seconds) once metadata loads — used to
+   *  carry the position over from the live (streaming) player. */
+  initialTime?: number;
+  /** Attempt to continue playing on load (the live-player handoff). Browsers
+   *  allow this after any prior user gesture on the page; a denial is silent
+   *  and the user just presses play at the carried-over position. */
+  autoPlay?: boolean;
 }
 
 // Standard variant of HTMLMediaElement extended with the older vendor-prefixed
@@ -79,6 +87,8 @@ export function PodcastAudioPlayer({
   coverImageUrl,
   onError,
   dark = false,
+  initialTime,
+  autoPlay = false,
 }: PodcastAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -106,8 +116,35 @@ export function PodcastAudioPlayer({
     });
   });
   const [audioError, setAudioError] = useState(false);
+  // The live-player handoff (initialTime/autoPlay) applies exactly once per
+  // source — not again after the user seeks or replays.
+  const handoffAppliedRef = useRef(false);
+  // One silent retry per source before declaring failure — a just-persisted
+  // CDN object can 404/stall for a beat right after generation finishes.
+  const errorRetriedRef = useRef(false);
 
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  const handleLoadedMetadata = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    setDuration(audio.duration ?? 0);
+    if (handoffAppliedRef.current) return;
+    handoffAppliedRef.current = true;
+    if (initialTime && initialTime > 0 && Number.isFinite(audio.duration)) {
+      const t = Math.min(initialTime, Math.max(0, audio.duration - 0.25));
+      audio.currentTime = t;
+      setCurrentTime(t);
+    }
+    if (autoPlay) {
+      audio
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch(() => {
+          // Autoplay denied — the user resumes manually at the carried position.
+        });
+    }
+  }, [initialTime, autoPlay]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
@@ -192,6 +229,8 @@ export function PodcastAudioPlayer({
     setCurrentTime(0);
     setDuration(0);
     setAudioError(false);
+    handoffAppliedRef.current = false;
+    errorRetriedRef.current = false;
   }, [audioUrl]);
 
   // Apply playback speed AND preserve pitch — this is the YouTube/Spotify
@@ -257,16 +296,36 @@ export function PodcastAudioPlayer({
     : "p-2 rounded-full text-foreground hover:bg-muted transition-colors";
   const waveformBg = dark ? "bg-white/10" : "bg-muted";
   const waveformFill = dark ? "bg-primary/20" : "bg-primary/15";
+  // In dark mode the player sits on a near-black surface where the shared
+  // Slider's `bg-primary/20` track and `bg-background` thumb nearly vanish —
+  // override the track/thumb so the rail stays visible against black.
+  const darkSlider = dark
+    ? "[&>span:first-of-type]:bg-white/25 [&_[role=slider]]:bg-white [&_[role=slider]]:border-white/40"
+    : "";
 
   return (
     <div className="w-full flex flex-col gap-4">
+      {/*
+        Headless <audio> driven by this component's custom transport (imperative
+        audioRef + timeupdate/loadedmetadata/ended events, seek, speed, loop).
+        InlineMediaRef is a *display* element (it renders its own controls) and
+        deliberately doesn't model a headless player, so this is the one justified
+        raw media element here. Durability is guaranteed upstream: audio_url is
+        registered with the public-media-URL guard (pc_episodes/pc_studio_runs)
+        and persisted public — it is never a raw signed S3 link.
+      */}
       <audio
         ref={audioRef}
         src={audioUrl}
         onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
-        onLoadedMetadata={() => setDuration(audioRef.current?.duration ?? 0)}
+        onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => setIsPlaying(false)}
         onError={() => {
+          if (!errorRetriedRef.current) {
+            errorRetriedRef.current = true;
+            setTimeout(() => audioRef.current?.load(), 1500);
+            return;
+          }
           setAudioError(true);
           onError?.();
         }}
@@ -351,7 +410,7 @@ export function PodcastAudioPlayer({
         max={duration || 100}
         step={0.5}
         onValueChange={([v]) => handleSeek(v)}
-        className="h-1"
+        className={cn("h-1", darkSlider)}
         aria-label="Seek"
       />
 
@@ -477,7 +536,7 @@ export function PodcastAudioPlayer({
             max={1}
             step={0.02}
             onValueChange={([v]) => handleVolumeChange(v)}
-            className="w-16 hidden sm:block"
+            className={cn("w-16 hidden sm:flex", darkSlider)}
             aria-label="Volume"
           />
         </div>

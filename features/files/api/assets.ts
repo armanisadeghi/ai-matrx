@@ -322,6 +322,16 @@ export interface PdfCompressResult {
   mime_type: string;
   data_url: string | null;
   signed_url: string | null;
+  /** Seconds until signed_url expires (signed_url mode only). */
+  expires_in?: number | null;
+  /** Tier the caller asked for. */
+  level_requested?: number | null;
+  /** Tier that actually produced the output (cap escalation may raise it). */
+  level_used?: number | null;
+  /** Whether max_size_bytes was met (null when no cap was sent). */
+  cap_satisfied?: boolean | null;
+  /** "inplace" | "raster" — which compression path produced the output. */
+  strategy_used?: string | null;
 }
 
 /**

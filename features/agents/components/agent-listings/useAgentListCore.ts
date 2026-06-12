@@ -8,7 +8,12 @@ import {
   makeSelectFilteredAgents,
   selectAllAgentCategories,
   selectAllAgentTags,
+  selectTotalBuiltinAgentsCount,
+  selectTotalOwnedAgentsCount,
+  selectTotalSharedAgentsCount,
+  selectTotalUserAgentsCount,
 } from "@/features/agents/redux/agent-consumers/selectors";
+import type { AgentListTabCounts } from "./core/AgentListTabs";
 import {
   selectAgentsSliceStatus,
   selectActiveAgentId,
@@ -48,6 +53,12 @@ export function useAgentListCore({
   const activeAgentId = useAppSelector(selectActiveAgentId);
   const allCategories = useAppSelector(selectAllAgentCategories);
   const allTags = useAppSelector(selectAllAgentTags);
+  const tabCounts: AgentListTabCounts = {
+    mine: useAppSelector(selectTotalOwnedAgentsCount),
+    shared: useAppSelector(selectTotalSharedAgentsCount),
+    all: useAppSelector(selectTotalUserAgentsCount),
+    system: useAppSelector(selectTotalBuiltinAgentsCount),
+  };
   const isLoading = sliceStatus === "loading";
 
   const ensureLoaded = useCallback(() => {
@@ -74,9 +85,9 @@ export function useAgentListCore({
 
   const activeFilterCount =
     (consumer.sortBy !== "updated-desc" ? 1 : 0) +
-    (consumer.includedCats.length > 0 ? 1 : 0) +
-    (consumer.includedTags.length > 0 ? 1 : 0) +
-    (consumer.favFilter !== "all" ? 1 : 0);
+    (consumer.tab !== "system" && consumer.includedCats.length > 0 ? 1 : 0) +
+    (consumer.tab !== "system" && consumer.includedTags.length > 0 ? 1 : 0) +
+    (consumer.tab !== "system" && consumer.favFilter !== "all" ? 1 : 0);
 
   const handleAgentHover = useCallback(
     (agent: AgentDefinitionRecord, panelOpen: boolean) => {
@@ -123,6 +134,7 @@ export function useAgentListCore({
     allCategories,
     allTags,
     consumer,
+    tabCounts,
     activeFilterCount,
     hoveredAgent,
     setHoveredAgent,

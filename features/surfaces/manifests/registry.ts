@@ -23,6 +23,7 @@ import { codeEditorManifest } from "./code-editor.manifest";
 import { pdfWidgetsManifest } from "./pdf-widgets.manifest";
 import { contentExtractorManifest } from "./content-extractor.manifest";
 import { transcriptsManifest } from "./transcripts.manifest";
+import { transcriptsCleanupManifest } from "./transcripts-cleanup.manifest";
 import { agentBuilderManifest } from "./agent-builder.manifest";
 import { chatManifest } from "./chat.manifest";
 import { agentRunManifest } from "./agent-run.manifest";
@@ -46,6 +47,7 @@ export const ALL_MANIFESTS: readonly SurfaceManifest[] = [
   pdfWidgetsManifest,
   contentExtractorManifest,
   transcriptsManifest,
+  transcriptsCleanupManifest,
   agentBuilderManifest,
   chatManifest,
   agentRunManifest,

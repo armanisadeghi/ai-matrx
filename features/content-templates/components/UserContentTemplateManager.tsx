@@ -19,6 +19,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useSettingsNavigate } from "@/features/settings/components/SettingsPresentationContext";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -297,7 +298,8 @@ export function UserContentTemplateManager() {
         if (
           !t.label?.toLowerCase().includes(q) &&
           !t.content?.toLowerCase().includes(q) &&
-          !t.tags?.some((tag) => tag.toLowerCase().includes(q))
+          !t.tags?.some((tag) => tag.toLowerCase().includes(q)) &&
+          !idMatchesQuery(t, q)
         )
           return false;
       }

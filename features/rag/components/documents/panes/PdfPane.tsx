@@ -16,6 +16,7 @@ import type { ComponentType } from "react";
 import { useMemo } from "react";
 import type { DocumentDetail } from "@/features/rag/types/documents";
 import { pageImageUrl } from "@/features/rag/api/document";
+import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
 import { InlineMediaRef } from "@/features/files";
 
 interface PdfPreviewProps {
@@ -85,7 +86,14 @@ export function PdfPane({
   void onActivePageChange;
   void activePageIndex;
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-background">
+    <div className="relative flex flex-col h-full overflow-hidden bg-background">
+      <div className="absolute right-2 top-2 z-10">
+        <PdfSurfaceSwitcher
+          current="rag-library"
+          fileId={document.source_id}
+          size="icon"
+        />
+      </div>
       <PdfPreview fileId={document.source_id} />
     </div>
   );

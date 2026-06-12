@@ -51,6 +51,14 @@ export function decorateSandboxRow(row: SandboxInstanceRow): SandboxInstance {
   const configTier =
     config?.tier === "ec2" || config?.tier === "hosted" ? config.tier : null;
   const tier: SandboxTier | null = persistedTier ?? configTier ?? null;
+  if (tier === null) {
+    console.error(
+      `[decorateSandboxRow] sandbox row ${row.id} (sandbox_id: ${row.sandbox_id}) has no tier set ` +
+        "in either the dedicated column or config.tier. " +
+        "This sandbox was created before tier tracking existed or was created without an explicit tier. " +
+        "Update the row to 'ec2' or 'hosted' to suppress this error.",
+    );
+  }
 
   return {
     ...row,

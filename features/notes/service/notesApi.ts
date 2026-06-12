@@ -10,10 +10,16 @@ import {
   deleteNote as deleteNoteService,
   copyNote as copyNoteService,
   fetchNotes,
+  fetchNoteListItems,
   fetchNoteById,
   ensureFolderMaterialized as ensureFolderMaterializedService,
 } from "./notesService";
-import type { CreateNoteInput, UpdateNoteInput, Note } from "../types";
+import type {
+  CreateNoteInput,
+  UpdateNoteInput,
+  Note,
+  NoteListItem,
+} from "../types";
 
 /**
  * Create a new note (client-side call)
@@ -67,6 +73,13 @@ export async function remove(noteId: string): Promise<void> {
  */
 export async function getAll(): Promise<Note[]> {
   return fetchNotes();
+}
+
+/**
+ * Get lightweight note list items (no content) for pickers.
+ */
+export async function listItems(): Promise<NoteListItem[]> {
+  return fetchNoteListItems();
 }
 
 /**
@@ -126,6 +139,7 @@ export const NotesAPI = {
   remove,
   copy,
   getAll,
+  listItems,
   getById,
   quickCreate,
   ensureFolderMaterialized,

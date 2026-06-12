@@ -16,15 +16,19 @@ import { BoundColumn } from "../../../shared/BoundColumn";
 import { BlindColumnHeader } from "../../../shared/BlindColumnHeader";
 import { selectBlindActive } from "../../../redux/selectors";
 import { ModelColumnHeader } from "./ModelColumnHeader";
-import { MODEL_SURFACE_KEY, removeColumnFromModelBattle } from "../redux/thunks";
+import {
+  MODEL_SURFACE_KEY,
+  removeColumnFromModelBattle,
+} from "../redux/thunks";
 import type { ModelColumn as ModelColumnType } from "../types";
 
 interface Props {
   column: ModelColumnType;
   onToggleCollapse: () => void;
+  isBaseline?: boolean;
 }
 
-export function ModelColumn({ column, onToggleCollapse }: Props) {
+export function ModelColumn({ column, onToggleCollapse, isBaseline }: Props) {
   const dispatch = useAppDispatch();
   const blindActive = useAppSelector(selectBlindActive);
 
@@ -39,15 +43,14 @@ export function ModelColumn({ column, onToggleCollapse }: Props) {
           collapsed={column.collapsed}
           onToggleCollapse={onToggleCollapse}
           onRemove={() =>
-            dispatch(
-              removeColumnFromModelBattle({ columnId: column.columnId }),
-            )
+            dispatch(removeColumnFromModelBattle({ columnId: column.columnId }))
           }
         />
       ) : (
         <ModelColumnHeader
           column={column}
           onToggleCollapse={onToggleCollapse}
+          isBaseline={isBaseline}
         />
       )}
       <div className="flex-1 overflow-hidden flex justify-center min-w-0">

@@ -26,7 +26,6 @@ export async function createProject(
         description: description ?? null,
         created_by: userId,
         organization_id: null,
-        is_personal: true,
         settings: {},
       })
       .select()

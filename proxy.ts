@@ -3,11 +3,11 @@
 // Refreshes auth tokens and manages session cookies on every matched request.
 // https://supabase.com/docs/guides/auth/server-side/nextjs
 
-import { type NextRequest } from 'next/server'
-import { updateSession } from '@/utils/supabase/middleware'
+import { type NextRequest } from "next/server";
+import { updateSession } from "@/utils/supabase/middleware";
 
 export async function proxy(request: NextRequest) {
-  return await updateSession(request)
+  return await updateSession(request);
 }
 
 export const config = {
@@ -23,7 +23,7 @@ export const config = {
      * - app_callback / app_redirect (OAuth app linking, handles own auth flow)
      * - flash-cards, matrx, dash-test (authenticated layouts handle own auth)
      * - Auth-related pages: forgot-password, error, reset-password
-     * - Info pages: contact, about, privacy-policy, google-settings, google-auth-demo
+     * - Info pages: contact, about, privacy-policy, google-settings
      * - Developer pages: developers
      *
      * NOTE: public content routes (/p, /demos, /canvas/shared, /canvas/discover,
@@ -31,6 +31,6 @@ export const config = {
      * that authenticated users still get their session cookies refreshed. They are
      * excluded from the login-redirect check in utils/supabase/middleware.ts.
      */
-    '/((?!api|_next/static|_next/image|public|auth|matrx|flash-cards|dash-test|app_redirect|app_callback|forgot-password|error|reset-password|contact|about|privacy-policy|google-settings|google-auth-demo|developers|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest).*)',
+    "/((?!api|_next/static|_next/image|public|auth|matrx|flash-cards|dash-test|app_redirect|app_callback|forgot-password|error|reset-password|contact|about|privacy-policy|google-settings|developers|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest).*)",
   ],
-}
+};

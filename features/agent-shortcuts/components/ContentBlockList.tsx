@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -106,7 +107,8 @@ export function ContentBlockList({
         (b) =>
           b.label.toLowerCase().includes(q) ||
           b.blockId.toLowerCase().includes(q) ||
-          (b.description ?? "").toLowerCase().includes(q),
+          (b.description ?? "").toLowerCase().includes(q) ||
+          idMatchesQuery(b, q),
       );
     }
     if (categoryFilter !== "all") {

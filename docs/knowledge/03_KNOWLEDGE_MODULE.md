@@ -2,7 +2,7 @@
 
 > **What this is:** the detailed zoom-in on **Phase 6 (Structure & Associate)** of the 7-phase lifecycle in [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md). The "5 stages" below are Phase 6's *internal* steps — **not** the whole system pipeline.
 > **Audience:** humans orienting to the module *and* coding agents working on any part of it.
-> **Status:** settled except where marked `UNDECIDED` (§9). Treat `UNDECIDED` as a guardrail, not a gap to fill silently.
+> **Status:** settled. Scoring & seeding are now DEFINED in [`04_matrx_quality_model.md`](04_matrx_quality_model.md) (§9 covers what's pipeline-specific). What's left there is *rollout*, not design.
 > **Parent / detail docs:** architecture & the 9 STOP rules → [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md) · scopes → [`scope-model.md`](scope-model.md) · scopeable entities → [`scopeable_entities.md`](scopeable_entities.md) · trust → [`knowledge_provenance_model.md`](knowledge_provenance_model.md)
 
 ---
@@ -70,7 +70,7 @@ The extractor does not reliably know which is which. Classification into entity-
 
 RAG is the storage-and-search substrate the other three pillars enrich.
 
-**On ingest (Stage 5):** chunk the document (overlapping windows) → embed each chunk → store the chunk text, its vector, the document's resolved entities, importance scores, scope links, authority tier, confidence, content role, and lineage **in the same record.** The metadata *travels with* the chunk.
+**On ingest (Stage 5):** chunk the document (overlapping windows) → embed each chunk → store the chunk text, its vector, the document's resolved entities, importance scores, scope links, authority tier, confidence, content role, and lineage **in the same record.** The metadata *travels with* the chunk. **Each chunk is an artifact node** in the lineage DAG (`04` §22) — it gets its own quality vector and participates in `artifact_lineage_edges`, replacing the legacy single `(source_kind, source_id)` parent pointer.
 
 **On retrieval, two mechanisms run together:**
 1. **Semantic search** — vector similarity ("find passages that mean 'severe back injury'"). Catches paraphrase and synonymy.
@@ -112,13 +112,15 @@ Projects and tasks are a **separate system**, optionally M2M-associated to scope
 
 ## 6. Trust through the pipeline
 
-> The trust **model** — provenance vs. authority, content roles (Source/Destination/Utility/Container), authority tiers (`primary`/`derived`/`unvalidated`), and the `input_authority × utility_transformation = output_authority` rule — lives in [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md) §5 + [`knowledge_provenance_model.md`](knowledge_provenance_model.md). Below is only what's **specific to this pipeline.**
+> **All scoring is canonical in [`04_matrx_quality_model.md`](04_matrx_quality_model.md)** — Quality Vector, log-odds propagation, utility effect types, composite, seeding. The trust **model** — content roles, authority tiers, the `input_authority × utility_transformation` intuition — lives in [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md) §5 + [`knowledge_provenance_model.md`](knowledge_provenance_model.md). Below is only what's **specific to this pipeline.**
 
-**Seeding control (anti-sprouting) — wanted, not yet decided.** A guard so a low-authority derived item (e.g. a flashcard) can't be re-ingested as an authoritative source is something we *want*, but the mechanism is **undecided** (it depends on the scoring question — §9). Don't build it as settled. See `02` §5.
+**Seeding control (anti-sprouting) — governed by `04`.** Derived items (e.g. a flashcard) do **not** auto-become trusted seed sources; seeding requires explicit `seed_policy` / validation / human approval (`can_be_seeded`). Definition in `04`.
+
+**Entity anchoring — an entity is extracted FROM an artifact, it is not one.** Each mention anchors to a single artifact node (`extracted_from_artifact_id`) + `span` + `extraction_confidence` (mechanical) + per-artifact `transformation_flags` + `human_verification`. It does **not** carry a parallel lineage; "also appears in the clean text / raw PDF" is **derived** by walking the artifact lineage DAG, not stored. Resolved entities (stage 2) group mentions across artifacts; trust comes from each anchor's quality vector. Shape canonical in [`04_matrx_quality_model.md`](04_matrx_quality_model.md) §22.
 
 **Trust through the 5 stages:** entities inherit doc tier + confidence (1) → merges keep the highest authority (2) → provenance weights importance (3) → scope links are **suggestions** (`scope_association_suggestions`) until human-confirmed, which writes `ctx_context_item_values` via `set_context_value()` (4) → each chunk stores entities + scope links + authority tier + confidence + content role + lineage beside its embedding (5).
 
-**Keep raw data forever, tagged — never deleted, only gated.** Re-process from originals if instructions change.
+**Retention is the default — we never *auto-drop* content just because we're done reading it; raw stays tagged and gated, re-processable when instructions change.** This is NOT a deletion veto: the **user is the ultimate boss** and may delete anything they own. Deleting an anchor/source triggers a warning + a **tombstone** (node shell + lineage edges + quality vectors kept so derived artifacts don't dangle; bytes purged) — see [`knowledge_provenance_model.md`](knowledge_provenance_model.md) "Deletion & erasure" + [`04`](04_matrx_quality_model.md) §22.7.
 
 ---
 
@@ -140,36 +142,31 @@ A periodic **per-org / per-user theme pass** (human-reviewed) surfaces recurring
 - The 5-stage pipeline order and the entity/concept split at Stage 4.
 - The four-level scope chain and the two relation modes (item/value vs. M2M assignment).
 - Scope links are **suggestions until human-confirmed**; confirmation writes values via `set_context_value()`.
-- Raw data is retained forever and tagged, never deleted.
+- Retention is the **default** (no auto-drop on "done reading"); raw stays tagged & re-processable. **User deletion is absolute** — deleting an anchor warns + tombstones (shell + lineage kept, bytes purged), never a system veto.
 - Cost shape: batch passes, not per-entity LLM calls.
 - **Personal-org invariant (org-scoping contract).** Every user has exactly one personal organization (`public.organizations.is_personal=true`, materialized by the `create_personal_organization` auth-trigger on signup; verified 70/70 at the time this section landed). **Every row a user writes on `rag.kg_chunks` / `rag.kg_entities` / `rag.kg_chunk_entities` / `rag.kg_edges` MUST carry a non-NULL `organization_id`.** The system NEVER forces a user to pick an org — the default is their personal one, resolved at the ingest boundary by [`aidream/api/utils/effective_org.resolve_effective_organization_id`](../../aidream/api/utils/effective_org.py) via `public.ensure_personal_organization(user_id)`. Three independent gates enforce the invariant: (1) the aidream auto-ingest router that resolves the personal-org default; (2) matrx-rag refusing to persist a NULL org on `ingest_source` / `extract_entities`; (3) [`scripts/validate_org_scoping.py`](../../scripts/validate_org_scoping.py) — a loud-but-non-blocking release-time drift check wired into `release.sh`. The visibility predicate in [`aidream/api/routers/kg_graph.py`](../../aidream/api/routers/kg_graph.py) fails closed for any row that ever appears with a NULL org. Background: the 2026-06-03 incident, where the "NULL org ⇒ globally visible" branch silently leaked 350+ personal-scope entities to every other user.
 
-**⚠️ The 9 STOP rules apply in full to this module.** They are kept as a single canonical list in [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md) §7 (one copy, so they can't drift). The two that bite most often here: **never** treat a single `confidence`/trust number as settled (§9), and **never** use *extraction confidence as if it were trust.*
+**⚠️ The 9 STOP rules apply in full to this module.** They are kept as a single canonical list in [`02_KNOWLEDGE_ARCHITECTURE.md`](02_KNOWLEDGE_ARCHITECTURE.md) §7 (one copy, so they can't drift). The two that bite most often here: **never** explain/compute scoring outside [`04_matrx_quality_model.md`](04_matrx_quality_model.md), and **never** conflate the three score types — Quality (`04`) vs scope match confidence vs *extraction confidence* (mechanical, not trust).
 
 **When planning new code, look here first:**
 - Extraction/resolution/importance → §2, §3.
 - Anything touching scopes → §5 + `scope-model.md` + the `ctx_*` tables.
-- Anything touching trust/confidence/authority → §6 + `knowledge_provenance_model.md` + §9.
+- Anything touching scoring/quality/trust/authority → [`04_matrx_quality_model.md`](04_matrx_quality_model.md) (canonical) + §6 + `knowledge_provenance_model.md`.
 - Retrieval/indexing → §4.
 
 ---
 
-## 9. UNDECIDED / future — scoring, and seeding control
+## 9. Scoring & seeding — DEFINED in `04` (rollout pending)
 
-Two things we *want* but have **not** decided. Don't build either as settled.
+Quality scoring and seeding control are **decided**, in [`04_matrx_quality_model.md`](04_matrx_quality_model.md) — the single source of truth. This module **refers to `04`**; it does not re-explain scoring.
 
-### 9a · Quality / trust scoring
-**This is not decided. Any column, code path, or doc that treats a single trust/confidence number as settled is wrong by definition.** `confidence` is a placeholder, not a contract. Do **not** encode a resolution in schema or code until the decision is made.
+### 9a · Quality / trust scoring — DECIDED
+Not one number: a **Quality Vector** (`source_quality`, `capture_quality`, `faithfulness`, `alignment`, `coverage`, `utility_value`) + purpose-dependent **`composite_quality`**, propagated in log-odds space via the `preserve` / `additive_impact` / `targeted_transform` effect types. See `04`.
 
-What we know: there are several **distinct** signals currently collapsed into one number —
-1. **Source prior** — trust from origin (court transcript → high; raw scrape → low). The `authority_tier` idea; not actually applied to the score today.
-2. **Extraction confidence** — the model's mechanical certainty it pulled the entity *correctly*. Says nothing about whether the content is *true*. **The only signal stored today** (per-mention `confidence` → per-entity `confidence_avg`).
-3. **Validation deltas** — a reviewer bumps trust; reviewers have **unequal power** to bump.
-4. **Composite trust** — the single downstream handle the three above *should* feed.
+**Pipeline-specific note:** the per-mention `confidence` → per-entity `confidence_avg` stored today is **NER extraction confidence** — a mechanical capture signal, *not* the quality composite and *not* trust. It feeds `04` only as a capture-side gate, never as the composite. Keep the three score types separate: Quality (`04`) · scope match confidence ([`scope-association-pipeline.md`](scope-association-pipeline.md)) · extraction confidence.
 
-Open question: is this 1 number or 3–4, and how do they combine? Strong suspicion: **(2) is being used as if it were (4)**.
+### 9b · Seeding control (anti-sprouting) — GOVERNED by `04`
+Hard rule: derived artifacts do **not** automatically become trusted seed sources. Seeding requires explicit `seed_policy` / validation / human approval (`can_be_seeded`). Definition + fields in `04`.
 
-Non-binding suggestion: keep extraction confidence as a **quality gate only**; compute trust separately as **source prior moved by validation deltas**. Decide before encoding.
-
-### 9b · Seeding control (anti-sprouting)
-We *want* a guard so a low-authority derived item (e.g. an AI-generated flashcard) can't be re-ingested as if it were an authoritative source and propagate errors. The mechanism — a seeding gate, a promotion step, which authority threshold — is **undecided**, and it depends on 9a (you can't gate on authority you can't yet score). *Non-binding suggestion:* gate seeding on an explicit human/validation-set `can_be_seeded` flag, never on an auto-computed score. Don't build it as settled yet.
+### What's actually still open here
+*Rollout*, not design: wiring the quality engine into ingest/Stage-5 persistence, the DB columns, and default utility profiles for this pipeline's utilities (chunker, extractor, resolver). Tracked in [`00_MASTER_TASKLIST.md`](00_MASTER_TASKLIST.md).

@@ -44,8 +44,10 @@ import {
   selectSecondaryCanvasItem,
   selectCanvasIsSplit,
   markItemSynced,
+  isPersistableCanvasType,
   type CanvasItem,
 } from "@/features/canvas/redux/canvasSlice";
+import { toast } from "sonner";
 import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import { XTapButton } from "@/components/icons/tap-buttons";
 import { CanvasBody, getDefaultTitle, titleToString } from "./CanvasBody";
@@ -103,6 +105,10 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
       ? content.metadata.subtitle
       : undefined;
   const isSynced = !!item.isSynced;
+  // Ephemeral editor surfaces (code_preview / code_edit_error) carry live
+  // callbacks that can't be serialized — saving or sharing them writes a
+  // corrupt, dead row. Hide both affordances for those types.
+  const canPersist = isPersistableCanvasType(content.type);
 
   // ── Per-pane actions ────────────────────────────────────────────────────
   const handleCloseAll = () => dispatch(closeCanvas());
@@ -144,6 +150,10 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
 
   const handleSync = async () => {
     if (!content) return;
+    if (!canPersist) {
+      toast.error("This view is interactive-only and can't be saved.");
+      return;
+    }
     setIsSyncing(true);
     try {
       const { canvasItemsService } =
@@ -160,6 +170,15 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
             savedItemId: result.data.id,
           }),
         );
+      } else {
+        // Loud failure: a save that silently no-ops looks identical to success.
+        const msg =
+          result.error instanceof Error
+            ? result.error.message
+            : typeof result.error === "string"
+              ? result.error
+              : "Couldn't save to your library.";
+        toast.error(msg);
       }
     } finally {
       setIsSyncing(false);
@@ -268,7 +287,8 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
             </>
           )}
 
-          {/* Sync */}
+          {/* Sync — hidden for render-only types that can't be persisted */}
+          {canPersist && (
           <TapTargetButton
             icon={
               isSynced && !isSyncing ? (
@@ -300,14 +320,17 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
             onClick={handleSync}
             disabled={isSyncing}
           />
+          )}
 
-          {/* Share */}
+          {/* Share — hidden for render-only types that can't be persisted */}
+          {canPersist && (
           <TapTargetButton
             icon={<Share2 className="h-4 w-4" />}
             ariaLabel="Share canvas"
             tooltip="Share"
             onClick={() => setIsShareOpen(true)}
           />
+          )}
 
           {/* Close — semantics depend on paneRole */}
           <XTapButton

@@ -1,7 +1,6 @@
 import { getAgent } from "@/lib/agents/data";
 import { AgentWidgetsPage } from "@/features/agents/components/widgets/AgentWidgetsPage";
 
-export const metadata = { title: "Agent Widgets | AI Matrx" };
 
 export default async function AgentWidgetsRoute({
   params,

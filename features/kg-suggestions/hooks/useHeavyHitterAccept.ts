@@ -1,54 +1,47 @@
 // features/kg-suggestions/hooks/useHeavyHitterAccept.ts
 //
-// Orchestrates the heavy-hitter ACCEPT → CREATE SCOPE → TAG SOURCES flow,
-// the end-to-end consumption of a `KgHeavyHitterAcceptPlan`.
+// Orchestrates the heavy-hitter ACCEPT → CREATE SCOPE → TAG SOURCE flow.
 //
-// This is the seam that Phase F left disabled ("Create scope — coming soon")
-// because the Phase E backend contract hadn't landed yet. The live contract
-// (aidream/api/routers/kg_suggestions.py, read 2026-06-02): accepting a
-// `match_kind="heavy_hitter"` suggestion flips its status to `accepted`
-// server-side and returns a plan — the entity, a suggested scope name, and the
-// owner-scoped source mentions to tag. Scope creation is a frontend-owned
-// write path (React → Supabase direct, per the scopes invariant), so the FE
-// drives the rest here.
+// As of 2026-06-07 there is no backend accept endpoint and no server-returned
+// "plan" (the aidream /kg-suggestions API was deleted). Accepting a
+// `match_kind="heavy_hitter"` row is now ENTIRELY frontend-owned:
+//   1. create the scope via the canonical `create_scope` RPC (the same path
+//      NewScopeInline / HierarchyCascade / ScopeFormSheet use), then
+//   2. tag the suggestion's own source document to it (additively), then
+//      mark the suggestion accepted (scope_association_suggestions) and drop
+//      the row from every cached list.
 //
-// REUSED primitives (no parallel write paths created):
-//  - createScope thunk → `create_scope` RPC (features/agent-context/redux/scope)
-//    — the SAME path NewScopeInline / HierarchyCascade / ScopeFormSheet use.
+// NOTE: the old backend plan returned EVERY document mentioning the recurring
+// entity (read from rag.kg_chunk_entities). That `rag` schema is not exposed to
+// PostgREST, so v1 tags only the originating source. The new scope is created
+// and useful immediately; the user can tag further documents from the normal
+// scope-tagging surfaces. This limitation is the documented v1 boundary in the
+// handoff doc (§5 open question).
+//
+// REUSED primitives (no parallel write paths):
+//  - createScope thunk → `create_scope` RPC.
 //  - scopesService.getEntityScopes + setEntityScopes — the canonical
-//    ctx_scope_assignments chokepoint (Surface B tagging). Additive per source:
-//    we read each source's current scopes and write [...current, newScopeId] so
-//    we never clobber a source's existing tags.
-//
-// Failure semantics (the accept-succeeded-but-create-failed edge):
-//  - accept() is idempotent server-side: it has ALREADY flipped the suggestion
-//    to `accepted` by the time it resolves. So if scope creation throws AFTER a
-//    successful accept, the suggestion is gone but no scope exists. We surface a
-//    RECOVERABLE error (`stage: "create"`) so the UI can tell the user the
-//    suggestion was accepted but they must create the scope manually — never a
-//    confusing silent failure.
-//  - tagging is best-effort PER SOURCE: a single source that fails to tag does
-//    NOT fail the whole flow (the scope exists and is useful). We count
-//    successes/failures and report them.
+//    ctx_scope_assignments chokepoint (additive per source).
+//  - kgSuggestionsService.markKgSuggestionAccepted — the row lifecycle write.
 
 "use client";
 
 import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { createScope } from "@/features/agent-context/redux/scope/scopesSlice";
+import { removeFromLists } from "@/lib/redux/slices/kgSuggestionsSlice";
 import { scopesService } from "@/features/scopes/service/scopesService";
+import { markKgSuggestionAccepted } from "@/features/kg-suggestions/service/kgSuggestionsService";
 import type { ScopeAssignmentEntityType } from "@/features/scopes/types";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import {
-  isHeavyHitterPlan,
   kgSourceKindToEntityType,
-  type KgAcceptResult,
-  type KgHeavyHitterSource,
+  type KgSuggestionRow,
 } from "@/features/kg-suggestions/types";
 
 export interface PromoteHeavyHitterArgs {
-  /** The heavy-hitter suggestion id to accept + promote. */
-  suggestionId: string;
+  /** The heavy-hitter row to promote. */
+  row: KgSuggestionRow;
   /** Active org the new scope belongs to. */
   organizationId: string;
   /** The scope_type the user picked (required — `create_scope` needs it). */
@@ -59,26 +52,19 @@ export interface PromoteHeavyHitterArgs {
 
 export interface PromoteHeavyHitterResult {
   ok: boolean;
-  /** Set when the scope was created. */
   scopeId?: string;
   scopeName?: string;
-  /** Sources successfully tagged to the new scope. */
+  /** 1 when the originating source was tagged, else 0. */
   taggedCount: number;
-  /** Sources skipped because their source_kind has no taggable entity type. */
+  /** 1 when the source kind has no taggable entity type, else 0. */
   skippedCount: number;
-  /** Sources that mapped to a taggable type but whose tag write failed. */
+  /** 1 when the tag write failed (scope still created), else 0. */
   tagFailedCount: number;
   /**
    * Failure stage when `ok` is false:
-   *  - "accept" → the accept call itself failed; nothing changed.
-   *  - "plan"   → accept succeeded but returned a non-heavy-hitter response
-   *               (shouldn't happen for a heavy_hitter row) — treated as an
-   *               error so we don't silently swallow it.
-   *  - "create" → accept SUCCEEDED (suggestion is now accepted server-side) but
-   *               scope creation failed. RECOVERABLE: the user must create the
-   *               scope manually. The caller surfaces this distinctly.
+   *  - "create" → scope creation failed; nothing was written. Try again.
    */
-  failedStage?: "accept" | "plan" | "create";
+  failedStage?: "create";
   error?: string;
 }
 
@@ -86,11 +72,7 @@ function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-/**
- * Tag one source to the scope, additively (preserve its existing scopes).
- * Returns true on success, false on a mapped-but-failed write. Untaggable
- * kinds are filtered out by the caller before this runs.
- */
+/** Tag one source to the scope additively (preserve its existing scopes). */
 async function tagSourceToScope(
   entityType: ScopeAssignmentEntityType,
   sourceId: string,
@@ -107,50 +89,18 @@ async function tagSourceToScope(
   return !isScopesRpcErr(written);
 }
 
-export interface UseHeavyHitterAcceptArgs {
-  /** The accept fn from `useKgSuggestions` — already flips status + drops row. */
-  accept: (id: string) => Promise<KgAcceptResult>;
-}
-
-export function useHeavyHitterAccept({ accept }: UseHeavyHitterAcceptArgs) {
+export function useHeavyHitterAccept() {
   const dispatch = useAppDispatch();
 
   const promote = useCallback(
-    async (
-      args: PromoteHeavyHitterArgs,
-    ): Promise<PromoteHeavyHitterResult> => {
-      const { suggestionId, organizationId, scopeTypeId, scopeName } = args;
+    async (args: PromoteHeavyHitterArgs): Promise<PromoteHeavyHitterResult> => {
+      const { row, organizationId, scopeTypeId, scopeName } = args;
       const base = { taggedCount: 0, skippedCount: 0, tagFailedCount: 0 };
 
-      // 1) Accept — flips the suggestion to `accepted` and returns the plan.
-      let res: KgAcceptResult;
-      try {
-        res = await accept(suggestionId);
-      } catch (err) {
-        return {
-          ok: false,
-          ...base,
-          failedStage: "accept",
-          error: errMessage(err),
-        };
-      }
+      const finalName =
+        scopeName.trim() || row.suggested_value || row.entity.name || "";
 
-      if (!isHeavyHitterPlan(res)) {
-        // The row was a heavy_hitter but the backend returned a cell-value
-        // accept. Don't swallow — this is a contract mismatch worth surfacing.
-        return {
-          ok: false,
-          ...base,
-          failedStage: "plan",
-          error:
-            "Accepted, but the server did not return a scope-creation plan.",
-        };
-      }
-
-      const plan = res;
-      const sources: KgHeavyHitterSource[] = plan.sources ?? [];
-
-      // 2) Create the scope via the canonical create_scope RPC.
+      // 1) Create the scope via the canonical create_scope RPC.
       let scopeId: string;
       let createdName: string;
       try {
@@ -158,17 +108,15 @@ export function useHeavyHitterAccept({ accept }: UseHeavyHitterAcceptArgs) {
           createScope({
             org_id: organizationId,
             type_id: scopeTypeId,
-            name: scopeName.trim() || plan.suggested_scope_name,
+            name: finalName,
             description: `Created from recurring entity "${
-              plan.suggestion.entity.name ?? plan.suggested_scope_name
+              row.entity.name ?? finalName
             }"`,
           }),
         ).unwrap();
         scopeId = scope.id;
         createdName = scope.name;
       } catch (err) {
-        // Accept already succeeded — the suggestion is accepted but no scope
-        // exists. Recoverable: tell the user to create it manually.
         return {
           ok: false,
           ...base,
@@ -177,24 +125,31 @@ export function useHeavyHitterAccept({ accept }: UseHeavyHitterAcceptArgs) {
         };
       }
 
-      // 3) Tag each source to the new scope (additive, best-effort per source).
+      // 2) Tag the originating source to the new scope (best-effort).
       let taggedCount = 0;
       let skippedCount = 0;
       let tagFailedCount = 0;
-      for (const src of sources) {
-        const entityType = kgSourceKindToEntityType(src.source_kind);
-        if (!entityType) {
-          skippedCount += 1;
-          continue;
-        }
-        const ok = await tagSourceToScope(
+      const entityType = kgSourceKindToEntityType(row.source_kind);
+      if (!entityType) {
+        skippedCount = 1;
+      } else {
+        const tagged = await tagSourceToScope(
           entityType as ScopeAssignmentEntityType,
-          src.source_id,
+          row.source_id,
           scopeId,
         );
-        if (ok) taggedCount += 1;
-        else tagFailedCount += 1;
+        if (tagged) taggedCount = 1;
+        else tagFailedCount = 1;
       }
+
+      // 3) Mark accepted + drop the row everywhere (best-effort on the mark —
+      //    the scope already exists, so never fail the flow on this write).
+      try {
+        await markKgSuggestionAccepted(row);
+      } catch {
+        // Suggestion may resurface on a later load; non-destructive.
+      }
+      dispatch(removeFromLists({ id: row.id }));
 
       return {
         ok: true,
@@ -205,7 +160,7 @@ export function useHeavyHitterAccept({ accept }: UseHeavyHitterAcceptArgs) {
         tagFailedCount,
       };
     },
-    [accept, dispatch],
+    [dispatch],
   );
 
   return { promote };

@@ -11,6 +11,7 @@ import { Check, Plus, Search, X } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import {
   makeSelectScopeTypesForOrg,
   selectTreeStatus,
@@ -95,7 +96,9 @@ export default function TaskScopeTags({
       .map((t) => ({
         ...t,
         scopes: q
-          ? t.scopes.filter((s) => s.name.toLowerCase().includes(q))
+          ? t.scopes.filter(
+              (s) => s.name.toLowerCase().includes(q) || idMatchesQuery(s, q),
+            )
           : t.scopes,
       }))
       .filter((t) => t.scopes.length > 0);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Plus, X, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import {
   Sheet,
@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
-import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
+import { ScopeColorPicker } from "./ScopeColorPicker";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -36,7 +36,6 @@ import {
   listScopeTypeItems,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { slugifyKey } from "@/features/scope-system/utils/slugify";
-import { supabase } from "@/utils/supabase/client";
 
 type ContextItemDraft = { id: string; display_name: string };
 
@@ -86,6 +85,9 @@ export function AddScopeModal({
   const [variableKeyInput, setVariableKeyInput] = useState("");
   const [variableKeys, setVariableKeys] = useState<string[]>([]);
 
+  const rowInputsRef = useRef<Map<string, HTMLInputElement>>(new Map());
+  const pendingFocusRowRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!open) return;
     setLabelSingular("");
@@ -103,13 +105,25 @@ export function AddScopeModal({
     setAdvancedOpen(false);
   }, [open, existingTypes.length]);
 
+  useEffect(() => {
+    const target = pendingFocusRowRef.current;
+    if (!target) return;
+    const el = rowInputsRef.current.get(target);
+    if (el) {
+      el.focus();
+      pendingFocusRowRef.current = null;
+    }
+  }, [items]);
+
   function handleSingularChange(v: string) {
     setLabelSingular(v);
     if (!pluralEdited) setLabelPlural(pluralize(v));
   }
 
-  function addItemRow() {
-    setItems((rows) => [...rows, newItemRow()]);
+  function appendItemRow() {
+    const row = newItemRow();
+    pendingFocusRowRef.current = row.id;
+    setItems((rows) => [...rows, row]);
   }
   function removeItemRow(id: string) {
     setItems((rows) =>
@@ -122,6 +136,21 @@ export function AddScopeModal({
     );
   }
 
+  function handleItemRowKeyDown(
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number,
+  ) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const next = items[index + 1];
+      if (next) {
+        rowInputsRef.current.get(next.id)?.focus();
+      } else {
+        appendItemRow();
+      }
+    }
+  }
+
   function addVariableKey() {
     const key = slugifyKey(variableKeyInput);
     if (key && !variableKeys.includes(key)) {
@@ -131,17 +160,6 @@ export function AddScopeModal({
   }
   function removeVariableKey(key: string) {
     setVariableKeys(variableKeys.filter((k) => k !== key));
-  }
-
-  async function persistColorIfCustom(typeId: string) {
-    if (!color || color === "blue") return;
-    const { error } = await supabase
-      .from("ctx_scope_types")
-      .update({ color })
-      .eq("id", typeId);
-    if (error) {
-      console.warn("Failed to set scope_type color", error);
-    }
   }
 
   async function handleSave() {
@@ -163,6 +181,7 @@ export function AddScopeModal({
           label_singular: trimmedSingular,
           label_plural: trimmedPlural || trimmedSingular,
           icon: icon || "Folder",
+          color,
           description: description.trim(),
           sort_order: sortOrder,
           max_assignments: maxAssignments
@@ -173,8 +192,6 @@ export function AddScopeModal({
           default_variable_keys: variableKeys,
         }),
       ).unwrap();
-
-      await persistColorIfCustom(primaryType.id);
 
       for (const display_name of primaryItems) {
         await dispatch(
@@ -208,9 +225,9 @@ export function AddScopeModal({
     <Sheet open={open} onOpenChange={(o) => (!busy ? onOpenChange(o) : null)}>
       <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Add a scope</SheetTitle>
+          <SheetTitle>Add a scope type</SheetTitle>
           <SheetDescription>
-            A scope groups things you want to track — clients, products, teams,
+            A scope type is a dimension you track — Clients, Products, Teams,
             anything. Define the context items you want for each one.
           </SheetDescription>
         </SheetHeader>
@@ -244,14 +261,24 @@ export function AddScopeModal({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs">Icon</Label>
-            <IconInputWithValidation
-              value={icon}
-              onChange={setIcon}
-              showLucideLink={false}
-              disabled={busy}
-            />
+          <div className="grid grid-cols-[1fr_auto] gap-3 items-start">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Icon</Label>
+              <IconInputWithValidation
+                value={icon}
+                onChange={setIcon}
+                showLucideLink={false}
+                disabled={busy}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Color</Label>
+              <ScopeColorPicker
+                value={color}
+                onChange={setColor}
+                disabled={busy}
+              />
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -268,18 +295,27 @@ export function AddScopeModal({
 
           {/* Context items to track */}
           <div className="space-y-2">
-            <div>
-              <Label className="text-xs">
-                Context items to track for each {labelSingular || "item"}
-              </Label>
-              <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-                Add a few now or skip — you can add more later from any scope.
-              </p>
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <Label className="text-xs">
+                  Context items to track for each {labelSingular || "item"}
+                </Label>
+                <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+                  Add a few now or skip — you can add more later from any scope.
+                </p>
+              </div>
+              <span className="text-[10px] text-muted-foreground shrink-0">
+                Press Enter to add another
+              </span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {items.map((row, idx) => (
                 <div key={row.id} className="flex items-center gap-2">
                   <Input
+                    ref={(el) => {
+                      if (el) rowInputsRef.current.set(row.id, el);
+                      else rowInputsRef.current.delete(row.id);
+                    }}
                     placeholder={
                       idx === 0
                         ? "e.g. Industry"
@@ -289,6 +325,7 @@ export function AddScopeModal({
                     }
                     value={row.display_name}
                     onChange={(e) => updateItemRow(row.id, e.target.value)}
+                    onKeyDown={(e) => handleItemRowKeyDown(e, idx)}
                     disabled={busy}
                     style={{ fontSize: "16px" }}
                   />
@@ -309,7 +346,7 @@ export function AddScopeModal({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={addItemRow}
+              onClick={appendItemRow}
               disabled={busy}
             >
               <Plus className="h-3.5 w-3.5 mr-1" />
@@ -332,7 +369,7 @@ export function AddScopeModal({
               )}
               Advanced settings
               <span className="text-xs text-muted-foreground font-normal">
-                color, parent, sort order, max, default variables
+                parent, sort order, max, default variables
               </span>
             </button>
           </div>
@@ -340,14 +377,6 @@ export function AddScopeModal({
           {advancedOpen && (
             <div className="space-y-5">
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Color</Label>
-                  <TailwindColorPicker
-                    selectedColor={color}
-                    onColorChange={setColor}
-                    size="sm"
-                  />
-                </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Sort order</Label>
                   <Input
@@ -361,9 +390,6 @@ export function AddScopeModal({
                     disabled={busy}
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Max assignments</Label>
                   <Input
@@ -379,29 +405,30 @@ export function AddScopeModal({
                     Leave blank for unlimited
                   </p>
                 </div>
-                {parentCandidates.length > 0 && (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Parent type</Label>
-                    <Select
-                      value={parentTypeId}
-                      onValueChange={setParentTypeId}
-                      disabled={busy}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="None" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NONE_VALUE}>None</SelectItem>
-                        {parentCandidates.map((t) => (
-                          <SelectItem key={t.id} value={t.id}>
-                            {t.label_singular}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
               </div>
+
+              {parentCandidates.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Parent type</Label>
+                  <Select
+                    value={parentTypeId}
+                    onValueChange={setParentTypeId}
+                    disabled={busy}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE_VALUE}>None</SelectItem>
+                      {parentCandidates.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.label_singular}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label className="text-xs">Default variable keys</Label>
@@ -474,7 +501,7 @@ export function AddScopeModal({
               disabled={!canSave || busy}
             >
               {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Create scope
+              Create scope type
             </Button>
           </div>
         </div>

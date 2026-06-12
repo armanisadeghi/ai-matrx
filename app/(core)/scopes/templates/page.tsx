@@ -1,10 +1,5 @@
 import { TemplatesGalleryPanel } from "@/features/scopes/components/management/TemplatesGalleryPanel";
 
-export const metadata = {
-  title: "Scope templates",
-  description:
-    "Reusable scope-type bundles. Apply one to seed an organization with the right dimensions and context items in a single step.",
-};
 
 export default function ScopesTemplatesPage() {
   return (

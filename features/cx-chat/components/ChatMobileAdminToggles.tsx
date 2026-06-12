@@ -6,7 +6,7 @@
 
 import { Blocks, Camera } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
 import {
   selectActiveServer,
   switchServer,
@@ -22,7 +22,7 @@ import {
 
 export default function ChatMobileAdminToggles() {
   const dispatch = useAppDispatch();
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector(selectIsAdmin);
   const activeServer = useAppSelector(selectActiveServer);
   const isUsingLocalhost = activeServer === "localhost";
   const blockMode = useAppSelector(selectIsBlockMode);

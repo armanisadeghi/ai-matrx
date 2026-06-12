@@ -21,7 +21,7 @@ import { enableMapSet } from "immer";
 import { socketMiddleware } from "./socket-io/connection/socketMiddleware";
 import { autoSaveMiddleware } from "@/features/notes/redux/autoSaveMiddleware";
 import { codeFilesAutoSaveMiddleware } from "@/features/code-files/redux/autoSaveMiddleware";
-import { cloudFilesRealtimeMiddleware } from "@/features/files";
+import { cloudFilesRealtimeMiddleware, cloudFilesMutationToastMiddleware } from "@/features/files";
 import {
   createSyncMiddleware,
   type SyncEngineApi,
@@ -186,6 +186,7 @@ export const makeEntityStore = (initialState?: Partial<InitialReduxState>) => {
         autoSaveMiddleware,
         codeFilesAutoSaveMiddleware,
         cloudFilesRealtimeMiddleware,
+        cloudFilesMutationToastMiddleware,
       ),
     devTools: process.env.NODE_ENV !== "production",
   });

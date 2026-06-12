@@ -21,7 +21,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import {
   AlertCircle,
   Beaker,
@@ -43,11 +43,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -174,7 +170,10 @@ function fileNameOf(meta: Record<string, unknown>): string | null {
 }
 
 function pageNumberOf(meta: Record<string, unknown>): number | null {
-  const pn = (meta?.page_number ?? meta?.first_page) as number | string | undefined;
+  const pn = (meta?.page_number ?? meta?.first_page) as
+    | number
+    | string
+    | undefined;
   if (typeof pn === "number") return pn;
   if (typeof pn === "string") {
     const n = Number.parseInt(pn, 10);
@@ -220,9 +219,7 @@ function RichHitCard({
   const src = (meta?.source ?? {}) as Record<string, unknown>;
   const libraryShortCode = src.library_short_code as string | undefined;
   const fileName =
-    "file_name" in hit && hit.file_name
-      ? hit.file_name
-      : fileNameOf(meta);
+    "file_name" in hit && hit.file_name ? hit.file_name : fileNameOf(meta);
   const pageNumber =
     "page_number" in hit && hit.page_number != null
       ? hit.page_number
@@ -255,7 +252,10 @@ function RichHitCard({
           {fileName ?? `(${hit.source_kind})`}
         </span>
         {pageNumber !== null && (
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-auto">
+          <Badge
+            variant="secondary"
+            className="text-[10px] px-1.5 py-0 ml-auto"
+          >
             page {pageNumber}
           </Badge>
         )}
@@ -495,10 +495,7 @@ function ScopeSidebar({
           <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="font-semibold">Pipeline</span>
         </div>
-        <KindToggle
-          value={scope.kindFilter}
-          onChange={scope.setKindFilter}
-        />
+        <KindToggle value={scope.kindFilter} onChange={scope.setKindFilter} />
         <label className="flex items-center gap-2 text-xs cursor-pointer">
           <input
             type="checkbox"
@@ -690,12 +687,12 @@ function SearchTab({ scope }: { scope: Scope }) {
               </button>
             )}
           </div>
-          <Button type="submit" disabled={!query.trim() || running} className="shrink-0">
-            {running ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Search"
-            )}
+          <Button
+            type="submit"
+            disabled={!query.trim() || running}
+            className="shrink-0"
+          >
+            {running ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
           </Button>
         </form>
       </header>
@@ -718,8 +715,8 @@ function SearchTab({ scope }: { scope: Scope }) {
               optionally reranked by Cohere, and de-duplicated with MMR.
             </p>
             <p>
-              Each card shows the full hit snippet with the source, page,
-              and a deep link into the original document.
+              Each card shows the full hit snippet with the source, page, and a
+              deep link into the original document.
             </p>
           </div>
         )}
@@ -733,52 +730,56 @@ function SearchTab({ scope }: { scope: Scope }) {
           </div>
         )}
 
-        <AnimatePresence mode="wait">
-          {response && (
-            <motion.div
-              key={response.query}
-              {...FADE_IN_UP}
-              className="p-4 space-y-3"
-            >
-              <div className="text-xs text-muted-foreground tabular-nums">
-                {response.hits.length} hits · {response.total_candidates}{" "}
-                candidates · {response.latency_ms} ms
-                {response.reranker_model &&
-                  ` · reranked by ${response.reranker_model}`}
+        {/* Results panel. Rendered as a plain conditional (NOT an
+            AnimatePresence `mode="wait"` swap) — `FADE_IN_UP` carries an
+            `exit`, and with React Compiler enabled the exiting child often
+            never completes, which under `mode="wait"` blocks the NEXT query's
+            results from ever mounting. `key={response.query}` still remounts
+            (enter fade) on each new search; removal is immediate. */}
+        {response && (
+          <motion.div
+            key={response.query}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="p-4 space-y-3"
+          >
+            <div className="text-xs text-muted-foreground tabular-nums">
+              {response.hits.length} hits · {response.total_candidates}{" "}
+              candidates · {response.latency_ms} ms
+              {response.reranker_model &&
+                ` · reranked by ${response.reranker_model}`}
+            </div>
+            {response.hits.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                No hits for{" "}
+                <strong className="text-foreground">"{response.query}"</strong>.
+                Try the Diagnostics tab to check whether your content was
+                indexed and is visible to you.
               </div>
-              {response.hits.length === 0 ? (
-                <div className="text-sm text-muted-foreground">
-                  No hits for{" "}
-                  <strong className="text-foreground">
-                    "{response.query}"
-                  </strong>
-                  . Try the Diagnostics tab to check whether your content
-                  was indexed and is visible to you.
-                </div>
-              ) : (
-                response.hits.map((h, i) => (
-                  <motion.div
-                    key={h.chunk_id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      duration: 0.2,
-                      ease: "easeOut",
-                      delay: Math.min(i * 0.03, 0.3),
-                    }}
-                  >
-                    <RichHitCard
-                      rank={i + 1}
-                      hit={h}
-                      showFullText
-                      showBreakdown
-                    />
-                  </motion.div>
-                ))
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+            ) : (
+              response.hits.map((h, i) => (
+                <motion.div
+                  key={h.chunk_id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.2,
+                    ease: "easeOut",
+                    delay: Math.min(i * 0.03, 0.3),
+                  }}
+                >
+                  <RichHitCard
+                    rank={i + 1}
+                    hit={h}
+                    showFullText
+                    showBreakdown
+                  />
+                </motion.div>
+              ))
+            )}
+          </motion.div>
+        )}
       </ScrollArea>
     </div>
   );
@@ -947,15 +948,23 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
               className="pl-9 h-10 text-base"
             />
           </div>
-          <Button type="submit" disabled={!query.trim() || running} className="shrink-0">
-            {running ? <Loader2 className="h-4 w-4 animate-spin" /> : "Diagnose"}
+          <Button
+            type="submit"
+            disabled={!query.trim() || running}
+            className="shrink-0"
+          >
+            {running ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Diagnose"
+            )}
           </Button>
         </form>
         <p className="mt-2 text-[11px] text-muted-foreground">
           This tab runs the full retrieval pipeline and exposes every layer:
           query rewrites, HyDE passage, embedding vector preview, per-stage
-          counts, raw request/response, per-hit score breakdown, and the
-          exact prompt block an agent would receive.
+          counts, raw request/response, per-hit score breakdown, and the exact
+          prompt block an agent would receive.
         </p>
       </header>
 
@@ -1430,10 +1439,10 @@ function AgentChatTab({ scope }: { scope: Scope }) {
                 Ask the agent anything
               </p>
               <p>
-                The agent will call <code className="font-mono">rag_search</code>{" "}
-                one or more times, then answer using only what it retrieved.
-                You'll see every tool call, every retrieved chunk, and the
-                final answer.
+                The agent will call{" "}
+                <code className="font-mono">rag_search</code> one or more times,
+                then answer using only what it retrieved. You'll see every tool
+                call, every retrieved chunk, and the final answer.
               </p>
             </div>
           )}
@@ -1531,10 +1540,7 @@ function ChatMessageView({ message }: { message: ChatMessage }) {
                     </code>
                   </span>
                   {c.result && (
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] ml-auto"
-                    >
+                    <Badge variant="secondary" className="text-[10px] ml-auto">
                       {c.result.n_hits} hits · {c.result.latency_ms}ms
                     </Badge>
                   )}
@@ -1620,9 +1626,9 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
         <div className="flex-1">
           <div className="text-sm font-semibold">Diagnostics</div>
           <div className="text-[11px] text-muted-foreground">
-            See what chunks are visible to you, and via which ACL route.
-            Toggle "Admin: bypass ACL" in the sidebar to compare against the
-            full database.
+            See what chunks are visible to you, and via which ACL route. Toggle
+            "Admin: bypass ACL" in the sidebar to compare against the full
+            database.
           </div>
         </div>
         <Button onClick={refresh} disabled={loading} size="sm">
@@ -1650,13 +1656,13 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                 Inventory not loaded yet
               </p>
               <p>
-                Click <strong>Load</strong> to fetch every chunk visible to
-                you, grouped by source kind and visibility route.
+                Click <strong>Load</strong> to fetch every chunk visible to you,
+                grouped by source kind and visibility route.
               </p>
               <p className="mt-2 text-xs">
-                If you're not finding your PDFs in search, this is the
-                fastest way to confirm whether they were ingested and whether
-                ACL is filtering them out.
+                If you're not finding your PDFs in search, this is the fastest
+                way to confirm whether they were ingested and whether ACL is
+                filtering them out.
               </p>
             </div>
           )}
@@ -1685,7 +1691,10 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
                     label="Distinct sources"
                     value={inv.total_visible_sources.toLocaleString()}
                   />
-                  <Stat label="Is admin" value={inv.scope.is_admin ? "yes" : "no"} />
+                  <Stat
+                    label="Is admin"
+                    value={inv.scope.is_admin ? "yes" : "no"}
+                  />
                   <Stat
                     label="Organization"
                     value={inv.scope.organization_id ?? "—"}

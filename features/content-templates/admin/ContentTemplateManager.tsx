@@ -71,6 +71,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import type {
   TypedStreamEvent,
   RenderBlockEvent,
@@ -329,7 +330,8 @@ export function ContentTemplateManager({
       template.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       template.tags?.some((tag) =>
         tag.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
+      ) ||
+      idMatchesQuery(template, searchTerm);
 
     return matchesRole && matchesSearch;
   });

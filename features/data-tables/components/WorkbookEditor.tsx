@@ -45,6 +45,8 @@ import {
 import { toast } from "@/components/ui/use-toast";
 
 import { useWorkbookRealtime } from "../hooks/useWorkbookRealtime";
+import { RemoteCursorsLayer } from "./RemoteCursorsLayer";
+import { WorkbookCursorOverlay } from "./WorkbookCursorOverlay";
 import {
   getLatestSnapshot,
   saveSnapshot,
@@ -61,18 +63,40 @@ type Props = {
   editable?: boolean;
   /** Used as the XLSX filename on export. Falls back to workbookId. */
   workbookName?: string;
+  /**
+   * Opt in to v2 CRDT collab — see `features/data-tables/collab/FEATURE.md`.
+   * Defaults to `false` so v1 behavior (snapshot-per-save last-write-wins)
+   * is unchanged until the workbook page explicitly turns this on. When
+   * `true`, the editor wires a `WorkbookCollabSession`, broadcasts mutations
+   * via Supabase Broadcast, and renders a remote-cursors strip in the
+   * toolbar. Snapshot writes become host-gated.
+   */
+  collab?: boolean;
 };
 
 export default function WorkbookEditor({
   workbookId,
   editable = true,
   workbookName,
+  collab = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const apiRef = useRef<FUniver | null>(null);
   const univerRef = useRef<Univer | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaveByUserRef = useRef<string | null>(null);
+  // V2 collab session — null until `collab=true` AND Univer has booted.
+  // See `../collab/FEATURE.md` for the full architecture; this ref is the
+  // sole live connection between Univer's command service and Yjs.
+  const collabSessionRef = useRef<import("../collab/WorkbookCollabSession").WorkbookCollabSession | null>(null);
+  // Univer selection-listener disposer, kept ref-side so the unmount path can
+  // reach it regardless of which render registered it.
+  const collabSelectionDisposerRef = useRef<{ dispose: () => void } | null>(null);
+  const [remoteAwareness, setRemoteAwareness] = useState<
+    Map<number, import("../collab/types").AwarenessState>
+  >(new Map());
+  const [collabIsHost, setCollabIsHost] = useState(true); // solo = host by default
+  const [collabSelfUid, setCollabSelfUid] = useState<string>("");
 
   const [bootState, setBootState] = useState<
     "booting" | "ready" | "load_error"
@@ -85,6 +109,14 @@ export default function WorkbookEditor({
   // every render.
   const onRemoteSnapshot = useCallback(
     (evt: { snapshotId: string; createdBy: string | null }) => {
+      // V2 (collab=true): the CRDT is the source of truth for live edits,
+      // and the elected host writes snapshots as periodic checkpoints. A
+      // remote-snapshot hot-swap here would overwrite the local Yjs doc and
+      // momentarily desync peers. Suppress unless the local doc is genuinely
+      // far behind (a disaster-recovery path tracked separately). For v1
+      // (collab=false) the old behavior is preserved: refetch on any remote
+      // snapshot from another user.
+      if (collab) return;
       if (
         evt.createdBy &&
         lastSaveByUserRef.current &&
@@ -98,10 +130,14 @@ export default function WorkbookEditor({
     },
     // reloadFromLatest is stable via useCallback below; including it would
     // create a cycle. Captured by ref via apiRef.
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [collab],
   );
 
-  useWorkbookRealtime(workbookId, onRemoteSnapshot);
+  // V2 disables the snapshot-driven hot-swap (CRDT handles live state);
+  // gating the hook call keeps the realtime subscription off entirely when
+  // collab is on. Zero overhead, zero redundant refetches.
+  useWorkbookRealtime(workbookId, onRemoteSnapshot, { enabled: !collab });
 
   const reloadFromLatest = useCallback(async () => {
     if (!apiRef.current) return;
@@ -166,9 +202,29 @@ export default function WorkbookEditor({
           setSaveStatus("dirty");
           if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
           saveTimerRef.current = setTimeout(() => {
+            // V2: only the elected host writes the canonical snapshot.
+            // Solo / no-collab path: collabIsHost defaults true, so we save.
+            if (collab && !collabIsHost) return;
             void performSave();
           }, 2500);
         });
+
+        // V2 CRDT collab — opt-in. Mounted only after Univer is ready so we
+        // can resolve ICommandService and the local user identity.
+        //
+        // Fire-and-forget with a hard try/catch: a failure in collab boot
+        // (offline, broken injector path, dynamic-import miss, permission
+        // glitch) must NEVER take the workbook page down. The user keeps a
+        // working solo workbook; collab silently degrades with a console
+        // warning that surfaces in error tracking.
+        if (collab) {
+          void startCollabSession().catch((err) => {
+            console.warn(
+              "[workbook] collab boot failed — falling back to solo mode",
+              err,
+            );
+          });
+        }
       } catch (err) {
         if (cancelled) return;
         setLoadError(err instanceof Error ? err.message : String(err));
@@ -179,12 +235,134 @@ export default function WorkbookEditor({
     return () => {
       cancelled = true;
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      collabSelectionDisposerRef.current?.dispose();
+      collabSelectionDisposerRef.current = null;
+      collabSessionRef.current?.stop();
+      collabSessionRef.current = null;
       univerRef.current?.dispose();
       univerRef.current = null;
       apiRef.current = null;
     };
-    // Re-mount when the workbookId changes (route navigation).
-  }, [workbookId, editable]);
+    // Re-mount when the workbookId changes (route navigation) OR when
+    // collab is toggled (boots a different session shape).
+  }, [workbookId, editable, collab]);
+
+  // Lazy-import the collab classes so the bundle for non-collab users stays
+  // free of yjs / y-protocols. Resolved at session-start time only.
+  const startCollabSession = useCallback(async () => {
+    if (!univerRef.current) return;
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData?.user?.id;
+    if (!uid) return;
+    setCollabSelfUid(uid);
+
+    const [{ WorkbookCollabSession }, { SupabaseYjsProvider }] =
+      await Promise.all([
+        import("../collab/WorkbookCollabSession"),
+        import("../collab/SupabaseYjsProvider"),
+      ]);
+
+    // Univer's `__getInjector` is technically a private path (the double
+    // underscore is the warning). On some build/runtime combos it returns
+    // undefined or `injector.get(ICommandService)` returns undefined; both
+    // would crash the page if uncaught. Probe defensively — when we can't
+    // resolve the command service, log + return so the editor runs in
+    // solo-without-collab mode rather than tearing down the route.
+    let commandService:
+      | import("../collab/WorkbookCollabSession").CommandServiceLike
+      | null = null;
+    try {
+      const injector = (univerRef.current as unknown as {
+        __getInjector?: () => {
+          get: <T>(token: unknown) => T | undefined;
+        };
+      }).__getInjector?.();
+      if (!injector) {
+        console.warn("[workbook] collab: Univer injector unavailable");
+        return;
+      }
+      const { ICommandService } = await import("@univerjs/core");
+      const resolved = injector.get<
+        import("../collab/WorkbookCollabSession").CommandServiceLike
+      >(ICommandService as unknown);
+      if (!resolved || typeof resolved.onMutationExecutedForCollab !== "function") {
+        console.warn(
+          "[workbook] collab: ICommandService missing the onMutationExecutedForCollab hook",
+        );
+        return;
+      }
+      commandService = resolved;
+    } catch (err) {
+      console.warn("[workbook] collab: command-service resolution threw", err);
+      return;
+    }
+
+    const clientId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `c-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+    const session = new WorkbookCollabSession({
+      workbookId,
+      uid,
+      clientId,
+      commandService,
+      makeProvider: ({ workbookId: wid, clientId: cid, doc, awareness }) =>
+        new SupabaseYjsProvider({
+          workbookId: wid,
+          clientId: cid,
+          doc,
+          awareness,
+        }),
+      onAwarenessChange: (aw) => {
+        setRemoteAwareness(
+          new Map(aw.getStates() as Map<
+            number,
+            import("../collab/types").AwarenessState
+          >),
+        );
+        const election = session.electHost();
+        setCollabIsHost(election.isHost);
+      },
+    });
+
+    collabSessionRef.current = session;
+    await session.start();
+
+    // Stream local selection changes into Awareness so remote peers can
+    // render this user's cell ring. Defensive: facade typings are loose at
+    // the .onSelectionChange boundary; on a Univer build where the method
+    // is missing we just skip cursor broadcasting — sessions still sync
+    // mutations + presence (uid + color) without cell coords.
+    try {
+      const fb = (apiRef.current as unknown as {
+        getActiveWorkbook?: () => {
+          getActiveSheet?: () => { getSheetId: () => string } | null;
+          onSelectionChange?: (
+            cb: (
+              selections: Array<{ startRow: number; startColumn: number }>,
+            ) => void,
+          ) => { dispose: () => void };
+        } | undefined;
+      } | null)?.getActiveWorkbook?.();
+      if (fb?.onSelectionChange) {
+        const disposer = fb.onSelectionChange((selections) => {
+          if (!collabSessionRef.current) return;
+          const first = selections?.[0];
+          if (!first) return;
+          const sheetId = fb.getActiveSheet?.()?.getSheetId() ?? null;
+          collabSessionRef.current.setCursor({
+            sheetId,
+            row: first.startRow,
+            col: first.startColumn,
+          });
+        });
+        collabSelectionDisposerRef.current = disposer;
+      }
+    } catch (err) {
+      console.warn("[workbook] collab: selection wiring failed", err);
+    }
+  }, [workbookId]);
 
   // Stable save fn — pulled out so the timer callback and the manual-save
   // button can both reach it.
@@ -267,6 +445,12 @@ export default function WorkbookEditor({
           {bootState === "ready" && <span>{editable ? "Editing" : "Viewing"}</span>}
         </div>
         <div className="flex items-center gap-2">
+          {collab && bootState === "ready" && (
+            <RemoteCursorsLayer
+              states={remoteAwareness}
+              selfUid={collabSelfUid}
+            />
+          )}
           <div className={`flex items-center gap-1 ${statusPill.className}`}>
             {statusPill.icon}
             <span>{statusPill.text}</span>
@@ -308,7 +492,20 @@ export default function WorkbookEditor({
           </Button>
         </div>
       </div>
-      <div ref={containerRef} className="min-h-0 flex-1" />
+      {/* Relative wrapper so the absolute cursor overlay layers inside it
+          (not over the whole viewport) and the Univer canvas keeps its own
+          flex sizing. */}
+      <div className="relative min-h-0 flex-1">
+        <div ref={containerRef} className="absolute inset-0" />
+        {collab && bootState === "ready" && (
+          <WorkbookCursorOverlay
+            univerAPI={apiRef.current}
+            containerRef={containerRef}
+            states={remoteAwareness}
+            selfUid={collabSelfUid}
+          />
+        )}
+      </div>
 
       <Sheet
         open={historyOpen}

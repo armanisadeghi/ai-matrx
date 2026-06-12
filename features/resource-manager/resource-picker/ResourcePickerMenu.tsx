@@ -346,7 +346,7 @@ export function ResourcePickerMenu({
                     N/A
                   </span>
                 )}
-                <ChevronRight className="w-3 h-3 ml-auto flex-shrink-0 text-gray-400 dark:text-gray-600 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors" />
+                <ChevronRight className="w-3 h-3 ml-1.5 flex-shrink-0 text-gray-400 dark:text-gray-600 group-hover:text-gray-600 dark:group-hover:text-gray-400 transition-colors" />
               </Button>
             );
           })}

@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { idMatchesQuery } from "@/utils/search-scoring";
 import { fetchFieldsThunk, deleteFieldThunk, setFieldPublicThunk } from '@/lib/redux/app-builder/thunks/fieldBuilderThunks';
 import { setActiveField } from '@/lib/redux/app-builder/slices/fieldBuilderSlice';
 import { selectAllFields, selectFieldLoading, selectFieldError, selectActiveFieldId } from '@/lib/redux/app-builder/selectors/fieldSelectors';
@@ -163,10 +164,11 @@ export default function FieldComponentsList({
     // Logic for handling container assignment will be added later
   };
 
-  const filteredComponents = fields.filter((comp: FieldBuilder) => 
+  const filteredComponents = fields.filter((comp: FieldBuilder) =>
     comp.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
     comp.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    comp.component.toLowerCase().includes(searchTerm.toLowerCase())
+    comp.component.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    idMatchesQuery(comp, searchTerm)
   );
 
   return (

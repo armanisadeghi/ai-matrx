@@ -130,7 +130,6 @@ function OrgSelector({
     id: string;
     name: string;
     slug: string;
-    is_personal: boolean;
     role: string;
   }[];
   orgsLoading: boolean;

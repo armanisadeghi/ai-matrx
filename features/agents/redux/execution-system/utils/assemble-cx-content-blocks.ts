@@ -82,7 +82,7 @@ function renderBlockTypeToMediaKind(
  * uses the raw chunk text stored on the timeline entry and never enters
  * here.
  */
-function reconstructBlockMarkdown(block: {
+export function reconstructBlockMarkdown(block: {
   type: string;
   content: string | null;
   data?: Record<string, unknown> | null;

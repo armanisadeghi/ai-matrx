@@ -7,6 +7,7 @@ import {
   ArrowLeftRight,
   BookOpen,
   Boxes,
+  Building2,
   Code2,
   Columns2,
   Container,
@@ -34,6 +35,7 @@ import {
   Menu,
   MessageCircle,
   Mic,
+  Network,
   NotebookPen,
   PanelLeft,
   Plus,
@@ -49,7 +51,7 @@ import {
   Webhook,
   Workflow,
   X,
-  Zap
+  Zap,
 } from "lucide-react";
 
 export const shellIconComponents: Record<string, LucideIcon> = {
@@ -57,6 +59,7 @@ export const shellIconComponents: Record<string, LucideIcon> = {
   ArrowLeftRight,
   BookOpen,
   Boxes,
+  Building2,
   Code2,
   Columns2,
   Container,
@@ -84,6 +87,7 @@ export const shellIconComponents: Record<string, LucideIcon> = {
   Menu,
   MessageCircle,
   Mic,
+  Network,
   NotebookPen,
   PanelLeft,
   Plus,

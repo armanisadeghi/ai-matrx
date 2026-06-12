@@ -82,6 +82,7 @@ import FeedbackDetailDialog from "./FeedbackDetailDialog";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { idMatchesQuery } from "@/utils/search-scoring";
 
 const statusOptions: { value: FeedbackStatus; label: string; color: string }[] =
   [
@@ -600,7 +601,8 @@ export default function FeedbackTable() {
         return (
           item.description.toLowerCase().includes(search) ||
           item.username?.toLowerCase().includes(search) ||
-          item.route.toLowerCase().includes(search)
+          item.route.toLowerCase().includes(search) ||
+          idMatchesQuery(item, search)
         );
       }
 

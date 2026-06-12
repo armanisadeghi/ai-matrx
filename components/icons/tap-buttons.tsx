@@ -58,7 +58,18 @@ export interface TapButtonProps {
 const Wrap = forwardRef<
   HTMLButtonElement,
   TapButtonProps & { children: React.ReactNode }
->(function Wrap({ variant = "glass", children, ...props }, ref) {
+>(function Wrap(
+  {
+    variant = "glass",
+    children,
+    bgColor,
+    iconColor,
+    hoverBgColor,
+    activeBgColor,
+    ...props
+  },
+  ref,
+) {
   switch (variant) {
     case "transparent":
       return (
@@ -68,7 +79,14 @@ const Wrap = forwardRef<
       );
     case "solid":
       return (
-        <TapTargetButtonSolid ref={ref} {...props}>
+        <TapTargetButtonSolid
+          ref={ref}
+          bgColor={bgColor}
+          iconColor={iconColor}
+          hoverBgColor={hoverBgColor}
+          activeBgColor={activeBgColor}
+          {...props}
+        >
           {children}
         </TapTargetButtonSolid>
       );
@@ -709,6 +727,17 @@ export function CheckSquareTapButton(props: TapButtonProps) {
     <Wrap ariaLabel="Task" {...props}>
       <path d="m9 11 3 3L22 4" />
       <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+    </Wrap>
+  );
+}
+
+// lucide: ghost v0.577.0
+export function GhostTapButton(props: TapButtonProps) {
+  return (
+    <Wrap ariaLabel="Incognito chat" {...props}>
+      <path d="M9 10h.01" />
+      <path d="M15 10h.01" />
+      <path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" />
     </Wrap>
   );
 }

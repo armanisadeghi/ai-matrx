@@ -7,10 +7,8 @@
  * while not actively typing.
  */
 
-import { useEffect, useRef, useState } from "react";
 import { Check, Loader2, Minimize2 } from "lucide-react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { updateWorkingDocumentContentThunk } from "../../redux/thunks";
+import { useWorkingDocumentDraft } from "../../hooks/useWorkingDocumentDraft";
 import type { StudioDocument } from "../../types";
 
 interface FocusedDocumentEditorProps {
@@ -19,53 +17,19 @@ interface FocusedDocumentEditorProps {
   onClose: () => void;
 }
 
-const AUTOSAVE_MS = 800;
-
 export function FocusedDocumentEditor({
   sessionId,
   doc,
   onClose,
 }: FocusedDocumentEditorProps) {
-  const dispatch = useAppDispatch();
-  const [draft, setDraft] = useState(doc.content);
-  const [saving, setSaving] = useState(false);
-  const dirtyRef = useRef(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const editingRef = useRef(false);
-
-  // Pull in assistant/realtime edits only when the user isn't actively typing.
-  useEffect(() => {
-    if (!editingRef.current) setDraft(doc.content);
-  }, [doc.content]);
-
-  const save = async (content: string) => {
-    if (!dirtyRef.current) return;
-    setSaving(true);
-    await dispatch(
-      updateWorkingDocumentContentThunk({
-        sessionId,
-        documentId: doc.id,
-        content,
-      }),
-    );
-    dirtyRef.current = false;
-    setSaving(false);
-  };
-
-  const handleChange = (value: string) => {
-    editingRef.current = true;
-    dirtyRef.current = true;
-    setDraft(value);
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      editingRef.current = false;
-      void save(value);
-    }, AUTOSAVE_MS);
-  };
+  const { draft, saving, onChange, flush } = useWorkingDocumentDraft(
+    sessionId,
+    doc.id,
+    doc.content,
+  );
 
   const handleClose = () => {
-    if (timer.current) clearTimeout(timer.current);
-    void save(draft);
+    flush();
     onClose();
   };
 
@@ -102,7 +66,8 @@ export function FocusedDocumentEditor({
 
       <textarea
         value={draft}
-        onChange={(e) => handleChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={flush}
         placeholder="Draft your document here, or ask the assistant to build it."
         className="min-h-0 flex-1 resize-none bg-transparent px-4 py-4 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
       />

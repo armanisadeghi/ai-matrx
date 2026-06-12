@@ -29,7 +29,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { setActiveFileId } from "@/features/files/redux/slice";
@@ -64,6 +64,7 @@ export function SingleFileShell({ fileId, className }: SingleFileShellProps) {
 
 function SingleFileShellDesktop({ fileId, className }: SingleFileShellProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const [activeTab, setActiveTab] = useState<FileTab>("preview");
 
@@ -74,6 +75,30 @@ function SingleFileShellDesktop({ fileId, className }: SingleFileShellProps) {
   useEffect(() => {
     dispatch(setActiveFileId(fileId));
     void dispatch(attachVirtualRoots());
+    // Deep-link self-heal: the route's server component already verified
+    // this file exists, but the client store only hydrates workspace
+    // subtrees — a direct /files/f/{id} visit (or an extractor-uploaded
+    // file outside the workspace roots) otherwise renders "File not
+    // found" forever. Fetch the single row and upsert it. Loud on fire:
+    // a hit here means the proactive hydration path missed a real file.
+    void (async () => {
+      if (selectFileById(store.getState(), fileId)) return;
+      const { supabase } = await import("@/utils/supabase/client");
+      const { dbRowToCloudFile } = await import("@/features/files/redux/converters");
+      const { upsertFile } = await import("@/features/files/redux/slice");
+      const { data, error } = await supabase
+        .from("cld_files")
+        .select("*")
+        .eq("id", fileId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (error || !data) return;
+      console.warn(
+        "[files] deep-link self-heal hydrated file missing from store:",
+        fileId,
+      );
+      dispatch(upsertFile(dbRowToCloudFile(data)));
+    })();
     // Cleanup: clear the active file id on unmount so navigating away
     // doesn't leave a stale selection that other surfaces could observe.
     return () => {

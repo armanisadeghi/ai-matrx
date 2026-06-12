@@ -1,5 +1,7 @@
 # Transcripts Feature
 
+> **Storage contract:** [`FEATURE.md`](./FEATURE.md) is the source of truth for how every `/transcripts` route stores records and audio. Read it before touching storage code. This README is user-facing usage docs only.
+
 ## 📋 Overview
 
 The Transcripts feature provides a complete database-backed system for managing audio/video transcripts with full CRUD operations, real-time sync, audio file upload with AI transcription, and seamless organization.
@@ -16,7 +18,7 @@ The Transcripts feature provides a complete database-backed system for managing 
 - ✅ **Full Database Persistence** - All transcripts stored in Supabase
 - ✅ **Real-time Sync** - Live updates across sessions
 - ✅ **Audio Upload & Transcription** - Upload audio files and transcribe with Groq Whisper
-- ✅ **Storage Management** - Audio files stored in Supabase Storage
+- ✅ **Storage Management** - Audio files stored in cloud-files (`cld_files`) via the universal file handler
 - ✅ **Complete File Deletion** - Delete both transcript records and storage files
 - ✅ **Segment Management** - Timestamps, speakers, and text
 - ✅ **Rich Metadata** - Duration, word count, speaker tracking
@@ -37,15 +39,9 @@ The Transcripts feature provides a complete database-backed system for managing 
 
 ## 🚀 Getting Started
 
-### Step 1: Run the Database Migration
+### Step 1: Database
 
-**REQUIRED:** Run this SQL in your Supabase SQL Editor:
-
-```sql
--- See: features/transcripts/migrations/create_transcripts_table.sql
-```
-
-This creates:
+The `transcripts` table is live in production (the DB is the source of truth — see CLAUDE.md's migrations section). `migrations/create_transcripts_table.sql` is the schema reference:
 - `transcripts` table with all necessary columns
 - Indexes for performance
 - Row Level Security policies
@@ -53,7 +49,7 @@ This creates:
 
 ### Step 2: Verify the Route
 
-Navigate to `/transcription/processor` to access the transcript management interface.
+Navigate to `/transcripts` to access the transcript management interface.
 
 ### Step 3: Import Your First Transcript
 
@@ -61,7 +57,7 @@ Navigate to `/transcription/processor` to access the transcript management inter
 2. Click the "Import" button on the transcript block
 3. Fill in title and details
 4. Click "Import Transcript"
-5. View it in `/transcription/processor`!
+5. View it in `/transcripts`!
 
 ---
 
@@ -69,26 +65,33 @@ Navigate to `/transcription/processor` to access the transcript management inter
 
 ```
 features/transcripts/
+├── FEATURE.md                            # Core-storage contract (source of truth)
 ├── migrations/
-│   └── create_transcripts_table.sql      # Database migration
+│   └── create_transcripts_table.sql      # Schema reference (applied live)
 ├── service/
-│   └── transcriptsService.ts             # CRUD operations + storage deletion
+│   ├── transcriptsService.ts             # All `transcripts` CRUD + drafts + copy
+│   └── audioStorageService.ts            # Audio bytes ↔ cld_files via fileHandler
 ├── context/
 │   └── TranscriptsContext.tsx            # React context with optimistic updates
+├── hooks/
+│   └── useTranscriptsSurfaceScope.ts     # Surface scope wiring
 ├── utils/
-│   ├── dateFormatting.ts                 # Time/date formatting utilities
-│   └── index.ts                          # Utils exports
+│   └── dateFormatting.ts                 # Time/date formatting utilities
+├── constants/
+│   └── recording.ts                      # Recording limits
 ├── components/
-│   ├── TranscriptsLayout.tsx             # Main layout with h-page system
+│   ├── TranscriptsListPage.tsx           # /transcripts list island
+│   ├── TranscriptsLayout.tsx             # Processor layout with h-page system
 │   ├── TranscriptsHeader.tsx             # Header portal component
 │   ├── TranscriptsSidebar.tsx            # Folder/transcript browser
 │   ├── TranscriptViewer.tsx              # Display/edit transcript
 │   ├── CreateTranscriptModal.tsx         # Upload & transcribe modal
+│   ├── RecordingInterface.tsx            # In-app recording
+│   ├── RecordingPreview.tsx              # Draft review
+│   ├── DraftIndicator.tsx                # Draft badge
 │   ├── DeleteTranscriptDialog.tsx        # Proper delete confirmation
-│   ├── ImportTranscriptModal.tsx         # Import modal
-│   └── index.ts                          # Component exports
+│   └── ImportTranscriptModal.tsx         # Import modal
 ├── types.ts                              # TypeScript interfaces
-├── index.ts                              # Main exports
 └── README.md                             # This file
 ```
 
@@ -106,8 +109,8 @@ features/transcripts/
 | `description` | TEXT | Optional description |
 | `segments` | JSONB | Array of transcript segments |
 | `metadata` | JSONB | Duration, word count, speakers, etc. |
-| `audio_file_path` | TEXT | Path to audio in Supabase Storage |
-| `video_file_path` | TEXT | Path to video in Supabase Storage |
+| `audio_file_path` | TEXT | `cld_files` UUID of the audio (universal file handler) |
+| `video_file_path` | TEXT | `cld_files` UUID of the video (universal file handler) |
 | `source_type` | TEXT | 'audio', 'video', 'meeting', 'interview', 'other' |
 | `tags` | TEXT[] | Array of tags |
 | `folder_name` | TEXT | Folder for organization |
@@ -244,7 +247,7 @@ All context methods use these underlying service functions:
 - Responsive padding and safe areas
 
 ### CreateTranscriptModal
-- Upload audio files to Supabase Storage
+- Upload audio files to cloud-files via `audioStorageService`
 - Clear "Upload Only" vs "Upload & Transcribe" options
 - Animated transcription progress with file details
 - Groq Whisper Large V3 Turbo integration
@@ -273,7 +276,7 @@ The system seamlessly integrates with the existing `AdvancedTranscriptViewer` co
 3. **Segments parsed** → From markdown format to structured data
 4. **User configures** → Title, description, folder, etc.
 5. **Import** → Saved to database via transcriptsService
-6. **View in /transcription/processor** → Full editing capabilities
+6. **View in /transcripts** → Full editing capabilities
 
 ### Supported Input Format
 
@@ -303,17 +306,16 @@ The system seamlessly integrates with the existing `AdvancedTranscriptViewer` co
 - Real-time subscriptions are lightweight
 
 ### Storage Integration
-- Store audio/video files in Supabase Storage
-- Reference them via `audio_file_path` or `video_file_path`
-- Use public URLs for playback
+- Audio/video bytes go through `service/audioStorageService.ts` → the universal file handler (`cld_files`) — never `supabase.storage`
+- `audio_file_path` / `video_file_path` hold `cld_files` UUIDs, not bucket paths
+- Playback URLs are minted (and auto-refreshed) from the UUID via `useFileSrc` / `getSignedUrl` — never persist a signed URL
 
 ---
 
 ## 🐛 Troubleshooting
 
 ### "Table doesn't exist" error
-- Run the migration SQL file
-- Check Supabase table browser
+- Check the Supabase table browser (`transcripts` is applied live; see CLAUDE.md's migrations section)
 
 ### Import not working
 - Verify transcript format matches expected structure

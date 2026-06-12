@@ -92,6 +92,9 @@ const InlineDecisionBlock = lazy(
   () => import("../../blocks/inline-decision/InlineDecisionBlock"),
 );
 const ArtifactBlock = lazy(() => import("../../blocks/artifact/ArtifactBlock"));
+const ArtifactRefBlock = lazy(
+  () => import("../../blocks/artifact/ArtifactRefBlock"),
+);
 const EditorErrorBlock = lazy(
   () => import("../../blocks/editor-resources/EditorErrorBlock"),
 );
@@ -382,6 +385,11 @@ export const BlockComponents = {
   ArtifactBlock: (props: any) => (
     <LazyBlockWrapper>
       <ArtifactBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  ArtifactRefBlock: (props: any) => (
+    <LazyBlockWrapper>
+      <ArtifactRefBlock {...props} />
     </LazyBlockWrapper>
   ),
   EditorErrorBlock: (props: any) => (

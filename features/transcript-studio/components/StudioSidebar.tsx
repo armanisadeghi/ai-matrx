@@ -25,6 +25,8 @@ interface StudioSidebarProps {
   className?: string;
   onPickSession?: (sessionId: string) => void;
   onCreateSession?: (sessionId: string) => void;
+  /** When provided, session pick/create updates the page URL (`?session=`). */
+  navigateToSession?: (sessionId: string | null) => void;
   /** When provided, renders a collapse toggle in the header. */
   onCollapse?: () => void;
 }
@@ -33,6 +35,7 @@ export function StudioSidebar({
   className,
   onPickSession,
   onCreateSession,
+  navigateToSession,
   onCollapse,
 }: StudioSidebarProps) {
   const dispatch = useAppDispatch();
@@ -53,19 +56,24 @@ export function StudioSidebar({
   useEffect(() => setIsHydrated(true), []);
 
   const handlePick = (id: string) => {
-    dispatch(activeSessionIdSet(id));
+    if (navigateToSession) {
+      navigateToSession(id);
+    } else {
+      dispatch(activeSessionIdSet(id));
+    }
     onPickSession?.(id);
   };
 
   const handleCreate = async () => {
     if (!userId) return;
     const result = await dispatch(
-      createSessionThunk({ userId, activate: true }),
+      createSessionThunk({
+        userId,
+        activate: !navigateToSession,
+      }),
     );
-    if (
-      createSessionThunk.fulfilled.match(result) &&
-      result.payload?.id
-    ) {
+    if (createSessionThunk.fulfilled.match(result) && result.payload?.id) {
+      navigateToSession?.(result.payload.id);
       onCreateSession?.(result.payload.id);
     }
   };
@@ -148,6 +156,7 @@ export function StudioSidebar({
                 session={session}
                 isActive={session.id === activeSessionId}
                 onPick={() => handlePick(session.id)}
+                navigateToSession={navigateToSession}
               />
             ))}
           </ul>
@@ -161,9 +170,15 @@ interface SidebarItemProps {
   session: StudioSession;
   isActive: boolean;
   onPick: () => void;
+  navigateToSession?: (sessionId: string | null) => void;
 }
 
-function SidebarItem({ session, isActive, onPick }: SidebarItemProps) {
+function SidebarItem({
+  session,
+  isActive,
+  onPick,
+  navigateToSession,
+}: SidebarItemProps) {
   const dispatch = useAppDispatch();
   const subtitle = formatSessionSubtitle(session);
   const [editing, setEditing] = useState(false);
@@ -199,10 +214,10 @@ function SidebarItem({ session, isActive, onPick }: SidebarItemProps) {
   return (
     <li
       className={cn(
-        "group relative flex flex-col gap-0.5 px-3 py-2 text-left transition-colors",
+        "group relative flex flex-col gap-0.5 border-l-2 py-2 pl-3 pr-3 text-left transition-colors",
         isActive
-          ? "bg-primary/10 border-l-2 border-primary"
-          : "border-l-2 border-transparent hover:bg-accent/40",
+          ? "border-primary bg-primary/10"
+          : "border-transparent hover:bg-accent/40",
         !editing && "cursor-pointer",
       )}
       onClick={() => {
@@ -247,33 +262,35 @@ function SidebarItem({ session, isActive, onPick }: SidebarItemProps) {
           />
         ) : (
           <>
-            <span className="line-clamp-1 flex-1 min-w-0 text-xs font-medium">
+            <span className="line-clamp-1 min-w-0 flex-1 text-xs font-medium">
               {session.title}
             </span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                startEdit();
-              }}
-              aria-label="Rename session"
-              title="Rename"
-              className="hidden h-5 w-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground group-hover:flex"
-            >
-              <Pencil className="h-3 w-3" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setConfirmDelete(true);
-              }}
-              aria-label="Delete session"
-              title="Delete"
-              className="hidden h-5 w-5 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-destructive hover:text-destructive-foreground group-hover:flex"
-            >
-              <Trash2 className="h-3 w-3" />
-            </button>
+            <div className="flex w-11 shrink-0 items-center justify-end gap-0.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startEdit();
+                }}
+                aria-label="Rename session"
+                title="Rename"
+                className="inline-flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmDelete(true);
+                }}
+                aria-label="Delete session"
+                title="Delete"
+                className="inline-flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-opacity hover:bg-destructive hover:text-destructive-foreground group-hover:opacity-100"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -296,7 +313,11 @@ function SidebarItem({ session, isActive, onPick }: SidebarItemProps) {
         variant="destructive"
         onConfirm={() => {
           setConfirmDelete(false);
-          void dispatch(deleteSessionThunk(session.id));
+          void dispatch(deleteSessionThunk(session.id)).then(() => {
+            if (isActive) {
+              navigateToSession?.(null);
+            }
+          });
         }}
       />
     </li>

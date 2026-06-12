@@ -14,37 +14,22 @@
  */
 
 import React, { useCallback } from "react";
-import {
-  ArrowUp,
-  Braces,
-  ChevronDown,
-  Bug,
-  CircleStop,
-} from "lucide-react";
+import { ArrowUp, Braces, CircleStop, AudioLines } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { SmartAgentResourcePickerButton } from "../resources/SmartAgentResourcePickerButton";
-import { InputControlsMenu } from "./InputControlsMenu";
+import { RunControlsMenu } from "./RunControlsMenu";
 import { InputButton } from "./InputActionButtons";
 import { AgentMicrophoneButton } from "./AgentMicrophoneButton";
 import {
   selectShowVariablePanel,
-  selectIsCreator,
-  selectShowCreatorDebug,
   selectShowAttachments,
   selectShowMicrophone,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import {
-  toggleCreatorDebug,
-  toggleVariablePanel,
-} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
+import { toggleVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
   selectIsExecuting,
   selectShouldShowVariables,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   smartExecute,
   cancelExecution,
@@ -64,8 +49,6 @@ interface SingleRowActionButtonsProps {
 
 export function SingleRowActionButtons({
   conversationId,
-  uploadBucket = "userContent",
-  uploadPath = "agent-attachments",
   showSendButton = true,
   showVariableIcon = true,
   sendButtonVariant = "default",
@@ -79,21 +62,11 @@ export function SingleRowActionButtons({
   const showVariablePanel = useAppSelector(
     selectShowVariablePanel(conversationId),
   );
-  const isCreator = useAppSelector(selectIsCreator(conversationId));
-  const showCreatorDebug = useAppSelector(
-    selectShowCreatorDebug(conversationId),
-  );
   const shouldShowVariables = useAppSelector(
     selectShouldShowVariables(conversationId),
   );
-  const showAttachments = useAppSelector(
-    selectShowAttachments(conversationId),
-  );
-  const showMicrophone = useAppSelector(
-    selectShowMicrophone(conversationId),
-  );
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
-  const isDebugMode = useAppSelector(selectIsDebugMode);
+  const showAttachments = useAppSelector(selectShowAttachments(conversationId));
+  const showMicrophone = useAppSelector(selectShowMicrophone(conversationId));
 
   const handleSend = useCallback(() => {
     if (disableSend) return;
@@ -111,46 +84,16 @@ export function SingleRowActionButtons({
 
   return (
     <div className="flex items-center gap-0.5 shrink-0">
-      {showAttachments && (
-        <SmartAgentResourcePickerButton
-          conversationId={conversationId}
-          uploadBucket={uploadBucket}
-          uploadPath={uploadPath}
-        />
-      )}
-
-      <InputControlsMenu conversationId={conversationId} />
-
-      {isAdmin && isDebugMode && (
-        <InputButton
-          icon={Bug}
-          tooltip="Debug instance state"
-          onClick={() =>
-            dispatch(
-              openOverlay({
-                overlayId: "chatDebugWindow",
-                data: { sessionId: conversationId },
-              }),
-            )
-          }
-          className="text-orange-500"
-        />
-      )}
-
-      {isCreator && (
-        <InputButton
-          icon={ChevronDown}
-          tooltip={showCreatorDebug ? "Hide debug" : "Show debug"}
-          onClick={() => dispatch(toggleCreatorDebug(conversationId))}
-          active={showCreatorDebug}
-          className="text-amber-500"
-        />
-      )}
+      <RunControlsMenu
+        conversationId={conversationId}
+        variant="plus"
+        includeAttach={showAttachments}
+      />
 
       {shouldShowVariables && showVariableIcon && (
         <InputButton
           icon={Braces}
-          tooltip={showVariablePanel ? "Hide variables" : "Show variables"}
+          tooltip={showVariablePanel ? "Hide Form Inputs" : "Show Form Inputs"}
           onClick={() => dispatch(toggleVariablePanel(conversationId))}
           active={showVariablePanel}
         />
@@ -159,7 +102,11 @@ export function SingleRowActionButtons({
       {extraRightControls}
 
       {showMicrophone && (
-        <AgentMicrophoneButton conversationId={conversationId} size="xs" />
+        <AgentMicrophoneButton
+          conversationId={conversationId}
+          size="xs"
+          label="Record audio"
+        />
       )}
 
       {showSendButton && (
@@ -168,7 +115,7 @@ export function SingleRowActionButtons({
           disabled={disableSend}
           className={sendBtnClass}
           tabIndex={-1}
-          title={isExecuting ? "Stop" : "Send"}
+          title={isExecuting ? "Stop" : "Send Message"}
         >
           {isExecuting ? (
             <CircleStop className="w-3 h-3" />
@@ -176,6 +123,18 @@ export function SingleRowActionButtons({
             <ArrowUp className="w-3 h-3" />
           )}
         </Button>
+      )}
+
+      {showSendButton && (
+        <button
+          type="button"
+          tabIndex={-1}
+          title="Live audio"
+          aria-label="Live audio"
+          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <AudioLines className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
       )}
     </div>
   );
