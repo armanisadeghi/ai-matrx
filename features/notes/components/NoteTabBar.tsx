@@ -203,9 +203,44 @@ export function NoteTabBar({ instanceId }: NoteTabBarProps) {
 
   if (!openTabs || openTabs.length === 0) return null;
 
+  // Per-tab wrapper (drag handlers + drop-target styling). Shared between the
+  // pinned active tab and the scrolling tabs so behaviour stays identical.
+  const renderTab = (tabId: string) => (
+    <div
+      key={tabId}
+      onDragOver={(e) => {
+        if (!draggedTab || draggedTab === tabId) return;
+        e.preventDefault();
+        setDragOverTab(tabId);
+      }}
+      onDragStart={() => {
+        dispatch(markTabInteraction({ instanceId }));
+        setDraggedTab(tabId);
+      }}
+      onDragEnd={() => {
+        setDraggedTab(null);
+        setDragOverTab(null);
+      }}
+      className={cn(
+        "flex items-stretch",
+        draggedTab === tabId && "opacity-40",
+        dragOverTab === tabId && "border-l-2 border-primary",
+      )}
+    >
+      <NoteTabItem noteId={tabId} instanceId={instanceId} />
+    </div>
+  );
+
+  // The active tab lives in the pinned cluster (never scrolls); everything
+  // else scrolls in the region to its right — so other tabs start where the
+  // active tab ends instead of sliding behind it.
+  const scrollingTabs = activeTabId
+    ? openTabs.filter((t) => t !== activeTabId)
+    : openTabs;
+
   return (
     <div
-      className="notes-tab-bar-scroll flex items-stretch h-8 min-h-[2rem] overflow-x-auto overflow-y-hidden border-b border-border shrink-0 mt-1"
+      className="notes-tab-bar-scroll flex items-stretch h-8 min-h-[2rem] overflow-hidden border-b border-border shrink-0 mt-1"
       role="tablist"
       aria-label="Open notes"
       onDragOver={(e) => {
@@ -214,51 +249,25 @@ export function NoteTabBar({ instanceId }: NoteTabBarProps) {
       }}
       onDrop={handleDrop}
     >
-      <div
-        ref={scrollRef}
-        className="flex items-stretch flex-1 min-w-0 overflow-x-auto h-full"
-      >
-        {/* New-note button — pinned as the first "little tab" so it (and the
-            active tab beside it) stay put while the rest of the strip scrolls. */}
+      {/* Pinned cluster: new-note button + active tab. Stays put while the
+          rest of the strip scrolls underneath the scrolling region. */}
+      <div className="flex items-stretch shrink-0 bg-background z-10">
         <button
-          className="sticky left-0 z-20 flex items-center justify-center w-8 h-8 shrink-0 self-stretch bg-background border-r border-border/60 cursor-pointer transition-colors text-muted-foreground hover:bg-accent hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5"
+          className="flex items-center justify-center w-8 h-8 shrink-0 self-stretch border-r border-border/60 cursor-pointer transition-colors text-muted-foreground hover:bg-accent hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5"
           onClick={handleNewTab}
           title="New Note"
         >
           <Plus />
         </button>
+        {activeTabId && renderTab(activeTabId)}
+      </div>
 
-        {openTabs.map((tabId) => {
-          const isActiveTab = tabId === activeTabId;
-          return (
-            <div
-              key={tabId}
-              onDragOver={(e) => {
-                if (!draggedTab || draggedTab === tabId) return;
-                e.preventDefault();
-                setDragOverTab(tabId);
-              }}
-              onDragStart={() => {
-                dispatch(markTabInteraction({ instanceId }));
-                setDraggedTab(tabId);
-              }}
-              onDragEnd={() => {
-                setDraggedTab(null);
-                setDragOverTab(null);
-              }}
-              className={cn(
-                "flex items-stretch",
-                // Pin the active tab right after the new-note button so its
-                // label is never scrolled out of view, even on a full row.
-                isActiveTab && "sticky left-8 z-10 bg-background",
-                draggedTab === tabId && "opacity-40",
-                dragOverTab === tabId && "border-l-2 border-primary",
-              )}
-            >
-              <NoteTabItem noteId={tabId} instanceId={instanceId} />
-            </div>
-          );
-        })}
+      {/* Scrolling region: the remaining (non-active) tabs. */}
+      <div
+        ref={scrollRef}
+        className="flex items-stretch flex-1 min-w-0 overflow-x-auto overflow-y-hidden h-full"
+      >
+        {scrollingTabs.map(renderTab)}
 
         {/* Split view button */}
         {activeTabId && !splitNoteId && (

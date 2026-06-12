@@ -89,21 +89,27 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
     bottom: number;
   } | null>(null);
 
+  const recomputeFolderMenuPos = useCallback(() => {
+    const rect = folderBtnRef.current?.getBoundingClientRect();
+    if (rect) {
+      setFolderMenuPos({
+        left: rect.left,
+        bottom: window.innerHeight - rect.top + 4,
+      });
+    }
+  }, []);
+
   const toggleFolderMenu = useCallback(() => {
     setFolderOpen((open) => {
       if (open) return false;
-      const rect = folderBtnRef.current?.getBoundingClientRect();
-      if (rect) {
-        setFolderMenuPos({
-          left: rect.left,
-          bottom: window.innerHeight - rect.top + 4,
-        });
-      }
+      recomputeFolderMenuPos();
       return true;
     });
-  }, []);
+  }, [recomputeFolderMenuPos]);
 
-  // Close on outside click, scroll, resize, or Escape while open.
+  // While open: close on outside click or Escape. Scroll/resize only
+  // *reposition* the menu (the trigger lives in a fixed bottom bar, so it
+  // doesn't move with content scroll — closing on every scroll was wrong).
   useEffect(() => {
     if (!folderOpen) return;
     const onPointerDown = (e: MouseEvent) => {
@@ -119,18 +125,17 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setFolderOpen(false);
     };
-    const onReposition = () => setFolderOpen(false);
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", onReposition, true);
-    window.addEventListener("resize", onReposition);
+    window.addEventListener("scroll", recomputeFolderMenuPos, true);
+    window.addEventListener("resize", recomputeFolderMenuPos);
     return () => {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKey);
-      window.removeEventListener("scroll", onReposition, true);
-      window.removeEventListener("resize", onReposition);
+      window.removeEventListener("scroll", recomputeFolderMenuPos, true);
+      window.removeEventListener("resize", recomputeFolderMenuPos);
     };
-  }, [folderOpen]);
+  }, [folderOpen, recomputeFolderMenuPos]);
 
   // Derived content metrics — single memo keyed on content so this only
   // recomputes when the note text actually changes (never on unrelated
