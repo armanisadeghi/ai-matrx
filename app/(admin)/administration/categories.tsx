@@ -525,6 +525,29 @@ export const adminCategories = [
     ],
   },
   {
+    name: "Surfaces",
+    icon: <Layout className="w-6 h-6" />,
+    iconColor: "text-lime-600",
+    features: [
+      {
+        title: "UI Surfaces",
+        description:
+          "100+ surfaces grouped by client and tier (Pages / Specialized / Overlays / Editor variants / Debug). Bulk activate / deactivate, FK-aware delete, rename via FK CASCADE, candidate-inventory bulk-add, plus a full-screen per-surface editor (identity, classification, tool defaults, roles, values drift, usage).",
+        icon: <Layout />,
+        link: "/administration/surfaces",
+        isNew: true,
+      },
+      {
+        title: "Manifest Drift & Sync",
+        description:
+          "Compare code-declared surface manifests to database state (ui_surface_value / agent roles) and apply Sync Manifests. Opens the surfaces admin with the drift report.",
+        icon: <AlertTriangle />,
+        link: "/administration/surfaces?drift=1",
+        isNew: true,
+      },
+    ],
+  },
+  {
     name: "Tool Registry",
     icon: <IconTestPipe className="w-6 h-6" />,
     iconColor: "text-pink-600",
@@ -550,14 +573,6 @@ export const adminCategories = [
           "System and personal tool bundles. Create with auto-lister (one click), edit metadata, manage member aliases, search-and-add tools across the catalog.",
         icon: <IconBox />,
         link: "/administration/bundles",
-        isNew: true,
-      },
-      {
-        title: "UI Surfaces",
-        description:
-          "100+ surfaces grouped by client and tier (Pages / Specialized / Overlays / Editor variants / Debug). Bulk activate / deactivate, inline description edit, FK-aware delete, rename via FK CASCADE, candidate-inventory bulk-add.",
-        icon: <Layout />,
-        link: "/administration/surfaces",
         isNew: true,
       },
       {

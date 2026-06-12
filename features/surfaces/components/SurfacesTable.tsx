@@ -9,6 +9,7 @@ import {
   ArrowUpDown,
   Copy,
   Eye,
+  Loader2,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -42,9 +43,14 @@ interface Props {
   selectedName: string | null;
   /** Surface names that have a code-side manifest registered. */
   manifestedSurfaceNames: Set<string>;
+  /** Row / pencil click — navigates to the full-screen editor. */
   onSelect: (row: SurfaceWithStats) => void;
   onEdit: (row: SurfaceWithStats) => void;
+  /** Eye click — opens the lightweight side panel without leaving the list. */
+  onPeek: (row: SurfaceWithStats) => void;
   onDelete: (row: SurfaceWithStats) => void;
+  /** Name of the row currently navigating (shows a loader, guards re-clicks). */
+  navigatingName: string | null;
 }
 
 const cellClass = "px-2 py-1.5 text-xs align-middle";
@@ -96,7 +102,9 @@ export function SurfacesTable({
   manifestedSurfaceNames,
   onSelect,
   onEdit,
+  onPeek,
   onDelete,
+  navigatingName,
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("sort_order");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -236,19 +244,28 @@ export function SurfacesTable({
               const tier = tierFor(row.sort_order);
               const isSelected = row.name === selectedName;
               const hasManifest = manifestedSurfaceNames.has(row.name);
+              const isNavigating = row.name === navigatingName;
               return (
                 <tr
                   key={row.name}
-                  onClick={() => onSelect(row)}
+                  onClick={() => {
+                    if (navigatingName) return;
+                    onSelect(row);
+                  }}
                   className={`border-b border-border group cursor-pointer hover:bg-accent/40 ${
                     isSelected ? "bg-primary/10" : ""
-                  } ${row.is_active ? "" : "opacity-60"}`}
+                  } ${row.is_active ? "" : "opacity-60"} ${
+                    isNavigating ? "opacity-60" : ""
+                  }`}
                 >
                   <td className={cellClass}>
                     <div className="flex items-center gap-1.5">
                       <span className="font-mono text-foreground truncate max-w-[260px]">
                         {row.name}
                       </span>
+                      {isNavigating && (
+                        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground shrink-0" />
+                      )}
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
@@ -341,15 +358,16 @@ export function SurfacesTable({
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0"
+                            disabled={!!navigatingName}
                             onClick={(e) => {
                               e.stopPropagation();
-                              onSelect(row);
+                              onPeek(row);
                             }}
                           >
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>View detail</TooltipContent>
+                        <TooltipContent>Peek (side panel)</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -357,6 +375,7 @@ export function SurfacesTable({
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0"
+                            disabled={!!navigatingName}
                             onClick={(e) => {
                               e.stopPropagation();
                               onEdit(row);
@@ -365,7 +384,7 @@ export function SurfacesTable({
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Edit</TooltipContent>
+                        <TooltipContent>Open editor</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>

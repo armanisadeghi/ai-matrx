@@ -12,6 +12,8 @@ export type UiSurfaceRow = Tables["ui_surface"]["Row"];
 export type UiSurfaceUpsert = Tables["ui_surface"]["Insert"];
 export type UiSurfaceValueRow = Tables["ui_surface_value"]["Row"];
 export type ToolSurfaceDefaultsRow = Tables["tool_surface_defaults"]["Row"];
+export type ToolSurfaceDefaultsUpsert =
+  Tables["tool_surface_defaults"]["Insert"];
 
 export interface SurfaceWithStats extends UiSurfaceRow {
   /**
@@ -129,6 +131,19 @@ export async function listSurfaceOptions(): Promise<SurfaceOption[]> {
   return (data ?? []) as SurfaceOption[];
 }
 
+/** Fetch a single surface row by exact name. Null when missing. */
+export async function getSurfaceByName(
+  name: string,
+): Promise<UiSurfaceRow | null> {
+  const { data, error } = await sb()
+    .from("ui_surface")
+    .select("*")
+    .eq("name", name)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function createSurface(
   row: UiSurfaceUpsert,
 ): Promise<UiSurfaceRow> {
@@ -147,6 +162,8 @@ export async function updateSurface(
     description: string | null;
     sort_order: number;
     is_active: boolean;
+    execution_mode: string;
+    url_pattern: string | null;
     executor_name: string | null;
     parent_surface_name: string | null;
   }>,
@@ -476,6 +493,43 @@ export async function listToolBindings(surfaceName: string) {
     tool_category: t.category,
     tool_is_active: t.is_active,
   }));
+}
+
+/**
+ * The full `tool_surface_defaults` row for a surface — null when the surface
+ * has no opinions yet (no row exists until the first edit).
+ */
+export async function getSurfaceToolDefaults(
+  surfaceName: string,
+): Promise<ToolSurfaceDefaultsRow | null> {
+  const { data, error } = await sb()
+    .from("tool_surface_defaults")
+    .select("*")
+    .eq("surface_name", surfaceName)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Upsert the surface's `tool_surface_defaults` row (PK = surface_name).
+ * Creates the row on first edit, then patches columns in place. Returns the
+ * row as persisted so editors can replace local state without a refetch.
+ */
+export async function upsertSurfaceToolDefaults(
+  surfaceName: string,
+  patch: Partial<Omit<ToolSurfaceDefaultsUpsert, "surface_name">>,
+): Promise<ToolSurfaceDefaultsRow> {
+  const { data, error } = await sb()
+    .from("tool_surface_defaults")
+    .upsert(
+      { surface_name: surfaceName, ...patch },
+      { onConflict: "surface_name" },
+    )
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 /** Calls the admin drift-report endpoint. Throws on non-2xx. */

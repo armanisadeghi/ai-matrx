@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle,
   AlertTriangle,
@@ -57,6 +64,10 @@ import { getRegisteredSurfaceNames } from "@/features/surfaces/manifests/registr
 import { SURFACE_CANDIDATES } from "@/features/surfaces/data/surface-candidates";
 
 export function SurfacesContainer() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
   const [surfaces, setSurfaces] = useState<SurfaceWithStats[]>([]);
   const [clients, setClients] = useState<
     { name: string; description: string | null; is_active: boolean | null }[]
@@ -67,12 +78,27 @@ export function SurfacesContainer() {
   const [filters, setFilters] =
     useState<SurfacesFilterState>(DEFAULT_FILTER_STATE);
   const [selectedName, setSelectedName] = useState<string | null>(null);
+  const [navigatingName, setNavigatingName] = useState<string | null>(null);
 
   const [creating, setCreating] = useState(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [candidatesOpen, setCandidatesOpen] = useState(false);
   const [syncOpen, setSyncOpen] = useState(false);
-  const [driftOpen, setDriftOpen] = useState(false);
+  // ?drift=1 deep-links straight into the drift dialog (one-shot, read at mount).
+  const [driftOpen, setDriftOpen] = useState(
+    () => searchParams.get("drift") === "1",
+  );
+
+  /** Navigate to the full-screen per-surface editor (house nav rules). */
+  const openEditor = (row: SurfaceWithStats) => {
+    if (navigatingName) return;
+    setNavigatingName(row.name);
+    const href = `/administration/surfaces/${row.name
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/")}`;
+    startTransition(() => router.push(href));
+  };
 
   const manifestedSurfaceNames = useMemo(
     () => new Set(getRegisteredSurfaceNames()),
@@ -99,6 +125,12 @@ export function SurfacesContainer() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Clear the per-row navigation loader if the transition settles without
+  // unmounting (e.g. push to the same route).
+  useEffect(() => {
+    if (!isPending) setNavigatingName(null);
+  }, [isPending]);
 
   const clientNames = useMemo(
     () => clients.map((c) => c.name).sort((a, b) => a.localeCompare(b)),
@@ -296,9 +328,11 @@ export function SurfacesContainer() {
             isLoading={loading}
             selectedName={selectedName}
             manifestedSurfaceNames={manifestedSurfaceNames}
-            onSelect={(r) => setSelectedName(r.name)}
-            onEdit={(r) => setSelectedName(r.name)}
+            onSelect={openEditor}
+            onEdit={openEditor}
+            onPeek={(r) => setSelectedName(r.name)}
             onDelete={(r) => void onDelete(r)}
+            navigatingName={navigatingName}
           />
           <div className="shrink-0 px-3 py-1 text-[10px] text-muted-foreground tabular-nums border-t border-border bg-card">
             {visible.length} of {surfaces.length} surface

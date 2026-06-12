@@ -319,3 +319,27 @@ export async function listAllExecutorNames(): Promise<string[]> {
   if (error) throw error;
   return (data ?? []).map((r) => r.name);
 }
+
+/** One row of the full tool catalog, shaped for generic search/add pickers. */
+export interface ToolCatalogOption {
+  id: string;
+  name: string;
+  category: string | null;
+  description: string;
+  is_active: boolean | null;
+  source_kind: ToolDefRow["source_kind"];
+}
+
+/**
+ * The full `tool_def` catalog (active AND inactive — callers filter) for
+ * generic tool pickers, e.g. the surface tool-defaults editor.
+ */
+export async function listAllToolOptions(): Promise<ToolCatalogOption[]> {
+  const { data, error } = await sb()
+    .from("tool_def")
+    .select("id, name, category, description, is_active, source_kind")
+    .order("category", { ascending: true })
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
