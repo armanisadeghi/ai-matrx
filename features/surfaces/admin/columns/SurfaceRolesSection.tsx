@@ -65,7 +65,7 @@ export function SurfaceRolesSection({
     setBusyRole(view.role.name);
     try {
       await view.setForMe(agent.id);
-      toast.success(`${agent.name} is now your ${view.role.label} agent`);
+      toast.success(`${agent.name} is now your selection for ${view.role.label}`);
     } catch (err) {
       console.error("[surfaces] setForMe failed:", err);
       toast.error("Could not save your selection");
@@ -123,12 +123,12 @@ function RoleRow({
   return (
     <li className="flex flex-wrap items-center gap-x-2 gap-y-1">
       <span
-        className="text-xs font-medium text-foreground"
+        className="whitespace-nowrap text-xs font-medium text-foreground"
         title={view.role.description || undefined}
       >
         {view.role.label}
       </span>
-      <span className="flex items-center gap-1">
+      <span className="flex min-w-0 flex-wrap items-center gap-1">
         <TierChip
           label={platformName ? `Platform: ${platformName}` : "Platform: —"}
           active={tier === "manifest" || tier === "global"}
@@ -136,17 +136,17 @@ function RoleRow({
         <TierChip label="Org" active={tier === "org"} />
         <TierChip label="You" active={tier === "user"} />
       </span>
-      <span className="ml-auto flex items-center gap-1">
+      <span className="flex flex-wrap items-center gap-1">
         <button
           type="button"
           onClick={onUseForMe}
           disabled={busy}
-          className="inline-flex h-6 items-center gap-1 rounded-md border border-border bg-background px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-md border border-border bg-background px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
+            <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
           ) : (
-            <UserRoundCheck className="h-3 w-3" />
+            <UserRoundCheck className="h-3 w-3 shrink-0" />
           )}
           Use this agent → For me
         </button>
@@ -154,7 +154,7 @@ function RoleRow({
           type="button"
           disabled
           title="Org scope lands with the hub"
-          className="inline-flex h-6 cursor-not-allowed items-center rounded-md border border-border/50 bg-muted/20 px-2 text-[11px] font-medium text-muted-foreground/45"
+          className="inline-flex h-6 cursor-not-allowed items-center whitespace-nowrap rounded-md border border-border/50 bg-muted/20 px-2 text-[11px] font-medium text-muted-foreground/45"
         >
           For my org
         </button>
@@ -167,14 +167,14 @@ function TierChip({ label, active }: { label: string; active: boolean }) {
   return (
     <span
       className={cn(
-        "inline-flex h-5 items-center rounded px-1.5 text-[10px] font-medium",
+        "inline-flex h-5 max-w-[150px] items-center rounded px-1.5 text-[10px] font-medium",
         active
           ? "bg-primary/10 text-primary"
           : "bg-muted text-muted-foreground/60",
       )}
-      title={active ? "Effective tier" : undefined}
+      title={active ? `${label} — effective tier` : label}
     >
-      {label}
+      <span className="truncate">{label}</span>
     </span>
   );
 }
