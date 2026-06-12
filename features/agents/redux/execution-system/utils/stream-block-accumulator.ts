@@ -25,6 +25,7 @@ import {
 import {
   detectJsonBlockType,
   parseXmlAttributes,
+  extractAudioLink,
 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 
 // ============================================================================
@@ -246,6 +247,14 @@ export class StreamBlockAccumulator {
    */
   private currentBlockEmitted = false;
   private subState: BlockSubState = { kind: "none" };
+  /**
+   * URL + label for the current `audio` block. The accumulator's single-line
+   * media blocks (image/video) leave `data` null, which is why the legacy
+   * client image/video markdown path never populated `src`. Audio MUST carry
+   * its URL on `data.src` or BlockRenderer's `audio` case renders nothing —
+   * so we stash the extracted link here and emit it via buildBlockData.
+   */
+  private pendingMediaData: { src: string; alt: string } | null = null;
   private ingestCount = 0;
   private emitCount = 0;
   private upsertAction: (payload: {
@@ -424,6 +433,25 @@ export class StreamBlockAccumulator {
       this.closeCurrentBlock(dispatch);
       this.openBlock("text", dispatch);
       return;
+    }
+
+    // ── Audio ─────────────────────────────────────────────────────────
+    // An audio response that streamed in as a markdown/text link. We split it
+    // into its own `audio` block carrying the resolved URL on `data.src` so
+    // BlockRenderer renders the same player the DB (audio_output) path does,
+    // live and without waiting for reload. Falls through to text if the
+    // prefilter flagged a false positive (extraction returns null).
+    if (hasCandidate(flags, Candidate.AUDIO)) {
+      const audio = extractAudioLink(rawLine);
+      if (audio) {
+        this.closeCurrentBlock(dispatch);
+        this.openBlock("audio", dispatch);
+        this.pendingMediaData = audio;
+        this.appendToCurrentBlock(rawLine);
+        this.closeCurrentBlock(dispatch);
+        this.openBlock("text", dispatch);
+        return;
+      }
     }
 
     // ── MATRX broker ──────────────────────────────────────────────────
@@ -659,6 +687,7 @@ export class StreamBlockAccumulator {
     this.currentBlockType = type;
     this.currentBlockContent = "";
     this.currentBlockEmitted = false;
+    this.pendingMediaData = null;
   }
 
   private emitCurrentBlock(
@@ -774,6 +803,10 @@ export class StreamBlockAccumulator {
   }
 
   private buildBlockData(): Record<string, unknown> | null {
+    // Audio blocks carry the resolved link so the renderer has a `src`.
+    if (this.currentBlockType === "audio" && this.pendingMediaData) {
+      return { ...this.pendingMediaData };
+    }
     if (this.subState.kind === "code_fence") {
       // Only emit language data for plain code blocks. When the type has been
       // upgraded to a JSON sub-type (diagram, quiz, etc.), `data` must be null

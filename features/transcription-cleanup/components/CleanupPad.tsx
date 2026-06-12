@@ -167,6 +167,41 @@ function mappingCaption(mapping: InputMappingInfo | null): string | null {
   return `input → ${mapping.target}`;
 }
 
+/** Skeleton line widths — stable per row so the shimmer doesn't reflow. */
+const VEIL_LINE_WIDTHS = ["92%", "78%", "85%", "64%", "88%", "71%"] as const;
+
+/**
+ * In-pane loading veil shown while a session's content is fetched. It covers
+ * ONLY the data region of a pane (the headers / toolbars stay mounted), so the
+ * page never loses its structure on a session switch — and it fully masks the
+ * previous session's text so there's no stale flash before the new content
+ * applies.
+ */
+function PaneLoadingVeil({ label }: { label: string }) {
+  return (
+    <div
+      className="absolute inset-0 z-10 flex flex-col gap-3 bg-background/85 px-4 py-3 backdrop-blur-[2px]"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+        {label}
+      </div>
+      <div className="flex flex-1 flex-col gap-2.5 pt-1">
+        {VEIL_LINE_WIDTHS.map((w, i) => (
+          <div
+            key={i}
+            className="h-3 animate-pulse rounded bg-muted"
+            style={{ width: w }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Stable initial slot (fixed id — SSR-safe; new slots mint uuids on click). */
 function initialSlot(): CleanupCustomSlot {
   return {
@@ -206,6 +241,14 @@ export default function CleanupPad({
   const [isMicTranscribing, setIsMicTranscribing] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  /**
+   * The session whose content is currently reflected in the panes. Set by the
+   * load-reset effect once the DB snapshot has been applied to local state.
+   * Drives the in-pane loading veil: while the active session differs from this
+   * (or a fetch is in flight), each data pane shows its own loading state —
+   * never the previous session's text.
+   */
+  const [appliedSessionId, setAppliedSessionId] = useState<string | null>(null);
   const micRef = useRef<MicrophoneIconButtonHandle>(null);
 
   // Agents — Clean defaults to the system cleaner.
@@ -452,6 +495,8 @@ export default function CleanupPad({
     setLiveTranscript("");
     cleanAi.reset();
     for (const ai of slotAis) ai.reset();
+    // Content is now reflected in the panes — lift the per-pane loading veil.
+    setAppliedSessionId(loaded.sessionId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.loaded, dispatch]);
 
@@ -477,6 +522,19 @@ export default function CleanupPad({
     for (const ai of slotAis) ai.reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, cleanAi]);
+
+  /**
+   * Per-pane loading: true while a persisted session is being switched in —
+   * either the fetch is in flight (`loadState === "loading"`), or it has just
+   * resolved but the load-reset effect hasn't applied the snapshot to the panes
+   * yet (`appliedSessionId` still lags `session.loaded`). The second clause
+   * closes the one-frame gap that would otherwise flash the previous session's
+   * text. Locally-created sessions never populate `session.loaded`, so they
+   * never veil.
+   */
+  const isLoadingSession =
+    session.loadState === "loading" ||
+    (session.loaded !== null && session.loaded.sessionId !== appliedSessionId);
 
   // ── Agent name resolution for dropdown labels ──────────────────────────────
   const resolveAgentName = useCallback(
@@ -1279,34 +1337,37 @@ export default function CleanupPad({
           )}
         </div>
       </div>
-      <UnifiedAgentContextMenu
-        sourceFeature="transcription-cleanup"
-        surfaceName="matrx-user/transcripts-cleanup"
-        getTextarea={() => transcriptTaRef.current}
-        isEditable={!isTranscriptLocked}
-        contextData={menuContextData("transcript", transcriptDisplay)}
-        placementMode={{ "content-block": "hide" }}
-        className="flex min-h-0 flex-1 flex-col"
-        {...transcriptHandlers}
-      >
-        <textarea
-          ref={transcriptTaRef}
-          value={transcriptDisplay}
-          readOnly={isTranscriptLocked}
-          onChange={(e) => handleDraftChange(e.target.value)}
-          placeholder={
-            isTranscriptLocked
-              ? "Live transcript streams here while recording. Use At start / At end to queue extra text."
-              : "Tap the mic above to record. Transcribed text appears here and is processed automatically..."
-          }
-          className={cn(
-            "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
-            "text-base md:text-sm",
-            "focus:outline-none focus:ring-0",
-            isTranscriptLocked && "cursor-default",
-          )}
-        />
-      </UnifiedAgentContextMenu>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <UnifiedAgentContextMenu
+          sourceFeature="transcription-cleanup"
+          surfaceName="matrx-user/transcripts-cleanup"
+          getTextarea={() => transcriptTaRef.current}
+          isEditable={!isTranscriptLocked}
+          contextData={menuContextData("transcript", transcriptDisplay)}
+          placementMode={{ "content-block": "hide" }}
+          className="flex min-h-0 flex-1 flex-col"
+          {...transcriptHandlers}
+        >
+          <textarea
+            ref={transcriptTaRef}
+            value={transcriptDisplay}
+            readOnly={isTranscriptLocked}
+            onChange={(e) => handleDraftChange(e.target.value)}
+            placeholder={
+              isTranscriptLocked
+                ? "Live transcript streams here while recording. Use At start / At end to queue extra text."
+                : "Tap the mic above to record. Transcribed text appears here and is processed automatically..."
+            }
+            className={cn(
+              "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
+              "text-base md:text-sm",
+              "focus:outline-none focus:ring-0",
+              isTranscriptLocked && "cursor-default",
+            )}
+          />
+        </UnifiedAgentContextMenu>
+        {isLoadingSession && <PaneLoadingVeil label="Loading transcript…" />}
+      </div>
     </div>
   );
 
@@ -1369,29 +1430,32 @@ export default function CleanupPad({
           )}
         </div>
       </div>
-      <UnifiedAgentContextMenu
-        sourceFeature="transcription-cleanup"
-        surfaceName="matrx-user/transcripts-cleanup"
-        getTextarea={() => cleanTaRef.current}
-        isEditable
-        contextData={menuContextData("clean", responseValue)}
-        placementMode={{ "content-block": "hide" }}
-        className="flex min-h-0 flex-1 flex-col"
-        {...cleanHandlers}
-      >
-        <textarea
-          ref={cleanTaRef}
-          value={responseValue}
-          onChange={(e) => handleResponseChange(e.target.value)}
-          placeholder={responsePlaceholder}
-          className={cn(
-            "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
-            "text-base md:text-sm",
-            "focus:outline-none focus:ring-0",
-            cleanAi.phase === "error" && "text-destructive",
-          )}
-        />
-      </UnifiedAgentContextMenu>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <UnifiedAgentContextMenu
+          sourceFeature="transcription-cleanup"
+          surfaceName="matrx-user/transcripts-cleanup"
+          getTextarea={() => cleanTaRef.current}
+          isEditable
+          contextData={menuContextData("clean", responseValue)}
+          placementMode={{ "content-block": "hide" }}
+          className="flex min-h-0 flex-1 flex-col"
+          {...cleanHandlers}
+        >
+          <textarea
+            ref={cleanTaRef}
+            value={responseValue}
+            onChange={(e) => handleResponseChange(e.target.value)}
+            placeholder={responsePlaceholder}
+            className={cn(
+              "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
+              "text-base md:text-sm",
+              "focus:outline-none focus:ring-0",
+              cleanAi.phase === "error" && "text-destructive",
+            )}
+          />
+        </UnifiedAgentContextMenu>
+        {isLoadingSession && <PaneLoadingVeil label="Loading cleaned text…" />}
+      </div>
     </div>
   );
 
@@ -1574,29 +1638,32 @@ export default function CleanupPad({
     <div className="flex h-full min-h-0 flex-col bg-background">
       {customTopBand}
       {customToolbar}
-      <UnifiedAgentContextMenu
-        sourceFeature="transcription-cleanup"
-        surfaceName="matrx-user/transcripts-cleanup"
-        getTextarea={() => customTaRef.current}
-        isEditable
-        contextData={menuContextData("custom", activeSlotValue)}
-        placementMode={{ "content-block": "hide" }}
-        className="flex min-h-0 flex-1 flex-col"
-        {...customHandlers}
-      >
-        <textarea
-          ref={customTaRef}
-          value={activeSlotValue}
-          onChange={(e) => handleCustomChange(e.target.value)}
-          placeholder={customPlaceholder}
-          className={cn(
-            "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
-            "text-base md:text-sm",
-            "focus:outline-none focus:ring-0",
-            activeAi.phase === "error" && "text-destructive",
-          )}
-        />
-      </UnifiedAgentContextMenu>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <UnifiedAgentContextMenu
+          sourceFeature="transcription-cleanup"
+          surfaceName="matrx-user/transcripts-cleanup"
+          getTextarea={() => customTaRef.current}
+          isEditable
+          contextData={menuContextData("custom", activeSlotValue)}
+          placementMode={{ "content-block": "hide" }}
+          className="flex min-h-0 flex-1 flex-col"
+          {...customHandlers}
+        >
+          <textarea
+            ref={customTaRef}
+            value={activeSlotValue}
+            onChange={(e) => handleCustomChange(e.target.value)}
+            placeholder={customPlaceholder}
+            className={cn(
+              "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
+              "text-base md:text-sm",
+              "focus:outline-none focus:ring-0",
+              activeAi.phase === "error" && "text-destructive",
+            )}
+          />
+        </UnifiedAgentContextMenu>
+        {isLoadingSession && <PaneLoadingVeil label="Loading output…" />}
+      </div>
     </div>
   );
 

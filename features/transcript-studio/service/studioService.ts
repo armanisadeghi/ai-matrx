@@ -12,6 +12,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { NEW_SESSION_DEFAULT_TITLE, DEFAULT_MODULE_ID } from "../constants";
 import type {
+  AssistantConversationRef,
   CleanupCustomSlot,
   CreateSessionInput,
   SessionContextItem,
@@ -49,6 +50,7 @@ export interface SessionRow {
   audio_storage_path: string | null;
   is_deleted: boolean;
   assistant_conversation_id: string | null;
+  assistant_conversations: AssistantConversationRef[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -71,6 +73,9 @@ export function rowToSession(row: SessionRow): StudioSession {
     audioStoragePath: row.audio_storage_path,
     isDeleted: row.is_deleted,
     assistantConversationId: row.assistant_conversation_id ?? null,
+    assistantConversations: Array.isArray(row.assistant_conversations)
+      ? row.assistant_conversations
+      : [],
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -173,6 +178,8 @@ export async function updateSession(
   if (patch.isDeleted !== undefined) update.is_deleted = patch.isDeleted;
   if (patch.assistantConversationId !== undefined)
     update.assistant_conversation_id = patch.assistantConversationId;
+  if (patch.assistantConversations !== undefined)
+    update.assistant_conversations = patch.assistantConversations;
 
   // maybeSingle (not single): the session row may be gone (deleted, or a
   // local/optimistic session never persisted) when a background update lands —

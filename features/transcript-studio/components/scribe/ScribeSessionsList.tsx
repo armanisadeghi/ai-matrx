@@ -256,6 +256,7 @@ export function ScribeSessionsList({
               }),
             );
           }
+          setRenameSessionId(null);
         }}
       />
     </div>

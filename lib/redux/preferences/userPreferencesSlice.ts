@@ -333,6 +333,11 @@ export interface CustomCleanerAgent {
 export interface TranscriptionPreferences {
   /** User-added cleaner agents merged into the Transcription Cleanup picker. */
   customCleanerAgents: CustomCleanerAgent[];
+  /**
+   * User-wide default agent for the Scribe audio assistant. Null → fall back to
+   * the seeded AUDIO_ASSISTANT_AGENT_ID. Per-session choices override this.
+   */
+  scribeAssistantAgentId: string | null;
 }
 
 /** Captured keyboard shortcut — mirrors the `KeybindingValue` shape used by
@@ -576,6 +581,7 @@ export const initializeUserPreferencesState = (
     },
     transcription: {
       customCleanerAgents: [],
+      scribeAssistantAgentId: null,
     },
     agentConnections: {
       notifyOnConnect: true,

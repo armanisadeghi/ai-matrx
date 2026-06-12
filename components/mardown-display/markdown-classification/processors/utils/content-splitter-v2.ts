@@ -1259,6 +1259,65 @@ function detectVideoMarkdown(line: string): {
   return { isVideo: false };
 }
 
+// Audio file extensions we recognize when a bare/markdown link points at a
+// clip. The optional `?query` tail keeps signed S3 URLs (…/clip.mp3?X-Amz-…)
+// matching since the extension sits before the query string.
+export const AUDIO_URL_EXT =
+  /\.(mp3|wav|m4a|aac|ogg|oga|opus|flac|weba|webm)(\?[^\s)]*)?$/i;
+
+/**
+ * Extracts the audio URL + label from a single line that is an audio link, or
+ * returns null. Shared by the splitter, the streaming block accumulator, and
+ * the content prefilter so all three agree on what counts as an audio link.
+ * Three accepted shapes, all line-scoped:
+ *   1. `[Audio URL: https://…]`  — backend custom format, symmetric with
+ *      `[Image URL: …]` / `[Video URL: …]`.
+ *   2. `[label](https://…/clip.mp3)` or `![label](…)` — a standard markdown
+ *      link whose URL is an audio file AND which is the entire line (so inline
+ *      links inside a sentence are left as ordinary links).
+ *   3. A bare audio URL on its own line.
+ */
+export function extractAudioLink(
+  line: string,
+): { src: string; alt: string } | null {
+  const trimmed = line.trim();
+
+  const customMatch = trimmed.match(/\[Audio URL:\s*(https?:\/\/[^\s\]]+)\]/);
+  if (customMatch) {
+    return { src: customMatch[1], alt: "Audio" };
+  }
+
+  const linkMatch = trimmed.match(/^!?\[(.*?)\]\((https?:\/\/[^\s)]+)\)$/);
+  if (linkMatch && AUDIO_URL_EXT.test(linkMatch[2])) {
+    return { src: linkMatch[2], alt: linkMatch[1] || "Audio" };
+  }
+
+  if (/^https?:\/\/[^\s)]+$/.test(trimmed) && AUDIO_URL_EXT.test(trimmed)) {
+    return { src: trimmed, alt: "Audio" };
+  }
+
+  return null;
+}
+
+/**
+ * Detects an audio response that arrives as a markdown/text link rather than a
+ * structured media block — the streaming twin of the server-side
+ * `audio_output` block. Without this, an audio-only assistant turn renders as a
+ * plain clickable link mid-stream and only becomes a player after reload (when
+ * the DB serves it as a `media` block).
+ */
+function detectAudioMarkdown(line: string): {
+  isAudio: boolean;
+  src?: string;
+  alt?: string;
+} {
+  const audio = extractAudioLink(line);
+  if (audio) {
+    return { isAudio: true, src: audio.src, alt: audio.alt };
+  }
+  return { isAudio: false };
+}
+
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
@@ -1517,6 +1576,25 @@ export const splitContentIntoBlocksV2 = (
         content: trimmedLine,
         src: videoCheck.src,
         alt: videoCheck.alt,
+      });
+
+      i++;
+      continue;
+    }
+
+    // 4.6. Check for audio markdown
+    const audioCheck = detectAudioMarkdown(line);
+    if (audioCheck.isAudio) {
+      if (currentText.trim()) {
+        blocks.push({ type: "text", content: currentText.trimEnd() });
+        currentText = "";
+      }
+
+      blocks.push({
+        type: "audio",
+        content: trimmedLine,
+        src: audioCheck.src,
+        alt: audioCheck.alt,
       });
 
       i++;

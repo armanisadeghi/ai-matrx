@@ -134,6 +134,7 @@ export function TextInputDialog({
       {multiline ? (
         <Textarea
           autoFocus
+          onFocus={(event) => event.currentTarget.select()}
           value={value}
           onChange={(event) => {
             setValue(event.target.value);
@@ -152,6 +153,7 @@ export function TextInputDialog({
       ) : (
         <Input
           autoFocus
+          onFocus={(event) => event.currentTarget.select()}
           value={value}
           onChange={(event) => {
             setValue(event.target.value);

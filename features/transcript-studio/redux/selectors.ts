@@ -7,6 +7,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type {
+  AssistantConversationRef,
   CleanedSegment,
   RawSegment,
   RecordingSegment,
@@ -365,5 +366,39 @@ export const selectAssistantConversationId =
       state.transcriptStudio.assistantConversationIdBySession[sessionId] ?? null
     );
   };
+
+/** The roster of every assistant conversation that belongs to the session. */
+export function selectAssistantConversations(sessionId: string | null) {
+  return (state: RootState): AssistantConversationRef[] => {
+    if (!sessionId) return EMPTY_CONVERSATIONS;
+    return (
+      state.transcriptStudio.byId[sessionId]?.assistantConversations ??
+      EMPTY_CONVERSATIONS
+    );
+  };
+}
+
+/**
+ * The agentId driving the session's ACTIVE assistant conversation, resolved
+ * from the roster. Null until the roster has an entry for the active id (e.g.
+ * a legacy session whose single conversation predates the roster).
+ */
+export function selectActiveAssistantAgentId(sessionId: string | null) {
+  return (state: RootState): string | null => {
+    if (!sessionId) return null;
+    const session = state.transcriptStudio.byId[sessionId];
+    if (!session) return null;
+    const activeId =
+      state.transcriptStudio.assistantConversationIdBySession[sessionId] ??
+      session.assistantConversationId;
+    if (!activeId) return null;
+    const ref = session.assistantConversations?.find(
+      (c) => c.conversationId === activeId,
+    );
+    return ref?.agentId ?? null;
+  };
+}
+
+const EMPTY_CONVERSATIONS: AssistantConversationRef[] = [];
 
 void selectScope; // reserved — fuller scope-getter once we add per-column buffers

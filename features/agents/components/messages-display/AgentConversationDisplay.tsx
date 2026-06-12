@@ -30,6 +30,7 @@ import {
   selectLatestRequestId,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { AgentUserMessage } from "./user/AgentUserMessage";
+import { MarkdownContextMenuProvider } from "@/features/context-menu-v2/markdown/MarkdownContextMenuProvider";
 import type { AssistantTurnGroupMember } from "./assistant/AssistantTurnGroup";
 const AssistantTurnGroup = dynamic(
   () =>
@@ -335,51 +336,53 @@ export function AgentConversationDisplay({
   const spacingClass = compact ? "space-y-2 pb-2" : "space-y-6 pb-24";
 
   return (
-    <div className={`${spacingClass} p-2 scrollbar-hide`}>
-      {displayGroups.map((group) => {
-        if (group.kind === "user") {
+    <MarkdownContextMenuProvider conversationId={conversationId}>
+      <div className={`${spacingClass} p-2 scrollbar-hide`}>
+        {displayGroups.map((group) => {
+          if (group.kind === "user") {
+            return (
+              <AgentUserMessage
+                key={group.key}
+                conversationId={conversationId}
+                messageId={group.messageId}
+                surfaceKey={surfaceKey}
+                compact={compact}
+              />
+            );
+          }
+
+          if (group.kind === "assistant-failed") {
+            // Rendered directly (not via AssistantTurnGroup): a failed turn
+            // renders whatever content already streamed with the error line
+            // appended BELOW it (error-only when nothing streamed), and never
+            // mounts an action bar — nothing for a turn group to coordinate.
+            return (
+              <AgentAssistantMessage
+                key={group.key}
+                conversationId={conversationId}
+                requestId={group.requestId ?? undefined}
+                messageId={group.messageId ?? undefined}
+                isStreamActive={group.isStreamActive}
+                surfaceKey={surfaceKey}
+                compact={compact}
+                canRetry={group.canRetry}
+              />
+            );
+          }
+
           return (
-            <AgentUserMessage
+            <AssistantTurnGroup
               key={group.key}
               conversationId={conversationId}
-              messageId={group.messageId}
               surfaceKey={surfaceKey}
               compact={compact}
+              members={group.members}
             />
           );
-        }
+        })}
 
-        if (group.kind === "assistant-failed") {
-          // Rendered directly (not via AssistantTurnGroup): a failed turn
-          // renders whatever content already streamed with the error line
-          // appended BELOW it (error-only when nothing streamed), and never
-          // mounts an action bar — nothing for a turn group to coordinate.
-          return (
-            <AgentAssistantMessage
-              key={group.key}
-              conversationId={conversationId}
-              requestId={group.requestId ?? undefined}
-              messageId={group.messageId ?? undefined}
-              isStreamActive={group.isStreamActive}
-              surfaceKey={surfaceKey}
-              compact={compact}
-              canRetry={group.canRetry}
-            />
-          );
-        }
-
-        return (
-          <AssistantTurnGroup
-            key={group.key}
-            conversationId={conversationId}
-            surfaceKey={surfaceKey}
-            compact={compact}
-            members={group.members}
-          />
-        );
-      })}
-
-      <div ref={bottomRef} />
-    </div>
+        <div ref={bottomRef} />
+      </div>
+    </MarkdownContextMenuProvider>
   );
 }

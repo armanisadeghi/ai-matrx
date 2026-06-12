@@ -68,9 +68,25 @@ export interface StudioSession {
    * and rehydrates its history instead of starting fresh each mount.
    */
   assistantConversationId: string | null;
+  /**
+   * Roster of every assistant conversation that belongs to this session. Each
+   * is bound to the agent it was created with (a conversation can't be re-
+   * pointed at another agent), so switching the assistant agent adds/reuses an
+   * entry here while `assistantConversationId` tracks the ACTIVE one. Lets the
+   * user flip between agents and keep each agent's own history.
+   */
+  assistantConversations: AssistantConversationRef[];
 
   createdAt: string;
   updatedAt: string;
+}
+
+/** One assistant conversation in a session's roster (see StudioSession). */
+export interface AssistantConversationRef {
+  conversationId: string;
+  agentId: string;
+  createdAt: string;
+  lastUsedAt: string;
 }
 
 export interface RecordingSegment {
@@ -276,6 +292,7 @@ export interface UpdateSessionInput {
   transcriptId?: string | null;
   isDeleted?: boolean;
   assistantConversationId?: string | null;
+  assistantConversations?: AssistantConversationRef[];
 }
 
 export interface CreateRecordingSegmentInput {

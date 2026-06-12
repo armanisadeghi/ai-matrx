@@ -269,6 +269,10 @@ export const fetchCleanedSegmentsThunk = createAsyncThunk<
 // each thunk lives in. The implementations live in dedicated files to keep
 // this file focused on session + raw CRUD.
 export { ensureAssistantConversationThunk } from "./ensureAssistantConversation.thunk";
+export {
+  switchAssistantAgentThunk,
+  setActiveAssistantConversationThunk,
+} from "./assistantAgent.thunk";
 export { runCleaningPassThunk } from "./runCleaningPass.thunk";
 export type { RunCleaningPassResult } from "./runCleaningPass.thunk";
 export { cleanRecordingThunk } from "./cleanRecording.thunk";

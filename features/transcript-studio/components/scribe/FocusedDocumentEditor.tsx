@@ -7,7 +7,12 @@
  * while not actively typing.
  */
 
+import { useRef } from "react";
 import { Check, Loader2, Minimize2 } from "lucide-react";
+import {
+  ProTextarea,
+  type ProTextareaElement,
+} from "@/components/official/ProTextarea";
 import { useWorkingDocumentDraft } from "../../hooks/useWorkingDocumentDraft";
 import type { StudioDocument } from "../../types";
 
@@ -22,13 +27,18 @@ export function FocusedDocumentEditor({
   doc,
   onClose,
 }: FocusedDocumentEditorProps) {
+  const textareaRef = useRef<ProTextareaElement>(null);
   const { draft, saving, onChange, flush } = useWorkingDocumentDraft(
     sessionId,
     doc.id,
     doc.content,
   );
 
-  const handleClose = () => {
+  const handleCloseRequest = () => {
+    textareaRef.current?.requestClose?.();
+  };
+
+  const handleCloseConfirmed = () => {
     flush();
     onClose();
   };
@@ -55,7 +65,7 @@ export function FocusedDocumentEditor({
           </span>
           <button
             type="button"
-            onClick={handleClose}
+            onClick={handleCloseRequest}
             className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-sm font-medium text-foreground active:bg-accent"
           >
             <Minimize2 className="h-4 w-4" />
@@ -64,12 +74,15 @@ export function FocusedDocumentEditor({
         </div>
       </header>
 
-      <textarea
+      <ProTextarea
+        ref={textareaRef}
         value={draft}
         onChange={(e) => onChange(e.target.value)}
         onBlur={flush}
+        onRequestClose={handleCloseConfirmed}
         placeholder="Draft your document here, or ask the assistant to build it."
-        className="min-h-0 flex-1 resize-none bg-transparent px-4 py-4 text-base leading-relaxed text-foreground outline-none placeholder:text-muted-foreground"
+        wrapperClassName="flex min-h-0 flex-1 flex-col px-4 py-4"
+        className="h-full min-h-0 flex-1 resize-none border-0 bg-transparent text-base leading-relaxed text-foreground shadow-none focus-visible:ring-0"
       />
     </div>
   );

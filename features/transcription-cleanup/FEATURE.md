@@ -121,6 +121,18 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-06-12 — Per-pane loading state on session switch. `CleanupPad` now
+  consumes `useCleanupSession().loadState` (previously unused): each data pane
+  (Transcript / Clean / Custom) renders its own `PaneLoadingVeil` (spinner +
+  skeleton shimmer, `absolute inset-0` over the body only) while the active
+  session is being fetched — headers/toolbars stay mounted so the page never
+  loses structure. A local `appliedSessionId` (set by the load-reset effect once
+  the snapshot lands) keeps the veil up through the one-frame gap between
+  `loadState → "ready"` and the panes applying the new content, eliminating the
+  stale-content flash that made switching feel like it "didn't work". Veil
+  formula: `loadState === "loading" || (loaded && loaded.sessionId !==
+  appliedSessionId)`; locally-created sessions never populate `loaded`, so they
+  never veil.
 - 2026-06-10 — Surface registration expanded to the "expose everything"
   standard: manifest 8 → 36 values (active pane, session identity, all
   container texts + `all_custom_outputs`, word/char counts, mic/recording

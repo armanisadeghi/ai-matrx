@@ -133,6 +133,12 @@ export function SystemInstructionEditor({
             checked={data.include_safety_guidelines ?? false}
             onChange={(v) => update({ include_safety_guidelines: v })}
           />
+          <ToggleRow
+            id={`include-context-${conversationId}`}
+            label="Include context awareness block"
+            checked={data.include_context_block ?? true}
+            onChange={(v) => update({ include_context_block: v })}
+          />
         </div>
       </Section>
 

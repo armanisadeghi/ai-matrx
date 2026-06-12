@@ -482,7 +482,11 @@ export function NoteContentEditor({
               editorMode === "plain" || editorMode === "split" ? (
                 <>
                   {findReplaceState?.isOpen && (
+                    // Keyed by editorMode so the overlay remounts cleanly when
+                    // the user toggles plain↔split — a fresh mount re-scrolls
+                    // the active match into view instead of leaving it stranded.
                     <NoteFindMatchOverlayRedux
+                      key={editorMode}
                       instanceId={instanceId}
                       noteId={noteId}
                       textareaRef={textareaRef}
@@ -504,7 +508,13 @@ export function NoteContentEditor({
           />
           {findReplaceState?.isOpen &&
             (editorMode === "split" || editorMode === "preview") && (
+              // Keyed by editorMode so the hook remounts when switching
+              // split↔preview. The preview DOM container is a different element
+              // per mode, and a stable ref can't tell the effect its `.current`
+              // swapped — remounting forces a fresh highlight + scroll-to-active
+              // against the new container.
               <NotePreviewFindHighlightRedux
+                key={editorMode}
                 instanceId={instanceId}
                 containerRef={previewContainerRef}
               />
@@ -567,7 +577,11 @@ function NoteFindMatchOverlayRedux({
   // force a scroll — that would disrupt editing.
   const activeIndex = fr?.currentMatchIndex ?? -1;
   const [scrollToken, setScrollToken] = useState(0);
-  const prevActiveRef = useRef(activeIndex);
+  // Seed with a sentinel (not the live index) so the FIRST commit — a fresh
+  // mount after reopening find or switching editor mode — counts as a change
+  // and scrolls the already-active match into view. Without this, reopening
+  // the bar on match 23 leaves the viewport wherever it was.
+  const prevActiveRef = useRef(-1);
   useEffect(() => {
     if (prevActiveRef.current !== activeIndex) {
       prevActiveRef.current = activeIndex;
@@ -595,8 +609,21 @@ function NotePreviewFindHighlightRedux({
   containerRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const fr = useAppSelector(selectFindReplaceState(instanceId));
+  useEffect(() => {
+    // TEMP DEBUG
+    // eslint-disable-next-line no-console
+    console.log("[findhl] NotePreviewFindHighlightRedux MOUNT", {
+      hasContainer: !!containerRef.current,
+    });
+    return () => {
+      // eslint-disable-next-line no-console
+      console.log("[findhl] NotePreviewFindHighlightRedux UNMOUNT");
+    };
+  }, [containerRef]);
   const [scrollToken, setScrollToken] = useState(0);
-  const prevActiveRef = useRef(fr?.currentMatchIndex ?? -1);
+  // Sentinel seed (see NoteFindMatchOverlayRedux) so a fresh mount after a
+  // mode switch scrolls the active match into view rather than staying put.
+  const prevActiveRef = useRef(-1);
   useEffect(() => {
     const current = fr?.currentMatchIndex ?? -1;
     if (prevActiveRef.current !== current) {

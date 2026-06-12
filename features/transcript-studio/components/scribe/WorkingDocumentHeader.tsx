@@ -4,11 +4,14 @@ import { useState } from "react";
 import {
   Check,
   ChevronRight,
+  Copy,
   Loader2,
   Maximize2,
   Volume2,
   VolumeX,
 } from "lucide-react";
+import { toast } from "sonner";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
@@ -34,6 +37,7 @@ export function WorkingDocumentHeader({
   // Collapsed by default — the screen below owns the focus; the document is
   // one tap away when the user wants to read or expand it.
   const [docOpen, setDocOpen] = useState(false);
+  const [hasCopied, setHasCopied] = useState(false);
 
   const speaker = useCartesiaSpeaker({ purpose: "reading" });
   const reading = speaker.isPlaying || speaker.isLoading;
@@ -50,6 +54,8 @@ export function WorkingDocumentHeader({
     docContent,
   );
 
+  const copyText = draft.trim() || docContent.trim();
+
   const handleReadAloud = async () => {
     if (!docContent.trim()) return;
     if (reading) {
@@ -57,6 +63,18 @@ export function WorkingDocumentHeader({
       return;
     }
     await speaker.speak(docContent);
+  };
+
+  const handleCopy = async () => {
+    const text = draft || docContent;
+    if (!text.trim()) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setHasCopied(true);
+      setTimeout(() => setHasCopied(false), 450);
+    } catch {
+      toast.error("Could not copy to clipboard");
+    }
   };
 
   return (
@@ -93,6 +111,26 @@ export function WorkingDocumentHeader({
             <VolumeX className="h-4 w-4" />
           ) : (
             <Volume2 className="h-4 w-4" />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleCopy()}
+          disabled={!copyText}
+          aria-label={hasCopied ? "Copied" : "Copy document"}
+          className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-full",
+            copyText
+              ? hasCopied
+                ? "text-green-500 active:bg-accent"
+                : "text-foreground active:bg-accent"
+              : "text-muted-foreground/50",
+          )}
+        >
+          {hasCopied ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Copy className="h-4 w-4" />
           )}
         </button>
         <button
@@ -143,13 +181,13 @@ export function WorkingDocumentHeader({
           </div>
           {/* resize-y: the user drags the textarea taller/shorter and the
               header (shrink-0 in the column) grows with it — no separate
-              container height to manage. */}
-          <textarea
+              container height to manage. ProTextarea owns mic + copy controls. */}
+          <ProTextarea
             value={draft}
             onChange={(e) => onChange(e.target.value)}
             onBlur={flush}
             placeholder="Empty. Ask the agent to draft, splice, or rework your recordings — or type here. Your edits and the agent's stay in sync each round."
-            className="h-40 max-h-[70dvh] min-h-[6rem] w-full resize-y overflow-y-auto rounded-md bg-muted/40 px-3 py-2 text-base leading-relaxed text-foreground outline-none ring-1 ring-inset ring-transparent transition-shadow placeholder:text-muted-foreground focus:bg-background focus:ring-border"
+            className="h-40 max-h-[70dvh] min-h-[6rem] resize-y overflow-y-auto bg-muted/40 text-base leading-relaxed text-foreground focus:bg-background"
           />
         </div>
       )}

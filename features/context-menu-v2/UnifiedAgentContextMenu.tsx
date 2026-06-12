@@ -136,6 +136,20 @@ export interface UnifiedAgentContextMenuProps {
     contextFilter?: string;
     [key: string]: unknown;
   };
+  /**
+   * Delegation hook for SINGLE-INSTANCE menus that serve many targets (e.g.
+   * one menu for a whole conversation of assistant messages). Called with the
+   * right-clicked element the instant the context menu is summoned; return the
+   * per-target context (messageId, blockId, blockType, tool, content, …) and
+   * it is shallow-merged OVER `contextData` for that one invocation.
+   *
+   * This is what lets us mount the heavy menu ONCE and tag thousands of blocks
+   * with cheap DOM attributes instead of mounting a menu per block. Return null
+   * to fall back to the static `contextData`.
+   */
+  resolveContextOnOpen?: (
+    target: HTMLElement | null,
+  ) => Record<string, unknown> | null;
   className?: string;
   enableFloatingIcon?: boolean;
   onUndo?: () => void;
@@ -224,8 +238,15 @@ export function UniversalContextMenuV2({
   scope = "global",
   scopeId = null,
   extraSections,
+  resolveContextOnOpen,
 }: UnifiedAgentContextMenuProps) {
   const dispatch = useAppDispatch();
+
+  // Per-invocation context resolved by `resolveContextOnOpen` (single-instance
+  // delegation). Captured on right-click before the menu opens; read by the
+  // compare + launch handlers. A ref (not state) so resolving never triggers a
+  // re-render of this hot component.
+  const resolvedContextRef = useRef<Record<string, unknown> | null>(null);
 
   const resolvedPlacementMode = resolvePlacementMode(
     placementMode,
@@ -314,6 +335,14 @@ export function UniversalContextMenuV2({
 
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
 
+  // Effective contextData for THIS invocation: static prop with any
+  // per-target resolution (single-instance delegation) merged over it.
+  const getEffectiveContextData = useCallback((): Record<string, unknown> => {
+    const base = (contextData ?? {}) as Record<string, unknown>;
+    const resolved = resolvedContextRef.current;
+    return resolved ? { ...base, ...resolved } : base;
+  }, [contextData]);
+
   // The content a Compare action operates on: the current selection if there
   // is one, otherwise the whole field/content passed via contextData.content.
   const getCompareContent = useCallback((): {
@@ -322,10 +351,10 @@ export function UniversalContextMenuV2({
   } => {
     const sel = capturedSelection.current?.text || selectedText || "";
     if (sel.trim()) return { content: sel, label: "Selection" };
-    const content =
-      typeof contextData?.content === "string" ? contextData.content : "";
+    const cd = getEffectiveContextData();
+    const content = typeof cd.content === "string" ? cd.content : "";
     return { content, label: "Current" };
-  }, [selectedText, contextData]);
+  }, [selectedText, getEffectiveContextData]);
 
   const handleCompareClipboard = useCallback(async () => {
     const { content, label } = getCompareContent();
@@ -403,6 +432,11 @@ export function UniversalContextMenuV2({
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 2) return;
     const target = e.target as HTMLElement;
+    // Single-instance delegation: resolve per-target context (message/block/
+    // tool/content) from the element being right-clicked, before the menu opens.
+    resolvedContextRef.current = resolveContextOnOpen
+      ? resolveContextOnOpen(target)
+      : null;
     selectionLocked.current = true;
 
     if (
@@ -690,20 +724,19 @@ export function UniversalContextMenuV2({
         textAfter = value.substring(selectionRange.end ?? 0);
       }
 
+      const cd = getEffectiveContextData();
       const applicationScope: ApplicationScope = {
         selection: selectionText,
         text_before: textBefore,
         text_after: textAfter,
-        content:
-          typeof contextData?.content === "string" ? contextData.content : "",
+        content: typeof cd.content === "string" ? cd.content : "",
         context:
-          typeof contextData?.context === "string"
-            ? { raw: contextData.context }
-            : ((contextData?.context as Record<string, unknown> | undefined) ??
-              {}),
+          typeof cd.context === "string"
+            ? { raw: cd.context }
+            : ((cd.context as Record<string, unknown> | undefined) ?? {}),
       };
 
-      for (const [k, v] of Object.entries(contextData ?? {})) {
+      for (const [k, v] of Object.entries(cd)) {
         if (k === "content" || k === "context" || k === "contextFilter")
           continue;
         applicationScope[k] = v;
@@ -749,7 +782,7 @@ export function UniversalContextMenuV2({
       }
     },
     [
-      contextData,
+      getEffectiveContextData,
       launchShortcut,
       selectedText,
       selectionRange,

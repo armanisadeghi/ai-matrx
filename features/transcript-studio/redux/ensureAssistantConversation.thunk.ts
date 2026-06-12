@@ -31,6 +31,12 @@ import { setShowMicrophone } from "@/features/agents/redux/execution-system/inst
 import { AUDIO_ASSISTANT_AGENT_ID } from "../constants";
 import { getSession, updateSession } from "../service/studioService";
 import { assistantConversationIdSet, sessionUpserted } from "./slice";
+import {
+  appendRoster,
+  findRosterByConversation,
+  makeRosterRef,
+  resolveDefaultAssistantAgentId,
+} from "./assistantRoster";
 
 interface ThunkApi {
   dispatch: AppDispatch;
@@ -45,11 +51,12 @@ const inFlight = new Map<string, Promise<string | null>>();
 
 async function createInstanceForSession(
   dispatch: AppDispatch,
+  agentId: string,
   conversationId: string | undefined,
 ): Promise<string> {
   return dispatch(
     createManualInstance({
-      agentId: AUDIO_ASSISTANT_AGENT_ID,
+      agentId,
       // When `conversationId` is provided we're resuming the persisted id;
       // when undefined createManualInstance mints a fresh one.
       ...(conversationId ? { conversationId } : {}),
@@ -110,10 +117,39 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
           ];
         if (raced) return raced;
 
+        // The stored conversation predates the roster on legacy sessions —
+        // recover its agent from the roster, else assume the seeded default it
+        // was originally created with.
+        const session = getState().transcriptStudio.byId[sessionId];
+        const roster = session?.assistantConversations ?? [];
+        const storedAgentId =
+          findRosterByConversation(roster, storedId)?.agentId ??
+          AUDIO_ASSISTANT_AGENT_ID;
+
         const instanceExists =
           !!getState().conversations.byConversationId[storedId];
         if (!instanceExists) {
-          await createInstanceForSession(dispatch, storedId);
+          await createInstanceForSession(dispatch, storedAgentId, storedId);
+        }
+
+        // Backfill the roster so the UI can show + switch the active agent.
+        if (!findRosterByConversation(roster, storedId)) {
+          const nextRoster = appendRoster(
+            roster,
+            makeRosterRef(storedId, storedAgentId),
+          );
+          try {
+            const updated = await updateSession(sessionId, {
+              assistantConversations: nextRoster,
+            });
+            if (updated) dispatch(sessionUpserted(updated));
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              "[studio] ensureAssistantConversation: roster backfill failed",
+              err,
+            );
+          }
         }
         // Rehydrate prior turns from the DB. May 404/return empty if the
         // conversation was minted but no turn was ever sent — that's fine, the
@@ -136,9 +172,12 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
         return storedId;
       }
 
-      // 3. Fresh conversation — mint, seed UI, persist the link for next load.
+      // 3. Fresh conversation — mint with the resolved default agent (user-wide
+      // default → seeded agent), seed UI, persist the link + roster for next load.
+      const defaultAgentId = resolveDefaultAssistantAgentId(getState());
       const newConversationId = await createInstanceForSession(
         dispatch,
+        defaultAgentId,
         undefined,
       );
       dispatch(
@@ -151,8 +190,15 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
         setShowMicrophone({ conversationId: newConversationId, value: true }),
       );
       try {
+        const existingRoster =
+          getState().transcriptStudio.byId[sessionId]?.assistantConversations ??
+          [];
         const updated = await updateSession(sessionId, {
           assistantConversationId: newConversationId,
+          assistantConversations: appendRoster(
+            existingRoster,
+            makeRosterRef(newConversationId, defaultAgentId),
+          ),
         });
         if (updated) {
           dispatch(sessionUpserted(updated));

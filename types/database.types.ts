@@ -18987,6 +18987,7 @@ export type Database = {
       studio_sessions: {
         Row: {
           assistant_conversation_id: string | null
+          assistant_conversations: Json
           audio_storage_path: string | null
           created_at: string
           ended_at: string | null
@@ -19007,6 +19008,7 @@ export type Database = {
         }
         Insert: {
           assistant_conversation_id?: string | null
+          assistant_conversations?: Json
           audio_storage_path?: string | null
           created_at?: string
           ended_at?: string | null
@@ -19027,6 +19029,7 @@ export type Database = {
         }
         Update: {
           assistant_conversation_id?: string | null
+          assistant_conversations?: Json
           audio_storage_path?: string | null
           created_at?: string
           ended_at?: string | null

@@ -90,6 +90,41 @@ interface BlockRendererProps {
 }
 
 /**
+ * Best-effort MIME type for an audio URL parsed from a markdown link, derived
+ * from its file extension (query string ignored). Lets the audio player emit a
+ * correct `<source type>`; returns undefined for unknown extensions, which the
+ * player handles gracefully.
+ */
+function audioMimeFromUrl(url: string): string | undefined {
+  const ext = url
+    .split(/[?#]/)[0]
+    .match(/\.([a-z0-9]+)$/i)?.[1]
+    ?.toLowerCase();
+  switch (ext) {
+    case "mp3":
+      return "audio/mpeg";
+    case "wav":
+      return "audio/wav";
+    case "m4a":
+      return "audio/mp4";
+    case "aac":
+      return "audio/aac";
+    case "ogg":
+    case "oga":
+      return "audio/ogg";
+    case "opus":
+      return "audio/opus";
+    case "flac":
+      return "audio/flac";
+    case "weba":
+    case "webm":
+      return "audio/webm";
+    default:
+      return undefined;
+  }
+}
+
+/**
  * Helper to determine if JSON content is genuinely incomplete (still streaming)
  * or just marked incomplete due to formatting issues
  */
@@ -498,6 +533,23 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           alt={block.alt}
         />
       );
+
+    case "audio": {
+      // Audio that streamed in as a markdown/text link (the splitter's
+      // `detectAudioMarkdown`). The URL is on `block.src`, mirroring the
+      // markdown `image`/`video` cases. This is the live-stream twin of the
+      // server-side `audio_output` case above — both render the same player —
+      // so an audio-only turn shows a player mid-stream, not a bare link.
+      if (!block.src) return null;
+      return (
+        <BlockComponents.AudioOutputBlock
+          key={index}
+          url={block.src}
+          mimeType={audioMimeFromUrl(block.src)}
+          title={block.alt && block.alt !== "Audio" ? block.alt : undefined}
+        />
+      );
+    }
 
     case "code": {
       // Special handling for diff blocks

@@ -49,10 +49,24 @@ export interface HeavyDividerRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * An audio player parsed from a markdown audio link in streamed/persisted text
+ * (e.g. `[Audio URL: …]` or a standalone `…​.mp3` link). Mirrors the typed
+ * `image`/`video` render blocks: the URL travels on the splitter block's `src`
+ * field, not here. This is the streaming-text twin of the server-side
+ * `audio_output` block — see content-splitter-v2.ts `detectAudioMarkdown`.
+ */
+export interface AudioRenderBlock {
+  type: "audio";
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
 export type ClientOnlyRenderBlock =
   | TreeRenderBlock
   | AccentDividerRenderBlock
-  | HeavyDividerRenderBlock;
+  | HeavyDividerRenderBlock
+  | AudioRenderBlock;
 
 export type ClientOnlyBlockType = ClientOnlyRenderBlock["type"];
 

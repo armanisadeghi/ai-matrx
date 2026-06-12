@@ -32,7 +32,25 @@ export const Candidate = {
   DIVIDER: 1 << 7, // *** or # ===
   TREE: 1 << 8, // Box-drawing / ASCII tree characters
   BARE_JSON: 1 << 9, // { "key": ... } JSON object without code fences
+  AUDIO: 1 << 10, // [Audio URL: ...] or a standalone …/clip.mp3 link
 } as const;
+
+/**
+ * Audio file extensions recognized when a standalone markdown/bare link points
+ * at a clip. Optional `?query` tail keeps signed S3 URLs matching. Mirrors
+ * AUDIO_URL_EXT + extractAudioLink in content-splitter-v2.ts — kept inline so
+ * this fast-path prefilter stays dependency-free (same pattern as the XML tag
+ * sets duplicated across the prefilter, accumulator, and splitter).
+ */
+const AUDIO_EXT_RE =
+  /\.(mp3|wav|m4a|aac|ogg|oga|opus|flac|weba|webm)(\?[^\s)]*)?$/i;
+
+function isStandaloneAudioLink(trimmed: string): boolean {
+  const link = trimmed.match(/^!?\[.*?\]\((https?:\/\/[^\s)]+)\)$/);
+  if (link) return AUDIO_EXT_RE.test(link[1]);
+  if (/^https?:\/\/[^\s)]+$/.test(trimmed)) return AUDIO_EXT_RE.test(trimmed);
+  return false;
+}
 
 export type CandidateFlags = number;
 
@@ -236,12 +254,16 @@ export function classifyLine(line: string, trimmed: string): CandidateFlags {
     searchFrom = ltPos + 1;
   }
 
-  // [Video URL: ...] or [Image URL: ...] — inline bracket patterns
-  if (!(flags & Candidate.IMAGE) || !(flags & Candidate.VIDEO)) {
+  // [Video URL: ...] or [Image URL: ...] or [Audio URL: ...] — inline brackets
+  if (
+    !(flags & Candidate.IMAGE) ||
+    !(flags & Candidate.VIDEO) ||
+    !(flags & Candidate.AUDIO)
+  ) {
     const bracketIdx = trimmed.indexOf("[");
     if (bracketIdx !== -1) {
       // Layer 1: check the next few characters cheaply
-      // [Image URL: or [Video URL:
+      // [Image URL: / [Video URL: / [Audio URL: (all 10 chars)
       if (bracketIdx + 10 < len) {
         const after = trimmed[bracketIdx + 1];
         if (
@@ -254,9 +276,25 @@ export function classifyLine(line: string, trimmed: string): CandidateFlags {
           trimmed.substring(bracketIdx + 1, bracketIdx + 11) === "Video URL:"
         ) {
           flags |= Candidate.VIDEO;
+        } else if (
+          after === "A" &&
+          trimmed.substring(bracketIdx + 1, bracketIdx + 11) === "Audio URL:"
+        ) {
+          flags |= Candidate.AUDIO;
         }
       }
     }
+  }
+
+  // Standalone audio link: `[label](…/clip.mp3)`, `![…](…)`, or a bare audio
+  // URL occupying the whole line. Gated on a cheap first-char check so plain
+  // text never pays for the regex.
+  if (
+    !(flags & Candidate.AUDIO) &&
+    (first === "[" || first === "!" || first === "h") &&
+    isStandaloneAudioLink(trimmed)
+  ) {
+    flags |= Candidate.AUDIO;
   }
 
   // Inline table: | somewhere not at start (rare, but you want inline support)

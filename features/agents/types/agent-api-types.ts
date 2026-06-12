@@ -154,6 +154,11 @@ export interface SystemInstruction {
   include_date?: boolean;
   include_code_guidelines?: boolean;
   include_safety_guidelines?: boolean;
+  /** Auto-injected context-awareness block (`<deferred_context_available>` +
+   *  scope/labels). Default true. Turn off for agents that should never receive
+   *  the deferred-context preamble. (Non-chat TTS/image/video models drop it
+   *  automatically server-side regardless of this flag.) */
+  include_context_block?: boolean;
   version?: string;
   category?: string;
   [key: string]: unknown;

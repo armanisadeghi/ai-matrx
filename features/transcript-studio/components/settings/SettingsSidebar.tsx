@@ -1,7 +1,12 @@
 "use client";
 
-import { Lightbulb, ListChecks, Settings2, X, Zap } from "lucide-react";
+import { Bot, Lightbulb, ListChecks, Settings2, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { useSetting } from "@/features/settings/hooks/useSetting";
+import { AUDIO_ASSISTANT_AGENT_ID } from "../../constants";
 import {
   Sheet,
   SheetContent,
@@ -51,27 +56,26 @@ export function SettingsSidebar({
         onOpenChange(next);
       }}
     >
-      <SheetContent
-        side="right"
-        className="w-[380px] overflow-y-auto pb-safe"
-      >
+      <SheetContent side="right" className="w-[380px] overflow-y-auto pb-safe">
         <SheetHeader className="space-y-1">
           <SheetTitle className="flex items-center gap-2 text-sm">
             <Settings2 className="h-4 w-4 text-muted-foreground" />
             Session settings
           </SheetTitle>
           <SheetDescription className="text-[11px]">
-            Per-session overrides. Saves automatically. Bounds are enforced
-            at the database level.
+            Per-session overrides. Saves automatically. Bounds are enforced at
+            the database level.
           </SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 flex flex-col gap-6">
+          {/* Audio assistant — the chat agent in the Agent / Live / Agent+ tabs */}
+          <SettingsGroup icon={Bot} title="Scribe assistant">
+            <DefaultAssistantAgentPicker />
+          </SettingsGroup>
+
           {/* Column 2 — cleaning */}
-          <SettingsGroup
-            icon={Zap}
-            title="Cleaned transcript (Column 2)"
-          >
+          <SettingsGroup icon={Zap} title="Cleaned transcript (Column 2)">
             <AgentShortcutPicker
               label="Cleaning agent"
               description="Polishes Column 1 text via the [[RESUME]] marker contract."
@@ -119,9 +123,7 @@ export function SettingsSidebar({
           <SettingsGroup icon={ListChecks} title="Module (Column 4)">
             <ModulePicker
               value={effective.moduleId}
-              onChange={(id) =>
-                update({ moduleId: id }, { immediate: true })
-              }
+              onChange={(id) => update({ moduleId: id }, { immediate: true })}
             />
             {moduleDef && (
               <>
@@ -170,6 +172,56 @@ interface SettingsGroupProps {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   children: React.ReactNode;
+}
+
+/**
+ * User-wide default agent for the Scribe audio assistant. New sessions start
+ * with this agent; each session can then switch on its own (the per-session
+ * choice lives on the session, not here). Null → the seeded default agent.
+ */
+function DefaultAssistantAgentPicker() {
+  const [agentId, setAgentId] = useSetting<string | null>(
+    "userPreferences.transcription.scribeAssistantAgentId",
+  );
+  const effectiveId = agentId ?? AUDIO_ASSISTANT_AGENT_ID;
+  const name = useAppSelector((s) => selectAgentById(s, effectiveId)?.name);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[11px] font-medium text-foreground">
+        Default agent
+      </label>
+      <div className="flex items-center gap-2">
+        <AgentListDropdown
+          onSelect={(id) => setAgentId(id)}
+          compact
+          triggerSlot={
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md border border-border/60 bg-background px-2 py-1.5 text-left transition-colors active:bg-accent"
+            >
+              <Bot className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <span className="truncate text-[12px] text-foreground">
+                {name ?? "Default assistant"}
+              </span>
+            </button>
+          }
+        />
+        {agentId && (
+          <button
+            type="button"
+            onClick={() => setAgentId(null)}
+            className="shrink-0 text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+          >
+            Reset
+          </button>
+        )}
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        Used for new sessions. Each session can change its own agent.
+      </p>
+    </div>
+  );
 }
 
 function SettingsGroup({ icon: Icon, title, children }: SettingsGroupProps) {

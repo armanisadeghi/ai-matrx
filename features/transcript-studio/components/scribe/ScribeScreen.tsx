@@ -41,6 +41,7 @@ import { ScribeCaptureScreen } from "./ScribeCaptureScreen";
 import { AssistantScreen } from "./AssistantScreen";
 import { ExperimentalAgentScreen } from "./ExperimentalAgentScreen";
 import { ScribeLiveScreen } from "./ScribeLiveScreen";
+import { AssistantAgentBar } from "./AssistantAgentBar";
 import { WorkingDocumentHeader } from "./WorkingDocumentHeader";
 import { VoicePlaybackButton } from "./VoicePlaybackButton";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
@@ -295,9 +296,10 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
         </div>
       </header>
 
-      {/* Working document — rendered once here so it sits at the top of EVERY
-          tab identically (Record / Agent / Live / …). Single shared instance;
-          tabs below never duplicate it. */}
+      {/* Assistant agent bar + working document — rendered once here so they
+          sit at the top of EVERY tab identically (Record / Agent / Live / …).
+          Single shared instances; tabs below never duplicate them. */}
+      <AssistantAgentBar sessionId={sessionId} />
       <WorkingDocumentHeader sessionId={sessionId} />
 
       {/* Body — all three modes stay mounted; switching tabs only flips
@@ -348,6 +350,7 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
               patch: { title: value.trim() },
             }),
           );
+          setRenameOpen(false);
         }}
       />
     </div>
