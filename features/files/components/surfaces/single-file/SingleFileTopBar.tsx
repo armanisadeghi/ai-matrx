@@ -213,8 +213,8 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
           <PdfSurfaceSwitcher
             current="file-viewer"
             fileId={fileId}
-            size="icon"
-            className="h-7 w-7 border-0"
+            size="sm"
+            className="mr-1"
           />
         )}
         {/* Show files — opens NavSidebar in a slide-out Sheet so the user

@@ -350,24 +350,34 @@ export default function PdfDocumentRenderer({
   // the `file` prop's identity changes, so memoise it. `remoteUrl`
   // wins when both are provided so the progressive path is the
   // forward-default.
+  // Retry support: bumping the nonce appends a query param, which gives
+  // pdfjs a NEW document identity AND a different cache key — so a retry
+  // bypasses a stale/broken service-worker cache entry instead of
+  // replaying the exact failed request.
+  const [retryNonce, setRetryNonce] = useState(0);
+
   const documentFile = useMemo(() => {
     if (remoteUrl) {
       const headers = remoteHeadersKey
         ? (JSON.parse(remoteHeadersKey) as Record<string, string>)
         : undefined;
+      const url =
+        retryNonce > 0
+          ? `${remoteUrl}${remoteUrl.includes("?") ? "&" : "?"}retry=${retryNonce}`
+          : remoteUrl;
       // pdfjs accepts `url + httpHeaders + withCredentials` here and
       // will issue partial-content Range requests against `url` rather
       // than a single full-body GET. The SW intercepts those requests
       // and serves cached bytes as 206 when available.
       return {
-        url: remoteUrl,
+        url,
         httpHeaders: headers,
         withCredentials,
       };
     }
     if (blobUrl) return { url: blobUrl };
     return null;
-  }, [remoteUrl, remoteHeadersKey, withCredentials, blobUrl]);
+  }, [remoteUrl, remoteHeadersKey, withCredentials, blobUrl, retryNonce]);
 
   // The "document identity" for the reset-on-new-document effect below.
   // Distinct from the memoised `documentFile` (whose identity tracks
@@ -642,7 +652,28 @@ export default function PdfDocumentRenderer({
           <p className="max-w-md text-xs text-muted-foreground break-words">
             {combinedError}
           </p>
+          {/* "Failed to fetch" is a network/CORS/service-worker error, not an
+            * HTTP status — say WHERE we tried so localhost-vs-prod backend
+            * confusion is visible at a glance. */}
+          {remoteUrl && String(combinedError).includes("Failed to fetch") ? (
+            <p className="max-w-md text-[10px] text-muted-foreground/80 break-words">
+              Couldn&apos;t reach{" "}
+              <span className="font-mono">{new URL(remoteUrl).host}</span> — if
+              you&apos;re on a dev build, check the backend is running; on a
+              long-lived tab, Retry bypasses the cached service worker.
+            </p>
+          ) : null}
         </div>
+        <button
+          type="button"
+          onClick={() => {
+            setLoadError(null);
+            setRetryNonce((n) => n + 1);
+          }}
+          className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
+        >
+          Retry
+        </button>
       </div>
     );
   }

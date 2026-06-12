@@ -24,7 +24,7 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
@@ -223,7 +223,10 @@ export function FilePreview({
         };
       }
     }
-    // PDF files get a shortcut to the PDF Extractor tool.
+    // PDF files: take THIS document to the extractor (resolve the linked
+    // processed_documents row via the canonical bridge). The old behavior
+    // opened the floating extractor window with no document context —
+    // the user landed nowhere near the file they were looking at.
     if (
       !openInRoute &&
       capability.previewKind === "pdf" &&
@@ -231,8 +234,17 @@ export function FilePreview({
     ) {
       openInRoute = {
         label: "Open in PDF Extractor",
-        onClick: () =>
-          dispatch(openOverlay({ overlayId: "pdfExtractorWindow" })),
+        onClick: () => {
+          void resolvePdfSurfaceIds({ fileId }).then(
+            ({ processedDocumentId }) => {
+              router.push(
+                processedDocumentId
+                  ? `/tools/pdf-extractor/${processedDocumentId}`
+                  : "/tools/pdf-extractor",
+              );
+            },
+          );
+        },
       };
     }
     // Image files get a shortcut to the full-screen Image Studio Edit mode.

@@ -24,6 +24,25 @@ const TTL_MS = 60_000;
 const cache = new Map<string, { at: number; ids: PdfSurfaceLinkIds }>();
 const inflight = new Map<string, Promise<PdfSurfaceLinkIds>>();
 
+/** One-shot resolver (exported for non-hook callers like action rows).
+ *  Same cache as the hook. */
+export async function resolvePdfSurfaceIds(opts: {
+  fileId?: string | null;
+  processedDocumentId?: string | null;
+}): Promise<PdfSurfaceLinkIds> {
+  const key = `${opts.fileId ?? ""}|${opts.processedDocumentId ?? ""}`;
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.ids;
+  let p = inflight.get(key);
+  if (!p) {
+    p = resolveIds(opts).finally(() => inflight.delete(key));
+    inflight.set(key, p);
+  }
+  const ids = await p;
+  cache.set(key, { at: Date.now(), ids });
+  return ids;
+}
+
 async function resolveIds(opts: {
   fileId?: string | null;
   processedDocumentId?: string | null;

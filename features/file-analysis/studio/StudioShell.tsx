@@ -157,7 +157,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
           {file?.meta.fileName ?? "Document"}{" "}
           <span className="text-muted-foreground">— Analysis Studio</span>
         </h1>
-        <PdfSurfaceSwitcher current="analysis-studio" fileId={fileId} size="icon" />
+        <PdfSurfaceSwitcher current="analysis-studio" fileId={fileId} size="sm" />
         {annotationPages.length ? (
           <button
             type="button"
