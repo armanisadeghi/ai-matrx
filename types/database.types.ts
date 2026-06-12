@@ -3971,6 +3971,79 @@ export type Database = {
         }
         Relationships: []
       }
+      cld_file_rag_jobs: {
+        Row: {
+          attempt_count: number
+          completed_at: string | null
+          created_at: string
+          error: Json | null
+          file_id: string
+          id: string
+          organization_id: string | null
+          scheduled_for: string
+          skipped_reason: string | null
+          started_at: string | null
+          status: string
+          trigger_source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          error?: Json | null
+          file_id: string
+          id?: string
+          organization_id?: string | null
+          scheduled_for?: string
+          skipped_reason?: string | null
+          started_at?: string | null
+          status?: string
+          trigger_source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          error?: Json | null
+          file_id?: string
+          id?: string
+          organization_id?: string | null
+          scheduled_for?: string
+          skipped_reason?: string | null
+          started_at?: string | null
+          status?: string
+          trigger_source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cld_file_rag_jobs_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cld_file_rag_jobs_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+          {
+            foreignKeyName: "cld_file_rag_jobs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cld_file_versions: {
         Row: {
           change_summary: string | null
@@ -21471,6 +21544,198 @@ export type Database = {
           {
             foreignKeyName: "ui_surface_parent_surface_name_fkey"
             columns: ["parent_surface_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
+      ui_surface_agent_pref: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          kind: string
+          organization_id: string | null
+          position: number
+          role_name: string
+          scope_id: string | null
+          settings: Json
+          surface_name: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          kind?: string
+          organization_id?: string | null
+          position?: number
+          role_name: string
+          scope_id?: string | null
+          settings?: Json
+          surface_name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          organization_id?: string | null
+          position?: number
+          role_name?: string
+          scope_id?: string | null
+          settings?: Json
+          surface_name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_surface_agent_pref_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agx_agent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ui_surface_agent_pref_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ui_surface_agent_pref_role_fkey"
+            columns: ["surface_name", "role_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface_agent_role"
+            referencedColumns: ["surface_name", "name"]
+          },
+          {
+            foreignKeyName: "ui_surface_agent_pref_scope_id_fkey"
+            columns: ["scope_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ui_surface_agent_role: {
+        Row: {
+          allow_custom: boolean
+          auto_run: string
+          created_at: string
+          default_agent_id: string | null
+          description: string
+          kind: string
+          label: string
+          max_agents: number
+          name: string
+          sort_order: number
+          surface_name: string
+          updated_at: string
+        }
+        Insert: {
+          allow_custom?: boolean
+          auto_run?: string
+          created_at?: string
+          default_agent_id?: string | null
+          description?: string
+          kind?: string
+          label?: string
+          max_agents?: number
+          name: string
+          sort_order?: number
+          surface_name: string
+          updated_at?: string
+        }
+        Update: {
+          allow_custom?: boolean
+          auto_run?: string
+          created_at?: string
+          default_agent_id?: string | null
+          description?: string
+          kind?: string
+          label?: string
+          max_agents?: number
+          name?: string
+          sort_order?: number
+          surface_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_surface_agent_role_default_agent_id_fkey"
+            columns: ["default_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agx_agent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ui_surface_agent_role_surface_name_fkey"
+            columns: ["surface_name"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
+      ui_surface_config: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          namespace: string
+          organization_id: string | null
+          scope_id: string | null
+          surface_name: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          namespace: string
+          organization_id?: string | null
+          scope_id?: string | null
+          surface_name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          namespace?: string
+          organization_id?: string | null
+          scope_id?: string | null
+          surface_name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_surface_config_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ui_surface_config_scope_id_fkey"
+            columns: ["scope_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ui_surface_config_surface_name_fkey"
+            columns: ["surface_name"]
             isOneToOne: false
             referencedRelation: "ui_surface"
             referencedColumns: ["name"]

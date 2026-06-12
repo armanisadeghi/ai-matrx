@@ -167,6 +167,7 @@ import { default as conversationFocusReducer } from "@/features/agents/redux/exe
 import { surfacesReducer } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { surfacesCatalogReducer } from "@/features/surfaces/redux/surfacesCatalogSlice";
 import { agentSurfaceBindingsReducer } from "@/features/surfaces/redux/agentSurfaceBindingsSlice";
+import { surfaceConfigReducer } from "@/features/surfaces/redux/surfaceConfigSlice";
 import agentAssistantMarkdownDraftReducer from "@/features/agents/redux/agent-assistant-markdown-draft.slice";
 import { default as netRequestsReducer } from "@/lib/redux/net/netRequestsSlice";
 import { default as netHealthReducer } from "@/lib/redux/net/netHealthSlice";
@@ -385,6 +386,7 @@ export const slimReducerMap = {
   // navigation registry above, which is misnamed; we'll rename it later).
   surfacesCatalog: surfacesCatalogReducer,
   agentSurfaceBindings: agentSurfaceBindingsReducer,
+  surfaceConfig: surfaceConfigReducer,
   agentAssistantMarkdownDraft: agentAssistantMarkdownDraftReducer,
 
   mcp: mcpReducer,

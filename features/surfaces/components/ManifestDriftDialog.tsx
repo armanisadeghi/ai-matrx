@@ -35,8 +35,8 @@ import {
 import type {
   SurfaceDriftReport,
   SurfaceValue,
-  SurfaceValueDrift,
   BrokenMapping,
+  UnknownNamespace,
 } from "@/features/surfaces/types";
 
 interface Props {
@@ -69,6 +69,10 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
     ? report.manifestsMissingInDb.length +
       report.dbValuesNotInManifest.length +
       report.diffs.length +
+      report.roleManifestsMissingInDb.length +
+      report.dbRolesNotInManifest.length +
+      report.roleDiffs.length +
+      report.unknownNamespaces.length +
       report.brokenAgentMappings.length
     : 0;
 
@@ -118,7 +122,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 {report.manifestsMissingInDb.map((d) => (
                   <DriftRow
                     key={`m-${d.surfaceName}-${d.valueName}`}
-                    drift={d}
+                    surfaceName={d.surfaceName}
+                    name={d.valueName}
                   />
                 ))}
               </Section>
@@ -132,7 +137,8 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 {report.dbValuesNotInManifest.map((d) => (
                   <DriftRow
                     key={`d-${d.surfaceName}-${d.valueName}`}
-                    drift={d}
+                    surfaceName={d.surfaceName}
+                    name={d.valueName}
                   />
                 ))}
               </Section>
@@ -146,8 +152,71 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
                 {report.diffs.map((d) => (
                   <DriftRow
                     key={`diff-${d.surfaceName}-${d.valueName}`}
-                    drift={d}
+                    surfaceName={d.surfaceName}
+                    name={d.valueName}
+                    diff={d.diff}
                     showDiff
+                  />
+                ))}
+              </Section>
+
+              <Section
+                title="Manifest roles missing from DB"
+                count={report.roleManifestsMissingInDb.length}
+                tone="amber"
+                description="Agent roles declared in code but not yet upserted. Sync to apply."
+              >
+                {report.roleManifestsMissingInDb.map((d) => (
+                  <DriftRow
+                    key={`rm-${d.surfaceName}-${d.roleName}`}
+                    surfaceName={d.surfaceName}
+                    name={d.roleName}
+                  />
+                ))}
+              </Section>
+
+              <Section
+                title="DB roles without a code manifest"
+                count={report.dbRolesNotInManifest.length}
+                tone="rose"
+                description='Stale agent roles. Sync with "Delete stale rows" to clean up — user/org agent prefs for these roles are swept too.'
+              >
+                {report.dbRolesNotInManifest.map((d) => (
+                  <DriftRow
+                    key={`rd-${d.surfaceName}-${d.roleName}`}
+                    surfaceName={d.surfaceName}
+                    name={d.roleName}
+                  />
+                ))}
+              </Section>
+
+              <Section
+                title="Role field-level diffs"
+                count={report.roleDiffs.length}
+                tone="orange"
+                description="Same role on both sides but fields differ. Sync to make DB match code."
+              >
+                {report.roleDiffs.map((d) => (
+                  <DriftRow
+                    key={`rdiff-${d.surfaceName}-${d.roleName}`}
+                    surfaceName={d.surfaceName}
+                    name={d.roleName}
+                    diff={d.diff}
+                    showDiff
+                  />
+                ))}
+              </Section>
+
+              <Section
+                title="Unknown config namespaces"
+                count={report.unknownNamespaces.length}
+                tone="rose"
+                description="Referenced in a manifest or ui_surface_config but not registered. Register a handler in namespace-registry.ts."
+              >
+                {report.unknownNamespaces.map((ns) => (
+                  <NamespaceRow
+                    key={`ns-${ns.source}-${ns.surfaceName ?? ""}-${ns.namespace}`}
+                    ns={ns}
                   />
                 ))}
               </Section>
@@ -242,35 +311,57 @@ function Section({
 }
 
 function DriftRow({
-  drift,
+  surfaceName,
+  name,
+  diff,
   showDiff = false,
 }: {
-  drift: SurfaceValueDrift;
+  surfaceName: string;
+  name: string;
+  diff?: Partial<Record<string, { manifest: unknown; db: unknown }>>;
   showDiff?: boolean;
 }) {
   return (
     <div className="px-2 py-1.5 text-[11px] space-y-0.5">
       <div className="flex items-center gap-2">
-        <span className="font-mono text-foreground">{drift.surfaceName}</span>
+        <span className="font-mono text-foreground">{surfaceName}</span>
         <span className="text-muted-foreground">·</span>
-        <span className="font-mono">{drift.valueName}</span>
+        <span className="font-mono">{name}</span>
       </div>
-      {showDiff && drift.diff && (
+      {showDiff && diff && (
         <div className="text-[10px] text-muted-foreground space-y-0.5 mt-0.5">
-          {Object.entries(drift.diff).map(([field, vals]) => (
+          {Object.entries(diff).map(([field, vals]) => (
             <div key={field} className="flex gap-2">
               <span className="font-mono">{field}:</span>
               <span>
                 code=
                 <code className="font-mono">
-                  {JSON.stringify(vals.manifest)}
+                  {JSON.stringify(vals?.manifest)}
                 </code>{" "}
-                db=<code className="font-mono">{JSON.stringify(vals.db)}</code>
+                db=<code className="font-mono">{JSON.stringify(vals?.db)}</code>
               </span>
             </div>
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function NamespaceRow({ ns }: { ns: UnknownNamespace }) {
+  return (
+    <div className="px-2 py-1.5 text-[11px] flex items-center gap-2 flex-wrap">
+      <Badge variant="outline" className="text-[10px]">
+        {ns.source}
+      </Badge>
+      {ns.surfaceName && (
+        <>
+          <span className="font-mono text-foreground">{ns.surfaceName}</span>
+          <span className="text-muted-foreground">·</span>
+        </>
+      )}
+      <span className="font-mono">{ns.namespace}</span>
+      <span className="text-muted-foreground">has no registered handler</span>
     </div>
   );
 }

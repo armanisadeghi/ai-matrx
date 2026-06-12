@@ -501,6 +501,9 @@ export async function syncManifests(
 ): Promise<{
   upserted: { surfaceName: string; valueName: string }[];
   deleted: { surfaceName: string; valueName: string }[];
+  roleUpserted: { surfaceName: string; roleName: string }[];
+  roleDeleted: { surfaceName: string; roleName: string }[];
+  sweptPrefCount: number;
   skippedMissingSurface: string[];
   driftAfter: SurfaceDriftReport;
 }> {
@@ -517,6 +520,9 @@ export async function syncManifests(
     result: {
       upserted: { surfaceName: string; valueName: string }[];
       deleted: { surfaceName: string; valueName: string }[];
+      roleUpserted: { surfaceName: string; roleName: string }[];
+      roleDeleted: { surfaceName: string; roleName: string }[];
+      sweptPrefCount: number;
       skippedMissingSurface: string[];
       driftAfter: SurfaceDriftReport;
     };

@@ -60,6 +60,49 @@ export interface SurfaceValue {
 }
 
 // ---------------------------------------------------------------------------
+// SurfaceAgentRole — a named agent position a surface uses.
+// ---------------------------------------------------------------------------
+
+/**
+ * Declared in manifests, mirrored to `public.ui_surface_agent_role` by
+ * manifest sync (same lifecycle as SurfaceValue). A role is somewhere the
+ * surface PLUGS IN an agent: cleanup's `clean` + `custom_slot`, scribe's
+ * `assistant`. The manifest's `defaultAgentId` is the platform default;
+ * users/orgs override via `ui_surface_agent_pref` rows (selection per role,
+ * resolved global → org-by-membership → user).
+ */
+export interface SurfaceAgentRole {
+  /** lower_snake_case, unique per surface (e.g. `clean`, `custom_slot`). */
+  name: string;
+  label: string;
+  description: string;
+  /** `single` = one agent fills it; `multi` = ordered positions (slots). */
+  kind: "single" | "multi";
+  /** Platform default agent id (system-owned UUID). Null = starts empty. */
+  defaultAgentId: string | null;
+  /** kind="multi" only — max concurrent positions. Defaults to 1. */
+  maxAgents?: number;
+  /** User may slot ANY agent (true, default) vs roster/system agents only. */
+  allowCustom?: boolean;
+  /** Auto-run semantics for agents in this role. Default "user-choice". */
+  autoRun?: "always" | "never" | "user-choice";
+  sortOrder?: number;
+}
+
+/**
+ * A config namespace the surface consumes from `public.ui_surface_config`
+ * (dictionary, session_defaults, …). Code-only declaration — the handler
+ * (validate/merge/empty) is registered in
+ * `features/surfaces/config/namespace-registry.ts`.
+ */
+export interface SurfaceConfigNamespaceDecl {
+  /** Must exist in the namespace registry. */
+  namespace: string;
+  label: string;
+  description: string;
+}
+
+// ---------------------------------------------------------------------------
 // SurfaceManifest — what a single surface declares.
 // ---------------------------------------------------------------------------
 
@@ -68,6 +111,10 @@ export interface SurfaceManifest {
   surfaceName: string;
   /** Flat list of SurfaceValues this surface declares. */
   values: readonly SurfaceValue[];
+  /** Agent positions this surface uses. Mirrored to ui_surface_agent_role. */
+  agentRoles?: readonly SurfaceAgentRole[];
+  /** Config namespaces this surface consumes (code-only declaration). */
+  configNamespaces?: readonly SurfaceConfigNamespaceDecl[];
 }
 
 // ---------------------------------------------------------------------------
@@ -136,6 +183,27 @@ export interface SurfaceValueDrift {
   diff?: Partial<Record<keyof SurfaceValue, { manifest: unknown; db: unknown }>>;
 }
 
+/** Single drift entry for a SurfaceAgentRole not synced between code and DB. */
+export interface SurfaceAgentRoleDrift {
+  surfaceName: string;
+  roleName: string;
+  /** `manifest_only` = code has it, DB doesn't. `db_only` = DB has it, code doesn't. `diff` = both have it but fields differ. */
+  kind: "manifest_only" | "db_only" | "diff";
+  /** Field-level diff when `kind === "diff"`. */
+  diff?: Partial<
+    Record<keyof SurfaceAgentRole, { manifest: unknown; db: unknown }>
+  >;
+}
+
+/** A config namespace referenced somewhere but missing a registered handler. */
+export interface UnknownNamespace {
+  namespace: string;
+  /** `manifest` = declared in a manifest's `configNamespaces`. `db` = present on `ui_surface_config` rows. */
+  source: "manifest" | "db";
+  /** Declaring surface (manifest side only — DB rows are reported per distinct namespace). */
+  surfaceName?: string;
+}
+
 /** Single broken-mapping entry — a JSONB mapping references a target that no longer exists. */
 export interface BrokenMapping {
   /** The kind of binding whose mapping is broken. */
@@ -159,6 +227,14 @@ export interface SurfaceDriftReport {
   dbValuesNotInManifest: SurfaceValueDrift[];
   /** Surface values present in both but with diverging field values. */
   diffs: SurfaceValueDrift[];
+  /** Agent roles that exist in code manifests but not in DB. */
+  roleManifestsMissingInDb: SurfaceAgentRoleDrift[];
+  /** Agent roles that exist in DB but no longer in any code manifest. */
+  dbRolesNotInManifest: SurfaceAgentRoleDrift[];
+  /** Agent roles present in both but with diverging field values. */
+  roleDiffs: SurfaceAgentRoleDrift[];
+  /** Config namespaces referenced (manifest or `ui_surface_config`) without a registered handler. */
+  unknownNamespaces: UnknownNamespace[];
   /** Broken `surface_value` mappings in `agx_agent_surface.value_mappings`. */
   brokenAgentMappings: BrokenMapping[];
 }

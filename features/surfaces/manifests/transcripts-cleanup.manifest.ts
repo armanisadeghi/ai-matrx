@@ -367,6 +367,40 @@ export const transcriptsCleanupManifest: SurfaceManifest = {
     pickBaseline("selection", "text_before", "text_after", "content", "context"),
     surfaceSpecific,
   ),
+  agentRoles: [
+    {
+      name: "clean",
+      label: "Cleaning agent",
+      description:
+        "Produces the cleaned transcript from the raw transcript (the Clean container). Runs on mic completion and via the Clean Up button.",
+      kind: "single",
+      // Platform default: "Transcription Cleaner Context Slots" (system agent).
+      defaultAgentId: "9cae3831-9895-4ddb-97cd-2ded3d3f443b",
+      allowCustom: true,
+      autoRun: "user-choice",
+      sortOrder: 10,
+    },
+    {
+      name: "custom_slot",
+      label: "Custom output slot",
+      description:
+        "User-chosen agents producing additional outputs from the raw or cleaned text (the Custom column, up to 3 slots).",
+      kind: "multi",
+      defaultAgentId: null,
+      maxAgents: 3,
+      allowCustom: true,
+      autoRun: "user-choice",
+      sortOrder: 20,
+    },
+  ],
+  configNamespaces: [
+    {
+      namespace: "dictionary",
+      label: "Dictionary",
+      description:
+        "Term corrections and pronunciations applied during cleaning (org + user layers merged).",
+    },
+  ],
 };
 
 /** Type-safe scope builder for the cleanup page. */

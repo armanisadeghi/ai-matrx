@@ -36,12 +36,16 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
     try {
       const res = await syncManifests({ deleteStale, createMissingSurfaces });
       setResult(res);
-      const changeCount = res.upserted.length + res.deleted.length;
+      const changeCount =
+        res.upserted.length +
+        res.deleted.length +
+        res.roleUpserted.length +
+        res.roleDeleted.length;
       if (changeCount === 0) {
         toast.success("Already in sync — no changes applied.");
       } else {
         toast.success(
-          `Sync applied: ${res.upserted.length} upserted, ${res.deleted.length} deleted`,
+          `Sync applied: ${res.upserted.length + res.roleUpserted.length} upserted, ${res.deleted.length + res.roleDeleted.length} deleted`,
         );
       }
     } catch (e) {
@@ -63,7 +67,8 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
             <p className="text-muted-foreground">
               Applies the code-side{" "}
               <code className="font-mono">SurfaceManifest</code> declarations to
-              the <code className="font-mono">ui_surface_value</code> table.
+              the <code className="font-mono">ui_surface_value</code> and{" "}
+              <code className="font-mono">ui_surface_agent_role</code> tables.
               Rows are upserted to match code exactly; nothing else changes.
             </p>
             <label className="flex items-start gap-2 cursor-pointer">
@@ -77,8 +82,11 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
                 <div className="font-medium">Delete stale rows</div>
                 <p className="text-[11px] text-muted-foreground">
                   Remove DB <code className="font-mono">ui_surface_value</code>{" "}
-                  rows for values no longer declared in any registered manifest.
-                  Safe; tools and agents are unaffected.
+                  and <code className="font-mono">ui_surface_agent_role</code>{" "}
+                  rows no longer declared in any registered manifest. Deleting
+                  a role also sweeps its{" "}
+                  <code className="font-mono">ui_surface_agent_pref</code> rows
+                  (FK cascade); the count is reported below.
                 </p>
               </div>
             </label>
@@ -118,6 +126,20 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
               <span className="tabular-nums font-mono">
                 {result.deleted.length}
               </span>
+              <span className="text-muted-foreground">Roles upserted:</span>
+              <span className="tabular-nums font-mono">
+                {result.roleUpserted.length}
+              </span>
+              <span className="text-muted-foreground">Roles deleted:</span>
+              <span className="tabular-nums font-mono">
+                {result.roleDeleted.length}
+              </span>
+              <span className="text-muted-foreground">
+                Agent prefs swept:
+              </span>
+              <span className="tabular-nums font-mono">
+                {result.sweptPrefCount}
+              </span>
               <span className="text-muted-foreground">Surfaces skipped:</span>
               <span className="tabular-nums font-mono">
                 {result.skippedMissingSurface.length}
@@ -127,6 +149,10 @@ export function ManifestSyncDialog({ onClose, onSynced }: Props) {
                 {result.driftAfter.manifestsMissingInDb.length +
                   result.driftAfter.dbValuesNotInManifest.length +
                   result.driftAfter.diffs.length +
+                  result.driftAfter.roleManifestsMissingInDb.length +
+                  result.driftAfter.dbRolesNotInManifest.length +
+                  result.driftAfter.roleDiffs.length +
+                  result.driftAfter.unknownNamespaces.length +
                   result.driftAfter.brokenAgentMappings.length}
               </span>
             </div>
