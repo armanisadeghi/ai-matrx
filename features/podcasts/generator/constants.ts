@@ -171,6 +171,13 @@ export const YOUTUBE_RESEARCH_AGENT_ID = "7402d782-81ea-4765-bb24-d08a639c4aa8";
 
 export const HOST_COUNT_DEFAULT = 2;
 
+/** A website scrape must yield at least this many characters to count as a
+ *  SUCCESSFUL scrape (a thinner result is a failed/blocked scrape, not thin
+ *  content — surfaced with a distinct error). Pairs with the server's
+ *  `_MIN_CONTENT_CHARS` (1000) content gate; the scrape bar is higher because a
+ *  real article page yields far more than 2000 chars of body text. */
+export const MIN_SCRAPE_CHARS = 2000;
+
 /** Default focus steer passed to the Web Content Extractor (empty = no steer). */
 export const DEFAULT_EXTRACTOR_FOCUS = "";
 

@@ -26,6 +26,7 @@ import {
   YOUTUBE_RESEARCH_AGENT_ID,
   DEFAULT_EXTRACTOR_FOCUS,
   DEFAULT_YOUTUBE_TIMESTAMP_INSTRUCTION,
+  MIN_SCRAPE_CHARS,
 } from "./constants";
 
 export interface UseSourceResolvers {
@@ -66,6 +67,17 @@ export function useSourceResolvers(): UseSourceResolvers {
       const raw = scraped?.textContent?.trim();
       if (!raw) {
         throw new Error("The page returned no readable text to clean.");
+      }
+      // A successful scrape returns substantial page text. Under ~2000 chars
+      // means the scrape FAILED (JS-only page, paywall, bot block) — that's a
+      // different problem from "thin content", so we stop here with a clear
+      // message rather than feeding a near-empty page to the script writer.
+      if (raw.length < MIN_SCRAPE_CHARS) {
+        throw new Error(
+          `That page only yielded ${raw.length} characters — likely a failed or ` +
+            `blocked scrape (paywall, login wall, or a JS-only page). Try a ` +
+            `different URL, or paste the content directly.`,
+        );
       }
       const cleaned = await run({
         agentId: WEB_CONTENT_EXTRACTOR_AGENT_ID,
