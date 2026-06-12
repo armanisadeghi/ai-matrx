@@ -26,6 +26,18 @@ export type WorkbookSnapshotOrigin =
   | "imported"
   | "restored";
 
+// ─── documents (mirror of workbooks; Univer preset-docs-core surface) ────────
+
+export type DocumentRow = T["udt_documents"]["Row"];
+export type DocumentInsert = T["udt_documents"]["Insert"];
+export type DocumentUpdate = T["udt_documents"]["Update"];
+
+export type DocumentSnapshot = T["udt_document_snapshots"]["Row"];
+export type DocumentSnapshotInsert = T["udt_document_snapshots"]["Insert"];
+
+/** Same advisory enum as workbooks — string column in the DB. */
+export type DocumentSnapshotOrigin = WorkbookSnapshotOrigin;
+
 export type Dataset = T["udt_datasets"]["Row"];
 export type DatasetInsert = T["udt_datasets"]["Insert"];
 export type DatasetUpdate = T["udt_datasets"]["Update"];
@@ -45,6 +57,7 @@ export type RowVersion = T["udt_dataset_row_versions"]["Row"];
 export type FieldDataType = E["field_data_type"];
 export type RowChangeKind = E["row_change_kind"];
 export type WorkbookSource = E["workbook_source"];
+export type DocumentSource = E["document_source"];
 export type PermissionLevel = E["permission_level"];
 
 export const FIELD_DATA_TYPES: readonly FieldDataType[] = [

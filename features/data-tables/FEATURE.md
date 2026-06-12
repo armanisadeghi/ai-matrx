@@ -373,6 +373,28 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-06-12` — claude: **Cloud Documents surface launched (`/documents`)**. Sibling to
+  `/workbooks` — same architecture, Univer's `preset-docs-core` instead of
+  `preset-sheets-core`. New DB tables `udt_documents` + `udt_document_snapshots`
+  (migration `udt_v2_documents.sql`, applied live) — RLS + shareable_resource_registry
+  entry + supabase_realtime publication mirror workbooks 1:1. New
+  `document_source` enum: `created | imported_docx | imported_md | imported_txt`.
+  New service: `features/data-tables/document-service.ts` (mirror of
+  `workbook-service.ts`). New hook: `useDocumentRealtime`. New components:
+  `DocumentEditor.tsx`, `DocumentHistoryViewer.tsx`. New routes:
+  `app/(core)/documents/{layout,page,[id]/page}.tsx` — auth-gated, dynamic-import
+  the editor with `ssr:false` (Univer needs `window`). New landing:
+  `features/auth/components/module-landing/landings/DocumentsLanding.tsx`. Nav
+  entry added in `features/shell/constants/nav-data.ts` (icon `FileText`).
+  Permission registry mirror updated (`utils/permissions/registry.ts`).
+  **Collab reused, not duplicated:** `SupabaseYjsProvider` gained an optional
+  `channelPrefix` (default `"workbook"`); docs pass `"document"` so the
+  channel becomes `yjs:document:<id>`. `WorkbookCollabSession` itself is
+  resource-id-agnostic — `documentId` flows through its `workbookId` slot.
+  Future rename to `UniverCollabSession` tracked as tech debt; the current
+  shape works on the docs ICommandService unchanged because Univer exposes a
+  single command service for both presets and `onMutationExecutedForCollab`
+  fires on docs mutations the same way.
 - `2026-06-06` — claude: **Final-pass closeout — retention policy + FK to cld_files + smart importer**.
   Decisions locked with the user: Wave H = keep latest 2 OR within 14 days (weekly pg_cron);
   aidream attribution stays NULL (honest); CRDT collab v2 green-lit but scoped to "after the

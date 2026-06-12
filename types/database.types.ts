@@ -20945,6 +20945,107 @@ export type Database = {
           },
         ]
       }
+      udt_document_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document_id: string
+          id: string
+          label: string | null
+          origin: string
+          snapshot: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document_id: string
+          id?: string
+          label?: string | null
+          origin?: string
+          snapshot: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document_id?: string
+          id?: string
+          label?: string | null
+          origin?: string
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_document_snapshots_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "udt_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      udt_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          document_name: string
+          id: string
+          is_public: boolean
+          metadata: Json | null
+          organization_id: string | null
+          original_file_id: string | null
+          project_id: string | null
+          source: Database["public"]["Enums"]["document_source"]
+          task_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          document_name: string
+          id?: string
+          is_public?: boolean
+          metadata?: Json | null
+          organization_id?: string | null
+          original_file_id?: string | null
+          project_id?: string | null
+          source?: Database["public"]["Enums"]["document_source"]
+          task_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          document_name?: string
+          id?: string
+          is_public?: boolean
+          metadata?: Json | null
+          organization_id?: string | null
+          original_file_id?: string | null
+          project_id?: string | null
+          source?: Database["public"]["Enums"]["document_source"]
+          task_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "udt_documents_original_file_id_fkey"
+            columns: ["original_file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "udt_documents_original_file_id_fkey"
+            columns: ["original_file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+        ]
+      }
       udt_picklist_items: {
         Row: {
           created_at: string
@@ -30577,6 +30678,11 @@ export type Database = {
         | "LocalEvents"
         | "NeedNewOption"
         | "none"
+      document_source:
+        | "created"
+        | "imported_docx"
+        | "imported_md"
+        | "imported_txt"
       field_data_type:
         | "string"
         | "number"
@@ -31331,6 +31437,12 @@ export const Constants = {
         "LocalEvents",
         "NeedNewOption",
         "none",
+      ],
+      document_source: [
+        "created",
+        "imported_docx",
+        "imported_md",
+        "imported_txt",
       ],
       field_data_type: [
         "string",
