@@ -77,7 +77,13 @@ export interface KgGraphCanvasProps {
 
 const ALL_KINDS = "__all__";
 
-const SELECT_TRIGGER = "h-8 w-[150px] text-xs";
+// `shrink-0` is load-bearing: the toolbar is an `overflow-x-auto` flex row that
+// is supposed to scroll horizontally on narrow screens. Without it, flexbox
+// crushes these fixed-width controls to fit the viewport — collapsing the
+// selects to icon-only squares and squeezing labels into vertical 1-char columns
+// (the mobile bug this file's toolbar comment warns about). Non-shrinking
+// children force the row to overflow and scroll instead.
+const SELECT_TRIGGER = "h-8 w-[150px] shrink-0 text-xs";
 
 // The shadcn SelectTrigger applies `[&>span]:line-clamp-1`, which forces
 // `display:-webkit-box; -webkit-box-orient:vertical` onto the trigger's direct
@@ -217,13 +223,13 @@ export function KgGraphCanvas({
           reflows the row; the variable node/edge count truncates instead of
           pushing the controls. Overflows to a horizontal scroll on narrow widths. */}
       <div className="flex items-center gap-2 overflow-x-auto border-b border-border bg-card px-3 py-2">
-        <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-          <Network className="h-4 w-4 text-primary" />
+        <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-medium text-foreground">
+          <Network className="h-4 w-4 shrink-0 text-primary" />
           {mode === "org" ? "Knowledge graph" : "Scope neighborhood"}
         </div>
 
         {status === "ready" ? (
-          <span className="min-w-0 shrink truncate whitespace-nowrap text-xs text-muted-foreground">
+          <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
             {nodeCount} node{nodeCount === 1 ? "" : "s"} · {edgeCount} edge
             {edgeCount === 1 ? "" : "s"}
             {payload?.truncated ? (
@@ -263,7 +269,7 @@ export function KgGraphCanvas({
           ) : null}
 
           {/* Search */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
@@ -405,10 +411,10 @@ export function KgGraphCanvas({
 
           <button
             onClick={() => setReloadKey((n) => n + 1)}
-            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="inline-flex h-8 shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
             title="Reload graph"
           >
-            <RefreshCw className="h-3.5 w-3.5" /> Reload
+            <RefreshCw className="h-3.5 w-3.5 shrink-0" /> Reload
           </button>
         </div>
       </div>
