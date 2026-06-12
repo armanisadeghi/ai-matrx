@@ -96,7 +96,7 @@ export function AgentSettingsModalTrigger({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[88vh] flex flex-col gap-0 p-0">
+        <DialogContent className="max-w-lg max-h-[88dvh] flex flex-col gap-0 p-0">
           <DialogHeader className="px-4 py-3 border-b shrink-0">
             <DialogTitle className="text-sm">Model Settings</DialogTitle>
           </DialogHeader>

@@ -86,7 +86,7 @@ const AnimatedFormModal: React.FC<AnimatedFormModalProps & { className?: string 
                                 "bg-background p-6 rounded-lg shadow-xl max-w-md w-full relative z-10 overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary",
                                 className
                             )} // Added overflow-y-auto and scrollbar styles for scrollable content
-                            style={{ maxHeight: "90vh" }} // Set max height to 90% of the viewport height to ensure modal is contained within the viewport
+                            style={{ maxHeight: "90dvh" }} // Set max height to 90% of the viewport height to ensure modal is contained within the viewport
                             {...props}
                         >
                             <button
@@ -95,7 +95,7 @@ const AnimatedFormModal: React.FC<AnimatedFormModalProps & { className?: string 
                             >
                                 &times;
                             </button>
-                            <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary max-h-[70vh]"> {/* Ensure form content can scroll */}
+                            <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-primary max-h-[70dvh]"> {/* Ensure form content can scroll */}
                                 <AnimatedForm
                                     fields={fields}
                                     formState={internalFormState}

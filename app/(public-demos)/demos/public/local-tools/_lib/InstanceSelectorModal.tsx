@@ -391,7 +391,7 @@ export function InstanceSelectorModal({ open, onClose, currentUrl, onSelectUrl }
 
     return (
         <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0">
+            <DialogContent className="max-w-2xl max-h-[85dvh] flex flex-col p-0 gap-0">
                 <DialogHeader className="px-4 pt-4 pb-3 border-b shrink-0">
                     <div className="flex items-center justify-between">
                         <DialogTitle className="text-base font-semibold">Select Engine Instance</DialogTitle>

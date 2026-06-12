@@ -497,7 +497,7 @@ ${wordPressCSS}
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-textured rounded-lg shadow-xl max-w-[90vw] max-w-[1400px] w-full h-[90vh] flex flex-col">
+      <div className="bg-textured rounded-lg shadow-xl max-w-[90vw] max-w-[1400px] w-full h-[90dvh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">

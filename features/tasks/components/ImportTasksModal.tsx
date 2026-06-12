@@ -298,7 +298,7 @@ export default function ImportTasksModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl h-full max-h-[70vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-2xl h-full max-h-[70dvh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckSquare className="h-5 w-5" />

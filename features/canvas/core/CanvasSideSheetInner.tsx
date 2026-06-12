@@ -144,7 +144,7 @@ export function CanvasSideSheetInner() {
         style={{
           width: isMobile ? "100%" : `${width}px`,
           maxWidth: isMobile ? "100%" : `${width}px`,
-          height: isMobile ? "100dvh" : "100vh",
+          height: isMobile ? "100dvh" : "100dvh",
           zIndex: 10000,
         }}
         onPointerDownOutside={(e) => {

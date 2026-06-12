@@ -321,7 +321,7 @@ export default function ProviderReferenceModal({ providers, onClose }: Props) {
         left: position.x,
         top: position.y,
         width: 520,
-        height: "min(600px, 75vh)",
+        height: "min(600px, 75dvh)",
         zIndex: 9999,
       }}
       className="flex flex-col bg-card border rounded-lg shadow-2xl overflow-hidden"

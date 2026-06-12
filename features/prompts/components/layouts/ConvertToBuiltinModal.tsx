@@ -1006,7 +1006,7 @@ export function ConvertToBuiltinModal({
   return (
     <Dialog open={isOpen} onOpenChange={handleResetAndClose}>
       <DialogContent 
-        className="max-w-2xl max-h-[90vh] flex flex-col p-0"
+        className="max-w-2xl max-h-[90dvh] flex flex-col p-0"
         onPointerDownOutside={(e) => isProcessing && e.preventDefault()}
       >
         <DialogHeader className="px-4 pt-3 pb-2 border-b">

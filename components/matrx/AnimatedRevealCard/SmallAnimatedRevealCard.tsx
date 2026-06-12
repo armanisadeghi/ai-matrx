@@ -144,7 +144,7 @@ const SmallAnimatedRevealCard: React.FC<SmallAnimatedRevealCardProps> = ({
       </div>
       {Component && isComponentVisible && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-textured p-4 rounded-lg max-w-xl w-full max-h-[80vh] overflow-auto">
+          <div className="bg-textured p-4 rounded-lg max-w-xl w-full max-h-[80dvh] overflow-auto">
             <Component />
             <button
               className="mt-4 px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"

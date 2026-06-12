@@ -136,7 +136,7 @@ const SearchableSelectFieldConcept: React.FC<CommonFieldProps> = ({
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <ScrollArea className="h-72 max-h-[60vh]">
+                        <ScrollArea className="h-72 max-h-[60dvh]">
                             <div className="p-1">
                                 {filteredOptions.length === 0 ? (
                                     <div className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">No options found.</div>

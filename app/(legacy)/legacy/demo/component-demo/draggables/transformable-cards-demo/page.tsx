@@ -74,7 +74,7 @@ export default function TransformableCardsDemo() {
   
   return (
     <DraggableCardProvider>
-      <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 p-8 pb-32 overflow-hidden">
+      <div className="w-full min-h-dvh bg-gray-50 dark:bg-gray-900 p-8 pb-32 overflow-hidden">
         <h1 className="text-2xl font-bold mb-2 text-gray-800 dark:text-gray-200">
           Transformable Cards Demo
         </h1>

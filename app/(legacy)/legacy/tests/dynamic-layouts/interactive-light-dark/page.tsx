@@ -155,7 +155,7 @@ const LayoutDemoPage = () => {
     const previewContainerClass = layoutConfig?.parentContainer ?? 'bg-elevation1 rounded-lg p-3 border border-border shadow-sm';
 
     return (
-        <div className="min-h-screen bg-background text-foreground p-3">
+        <div className="min-h-dvh bg-background text-foreground p-3">
             {/* Controls */}
             <Card className="mb-3 border-border bg-card">
                 <div className="p-4">

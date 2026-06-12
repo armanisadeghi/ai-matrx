@@ -64,12 +64,12 @@ export const getPanelConfig = (
                 width: `${isFullScreen ? 100 : size}vw`,
                 maxWidth: `${maxSize}vw`,
                 minWidth: `${minSize}vw`,
-                height: '100vh'
+                height: '100dvh'
             },
             resizableGroup: {
                 direction: 'horizontal',
                 style: {
-                    height: '100vh',
+                    height: '100dvh',
                     width: `${isFullScreen ? 100 : size}vw`, // Match container width
                     touchAction: 'none',
                     userSelect: 'none',
@@ -82,7 +82,7 @@ export const getPanelConfig = (
             },
             content: {
                 border: 'border-r',
-                height: 'calc(100vh - 48px)',
+                height: 'calc(100dvh - 48px)',
                 scrollDirection: 'pan-y'
             },
             chevrons: {
@@ -110,12 +110,12 @@ export const getPanelConfig = (
                 width: `${isFullScreen ? 100 : size}vw`,
                 maxWidth: `${maxSize}vw`,
                 minWidth: `${minSize}vw`,
-                height: '100vh'
+                height: '100dvh'
             },
             resizableGroup: {
                 direction: 'horizontal',
                 style: {
-                    height: '100vh',
+                    height: '100dvh',
                     width: '100%',
                     touchAction: 'none',
                     userSelect: 'none',
@@ -128,7 +128,7 @@ export const getPanelConfig = (
             },
             content: {
                 border: 'border-l',
-                height: 'calc(100vh - 48px)',
+                height: 'calc(100dvh - 48px)',
                 scrollDirection: 'pan-y'
             },
             chevrons: {
@@ -174,7 +174,7 @@ export const getPanelConfig = (
             },
             content: {
                 border: 'border-b',
-                height: 'calc(100vh - 48px)',
+                height: 'calc(100dvh - 48px)',
                 scrollDirection: 'pan-x'
             },
             chevrons: {
@@ -220,7 +220,7 @@ export const getPanelConfig = (
             },
             content: {
                 border: 'border-t',
-                height: 'calc(100vh - 48px)',
+                height: 'calc(100dvh - 48px)',
                 scrollDirection: 'pan-x'
             },
             chevrons: {

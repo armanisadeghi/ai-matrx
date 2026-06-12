@@ -533,7 +533,7 @@ const EventsViewer: React.FC<ViewerProps> = ({
   // Error state
   if (!data?.success && data?.errors) {
     return (
-      <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-screen">
+      <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-dvh">
         <div className="max-w-full px-2 sm:px-4 lg:px-6 py-4">
           <Card title="Error">
             <div className="text-red-500 p-4">{data?.errors}</div>
@@ -546,7 +546,7 @@ const EventsViewer: React.FC<ViewerProps> = ({
   // Loading state
   if (!data?.data) {
     return (
-      <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-screen">
+      <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-dvh">
         <div className="max-w-full px-2 sm:px-4 lg:px-6 py-4">
           <Card title="Loading">
             <div className="text-gray-500 p-4">Loading events data...</div>
@@ -557,7 +557,7 @@ const EventsViewer: React.FC<ViewerProps> = ({
   }
 
   return (
-    <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-screen">
+    <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-dvh">
       <div className="max-w-full px-2 sm:px-4 lg:px-6 py-4">
         {/* Hero section with compact design for overlay */}
         <div className="mb-6 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl shadow-lg overflow-hidden">

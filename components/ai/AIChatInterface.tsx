@@ -77,7 +77,7 @@ const AIChatInterface: React.FC<AIChatInterfaceProps> = ({
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
         >
           <motion.div
-            className="w-full max-w-2xl h-[80vh] bg-zinc-900 rounded-lg shadow-xl overflow-hidden"
+            className="w-full max-w-2xl h-[80dvh] bg-zinc-900 rounded-lg shadow-xl overflow-hidden"
             layoutId="expandable-card"
           >
             <div className="flex flex-col h-full">

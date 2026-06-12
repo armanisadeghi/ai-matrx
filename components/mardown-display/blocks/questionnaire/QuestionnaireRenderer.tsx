@@ -655,7 +655,7 @@ const DebugDisplay = ({ debugMode, formState, questionData }) => {
         </button>
       </CardHeader>
       <CardContent>
-        <pre className="bg-slate-100 dark:bg-slate-900 p-4 rounded-lg overflow-auto max-h-[calc(100vh-20rem)] text-sm whitespace-pre-wrap break-all">
+        <pre className="bg-slate-100 dark:bg-slate-900 p-4 rounded-lg overflow-auto max-h-[calc(100dvh-20rem)] text-sm whitespace-pre-wrap break-all">
           {JSON.stringify(debugData, null, 2)}
         </pre>
       </CardContent>

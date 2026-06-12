@@ -112,7 +112,7 @@ const AppletSelectCreateOverlay: React.FC<AppletSelectCreateOverlayProps> & {
                 <DialogContent
                     className={`
                     p-0 border-gray-200 dark:border-gray-700
-                    ${isFullscreen ? "w-screen h-screen max-w-none rounded-none" : "max-w-[80vw] h-[80vh]"}
+                    ${isFullscreen ? "w-screen h-dvh max-w-none rounded-none" : "max-w-[80vw] h-[80dvh]"}
                 `}
                 >
                     <DialogHeader className="px-6 py-4 border-b border-border">

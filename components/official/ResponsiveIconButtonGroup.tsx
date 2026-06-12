@@ -138,7 +138,7 @@ export function ResponsiveIconButtonGroup({
                         <SheetTitle>{sheetTitle}</SheetTitle>
                     </SheetHeader>
 
-                    <div className="mt-4 space-y-2 max-h-[60vh] overflow-y-auto">
+                    <div className="mt-4 space-y-2 max-h-[60dvh] overflow-y-auto">
                         {visibleButtons.map((button) => {
                             // Custom render function for mobile
                             if (button.render) {

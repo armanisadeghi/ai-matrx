@@ -365,7 +365,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
         className={cn(
           "w-full my-4 rounded-t-xl rounded-b-lg overflow-hidden border border-neutral-200 dark:border-neutral-700",
           isFullScreen &&
-            "fixed w-[95vw] h-[90vh] z-[9999] bg-textured flex flex-col shadow-2xl rounded-xl overflow-hidden",
+            "fixed w-[95vw] h-[90dvh] z-[9999] bg-textured flex flex-col shadow-2xl rounded-xl overflow-hidden",
           className,
         )}
         style={
@@ -432,7 +432,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
                 mode={mode}
                 height={
                   isFullScreen
-                    ? "calc(100vh - 15rem)"
+                    ? "calc(100dvh - 15rem)"
                     : `${Math.max(400, code.split("\n").length * 20 + 100)}px`
                 }
                 showCopyButton={false}

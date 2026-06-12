@@ -644,7 +644,7 @@ const UnifiedBookmarkManager: React.FC<UnifiedBookmarkManagerProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[1200px] max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[1200px] max-h-[90dvh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Bookmark Manager</DialogTitle>
           </DialogHeader>

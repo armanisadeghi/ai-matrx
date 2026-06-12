@@ -32,7 +32,7 @@ export default function SearchConsolePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 p-6">
             <div className="space-y-6">
                 {/* Header */}
                 <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-700 dark:to-emerald-700 p-6 shadow-lg">

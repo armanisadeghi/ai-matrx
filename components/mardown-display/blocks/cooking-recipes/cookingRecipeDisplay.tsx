@@ -160,7 +160,7 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({ recipe, taskId }) => {
         className={`w-full ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-2" : "py-3"}`}
       >
         <div
-          className={`max-w-6xl mx-auto ${isFullScreen ? "bg-textured rounded-xl shadow-2xl h-full max-h-[98vh] w-full flex flex-col overflow-hidden" : ""}`}
+          className={`max-w-6xl mx-auto ${isFullScreen ? "bg-textured rounded-xl shadow-2xl h-full max-h-[98dvh] w-full flex flex-col overflow-hidden" : ""}`}
         >
           {/* Scrollable Content */}
           <div className={isFullScreen ? "flex-1 overflow-y-auto" : ""}>

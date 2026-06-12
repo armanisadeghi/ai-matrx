@@ -33,7 +33,7 @@ export function RelationshipDetails({
 
     if (!relationship) {
         return (
-            <ScrollArea className="h-[calc(100vh-8rem)]">
+            <ScrollArea className="h-[calc(100dvh-8rem)]">
                 <div className="space-y-6 p-6">
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
@@ -62,7 +62,7 @@ export function RelationshipDetails({
     };
 
     return (
-        <ScrollArea className="h-[calc(100vh-8rem)]">
+        <ScrollArea className="h-[calc(100dvh-8rem)]">
             <div className="space-y-6 p-6">
                 <div className="space-y-4">
                     <div className="flex items-center gap-3">

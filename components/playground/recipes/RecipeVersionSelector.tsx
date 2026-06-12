@@ -155,7 +155,7 @@ export const RecipeVersionSelector: React.FC<RecipeVersionSelectorProps> = ({
   if (compiledRecipeIsLoading) {
     return (
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[95vw] sm:w-[70vw] h-[90dvh] sm:h-[85vh] max-w-none p-4 sm:p-6 gap-4 flex flex-col overflow-hidden">
+        <DialogContent className="w-[95vw] sm:w-[70vw] h-[90dvh] sm:h-[85dvh] max-w-none p-4 sm:p-6 gap-4 flex flex-col overflow-hidden">
           <DialogTitle className="text-lg font-semibold">
             Convert "{recipeName}" to Prompt
           </DialogTitle>
@@ -175,7 +175,7 @@ export const RecipeVersionSelector: React.FC<RecipeVersionSelectorProps> = ({
   if (compiledRecipeIsError) {
     return (
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[95vw] sm:w-[70vw] h-[90dvh] sm:h-[85vh] max-w-none p-4 sm:p-6 gap-4 flex flex-col overflow-hidden">
+        <DialogContent className="w-[95vw] sm:w-[70vw] h-[90dvh] sm:h-[85dvh] max-w-none p-4 sm:p-6 gap-4 flex flex-col overflow-hidden">
           <DialogTitle className="text-lg font-semibold">
             Convert "{recipeName}" to Prompt
           </DialogTitle>
@@ -197,7 +197,7 @@ export const RecipeVersionSelector: React.FC<RecipeVersionSelectorProps> = ({
   if (records.length === 0) {
     return (
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[95vw] sm:w-[70vw] h-[90dvh] sm:h-[85vh] max-w-none p-4 sm:p-6 gap-4 flex flex-col overflow-hidden">
+        <DialogContent className="w-[95vw] sm:w-[70vw] h-[90dvh] sm:h-[85dvh] max-w-none p-4 sm:p-6 gap-4 flex flex-col overflow-hidden">
           <DialogTitle className="text-lg font-semibold">
             Convert "{recipeName}" to Prompt
           </DialogTitle>
@@ -277,7 +277,7 @@ export const RecipeVersionSelector: React.FC<RecipeVersionSelectorProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:w-[70vw] h-[90dvh] sm:h-[85vh] max-w-none p-4 sm:p-6 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="w-[95vw] sm:w-[70vw] h-[90dvh] sm:h-[85dvh] max-w-none p-4 sm:p-6 gap-0 flex flex-col overflow-hidden">
         <DialogTitle className="text-lg font-semibold mb-4">
           Convert "{recipeName}" to Prompt
         </DialogTitle>

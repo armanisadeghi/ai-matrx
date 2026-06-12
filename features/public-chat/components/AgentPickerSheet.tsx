@@ -497,9 +497,9 @@ function DesktopAgentPicker({
         onClick={() => onOpenChange(false)}
       />
 
-      <div className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] pointer-events-none">
+      <div className="fixed inset-0 z-50 flex items-start justify-center pt-[12dvh] pointer-events-none">
         <div
-          className="pointer-events-auto w-[560px] max-h-[70vh] bg-popover rounded-2xl border border-border shadow-2xl flex flex-col overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150"
+          className="pointer-events-auto w-[560px] max-h-[70dvh] bg-popover rounded-2xl border border-border shadow-2xl flex flex-col overflow-hidden animate-in fade-in-0 zoom-in-95 duration-150"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Search bar */}

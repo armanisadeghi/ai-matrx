@@ -358,7 +358,7 @@ export function AudioRecoveryModal({
         if (!open) onClose();
       }}
     >
-      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[80dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mic className="h-5 w-5" />

@@ -398,7 +398,7 @@ export default function TableConfigModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-[800px] max-h-[90dvh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
@@ -414,7 +414,7 @@ export default function TableConfigModal({
           </TabsList>
 
           <TabsContent value="fields" className="flex-1 overflow-hidden mt-4">
-            <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2">
+            <div className="space-y-4 max-h-[50dvh] overflow-y-auto pr-2">
               {Object.keys(dataTypeChanges).length > 0 && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                   <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">

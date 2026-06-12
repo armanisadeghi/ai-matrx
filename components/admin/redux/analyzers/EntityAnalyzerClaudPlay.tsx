@@ -70,8 +70,8 @@ const EntityAnalyzerClaudPlay = (
         'fixed transition-all duration-200 z-50',
         positionStyles[position],
         {
-            'h-[50vh]': displayState === 'expanded',
-            'h-screen': displayState === 'fullPage',
+            'h-[50dvh]': displayState === 'expanded',
+            'h-dvh': displayState === 'fullPage',
             'h-12': displayState === 'minimized',
         },
         className

@@ -336,7 +336,7 @@ export function AgentAppsGrid({
           </PopoverTrigger>
           <PopoverContent
             align="start"
-            className="w-[420px] max-h-[80vh] overflow-y-auto p-0"
+            className="w-[420px] max-h-[80dvh] overflow-y-auto p-0"
           >
             <div className="p-4 space-y-4">
               <FilterSection

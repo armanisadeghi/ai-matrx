@@ -94,7 +94,7 @@ export default function SharedHeatmapPage() {
 
   if (loading) {
     return (
-      <div className="h-[calc(100vh-2.5rem)] flex items-center justify-center bg-textured">
+      <div className="h-[calc(100dvh-2.5rem)] flex items-center justify-center bg-textured">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted-foreground">Loading heatmap...</p>
@@ -105,7 +105,7 @@ export default function SharedHeatmapPage() {
 
   if (error || !heatmap) {
     return (
-      <div className="h-[calc(100vh-2.5rem)] flex items-center justify-center bg-textured p-4">
+      <div className="h-[calc(100dvh-2.5rem)] flex items-center justify-center bg-textured p-4">
         <Card className="max-w-md w-full">
           <CardHeader>
             <div className="flex items-center gap-2 text-destructive mb-2">
@@ -129,7 +129,7 @@ export default function SharedHeatmapPage() {
   const minCount = Math.min(...heatmap.data.map((d) => d.count));
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       {/* Header */}
       <div className="flex-shrink-0 border-b bg-background/95 backdrop-blur-sm">
         <div className="px-4 py-3 flex items-center justify-between gap-4">

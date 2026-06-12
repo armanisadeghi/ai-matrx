@@ -4,7 +4,7 @@ import { SchemaVisualizerLayout } from "@/features/administration/schema-visuali
 
 export default function EnhancedSchemaVisualizerPage() {
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
       <SchemaVisualizerLayout />
     </div>
   );

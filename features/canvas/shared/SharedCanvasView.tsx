@@ -24,7 +24,7 @@ interface SharedCanvasViewProps {
     className?: string;
 }
 
-export function SharedCanvasView({ shareToken, className = "h-[calc(100vh-3.5rem)]" }: SharedCanvasViewProps) {
+export function SharedCanvasView({ shareToken, className = "h-[calc(100dvh-3.5rem)]" }: SharedCanvasViewProps) {
     const { data: canvas, isLoading, error } = useSharedCanvas(shareToken);
     const [showDetails, setShowDetails] = useState(false);
 
@@ -33,7 +33,7 @@ export function SharedCanvasView({ shareToken, className = "h-[calc(100vh-3.5rem
 
     if (isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+            <div className="min-h-dvh flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
                 <div className="text-center space-y-4">
                     <Loader2 className="w-12 h-12 animate-spin mx-auto text-blue-600 dark:text-blue-400" />
                     <p className="text-zinc-600 dark:text-zinc-400">Loading canvas...</p>
@@ -44,7 +44,7 @@ export function SharedCanvasView({ shareToken, className = "h-[calc(100vh-3.5rem
 
     if (error || !canvas) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950">
+            <div className="min-h-dvh flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950">
                 <div className="text-center max-w-md">
                     <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-200 dark:border-zinc-700">
                         <AlertCircle className="w-8 h-8 text-zinc-600 dark:text-zinc-400" />

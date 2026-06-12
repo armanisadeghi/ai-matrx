@@ -71,7 +71,7 @@ export const PageTemplate: React.FC<PageTemplateProps> = ({
   };
 
   return (
-    <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-screen">
+    <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-dvh">
       <div className="max-w-full px-2 sm:px-4 lg:px-6 py-4 ">
         {/* Hero section */}
         <div className="mb-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl shadow-xl overflow-hidden">

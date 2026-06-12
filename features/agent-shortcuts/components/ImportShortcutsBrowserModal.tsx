@@ -291,7 +291,7 @@ export function ImportShortcutsBrowserModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl h-[70vh] flex flex-col">
+      <DialogContent className="max-w-2xl h-[70dvh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Import from Shortcut</DialogTitle>
           <DialogDescription>

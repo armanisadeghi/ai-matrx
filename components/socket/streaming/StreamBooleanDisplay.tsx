@@ -97,7 +97,7 @@ const StreamBooleanDisplay = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-3 flex-grow">
-        <StreamDisplayOverlay title={title} className="h-[calc(95vh-5rem)]">
+        <StreamDisplayOverlay title={title} className="h-[calc(95dvh-5rem)]">
           {renderIndicator()}
         </StreamDisplayOverlay>
       </CardContent>

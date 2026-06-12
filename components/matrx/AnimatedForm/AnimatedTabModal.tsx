@@ -133,7 +133,7 @@ const AnimatedTabModal: React.FC<AnimatedTabModalProps & { className?: string }>
                                 "shadow-xl max-w-lg w-full relative z-10 overflow-y-auto scrollbar-none",
                                 className
                             )}
-                            style={{maxHeight: "95vh"}}
+                            style={{maxHeight: "95dvh"}}
                             {...props}
                         >
                             <button

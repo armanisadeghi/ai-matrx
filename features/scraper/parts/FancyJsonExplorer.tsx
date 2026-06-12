@@ -170,7 +170,7 @@ const FancyJsonExplorer = ({ pageData }) => {
       
       {renderNavigationKeys(currentKeys, handleKeyClick)}
       
-      <div className="overflow-auto max-h-[70vh]">
+      <div className="overflow-auto max-h-[70dvh]">
         {renderContent()}
       </div>
     </div>

@@ -119,7 +119,7 @@ export const WorkflowSystem: React.FC<WorkflowSystemProps> = ({ workflowId, mode
     }, []);
 
     return (
-        <div className="h-screen w-full flex flex-col bg-background">
+        <div className="h-dvh w-full flex flex-col bg-background">
             <WorkflowHeader
                 workflowId={workflowId}
                 mode={mode}

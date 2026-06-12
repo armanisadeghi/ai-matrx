@@ -1209,7 +1209,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
         className={`w-full ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-4" : "py-4"}`}
       >
         <div
-          className={`max-w-7xl mx-auto ${isFullScreen ? "bg-textured rounded-2xl shadow-2xl h-full max-h-[95vh] w-full flex flex-col overflow-hidden" : ""}`}
+          className={`max-w-7xl mx-auto ${isFullScreen ? "bg-textured rounded-2xl shadow-2xl h-full max-h-[95dvh] w-full flex flex-col overflow-hidden" : ""}`}
         >
           {/* Header */}
           <div

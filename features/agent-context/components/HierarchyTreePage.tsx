@@ -363,7 +363,7 @@ export function HierarchyTreePage() {
   return (
     <div className="flex flex-col md:flex-row h-full overflow-hidden">
       {/* ─── Left: Tree ──────────────────────────────────────── */}
-      <div className="w-full md:w-[320px] shrink-0 border-b md:border-b-0 md:border-r border-border/50 flex flex-col overflow-hidden bg-card/30 h-[40vh] md:h-full">
+      <div className="w-full md:w-[320px] shrink-0 border-b md:border-b-0 md:border-r border-border/50 flex flex-col overflow-hidden bg-card/30 h-[40dvh] md:h-full">
         {/* User header */}
         <div className="px-3 pt-3 pb-2 border-b border-border/50">
           <div className="flex items-center gap-2">

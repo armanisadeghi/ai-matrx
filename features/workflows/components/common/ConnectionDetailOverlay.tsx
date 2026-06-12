@@ -334,7 +334,7 @@ export const ConnectionDetailOverlay: React.FC<ConnectionDetailOverlayProps> = (
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-7xl w-[95vw] h-[95vh] max-h-[95vh] overflow-hidden flex flex-col p-0">
+            <DialogContent className="max-w-7xl w-[95vw] h-[95dvh] max-h-[95dvh] overflow-hidden flex flex-col p-0">
                 <DialogHeader className="p-4 border-b border-border flex-shrink-0">
                     <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">Connection Details</DialogTitle>
                     <DialogDescription className="text-sm text-gray-600 dark:text-gray-400">

@@ -86,7 +86,7 @@ const AdminPage = () => {
 
     return (
       <ErrorBoundary>
-        <div className="min-h-screen py-2 bg-matrx-card w-full">
+        <div className="min-h-dvh py-2 bg-matrx-card w-full">
           <div className="w-full">{selectedFeature?.component}</div>
         </div>
       </ErrorBoundary>
@@ -95,7 +95,7 @@ const AdminPage = () => {
   if (selectedCategory) {
     const category = adminCategories.find((c) => c.name === selectedCategory);
     return (
-      <div className="min-h-screen py-4 bg-neutral-100 dark:bg-neutral-900 w-full">
+      <div className="min-h-dvh py-4 bg-neutral-100 dark:bg-neutral-900 w-full">
         <div className="w-full px-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {category?.features.map((feature, index) => (
@@ -113,7 +113,7 @@ const AdminPage = () => {
   }
 
   return (
-    <div className="min-h-screen py-4 bg-neutral-100 dark:bg-neutral-900 w-full">
+    <div className="min-h-dvh py-4 bg-neutral-100 dark:bg-neutral-900 w-full">
       <div className="w-full mx-2">
         <h1 className="text-xl font-bold text-center mb-4">
           OLD (Deprecated) use:{" "}

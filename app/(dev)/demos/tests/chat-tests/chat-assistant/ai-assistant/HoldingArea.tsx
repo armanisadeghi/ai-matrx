@@ -52,7 +52,7 @@ const HoldingArea: React.FC<HoldingAreaProps> = ({
   };
   
   return (
-    <div className="overflow-y-auto flex flex-col gap-1 w-72 px-2 py-1 bg-textured border-t border-border max-h-[20vh]">
+    <div className="overflow-y-auto flex flex-col gap-1 w-72 px-2 py-1 bg-textured border-t border-border max-h-[20dvh]">
       <div className="flex justify-between items-center mb-1">
         <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
           Answered Items ({items.length})

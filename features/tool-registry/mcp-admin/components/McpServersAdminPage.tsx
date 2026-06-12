@@ -658,7 +658,7 @@ function ConfigDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[85dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? `Edit config "${config.label}"` : "New config"}</DialogTitle>
         </DialogHeader>

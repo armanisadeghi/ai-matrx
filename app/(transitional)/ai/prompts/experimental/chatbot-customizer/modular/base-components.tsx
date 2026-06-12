@@ -112,7 +112,7 @@ export const AICustomizationPanel: React.FC<AICustomizationProps> = ({ config, i
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-background text-foreground">
+        <div className="flex flex-col min-h-dvh bg-background text-foreground">
             <header className="sticky top-0 z-10 bg-card border-b border-border px-6 py-4 shadow-sm">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex items-center">

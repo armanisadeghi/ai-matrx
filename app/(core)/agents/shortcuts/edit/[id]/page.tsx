@@ -73,7 +73,7 @@ export default function UserEditShortcutPage({
 
   if (isLoading && !resolved) {
     return (
-      <div className="h-[calc(100vh-2.5rem)] flex items-center justify-center bg-textured">
+      <div className="h-[calc(100dvh-2.5rem)] flex items-center justify-center bg-textured">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading shortcut...
@@ -84,7 +84,7 @@ export default function UserEditShortcutPage({
 
   if (!resolved) {
     return (
-      <div className="h-[calc(100vh-2.5rem)] flex items-center justify-center p-6 bg-textured">
+      <div className="h-[calc(100dvh-2.5rem)] flex items-center justify-center p-6 bg-textured">
         <Card className="max-w-md w-full border-destructive/30">
           <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
             <div className="p-3 bg-destructive/10 rounded-full">
@@ -111,7 +111,7 @@ export default function UserEditShortcutPage({
   }
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       <div className="flex-shrink-0 px-4 h-12 border-b border-border bg-card flex items-center gap-2">
         <Button
           variant="ghost"

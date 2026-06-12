@@ -18,7 +18,7 @@ export default function ComingSoonPage({
   statusBadgeText = STATUS_BADGE_TEXT,
 }: ComingSoonPageProps) {
   return (
-    <div className="relative min-h-screen bg-black text-white flex flex-col justify-between overflow-hidden font-sans selection:bg-indigo-500/30">
+    <div className="relative min-h-dvh bg-black text-white flex flex-col justify-between overflow-hidden font-sans selection:bg-indigo-500/30">
       {/* Background Decorative Gradients */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[500px] opacity-20 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-500 via-purple-500 to-transparent blur-[100px] rounded-full mix-blend-screen" />
@@ -41,7 +41,7 @@ export default function ComingSoonPage({
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center w-full max-w-4xl mx-auto mt-[-5vh]">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center w-full max-w-4xl mx-auto mt-[-5dvh]">
         {/* Status Badge */}
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm text-xs font-medium text-zinc-300 tracking-wide mb-8">
           <span className="relative flex h-2 w-2">

@@ -67,7 +67,7 @@ export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
       {/* ── Hero — full-width image ───────────────────────────────── */}
       <div
         className="relative shrink-0 overflow-hidden bg-zinc-900"
-        style={{ height: coverImage ? "38vh" : "20vh" }}
+        style={{ height: coverImage ? "38dvh" : "20dvh" }}
       >
         {coverImage ? (
           <>

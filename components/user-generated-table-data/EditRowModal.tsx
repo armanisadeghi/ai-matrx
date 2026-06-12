@@ -412,7 +412,7 @@ export default function EditRowModal({
             </div>
           )}
 
-          <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-2 scrollbar-none">
+          <div className="max-h-[60dvh] overflow-y-auto space-y-4 pr-2 scrollbar-none">
             {fields
               .sort((a, b) => a.field_order - b.field_order)
               .map((field) => (

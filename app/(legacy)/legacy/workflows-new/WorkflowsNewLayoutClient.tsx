@@ -54,7 +54,7 @@ function WorkflowLayoutInner({ children }: { children: React.ReactNode }) {
 
   if (isError) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-dvh">
         <div className="text-center">
           <p className="text-red-600 dark:text-red-400 mb-4">
             Failed to load workflows

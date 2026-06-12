@@ -299,7 +299,7 @@ export function ToolCreatePage() {
       <Textarea
         value={JSON.stringify(tool.parameters, null, 2)}
         onChange={(e) => setJsonField("parameters", e.target.value)}
-        className={`font-mono text-sm flex-1 min-h-[60vh] resize-none ${jsonErrors.parameters ? "border-destructive" : ""}`}
+        className={`font-mono text-sm flex-1 min-h-[60dvh] resize-none ${jsonErrors.parameters ? "border-destructive" : ""}`}
         style={{ fontSize: "13px" }}
       />
     </div>
@@ -318,7 +318,7 @@ export function ToolCreatePage() {
       <Textarea
         value={JSON.stringify(tool.output_schema, null, 2)}
         onChange={(e) => setJsonField("output_schema", e.target.value)}
-        className={`font-mono text-sm flex-1 min-h-[60vh] resize-none ${jsonErrors.output_schema ? "border-destructive" : ""}`}
+        className={`font-mono text-sm flex-1 min-h-[60dvh] resize-none ${jsonErrors.output_schema ? "border-destructive" : ""}`}
         style={{ fontSize: "13px" }}
       />
     </div>

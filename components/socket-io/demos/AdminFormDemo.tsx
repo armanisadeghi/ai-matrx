@@ -18,7 +18,7 @@ const AdminFormDemo = ({ debugMode }: { debugMode: boolean }) => {
     const allFieldPaths = getAllFieldPaths(taskState?.taskName || "");
 
     return (
-        <div className="flex flex-col max-h-screen bg-inherit text-inherit">
+        <div className="flex flex-col max-h-dvh bg-inherit text-inherit">
             <div className="sticky top-0 z-50 bg-inherit text-inherit">
                 <SocketHeaderFull onTaskCreate={setTaskId} debugMode={debugMode} />
             </div>

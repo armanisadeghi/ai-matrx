@@ -607,7 +607,7 @@ export default function UtilityTestPage() {
 
       {/* Table Viewer Dialog */}
       <Dialog open={viewTableModalOpen} onOpenChange={setViewTableModalOpen}>
-        <DialogContent className="max-w-[90vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[90vw] max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Table Viewer - {userTableName}</DialogTitle>
             <DialogDescription>

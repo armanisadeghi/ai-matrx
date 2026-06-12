@@ -43,7 +43,7 @@ const StateViewerOverlay: React.FC<StateViewerOverlayProps> = ({
         initialTab={activeTab}
         onTabChange={setActiveTab}
         width="95vw"
-        height="95vh"
+        height="95dvh"
         compactTabs={true}
         homeTabId={TAB_INDEX_ID}
       />

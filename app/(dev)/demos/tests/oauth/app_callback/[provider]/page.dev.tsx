@@ -47,7 +47,7 @@ export default function OAuthCallback() {
 
   if (error) {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-dvh flex items-center justify-center bg-gray-50">
           <div className="text-center">
             <h1 className="text-xl font-medium text-red-600">
               Authentication Error
@@ -59,7 +59,7 @@ export default function OAuthCallback() {
   }
 
   return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+      <div className="min-h-dvh flex flex-col items-center justify-center bg-gray-50">
         <div className="text-center">
           <h1 className="text-xl font-medium text-gray-700">
             Processed {provider} authentication

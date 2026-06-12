@@ -362,7 +362,7 @@ export default function TaskPreviewWindow({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="h-[90vh] flex flex-col">
+        <DrawerContent className="h-[90dvh] flex flex-col">
           <DrawerHeader>
             <DrawerTitle>Preview tasks</DrawerTitle>
             <DrawerDescription>
@@ -399,7 +399,7 @@ export default function TaskPreviewWindow({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0">
+      <DialogContent className="max-w-2xl max-h-[85dvh] flex flex-col p-0">
         <DialogHeader className="shrink-0 p-4 border-b border-border/50">
           <DialogTitle>Preview tasks</DialogTitle>
           <DialogDescription>

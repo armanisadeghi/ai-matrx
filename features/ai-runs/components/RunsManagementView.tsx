@@ -105,7 +105,7 @@ export function RunsManagementView() {
   };
 
   return (
-    <div className="h-[calc(100vh-3rem)] lg:h-[calc(100vh-2.5rem)] flex flex-col bg-textured">
+    <div className="h-[calc(100dvh-3rem)] lg:h-[calc(100dvh-2.5rem)] flex flex-col bg-textured">
       {/* Header */}
       <div className="flex-shrink-0 border-b border-border bg-white dark:bg-zinc-900">
         <div className="px-6 py-4">

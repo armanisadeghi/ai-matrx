@@ -233,7 +233,7 @@ export default function CreateTemplateModal({ isOpen, onClose, onSuccess }: Crea
       if (!open) onClose();
       if (open) resetForm();
     }}>
-      <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[650px] max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Schema Template</DialogTitle>
         </DialogHeader>

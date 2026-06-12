@@ -47,7 +47,7 @@ export default function PageSpeedInsightsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="min-h-dvh bg-gray-50 dark:bg-gray-900 p-6">
             <div className="space-y-6">
                 {/* Header with Full-Width URL Form */}
                 <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-700 p-6 shadow-lg">

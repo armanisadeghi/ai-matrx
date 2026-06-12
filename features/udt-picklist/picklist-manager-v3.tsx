@@ -678,7 +678,7 @@ export function PicklistManager({ supabase, userId }: PicklistManagerProps) {
     }
 
     return (
-        <div className="grid h-[calc(100vh-8rem)] min-h-[560px] grid-cols-[260px_1fr] overflow-hidden rounded-lg border bg-background">
+        <div className="grid h-[calc(100dvh-8rem)] min-h-[560px] grid-cols-[260px_1fr] overflow-hidden rounded-lg border bg-background">
             {/* Sidebar */}
             <aside className="flex min-h-0 flex-col border-r bg-muted/30">
                 <div className="flex items-center justify-between px-3 pb-2 pt-3">

@@ -514,7 +514,7 @@ export function ConversationInput({
         />
       )}
       {hasVariables && !useGuidedVars && (
-        <div className="max-h-[30vh] md:max-h-[45vh] overflow-y-auto overscroll-contain rounded-xl mb-1">
+        <div className="max-h-[30dvh] md:max-h-[45dvh] overflow-y-auto overscroll-contain rounded-xl mb-1">
           <StackedVariableInputs
             conversationId={conversationId}
             disabled={isExecuting}

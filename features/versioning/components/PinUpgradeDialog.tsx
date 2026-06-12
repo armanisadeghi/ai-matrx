@@ -97,7 +97,7 @@ export function PinUpgradeDialog({
             <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
             {/* Dialog */}
-            <div className="relative w-full max-w-2xl max-h-[85vh] bg-background border border-border rounded-lg shadow-xl flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-2xl max-h-[85dvh] bg-background border border-border rounded-lg shadow-xl flex flex-col animate-in fade-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
                     <div>

@@ -44,7 +44,7 @@ export const DebugInfo: React.FC<{
   );
 
   return (
-    <div className="fixed left-6 top-1/2 transform -translate-y-1/2 w-96 text-left p-2 my-2 bg-gray-100 dark:bg-gray-800 rounded-xl border-3 border-gray-300 dark:border-gray-600 shadow-md z-50 overflow-auto max-h-[80vh]">
+    <div className="fixed left-6 top-1/2 transform -translate-y-1/2 w-96 text-left p-2 my-2 bg-gray-100 dark:bg-gray-800 rounded-xl border-3 border-gray-300 dark:border-gray-600 shadow-md z-50 overflow-auto max-h-[80dvh]">
       <div className="font-mono space-y-4 text-lg text-gray-700 dark:text-gray-300">
         <div>Status: {activeMessageStatus}</div>
         <div>

@@ -250,7 +250,7 @@ function CategoryItems({
         {group.category.label}
       </SubTrigger>
       <SubContent
-        className="min-w-[200px] max-h-[70vh] overflow-y-auto"
+        className="min-w-[200px] max-h-[70dvh] overflow-y-auto"
         avoidCollisions
         collisionPadding={8}
       >
@@ -1100,7 +1100,7 @@ export function NoteContextMenuHeavy({
             <FolderInput /> Move to Folder
           </SubTrigger>
           <SubContent
-            className="min-w-[180px] max-h-[70vh] overflow-y-auto"
+            className="min-w-[180px] max-h-[70dvh] overflow-y-auto"
             avoidCollisions
             collisionPadding={8}
           >
@@ -1138,7 +1138,7 @@ export function NoteContextMenuHeavy({
             )}
           </SubTrigger>
           <SubContent
-            className="min-w-[220px] max-h-[70vh] overflow-y-auto"
+            className="min-w-[220px] max-h-[70dvh] overflow-y-auto"
             avoidCollisions
             collisionPadding={8}
           >
@@ -1172,7 +1172,7 @@ export function NoteContextMenuHeavy({
               <FileText /> Content Blocks
             </SubTrigger>
             <SubContent
-              className="min-w-[220px] max-h-[70vh] overflow-y-auto"
+              className="min-w-[220px] max-h-[70dvh] overflow-y-auto"
               avoidCollisions
               collisionPadding={8}
             >
@@ -1198,7 +1198,7 @@ export function NoteContextMenuHeavy({
               {getPlacementTypeMeta("organization-tool").label}
             </SubTrigger>
             <SubContent
-              className="min-w-[220px] max-h-[70vh] overflow-y-auto"
+              className="min-w-[220px] max-h-[70dvh] overflow-y-auto"
               avoidCollisions
               collisionPadding={8}
             >
@@ -1223,7 +1223,7 @@ export function NoteContextMenuHeavy({
               <User /> {getPlacementTypeMeta("user-tool").label}
             </SubTrigger>
             <SubContent
-              className="min-w-[220px] max-h-[70vh] overflow-y-auto"
+              className="min-w-[220px] max-h-[70dvh] overflow-y-auto"
               avoidCollisions
               collisionPadding={8}
             >
@@ -1434,7 +1434,7 @@ export function NoteContextMenuHeavy({
           )}
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className="w-64 max-h-[70vh] overflow-y-auto"
+          className="w-64 max-h-[70dvh] overflow-y-auto"
           align="center"
           side="bottom"
           sideOffset={5}

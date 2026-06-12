@@ -30,7 +30,7 @@ const AdvancedDynamicLayout = ({ layoutType, children }) => {
         padding: '1rem',
         backgroundColor: '#1a202c',
         borderRadius: '0.5rem',
-        minHeight: '100vh',
+        minHeight: '100dvh',
     };
 
     const childrenMap = React.Children.toArray(children).reduce<Record<string, React.ReactNode>>((acc, child) => {

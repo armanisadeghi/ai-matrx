@@ -656,7 +656,7 @@ export default function DocumentsPage() {
                         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr_1fr] gap-4">
 
                             {/* Folder sidebar */}
-                            <div className="border rounded-lg p-2 bg-card overflow-y-auto max-h-[60vh]">
+                            <div className="border rounded-lg p-2 bg-card overflow-y-auto max-h-[60dvh]">
                                 <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-1">
                                     Folders
                                 </h3>
@@ -693,7 +693,7 @@ export default function DocumentsPage() {
                                     </div>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto max-h-[50vh]">
+                                <div className="flex-1 overflow-y-auto max-h-[50dvh]">
                                     {notes.length === 0 ? (
                                         <p className="text-xs text-muted-foreground p-3 text-center italic">No notes found</p>
                                     ) : (
@@ -762,7 +762,7 @@ export default function DocumentsPage() {
                                         <textarea
                                             value={editContent}
                                             onChange={(e) => setEditContent(e.target.value)}
-                                            className="w-full h-[40vh] text-xs font-mono rounded border p-2 bg-background resize-y"
+                                            className="w-full h-[40dvh] text-xs font-mono rounded border p-2 bg-background resize-y"
                                             placeholder="Note content..."
                                             spellCheck={false}
                                         />
@@ -861,7 +861,7 @@ export default function DocumentsPage() {
                             {versions.length === 0 ? (
                                 <p className="text-xs text-muted-foreground italic">No versions loaded</p>
                             ) : (
-                                <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                                <div className="space-y-2 max-h-[50dvh] overflow-y-auto">
                                     {versions.map((v, i) => (
                                         <div key={v.version_id || i} className="border rounded p-2 bg-background">
                                             <div className="flex items-center justify-between mb-1">

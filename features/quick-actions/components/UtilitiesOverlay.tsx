@@ -171,7 +171,7 @@ export function UtilitiesOverlay({
       initialTab={initialTab}
       onTabChange={(tab) => setActiveTab(tab as typeof initialTab)}
       width="95vw"
-      height="95vh"
+      height="95dvh"
       sharedHeader={
         route ? (
           <div className="flex items-center justify-end">

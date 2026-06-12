@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function ModelAuditPage() {
     return (
-        <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
+        <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
             <Suspense
                 fallback={
                     <div className="flex-1 flex items-center justify-center gap-2 text-muted-foreground text-sm">

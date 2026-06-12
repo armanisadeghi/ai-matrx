@@ -764,7 +764,7 @@ export function GuidedVariableInputs({
       <div className="relative">
         <div
           ref={scrollRef}
-          className="max-h-[28vh] md:max-h-[35vh] overflow-y-auto overscroll-contain px-3 py-2"
+          className="max-h-[28dvh] md:max-h-[35dvh] overflow-y-auto overscroll-contain px-3 py-2"
         >
           <GuidedVariableContent
             variable={variable}

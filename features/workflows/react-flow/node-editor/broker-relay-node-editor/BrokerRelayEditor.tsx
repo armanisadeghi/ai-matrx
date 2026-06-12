@@ -113,7 +113,7 @@ const BrokerRelayEditor: React.FC<BrokerRelayEditorProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
-      <DialogContent className="max-w-3xl h-[85vh] flex flex-col">
+      <DialogContent className="max-w-3xl h-[85dvh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <ArrowRightLeft className="h-5 w-5 text-blue-600 dark:text-blue-400" />

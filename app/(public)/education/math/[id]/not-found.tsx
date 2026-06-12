@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 
 export default function MathProblemNotFound() {
     return (
-        <div className="min-h-screen bg-textured flex items-center justify-center p-4">
+        <div className="min-h-dvh bg-textured flex items-center justify-center p-4">
             <div className="max-w-2xl w-full text-center space-y-6">
                 {/* Icon */}
                 <div className="flex justify-center">

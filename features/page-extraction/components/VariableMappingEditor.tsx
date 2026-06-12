@@ -527,7 +527,7 @@ function OptionSelect({
       >
         <SelectValue placeholder="Not mapped" />
       </SelectTrigger>
-      <SelectContent className="max-h-[60vh] min-w-[20rem]">
+      <SelectContent className="max-h-[60dvh] min-w-[20rem]">
         <SelectItem value={UNMAPPED_VALUE} className="text-[11px]">
           <span className="text-muted-foreground italic">Not mapped</span>
         </SelectItem>

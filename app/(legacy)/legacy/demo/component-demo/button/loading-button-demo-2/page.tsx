@@ -57,7 +57,7 @@ export default function LoadingButtonDemo() {
     };
 
     return (
-        <div className="flex min-h-screen w-full flex-col gap-6">
+        <div className="flex min-h-dvh w-full flex-col gap-6">
             {/* Variants Section */}
             <DemoSection title="Color Variants">
                 {VARIANTS.map((variant) => (

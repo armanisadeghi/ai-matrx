@@ -93,7 +93,7 @@ const BusinessIntegrations: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-dvh w-full bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-textured shadow-md w-full">
         <div className="max-w-full px-4 py-4 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">

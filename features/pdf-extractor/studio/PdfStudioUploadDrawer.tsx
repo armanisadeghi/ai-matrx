@@ -57,7 +57,7 @@ export function PdfStudioUploadDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[80vh]">
+      <DrawerContent className="max-h-[80dvh]">
         <DrawerHeader>
           <DrawerTitle>Add documents</DrawerTitle>
           <DrawerDescription>

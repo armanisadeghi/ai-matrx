@@ -13,13 +13,13 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 }
 
 // When the consumer asks the <textarea> to fill its container via `h-full`,
-// `h-screen`, or `flex-1`, the wrapping motion.div must also stretch or
+// `h-dvh`, or `flex-1`, the wrapping motion.div must also stretch or
 // CSS `height: 100%` on the inner textarea resolves against an auto-sized
 // parent and collapses. This detects those classes and forwards matching
 // stretch behavior to the wrapper so `<Textarea className="h-full" />`
 // works out-of-the-box without consumers needing to learn about
 // `wrapperClassName`.
-const FILL_HEIGHT_REGEX = /(?:^|\s)(h-full|h-screen|flex-1|grow)(?:\s|$)/;
+const FILL_HEIGHT_REGEX = /(?:^|\s)(h-full|h-dvh|flex-1|grow)(?:\s|$)/;
 const FILL_WIDTH_REGEX = /(?:^|\s)(w-full|w-screen)(?:\s|$)/;
 const getWrapperStretchClasses = (className?: string) => {
   if (!className) return undefined;

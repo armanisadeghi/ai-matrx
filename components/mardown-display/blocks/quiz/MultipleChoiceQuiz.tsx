@@ -1059,7 +1059,7 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div
-              className="bg-textured rounded-xl shadow-2xl h-full max-h-[98vh] w-full max-w-4xl mx-3 flex flex-col overflow-hidden relative"
+              className="bg-textured rounded-xl shadow-2xl h-full max-h-[98dvh] w-full max-w-4xl mx-3 flex flex-col overflow-hidden relative"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex-1 overflow-y-auto p-3">

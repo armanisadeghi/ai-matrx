@@ -263,7 +263,7 @@ export function ResourceDebugModal({ resources, isVisible, chatInput = "", varia
             
             {/* Message Preview Dialog */}
             <Dialog open={showMessagePreview} onOpenChange={setShowMessagePreview}>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+                <DialogContent className="max-w-4xl max-h-[80dvh] overflow-hidden flex flex-col">
                     <DialogHeader>
                         <DialogTitle>Formatted Message Preview</DialogTitle>
                         <DialogDescription>

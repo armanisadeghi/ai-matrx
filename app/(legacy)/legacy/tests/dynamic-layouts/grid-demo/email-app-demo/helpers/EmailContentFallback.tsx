@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const EmailContentFallback = () => (
-    <ScrollArea className="h-[calc(100vh-280px)]">
+    <ScrollArea className="h-[calc(100dvh-280px)]">
         <div className="p-4 space-y-4">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">

@@ -324,7 +324,7 @@ export const CompiledRecipeOverlay: React.FC<CompiledRecipeOverlayProps> = ({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent
         className={cn(
-          "w-[95vw] sm:w-[50vw] h-[90dvh] sm:h-[95vh] max-w-none p-4 gap-0 flex flex-col overflow-hidden",
+          "w-[95vw] sm:w-[50vw] h-[90dvh] sm:h-[95dvh] max-w-none p-4 gap-0 flex flex-col overflow-hidden",
           className,
         )}
       >

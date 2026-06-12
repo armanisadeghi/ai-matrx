@@ -97,7 +97,7 @@ export function AutoCreatePromptAppForm({
   // Safety check: If no prompt is provided, show a message
   if (!prompt) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh]">
+      <div className="flex items-center justify-center min-h-[40dvh]">
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center space-y-3">
             <p className="text-muted-foreground text-lg">No prompt selected</p>

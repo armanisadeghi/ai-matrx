@@ -279,7 +279,7 @@ const RecipeNodeInitializer: React.FC<RecipeNodeInitializerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <Card className="w-full max-w-5xl h-[95vh] flex flex-col">
+      <Card className="w-full max-w-5xl h-[95dvh] flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
           <div className="space-y-1 px-4">
             <CardTitle>Configure Recipe Node</CardTitle>

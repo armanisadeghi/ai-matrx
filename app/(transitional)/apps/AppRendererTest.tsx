@@ -640,7 +640,7 @@ export default function AppRendererTest({ slug }: { slug: string }) {
               <textarea
                 value={selectorOutput}
                 readOnly
-                className="w-full h-[calc(100vh-750px)] p-3 font-mono text-sm border rounded-md bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700"
+                className="w-full h-[calc(100dvh-750px)] p-3 font-mono text-sm border rounded-md bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700"
               />
             </div>
           </div>

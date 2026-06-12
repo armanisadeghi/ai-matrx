@@ -171,7 +171,7 @@ export default function PasteRowsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col bg-card">
+      <DialogContent className="sm:max-w-[800px] max-h-[90dvh] overflow-hidden flex flex-col bg-card">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {stage === "paste" ? "Paste Rows" : "Confirm Pasted Rows"}

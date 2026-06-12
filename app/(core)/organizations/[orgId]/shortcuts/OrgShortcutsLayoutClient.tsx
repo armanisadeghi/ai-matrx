@@ -114,7 +114,7 @@ export function OrgShortcutsLayoutClient({
 
   if (loading) {
     return (
-      <div className="h-[calc(100vh-2.5rem)] flex items-center justify-center bg-textured">
+      <div className="h-[calc(100dvh-2.5rem)] flex items-center justify-center bg-textured">
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading organization…
@@ -125,7 +125,7 @@ export function OrgShortcutsLayoutClient({
 
   if (error || !organization || !role) {
     return (
-      <div className="h-[calc(100vh-2.5rem)] flex items-center justify-center bg-textured p-4">
+      <div className="h-[calc(100dvh-2.5rem)] flex items-center justify-center bg-textured p-4">
         <Card className="max-w-lg w-full p-8 border-destructive/30">
           <div className="flex flex-col items-center text-center space-y-4">
             <div className="p-3 bg-destructive/10 rounded-full">
@@ -191,7 +191,7 @@ export function OrgShortcutsLayoutClient({
 
   return (
     <OrgShortcutsProvider value={ctxValue}>
-      <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
+      <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
         <div className="border-b border-border px-4 bg-card flex items-center gap-2 flex-wrap">
           <Link
             href={`/organizations/${navOrgId}`}

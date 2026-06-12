@@ -177,7 +177,7 @@ export default function TableSelectionModal({
   return (
     <>
       <Dialog open={isOpen && !showReferenceOverlay} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[70vw] max-h-[90vh] overflow-hidden">
+        <DialogContent className="sm:max-w-[70vw] max-h-[90dvh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <Database className="h-5 w-5" />
@@ -201,7 +201,7 @@ export default function TableSelectionModal({
             </div>
 
             {/* Tables Grid */}
-            <div className="max-h-[60vh] overflow-y-auto">
+            <div className="max-h-[60dvh] overflow-y-auto">
               {loading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader className="h-6 w-6 animate-spin mr-2" />

@@ -45,7 +45,7 @@ export default function SchemaVisualizer() {
 
     if (isLoading) {
         return (
-            <div className="flex-1 min-h-screen flex items-center justify-center bg-textured">
+            <div className="flex-1 min-h-dvh flex items-center justify-center bg-textured">
                 <div className="flex flex-col items-center gap-3 text-muted-foreground">
                     <Loader2 className="h-8 w-8 animate-spin" />
                     <span className="text-sm">Loading database schema…</span>
@@ -56,7 +56,7 @@ export default function SchemaVisualizer() {
 
     if (isError) {
         return (
-            <div className="flex-1 min-h-screen flex items-center justify-center bg-textured">
+            <div className="flex-1 min-h-dvh flex items-center justify-center bg-textured">
                 <div className="text-center text-destructive">
                     <p className="font-medium">Failed to load schema</p>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -68,7 +68,7 @@ export default function SchemaVisualizer() {
     }
 
     return (
-        <div ref={containerRef} className="flex-1 min-h-screen">
+        <div ref={containerRef} className="flex-1 min-h-dvh">
             <div className="absolute inset-0">
                 <ReactFlow
                     nodes={nodes}

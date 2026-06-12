@@ -171,7 +171,7 @@ export function AgentChatAssistant({
       {/* Panel — visible when open */}
       {isOpen && (
         <div className="mb-2 animate-in slide-in-from-bottom-4 fade-in-0 duration-300">
-          <div className="w-80 max-h-[75vh] rounded-xl overflow-hidden flex flex-col shadow-2xl border border-border/50 bg-background/80 backdrop-blur-xl">
+          <div className="w-80 max-h-[75dvh] rounded-xl overflow-hidden flex flex-col shadow-2xl border border-border/50 bg-background/80 backdrop-blur-xl">
             {/* Header — draggable, minimal chrome */}
             <div
               className="flex items-center justify-between px-3 py-1.5 border-b border-border/40 cursor-grab active:cursor-grabbing touch-none select-none shrink-0 bg-muted/20"

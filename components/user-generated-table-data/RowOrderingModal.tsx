@@ -247,7 +247,7 @@ export default function RowOrderingModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[800px] h-[95vh] flex flex-col">
+      <DialogContent className="sm:max-w-[800px] h-[95dvh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <GripVertical className="h-5 w-5" />

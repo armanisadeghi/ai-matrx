@@ -636,7 +636,7 @@ export function RecipeTemplatesGallery({
 
       {/* Preview Dialog */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-4xl max-h-[90dvh] flex flex-col">
           {previewTemplate && (
             <>
               <DialogHeader>

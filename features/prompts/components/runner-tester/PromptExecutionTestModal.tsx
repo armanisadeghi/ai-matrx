@@ -463,7 +463,7 @@ export default function PromptExecutionTestModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[80dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             Testing: {testType === 'direct' ? 'Direct Execution' : testType === 'inline' ? 'Inline Overlay' : 'Background Tasks'}

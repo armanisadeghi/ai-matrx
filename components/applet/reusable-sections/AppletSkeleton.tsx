@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export const AppletSkeleton = () => {
     return (
-        <div className="h-screen w-full flex">
+        <div className="h-dvh w-full flex">
             {/* Sidebar */}
             <div className="w-64 border-r border-border bg-muted/40 p-4">
                 {/* Logo/Brand area */}

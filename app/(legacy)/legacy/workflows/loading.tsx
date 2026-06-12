@@ -3,7 +3,7 @@ import { Loader2, Workflow } from 'lucide-react';
 
 export default function WorkflowsLoading() {
   return (
-    <div className="h-screen w-full flex items-center justify-center bg-background">
+    <div className="h-dvh w-full flex items-center justify-center bg-background">
       {/* Overlay to prevent interactions */}
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50" />
       

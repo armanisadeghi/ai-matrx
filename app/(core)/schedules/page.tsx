@@ -12,7 +12,7 @@ export default function SchedulesPage() {
   const { refetch, tasks, status } = useScheduledTasks();
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       <header className="shrink-0 border-b border-border bg-card/40">
         <div className="px-4 sm:px-6 py-2 flex items-center justify-between gap-3  ">
           <div className="flex items-center gap-2 min-w-0 ">

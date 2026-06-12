@@ -26,7 +26,7 @@ export function AgentFloatingChat({
       title={displayTitle}
       onClose={onClose}
       width={420}
-      height="60vh"
+      height="60dvh"
       minWidth={320}
       minHeight={280}
       bodyClassName="p-0"

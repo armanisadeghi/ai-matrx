@@ -511,7 +511,7 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
         tabs={tabs}
         initialTab="query-history"
         width="90vw"
-        height="95vh"
+        height="95dvh"
       />
       
       {/* Delete confirmation dialog */}

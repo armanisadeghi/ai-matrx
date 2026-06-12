@@ -58,7 +58,7 @@ export default function DebugModulePanel({ moduleId, onClose }: DebugModulePanel
       onClick={onClose}
     >
       <Card
-        className="w-full max-w-4xl max-h-[90vh] overflow-hidden bg-background shadow-2xl border-2"
+        className="w-full max-w-4xl max-h-[90dvh] overflow-hidden bg-background shadow-2xl border-2"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -81,7 +81,7 @@ export default function DebugModulePanel({ moduleId, onClose }: DebugModulePanel
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(90dvh-100px)]">
           <DebugComponent />
         </div>
       </Card>

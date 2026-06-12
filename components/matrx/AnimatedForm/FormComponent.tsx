@@ -105,7 +105,7 @@ const AnimatedForm: React.FC<AnimatedFormProps & { className?: string }> = (
       ref={formRef}
       className={cn(
         "max-w-md mx-auto mt-4 p-4 bg-card rounded-lg shadow-xl",
-        isScrollable && "max-h-[65vh] overflow-y-auto",
+        isScrollable && "max-h-[65dvh] overflow-y-auto",
         className
       )}
             initial={{ opacity: 0, scale: 0.9 }}

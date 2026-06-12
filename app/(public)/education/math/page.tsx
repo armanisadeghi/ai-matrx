@@ -66,7 +66,7 @@ export default async function MathProblemsPage() {
     const groupedProblems = groupProblemsByModule(problems);
     
     return (
-        <div className="min-h-screen bg-textured">
+        <div className="min-h-dvh bg-textured">
             <div className="container mx-auto px-4 py-8 max-w-7xl">
                 {/* Header */}
                 <div className="mb-8">

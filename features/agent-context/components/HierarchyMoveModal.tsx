@@ -87,7 +87,7 @@ export function HierarchyMoveModal({ nodeToMove, tree, onClose }: Props) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
+      <DialogContent className="max-w-md max-h-[80dvh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-sm">
             <TreePine className="h-4 w-4" />

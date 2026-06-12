@@ -96,7 +96,7 @@ export function NestedResizableLayout({
   );
 
   return (
-    <div className={`h-[calc(100vh-4rem)] min-h-0 ${className}`}>
+    <div className={`h-[calc(100dvh-4rem)] min-h-0 ${className}`}>
       <ResizablePanelGroup orientation="horizontal" className="h-full min-h-0">
         {sections.map((section, index) => (
           <React.Fragment key={index}>

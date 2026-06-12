@@ -79,7 +79,7 @@ const FloatingSheetDemo = () => {
     const currentConfig = sheetConfigs[selectedDemo];
     
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-8">
+      <div className="min-h-dvh bg-gray-100 dark:bg-gray-900 p-8">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Floating Sheet Component Demo</h1>
           

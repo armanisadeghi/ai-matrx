@@ -124,7 +124,7 @@ export function UsageStatsModal({ isOpen, onClose, data }: UsageStatsModalProps)
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between mr-4">
             <DialogTitle className="flex items-center gap-2">

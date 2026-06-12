@@ -43,7 +43,7 @@ export const EmailAppLayout: React.FC<EmailAppLayoutProps> = (
     }, [isSidebarCollapsed]);
 
     return (
-        <GridContainer className="h-screen" gap={1}>
+        <GridContainer className="h-dvh" gap={1}>
             {isMobile ? (
                 // Mobile Layout
                 <>
@@ -120,7 +120,7 @@ export const EmailAppLayout: React.FC<EmailAppLayoutProps> = ({
                                                                   // ... props
                                                               }) => {
     return (
-        <GridContainer className="h-screen w-screen" gap={1}>
+        <GridContainer className="h-dvh w-screen" gap={1}>
             <GridItem area={layout.desktopNav}>
                 <GridComponentWrapper>
                     <EmailNav collapsed={isSidebarCollapsed} />

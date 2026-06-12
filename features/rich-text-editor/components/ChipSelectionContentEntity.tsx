@@ -62,7 +62,7 @@ export const ChipSelectionContent: React.FC<ChipSelectionContentProps> = ({
     <div className="h-full space-y-4">
       <div className="grid grid-cols-3 gap-4">
         <div className="col-span-1">
-          <div className="h-[80vh]">
+          <div className="h-[80dvh]">
             <ScrollArea className="h-full w-full rounded-md border">
               <div className="p-4">
                 <SmartCrudButtons
@@ -91,7 +91,7 @@ export const ChipSelectionContent: React.FC<ChipSelectionContentProps> = ({
           </div>
         </div>
         <div className="col-span-2">
-          <div className="h-[80vh]">
+          <div className="h-[80dvh]">
             <ScrollArea className="h-full w-full rounded-md border">
               <EntityShowSelectedAccordion entityKey="dataBroker" />
             </ScrollArea>

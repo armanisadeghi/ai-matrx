@@ -48,7 +48,7 @@ const HeaderAnalysis = ({ overview }: { overview: Overview }) => {
   };
 
   return (
-    <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-screen">
+    <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-dvh">
       <div className="max-w-full px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero section */}
         <div className="mb-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl shadow-xl overflow-hidden">

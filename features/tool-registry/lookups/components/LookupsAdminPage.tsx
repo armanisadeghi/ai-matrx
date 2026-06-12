@@ -874,7 +874,7 @@ function ToolExecutorDialog({
         <DialogHeader>
           <DialogTitle>{isEdit ? `Edit ${row.name}` : "New Tool Executor"}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3 max-h-[70vh] overflow-y-auto">
+        <div className="space-y-3 max-h-[70dvh] overflow-y-auto">
           <div className="space-y-1.5">
             <Label className="text-xs">Name (PK)</Label>
             <Input

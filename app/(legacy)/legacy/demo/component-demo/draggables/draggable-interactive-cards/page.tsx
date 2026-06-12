@@ -166,7 +166,7 @@ const chartData = [
   // Main demo component
   export default function DraggableInteractiveCards() {
     return (
-      <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900 p-8 overflow-hidden">
+      <div className="w-full min-h-dvh bg-gray-50 dark:bg-gray-900 p-8 overflow-hidden">
         <h1 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200">Draggable Components Demo</h1>
         <p className="mb-8 text-gray-600 dark:text-gray-400">Drag these cards around the screen</p>
         

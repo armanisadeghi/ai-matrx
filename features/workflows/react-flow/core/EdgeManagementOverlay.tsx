@@ -174,7 +174,7 @@ const EdgeManagementOverlay: React.FC<EdgeManagementOverlayProps> = ({ workflowI
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="max-w-6xl h-[85vh] flex flex-col">
+            <DialogContent className="max-w-6xl h-[85dvh] flex flex-col">
                 <DialogHeader className="flex-shrink-0">
                     <DialogTitle className="flex items-center gap-2">
                         <GitBranch className="h-5 w-5 text-blue-600 dark:text-blue-400" />

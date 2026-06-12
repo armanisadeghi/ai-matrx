@@ -430,7 +430,7 @@ export function MatrxLayoutDirect({
 
       {/* Main Content - with dynamic left margin based on sidebar state */}
       <motion.div
-        className="min-h-screen bg-white dark:bg-background"
+        className="min-h-dvh bg-white dark:bg-background"
         initial={{
           marginLeft: "32px",
         }}

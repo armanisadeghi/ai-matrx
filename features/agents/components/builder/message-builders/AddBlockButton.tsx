@@ -518,7 +518,7 @@ export function BlockRow({
               This block type is preserved in the agent definition and will be
               sent to the API unchanged. Editing is not supported.
             </p>
-            <ScrollArea className="max-h-[60vh] rounded-md border border-border bg-muted/50">
+            <ScrollArea className="max-h-[60dvh] rounded-md border border-border bg-muted/50">
               <pre className="p-4 text-xs font-mono whitespace-pre-wrap break-all">
                 {JSON.stringify(block, null, 2)}
               </pre>

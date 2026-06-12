@@ -59,7 +59,7 @@ const SplitScreenOverlay: React.FC<SplitScreenOverlayProps> = ({
     cancelButtonLabel = "Cancel",
     additionalButtons,
     width = "90vw",
-    height = "95vh",
+    height = "95dvh",
     leftPanelWidth = "50%",
     rightPanelWidth = "50%",
 }) => {

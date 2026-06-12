@@ -54,7 +54,7 @@ export function RecipeViewContent({
   const messageRoles = messages.map((msg: any) => msg.role);
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
       {/* Compact header in portal */}
       <RecipeViewHeader recipeId={recipeId} />
 

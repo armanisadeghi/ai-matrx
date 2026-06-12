@@ -18,7 +18,7 @@ export function AgentFullModal({
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl h-[85vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-3xl h-[85dvh] flex flex-col p-0 gap-0">
         <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
           <span className="text-sm font-medium text-foreground truncate">
             {title ?? "Agent Execution"}

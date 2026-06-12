@@ -18,7 +18,7 @@ export default function StyledLayout({
     <div className="w-full h-full bg-textured text-gray-900 dark:text-gray-200">
       {children}
 
-      <div className="h-screen bg-inherit" aria-hidden="true" />
+      <div className="h-dvh bg-inherit" aria-hidden="true" />
     </div>
   );
 }

@@ -152,7 +152,7 @@ const MatrxPanel: React.FC<MatrxPanelProps> = (
             },
             top: {
                 container: 'fixed inset-x-0 top-0',
-                dimensions: {height: '100vh'},
+                dimensions: {height: '100dvh'},
                 button: 'top-4 left-4',
                 panel: 'top-0',
                 border: 'border-b',
@@ -163,7 +163,7 @@ const MatrxPanel: React.FC<MatrxPanelProps> = (
             },
             bottom: {
                 container: 'fixed inset-x-0 bottom-0',
-                dimensions: {height: '100vh'},
+                dimensions: {height: '100dvh'},
                 button: 'bottom-4 right-4',
                 panel: 'bottom-0',
                 border: 'border-t',

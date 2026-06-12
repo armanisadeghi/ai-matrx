@@ -561,7 +561,7 @@ export default function SandboxDetailPage() {
             <CardContent>
               <div
                 ref={terminalRef}
-                className="bg-zinc-950 rounded-t-md p-4 min-h-48 max-h-[50vh] overflow-y-auto font-mono text-sm"
+                className="bg-zinc-950 rounded-t-md p-4 min-h-48 max-h-[50dvh] overflow-y-auto font-mono text-sm"
                 onClick={() => inputRef.current?.focus()}
               >
                 {terminalHistory.length === 0 && (

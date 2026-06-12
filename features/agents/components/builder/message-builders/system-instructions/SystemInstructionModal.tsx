@@ -21,7 +21,7 @@ export function SystemInstructionModal({
 }: SystemInstructionModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Structured System Instruction</DialogTitle>
         </DialogHeader>

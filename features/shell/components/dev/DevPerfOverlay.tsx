@@ -169,7 +169,7 @@ function DevPerfOverlayInner() {
             right: 12,
             zIndex: 99998,
             width: 320,
-            maxHeight: "70vh",
+            maxHeight: "70dvh",
             overflow: "auto",
             background: "rgba(0,0,0,0.88)",
             backdropFilter: "blur(12px)",

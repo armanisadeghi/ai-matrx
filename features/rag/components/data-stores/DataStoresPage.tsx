@@ -78,7 +78,7 @@ export function DataStoresPage() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] bg-background">
+    <div className="flex h-[calc(100dvh-3rem)] bg-background">
       <aside className="w-80 border-r flex flex-col overflow-hidden shrink-0">
         <div className="px-3 py-2 border-b flex items-center gap-2">
           <Database className="h-4 w-4 text-muted-foreground" />

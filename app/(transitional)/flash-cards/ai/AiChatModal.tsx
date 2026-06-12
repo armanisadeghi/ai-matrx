@@ -160,7 +160,7 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose, firstName })
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="bg-background p-0 w-full h-[98vh] sm:h-[90vh] max-w-[95vw] sm:max-w-[85vw] md:max-w-[75vw] flex flex-col">
+            <DialogContent className="bg-background p-0 w-full h-[98dvh] sm:h-[90dvh] max-w-[95vw] sm:max-w-[85vw] md:max-w-[75vw] flex flex-col">
                 <DialogHeader className="p-4 border-b">
                     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                         <div className="flex gap-2">

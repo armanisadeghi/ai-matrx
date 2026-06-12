@@ -328,7 +328,7 @@ export function PublicWebpagePicker({
 
       {/* Preview Modal */}
       <Dialog open={showPreview} onOpenChange={handleClosePreview}>
-        <DialogContent className="max-w-4xl h-[90vh] overflow-hidden flex flex-col p-0">
+        <DialogContent className="max-w-4xl h-[90dvh] overflow-hidden flex flex-col p-0">
           <DialogHeader className="px-6 py-4 border-b border-border flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-green-600 dark:text-green-500" />

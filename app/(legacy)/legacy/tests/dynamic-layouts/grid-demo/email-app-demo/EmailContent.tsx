@@ -42,7 +42,7 @@ const EmailContent = () => {
     };
 
     return (
-        <ScrollArea className="h-[75vh]">
+        <ScrollArea className="h-[75dvh]">
             <div className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">

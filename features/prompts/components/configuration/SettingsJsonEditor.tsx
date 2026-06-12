@@ -54,7 +54,7 @@ export function SettingsJsonEditor({
 
     return (
         <Dialog open={isOpen} onOpenChange={handleCancel}>
-            <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+            <DialogContent className="max-w-3xl max-h-[80dvh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Edit Settings as JSON</DialogTitle>
                 </DialogHeader>

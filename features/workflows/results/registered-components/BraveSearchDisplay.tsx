@@ -931,7 +931,7 @@ const BraveSearchDisplay: React.FC<BraveSearchDisplayProps> = ({ data }) => {
     // Error state
     if (!data?.content) {
         return (
-            <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-screen">
+            <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-dvh">
                 <div className="max-w-full px-2 sm:px-4 lg:px-6 py-4">
                     <Card title="Error">
                         <div className="text-red-500 p-4">No search data available</div>
@@ -942,7 +942,7 @@ const BraveSearchDisplay: React.FC<BraveSearchDisplayProps> = ({ data }) => {
     }
 
     return (
-        <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-screen">
+        <div className="w-full bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 min-h-dvh">
             <div className="max-w-full p-2 space-x-1">
                 {/* Hero section */}
                 <div className="mb-2 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl shadow-lg overflow-hidden">

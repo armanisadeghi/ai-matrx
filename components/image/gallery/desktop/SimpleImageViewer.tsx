@@ -176,7 +176,7 @@ export function SimpleImageViewer({
             <motion.div
                 ref={containerRef}
                 className={`relative bg-transparent rounded-lg overflow-hidden shadow-xl ${
-                    isFullScreen ? "w-full h-full" : "max-w-4xl w-full max-h-[90vh]"
+                    isFullScreen ? "w-full h-full" : "max-w-4xl w-full max-h-[90dvh]"
                 } flex flex-col`}
                 onClick={(e) => e.stopPropagation()}
                 initial={{ scale: 0.9 }}
@@ -185,7 +185,7 @@ export function SimpleImageViewer({
             >
                 <div className="relative flex-grow overflow-hidden bg-black/20">
                     {/* Fixed height container to prevent layout shifts */}
-                    <div className={`${isFullScreen ? "h-screen" : "h-[60vh]"} w-full relative`}>
+                    <div className={`${isFullScreen ? "h-dvh" : "h-[60dvh]"} w-full relative`}>
                         <AnimatePresence initial={false} custom={direction}>
                             <motion.div
                                 key={page}

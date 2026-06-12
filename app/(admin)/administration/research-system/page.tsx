@@ -11,7 +11,7 @@ export default function ResearchSystemAdminPage() {
     const [activeTab, setActiveTab] = useState('templates');
 
     return (
-        <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
+        <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
                 <div className="border-b px-4 bg-card">
                     <TabsList className="h-12">

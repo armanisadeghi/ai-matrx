@@ -213,7 +213,7 @@ export default function PersistenceTestPage() {
     );
 
     return (
-        <div className="flex h-[calc(100vh-2.5rem)] flex-col overflow-hidden bg-textured">
+        <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
             <header className="border-b border-border bg-card px-4 py-3">
                 <h1 className="text-base font-semibold">
                     Window Panels — Persistence Loop Tester

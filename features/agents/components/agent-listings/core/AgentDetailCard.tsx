@@ -189,7 +189,7 @@ export function AgentDetailCard({ agent, onSelect }: AgentDetailCardProps) {
             sideOffset={12}
             avoidCollisions
             collisionPadding={8}
-            className="w-[420px] max-h-[70vh] p-4 bg-card border border-border flex flex-col gap-3"
+            className="w-[420px] max-h-[70dvh] p-4 bg-card border border-border flex flex-col gap-3"
           >
             <div className="text-sm font-semibold text-foreground pr-2 shrink-0">
               {agent.name || "Untitled"}

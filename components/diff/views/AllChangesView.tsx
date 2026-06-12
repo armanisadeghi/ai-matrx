@@ -141,7 +141,7 @@ export function AllChangesView({
       </div>
 
       {/* Bottom padding so last items can scroll up */}
-      <div className="h-[50vh]" />
+      <div className="h-[50dvh]" />
     </div>
   );
 }

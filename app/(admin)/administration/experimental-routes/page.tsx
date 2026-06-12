@@ -73,7 +73,7 @@ export default function ExperimentalRoutesPage() {
     const totalRoutes = experimentalRoutes.reduce((sum, section) => sum + section.routes.length, 0);
 
     return (
-        <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-background">
+        <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-background">
             {/* Header */}
             <div className="flex-none border-b border-border bg-card px-6 py-4">
                 <div className="flex items-center gap-3 mb-3">

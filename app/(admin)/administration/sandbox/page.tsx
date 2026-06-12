@@ -278,7 +278,7 @@ export default function AdminSandboxManagementPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-textured">
+    <div className="min-h-dvh bg-textured">
       <div className="p-4 border-b border-border bg-textured">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">

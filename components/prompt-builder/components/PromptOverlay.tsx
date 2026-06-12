@@ -126,7 +126,7 @@ const PromptOverlay = ({ isOpen, onClose, onSave, initialMessages = [], currentP
             tabIndex={-1}
         >
             <div
-                className="bg-textured rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col border-border"
+                className="bg-textured rounded-lg shadow-xl w-full max-w-6xl h-[90dvh] flex flex-col border-border"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}

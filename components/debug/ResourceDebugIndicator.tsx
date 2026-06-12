@@ -221,7 +221,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
           transition: isDragging ? 'none' : 'all 0.2s ease',
         }}
       >
-        <Card className="w-[800px] max-h-[80vh] shadow-2xl">
+        <Card className="w-[800px] max-h-[80dvh] shadow-2xl">
           <div
             className="flex items-center justify-between p-3 border-b cursor-move bg-muted/50"
             onMouseDown={handleMouseDown}
@@ -248,7 +248,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
             </div>
           </div>
 
-          <ScrollArea className="max-h-[calc(80vh-60px)]">
+          <ScrollArea className="max-h-[calc(80dvh-60px)]">
             <div className="p-4 space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -275,7 +275,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
                     )}
                   </Button>
                 </div>
-                <div className="text-xs bg-muted p-3 rounded-lg max-h-[50vh] overflow-y-auto">
+                <div className="text-xs bg-muted p-3 rounded-lg max-h-[50dvh] overflow-y-auto">
                   <pre className="whitespace-pre-wrap break-words font-mono">
                     {previewData.fullMessage}
                   </pre>
@@ -301,7 +301,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
         transition: isDragging ? 'none' : 'all 0.2s ease',
       }}
     >
-      <Card className="w-96 max-h-[80vh] shadow-2xl">
+      <Card className="w-96 max-h-[80dvh] shadow-2xl">
         <div
           className="flex items-center justify-between p-3 border-b cursor-move bg-muted/50"
           onMouseDown={handleMouseDown}
@@ -328,7 +328,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
           </div>
         </div>
 
-        <ScrollArea className="max-h-[calc(60vh-60px)]">
+        <ScrollArea className="max-h-[calc(60dvh-60px)]">
           <div className="p-2 space-y-1">
             {resources.length === 0 ? (
               <div className="p-4 text-center text-sm text-muted-foreground">

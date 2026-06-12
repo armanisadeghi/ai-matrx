@@ -58,7 +58,7 @@ export function NotFoundContent({
   const items = customItems || getDefaultItems();
 
   return (
-    <div className="min-h-screen bg-textured flex flex-col items-center justify-center p-4">
+    <div className="min-h-dvh bg-textured flex flex-col items-center justify-center p-4">
       {/* Minimal header */}
       <div className="text-center mb-8 max-w-md">
         <div className="flex items-center justify-center mb-3">

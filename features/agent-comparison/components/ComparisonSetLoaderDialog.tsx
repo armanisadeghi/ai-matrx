@@ -142,7 +142,7 @@ export function ComparisonSetLoaderDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="max-h-[60vh] overflow-y-auto -mx-2 px-2">
+          <div className="max-h-[60dvh] overflow-y-auto -mx-2 px-2">
             {loading ? (
               <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />

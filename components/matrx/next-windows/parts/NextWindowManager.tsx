@@ -67,7 +67,7 @@ const NextWindowManager: React.FC<NextWindowManagerProps> = ({ windows: initialW
     return (
         <motion.div
             ref={containerRef}
-            className="relative w-full h-screen overflow-auto bg-background p-8"
+            className="relative w-full h-dvh overflow-auto bg-background p-8"
             onMouseMove={(e) => {
                 setBackgroundPosition({ x: e.clientX / 100, y: e.clientY / 100 });
             }}

@@ -458,7 +458,7 @@ export function TemplateBrowserModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl w-[90vw] h-[85vh] p-0 gap-0 overflow-hidden flex flex-col">
+      <DialogContent className="max-w-4xl w-[90vw] h-[85dvh] p-0 gap-0 overflow-hidden flex flex-col">
         <DialogHeader className="px-6 py-3 border-b border-border/50 flex-shrink-0">
           <DialogTitle>Content Templates</DialogTitle>
         </DialogHeader>

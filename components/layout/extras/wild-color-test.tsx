@@ -19,7 +19,7 @@ function BaseLayout({children, links}) {
                 "w-full flex-1 max-w-7xl mx-auto overflow-hidden",
                 "bg-yellow-300 dark:bg-yellow-600", // Bright yellow for debugging
                 "border border-red-500",
-                "h-screen"
+                "h-dvh"
             )}
         >
             <Sidebar open={open} setOpen={setOpen}>

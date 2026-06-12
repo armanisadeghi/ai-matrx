@@ -204,7 +204,7 @@ export function ContentBlockEditModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0">
+      <DialogContent className="max-w-6xl h-[90dvh] flex flex-col p-0">
         <DialogHeader className="px-4 pt-4 pb-3 border-b border-border flex-shrink-0">
           <div className="flex items-center justify-between pr-8">
             <div className="flex items-center gap-2">

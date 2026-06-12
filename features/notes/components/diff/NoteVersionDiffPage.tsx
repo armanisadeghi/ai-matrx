@@ -386,7 +386,7 @@ function NoteHistoryTimeline({
         </tbody>
       </table>
 
-      <div className="h-[50vh]" />
+      <div className="h-[50dvh]" />
     </div>
   );
 }

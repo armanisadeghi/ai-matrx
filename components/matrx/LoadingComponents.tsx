@@ -64,7 +64,7 @@ export const LargeComponentLoading: React.FC = () => (
 
 // Full Page Loading
 export const FullPageLoading: React.FC = () => (
-    <div className="w-full h-screen flex items-center justify-center p-8">
+    <div className="w-full h-dvh flex items-center justify-center p-8">
         <div className="w-full max-w-4xl animate-pulse space-y-8">
             <div className="h-8 bg-slate-200 rounded w-1/2"></div>
             <div className="space-y-4">
@@ -231,7 +231,7 @@ export const MatrxTableLoading: React.FC = () => {
 
 // Form Loading (Half-Page Version)
 export const FormLoadingSingleColumn: React.FC = () => (
-    <div className="w-full h-[50vh] flex items-center justify-center p-8">
+    <div className="w-full h-[50dvh] flex items-center justify-center p-8">
         <div className="w-full max-w-2xl animate-pulse space-y-8">
             {/* Title Placeholder */}
             <div className="h-8 bg-muted rounded w-1/3 mb-6"></div>
@@ -264,7 +264,7 @@ export const FormLoadingSingleColumn: React.FC = () => (
 
 // Form Loading (Two-Column Half-Page Version)
 export const FormLoadingTwoColumn: React.FC = () => (
-    <div className="w-full h-[50vh] flex items-center justify-center p-8">
+    <div className="w-full h-[50dvh] flex items-center justify-center p-8">
         <div className="w-full max-w-4xl animate-pulse space-y-8">
             {/* Title Placeholder */}
             <div className="h-8 bg-muted rounded w-1/3 mb-6"></div>

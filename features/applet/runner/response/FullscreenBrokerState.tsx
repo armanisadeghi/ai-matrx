@@ -85,7 +85,7 @@ const FullscreenBrokerState = ({
         initialTab={activeTab}
         onTabChange={setActiveTab}
         width="95vw"
-        height="90vh"
+        height="90dvh"
       />
     );
   }
@@ -114,7 +114,7 @@ const FullscreenBrokerState = ({
         initialTab={activeTab}
         onTabChange={setActiveTab}
         width="95vw"
-        height="90vh"
+        height="90dvh"
       />
     </>
   );

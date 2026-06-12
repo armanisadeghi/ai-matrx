@@ -166,7 +166,7 @@ export default function InvitationRequestsPage() {
     ].join("\n");
 
   return (
-    <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
         <div className="flex items-center gap-3">
@@ -318,7 +318,7 @@ export default function InvitationRequestsPage() {
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedRequest} onOpenChange={(open) => !open && setSelectedRequest(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85dvh] overflow-y-auto">
           {selectedRequest && (
             <>
               <DialogHeader>

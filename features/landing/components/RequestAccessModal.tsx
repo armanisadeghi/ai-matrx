@@ -129,7 +129,7 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`border-zinc-200 dark:border-zinc-800 max-h-[90vh] overflow-y-auto p-0 gap-0 ${
+        className={`border-zinc-200 dark:border-zinc-800 max-h-[90dvh] overflow-y-auto p-0 gap-0 ${
           step === 'followup'
             ? 'sm:max-w-2xl overflow-hidden'
             : 'sm:max-w-2xl'

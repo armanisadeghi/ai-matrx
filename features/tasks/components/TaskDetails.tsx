@@ -243,7 +243,7 @@ export default function TaskDetails({ task }: { task: any }) {
       
       {/* Full Screen Modal */}
       <Dialog open={isFullScreen} onOpenChange={setIsFullScreen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <span className={task.completed ? 'line-through text-muted-foreground' : ''}>

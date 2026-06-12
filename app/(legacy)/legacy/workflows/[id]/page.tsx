@@ -19,7 +19,7 @@ export default async function WorkflowPage({ params }: WorkflowPageProps) {
     }
     
     return (
-        <div className="h-screen">
+        <div className="h-dvh">
             <WorkflowSystemProvider
                 workflowId={id}
                 mode="edit"

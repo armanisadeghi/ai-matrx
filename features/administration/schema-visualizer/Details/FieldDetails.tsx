@@ -34,7 +34,7 @@ export function FieldDetails({ table, fieldName }: FieldDetailsProps) {
 
     if (!column) {
         return (
-            <ScrollArea className="h-[calc(100vh-8rem)]">
+            <ScrollArea className="h-[calc(100dvh-8rem)]">
                 <div className="space-y-6 p-6">
                     <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
@@ -57,7 +57,7 @@ export function FieldDetails({ table, fieldName }: FieldDetailsProps) {
     const isPrimaryKey = primaryKeyCols.includes(column.column_name);
 
     return (
-        <ScrollArea className="h-[calc(100vh-8rem)]">
+        <ScrollArea className="h-[calc(100dvh-8rem)]">
             <div className="space-y-6 p-6">
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">

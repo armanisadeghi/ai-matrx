@@ -23,7 +23,7 @@ export function TableDetails({ table }: TableDetailsProps) {
     );
 
     return (
-        <ScrollArea className="h-[calc(100vh-8rem)]">
+        <ScrollArea className="h-[calc(100dvh-8rem)]">
             <div className="space-y-6 p-6">
                 <div>
                     <h2 className="text-2xl font-bold mb-2">{table.table_name}</h2>

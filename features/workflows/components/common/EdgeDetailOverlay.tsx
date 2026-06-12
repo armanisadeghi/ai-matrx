@@ -202,7 +202,7 @@ export function EdgeDetailOverlay({
       />
 
       {/* Overlay Content */}
-      <div className="relative bg-textured rounded-lg shadow-2xl border-border w-full max-w-4xl mx-4 h-[90vh] flex flex-col">
+      <div className="relative bg-textured rounded-lg shadow-2xl border-border w-full max-w-4xl mx-4 h-[90dvh] flex flex-col">
         {/* Compact Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-3">

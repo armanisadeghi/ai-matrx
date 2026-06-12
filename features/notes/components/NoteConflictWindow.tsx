@@ -165,7 +165,7 @@ export function NoteConflictWindow({
           left: pos.x,
           top: pos.y,
           width: Math.min(800, typeof window !== "undefined" ? window.innerWidth - 40 : 800),
-          maxHeight: "80vh",
+          maxHeight: "80dvh",
         }}
       >
         {/* Header — draggable */}
@@ -214,7 +214,7 @@ export function NoteConflictWindow({
         </div>
 
         {/* Content area */}
-        <div className="flex-1 min-h-0 overflow-auto p-4" style={{ maxHeight: "50vh" }}>
+        <div className="flex-1 min-h-0 overflow-auto p-4" style={{ maxHeight: "50dvh" }}>
           {activeTab === "diff" && <DiffView segments={analysis.segments} />}
 
           {activeTab === "local" && (

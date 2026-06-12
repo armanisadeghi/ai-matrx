@@ -72,7 +72,7 @@ export default function FloatingSliderPage() {
   ];
 
   return (
-    <div className="relative h-screen w-full flex items-center justify-center">
+    <div className="relative h-dvh w-full flex items-center justify-center">
       <SliderDock items={links} className="bg-transparent" initialIndex={0} />
     </div>
   );

@@ -97,7 +97,7 @@ export function ContextDebugModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[80vh]">
+      <DialogContent className="max-w-3xl max-h-[80dvh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="text-lg">Context Debug</span>
@@ -122,7 +122,7 @@ export function ContextDebugModal({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="h-[60vh] pr-4">
+        <ScrollArea className="h-[60dvh] pr-4">
           <div className="space-y-6">
             {/* Standard Scopes */}
             <div>

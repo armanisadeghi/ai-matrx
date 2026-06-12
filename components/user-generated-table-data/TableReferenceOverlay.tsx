@@ -270,7 +270,7 @@ export default function TableReferenceOverlay({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[50vw] max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-[50vw] max-h-[90dvh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Link className="h-5 w-5" />
@@ -278,7 +278,7 @@ export default function TableReferenceOverlay({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 overflow-y-auto max-h-[calc(90vh-120px)] pr-2">
+        <div className="space-y-6 overflow-y-auto max-h-[calc(90dvh-120px)] pr-2">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Create intelligent references for workflows. Select the type of
             reference and configure the specific data you want to target.

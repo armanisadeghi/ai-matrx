@@ -100,7 +100,7 @@ export default function Page() {
     pct >= 100 ? "#EA4335" : pct >= 85 ? "#FBBC05" : "#34A853";
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] dark:bg-zinc-900 font-[system-ui,sans-serif]">
+    <div className="min-h-dvh bg-[#f8f9fa] dark:bg-zinc-900 font-[system-ui,sans-serif]">
 
       {/* ── Top nav ─────────────────────────────────────────────── */}
       <header className="bg-white dark:bg-zinc-800 border-b border-[#dfe1e5] dark:border-zinc-700 px-6 py-3 flex items-center justify-between">

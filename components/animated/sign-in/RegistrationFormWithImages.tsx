@@ -8,7 +8,7 @@ import AuthSignInForm from "@/components/animated/login/AuthSignIn";
 
 function RegistrationFormWithImages() {
     return (
-        <div className="w-full min-h-screen grid grid-cols-1 md:grid-cols-2">
+        <div className="w-full min-h-dvh grid grid-cols-1 md:grid-cols-2">
             <AuthSignInForm/>
             <div
                 className="relative w-full z-20 hidden md:flex border-l border-neutral-100 dark:border-neutral-800 overflow-hidden bg-white dark:bg-neutral-900 items-center justify-center">

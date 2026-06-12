@@ -300,7 +300,7 @@ export default function CreateTableModal({
                     No fields added yet. Click 'Add Field' to begin.
                   </div>
                 ) : (
-                  <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
+                  <div className="space-y-4 max-h-[40dvh] overflow-y-auto pr-2">
                     {fields.map((field, index) => (
                       <div
                         key={index}

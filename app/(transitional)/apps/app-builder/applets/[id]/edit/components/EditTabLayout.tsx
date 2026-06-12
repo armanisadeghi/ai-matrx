@@ -159,7 +159,7 @@ export default function EditTabLayout({ title, subtitle, tabs, id, onSave, hasCh
                     </div>
 
                     {showPreview && (
-                        <div className="md:w-1/2 bg-gray-50 dark:bg-gray-800 rounded-lg border-border p-4 h-[calc(100vh-500px)] sticky top-4 overflow-hidden relative">
+                        <div className="md:w-1/2 bg-gray-50 dark:bg-gray-800 rounded-lg border-border p-4 h-[calc(100dvh-500px)] sticky top-4 overflow-hidden relative">
                             {applet?.slug ? (
                                 <div className="h-full">
                                     <LiveAppAndAppletPreview

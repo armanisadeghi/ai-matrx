@@ -346,7 +346,7 @@ export function SaveTemplateModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="max-w-5xl max-h-[90vh] p-0 overflow-hidden flex flex-col gap-0">
+            <DialogContent className="max-w-5xl max-h-[90dvh] p-0 overflow-hidden flex flex-col gap-0">
                 {formFields}
                 {/* Scrollable content */}
                 <div className="flex-1 overflow-y-auto min-h-0">

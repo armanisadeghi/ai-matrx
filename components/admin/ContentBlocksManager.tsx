@@ -1436,7 +1436,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create New Content Block</DialogTitle>
           </DialogHeader>
@@ -1605,14 +1605,14 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         open={isCategoryManagementOpen}
         onOpenChange={setIsCategoryManagementOpen}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-4xl max-h-[90dvh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Manage Categories</DialogTitle>
           </DialogHeader>
 
           <div
             className="flex-1 overflow-y-auto pr-4"
-            style={{ maxHeight: "calc(90vh - 180px)" }}
+            style={{ maxHeight: "calc(90dvh - 180px)" }}
           >
             <div className="space-y-6 pb-6">
               {/* Create New Category */}

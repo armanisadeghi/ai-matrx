@@ -87,7 +87,7 @@ const AdminPage = () => {
         return (
             <ErrorBoundary>
 
-                <div className="min-h-screen py-10 bg-neutral-100 dark:bg-neutral-900 w-full">
+                <div className="min-h-dvh py-10 bg-neutral-100 dark:bg-neutral-900 w-full">
                     <div className="w-full px-4">
                         <button
                             onClick={handleBackToSelection}
@@ -108,7 +108,7 @@ const AdminPage = () => {
     if (selectedCategory) {
         const category = adminCategories.find(c => c.name === selectedCategory);
         return (
-            <div className="min-h-screen py-10 bg-neutral-100 dark:bg-neutral-900 w-full">
+            <div className="min-h-dvh py-10 bg-neutral-100 dark:bg-neutral-900 w-full">
                 <div className="w-full px-4">
                     <button
                         onClick={handleBackToSelection}
@@ -133,7 +133,7 @@ const AdminPage = () => {
     }
 
     return (
-        <div className="min-h-screen py-10 bg-neutral-100 dark:bg-neutral-900 w-full">
+        <div className="min-h-dvh py-10 bg-neutral-100 dark:bg-neutral-900 w-full">
             <div className="w-full mx-2">
                 <h1 className="text-4xl font-bold text-center mb-4">Admin Dashboard</h1>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

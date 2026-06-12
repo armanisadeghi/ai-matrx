@@ -153,7 +153,7 @@ export function PromptBuiltinEditDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[90vh]">
+      <DialogContent className="max-w-7xl max-h-[90dvh]">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -195,7 +195,7 @@ export function PromptBuiltinEditDialog({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-8rem)]">
+        <ScrollArea className="max-h-[calc(90dvh-8rem)]">
           <div className="p-2">
             <PromptBuiltinEditPanel
               selectedItem={{ type: 'shortcut', data: editShortcutData as any }}

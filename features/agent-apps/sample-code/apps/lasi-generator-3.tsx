@@ -73,7 +73,7 @@ export default function LSIKeywordGenerator({
     parsedData && Object.values(parsedData).some((arr) => arr.length > 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-dvh bg-gradient-to-br from-background via-background to-muted/20">
       <div className="max-w-6xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="pt-8 pb-4">

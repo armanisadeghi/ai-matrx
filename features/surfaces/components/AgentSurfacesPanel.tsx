@@ -888,7 +888,7 @@ function BindingEditorDialog({
 
   return (
     <Dialog open onOpenChange={(o) => !o && !busy && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[90dvh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {existing ? "Edit surface binding" : "New surface binding"}

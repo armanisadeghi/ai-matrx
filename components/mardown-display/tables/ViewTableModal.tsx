@@ -51,7 +51,7 @@ const ViewTableModal: React.FC<ViewTableModalProps> = ({
         </DialogHeader>
         
         <div className="py-0">          
-          <div className="h-[calc(85vh-140px)] overflow-auto border-border rounded-lg bg-textured">
+          <div className="h-[calc(85dvh-140px)] overflow-auto border-border rounded-lg bg-textured">
             <UserTableViewer tableId={tableInfo.table_id} showTableSelector={false} />
           </div>
         </div>

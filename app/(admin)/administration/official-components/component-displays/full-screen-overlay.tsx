@@ -86,7 +86,7 @@ const [isOpen, setIsOpen] = useState(false);
     onCancel={() => setIsOpen(false)}
     cancelButtonLabel="Cancel"        // Custom cancel button text
     width="90vw"                      // Custom width (default: 90vw)
-    height="95vh"                     // Custom height (default: 95vh)
+    height="95dvh"                     // Custom height (default: 95dvh)
   />
 </>`;
 
@@ -116,7 +116,7 @@ const [isOpen, setIsOpen] = useState(false);
         onCancel={() => setIsOpen(false)}
         cancelButtonLabel="Cancel"
         width="90vw"
-        height="95vh"
+        height="95dvh"
       />
     </>
   );

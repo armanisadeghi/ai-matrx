@@ -143,7 +143,7 @@ const RichTextEditor: React.FC<TextEditorProps> = ({ content, onChange, isExpand
     };
 
     return (
-        <div className={cn("w-full", isExpanded ? "h-[calc(100vh-8rem)]" : "min-h-[200px]")}>
+        <div className={cn("w-full", isExpanded ? "h-[calc(100dvh-8rem)]" : "min-h-[200px]")}>
             <div className="border-b border-neutral-200 dark:border-neutral-700 p-1 bg-white dark:bg-neutral-800 flex flex-wrap gap-1">
                 <Toggle aria-label="Bold" onClick={() => insertFormatting('**')}>
                     <Bold className="h-4 w-4" />

@@ -21,7 +21,7 @@ import { CreditCard, Mail, MessageSquare, PlusCircle, Settings, User } from "luc
 
 export default function ModalTest() {
     return (
-        <div className="flex items-center justify-center min-h-screen p-4 space-y-4 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
+        <div className="flex items-center justify-center min-h-dvh p-4 space-y-4 bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
             <OpenModal />
         </div>
     )

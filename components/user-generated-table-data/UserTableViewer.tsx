@@ -1734,7 +1734,7 @@ const UserTableViewer = ({
           setShowTextModal(open);
         }}
       >
-        <DialogContent className="sm:max-w-[60vw] max-h-[80vh]">
+        <DialogContent className="sm:max-w-[60vw] max-h-[80dvh]">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle>
@@ -1760,7 +1760,7 @@ const UserTableViewer = ({
               )}
             </div>
           </DialogHeader>
-          <div className="max-h-[50vh] overflow-y-auto">
+          <div className="max-h-[50dvh] overflow-y-auto">
             <Textarea
               value={expandedText || ""}
               onChange={(e) => handleExpandedTextChange(e.target.value)}

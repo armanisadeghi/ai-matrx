@@ -250,7 +250,7 @@ const RemovalDetails = ({ allRemovals }) => {
 
       {selectedItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-textured p-4 rounded-md max-w-3xl w-full max-h-[80vh] overflow-auto">
+          <div className="bg-textured p-4 rounded-md max-w-3xl w-full max-h-[80dvh] overflow-auto">
             <h2 className="text-xl font-bold mb-2">Full Text</h2>
             <p>
               <strong>Type:</strong>{" "}

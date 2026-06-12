@@ -134,7 +134,7 @@ export function SettingsShell({
       <WindowPanel
         title="Settings"
         width="72vw"
-        height="78vh"
+        height="78dvh"
         minWidth={640}
         minHeight={480}
         overlayId="userPreferencesWindow"

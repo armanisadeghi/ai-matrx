@@ -137,7 +137,7 @@ export default function ToolOverlay({ entry, events, onOpenOverlay, toolGroupId 
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                 </Button>
             </div>
-            <pre className="text-xs bg-slate-50 dark:bg-slate-900 p-4 rounded-lg overflow-auto max-h-[60vh] whitespace-pre-wrap">
+            <pre className="text-xs bg-slate-50 dark:bg-slate-900 p-4 rounded-lg overflow-auto max-h-[60dvh] whitespace-pre-wrap">
                 {text}
             </pre>
         </div>

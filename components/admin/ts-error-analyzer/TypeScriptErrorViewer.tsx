@@ -274,7 +274,7 @@ const TypeScriptErrorViewer: React.FC = () => {
   };
 
   return (
-    <div className="p-4 bg-slate-100 dark:bg-slate-900 min-h-screen text-slate-800 dark:text-slate-200 w-full">
+    <div className="p-4 bg-slate-100 dark:bg-slate-900 min-h-dvh text-slate-800 dark:text-slate-200 w-full">
       <div className="w-full">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">TypeScript Errors</h1>
@@ -584,7 +584,7 @@ const TypeScriptErrorViewer: React.FC = () => {
           onClick={() => setExpandedError(null)}
         >
           <div 
-            className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg max-w-3xl w-full max-h-[80vh] overflow-auto"
+            className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg max-w-3xl w-full max-h-[80dvh] overflow-auto"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-start mb-4">

@@ -182,7 +182,7 @@ export function ModelChangeConflictModal({
     return (
         <TooltipProvider delayDuration={200}>
             <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-                <DialogContent className="max-w-3xl max-h-[88vh] flex flex-col gap-0 p-0">
+                <DialogContent className="max-w-3xl max-h-[88dvh] flex flex-col gap-0 p-0">
 
                     {/* ── Header ── */}
                     <DialogHeader className="px-5 py-3 border-b border-border shrink-0">

@@ -256,9 +256,9 @@ const ComponentLibrary = () => {
 
     if (isLoading) {
         return (
-            <div className="container mx-auto px-4 py-6 min-h-screen">
+            <div className="container mx-auto px-4 py-6 min-h-dvh">
                 <Card className="border-border bg-textured shadow-lg h-full">
-                    <CardContent className="p-8 flex justify-center items-center min-h-[80vh]">
+                    <CardContent className="p-8 flex justify-center items-center min-h-[80dvh]">
                         <div className="text-center">
                             <div className="animate-pulse h-6 w-24 bg-gray-200 dark:bg-gray-700 rounded mx-auto mb-4"></div>
                             <p className="text-gray-500 dark:text-gray-400">Loading components...</p>
@@ -270,13 +270,13 @@ const ComponentLibrary = () => {
     }
 
     return (
-        <div className="container mx-auto px-4 py-6 min-h-screen">
+        <div className="container mx-auto px-4 py-6 min-h-dvh">
             <Card className="border-border bg-textured shadow-lg h-full">
                 <CardHeader>
                     <CardTitle className="text-2xl font-bold text-blue-500 dark:text-blue-400">Component Library</CardTitle>
                     <CardDescription className="text-gray-500 dark:text-gray-400">Import and export components for reuse</CardDescription>
                 </CardHeader>
-                <CardContent className="min-h-[80vh]">
+                <CardContent className="min-h-[80dvh]">
                     {error && (
                         <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300 rounded-md">{error}</div>
                     )}
@@ -350,7 +350,7 @@ const ComponentLibrary = () => {
                                         </Button>
                                     </div>
                                 </div>
-                                <div className="space-y-2 flex flex-col h-[calc(80vh-12rem)]">
+                                <div className="space-y-2 flex flex-col h-[calc(80dvh-12rem)]">
                                     <div className="flex items-center justify-between">
                                         <Label className="text-gray-900 dark:text-gray-100 flex items-center gap-2">
                                             {getComponentTypeIcon()}
@@ -387,7 +387,7 @@ const ComponentLibrary = () => {
                         </TabsContent>
                         <TabsContent value="import" className="mt-6 h-full">
                             <div className="space-y-6 h-full">
-                                <div className="space-y-2 flex flex-col h-[calc(80vh-8rem)]">
+                                <div className="space-y-2 flex flex-col h-[calc(80dvh-8rem)]">
                                     <Label className="text-gray-900 dark:text-gray-100">Import JSON Data</Label>
                                     <Textarea
                                         value={importData}

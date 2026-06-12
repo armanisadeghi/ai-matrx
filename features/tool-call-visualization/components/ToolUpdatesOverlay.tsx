@@ -311,7 +311,7 @@ export const ToolUpdatesOverlay: React.FC<ToolUpdatesOverlayProps> = ({
       tabs={tabs}
       initialTab={resolvedTopTab}
       width="95vw"
-      height="95vh"
+      height="95dvh"
     />
   );
 };

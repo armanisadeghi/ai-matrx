@@ -47,7 +47,7 @@ export default function FetchRecordsTest() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-8">
+        <div className="min-h-dvh bg-gray-100 dark:bg-gray-900 p-8">
             <div className="max-w-6xl mx-auto bg-textured rounded-lg shadow-md p-6">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">Message Fetch Records Test</h1>
 

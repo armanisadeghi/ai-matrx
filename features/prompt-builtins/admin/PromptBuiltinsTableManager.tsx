@@ -1144,14 +1144,14 @@ export function PromptBuiltinsTableManager({
           open={!!usageModalBuiltinId}
           onOpenChange={() => setUsageModalBuiltinId(null)}
         >
-          <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogContent className="max-w-2xl max-h-[80dvh]">
             <DialogHeader>
               <DialogTitle>Shortcut Usage</DialogTitle>
               <DialogDescription>
                 Shortcuts using this builtin
               </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="max-h-[60vh] pr-4">
+            <ScrollArea className="max-h-[60dvh] pr-4">
               {usageModalBuiltinId &&
                 (() => {
                   const builtin = builtins.find(

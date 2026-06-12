@@ -48,7 +48,7 @@ export function SchemaActions() {
                 </div>
             </CardHeader>
             <CardContent>
-                <ScrollArea className="h-[calc(100vh-12rem)] pr-4">
+                <ScrollArea className="h-[calc(100dvh-12rem)] pr-4">
                     <div className="space-y-4">
                         <div>
                             <h3 className="text-sm font-medium mb-2">Quick Actions</h3>
