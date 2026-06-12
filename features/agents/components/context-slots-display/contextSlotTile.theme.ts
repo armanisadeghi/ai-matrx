@@ -57,11 +57,11 @@ export const CONTEXT_SLOT_TILE_THEMES: Record<string, ContextSlotTileTheme> = {
       "bg-gradient-to-br from-slate-100 via-slate-50/95 to-white/80 dark:from-slate-900/60 dark:via-slate-900/40 dark:to-slate-950/20",
     icon: "text-slate-600 dark:text-slate-400",
   },
-  /** Collapsed multi-slot summary chip. */
+  /** Collapsed multi-slot summary chip — secondary violet wash. */
   "context-group": {
     surface:
-      "bg-gradient-to-br from-zinc-100 via-zinc-50/95 to-white/80 dark:from-zinc-900/55 dark:via-zinc-900/35 dark:to-zinc-950/20",
-    icon: "text-zinc-600 dark:text-zinc-400",
+      "bg-gradient-to-br from-violet-100 via-violet-50/95 to-white/80 dark:from-violet-950/50 dark:via-violet-950/25 dark:to-violet-950/10",
+    icon: "text-violet-600 dark:text-violet-400",
   },
   default: {
     surface:

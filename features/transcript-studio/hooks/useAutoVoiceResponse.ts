@@ -25,6 +25,10 @@ import {
   extractFlatText,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { useCartesiaStreamingSpeaker } from "@/features/tts/hooks/useCartesiaStreamingSpeaker";
+import {
+  setVoicePlayback,
+  clearVoicePlayback,
+} from "../state/voicePlaybackBus";
 
 interface UseAutoVoiceResponseOptions {
   conversationId: string | null | undefined;
@@ -37,7 +41,12 @@ export function useAutoVoiceResponse({
   enabled,
 }: UseAutoVoiceResponseOptions) {
   const store = useAppStore();
-  const speaker = useCartesiaStreamingSpeaker({ processMarkdown: true });
+  // Small first chunk = fastest first audio; the rest stream in larger pieces.
+  const speaker = useCartesiaStreamingSpeaker({
+    processMarkdown: true,
+    firstChunkMax: 90,
+    nextChunkMax: 300,
+  });
 
   // Messages already fully handled (spoken, or skipped because they predate us
   // / arrived complete). Keyed by message id.
@@ -88,9 +97,14 @@ export function useAutoVoiceResponse({
     if (handledIdRef.current.has(latestId)) return;
 
     if (activeIdRef.current !== latestId) {
-      // A new, not-yet-handled assistant message.
-      if (status === "complete") {
-        // Landed complete without us ever streaming it — do NOT auto-play.
+      // A new, not-yet-handled assistant message. ONLY auto-speak if it is
+      // genuinely streaming in live — `_clientStatus` is "pending"/"streaming"
+      // for a turn produced this session. Anything else ("complete", or
+      // undefined for messages hydrated from the DB on load) must NOT auto-play
+      // — it requires a manual click. This is what stops the bottom button from
+      // "playing" a hydrated last message on page load.
+      const isLive = status === "pending" || status === "streaming";
+      if (!isLive) {
         handledIdRef.current.add(latestId);
         return;
       }
@@ -118,6 +132,18 @@ export function useAutoVoiceResponse({
       void speaker.stop();
     }
   }, [enabled, speaker]);
+
+  // Publish playback state to the header bus so a global stop control can show
+  // up and halt audio from anywhere (the speaker instance lives here).
+  useEffect(() => {
+    setVoicePlayback({
+      active: speaker.isPlaying || speaker.isLoading,
+      playing: speaker.isPlaying,
+      stop: () => void speaker.stop(),
+    });
+  }, [speaker.isPlaying, speaker.isLoading, speaker]);
+
+  useEffect(() => clearVoicePlayback, []);
 
   return speaker;
 }

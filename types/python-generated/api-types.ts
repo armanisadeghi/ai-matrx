@@ -21676,6 +21676,10 @@ export interface components {
              * @default false
              */
             truncate_audio_for_testing: boolean;
+            /** Max Images */
+            max_images?: number | null;
+            /** Max Videos */
+            max_videos?: number | null;
         };
         /**
          * PodcastMediaUploadResponse

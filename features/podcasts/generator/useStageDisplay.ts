@@ -11,7 +11,7 @@
 // a domain-specific icon instead of an identical green check.
 
 import { useEffect, useState } from "react";
-import { stageKind, type StageKind } from "./constants";
+import { stageKind, formatStageLabel, type StageKind } from "./constants";
 import type { PodcastRunState } from "./types";
 
 export interface DisplayStage {
@@ -126,7 +126,7 @@ export function useStageDisplay(state: PodcastRunState): StageDisplay {
     }
     stages.push({
       key: s.stage,
-      label: s.label,
+      label: formatStageLabel(s.stage, s.label),
       status: s.status,
       kind: stageKind(s.stage),
     });

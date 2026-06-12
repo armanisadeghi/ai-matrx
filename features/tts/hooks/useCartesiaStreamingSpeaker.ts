@@ -72,6 +72,14 @@ export interface UseCartesiaStreamingSpeakerOptions {
 
 type CartesiaWs = ReturnType<CartesiaClient["tts"]["websocket"]>;
 
+/**
+ * Minimum buffered chars before the FIRST live-stream send when no sentence
+ * boundary has appeared yet. Small = faster time-to-first-audio (we send a
+ * short partial phrase rather than waiting for a full sentence to stream from
+ * the LLM). Subsequent flushes wait for sentence boundaries / a larger cap.
+ */
+const FIRST_SEND_MIN_CHARS = 60;
+
 export function useCartesiaStreamingSpeaker({
   processMarkdown = true,
   initialLoading = false,
@@ -316,6 +324,17 @@ export function useCartesiaStreamingSpeaker({
       const player = playerRef.current;
       if (!ws || !player) return;
       const req = { ...st.baseRequest, transcript: chunk, continue: !isLast };
+      const first = !st.started;
+      // Proof-of-streaming log: the EXACT text + size + method + time we hand to
+      // Cartesia, the instant we send it. If first-audio is slow, compare the
+      // first-send timestamp here against when audio actually starts — that gap
+      // is pure provider generation latency, not our chunking.
+      // eslint-disable-next-line no-console
+      console.log(
+        `[tts-stream] ${first ? "SEND(first)" : "continue"} t=${Math.round(
+          performance.now(),
+        )}ms last=${isLast} len=${chunk.length} text=${JSON.stringify(chunk)}`,
+      );
       if (!st.started) {
         st.started = true;
         const resp = await ws.send(req);
@@ -324,14 +343,26 @@ export function useCartesiaStreamingSpeaker({
           st.playStarted = true;
           hasPlayedRef.current = true;
           setPhaseIfMounted("playing");
-          player.play(resp.source).catch((err: unknown) => {
-            if (!st.session.signal.aborted) {
-              console.error(
-                "[useCartesiaStreamingSpeaker] stream play failed:",
-                err,
-              );
-            }
-          });
+          // play() resolves when the source finishes draining — for a
+          // continued context that's after the final continue:false. Flip back
+          // to idle then so the header "playing" indicator stops animating once
+          // audio is actually done (the stream API never awaited this before,
+          // so phase stayed "playing" forever).
+          player
+            .play(resp.source)
+            .then(() => {
+              if (!st.session.signal.aborted && streamRef.current === st) {
+                setPhaseIfMounted("idle");
+              }
+            })
+            .catch((err: unknown) => {
+              if (!st.session.signal.aborted) {
+                console.error(
+                  "[useCartesiaStreamingSpeaker] stream play failed:",
+                  err,
+                );
+              }
+            });
         }
       } else {
         await ws.continue(req);
@@ -394,11 +425,14 @@ export function useCartesiaStreamingSpeaker({
         const unsent = fullText.slice(st.sentLen);
         let cut = lastSentenceBoundary(unsent);
         if (cut < 0) {
-          // No complete sentence yet — flush at a space once the buffer is big
-          // enough to keep latency bounded; otherwise wait for more text.
-          if (unsent.length <= 400) return;
-          const sp = unsent.lastIndexOf(" ", 400);
-          cut = sp > 40 ? sp : 400;
+          // No complete sentence yet. For the VERY FIRST send, don't wait for a
+          // full sentence — flush at a word boundary as soon as we have a small
+          // amount of text, so time-to-first-audio is minimized. After that,
+          // only force-flush mid-sentence once the buffer grows past a soft cap.
+          const softCap = st.started ? 400 : FIRST_SEND_MIN_CHARS;
+          if (unsent.length <= softCap) return;
+          const sp = unsent.lastIndexOf(" ", softCap);
+          cut = sp > 20 ? sp : softCap;
         }
         const ready = unsent.slice(0, cut);
         st.sentLen += cut;
@@ -510,12 +544,31 @@ export function useCartesiaStreamingSpeaker({
     sessionRef.current = null;
     streamRef.current?.session.abort();
     streamRef.current = null;
-    if (playerRef.current && hasPlayedRef.current) {
+    // Tear down the player and NULL it. WebPlayer.stop() closes its underlying
+    // AudioContext; if we keep the ref, a second stop() (header button +
+    // auto-disable effect + unmount can all fire) calls stop() on an already-
+    // closed context → "Cannot close a closed AudioContext". Nulling makes a
+    // repeat stop a no-op and forces ensureConnection to build a fresh player
+    // (a closed context can't be reused) for the next utterance.
+    const player = playerRef.current;
+    playerRef.current = null;
+    hasPlayedRef.current = false;
+    if (player) {
       try {
-        await playerRef.current.stop();
-      } catch (err) {
-        console.error("[useCartesiaStreamingSpeaker] stop failed:", err);
+        await player.stop();
+      } catch {
+        // Already closed / never started — benign.
       }
+    }
+    // Drop the socket too so the next speak mints a fresh token + connection
+    // and pairs it with the fresh player.
+    if (websocketRef.current) {
+      try {
+        websocketRef.current.disconnect();
+      } catch {
+        /* ignore */
+      }
+      websocketRef.current = null;
     }
     setPhaseIfMounted("idle");
   }, [setPhaseIfMounted]);

@@ -32,7 +32,6 @@ export default function ImagesLayout({ children }: { children: ReactNode }) {
       <PageHeader>
         <ImagesListHeader />
       </PageHeader>
-      <span className="shell-hide-dock" aria-hidden="true" />
       <div className="flex h-dvh min-h-0 overflow-hidden bg-textured pt-[calc(var(--shell-header-h,2.75rem)+0.5rem)]">
         <ImagesSidebar />
         <main className="flex-1 min-w-0 min-h-0 overflow-hidden max-md:pb-24">

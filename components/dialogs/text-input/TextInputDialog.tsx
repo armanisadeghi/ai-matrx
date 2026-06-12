@@ -36,6 +36,7 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -61,6 +62,10 @@ export interface TextInputDialogProps {
   description?: React.ReactNode;
   placeholder?: string;
   defaultValue?: string;
+  /** Use a textarea instead of a single-line input (for longer descriptions). */
+  multiline?: boolean;
+  /** Visible rows when `multiline` is true. Default 5. */
+  rows?: number;
   confirmLabel?: string;
   cancelLabel?: string;
   /** When true, both buttons are disabled and a spinner shows on confirm. */
@@ -81,6 +86,8 @@ export function TextInputDialog({
   description,
   placeholder,
   defaultValue = "",
+  multiline = false,
+  rows = 5,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   busy = false,
@@ -124,25 +131,42 @@ export function TextInputDialog({
 
   const body = (
     <form onSubmit={handleFormSubmit} className="space-y-2">
-      <Input
-        autoFocus
-        value={value}
-        onChange={(event) => {
-          setValue(event.target.value);
-          if (error) setError(null);
-        }}
-        placeholder={placeholder}
-        disabled={busy}
-        // text-base = 16px, prevents iOS Safari zoom-on-focus
-        className={cn("text-base", error && "border-destructive")}
-        aria-invalid={!!error}
-        aria-describedby={error ? "text-input-dialog-error" : undefined}
-      />
+      {multiline ? (
+        <Textarea
+          autoFocus
+          value={value}
+          onChange={(event) => {
+            setValue(event.target.value);
+            if (error) setError(null);
+          }}
+          placeholder={placeholder}
+          disabled={busy}
+          rows={rows}
+          className={cn(
+            "min-h-[8rem] resize-y text-base",
+            error && "border-destructive",
+          )}
+          aria-invalid={!!error}
+          aria-describedby={error ? "text-input-dialog-error" : undefined}
+        />
+      ) : (
+        <Input
+          autoFocus
+          value={value}
+          onChange={(event) => {
+            setValue(event.target.value);
+            if (error) setError(null);
+          }}
+          placeholder={placeholder}
+          disabled={busy}
+          // text-base = 16px, prevents iOS Safari zoom-on-focus
+          className={cn("text-base", error && "border-destructive")}
+          aria-invalid={!!error}
+          aria-describedby={error ? "text-input-dialog-error" : undefined}
+        />
+      )}
       {error ? (
-        <p
-          id="text-input-dialog-error"
-          className="text-sm text-destructive"
-        >
+        <p id="text-input-dialog-error" className="text-sm text-destructive">
           {error}
         </p>
       ) : null}
@@ -161,11 +185,7 @@ export function TextInputDialog({
       >
         {cancelLabel}
       </Button>
-      <Button
-        type="button"
-        onClick={submit}
-        disabled={busy || !value.trim()}
-      >
+      <Button type="button" onClick={submit} disabled={busy || !value.trim()}>
         {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         {confirmLabel}
       </Button>

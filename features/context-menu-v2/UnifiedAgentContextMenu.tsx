@@ -250,6 +250,7 @@ export function UniversalContextMenuV2({
     placementTypes: dbPlacementTypes,
     addedContexts: resolvedAddedContexts,
     excludedContexts: resolvedExcludedContexts,
+    surfaceName,
     enabled: dbPlacementTypes.length > 0,
     scope,
     scopeId,

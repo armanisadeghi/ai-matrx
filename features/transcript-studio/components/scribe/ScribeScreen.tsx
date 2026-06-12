@@ -42,6 +42,7 @@ import { AssistantScreen } from "./AssistantScreen";
 import { ExperimentalAgentScreen } from "./ExperimentalAgentScreen";
 import { ScribeLiveScreen } from "./ScribeLiveScreen";
 import { WorkingDocumentHeader } from "./WorkingDocumentHeader";
+import { VoicePlaybackButton } from "./VoicePlaybackButton";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { useStudioAutoLabel } from "../../hooks/useStudioAutoLabel";
 import { useStudioSession } from "../../hooks/useStudioSession";
@@ -198,7 +199,9 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
               <ChevronLeft className="h-5 w-5" />
             </button>
           )}
-          <div className="hidden min-w-0 flex-1 sm:block">
+          {/* Title shortened (max-w) to make room for the voice-playback stop
+              control that appears next to the mic while audio is playing. */}
+          <div className="hidden min-w-0 max-w-[12rem] flex-1 sm:block">
             {mounted && session ? (
               <EditableSessionTitle
                 sessionId={sessionId}
@@ -233,6 +236,9 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
               ))}
             </div>
           </div>
+          {/* Voice playback stop — only renders while a voice reply is
+              loading/playing, so audio can be stopped from any tab. */}
+          <VoicePlaybackButton />
           {/* Recording control — inline, session-global. Tap to start; while
               recording it pulses red and stops. */}
           <button

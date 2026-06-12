@@ -11,6 +11,7 @@ import {
   type StageRow,
   type PodcastType,
 } from "@/features/podcasts/generator/types";
+import { formatStageLabel } from "@/features/podcasts/generator/constants";
 import type { PcStudioRun, PcStudioRunStatus } from "@/features/podcasts/types";
 import type { PcStudioRunUpdate } from "./service";
 import type { RunAsset, RunDetail, RunLiveness } from "./run-types";
@@ -47,7 +48,9 @@ export function rowToRunState(row: PcStudioRun): PodcastRunState {
   // moderation-rejected image). Per-asset failures show as retryable cards.
   const producedEpisode = Boolean(row.audio_url) || Boolean(row.episode_id);
   const status =
-    row.status === "failed" && producedEpisode ? "done" : statusToRun(row.status);
+    row.status === "failed" && producedEpisode
+      ? "done"
+      : statusToRun(row.status);
   return {
     ...INITIAL_RUN_STATE,
     status,
@@ -62,8 +65,16 @@ export function rowToRunState(row: PcStudioRun): PodcastRunState {
     description: row.description ?? "",
     script: row.script ?? "",
     audioUrl: row.audio_url ?? null,
-    images: slotsFromUrls(row.image_urls ?? [], row.image_prompts ?? [], "image"),
-    videos: slotsFromUrls(row.video_urls ?? [], row.video_prompts ?? [], "video"),
+    images: slotsFromUrls(
+      row.image_urls ?? [],
+      row.image_prompts ?? [],
+      "image",
+    ),
+    videos: slotsFromUrls(
+      row.video_urls ?? [],
+      row.video_prompts ?? [],
+      "video",
+    ),
     showId: row.show_id ?? null,
     episodeId: row.episode_id ?? null,
     episodeSlug: row.episode_slug ?? null,
@@ -94,6 +105,7 @@ function assetStatusToSlot(status: string): MediaSlot["status"] {
 function slotsFromAssets(
   assets: RunAsset[],
   kind: MediaSlot["kind"],
+  fallbackPrompts: string[] = [],
 ): MediaSlot[] {
   return assets
     .filter((a) => a.asset_kind === kind)
@@ -101,12 +113,30 @@ function slotsFromAssets(
     .map((a) => ({
       index: a.slot,
       kind,
-      prompt: a.prompt ?? "",
+      prompt: a.prompt?.trim() || fallbackPrompts[a.slot]?.trim() || "",
       // Prefer the (often signed) URL; podcastMediaRef recovers the file_id so
       // InlineMediaRef re-mints a durable URL for the owner.
       url: a.url ?? null,
       status: assetStatusToSlot(a.status),
     }));
+}
+
+/** Fill empty slot prompts from a persisted pc_studio_runs row. */
+export function mergeRowPrompts(
+  state: PodcastRunState,
+  row: PcStudioRun,
+): PodcastRunState {
+  return {
+    ...state,
+    images: state.images.map((slot) => ({
+      ...slot,
+      prompt: slot.prompt || row.image_prompts?.[slot.index] || "",
+    })),
+    videos: state.videos.map((slot) => ({
+      ...slot,
+      prompt: slot.prompt || row.video_prompts?.[slot.index] || "",
+    })),
+  };
 }
 
 /** Rebuild render-ready run state from the durable agent_run detail. */
@@ -116,16 +146,20 @@ export function detailToRunState(detail: RunDetail): PodcastRunState {
   // marked 'failed' by the pre-fix backend that aborted the whole run on one
   // moderation-rejected image. This heals those records on read; per-asset
   // failures still render as retryable "Couldn't render" cards below.
-  const producedEpisode = Boolean(detail.audio_url) || Boolean(detail.episode_id);
+  const producedEpisode =
+    Boolean(detail.audio_url) || Boolean(detail.episode_id);
   const rawStatus = livenessToRunStatus(detail.liveness);
-  const status =
-    rawStatus === "error" && producedEpisode ? "done" : rawStatus;
+  const status = rawStatus === "error" && producedEpisode ? "done" : rawStatus;
   const { done, total } = detail.stage_progress;
   const stages: StageRow[] = detail.stages.map((s) => ({
     stage: s.stage_key,
-    label: s.stage_key,
+    label: formatStageLabel(s.stage_key),
     status:
-      s.status === "completed" ? "done" : s.status === "failed" ? "failed" : "running",
+      s.status === "completed"
+        ? "done"
+        : s.status === "failed"
+          ? "failed"
+          : "running",
     step: 0,
     total: 0,
   }));
@@ -152,15 +186,13 @@ export function detailToRunState(detail: RunDetail): PodcastRunState {
     script: detail.script ?? "",
     scriptPreview: detail.script ?? "",
     audioUrl: detail.audio_url ?? null,
-    images: slotsFromAssets(detail.assets, "image"),
-    videos: slotsFromAssets(detail.assets, "video"),
+    images: slotsFromAssets(detail.assets, "image", detail.image_descriptions),
+    videos: slotsFromAssets(detail.assets, "video", detail.video_descriptions),
     stages,
     episodeId: detail.episode_id ?? null,
     episodeSlug: detail.episode_slug ?? null,
     error:
-      status === "error"
-        ? "This run was interrupted before finishing."
-        : null,
+      status === "error" ? "This run was interrupted before finishing." : null,
     podcastType: (detail.podcast_type as PodcastType | null) ?? null,
   };
 }

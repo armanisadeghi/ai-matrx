@@ -11,7 +11,7 @@
  * modal (placeholder JSON viewer until real modals are built).
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -42,6 +42,7 @@ import { FileResourceChip } from "@/features/files";
 import { InlineMediaRef } from "@/features/files";
 import { ContextSlotChipStrip } from "@/features/agents/components/context-slots-display/ContextSlotChipStrip";
 import { ResourceAttachmentTile } from "./ResourceAttachmentTile";
+import { useCollapsibleMessageText } from "./useCollapsibleMessageText";
 import type { RootState } from "@/lib/redux/store";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -512,11 +513,7 @@ export function AgentUserMessage({
       state.conversations.byConversationId[conversationId]?.agentId ?? null,
   );
 
-  const [isCollapsed, setIsCollapsed] = useState(true);
-  const [shouldBeCollapsible, setShouldBeCollapsible] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const measureRef = useRef<HTMLDivElement>(null);
-  const previousContentRef = useRef<string>("");
 
   const content = extractFlatText(record);
   // Non-text content blocks (images, audio, tables, etc.) render as chips.
@@ -532,25 +529,13 @@ export function AgentUserMessage({
     .filter((b): b is NormalisedBlock => b !== null);
 
   const trimmedText = content.trim();
+  const { isCollapsed, setIsCollapsed, shouldBeCollapsible, measureRef } =
+    useCollapsibleMessageText(trimmedText);
   const hasContent = trimmedText || normalisedBlocks.length > 0;
   const metadata =
     record?.metadata && typeof record.metadata === "object"
       ? (record.metadata as Record<string, unknown>)
       : null;
-
-  useEffect(() => {
-    if (measureRef.current) {
-      const COLLAPSE_THRESHOLD = 48;
-      const contentHeight = measureRef.current.scrollHeight;
-      const isLong = contentHeight > COLLAPSE_THRESHOLD;
-      const changed = previousContentRef.current !== trimmedText;
-      setShouldBeCollapsible(isLong);
-      if (changed) {
-        setIsCollapsed(isLong);
-        previousContentRef.current = trimmedText;
-      }
-    }
-  }, [trimmedText]);
 
   if (!hasContent) return null;
 
@@ -606,9 +591,17 @@ export function AgentUserMessage({
 
           {/* Text content */}
           {trimmedText && (
-            <div className="relative">
+            <div className="relative min-w-0">
+              {/* Off-screen sizer — same width/typography, never clamped */}
               <div
                 ref={measureRef}
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 -z-10 opacity-0 text-xs text-foreground whitespace-pre-wrap break-words"
+              >
+                {trimmedText}
+              </div>
+
+              <div
                 className={cn(
                   "text-xs text-foreground whitespace-pre-wrap break-words overflow-hidden transition-all duration-300",
                   shouldBeCollapsible && isCollapsed && "max-h-12",

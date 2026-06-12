@@ -265,7 +265,7 @@ Key design decisions:
    - `#shell-panel-toggle` — secondary panel sidebar (desktop)
    - `#shell-panel-mobile` — secondary panel sidebar (mobile drawer)
 
-6. **Route-level controls** via sentinel elements: `<span class="shell-hide-dock">` and `<span class="shell-hide-sidebar">` — routes drop invisible zero-size spans; shell detects them with `:has()` and adjusts layout globally.
+6. **Route-level controls** via sentinel elements: `<span class="shell-show-dock">` (mobile dock, opt-in) and `<span class="shell-hide-sidebar">` — routes drop invisible zero-size spans; shell detects them with `:has()` and adjusts layout globally.
 
 7. **Glass tokens** are defined in `--shell-glass-*` (single source of truth in `app/globals.css`). The four canonical utility classes are `.shell-glass`, `.shell-glass-dock`, `.shell-glass-sheet`, and `.shell-glass-card`. Modal/overlay variants (`.shell-glass-overlay`, `.shell-glass-modal`) live outside `@layer utilities` with `!important` to win the cascade against Radix-injected inline styles.
 

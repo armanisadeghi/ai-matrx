@@ -70,7 +70,8 @@ export function ContextSlotItemsPopover({
         </PopoverTrigger>
         <PopoverContent
           align="start"
-          side="bottom"
+          side="top"
+          sideOffset={6}
           className="w-80 max-w-[92vw] p-1.5"
         >
           <p className="px-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">

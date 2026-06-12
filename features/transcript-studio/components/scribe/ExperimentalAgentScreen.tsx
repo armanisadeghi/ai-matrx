@@ -14,18 +14,8 @@
 // studio recording segment; this tab is about conversing, not archiving.
 // It shares the same conversation as the Agent tab via useStudioAssistant.
 
-import { useRef, useState } from "react";
-import {
-  FileText,
-  Keyboard,
-  Loader2,
-  Mic,
-  Send,
-  Square,
-  Volume2,
-  VolumeX,
-  Webhook,
-} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Keyboard, Loader2, Mic, Square, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -34,7 +24,7 @@ import { setUserInputText } from "@/features/agents/redux/execution-system/insta
 import { useGlobalRecording } from "@/providers/GlobalRecordingProvider";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { useAutoVoiceResponse } from "../../hooks/useAutoVoiceResponse";
-import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
+import { RecordActionSheet, type RecordActionKey } from "./RecordActionSheet";
 
 interface ExperimentalAgentScreenProps {
   sessionId: string;
@@ -58,8 +48,12 @@ export function ExperimentalAgentScreen({
   const recording = useGlobalRecording();
 
   const ownedRef = useRef(false);
-  const [pendingText, setPendingText] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Post-stop chooser state. The sheet opens the moment recording STOPS; the
+  // transcript ("pendingText") lands a couple seconds later. The user's choice
+  // can arrive before OR after the text — we reconcile the two below.
+  const [pendingText, setPendingText] = useState<string | null>(null);
+  const chosenKeyRef = useRef<RecordActionKey | null>(null);
   // Agent+ is a voice-in / voice-out surface: no text field by default, and
   // responses are read back automatically. Both are toggleable from the bar.
   const [inputOpen, setInputOpen] = useState(false);
@@ -83,6 +77,34 @@ export function ExperimentalAgentScreen({
   const isRecording = isRecordingGlobal && owned;
   const blockedByOther = isRecordingGlobal && !owned;
 
+  // Apply a chosen action to the finished transcript, then close the sheet.
+  const executeAction = useCallback(
+    (key: RecordActionKey, text: string) => {
+      if (text) {
+        if (key === "send") {
+          void assistant.send(text);
+        } else if (conversationId) {
+          dispatch(setUserInputText({ conversationId, text }));
+          if (key === "transcribe-send") void assistant.send(text);
+        }
+      }
+      chosenKeyRef.current = null;
+      setPendingText(null);
+      setSheetOpen(false);
+    },
+    [assistant, conversationId, dispatch],
+  );
+
+  // The user tapped (or the timer auto-fired) a choice. Execute now if the
+  // transcript is already in; otherwise hold it and onComplete will pick it up.
+  const handleChoose = useCallback(
+    (key: RecordActionKey) => {
+      chosenKeyRef.current = key;
+      if (pendingText !== null) executeAction(key, pendingText);
+    },
+    [pendingText, executeAction],
+  );
+
   const startRecording = async () => {
     if (recording.isActive || recording.isFinalizing) return;
     ownedRef.current = true;
@@ -96,14 +118,23 @@ export function ExperimentalAgentScreen({
           ownedRef.current = false;
           const text = (result.text ?? "").trim();
           if (!text) {
+            chosenKeyRef.current = null;
+            setSheetOpen(false);
             toast("Nothing was transcribed.");
             return;
           }
-          setPendingText(text);
-          setSheetOpen(true);
+          // Text is ready. If a choice is already queued, run it; otherwise
+          // surface it so the sheet's countdown / buttons act on real text.
+          if (chosenKeyRef.current) {
+            executeAction(chosenKeyRef.current, text);
+          } else {
+            setPendingText(text);
+          }
         },
         onError: (message) => {
           ownedRef.current = false;
+          chosenKeyRef.current = null;
+          setSheetOpen(false);
           toast.error(message);
         },
       });
@@ -114,43 +145,13 @@ export function ExperimentalAgentScreen({
     }
   };
 
-  const sheetItems: ActionSheetItem[] = [
-    {
-      key: "send",
-      label: "Send to agent",
-      description: "Fire it as a turn now.",
-      icon: <Webhook className="h-4 w-4" />,
-      onSelect: () => {
-        if (pendingText) void assistant.send(pendingText);
-        setPendingText(null);
-      },
-    },
-    {
-      key: "transcribe",
-      label: "Transcribe only",
-      description: "Drop it into the input to edit before sending.",
-      icon: <FileText className="h-4 w-4" />,
-      onSelect: () => {
-        if (pendingText && conversationId) {
-          dispatch(setUserInputText({ conversationId, text: pendingText }));
-        }
-        setPendingText(null);
-      },
-    },
-    {
-      key: "transcribe-send",
-      label: "Transcribe & send",
-      description: "Stage it in the input and send.",
-      icon: <Send className="h-4 w-4" />,
-      onSelect: () => {
-        if (pendingText && conversationId) {
-          dispatch(setUserInputText({ conversationId, text: pendingText }));
-          void assistant.send(pendingText);
-        }
-        setPendingText(null);
-      },
-    },
-  ];
+  // Stop opens the chooser immediately — we don't wait for transcription.
+  const handleStop = useCallback(() => {
+    chosenKeyRef.current = null;
+    setPendingText(null);
+    setSheetOpen(true);
+    void recording.stop();
+  }, [recording]);
 
   if (!conversationId) {
     return (
@@ -229,7 +230,7 @@ export function ExperimentalAgentScreen({
 
           <button
             type="button"
-            onClick={isRecording ? recording.stop : startRecording}
+            onClick={isRecording ? handleStop : startRecording}
             disabled={
               (!isRecording && blockedByOther) || recording.isFinalizing
             }
@@ -276,14 +277,17 @@ export function ExperimentalAgentScreen({
         )}
       </div>
 
-      <ActionSheet
+      <RecordActionSheet
         open={sheetOpen}
         onOpenChange={(o) => {
           setSheetOpen(o);
-          if (!o) setPendingText(null);
+          if (!o) {
+            chosenKeyRef.current = null;
+            setPendingText(null);
+          }
         }}
-        title="What should we do with this?"
-        items={sheetItems}
+        preparing={pendingText === null}
+        onChoose={handleChoose}
       />
     </div>
   );

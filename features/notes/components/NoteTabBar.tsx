@@ -32,9 +32,6 @@ interface NoteTabBarProps {
   instanceId: string;
 }
 
-const actionBtnClass =
-  "flex items-center justify-center w-6 h-6 rounded cursor-pointer transition-colors text-muted-foreground hover:bg-accent hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5";
-
 export function NoteTabBar({ instanceId }: NoteTabBarProps) {
   const dispatch = useAppDispatch();
 
@@ -221,39 +218,47 @@ export function NoteTabBar({ instanceId }: NoteTabBarProps) {
         ref={scrollRef}
         className="flex items-stretch flex-1 min-w-0 overflow-x-auto h-full"
       >
-        {openTabs.map((tabId) => (
-          <div
-            key={tabId}
-            onDragOver={(e) => {
-              if (!draggedTab || draggedTab === tabId) return;
-              e.preventDefault();
-              setDragOverTab(tabId);
-            }}
-            onDragStart={() => {
-              dispatch(markTabInteraction({ instanceId }));
-              setDraggedTab(tabId);
-            }}
-            onDragEnd={() => {
-              setDraggedTab(null);
-              setDragOverTab(null);
-            }}
-            className={cn(
-              draggedTab === tabId && "opacity-40",
-              dragOverTab === tabId && "border-l-2 border-primary",
-            )}
-          >
-            <NoteTabItem noteId={tabId} instanceId={instanceId} />
-          </div>
-        ))}
-
-        {/* New note tab button */}
+        {/* New-note button — pinned as the first "little tab" so it (and the
+            active tab beside it) stay put while the rest of the strip scrolls. */}
         <button
-          className={cn(actionBtnClass, "shrink-0 self-center ml-1")}
+          className="sticky left-0 z-20 flex items-center justify-center w-8 h-8 shrink-0 self-stretch bg-background border-r border-border/60 cursor-pointer transition-colors text-muted-foreground hover:bg-accent hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5"
           onClick={handleNewTab}
           title="New Note"
         >
           <Plus />
         </button>
+
+        {openTabs.map((tabId) => {
+          const isActiveTab = tabId === activeTabId;
+          return (
+            <div
+              key={tabId}
+              onDragOver={(e) => {
+                if (!draggedTab || draggedTab === tabId) return;
+                e.preventDefault();
+                setDragOverTab(tabId);
+              }}
+              onDragStart={() => {
+                dispatch(markTabInteraction({ instanceId }));
+                setDraggedTab(tabId);
+              }}
+              onDragEnd={() => {
+                setDraggedTab(null);
+                setDragOverTab(null);
+              }}
+              className={cn(
+                "flex items-stretch",
+                // Pin the active tab right after the new-note button so its
+                // label is never scrolled out of view, even on a full row.
+                isActiveTab && "sticky left-8 z-10 bg-background",
+                draggedTab === tabId && "opacity-40",
+                dragOverTab === tabId && "border-l-2 border-primary",
+              )}
+            >
+              <NoteTabItem noteId={tabId} instanceId={instanceId} />
+            </div>
+          );
+        })}
 
         {/* Split view button */}
         {activeTabId && !splitNoteId && (

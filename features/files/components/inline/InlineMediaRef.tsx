@@ -115,6 +115,11 @@ export interface InlineMediaRefProps {
   muted?: boolean;
   playsInline?: boolean;
   preload?: "none" | "metadata" | "auto";
+  /**
+   * Space-separated native controls to hide, e.g. `"nofullscreen"`.
+   * Forwarded to `<video controlsList>`.
+   */
+  controlsList?: string;
   /** Optional rounded corners. Default `"md"`. */
   rounded?: "none" | "sm" | "md" | "lg" | "full";
   /** Click handler — wires up cursor + role + keyboard activation. */
@@ -539,6 +544,7 @@ export function InlineMediaRef({
   muted,
   playsInline,
   preload,
+  controlsList,
   rounded = "md",
   onClick,
   onError,
@@ -682,6 +688,7 @@ export function InlineMediaRef({
         muted={muted}
         playsInline={playsInline}
         preload={preload}
+        controlsList={controlsList}
         onLoadedData={
           onLoad as React.ReactEventHandler<HTMLVideoElement> | undefined
         }

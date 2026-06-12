@@ -98,21 +98,33 @@ function parseFencedJson(text: string | null): Record<string, unknown> | null {
   const blob = m ? m[1] : text.trim();
   try {
     const parsed = JSON.parse(blob);
-    return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+    return parsed && typeof parsed === "object"
+      ? (parsed as Record<string, unknown>)
+      : null;
   } catch {
     return null;
   }
 }
 
+function stringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
 function sourceSummary(request: Record<string, unknown>): RunSource {
   const idt = request.input_data_type;
   const fileUrls = Array.isArray(request.file_urls)
-    ? (request.file_urls as unknown[]).filter((u): u is string => typeof u === "string")
+    ? (request.file_urls as unknown[]).filter(
+        (u): u is string => typeof u === "string",
+      )
     : [];
-  const inputData = typeof request.input_data === "string" ? request.input_data.trim() : "";
+  const inputData =
+    typeof request.input_data === "string" ? request.input_data.trim() : "";
   let summary = "";
-  if (fileUrls.length > 0) summary = fileUrls[0].split("/").pop() || fileUrls[0];
-  else if (inputData) summary = inputData.slice(0, 160) + (inputData.length > 160 ? "…" : "");
+  if (fileUrls.length > 0)
+    summary = fileUrls[0].split("/").pop() || fileUrls[0];
+  else if (inputData)
+    summary = inputData.slice(0, 160) + (inputData.length > 160 ? "…" : "");
   return {
     input_data_type: idt != null ? String(idt) : null,
     summary,
@@ -144,8 +156,17 @@ function lastActivity(run: AgentRunRaw, stages: StageRowRaw[]): number | null {
   return candidates.length ? Math.max(...candidates) : null;
 }
 
-function liveness(status: string, lastAct: number | null, now: number): RunLiveness {
-  if (status === "completed" || status === "failed" || status === "draft" || status === "cancelled") {
+function liveness(
+  status: string,
+  lastAct: number | null,
+  now: number,
+): RunLiveness {
+  if (
+    status === "completed" ||
+    status === "failed" ||
+    status === "draft" ||
+    status === "cancelled"
+  ) {
     return status as RunLiveness;
   }
   if (lastAct == null) return "stalled";
@@ -162,13 +183,17 @@ function stageProgress(stages: StageRowRaw[]): StageProgress {
   return { done, failed, total: stages.length };
 }
 
-function firstImage(byKey: Map<string, StageRowRaw>): { url: string | null; fileId: string | null } {
+function firstImage(byKey: Map<string, StageRowRaw>): {
+  url: string | null;
+  fileId: string | null;
+} {
   let best: { slot: number; url: string } | null = null;
   for (const [key, stage] of byKey) {
     const m = key.match(IMAGE_RE);
     if (m && stage.status === "completed") {
       const url = stageOutput(stage);
-      if (url && (best === null || Number(m[1]) < best.slot)) best = { slot: Number(m[1]), url };
+      if (url && (best === null || Number(m[1]) < best.slot))
+        best = { slot: Number(m[1]), url };
     }
   }
   if (!best) return { url: null, fileId: null };
@@ -179,7 +204,10 @@ function assetStatus(raw: string): string {
   return raw || "unknown";
 }
 
-function buildAssetsMerged(stages: StageRowRaw[], assetRows: AssetRowRaw[]): RunAsset[] {
+function buildAssetsMerged(
+  stages: StageRowRaw[],
+  assetRows: AssetRowRaw[],
+): RunAsset[] {
   const bySlot = new Map<string, RunAsset>();
   // Stage-derived (authoritative URLs).
   for (const s of stages) {
@@ -224,11 +252,17 @@ function buildAssetsMerged(stages: StageRowRaw[], assetRows: AssetRowRaw[]): Run
     });
   }
   return [...bySlot.values()].sort((a, b) =>
-    a.asset_kind === b.asset_kind ? a.slot - b.slot : a.asset_kind < b.asset_kind ? -1 : 1,
+    a.asset_kind === b.asset_kind
+      ? a.slot - b.slot
+      : a.asset_kind < b.asset_kind
+        ? -1
+        : 1,
   );
 }
 
-function episodeSlugFromResult(result: Record<string, unknown> | null): string | null {
+function episodeSlugFromResult(
+  result: Record<string, unknown> | null,
+): string | null {
   const slug = result?.episode_slug ?? result?.slug;
   return typeof slug === "string" ? slug : null;
 }
@@ -282,10 +316,14 @@ export async function fetchPodcastRuns({
   else if (!includeDrafts) query = query.neq("status", "draft");
   const { data, error } = await query;
   if (error) throw error;
-  return ((data ?? []) as unknown as AgentRunRaw[]).map((r) => toSummary(r, now));
+  return ((data ?? []) as unknown as AgentRunRaw[]).map((r) =>
+    toSummary(r, now),
+  );
 }
 
-export async function fetchPodcastRunDetail(runId: string): Promise<RunDetail | null> {
+export async function fetchPodcastRunDetail(
+  runId: string,
+): Promise<RunDetail | null> {
   const now = Date.now();
   const { data, error } = await supabase
     .from("agent_run")
@@ -301,11 +339,15 @@ export async function fetchPodcastRunDetail(runId: string): Promise<RunDetail | 
   const status = run.status ?? "processing";
 
   const meta = parseFencedJson(stageOutput(byKey.get(METADATA_STAGE))) ?? {};
+  const imageDescriptions = stringArray(meta.image_descriptions);
+  const videoDescriptions = stringArray(meta.video_descriptions);
   const scriptOut = stageOutput(byKey.get(SCRIPT_STAGE));
   const audioUrl = stageOutput(byKey.get(AUDIO_STAGE));
   const official = stageOutput(byKey.get(OFFICIAL_VIDEO_STAGE));
   const hasCompleted = stages.some((s) => s.status === "completed");
-  const canRerun = !!(request.input_data || (request.file_urls as unknown[])?.length);
+  const canRerun = !!(
+    request.input_data || (request.file_urls as unknown[])?.length
+  );
 
   const summary = toSummary(run, now);
   return {
@@ -316,6 +358,8 @@ export async function fetchPodcastRunDetail(runId: string): Promise<RunDetail | 
     audio_url: audioUrl,
     audio_file_id: audioUrl ? fileIdFromUserFilesUrl(audioUrl) : null,
     official_video_url: official,
+    image_descriptions: imageDescriptions,
+    video_descriptions: videoDescriptions,
     assets: buildAssetsMerged(stages, run.pc_studio_run_assets ?? []),
     stages: [...stages]
       .sort((a, b) => (a.stage_key < b.stage_key ? -1 : 1))
@@ -342,7 +386,9 @@ export async function fetchPodcastRunDetail(runId: string): Promise<RunDetail | 
   };
 }
 
-export async function fetchPodcastRunStatus(runId: string): Promise<RunStatusDto | null> {
+export async function fetchPodcastRunStatus(
+  runId: string,
+): Promise<RunStatusDto | null> {
   const now = Date.now();
   const { data, error } = await supabase
     .from("agent_run")

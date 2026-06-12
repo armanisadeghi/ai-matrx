@@ -418,7 +418,39 @@ export const STAGE_FALLBACK_LABELS: Record<string, string> = {
   create_script: "Writing the script",
   generate_metadata: "Generating title, cover & video concepts",
   create_audio: "Producing the audio",
+  compose_official_video: "Composing the episode video",
 };
+
+/** Human label for a pipeline stage key (never show raw snake_case in UI). */
+export function formatStageLabel(
+  stageKey: string,
+  label?: string | null,
+): string {
+  const trimmed = label?.trim();
+  const looksLikeKey =
+    !trimmed ||
+    trimmed === stageKey ||
+    /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(trimmed);
+
+  if (trimmed && !looksLikeKey) return trimmed;
+
+  if (STAGE_FALLBACK_LABELS[stageKey]) return STAGE_FALLBACK_LABELS[stageKey];
+
+  const imageMatch = stageKey.match(/^image_(\d+)$/);
+  if (imageMatch) {
+    return `Cover art — style ${Number(imageMatch[1]) + 1}`;
+  }
+
+  const videoMatch = stageKey.match(/^video_(\d+)$/);
+  if (videoMatch) {
+    return `Video clip ${Number(videoMatch[1]) + 1}`;
+  }
+
+  return stageKey
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
 
 export const EXPECTED_IMAGE_COUNT = 5;
 export const EXPECTED_VIDEO_COUNT = 2;

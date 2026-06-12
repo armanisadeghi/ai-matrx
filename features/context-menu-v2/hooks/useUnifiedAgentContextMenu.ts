@@ -16,10 +16,18 @@ export type AgentMenuEntry =
   | ({
       entryType: "agent_shortcut";
       scopeLevel: Scope;
+      /**
+       * True when this entry is only visible because of the LEGACY
+       * `enabledFeatures`/untagged fallback — i.e. it did NOT match the
+       * current surface's `surfaceName`. Surfaced in red so we can find
+       * what to backfill before retiring the old mechanism.
+       */
+      legacyMatch: boolean;
     } & AgentShortcutRecord)
   | ({
       entryType: "content_block";
       scopeLevel: Scope;
+      legacyMatch: boolean;
     } & AgentContentBlockRecord);
 
 export interface AgentMenuCategoryGroup {
@@ -40,6 +48,15 @@ export interface UseUnifiedAgentContextMenuArgs {
    * Example: `['general']` with `addedContexts: ['code-editor']` → only code-editor shortcuts.
    */
   excludedContexts?: string[];
+  /**
+   * The Surface Registry `ui_surface.name` (`<client>/<surface>`) this menu
+   * is mounted on. When provided, shortcuts whose `surfaceName` matches are
+   * shown as first-class (modern) matches; everything else that still shows
+   * does so via the legacy `enabledFeatures`/untagged path and is flagged
+   * `legacyMatch` (rendered red). When omitted, surface matching can't run,
+   * so every visible item is treated as a legacy match.
+   */
+  surfaceName?: string | null;
   enabled?: boolean;
   scope?: Scope;
   scopeId?: string | null;
@@ -101,22 +118,40 @@ function buildAllowedContexts(
   return allowed;
 }
 
-function filterByAllowedContexts<
-  T extends { enabledFeatures?: string[] | null },
->(items: T[], allowed: Set<string>): T[] {
-  // Empty allow-set is a nonsense state — treat as "nothing visible".
-  if (allowed.size === 0) return [];
-  return items.filter((item) => {
-    const ec = item.enabledFeatures;
-    if (!ec || ec.length === 0) {
-      // Legacy rows with no features declared — treat as general.
-      return allowed.has("general");
-    }
-    for (const c of ec) {
-      if (allowed.has(c)) return true;
-    }
-    return false;
-  });
+// Does the item qualify via the LEGACY context mechanism?
+// (enabledFeatures intersects the allow-set, or it's untagged → general.)
+function matchesAllowedContexts(
+  item: { enabledFeatures?: string[] | null },
+  allowed: Set<string>,
+): boolean {
+  if (allowed.size === 0) return false;
+  const ec = item.enabledFeatures;
+  if (!ec || ec.length === 0) {
+    // Legacy rows with no features declared — treat as general.
+    return allowed.has("general");
+  }
+  for (const c of ec) {
+    if (allowed.has(c)) return true;
+  }
+  return false;
+}
+
+// "Both" matching: an item is visible if it matches the current surface by
+// `surfaceName` (modern, NOT legacy) OR via the legacy context path. Returns
+// whether the item is visible and whether it only qualified via the legacy
+// path (so the UI can flag it red).
+function classifyVisibility(
+  item: { enabledFeatures?: string[] | null; surfaceName?: string | null },
+  allowed: Set<string>,
+  surfaceName: string | null,
+): { visible: boolean; legacy: boolean } {
+  if (surfaceName && item.surfaceName && item.surfaceName === surfaceName) {
+    return { visible: true, legacy: false };
+  }
+  if (matchesAllowedContexts(item, allowed)) {
+    return { visible: true, legacy: true };
+  }
+  return { visible: false, legacy: false };
 }
 
 export function useUnifiedAgentContextMenu(
@@ -126,6 +161,7 @@ export function useUnifiedAgentContextMenu(
     placementTypes,
     addedContexts,
     excludedContexts,
+    surfaceName = null,
     enabled = true,
     scope = "global",
     scopeId = null,
@@ -183,19 +219,27 @@ export function useUnifiedAgentContextMenu(
         scopeLevel: resolveRowScope(b),
       }));
 
-    const allowedContexts = buildAllowedContexts(addedContexts, excludedContexts);
-
-    const filteredCategories = filterByAllowedContexts(scopedCategories, allowedContexts);
-    const filteredShortcuts = filterByAllowedContexts(scopedShortcuts, allowedContexts);
-    // Content blocks are static insertable text — they don't carry enabled_features
-    // today, so they always pass through. (If we ever add enabled_features to
-    // content_blocks, swap in filterByAllowedContexts.)
-    const filteredBlocks = scopedBlocks;
-
-    const dedupedCategories = dedupeByPrecedence(
-      filteredCategories,
-      (c) => `${c.placementType}:${c.parentCategoryId ?? "_root"}:${c.label}`,
+    const allowedContexts = buildAllowedContexts(
+      addedContexts,
+      excludedContexts,
     );
+
+    // Shortcuts: "both" matching (surfaceName OR legacy context), tagging the
+    // legacy-only ones so the menu can render them red.
+    const filteredShortcuts = scopedShortcuts.flatMap((s) => {
+      const { visible, legacy } = classifyVisibility(
+        s,
+        allowedContexts,
+        surfaceName,
+      );
+      return visible ? [{ ...s, legacyMatch: legacy }] : [];
+    });
+    // Content blocks are static insertable text — no surfaceName/enabledFeatures
+    // today, so they always pass through and are never flagged legacy.
+    const filteredBlocks = scopedBlocks.map((b) => ({
+      ...b,
+      legacyMatch: false,
+    }));
 
     const dedupedShortcuts = dedupeByPrecedence(filteredShortcuts, (s) => {
       if (s.keyboardShortcut) return `kbd:${s.keyboardShortcut}`;
@@ -219,13 +263,40 @@ export function useUnifiedAgentContextMenu(
       byCategory.get(cid)!.push(b as AgentMenuEntry);
     }
 
+    // Category inclusion: keep a category if it passes the legacy context
+    // allow-set OR it actually holds a visible item (so a surface-matched
+    // shortcut is never orphaned by a category that the context filter would
+    // have dropped). Pull in ancestors so the submenu tree can nest.
+    const catById = new Map(scopedCategories.map((c) => [c.id, c]));
+    const keepCategoryIds = new Set<string>();
+    for (const c of scopedCategories) {
+      if (matchesAllowedContexts(c, allowedContexts)) keepCategoryIds.add(c.id);
+    }
+    for (const cid of byCategory.keys()) {
+      let cur = catById.get(cid);
+      while (cur && !keepCategoryIds.has(cur.id)) {
+        keepCategoryIds.add(cur.id);
+        cur = cur.parentCategoryId
+          ? catById.get(cur.parentCategoryId)
+          : undefined;
+      }
+    }
+    const filteredCategories = scopedCategories.filter((c) =>
+      keepCategoryIds.has(c.id),
+    );
+
+    const dedupedCategories = dedupeByPrecedence(
+      filteredCategories,
+      (c) => `${c.placementType}:${c.parentCategoryId ?? "_root"}:${c.label}`,
+    );
+
     const nodeMap = new Map<string, AgentMenuCategoryGroup>();
     for (const cat of dedupedCategories) {
       nodeMap.set(cat.id, {
         category: cat,
-        items: (byCategory.get(cat.id) ?? []).slice().sort(
-          (x, y) => (x.sortOrder ?? 0) - (y.sortOrder ?? 0),
-        ),
+        items: (byCategory.get(cat.id) ?? [])
+          .slice()
+          .sort((x, y) => (x.sortOrder ?? 0) - (y.sortOrder ?? 0)),
         children: [],
       });
     }
@@ -259,6 +330,7 @@ export function useUnifiedAgentContextMenu(
     contentBlocks,
     addedContexts,
     excludedContexts,
+    surfaceName,
   ]);
 
   return {

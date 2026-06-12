@@ -82,12 +82,16 @@ export function AssetActionsMenu({
                 {Array.from({ length: modelCount }, (_, i) => (
                   <DropdownMenuItem
                     key={i}
-                    onClick={() => onRegenerate({ modelAlias: `model_${i + 1}` })}
+                    onClick={() =>
+                      onRegenerate({ modelAlias: `model_${i + 1}` })
+                    }
                     disabled={busy}
                   >
                     Model {i + 1}
                     {`model_${i + 1}` === defaultAlias && (
-                      <span className="ml-auto text-[10px] text-muted-foreground">current</span>
+                      <span className="ml-auto text-[10px] text-muted-foreground">
+                        current
+                      </span>
                     )}
                   </DropdownMenuItem>
                 ))}
@@ -108,6 +112,8 @@ export function AssetActionsMenu({
         description={`Regenerate this ${noun} from a new description.`}
         placeholder={`Describe the ${noun}…`}
         defaultValue={currentPrompt}
+        multiline
+        rows={6}
         confirmLabel="Regenerate"
         busy={busy}
         onConfirm={(value) => {

@@ -127,7 +127,7 @@ export function WorkingDocumentHeader({
         </button>
       </div>
       {docOpen && (
-        <div className="flex max-h-[40dvh] flex-col px-2 pb-2 pt-1">
+        <div className="flex flex-col px-2 pb-2 pt-1">
           <div className="mb-1 flex items-center justify-end px-2 text-[11px] text-muted-foreground">
             {saving ? (
               <span className="flex items-center gap-1">
@@ -141,12 +141,15 @@ export function WorkingDocumentHeader({
               </span>
             )}
           </div>
+          {/* resize-y: the user drags the textarea taller/shorter and the
+              header (shrink-0 in the column) grows with it — no separate
+              container height to manage. */}
           <textarea
             value={draft}
             onChange={(e) => onChange(e.target.value)}
             onBlur={flush}
             placeholder="Empty. Ask the agent to draft, splice, or rework your recordings — or type here. Your edits and the agent's stay in sync each round."
-            className="min-h-[8rem] flex-1 resize-none rounded-md bg-muted/40 px-3 py-2 text-base leading-relaxed text-foreground outline-none ring-1 ring-inset ring-transparent transition-shadow placeholder:text-muted-foreground focus:bg-background focus:ring-border"
+            className="h-40 max-h-[70dvh] min-h-[6rem] w-full resize-y overflow-y-auto rounded-md bg-muted/40 px-3 py-2 text-base leading-relaxed text-foreground outline-none ring-1 ring-inset ring-transparent transition-shadow placeholder:text-muted-foreground focus:bg-background focus:ring-border"
           />
         </div>
       )}

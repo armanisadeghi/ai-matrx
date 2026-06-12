@@ -35,7 +35,6 @@ export default async function AgentAppIdLayout({
   const { id } = await params;
   return (
     <>
-      <span className="shell-hide-dock" aria-hidden="true" />
       {/* Hydrate the agent-app row into Redux for every sub-route. Streamed in
           a Suspense boundary so it never blocks the layout shell. The /run
           shell does NOT depend on the hydrator winning the race — useAgentApp

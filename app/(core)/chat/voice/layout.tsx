@@ -1,7 +1,7 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-// Inherits the parent chat layout's `shell-hide-dock` marker — voice surfaces
-// hide the bottom dock so the visualizer can fill the viewport.
+// Voice chat inherits the parent chat layout. Mobile dock stays hidden by
+// default (opt-in via shell-show-dock) so the visualizer can fill the viewport.
 //
 // The sub-layout itself adds no chrome; it only exists to:
 //   1. Override route metadata for `/chat/voice*` (favicon letter, title).

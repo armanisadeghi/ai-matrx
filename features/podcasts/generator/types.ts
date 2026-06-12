@@ -123,6 +123,10 @@ export interface PodcastGenerateRequest {
 
   // Dev / cost control — trims the script to ~1 line/speaker before TTS.
   truncate_audio_for_testing?: boolean;
+  // Per-run media caps (test/cost control). Omit/undefined → the full set;
+  // 1 → a single asset; 0 → skip that media type entirely.
+  max_images?: number;
+  max_videos?: number;
 }
 
 // ── Podcast stream events (inside `event: "data"`) ──────────────────────────

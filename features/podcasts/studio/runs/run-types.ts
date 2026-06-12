@@ -74,6 +74,9 @@ export interface RunDetail extends RunSummary {
   audio_url: string | null;
   audio_file_id: string | null;
   official_video_url: string | null;
+  /** From generate_metadata — used when per-asset catalog prompts are missing. */
+  image_descriptions: string[];
+  video_descriptions: string[];
   assets: RunAsset[];
   stages: Array<{
     stage_key: string;
@@ -104,7 +107,10 @@ export interface RunStatusDto {
  *  validate the chosen alias server-side, so a drift here only mis-sizes the
  *  picker, never breaks generation. NOT data — so it lives client-side, not
  *  fetched from the Python backend. */
-export const MODEL_COUNTS: { image: number; video: number } = { image: 5, video: 2 };
+export const MODEL_COUNTS: { image: number; video: number } = {
+  image: 5,
+  video: 2,
+};
 
 /** A run is non-terminal (worth polling / showing live) while it can still change. */
 export function isNonTerminal(liveness: RunLiveness): boolean {

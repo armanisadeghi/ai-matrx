@@ -40,9 +40,6 @@ export default function ChatLayout({
 }) {
   return (
     <>
-      {/* Hide mobile dock — chat owns the bottom chrome */}
-      <span className="shell-hide-dock" aria-hidden="true" />
-
       {/* ── Panel sidebar ──────────────────────────────────────────────────
           Detected by shell CSS via :has(.shell-panel).
           The <aside> and all structural divs are pure server HTML.

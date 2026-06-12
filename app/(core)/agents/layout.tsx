@@ -19,10 +19,5 @@ export default function AgentsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <>
-      <span className="shell-hide-dock" aria-hidden="true" />
-      {children}
-    </>
-  );
+  return children;
 }

@@ -17,12 +17,13 @@ import {
   ArrowRight,
   Globe,
   KeyRound,
+  Layers,
   Loader2,
+  MonitorSmartphone,
   Plus,
   Stars,
   UserRound,
   Rocket,
-  Zap
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -90,15 +91,14 @@ export function AgentShortcutsPanel({
             <div className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
               Shortcuts
             </div>
-            <h1 className="text-2xl font-semibold text-foreground leading-tight">
-              {agentName}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Manage the quick-launch shortcuts that wire this agent into the
-              app — menus, keyboard hotkeys, context menus, and more.
-            </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <Link href={`${basePath}/${agentId}/shortcuts/batch`}>
+              <Button size="sm" variant="outline">
+                <Layers className="h-4 w-4 mr-1.5" />
+                Batch
+              </Button>
+            </Link>
             <Link href={`${basePath}/${agentId}/shortcuts/new`}>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1.5" />
@@ -143,19 +143,6 @@ export function AgentShortcutsPanel({
 
         {/* List */}
         <section className="space-y-3">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
-              All shortcuts for this agent
-            </h2>
-            <span className="text-xs text-muted-foreground">
-              {isLoading
-                ? "Loading…"
-                : `${shortcuts.length} ${
-                    shortcuts.length === 1 ? "shortcut" : "shortcuts"
-                  }`}
-            </span>
-          </div>
-
           {isLoading && shortcuts.length === 0 ? (
             <Card className="p-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -240,6 +227,10 @@ function ShortcutRow({
   );
 
   const scopeBadge = getScopeBadge(shortcut);
+  const surface = shortcut.surfaceName
+    ? splitSurfaceName(shortcut.surfaceName)
+    : null;
+  const surfaceLocal = surface ? prettifySurface(surface.local) : null;
 
   return (
     <button
@@ -254,15 +245,30 @@ function ShortcutRow({
         {shortcut.iconName ? (
           <IconResolver iconName={shortcut.iconName} size={16} />
         ) : (
-          <Zap className="h-4 w-4" />
+          <MonitorSmartphone className="h-4 w-4" />
         )}
       </div>
 
       <div className="min-w-0 flex-1">
+        {/* Primary value = the surface (the UI the shortcut links to) */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-foreground truncate">
-            {shortcut.label}
-          </span>
+          {surfaceLocal ? (
+            <span className="text-sm font-semibold text-foreground truncate">
+              {surfaceLocal}
+            </span>
+          ) : (
+            <span className="text-sm font-semibold text-muted-foreground italic truncate">
+              No surface
+            </span>
+          )}
+          {surface?.client && (
+            <Badge
+              variant="outline"
+              className="text-[10px] h-4 px-1.5 font-mono text-muted-foreground"
+            >
+              {surface.client}
+            </Badge>
+          )}
           <Badge
             variant={scopeBadge.variant}
             className="text-[10px] h-4 px-1.5"
@@ -282,18 +288,19 @@ function ShortcutRow({
             </span>
           )}
         </div>
-        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground truncate">
-          {category ? (
-            <span className="truncate">
-              {category.placementType} · {category.label}
-            </span>
-          ) : (
-            <span className="italic">Uncategorized</span>
+        {/* Secondary = raw surface path · shortcut label · category */}
+        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
+          {shortcut.surfaceName && (
+            <span className="font-mono truncate">{shortcut.surfaceName}</span>
           )}
-          {shortcut.description && (
+          <span aria-hidden>·</span>
+          <span className="truncate">{shortcut.label}</span>
+          {category && (
             <>
               <span aria-hidden>·</span>
-              <span className="truncate">{shortcut.description}</span>
+              <span className="truncate">
+                {category.placementType} · {category.label}
+              </span>
             </>
           )}
         </div>
@@ -302,6 +309,22 @@ function ShortcutRow({
       <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
     </button>
   );
+}
+
+/** `matrx-user/notes` → `{ client: "matrx-user", local: "notes" }`. */
+function splitSurfaceName(fullName: string): { client: string; local: string } {
+  const idx = fullName.indexOf("/");
+  if (idx < 0) return { client: "", local: fullName };
+  return { client: fullName.slice(0, idx), local: fullName.slice(idx + 1) };
+}
+
+/** `chat-voice` → `Chat Voice`. */
+function prettifySurface(s: string): string {
+  return s
+    .split(/[-_/]/g)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 function EmptyState({

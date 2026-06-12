@@ -327,12 +327,21 @@ export function MenuBody(props: MenuBodyRenderProps) {
             );
             const isDisabled =
               entry.entryType === "agent_shortcut" && !entry.agentId;
+            // Legacy-only match (matched via enabledFeatures/untagged, not the
+            // surface's surfaceName) — flag red so it's easy to find + backfill.
+            const isLegacy = entry.legacyMatch === true;
 
             return (
               <Item
                 key={entry.id}
                 onSelect={() => onEntrySelect(entry, placementType)}
                 disabled={isDisabled}
+                className={isLegacy ? "text-red-600 dark:text-red-400" : ""}
+                title={
+                  isLegacy
+                    ? "Legacy match: shown via enabledFeatures/untagged, not surfaceName. Needs backfill."
+                    : undefined
+                }
               >
                 <ItemIcon className="h-4 w-4 mr-2" />
                 {entry.label}

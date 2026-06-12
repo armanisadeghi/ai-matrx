@@ -1094,14 +1094,21 @@ button.shell-nav-item {
       "main";
   }
 
-  /* Main content needs bottom padding for dock */
+  /* Mobile dock is opt-in — no bottom padding unless a route requests it. */
   .shell-main {
-    padding-bottom: calc(var(--shell-dock-h) + var(--shell-dock-bottom) + 1rem + var(--shell-safe-area-bottom));
+    padding-bottom: 0;
+  }
+
+  body:has(.shell-show-dock) .shell-main {
+    padding-bottom: calc(
+      var(--shell-dock-h) + var(--shell-dock-bottom) + 1rem +
+        var(--shell-safe-area-bottom)
+    );
   }
 
   /* Hide dock when a note detail is open — note editor owns the bottom chrome */
   .shell-root:has(.note-detail-active) .shell-dock {
-    display: none;
+    display: none !important;
   }
 
   /* Remove dock padding when note detail is open — dock is hidden */
@@ -1109,6 +1116,10 @@ button.shell-nav-item {
     padding-bottom: 0;
   }
 
+  /* Dock hidden by default; routes opt in with shell-show-dock. */
+  body:not(:has(.shell-show-dock)) .shell-dock {
+    display: none !important;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -1543,9 +1554,9 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
     transform: translateY(0.5rem);
   }
 
-  /* When the dock is hidden (e.g. chat route), drop the user menu to the
-     bottom of the visible area instead of above the (nonexistent) dock. */
-  body:has(.shell-hide-dock) .shell-user-menu-panel {
+  /* When the dock is hidden (default), drop the user menu to the bottom of
+     the visible area instead of above the (nonexistent) dock. */
+  body:not(:has(.shell-show-dock)) .shell-user-menu-panel {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
   }
 }
@@ -1725,15 +1736,17 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
    shell handles every consequence automatically (visibility, spacing, grid).
    
    Usage (anywhere inside shell-main):
-     <span className="shell-hide-dock" aria-hidden="true" />
+     <span className="shell-show-dock" aria-hidden="true" />
      <span className="shell-hide-sidebar" aria-hidden="true" />
    
    The sentinel element itself is invisible — zero size, not in accessibility
    tree. The shell-root :has() selector reacts to its presence globally.
+   
+   Mobile dock is HIDDEN by default on all routes. Opt in with shell-show-dock.
    --------------------------------------------------------------------------- */
 
 /* Sentinel base — invisible, zero-footprint */
-.shell-hide-dock,
+.shell-show-dock,
 .shell-hide-sidebar {
   display: block;
   position: absolute;
@@ -1744,23 +1757,10 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   visibility: hidden;
 }
 
-/* ── shell-hide-dock ──────────────────────────────────────────────────────
-   Hides the mobile dock and removes the bottom padding that compensates
-   for it. Only applies on mobile (dock doesn't exist on desktop).
-   
-   NOTE: Uses body:has() — not shell-root:has() — because MobileDock is
-   portaled into #glass-layer (direct child of <body>) via GlassPortal,
-   so it lives outside .shell-root in the DOM. body:has() spans both trees.
+/* ── shell-show-dock ──────────────────────────────────────────────────────
+   Opt-in marker for routes that want the mobile bottom dock + compensating
+   main padding. Visibility rules live in section 13 (mobile overrides).
    ----------------------------------------------------------------------- */
-@media (max-width: 1023px) {
-  body:has(.shell-hide-dock) .shell-dock {
-    display: none !important;
-  }
-
-  body:has(.shell-hide-dock) .shell-main {
-    padding-bottom: 0;
-  }
-}
 
 /* ── shell-hide-sidebar ───────────────────────────────────────────────────
    Hides the desktop sidebar, collapses its grid column to zero, and

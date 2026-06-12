@@ -5,7 +5,14 @@
 // Title is handled by the tab (Layer 3) — NOT duplicated here.
 // Props: noteId only. Everything from Redux.
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from "react";
+import { createPortal } from "react-dom";
 import {
   FolderOpen,
   ChevronDown,
@@ -72,6 +79,59 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
   const [tagInput, setTagInput] = useState("");
   const [scopePickerOpen, setScopePickerOpen] = useState(false);
 
+  // Folder dropdown is portaled to <body> with fixed positioning: the
+  // metadata row clips overflow and the menu opens upward, so an in-flow
+  // absolute menu gets cut off. We anchor it to the trigger's rect instead.
+  const folderBtnRef = useRef<HTMLButtonElement>(null);
+  const folderMenuRef = useRef<HTMLDivElement>(null);
+  const [folderMenuPos, setFolderMenuPos] = useState<{
+    left: number;
+    bottom: number;
+  } | null>(null);
+
+  const toggleFolderMenu = useCallback(() => {
+    setFolderOpen((open) => {
+      if (open) return false;
+      const rect = folderBtnRef.current?.getBoundingClientRect();
+      if (rect) {
+        setFolderMenuPos({
+          left: rect.left,
+          bottom: window.innerHeight - rect.top + 4,
+        });
+      }
+      return true;
+    });
+  }, []);
+
+  // Close on outside click, scroll, resize, or Escape while open.
+  useEffect(() => {
+    if (!folderOpen) return;
+    const onPointerDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        folderMenuRef.current?.contains(target) ||
+        folderBtnRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setFolderOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFolderOpen(false);
+    };
+    const onReposition = () => setFolderOpen(false);
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onReposition, true);
+    window.addEventListener("resize", onReposition);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onReposition, true);
+      window.removeEventListener("resize", onReposition);
+    };
+  }, [folderOpen]);
+
   // Derived content metrics — single memo keyed on content so this only
   // recomputes when the note text actually changes (never on unrelated
   // re-renders). Word/char/line/reading-time all come from one shared util.
@@ -114,33 +174,16 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
     <>
       <div className="flex items-center gap-2 py-1 px-4 border-t border-border/20 shrink-0 overflow-hidden min-h-[1.625rem]">
         {/* Folder selector */}
-        <div className="relative shrink-0">
+        <div className="shrink-0">
           <button
-            onClick={() => setFolderOpen((v) => !v)}
+            ref={folderBtnRef}
+            onClick={toggleFolderMenu}
             className="flex items-center gap-1 text-[0.625rem] text-muted-foreground hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3 [&_svg]:h-3"
           >
             <FolderOpen />
             <span className="max-w-[80px] truncate">{folder}</span>
             <ChevronDown className="w-2! h-2! opacity-50" />
           </button>
-          {folderOpen && (
-            <div className="absolute left-0 bottom-full mb-1 z-50 min-w-[120px] max-h-[200px] overflow-auto py-1 bg-card/95 backdrop-blur-2xl border border-border rounded-lg shadow-lg">
-              {allFolders.map((f) => (
-                <button
-                  key={f}
-                  className={cn(
-                    "w-full text-left px-3 py-1.5 text-[0.625rem] cursor-pointer transition-colors",
-                    f === folder
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-foreground hover:bg-accent",
-                  )}
-                  onClick={() => handleFolderChange(f)}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Context toggle — shows summary pill, expands full picker below */}
@@ -250,6 +293,35 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
           <NoteContextPicker noteId={noteId} />
         </div>
       )}
+
+      {/* Folder dropdown — portaled to <body> so it escapes the metadata
+          row's overflow clip and sits above window panels. */}
+      {folderOpen &&
+        folderMenuPos &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={folderMenuRef}
+            className="fixed z-[10000] min-w-[120px] max-h-[240px] overflow-auto py-1 bg-card/95 backdrop-blur-2xl border border-border rounded-lg shadow-lg"
+            style={{ left: folderMenuPos.left, bottom: folderMenuPos.bottom }}
+          >
+            {allFolders.map((f) => (
+              <button
+                key={f}
+                className={cn(
+                  "w-full text-left px-3 py-1.5 text-[0.625rem] cursor-pointer transition-colors",
+                  f === folder
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-foreground hover:bg-accent",
+                )}
+                onClick={() => handleFolderChange(f)}
+              >
+                {f}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

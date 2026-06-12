@@ -5,44 +5,50 @@
  * ResourceAttachmentTile, with per-type context gradients.
  */
 
-import { createElement, type ComponentType } from "react";
+import { createElement, forwardRef, type ComponentType } from "react";
 import { cn } from "@/lib/utils";
 import { RESOURCE_ATTACHMENT_TILE_SHELL_ADAPTIVE } from "@/features/agents/components/messages-display/user/resourceAttachmentTile.theme";
 import { resolveContextSlotTileTheme } from "./contextSlotTile.theme";
 
-export interface ContextSlotTileProps {
+export interface ContextSlotTileProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   typeLabel: string;
   title: string;
   icon: ComponentType<{ className?: string }>;
   themeKey: string;
-  onClick?: () => void;
-  className?: string;
   /** Extra detail for hover — defaults to title. */
   tooltip?: string;
 }
 
-export function ContextSlotTile({
-  typeLabel,
-  title,
-  icon: Icon,
-  themeKey,
-  onClick,
-  className,
-  tooltip,
-}: ContextSlotTileProps) {
+export const ContextSlotTile = forwardRef<
+  HTMLButtonElement,
+  ContextSlotTileProps
+>(function ContextSlotTile(
+  {
+    typeLabel,
+    title,
+    icon: Icon,
+    themeKey,
+    className,
+    tooltip,
+    type = "button",
+    ...props
+  },
+  ref,
+) {
   const theme = resolveContextSlotTileTheme(themeKey);
 
   return (
     <button
-      type="button"
+      ref={ref}
+      type={type}
       title={tooltip ?? title}
-      onClick={onClick}
       className={cn(
         RESOURCE_ATTACHMENT_TILE_SHELL_ADAPTIVE,
         "w-[7.5rem] flex flex-col text-left min-w-0 px-1.5 py-1 gap-0.5 shrink-0",
         theme.surface,
         className,
       )}
+      {...props}
     >
       <span className="flex items-center gap-1 min-w-0 w-full">
         <span className="h-[1.125rem] w-[1.125rem] shrink-0 flex items-center justify-center">
@@ -59,4 +65,4 @@ export function ContextSlotTile({
       </span>
     </button>
   );
-}
+});

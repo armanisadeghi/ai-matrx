@@ -49,6 +49,8 @@ export function AddAssetCard({ kind, busy, onAdd }: AddAssetCardProps) {
         title={`Add a ${noun}`}
         description={`Describe the ${noun} you want and we'll generate it.`}
         placeholder={`Describe the ${noun}…`}
+        multiline
+        rows={6}
         confirmLabel={`Generate ${noun}`}
         busy={busy}
         onConfirm={(value) => {

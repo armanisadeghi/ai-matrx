@@ -10,7 +10,6 @@ import type {
   MediaSlot,
   StageRow,
 } from "./types";
-import { EXPECTED_IMAGE_COUNT, EXPECTED_VIDEO_COUNT } from "./constants";
 
 function upsertStage(stages: StageRow[], next: StageRow): StageRow[] {
   const idx = stages.findIndex((s) => s.stage === next.stage);
@@ -57,16 +56,16 @@ function computeProgress(stages: StageRow[], totalSteps: number): number {
   return Math.min(99, Math.round(((done + running * 0.5) / totalSteps) * 100));
 }
 
-function makeSlots(
-  prompts: string[],
-  kind: MediaSlot["kind"],
-  expected: number,
-): MediaSlot[] {
-  const count = prompts.length === 0 ? 0 : Math.max(prompts.length, expected);
-  return Array.from({ length: count }, (_, index) => ({
+function makeSlots(prompts: string[], kind: MediaSlot["kind"]): MediaSlot[] {
+  // The server applies the per-run image/video caps (skip / one / full) BEFORE
+  // streaming metadata, so it emits exactly as many prompts as it will generate
+  // assets. The prompt count is therefore the authoritative slot count — a
+  // capped run lays out only the slots it will fill, with no leftover "pending"
+  // ghosts, and a full run still lays out the complete set.
+  return Array.from({ length: prompts.length }, (_, index) => ({
     index,
     kind,
-    prompt: prompts[index] ?? prompts[prompts.length - 1] ?? "",
+    prompt: prompts[index] ?? "",
     url: null,
     status: "pending" as const,
   }));
@@ -204,8 +203,8 @@ export function reduce(
         ...state,
         title: data.title,
         description: data.description,
-        images: makeSlots(data.image_descriptions, "image", EXPECTED_IMAGE_COUNT),
-        videos: makeSlots(data.video_descriptions, "video", EXPECTED_VIDEO_COUNT),
+        images: makeSlots(data.image_descriptions, "image"),
+        videos: makeSlots(data.video_descriptions, "video"),
       };
     }
 

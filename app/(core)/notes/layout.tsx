@@ -56,7 +56,6 @@ export default async function NotesV2Layout({
       style={{ paddingTop: "var(--shell-header-h)" }}
     >
       <style dangerouslySetInnerHTML={{ __html: highlightStyles }} />
-      <span className="shell-hide-dock" aria-hidden="true" />
       <NotesView className="h-full" />
       <div style={{ display: "none" }}>{children}</div>
     </div>

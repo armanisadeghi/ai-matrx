@@ -21,7 +21,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { consumeStream } from "@/lib/api/stream-parser";
-import { reduce, settleStaleAssets } from "@/features/podcasts/generator/reduce";
+import {
+  reduce,
+  settleStaleAssets,
+} from "@/features/podcasts/generator/reduce";
 import { podcastService } from "@/features/podcasts/service";
 import {
   INITIAL_RUN_STATE,
@@ -41,7 +44,7 @@ import {
   type StreamingPcmPlayer,
 } from "@/features/audio/streamingPcmPlayer";
 import { studioRunsService } from "./service";
-import { rowToRunState, detailToRunState } from "./mapping";
+import { rowToRunState, detailToRunState, mergeRowPrompts } from "./mapping";
 import { takePendingStart } from "./pendingStart";
 import { reportMediaDurabilityViolation } from "@/lib/media/durability";
 import {
@@ -238,7 +241,8 @@ export function useStudioRun(runId: string): UseStudioRun {
       } else if (raw.type === "podcast_asset") {
         const a = raw as PodcastAssetEvent;
         if (a.success && a.url) {
-          const arr = a.asset_kind === "video" ? vidUrlsRef.current : imgUrlsRef.current;
+          const arr =
+            a.asset_kind === "video" ? vidUrlsRef.current : imgUrlsRef.current;
           arr[a.index] = a.url;
           persist(
             a.asset_kind === "video"
@@ -306,7 +310,10 @@ export function useStudioRun(runId: string): UseStudioRun {
             if (d.episode_id) {
               const ep = await podcastService.fetchEpisodeById(d.episode_id);
               if (ep && !cancelled) {
-                setState((s) => ({ ...s, audioUrl: ep.audio_url || s.audioUrl }));
+                setState((s) => ({
+                  ...s,
+                  audioUrl: ep.audio_url || s.audioUrl,
+                }));
                 if (ep.image_url) setSelectedCoverUrl(ep.image_url);
               }
             }
@@ -330,7 +337,10 @@ export function useStudioRun(runId: string): UseStudioRun {
       bgPollTimer = setTimeout(poll, 6_000);
     }
 
-    async function runStream(kind: "generate" | "resume", body?: PodcastGenerateRequest) {
+    async function runStream(
+      kind: "generate" | "resume",
+      body?: PodcastGenerateRequest,
+    ) {
       const controller = new AbortController();
       abortRef.current = controller;
       streamingRef.current = true;
@@ -365,7 +375,11 @@ export function useStudioRun(runId: string): UseStudioRun {
         const response =
           kind === "generate"
             ? await api.post(GENERATE_PATH, body, controller.signal)
-            : await api.post(resumePath(backendRunIdRef.current!), {}, controller.signal);
+            : await api.post(
+                resumePath(backendRunIdRef.current!),
+                {},
+                controller.signal,
+              );
 
         await consumeStream(
           response,
@@ -398,7 +412,9 @@ export function useStudioRun(runId: string): UseStudioRun {
             onEnd: () => {
               if (completedRef.current) {
                 setState((s) =>
-                  s.status === "running" ? { ...s, status: "done", progress: 100 } : s,
+                  s.status === "running"
+                    ? { ...s, status: "done", progress: 100 }
+                    : s,
                 );
               } else {
                 // Stream closed without a complete event → the backend is most
@@ -415,7 +431,10 @@ export function useStudioRun(runId: string): UseStudioRun {
         // Network drop (TypeError "network error", reset, etc.). The backend
         // keeps running on disconnect — poll the durable record rather than
         // re-firing the stream (which would re-run the in-flight audio).
-        console.warn("[studio-run] stream dropped; watching durable record:", e);
+        console.warn(
+          "[studio-run] stream dropped; watching durable record:",
+          e,
+        );
         void watchInBackground();
       } finally {
         streamingRef.current = false;
@@ -469,7 +488,10 @@ export function useStudioRun(runId: string): UseStudioRun {
       if (d.episode_id) {
         const episode = await podcastService.fetchEpisodeById(d.episode_id);
         if (episode && !cancelled) {
-          setState((s) => ({ ...s, audioUrl: episode.audio_url || s.audioUrl }));
+          setState((s) => ({
+            ...s,
+            audioUrl: episode.audio_url || s.audioUrl,
+          }));
           if (episode.image_url) setSelectedCoverUrl(episode.image_url);
         }
       }
@@ -504,7 +526,10 @@ export function useStudioRun(runId: string): UseStudioRun {
       if (runDetail) {
         setDetail(runDetail);
         setRecovery(deriveRecoveryState(runDetail));
-        setState(detailToRunState(runDetail));
+        const fromDetail = row
+          ? mergeRowPrompts(detailToRunState(runDetail), row)
+          : detailToRunState(runDetail);
+        setState(fromDetail);
         backendRunIdRef.current = runDetail.run_id;
         requestRef.current =
           runDetail.request && Object.keys(runDetail.request).length > 0
@@ -551,7 +576,10 @@ export function useStudioRun(runId: string): UseStudioRun {
 
       const pending = takePendingStart(runId);
       const liveness = runDetail?.liveness;
-      if (pending && (row?.status === "running" || liveness === "alive" || !runDetail)) {
+      if (
+        pending &&
+        (row?.status === "running" || liveness === "alive" || !runDetail)
+      ) {
         // Fresh from the create form — stream the live generation.
         void runStream("generate", pending);
       } else if (liveness === "alive" && backendRunIdRef.current) {
@@ -622,7 +650,10 @@ export function useStudioRun(runId: string): UseStudioRun {
               ? "failed"
               : "running",
       };
-      const copy = idx === -1 ? [...slots, next] : slots.map((x, i) => (i === idx ? next : x));
+      const copy =
+        idx === -1
+          ? [...slots, next]
+          : slots.map((x, i) => (i === idx ? next : x));
       copy.sort((a, b) => a.index - b.index);
       return isImg ? { ...s, images: copy } : { ...s, videos: copy };
     });
@@ -658,7 +689,10 @@ export function useStudioRun(runId: string): UseStudioRun {
         applyAssetToState(asset);
         if (asset.status === "failed")
           toast.error("Couldn't regenerate — try a different model.");
-        else toast.success(kind === "image" ? "New image ready." : "New clip ready.");
+        else
+          toast.success(
+            kind === "image" ? "New image ready." : "New clip ready.",
+          );
       } catch (e) {
         applyAssetToState({
           asset_kind: kind,
@@ -724,7 +758,10 @@ export function useStudioRun(runId: string): UseStudioRun {
         // write will rot — scream now (the DB guard also queues a heal) so the
         // backend persist-public regression can't hide. The cover should be a
         // durable CDN/public URL by the time it reaches here.
-        reportMediaDurabilityViolation(url, "podcast selectCover → pc_episodes.image_url");
+        reportMediaDurabilityViolation(
+          url,
+          "podcast selectCover → pc_episodes.image_url",
+        );
         void podcastService
           .updateEpisode(state.episodeId, { image_url: url })
           .then(() => toast.success("Cover updated"))

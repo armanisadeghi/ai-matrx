@@ -38,6 +38,9 @@ import {
   Workflow,
   ArrowRight,
   UserCog,
+  Images,
+  Clapperboard,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -102,6 +105,74 @@ interface GeneratorFormProps {
 const SECTION_LABEL =
   "text-xs font-semibold uppercase tracking-wide text-muted-foreground";
 
+/** Per-media-type generation limit. `all` = full set, `one` = a single asset,
+ *  `skip` = none. Maps to the backend's `max_images` / `max_videos` integer cap. */
+type MediaLimitMode = "all" | "one" | "skip";
+
+const MEDIA_LIMIT_MODES: { value: MediaLimitMode; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "one", label: "One" },
+  { value: "skip", label: "Skip" },
+];
+
+/** Map a media-limit mode to the server cap. `all` returns undefined so the
+ *  field is omitted and the server keeps its full default count. */
+function mediaModeToCap(mode: MediaLimitMode): number | undefined {
+  if (mode === "one") return 1;
+  if (mode === "skip") return 0;
+  return undefined;
+}
+
+/** One labelled row with an All · One · Skip segmented control. */
+function MediaLimitField({
+  icon: Icon,
+  label,
+  help,
+  value,
+  onChange,
+}: {
+  icon: LucideIcon;
+  label: string;
+  help: string;
+  value: MediaLimitMode;
+  onChange: (next: MediaLimitMode) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-start gap-2.5">
+        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <div>
+          <div className="text-sm font-medium text-foreground">{label}</div>
+          <p className="text-xs text-muted-foreground">{help}</p>
+        </div>
+      </div>
+      <div
+        role="group"
+        aria-label={`${label} count`}
+        className="flex shrink-0 overflow-hidden rounded-lg border border-border"
+      >
+        {MEDIA_LIMIT_MODES.map((m, i) => (
+          <button
+            key={m.value}
+            type="button"
+            aria-pressed={value === m.value}
+            onClick={() => onChange(m.value)}
+            className={cn(
+              "px-3 py-1.5 text-xs font-medium transition-colors",
+              i > 0 && "border-l border-border",
+              value === m.value
+                ? "bg-primary text-primary-foreground"
+                : "bg-card text-muted-foreground hover:bg-accent/40",
+            )}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function GeneratorForm({
   shows,
   onShowCreated,
@@ -128,6 +199,10 @@ export function GeneratorForm({
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [advancedHostsOpen, setAdvancedHostsOpen] = useState(false);
   const [truncate, setTruncate] = useState(true);
+  /** Per-run image/video caps — default to the full set; the user dials them
+   *  down to One or Skip for fast, cheap test runs. */
+  const [imageMode, setImageMode] = useState<MediaLimitMode>("all");
+  const [videoMode, setVideoMode] = useState<MediaLimitMode>("all");
   const [prepMessage, setPrepMessage] = useState("");
   const [firstShowInfo, setFirstShowInfo] = useState("");
 
@@ -180,6 +255,12 @@ export function GeneratorForm({
     }
     if (prepMessage.trim()) body.prep_user_message = prepMessage.trim();
     if (firstShowInfo.trim()) body.first_show_info_text = firstShowInfo.trim();
+    // Media caps ride along only when the user limited them — `all` keeps the
+    // server's full default count.
+    const maxImages = mediaModeToCap(imageMode);
+    if (maxImages !== undefined) body.max_images = maxImages;
+    const maxVideos = mediaModeToCap(videoMode);
+    if (maxVideos !== undefined) body.max_videos = maxVideos;
     onGenerate(body);
   };
 
@@ -639,10 +720,37 @@ export function GeneratorForm({
               </div>
               <p className="mt-0.5 max-w-md text-xs text-muted-foreground">
                 Trims audio to ~one line per host so runs stay fast and cheap.
-                Script, cover art and videos are always full quality. Turn off
+                Use the controls below to also limit images and videos. Turn off
                 for a full-length episode.
               </p>
             </div>
+          </div>
+
+          {/* Media output — cap or skip the (expensive) image/video fan-out so a
+              test run is fast and cheap without touching audio or the script. */}
+          <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-3.5">
+            <div>
+              <Label className="text-sm font-medium text-foreground">
+                Images &amp; videos
+              </Label>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Limit or skip media generation for faster, cheaper test runs.
+              </p>
+            </div>
+            <MediaLimitField
+              icon={Images}
+              label="Images"
+              help="Cover art & scene stills"
+              value={imageMode}
+              onChange={setImageMode}
+            />
+            <MediaLimitField
+              icon={Clapperboard}
+              label="Videos"
+              help="Generated motion clips"
+              value={videoMode}
+              onChange={setVideoMode}
+            />
           </div>
         </CollapsibleContent>
       </Collapsible>

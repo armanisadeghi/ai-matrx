@@ -219,22 +219,42 @@ export function AssetCard({
               )}
             </div>
           ) : (
-            <InlineMediaRef
-              ref={podcastMediaRef(slot.url)}
-              as="video"
-              size="fill"
-              fit="cover"
-              rounded="none"
-              autoPlay
-              muted
-              loop
-              playsInline
-              controls
-              preload="metadata"
-              fallback="skeleton"
-              className="absolute inset-0 animate-[fadeIn_0.4s_ease] bg-black"
-              alt={label}
-            />
+            <div className="absolute inset-0 animate-[fadeIn_0.4s_ease]">
+              <InlineMediaRef
+                ref={podcastMediaRef(slot.url)}
+                as="video"
+                size="fill"
+                fit="cover"
+                rounded="none"
+                autoPlay
+                muted
+                loop
+                playsInline
+                controls
+                controlsList="nofullscreen"
+                preload="metadata"
+                fallback="skeleton"
+                className="absolute inset-0 bg-black"
+                alt={label}
+              />
+              {onEnlarge && (
+                <div
+                  className={cn(
+                    "pointer-events-none absolute inset-x-0 top-0 flex justify-end bg-gradient-to-b from-black/60 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100",
+                    onRegenerate && "pr-11",
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onEnlarge(slot)}
+                    className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition-colors hover:bg-black/70"
+                    aria-label="Enlarge"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
           ))}
 
         {/* Selected indicator (image) — bottom-left, only when there's no

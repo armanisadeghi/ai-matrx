@@ -25,7 +25,6 @@ export default function ChatLayout({
 }) {
   return (
     <ChatIncognitoProvider>
-      <span className="shell-hide-dock" aria-hidden="true" />
       <ChatIncognitoHeaderButton />
       {children}
     </ChatIncognitoProvider>
