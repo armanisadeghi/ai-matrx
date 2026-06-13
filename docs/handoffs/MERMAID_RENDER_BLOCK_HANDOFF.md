@@ -1,6 +1,8 @@
 # Mermaid Render Block — Handoff & Honest Status
 
-**Date:** 2026-06-12 · **Author:** claude · **Status:** Live on web (pushed); a few items not 100% as originally envisioned — documented below.
+**Date:** 2026-06-12 (updated 2026-06-13) · **Author:** claude · **Status:** Live on web (pushed) and **user-confirmed working**; remaining gaps documented below.
+
+> **2026-06-13 update — confirmed live by the user.** Diagrams render and edit in chat. Two additions shipped after first review: (a) **18 content blocks** in a new **"Diagrams"** context-menu category — one per diagram type (human labels) + 4 combos + the general "Any Diagram (all types)" — applied + live-verified (closes §7.2's operational turn-on); (b) a **fullscreen** view from the block header (Expand → full-viewport overlay, Esc to exit), browser-verified. The replication skill (§ below) is now being written, per the original plan to document the process after live confirmation.
 
 This is the paving build for the render-block skill system. It is **done for web** and **pushed to both repos** (frontend `4546c7e1a` on `origin/main`; aidream mermaid pipeline already on `origin/main`). Read this before testing live or extending — it is deliberately honest about what is **proven** vs **wired-but-unproven**, and where it falls short of the original vision.
 
