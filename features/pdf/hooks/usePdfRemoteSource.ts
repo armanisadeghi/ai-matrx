@@ -31,7 +31,10 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabase/client";
-import { pythonFileInlineUrl } from "@/features/files/handler/utils/python-base";
+import {
+  pythonBaseUrl,
+  pythonFileInlineUrl,
+} from "@/features/files/handler/utils/python-base";
 
 export interface UsePdfRemoteSourceResult {
   /** Backend URL pdfjs should range-fetch. `null` while session is loading. */
@@ -63,6 +66,15 @@ export function usePdfRemoteSource(
   const [loading, setLoading] = useState<boolean>(!!fileId);
   const [error, setError] = useState<string | null>(null);
   const [sourceMissing, setSourceMissing] = useState<boolean>(false);
+  // For CDN-hosted (public) files the `/download` endpoint 302-redirects to
+  // the CDN. pdfjs sends an Authorization header (a *preflighted* request),
+  // and browsers refuse to follow a cross-origin redirect of a preflighted
+  // request → "Failed to fetch". Private files stream THROUGH the API (same
+  // origin, no redirect) and work fine. So for CDN files we resolve the
+  // direct, CORS-friendly CDN url up front and hand it to pdfjs with NO auth
+  // header (a simple Range GET — no preflight, no redirect). `null` = use the
+  // normal streaming path. Fail-safe: any resolution failure leaves this null.
+  const [directUrl, setDirectUrl] = useState<string | null>(null);
 
   // Read the access token once on mount (and again whenever the active
   // session changes — `onAuthStateChange` fires for sign-in / sign-out /
@@ -83,35 +95,67 @@ export function usePdfRemoteSource(
     // Reset on every new fileId so a stale flag from a previous (broken)
     // file never leaks onto a healthy one.
     setSourceMissing(false);
+    setDirectUrl(null);
 
-    // Source-health probe: a single PK lookup. If the row is absent (deleted
-    // and filtered by RLS, or genuinely gone) or carries a `deleted_at`, the
-    // binary is unreachable and the caller should degrade gracefully rather
-    // than letting pdfjs throw. Fail-open on query errors.
-    void supabase
-      .from("cld_files")
-      .select("id, deleted_at")
-      .eq("id", fileId)
-      .maybeSingle()
-      .then(({ data, error: lookupError }) => {
-        if (cancelled || lookupError) return;
-        setSourceMissing(!data || data.deleted_at != null);
-      });
-
-    void supabase.auth
-      .getSession()
-      .then(({ data, error: sessionError }) => {
+    void (async () => {
+      // Session token first — needed both for the byte fetches and for the
+      // CDN-url resolve below.
+      let tok: string | null = null;
+      try {
+        const { data, error: sessionError } = await supabase.auth.getSession();
         if (cancelled) return;
         if (sessionError) setError(sessionError.message);
-        setToken(data.session?.access_token ?? null);
-      })
-      .catch((e) => {
+        tok = data.session?.access_token ?? null;
+        setToken(tok);
+      } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Session lookup failed");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      }
+
+      // Source-health probe + storage backend. A single PK lookup. If the row
+      // is absent (deleted + RLS-filtered, or genuinely gone) or carries a
+      // `deleted_at`, the binary is unreachable and the caller should degrade
+      // gracefully. Fail-open on query errors.
+      const { data: row, error: lookupError } = await supabase
+        .from("cld_files")
+        .select("id, deleted_at, storage_uri")
+        .eq("id", fileId)
+        .maybeSingle();
+      if (cancelled) return;
+      const missing = !lookupError && (!row || row.deleted_at != null);
+      if (!lookupError) setSourceMissing(missing);
+
+      // CDN-hosted file → resolve the direct CORS-friendly url (see the
+      // `directUrl` comment). Only for the CDN bucket, so the common private
+      // path is byte-for-byte unchanged. Fail-safe: any failure → keep null
+      // and fall back to the streaming path.
+      const uri = row?.storage_uri ?? "";
+      if (!missing && tok && uri.startsWith("s3://cdn.")) {
+        try {
+          const res = await fetch(
+            `${pythonBaseUrl()}/files/${encodeURIComponent(fileId)}/url`,
+            { headers: { Authorization: `Bearer ${tok}` } },
+          );
+          if (res.ok) {
+            const j = (await res.json()) as { url?: unknown };
+            // Guard: never hand pdfjs a signed s3.amazonaws.com url — S3 sends
+            // no CORS header for our origins, so the fetch would fail. Only use
+            // a genuinely CORS-friendly CDN url; otherwise stream via the API.
+            if (
+              !cancelled &&
+              typeof j.url === "string" &&
+              !j.url.includes("s3.amazonaws.com")
+            ) {
+              setDirectUrl(j.url);
+            }
+          }
+        } catch {
+          // ignore — streaming path is the fallback
+        }
+      }
+
+      if (!cancelled) setLoading(false);
+    })();
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return;
@@ -131,6 +175,13 @@ export function usePdfRemoteSource(
       error: null,
       sourceMissing: false,
     };
+  }
+
+  // Direct CDN url → fetch it as-is, no auth header (simple Range GET, no
+  // cross-origin-redirect-of-a-preflighted-request trap). Otherwise stream
+  // through the API with the bearer token.
+  if (directUrl) {
+    return { remoteUrl: directUrl, headers: {}, loading, error, sourceMissing };
   }
 
   const headers: Record<string, string> = token
