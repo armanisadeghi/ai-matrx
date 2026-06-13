@@ -17,6 +17,15 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D3 — Agent Find Usages + Drift: prod re-verify + DM sender identity
+**Severity: low — built and locally verified; two follow-ups.**
+
+**What.** The Find Usages + Drift subsystem (see [`features/agents/FEATURE.md`](features/agents/FEATURE.md) → Find Usages & Drift) is live-verified against the shared DB locally (registry sync: 42 rows, 0 broken pins; weekly scan: 30 alert groups, dedup clean), but two items remain open:
+1. **Prod deploy + aimatrx.com end-to-end re-verify.** The aidream side (startup registry sync, weekly `agent_drift_weekly_scan` cron, `/agent-usage/*` router, DM send) and the UI surfaces (both windows, `/reports/agent-drift`, the agents-page banner, DM action chips) were exercised locally / via stubs; the weekly cron's first real fire and an actual DM landing in a recipient's inbox need a production run.
+2. **DM sender identity.** Drift DMs send from the platform operator's *personal* super-admin user (`4cf62e4e-…`, env-overridable via `MATRX_SYSTEM_DM_SENDER_USER_ID`). A dedicated "Matrx System" bot auth-user is the clean later swap — purely cosmetic (messages show a real human's name as sender until then).
+
+**Fence.** The weekly scan fingerprint-dedups so a re-verify run can't double-notify; the registry sync writes only on real deployments (`strict_startup_gates`) so a laptop can't mark prod keys vanished. Broken code pins scream (`record_error` + red log) without crashing boot.
+
 ### D1 — Media durability: public/owned media must never be a signed, expiring URL
 **Severity: high — silently breaks public pages days later.**
 
@@ -163,6 +172,43 @@ on >200pp runs as a held request instead of the resumable per-page job model
 (Operational Default: resume from last clean page preserving overlap).
 Also open: reading-order viewer tab; verify aidream variant pipeline renders
 PDF page-1 grid thumbnails.
+
+### D5 — Mermaid render block is web-only (other surfaces + chat-scoped agents pending)
+**Severity: low — feature works fully on web; gaps are reach, not correctness.**
+
+**What's deferred (by design, this build).**
+1. **Extension / desktop / mobile renderers.** The server-side block pipeline
+   already emits typed `mermaid` blocks (aidream `block_detector.py`
+   `SPECIAL_CODE_LANGUAGES` + `mermaid_parser.py`), but those clients don't
+   consume server-processed blocks yet, so they have no mermaid renderer. Tracked
+   by the `is_active=false` rows in `skl_render_components` (chrome-extension /
+   desktop / mobile). When a client switches to server-side processing, flip its
+   row active and add the renderer — the contract is already there.
+2. **`skl_resources` are not agent-reachable.** `skill_get` returns the skill
+   body only (aidream `tools/implementations/skill.py`), so the per-diagram-type
+   syntax reference lives inside the `mermaid-diagrams` skill body, not as
+   resource rows. Revisit if/when resources get an injection path.
+3. **Chat right-click surfaces assistant-message agents, not mermaid-scoped
+   ones.** `MarkdownContextMenuProvider` is one instance per conversation with a
+   single `surfaceName` (`matrx-user/assistant-message`); per-block surface
+   switching doesn't exist. So right-clicking a mermaid block passes the diagram
+   DSL as context (`data-block-source` → `diagram_source`) to whatever agent the
+   user picks, but mermaid-*scoped* agents live in the workbench AI rail (reached
+   via the block's Edit button), not the chat right-click menu. The captured
+   round-trip ("edit and send back into the artifact") is the workbench by
+   design — the chat menu is discovery + data hand-off. Per-block-type menu
+   filtering is the documented v2 (dynamic-contexts extension of
+   `useUnifiedAgentContextMenu`).
+
+**Also noted (pre-existing, surfaced by this build):** `PREFERENCE_MODULE_KEYS`
+in `userPreferencesSlice.ts` omits `sandbox` / `transcription` /
+`agentConnections` — those modules never persist via partialize. The new
+`mermaid` module WAS added (it persists); the older three are an unrelated gap
+left untouched.
+
+**The fence.** Each item is a clean one-step unlock (flip a row + add a renderer;
+add a resource injection path; build dynamic-context menu filtering) — none block
+the web feature.
 
 ## RESOLVED
 

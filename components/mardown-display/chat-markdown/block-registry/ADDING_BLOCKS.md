@@ -93,17 +93,19 @@ No Python work, no `missing-types.ts`, no DB round-trip work — `code` is alrea
 
 ---
 
-## Flavor F — Code fence remapped to a non-`code` type (e.g. ` ```transcript `, ` ```tasks `, ` ```questionnaire `)
+## Flavor F — Code fence remapped to a non-`code` type (e.g. ` ```transcript `, ` ```tasks `, ` ```questionnaire `, ` ```mermaid `)
 
-Like Flavor E, but the block emerges with a different `type` so it flows through its own renderer branch.
+Like Flavor E, but the block emerges with a different `type` so it flows through its own renderer branch. **` ```mermaid ` is the fullest worked example** (server + client detection, an alias, live progressive rendering, materialization, an editor) — read its diff before adding the next render-block skill.
 
-1. **`content-splitter-v2.ts`** — add the language string to the `specialCodeTypes` array inside `splitContentIntoBlocksV2` (around the code-block branch).
+1. **`content-splitter-v2.ts`** — add the language to the `SPECIAL_CODE_LANGUAGES` array. (Optional) add a fence alias to `CODE_LANGUAGE_ALIASES` (e.g. `mmd → mermaid`) and normalize with `normalizeCodeLanguage` before the membership test — both are exported and mirrored in aidream `block_detector.py`.
 2. **`BlockRenderer.tsx`** — `case "<type>":`.
 3. **`BlockComponentRegistry.tsx`** — lazy entry.
 4. **`components/mardown-display/blocks/<name>/`** — component + optional parser.
-5. **DB round-trip** — add a `case "<type>":` in `reconstructBlockMarkdown` that wraps back as ` ```<type>\n…\n``` `.
+5. **DB round-trip** — add a `case "<type>":` in `reconstructBlockMarkdown` that wraps back as ` ```<type>\n…\n``` ` (a fence — NOT the `<type>…</type>` XML default, which corrupts fence-promoted blocks).
+6. **(Optional) live promotion** — to render progressively *during* streaming, promote the fence at open-time in `stream-block-accumulator.ts` (the code-fence branch) instead of only at close. Mermaid is the first non-JSON type to do this.
+7. **Server side (do this FIRST when server emits it):** aidream `block_detector.py` `SPECIAL_CODE_LANGUAGES` (+ `CODE_LANGUAGE_ALIASES`), a Pydantic model + forgiving parser, `stream_processor.py` classification set + parser map, `render_blocks.py` registry (3 entries), then `pnpm sync-types:fast` so `TypedRenderBlock` gains the type. Landing the server first means no temp `missing-types.ts` entry.
 
-Python team: if the block is ever emitted server-side as a `render_block`, they add the matching TypedRenderBlock.
+Python team: if the block is ever emitted server-side as a `render_block`, they add the matching TypedRenderBlock (step 7).
 
 ---
 

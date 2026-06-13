@@ -123,16 +123,23 @@ const FIXERS: Fixer[] = [
     detail: "Quoted node labels containing special characters",
     appliesTo: FLOWCHART_ONLY,
     apply: (s) =>
-      mapBodyLines(s, (line) =>
-        line.replace(
-          /([A-Za-z0-9_]+)([[({])(?!")([^\][(){}"]*[():;,#&][^\][(){}"]*)([\])}])/g,
-          (full, id: string, open: string, label: string, close: string) => {
-            const pairs: Record<string, string> = { "[": "]", "(": ")", "{": "}" };
-            if (pairs[open] !== close) return full;
-            return `${id}${open}"${label.trim()}"${close}`;
-          },
-        ),
-      ),
+      mapBodyLines(s, (line) => {
+        // Per bracket type. The content class excludes ONLY that bracket's
+        // closer (so a [] label can legally contain parens, which is the most
+        // common LLM mistake — `A[Validate (strict) mode]`). The `(?!\[|\()`
+        // / `(?!\{)` guards avoid the multi-bracket shapes (stadium `([`,
+        // subroutine `[[`, hexagon `{{`) so we never change a node's shape.
+        const wrap = (label: string) => `"${label.trim().replace(/"/g, "#quot;")}"`;
+        return line
+          .replace(
+            /([A-Za-z0-9_]+)\[(?!\[)(?!")([^\]]*[(){}:;#&][^\]]*)\]/g,
+            (_m, id: string, label: string) => `${id}[${wrap(label)}]`,
+          )
+          .replace(
+            /([A-Za-z0-9_]+)\{(?!\{)(?!")([^}]*[()[\]:;#&][^}]*)\}/g,
+            (_m, id: string, label: string) => `${id}{${wrap(label)}}`,
+          );
+      }),
   },
   {
     rule: "fix-reserved-end",

@@ -2,7 +2,7 @@
 
 **Status:** `active` — primary output surface for agent responses; rapidly evolving
 **Tier:** `1`
-**Last updated:** `2026-05-19`
+**Last updated:** `2026-06-12`
 
 > Combined doc: **Artifacts** (wire format + block renderer) and **Canvas** (DB / library that persists + versions them). These two cannot be understood separately.
 
@@ -191,6 +191,7 @@ Rules:
 
 ## Change log
 
+- `2026-06-12` — claude: **Mermaid diagram artifact type** — new first-class `mermaid` block (from ` ```mermaid `/` ```mmd ` fences, server + client detection) materializes to `canvas_items` (`type: "mermaid"`, `content.metadata.diagramType/title`). Renders live during streaming (last-good-render + forgiving sanitizer in `components/mermaid/`), opens into `MermaidWorkbench` (canvas) with three views of one diagram — Diagram (tap-to-edit), Outline (structured rows), Code (CodeMirror) — gated by a per-adapter round-trip fidelity check (flowchart/mindmap/sequence/pie/timeline). User edits save as new versions via `cx_canvas_save_user_version` (session-versioning); chat refs resolve `"latest"` and live-refresh on `matrx:canvas-item-updated`. Agent editing via the `matrx-user/mermaid-editor` surface + "Edit with AI" rail (clone of cleanup's `useAiPostProcess`). Skill `mermaid-diagrams` + content block seeded ([`migrations/mermaid_render_block_platform.sql`](../../migrations/mermaid_render_block_platform.sql)). Other-platform renderers deferred — see [KNOWN_DEFECTS.md](../../KNOWN_DEFECTS.md) D5.
 - `2026-06-10` — claude: **materialization pipeline LIVE + verified** — render blocks auto-persist to `canvas_items` (commit-path + owner-gated reconcile-on-load) and the message is rewritten to a typed `cx_artifact_ref` rendered by id (no regeneration). New `cx_message_set_content` RPC (status-preserving, archives raw); fixed `cx_message_status_check` to allow `'edited'` (was silently breaking every `cx_message_edit`). Wave 0 hardening: stored-XSS on public canvas (`SandboxedHtml`), html-pages GET IDOR, crypto share tokens, corrupt-save guard (`isPersistableCanvasType`), stream-commit never-drop.
 - `2026-05-19` — composer: new modern canvas shell (`CanvasSideSheetInner` + `CanvasPane` + `CanvasBody`). Vertical split via `react-resizable-panels` with persisted ratio. Floating `CanvasReopenChip` and global ⌘\ shortcut. Glass tap buttons throughout the header, matching the new chat input + sidebar language. Legacy `CanvasRenderer` / `CanvasHeader` retained for in-page surfaces.
 - `2026-04-22` — claude: initial combined FEATURE.md for artifacts + canvas.

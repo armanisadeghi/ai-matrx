@@ -39,6 +39,7 @@ import { listsManifest } from "./lists.manifest";
 import { canvasManifest } from "./canvas.manifest";
 import { aiResultsManifest } from "./ai-results.manifest";
 import { agentAdvancedEditorManifest } from "./agent-advanced-editor.manifest";
+import { mermaidEditorManifest } from "./mermaid-editor.manifest";
 
 /** All registered surface manifests. Import order does not matter. */
 export const ALL_MANIFESTS: readonly SurfaceManifest[] = [
@@ -63,6 +64,7 @@ export const ALL_MANIFESTS: readonly SurfaceManifest[] = [
   canvasManifest,
   aiResultsManifest,
   agentAdvancedEditorManifest,
+  mermaidEditorManifest,
 ];
 
 /** Map of `surfaceName → manifest` for O(1) lookup. */

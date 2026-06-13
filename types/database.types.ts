@@ -8844,6 +8844,137 @@ export type Database = {
         }
         Relationships: []
       }
+      dict_entries: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          definition: string | null
+          id: string
+          ipa: string | null
+          is_active: boolean
+          organization_id: string | null
+          pronunciation: string | null
+          scope_id: string | null
+          scope_type_id: string | null
+          sounds_like: string[]
+          term: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          definition?: string | null
+          id?: string
+          ipa?: string | null
+          is_active?: boolean
+          organization_id?: string | null
+          pronunciation?: string | null
+          scope_id?: string | null
+          scope_type_id?: string | null
+          sounds_like?: string[]
+          term: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          definition?: string | null
+          id?: string
+          ipa?: string | null
+          is_active?: boolean
+          organization_id?: string | null
+          pronunciation?: string | null
+          scope_id?: string | null
+          scope_type_id?: string | null
+          sounds_like?: string[]
+          term?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dict_entries_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dict_entries_scope_id_fkey"
+            columns: ["scope_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dict_entries_scope_type_id_fkey"
+            columns: ["scope_type_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scope_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dict_settings: {
+        Row: {
+          created_at: string
+          id: string
+          max_inline_chars: number | null
+          organization_id: string | null
+          scope_id: string | null
+          scope_type_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_inline_chars?: number | null
+          organization_id?: string | null
+          scope_id?: string | null
+          scope_type_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_inline_chars?: number | null
+          organization_id?: string | null
+          scope_id?: string | null
+          scope_type_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dict_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dict_settings_scope_id_fkey"
+            columns: ["scope_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dict_settings_scope_type_id_fkey"
+            columns: ["scope_type_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_scope_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       display_option: {
         Row: {
           additional_params: Json | null
@@ -21497,6 +21628,7 @@ export type Database = {
           name: string
           parent_surface_name: string | null
           sort_order: number
+          supports_dictionary: boolean
           updated_at: string
           url_pattern: string | null
         }
@@ -21510,6 +21642,7 @@ export type Database = {
           name: string
           parent_surface_name?: string | null
           sort_order?: number
+          supports_dictionary?: boolean
           updated_at?: string
           url_pattern?: string | null
         }
@@ -21523,6 +21656,7 @@ export type Database = {
           name?: string
           parent_surface_name?: string | null
           sort_order?: number
+          supports_dictionary?: boolean
           updated_at?: string
           url_pattern?: string | null
         }
@@ -22586,6 +22720,36 @@ export type Database = {
           total_views_received?: number | null
           total_xp?: number | null
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_surface_state: {
+        Row: {
+          created_at: string
+          feature: string
+          id: string
+          state: Json
+          surface_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feature: string
+          id?: string
+          state?: Json
+          surface_key?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feature?: string
+          id?: string
+          state?: Json
+          surface_key?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -27738,6 +27902,184 @@ export type Database = {
         }[]
       }
       delete_user_table: { Args: { p_table_id: string }; Returns: Json }
+      dict_assert_access: {
+        Args: { p_level: string; p_owner_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      dict_delete_entries: {
+        Args: { p_ids: string[]; p_level: string; p_owner_id: string }
+        Returns: number
+      }
+      dict_delete_entries_for: {
+        Args: {
+          p_ids: string[]
+          p_level: string
+          p_owner_id: string
+          p_user_id: string
+        }
+        Returns: number
+      }
+      dict_get_settings: {
+        Args: { p_level: string; p_owner_id: string }
+        Returns: Json
+      }
+      dict_get_settings_for: {
+        Args: { p_level: string; p_owner_id: string; p_user_id: string }
+        Returns: Json
+      }
+      dict_list_entries: {
+        Args: { p_level: string; p_owner_id: string }
+        Returns: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          definition: string | null
+          id: string
+          ipa: string | null
+          is_active: boolean
+          organization_id: string | null
+          pronunciation: string | null
+          scope_id: string | null
+          scope_type_id: string | null
+          sounds_like: string[]
+          term: string
+          updated_at: string
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "dict_entries"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      dict_list_entries_for: {
+        Args: { p_level: string; p_owner_id: string; p_user_id: string }
+        Returns: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          definition: string | null
+          id: string
+          ipa: string | null
+          is_active: boolean
+          organization_id: string | null
+          pronunciation: string | null
+          scope_id: string | null
+          scope_type_id: string | null
+          sounds_like: string[]
+          term: string
+          updated_at: string
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "dict_entries"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      dict_list_owners: { Args: never; Returns: Json }
+      dict_list_owners_for: { Args: { p_user_id: string }; Returns: Json }
+      dict_owner_org: {
+        Args: { p_level: string; p_owner_id: string }
+        Returns: string
+      }
+      dict_resolve: {
+        Args: {
+          p_all?: boolean
+          p_include_user?: boolean
+          p_organization_ids?: string[]
+          p_scope_ids?: string[]
+          p_scope_type_ids?: string[]
+        }
+        Returns: Json
+      }
+      dict_resolve_for: {
+        Args: {
+          p_all?: boolean
+          p_include_user?: boolean
+          p_organization_ids?: string[]
+          p_scope_ids?: string[]
+          p_scope_type_ids?: string[]
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      dict_set_settings: {
+        Args: {
+          p_level: string
+          p_max_inline_chars: number
+          p_owner_id: string
+        }
+        Returns: Json
+      }
+      dict_set_settings_for: {
+        Args: {
+          p_level: string
+          p_max_inline_chars: number
+          p_owner_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      dict_upsert_entries: {
+        Args: { p_entries: Json; p_level: string; p_owner_id: string }
+        Returns: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          definition: string | null
+          id: string
+          ipa: string | null
+          is_active: boolean
+          organization_id: string | null
+          pronunciation: string | null
+          scope_id: string | null
+          scope_type_id: string | null
+          sounds_like: string[]
+          term: string
+          updated_at: string
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "dict_entries"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      dict_upsert_entries_for: {
+        Args: {
+          p_entries: Json
+          p_level: string
+          p_owner_id: string
+          p_user_id: string
+        }
+        Returns: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          definition: string | null
+          id: string
+          ipa: string | null
+          is_active: boolean
+          organization_id: string | null
+          pronunciation: string | null
+          scope_id: string | null
+          scope_type_id: string | null
+          sounds_like: string[]
+          term: string
+          updated_at: string
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "dict_entries"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       disconnect_mcp_server: {
         Args: { p_server_id: string }
         Returns: undefined
@@ -30407,6 +30749,7 @@ export type Database = {
           name: string
           parent_surface_name: string | null
           sort_order: number
+          supports_dictionary: boolean
           updated_at: string
           url_pattern: string | null
         }[]

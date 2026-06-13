@@ -44,7 +44,9 @@ export function useMermaidArtifactSave(args: UseMermaidArtifactSaveArgs) {
   const [version, setVersion] = useState<number | null>(null);
 
   const argsRef = useRef(args);
-  argsRef.current = args;
+  useEffect(() => {
+    argsRef.current = args;
+  });
   const pendingRef = useRef<{ source: string } | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savingRef = useRef(false);
@@ -145,7 +147,6 @@ export function useMermaidArtifactSave(args: UseMermaidArtifactSaveArgs) {
       if (timerRef.current) clearTimeout(timerRef.current);
       if (pendingRef.current) void persist();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { saveState, scheduleSave, flush, activeVersionId, version };

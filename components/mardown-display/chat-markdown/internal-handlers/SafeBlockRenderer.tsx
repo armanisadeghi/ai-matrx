@@ -50,6 +50,7 @@ function blockContextTags(
   const md = (block.metadata ?? {}) as Record<string, unknown>;
   const str = (v: unknown) =>
     typeof v === "string" && v.length > 0 ? v : undefined;
+  const artifactType = str(sd.artifact_type) ?? str(md.artifactType);
   return {
     "data-mtx-ctx": "block",
     "data-block-type": block.type,
@@ -57,6 +58,16 @@ function blockContextTags(
       str(sd.id) ?? str(md.blockId) ?? str(md.id) ?? String(index),
     "data-tool-name": str(sd.tool_name) ?? str(sd.toolName) ?? str(md.toolName),
     "data-language": str(block.language),
+    // Artifact identity for materialized refs (mermaid, etc.).
+    "data-artifact-type": artifactType,
+    "data-artifact-id": str(sd.artifact_id) ?? str(md.artifactId),
+    // Mermaid's rendered SVG text is node LABELS, not the diagram DSL — so the
+    // raw source must be tagged explicitly for the context menu to pass the
+    // real diagram to an agent. Bounded to mermaid; DSL is small (<2KB typical).
+    "data-block-source":
+      block.type === "mermaid" || artifactType === "mermaid"
+        ? str(block.content)
+        : undefined,
   };
 }
 

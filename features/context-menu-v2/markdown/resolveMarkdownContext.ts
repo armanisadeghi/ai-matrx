@@ -17,6 +17,12 @@ export interface MarkdownMenuContext extends Record<string, unknown> {
   blockType?: string;
   toolName?: string;
   language?: string;
+  /** `<artifact type>` / materialized artifact type of the block, when any. */
+  artifactType?: string;
+  /** canvas_items row id when the block is a materialized artifact. */
+  artifactId?: string;
+  /** Raw diagram DSL for mermaid blocks (the rendered SVG text is only labels). */
+  diagram_source?: string;
   /** Text the menu's compare/AI actions operate on when there's no selection. */
   content?: string;
 }
@@ -40,8 +46,17 @@ export function resolveMarkdownContext(
     if (d.blockType) ctx.blockType = d.blockType;
     if (d.toolName) ctx.toolName = d.toolName;
     if (d.language) ctx.language = d.language;
-    const text = blockEl.textContent?.trim();
-    if (text) ctx.content = text;
+    if (d.artifactType) ctx.artifactType = d.artifactType;
+    if (d.artifactId) ctx.artifactId = d.artifactId;
+    if (d.blockSource) {
+      // Mermaid: the diagram DSL, NOT the SVG's label text — feed agents the
+      // real source so "edit this diagram" works, and use it for content too.
+      ctx.diagram_source = d.blockSource;
+      ctx.content = d.blockSource;
+    } else {
+      const text = blockEl.textContent?.trim();
+      if (text) ctx.content = text;
+    }
   } else if (messageEl) {
     const text = messageEl.textContent?.trim();
     if (text) ctx.content = text;

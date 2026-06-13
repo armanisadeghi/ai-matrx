@@ -93,7 +93,9 @@ export type SourceFeature =
   /** Multi-agent side-by-side comparison page (`/agents/battle`). */
   | "agent-comparison"
   /** Right-click context menu on rendered assistant markdown (MarkdownStream). */
-  | "assistant-message";
+  | "assistant-message"
+  /** "Edit with AI" inside the Mermaid Workbench (canvas diagram editor). */
+  | "mermaid-workbench";
 
 export const SOURCE_APP = "matrx-admin" as const;
 

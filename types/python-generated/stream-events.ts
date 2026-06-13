@@ -1554,6 +1554,14 @@ export interface DiagramBlockData {
   layout?: DiagramLayout;
 }
 
+export interface MermaidBlockData {
+  title?: string | null;
+  diagramType?: string;
+  source: string;
+  isValid?: boolean | null;
+  diagnostics?: string[];
+}
+
 export interface TableBlockData {
   headers: string[];
   rows: string[][];
@@ -2029,6 +2037,16 @@ export interface DiagramRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
+export interface MermaidRenderBlock {
+  blockId: string;
+  blockIndex: number;
+  type: "mermaid";
+  status: "streaming" | "complete" | "error";
+  content?: string | null;
+  data?: MermaidBlockData | null;
+  metadata?: Record<string, unknown>;
+}
+
 export interface MathProblemRenderBlock {
   blockId: string;
   blockIndex: number;
@@ -2146,6 +2164,7 @@ export type TypedRenderBlock =
   | DecisionRenderBlock
   | ResearchRenderBlock
   | DiagramRenderBlock
+  | MermaidRenderBlock
   | MathProblemRenderBlock
   | ArtifactRenderBlock
   | InfoRenderBlock
@@ -2157,7 +2176,7 @@ export type TypedRenderBlock =
   | ToolRenderBlock;
 
 const TYPED_RENDER_BLOCK_TYPES = new Set<string>([
-  "text", "code", "table", "thinking", "reasoning", "consolidated_reasoning", "image", "video", "tasks", "transcript", "structured_info", "matrxBroker", "questionnaire", "flashcards", "quiz", "presentation", "cooking_recipe", "timeline", "progress_tracker", "comparison_table", "troubleshooting", "resources", "decision_tree", "decision", "research", "diagram", "math_problem", "artifact", "info", "task", "database", "private", "plan", "event", "tool",
+  "text", "code", "table", "thinking", "reasoning", "consolidated_reasoning", "image", "video", "tasks", "transcript", "structured_info", "matrxBroker", "questionnaire", "flashcards", "quiz", "presentation", "cooking_recipe", "timeline", "progress_tracker", "comparison_table", "troubleshooting", "resources", "decision_tree", "decision", "research", "diagram", "mermaid", "math_problem", "artifact", "info", "task", "database", "private", "plan", "event", "tool",
 ]);
 
 export function isTypedRenderBlock(e: RenderBlockPayload): e is RenderBlockPayload & TypedRenderBlock {

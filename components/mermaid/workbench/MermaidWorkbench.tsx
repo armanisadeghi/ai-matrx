@@ -10,7 +10,7 @@
  * fidelity check; everything else works for every diagram type.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Check,
   Code2,
@@ -21,6 +21,7 @@ import {
   Palette,
   Redo2,
   Shapes,
+  MessageSquare,
   TriangleAlert,
   Undo2,
 } from "lucide-react";
@@ -66,9 +67,12 @@ import {
   type MermaidOptionPreferences,
   type MermaidThemePreference,
 } from "../types";
+import { createMermaidEditorScope } from "@/features/surfaces/manifests/mermaid-editor.manifest";
+import { getFeaturedCatalogEntries } from "../catalog";
 import { CodeModePane } from "../code/CodeModePane";
 import { OutlineModePane } from "../outline/OutlineModePane";
 import { VisualModePane } from "../visual/VisualModePane";
+import { AgentEditRail } from "./AgentEditRail";
 import { registerMermaidEditor } from "./editor-bridge";
 import { useMermaidArtifactSave } from "./useMermaidArtifactSave";
 import { useMermaidEditor, type WorkbenchMode } from "./useMermaidEditor";
@@ -131,7 +135,6 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Session-versioned autosave ───────────────────────────────────────────
@@ -155,7 +158,6 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
       lastQueuedRef.current = state.source;
       scheduleSave(state.source);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.source]);
 
   // Options changes persist with the next content save; nudge one if clean.
@@ -166,19 +168,19 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
       lastOptionsRef.current = optionsKey;
       scheduleSave(state.source);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [optionsKey]);
 
   // ── Editor bridge (AI edits + context-menu collaborators) ───────────────
   const bridgeKey = canvasItemId ?? `draft:${metadata?.sourceMessageId ?? "new"}`;
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useEffect(() => {
+    stateRef.current = state;
+  });
   useEffect(() => {
     return registerMermaidEditor(bridgeKey, {
       getSource: () => stateRef.current.source,
       applySource: (next) => dispatch({ type: "APPLY_EXTERNAL_SOURCE", source: next }),
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bridgeKey]);
 
   // ── Keyboard undo/redo (visual + outline; code mode uses CodeMirror's) ──
@@ -194,8 +196,37 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── AI edit rail ─────────────────────────────────────────────────────────
+  const [aiOpen, setAiOpen] = useState(false);
+  const buildScope = useCallback(() => {
+    const s = stateRef.current;
+    const diagnostics =
+      s.outcome?.status === "invalid"
+        ? s.outcome.diagnostics
+        : s.outcome?.status === "ok"
+          ? s.outcome.doc.warnings
+          : [];
+    return createMermaidEditorScope({
+      diagram_source: s.source,
+      diagram_type: s.diagramType,
+      diagram_title: title,
+      editor_mode: s.mode,
+      validation_state:
+        s.outcome?.status === "ok"
+          ? "valid"
+          : s.outcome?.status === "invalid"
+            ? "invalid"
+            : "unknown",
+      validation_errors: diagnostics.map((d) => ({ line: d.line, message: d.message })),
+      selected_node_text: selectedLabel(s),
+      available_diagram_types: getFeaturedCatalogEntries().map((e) => e.type),
+      canvas_item_id: canvasItemId,
+      version: version ?? undefined,
+      conversation_id: metadata?.conversationId,
+    });
+  }, [title, canvasItemId, version, metadata?.conversationId]);
 
   const structuralOk = state.outcome?.status === "ok";
   const doc = state.outcome?.status === "ok" ? state.outcome.doc : null;
@@ -289,6 +320,21 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
 
           <div className="ml-auto flex items-center gap-0.5">
             <SaveIndicator state={saveState} onRetry={flush} />
+
+            <button
+              type="button"
+              aria-label="Edit with AI"
+              onClick={() => setAiOpen((v) => !v)}
+              className={cn(
+                "flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors",
+                aiOpen
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">AI</span>
+            </button>
 
             <button
               type="button"
@@ -447,27 +493,52 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
           </div>
         </div>
 
-        {/* Mode pane */}
-        <div className="min-h-0 flex-1">
-          {state.mode === "visual" && (
-            <VisualModePane
+        {/* Mode pane + optional AI rail (rail stacks below on mobile) */}
+        <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
+          <div className="min-h-0 flex-1">
+            {state.mode === "visual" && (
+              <VisualModePane
+                source={state.source}
+                options={renderOptions}
+                doc={doc}
+                selection={state.selection}
+                dispatch={dispatch}
+              />
+            )}
+            {state.mode === "outline" && (
+              <OutlineModePane doc={doc} unavailableReason={codeOnlyReason} dispatch={dispatch} />
+            )}
+            {state.mode === "code" && (
+              <CodeModePane source={state.source} options={renderOptions} dispatch={dispatch} />
+            )}
+          </div>
+          {aiOpen && (
+            <AgentEditRail
               source={state.source}
-              options={renderOptions}
-              doc={doc}
-              selection={state.selection}
-              dispatch={dispatch}
+              buildScope={buildScope}
+              onApply={(next) => dispatch({ type: "APPLY_EXTERNAL_SOURCE", source: next })}
+              onClose={() => setAiOpen(false)}
             />
-          )}
-          {state.mode === "outline" && (
-            <OutlineModePane doc={doc} unavailableReason={codeOnlyReason} dispatch={dispatch} />
-          )}
-          {state.mode === "code" && (
-            <CodeModePane source={state.source} options={renderOptions} dispatch={dispatch} />
           )}
         </div>
       </div>
     </TooltipProvider>
   );
+}
+
+/** Label of the selected node/edge, for the AI scope's selected_node_text. */
+function selectedLabel(state: {
+  selection: { kind: "node" | "edge"; id: string } | null;
+  outcome: { status: string } | null;
+}): string | undefined {
+  const sel = state.selection;
+  if (!sel || state.outcome?.status !== "ok") return undefined;
+  const doc = (state.outcome as { doc?: unknown }).doc as
+    | { nodes?: Array<{ id: string; label: string }>; edges?: Array<{ id: string; label?: string }> }
+    | undefined;
+  if (!doc) return undefined;
+  if (sel.kind === "node") return doc.nodes?.find((n) => n.id === sel.id)?.label;
+  return doc.edges?.find((e) => e.id === sel.id)?.label;
 }
 
 function SaveIndicator({ state, onRetry }: { state: string; onRetry: () => void }) {

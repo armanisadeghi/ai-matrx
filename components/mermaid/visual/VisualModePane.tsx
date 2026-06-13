@@ -54,7 +54,9 @@ export function VisualModePane({ source, options, doc, selection, dispatch }: Vi
   const containerRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [interactive, setInteractive] = useState(true);
-  const [popoverAt, setPopoverAt] = useState<{ x: number; y: number } | null>(null);
+  // Container bounds (cw/ch) are captured at click time so the popover can be
+  // clamped without reading the ref during render.
+  const [popoverAt, setPopoverAt] = useState<{ x: number; y: number; cw: number; ch: number } | null>(null);
 
   const flowDoc = doc?.kind === "flowchart" ? (doc as FlowchartDoc) : null;
   const apply = (op: MermaidOp) => dispatch({ type: "APPLY_OP", op });
@@ -96,8 +98,8 @@ export function VisualModePane({ source, options, doc, selection, dispatch }: Vi
     }
     const rect = containerRef.current?.getBoundingClientRect();
     const at = rect
-      ? { x: event.clientX - rect.left, y: event.clientY - rect.top }
-      : { x: 0, y: 0 };
+      ? { x: event.clientX - rect.left, y: event.clientY - rect.top, cw: rect.width, ch: rect.height }
+      : { x: 0, y: 0, cw: 400, ch: 300 };
     if (hit.kind === "node") {
       const node = flowDoc.nodes.find((n) => n.id === hit.id);
       if (!node) return;
@@ -123,7 +125,6 @@ export function VisualModePane({ source, options, doc, selection, dispatch }: Vi
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (!flowDoc) {
@@ -233,8 +234,8 @@ export function VisualModePane({ source, options, doc, selection, dispatch }: Vi
           <div
             className="absolute z-20 w-64 rounded-lg border border-border bg-card p-3 shadow-lg"
             style={{
-              left: Math.min(popoverAt!.x, (containerRef.current?.clientWidth ?? 400) - 270),
-              top: Math.min(popoverAt!.y + 8, (containerRef.current?.clientHeight ?? 300) - 240),
+              left: Math.min(popoverAt!.x, popoverAt!.cw - 270),
+              top: Math.min(popoverAt!.y + 8, popoverAt!.ch - 240),
             }}
           >
             {actionCard}

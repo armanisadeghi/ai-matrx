@@ -35,22 +35,22 @@ export function CodeModePane({ source, options, dispatch }: CodeModePaneProps) {
   const [ladder, setLadder] = useState<LadderResult | null>(null);
   const [previewOpen, setPreviewOpen] = useState(true);
   const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastExternalSource = useRef(source);
 
-  // External source changes (undo, ops from other modes, AI apply) win over
-  // the local draft — but never stomp mid-typing edits we haven't committed.
-  useEffect(() => {
-    if (source !== lastExternalSource.current) {
-      lastExternalSource.current = source;
-      setDraft(source);
-    }
-  }, [source]);
+  // External source changes (undo, ops from other modes, AI apply) win over the
+  // local draft. React's render-phase state-adjustment pattern (not an effect)
+  // so we never stomp mid-typing edits with a cascading-render effect — when the
+  // user's own debounced edit commits, `source` already equals `draft`, so the
+  // setDraft below is a no-op.
+  const [syncedSource, setSyncedSource] = useState(source);
+  if (source !== syncedSource) {
+    setSyncedSource(source);
+    setDraft(source);
+  }
 
   const handleChange = (value: string) => {
     setDraft(value);
     if (commitTimer.current) clearTimeout(commitTimer.current);
     commitTimer.current = setTimeout(() => {
-      lastExternalSource.current = value;
       dispatch({ type: "SET_SOURCE", source: value });
     }, COMMIT_DEBOUNCE_MS);
   };

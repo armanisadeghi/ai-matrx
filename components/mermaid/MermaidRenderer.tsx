@@ -54,7 +54,9 @@ export function MermaidRenderer({
   const [failure, setFailure] = useState<LadderResult | null>(null);
   const epochRef = useRef(0);
   const onLadderResultRef = useRef(onLadderResult);
-  onLadderResultRef.current = onLadderResult;
+  useEffect(() => {
+    onLadderResultRef.current = onLadderResult;
+  });
 
   useEffect(() => {
     preloadMermaid();
@@ -65,8 +67,8 @@ export function MermaidRenderer({
   useEffect(() => {
     const trimmed = source.trim();
     if (!trimmed) {
-      setLastGoodSvg(null);
-      setFailure(null);
+      // Don't clear state here (setState-in-effect) — the empty source is
+      // handled by deriving `hasSource` below, which hides any stale render.
       return;
     }
     const epoch = ++epochRef.current;
@@ -104,17 +106,23 @@ export function MermaidRenderer({
       isStreamActive ? STREAMING_DEBOUNCE_MS : 0,
     );
     return () => clearTimeout(timer);
-  }, [source, optionsKey, isStreamActive]); // eslint-disable-line react-hooks/exhaustive-deps -- optionsKey is the stable identity of `options`
+  }, [source, optionsKey, isStreamActive]);
 
   const diagramType = detectDiagramType(source);
   const label = getCatalogEntry(diagramType).label;
   const title = extractMermaidTitle(source);
 
-  if (failure && !isStreamActive && !lastGoodSvg) {
-    return <MermaidErrorCard failure={failure} originalSource={source} className={className} />;
+  // Derive what to show: when the source is empty, hide any stale render/error
+  // (avoids clearing state in the effect above).
+  const hasSource = source.trim().length > 0;
+  const showSvg = hasSource ? lastGoodSvg : null;
+  const showFailure = hasSource ? failure : null;
+
+  if (showFailure && !isStreamActive && !showSvg) {
+    return <MermaidErrorCard failure={showFailure} originalSource={source} className={className} />;
   }
 
-  if (!lastGoodSvg) {
+  if (!showSvg) {
     return (
       <div className={cn("space-y-2 p-3", className)} aria-busy="true">
         <Skeleton className="h-4 w-1/3" />
@@ -130,15 +138,15 @@ export function MermaidRenderer({
       className={cn("m-0", className)}
     >
       <MermaidViewport
-        svg={lastGoodSvg}
+        svg={showSvg}
         hideControls={hideViewportControls}
         onSvgMounted={onSvgMounted}
       />
-      {failure && !isStreamActive && (
+      {showFailure && !isStreamActive && (
         // The final source failed but a partial render succeeded earlier —
         // keep the diagram visible and surface the problem under it.
         <figcaption className="mt-1">
-          <MermaidErrorCard failure={failure} originalSource={source} />
+          <MermaidErrorCard failure={showFailure} originalSource={source} />
         </figcaption>
       )}
     </figure>
