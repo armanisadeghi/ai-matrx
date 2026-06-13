@@ -34,6 +34,7 @@ import {
   Loader2,
   RefreshCw,
   Shield,
+  Sparkles,
   Zap,
   Table2,
   Tag
@@ -47,6 +48,7 @@ import { TextContent } from "@/features/file-analysis/content/TextContent";
 import { TablesContent } from "@/features/file-analysis/content/TablesContent";
 import { ImagesContent } from "@/features/file-analysis/content/ImagesContent";
 import { PiiCandidatesContent } from "@/features/file-analysis/content/PiiCandidatesContent";
+import { EntitiesContent } from "@/features/file-analysis/content/EntitiesContent";
 import { RepeatedRegionsContent } from "@/features/file-analysis/content/RepeatedRegionsContent";
 import { DuplicatesContent } from "@/features/file-analysis/content/DuplicatesContent";
 import { OutlineContent } from "@/features/file-analysis/content/OutlineContent";
@@ -75,6 +77,7 @@ type Section =
   | "outline"
   | "text"
   | "pii"
+  | "entities"
   | "tables"
   | "images"
   | "regions"
@@ -270,6 +273,13 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
             results={results}
             onJumpToPage={(p) => jumpToPage(fileId, p)}
           />
+        ) : section === "entities" ? (
+          <ScrollSection>
+            <EntitiesContent
+              fileId={fileId}
+              onJumpToPage={(p) => jumpToPage(fileId, p)}
+            />
+          </ScrollSection>
         ) : section === "tables" ? (
           <ScrollSection>
             <TablesContent
@@ -469,6 +479,7 @@ function SectionTabs({
     { id: "outline", label: "Outline", icon: ListTree, badge: counts.outline_count || undefined },
     { id: "text", label: "Text", icon: FileText, badge: counts.chars_total ? `${Math.round(counts.chars_total / 1000)}K` : undefined },
     { id: "pii", label: "PII", icon: Shield, badge: counts.pii_medium || undefined },
+    { id: "entities", label: "Entities", icon: Sparkles },
     { id: "tables", label: "Tables", icon: Table2, badge: counts.tables_count || undefined },
     { id: "images", label: "Images", icon: ImageIcon, badge: counts.images_count || undefined },
     { id: "regions", label: "Regions", icon: Layers, badge: counts.regions_medium || undefined },
