@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MarkdownStream from "@/components/MarkdownStream";
+import AudioOutputBlockSkeleton from "@/components/mardown-display/blocks/audio/AudioOutputBlockSkeleton";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
@@ -240,15 +241,7 @@ export function AssistantMessage({
           !isAudioResponse &&
           isStreamActive &&
           !message.content &&
-          isTtsRequest && (
-            <div className="relative flex items-center gap-2 text-sm py-2 px-3 rounded-lg border bg-card overflow-hidden">
-              <div className="absolute inset-0 animate-[audio-shimmer_1.6s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
-              <Volume2 className="w-4 h-4 text-primary flex-shrink-0 relative z-10" />
-              <span className="text-muted-foreground relative z-10">
-                Generating audio\u2026
-              </span>
-            </div>
-          )}
+          isTtsRequest && <AudioOutputBlockSkeleton />}
 
         {!showLoading &&
           !isError &&

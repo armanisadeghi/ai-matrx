@@ -39,6 +39,7 @@ import {
   Crown,
   Bug,
   SlidersVertical,
+  FileText,
 } from "lucide-react";
 import {
   Popover,
@@ -57,6 +58,9 @@ import { RunSettingsEditor } from "@/features/agents/components/run-controls/Run
 import { RunModelPicker } from "@/features/agents/components/run-controls/RunModelPicker";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
+import { WorkingDocumentControls } from "@/features/agents/components/working-document/WorkingDocumentControls";
+import { useWorkingDocumentContextSync } from "@/features/agents/hooks/useWorkingDocument";
+import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 
 import {
   selectAttachmentCapabilities,
@@ -82,6 +86,7 @@ import type { Resource } from "@/features/prompts/types/resources";
 type Tab =
   | "attach"
   | "context"
+  | "document"
   | "model"
   | "tools"
   | "sandbox"
@@ -97,6 +102,11 @@ interface TabDef {
 
 const ATTACH_TAB: TabDef = { id: "attach", label: "Attach", icon: Paperclip };
 const CONTEXT_TAB: TabDef = { id: "context", label: "Context", icon: Layers };
+const DOCUMENT_TAB: TabDef = {
+  id: "document",
+  label: "Document",
+  icon: FileText,
+};
 // Per-conversation overrides (model + run config) that overwrite the agent's
 // own settings for this run only.
 const MODEL_TAB: TabDef = { id: "model", label: "Overrides", icon: Cpu };
@@ -168,6 +178,14 @@ export function RunControlsMenu({
 
   const submitOnEnter = useAppSelector(selectSubmitOnEnter(conversationId));
 
+  // Working document: keep the `working_document` instanceContext entry current
+  // for this conversation regardless of whether the popup/editor is open, so
+  // the agent always receives the document the user is collaborating on.
+  useWorkingDocumentContextSync(conversationId);
+  const workingDocEnabled = useAppSelector(
+    selectWorkingDocEnabled(conversationId),
+  );
+
   // The Model tab (and per-run model/settings overrides) only applies to
   // instances that own an override layer — manual/builder-test runs read the
   // agent live and have no override state, so we hide it there.
@@ -181,6 +199,7 @@ export function RunControlsMenu({
   const tabs: TabDef[] = [
     ...(includeAttach ? [ATTACH_TAB] : []),
     CONTEXT_TAB,
+    DOCUMENT_TAB,
     ...(hasOverrideLayer ? [MODEL_TAB] : []),
     ...BASE_TABS_FOR_RUN,
     ...(showCreatorTab ? [CREATOR_TAB] : []),
@@ -207,6 +226,7 @@ export function RunControlsMenu({
     addedCount > 0 ||
     hasSandbox ||
     hasModelOverride ||
+    workingDocEnabled ||
     !!settings?.disableToolInjection ||
     !!settings?.surfaceOverride;
 
@@ -287,6 +307,12 @@ export function RunControlsMenu({
                     aria-label="overridden"
                   />
                 )}
+                {t.id === "document" && workingDocEnabled && (
+                  <span
+                    className="ml-0.5 h-1.5 w-1.5 rounded-full bg-primary"
+                    aria-label="working document active"
+                  />
+                )}
               </button>
             );
           })}
@@ -313,6 +339,11 @@ export function RunControlsMenu({
             <div className="flex h-full items-center justify-center px-3 py-2 text-center text-xs text-muted-foreground">
               {/* Placeholder — the context component is wired in a later round. */}
               Context controls coming soon.
+            </div>
+          )}
+          {activeTab === "document" && (
+            <div className="h-full overflow-hidden">
+              <WorkingDocumentControls conversationId={conversationId} />
             </div>
           )}
           {activeTab === "model" && (

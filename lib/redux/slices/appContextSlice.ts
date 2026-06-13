@@ -38,9 +38,13 @@ export interface AppContextState {
   organization_name: string | null;
 
   /**
-   * Scope selections — keyed by scope type id, value is selected scope id.
-   * Scopes sit between organization and project in the hierarchy.
-   * Exactly one selection per scope_type at a time.
+   * Scope selections — MULTI-SELECT (2026-06-12). Keyed by scope id; value is
+   * the same scope id (map shape kept for type-compatibility; null values are
+   * tolerated and ignored). Any number of scopes across any scope types can
+   * be active at once; consumers flatten with Object.values().
+   *
+   * History: previously keyed by scope_type_id with exactly one scope per
+   * type — that cardinality is GONE. Do not reintroduce it.
    */
   scope_selections: Record<string, string | null>;
 

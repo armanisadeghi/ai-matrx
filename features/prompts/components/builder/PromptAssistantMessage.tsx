@@ -3,6 +3,7 @@ import React, { useState, useRef, useCallback } from "react";
 import { Volume2, Download, Loader2, Link, Copy, Check } from "lucide-react";
 import { useDomCapturePrint } from "@/features/chat/hooks/useDomCapturePrint";
 import MarkdownStream from "@/components/MarkdownStream";
+import AudioOutputBlockSkeleton from "@/components/mardown-display/blocks/audio/AudioOutputBlockSkeleton";
 import { AssistantActionBar } from "@/features/agents/components/messages-display/assistant/AssistantActionBar";
 import { PromptErrorMessage } from "../PromptErrorMessage";
 import { Button } from "@/components/ui/button";
@@ -142,13 +143,7 @@ export function PromptAssistantMessage({
       ) : (
         <>
           {isStreamActive && !content && isTtsRequest ? (
-            <div className="relative flex items-center gap-2 text-sm py-2 px-3 rounded-lg border bg-card overflow-hidden">
-              <div className="absolute inset-0 animate-[audio-shimmer_1.6s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-primary/10 to-transparent" />
-              <Volume2 className="w-4 h-4 text-primary flex-shrink-0 relative z-10" />
-              <span className="text-muted-foreground relative z-10">
-                Generating audio…
-              </span>
-            </div>
+            <AudioOutputBlockSkeleton />
           ) : (
             <div ref={captureRef}>
               <MarkdownStream

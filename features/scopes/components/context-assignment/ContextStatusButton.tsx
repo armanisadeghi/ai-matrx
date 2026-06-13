@@ -23,8 +23,10 @@ import {
 } from "./ContextAssignmentPopover";
 import type { ContextAssignmentSubject } from "./ContextAssignmentField";
 
-export interface ContextStatusButtonProps
-  extends Omit<ContextAssignmentPopoverProps, "trigger" | "subject"> {
+export interface ContextStatusButtonProps extends Omit<
+  ContextAssignmentPopoverProps,
+  "trigger" | "subject"
+> {
   subject: ContextAssignmentSubject;
   /** Provide when the host already knows (bulk fetch / FK fields) — skips the
    *  per-entity fetch. Counts as "has context" when > 0 OR hasOtherContext. */
@@ -33,6 +35,8 @@ export interface ContextStatusButtonProps
   hasOtherContext?: boolean;
   size?: "xs" | "sm";
   buttonClassName?: string;
+  /** Render scope-count text inside the same bordered, clickable control. */
+  showScopeLabel?: boolean;
 }
 
 export function ContextStatusButton({
@@ -41,6 +45,7 @@ export function ContextStatusButton({
   hasOtherContext = false,
   size = "sm",
   buttonClassName,
+  showScopeLabel = false,
   ...popoverProps
 }: ContextStatusButtonProps) {
   const skipFetch = knownScopeCount !== undefined;
@@ -52,6 +57,11 @@ export function ContextStatusButton({
   const hasContext = (scopeCount ?? 0) > 0 || hasOtherContext;
 
   const iconCls = size === "xs" ? "h-3.5 w-3.5" : "h-4 w-4";
+  const labelCls = size === "xs" ? "text-[10px]" : "text-xs";
+  const scopeLabel =
+    (scopeCount ?? 0) === 0
+      ? "None"
+      : `${scopeCount} scope${scopeCount === 1 ? "" : "s"}`;
 
   return (
     <ContextAssignmentPopover
@@ -60,16 +70,32 @@ export function ContextStatusButton({
       trigger={
         <button
           type="button"
-          title={hasContext ? "Context is set — click to review or change" : "No context set — click to assign"}
-          className={cn(
-            "inline-flex shrink-0 items-center justify-center rounded p-0.5 transition-colors",
+          title={
             hasContext
-              ? "text-emerald-600 hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
-              : "text-amber-500 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-950/50",
+              ? "Context is set — click to review or change"
+              : "No context set — click to assign"
+          }
+          className={cn(
+            "inline-flex shrink-0 cursor-pointer items-center justify-center rounded border transition-colors",
+            showScopeLabel
+              ? size === "xs"
+                ? "gap-1 px-1.5 py-0.5"
+                : "gap-1.5 px-2 py-0.5"
+              : "p-0.5",
+            hasContext
+              ? "border-emerald-500/60 text-emerald-600 hover:bg-emerald-100 dark:border-emerald-400/50 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
+              : "border-amber-500/60 text-amber-600 hover:bg-amber-100 dark:border-amber-400/50 dark:text-amber-400 dark:hover:bg-amber-950/50",
             buttonClassName,
           )}
         >
-          {hasContext ? <ShieldCheck className={iconCls} /> : <ShieldAlert className={iconCls} />}
+          {hasContext ? (
+            <ShieldCheck className={iconCls} />
+          ) : (
+            <ShieldAlert className={iconCls} />
+          )}
+          {showScopeLabel && (
+            <span className={cn(labelCls, "font-medium")}>{scopeLabel}</span>
+          )}
         </button>
       }
     />

@@ -222,6 +222,91 @@ function Chip({ label, onRemove, fg, border }: { label: string; onRemove: () => 
   );
 }
 
+/* ── hierarchy tree (active/filter modes) ────────────────────────────────────
+   One display, three levels, slight indents:
+     Org (checkbox = explicit org context · chevron expands)
+       Scope type (chevron expands; never selectable itself)
+         Scope (checkbox, multi-select)
+   The double-org confusion (browse dropdown + org section) is gone — the org
+   row IS both the navigation and the explicit opt-in. Searching auto-expands
+   to matching scopes. */
+
+function HierarchyTree({
+  organizations, query, selOrgs, onToggleOrg, selScopes, onToggleScope,
+}: {
+  organizations: OrgNode[]; query: string;
+  selOrgs: Set<string>; onToggleOrg: (id: string) => void;
+  selScopes: Set<string>; onToggleScope: (id: string) => void;
+}) {
+  const [openOrgs, setOpenOrgs] = useState<Set<string>>(new Set());
+  const [openTypes, setOpenTypes] = useState<Set<string>>(new Set());
+  const q = query.trim().toLowerCase();
+  const flip = (set: React.Dispatch<React.SetStateAction<Set<string>>>, id: string) =>
+    set((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  return (
+    <div className="rounded-lg border border-border p-1.5">
+      {organizations.map((o) => {
+        const types = q
+          ? o.scope_types
+              .map((t) => ({ t, scopes: t.scopes.filter((s) => s.name.toLowerCase().includes(q)) }))
+              .filter((x) => x.scopes.length > 0 || x.t.label_plural.toLowerCase().includes(q))
+          : o.scope_types.map((t) => ({ t, scopes: t.scopes }));
+        if (q && types.length === 0 && !o.name.toLowerCase().includes(q)) return null;
+        const orgOpen = q ? true : openOrgs.has(o.id);
+        const selectedInOrg = o.scope_types.reduce((n, t) => n + t.scopes.filter((s) => selScopes.has(s.id)).length, 0);
+        return (
+          <div key={o.id}>
+            {/* org row: chevron expands, checkbox = explicit org context */}
+            <div className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1.5 hover:bg-muted">
+              <button type="button" onClick={() => flip(setOpenOrgs, o.id)} className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
+                {orgOpen ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+                <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 truncate text-sm font-medium">{o.name}</span>
+                {o.is_personal && <span className="shrink-0 text-[10px] text-muted-foreground">personal</span>}
+                {selectedInOrg > 0 && <span className="shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">{selectedInOrg}</span>}
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleOrg(o.id)}
+                title="Include this organization in the context (a scope alone never implies its org)"
+                className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded border", selOrgs.has(o.id) ? "border-primary bg-primary text-primary-foreground" : "border-border")}
+              >
+                {selOrgs.has(o.id) && <Check className="h-3 w-3" />}
+              </button>
+            </div>
+            {orgOpen && types.map(({ t, scopes }) => {
+              const c = resolveColor(t);
+              const TIcon = resolveIcon(t.icon);
+              const typeOpen = q ? true : openTypes.has(t.id);
+              const selectedInType = t.scopes.filter((s) => selScopes.has(s.id)).length;
+              return (
+                <div key={t.id} className="ml-5">
+                  <button type="button" onClick={() => flip(setOpenTypes, t.id)} className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left hover:bg-muted">
+                    {typeOpen ? <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />}
+                    <TIcon className={cn("h-3.5 w-3.5 shrink-0", c.fg)} />
+                    <span className={cn("min-w-0 truncate text-sm", c.fg)}>{t.label_plural}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{t.scopes.length}</span>
+                    {selectedInType > 0 && <span className="shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">{selectedInType}</span>}
+                  </button>
+                  {typeOpen && (scopes.length === 0 ? (
+                    <div className="ml-6 px-1.5 py-0.5 text-xs text-muted-foreground">{q ? "No matches." : `No ${t.label_plural.toLowerCase()} yet.`}</div>
+                  ) : scopes.map((s) => (
+                    <div key={s.id} className="ml-5">
+                      <CheckRow on={selScopes.has(s.id)} label={s.name} textClass={c.fg} onClick={() => onToggleScope(s.id)} />
+                    </div>
+                  )))}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+      {organizations.length === 0 && <div className="px-2 py-1.5 text-xs text-muted-foreground">No organizations.</div>}
+    </div>
+  );
+}
+
 /* ── the field ───────────────────────────────────────────────────────────── */
 
 export function ContextAssignmentField({
@@ -329,8 +414,13 @@ export function ContextAssignmentField({
   const hiddenTasks = useMemo(() => allTasks.filter((t) => !inScope(taskOrg(t))).length, [allTasks, allProjects, addedProjects, org?.id]);
 
   const typeById = (id: string): ScopeTypeNode | undefined => org?.scope_types.find((t) => t.id === id);
+  // Non-assignment modes browse ALL orgs (hierarchy tree), so type resolution
+  // must search every org — not just the browse org.
   const typeOfScope = (id: string): ScopeTypeNode | undefined =>
-    org?.scope_types.find((t) => t.scopes.some((s) => s.id === id)) ?? typeById(addedScopes.find((a) => a.id === id)?.typeId ?? "");
+    (mode === "assignment"
+      ? org?.scope_types.find((t) => t.scopes.some((s) => s.id === id))
+      : organizations.flatMap((o) => o.scope_types).find((t) => t.scopes.some((s) => s.id === id))) ??
+    typeById(addedScopes.find((a) => a.id === id)?.typeId ?? "");
   const projName = (id: string) => [...allProjects, ...addedProjects].find((p) => p.id === id)?.name ?? id;
   const orgLabel = (oid: string | null) => (oid === org?.id ? "this org" : oid ? organizations.find((o) => o.id === oid)?.name ?? "other org" : "Unassigned");
 
@@ -361,16 +451,9 @@ export function ContextAssignmentField({
     set((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   function toggleScope(id: string) {
-    // assignment + filter: free multi-select. active: one scope per type.
-    if (mode !== "active") return toggle(setSelScopes, id);
-    const typeId = typeOfScope(id)?.id;
-    setSelScopes((p) => {
-      const n = new Set(p);
-      if (n.has(id)) { n.delete(id); return n; }
-      n.forEach((other) => { if (typeOfScope(other)?.id === typeId) n.delete(other); });
-      n.add(id);
-      return n;
-    });
+    // Free multi-select in EVERY mode (2026-06-12: the one-scope-per-type
+    // cardinality on active context is gone — do not reintroduce it).
+    toggle(setSelScopes, id);
   }
   const toggleSingle = (set: React.Dispatch<React.SetStateAction<Set<string>>>) => (id: string) =>
     set((p) => (p.has(id) ? new Set<string>() : new Set([id])));
@@ -592,7 +675,7 @@ export function ContextAssignmentField({
             ) : (
               <div className="flex flex-wrap items-center gap-1.5">
                 {showOrgSection && [...selOrgs].map((id) => <Chip key={id} label={organizations.find((o) => o.id === id)?.name ?? id} onRemove={() => toggleOrg(id)} />)}
-                {[...selScopes].map((id) => { const name = [...(org?.scope_types.flatMap((x) => x.scopes) ?? []), ...addedScopes].find((s) => s.id === id)?.name ?? id; const t = typeOfScope(id); const c = t ? resolveColor(t) : undefined; return <Chip key={id} label={t ? `${t.label_singular}: ${name}` : name} fg={c?.fg} border={c?.border} onRemove={() => toggle(setSelScopes, id)} />; })}
+                {[...selScopes].map((id) => { const name = [...organizations.flatMap((o) => o.scope_types.flatMap((x) => x.scopes)), ...addedScopes].find((s) => s.id === id)?.name ?? id; const t = typeOfScope(id); const c = t ? resolveColor(t) : undefined; return <Chip key={id} label={t ? `${t.label_singular}: ${name}` : name} fg={c?.fg} border={c?.border} onRemove={() => toggle(setSelScopes, id)} />; })}
                 {[...selProjects].map((id) => <Chip key={id} label={projName(id)} onRemove={() => toggle(setSelProjects, id)} />)}
                 {[...selTasks].map((id) => <Chip key={id} label={[...allTasks, ...addedTasks].find((t) => t.id === id)?.title ?? id} onRemove={() => toggle(setSelTasks, id)} />)}
                 {mode === "assignment" && [...derivedTypeIds].map((tid) => <span key={tid} className="inline-flex items-center gap-1 rounded-md border border-dashed border-border px-2 py-1 text-xs text-muted-foreground">{typeById(tid)?.label_plural}<span className="text-[9px] uppercase opacity-70">auto</span></span>)}

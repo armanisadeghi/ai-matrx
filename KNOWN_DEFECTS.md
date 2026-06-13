@@ -52,6 +52,19 @@ URLs and work fine; the new pipeline regressed.
 | 5. Heal the backlog | **TOOL BUILT — run pending authorization** | The existing leaked rows are healed server-side (works cross-user, unlike a per-owner frontend drain — the 5 broken episodes span 2 users). `aidream/scripts/flip_files_public.py` (a thin CLI over `media_durability.flip_file_to_public`) flips a batch of file_ids to public + reports CDN URLs; the `pc_episodes` rewrite + `mtx_media_heal_queue` mark-healed is then applied via SQL. Dry-run verified (16 files for the 5 episodes all resolve, all `private`, 0 errors). Running the real flip mutates 2 real users' production media, so it needs an explicit go-ahead. The same primitive is what generation-time layer 1 uses, so the classifier never drifts. |
 
 **What's still open.**
+- **Agent chat audio (`audio_output` / `media_block(kind=audio)`) is served as a raw
+  signed S3 URL.** Same root as podcasts: the media agent persists the generated
+  `.wav` with the default `visibility="private"`, so the backend `/files/{id}/url`
+  endpoint mints `matrx-user-files.s3.amazonaws.com/…?AWSAccessKeyId=…&Signature=…&Expires=…`.
+  The new `components/mardown-display/blocks/audio/AudioOutputBlockRenderer.tsx`
+  renders correctly via the file handler (`useFileSrc` from `file_id`) and the URL
+  plays/downloads/copies, but it is still expiring + S3 — so it WILL break when the
+  signature expires and the link should never be surfaced to users. **Fix is backend:**
+  persist agent audio public (or proxy via an our-domain durable URL) the same way
+  podcast layer 1 flips visibility. Frontend logs the resolved shape via
+  `console.log("[audio-block] resolved", …)` (no longer a `console.error` overlay,
+  since this is a tracked backend gap). When the backend serves durable URLs this
+  note can close.
 - **Run the heal on the 5-episode backlog** — `aidream/scripts/flip_files_public.py`
   is built + dry-run-verified; the real flip (16 files, 2 users) needs an explicit
   go-ahead because it mutates production media. After the flip, rewrite each

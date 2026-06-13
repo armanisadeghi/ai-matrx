@@ -32,7 +32,7 @@ import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 import type { FileSource } from "@/features/files/handler/types";
 import {
   fileIdFromUserFilesUrl,
-  reportMediaDurabilityViolation,
+  classifyMediaUrl,
   isDurableMediaUrl,
 } from "@/lib/media/durability";
 
@@ -103,16 +103,10 @@ function buildAudioSource(
   const durable = urlish.find((u) => isDurableMediaUrl(u));
   if (durable) return { kind: "external_url", url: durable, mime };
 
-  // 4. Last resort: an expiring URL with no recoverable identity. Scream — this
-  //    is a server-side durability defect — but still try to play it.
+  // 4. Last resort: an expiring URL with no recoverable identity. Still try to
+  //    play it (the durability gap is tracked as a known defect, see below).
   const last = urlish[0];
-  if (last) {
-    reportMediaDurabilityViolation(
-      last,
-      "AudioOutputBlockRenderer (no recoverable file_id; only an expiring URL)",
-    );
-    return { kind: "external_url", url: last, mime };
-  }
+  if (last) return { kind: "external_url", url: last, mime };
 
   return null;
 }
@@ -131,18 +125,20 @@ const AudioOutputBlockRenderer: React.FC<AudioOutputBlockRendererProps> = ({
   const source = buildAudioSource(data, mime);
   const resolvedUrl = useFileSrc(source);
 
-  // A resolved-but-still-raw-S3 URL means the file wasn't persisted public.
-  // Surface it loudly (doctrine: recovery layers must scream) — it still plays,
-  // but the server-side persistence needs fixing. Fire once per URL, not on
-  // every streaming re-render.
+  // Log the raw inbound shape + what we resolved, once per resolved URL. This is
+  // a plain `console.log` (NOT `console.error`) on purpose: a still-expiring S3
+  // URL here means the AUDIO was persisted private server-side — a known defect
+  // (see KNOWN_DEFECTS.md → "AI audio served as raw signed S3 URL"). The proper
+  // fix is backend (serve a durable public / our-domain URL); screaming with an
+  // error overlay on every generation for a tracked backend gap is just noise.
   useEffect(() => {
-    if (resolvedUrl) {
-      reportMediaDurabilityViolation(
-        resolvedUrl,
-        "AudioOutputBlockRenderer resolved src",
-      );
-    }
-  }, [resolvedUrl]);
+    if (!resolvedUrl) return;
+    console.log("[audio-block] resolved", {
+      kind: classifyMediaUrl(resolvedUrl),
+      resolvedUrl,
+      rawData: data,
+    });
+  }, [resolvedUrl, data]);
 
   if (!resolvedUrl) return null;
 

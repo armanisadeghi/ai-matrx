@@ -13,8 +13,9 @@
  */
 
 import { useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, Check, Layers, Loader2 } from "lucide-react";
+import { ArrowRight, Check, ExternalLink, Layers, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +25,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   PDF_SURFACES,
@@ -40,6 +46,9 @@ export interface PdfSurfaceSwitcherProps {
   size?: "icon" | "sm";
   className?: string;
 }
+
+const surfaceActionClassName =
+  "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-50";
 
 export function PdfSurfaceSwitcher({
   current,
@@ -65,7 +74,11 @@ export function PdfSurfaceSwitcher({
           size={size === "icon" ? "icon" : "sm"}
           disabled={isPending}
           aria-label="Open this PDF in another surface"
-          className={cn("shrink-0", size === "icon" ? "h-7 w-7" : "h-7 gap-1.5 px-2", className)}
+          className={cn(
+            "shrink-0",
+            size === "icon" ? "h-7 w-7" : "h-7 gap-1.5 px-2",
+            className,
+          )}
         >
           {isPending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -83,30 +96,63 @@ export function PdfSurfaceSwitcher({
         {entries.map(({ surface, href }) => {
           const isCurrent = surface.id === current;
           const Icon = surface.icon;
+          const canNavigate = Boolean(href) && !isCurrent && !isPending;
+
           return (
             <DropdownMenuItem
               key={surface.id}
-              disabled={isCurrent || !href || isPending}
-              onSelect={() => {
-                if (!href || isCurrent) return;
-                startTransition(() => router.push(href));
-              }}
-              className="gap-2"
+              disabled={isCurrent || !href}
+              onSelect={(event) => event.preventDefault()}
+              className="gap-2 py-1.5"
             >
-              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="flex-1 min-w-0">
+              <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1">
                 <span className="block text-xs font-medium">
                   {surface.label}
                 </span>
-                <span className="block text-[10px] text-muted-foreground truncate">
+                <span className="block truncate text-[10px] text-muted-foreground">
                   {surface.description}
                 </span>
               </span>
               {isCurrent ? (
-                <Check className="h-3.5 w-3.5 text-primary" />
-              ) : (
-                <ArrowUpRight className="h-3 w-3 text-muted-foreground" />
-              )}
+                <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+              ) : href ? (
+                <span className="flex shrink-0 items-center gap-0.5">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        disabled={!canNavigate}
+                        aria-label={`Open ${surface.label} here`}
+                        className={surfaceActionClassName}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (!href) return;
+                          startTransition(() => router.push(href));
+                        }}
+                      >
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Open here</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Open ${surface.label} in new tab`}
+                        className={surfaceActionClassName}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Open in new tab</TooltipContent>
+                  </Tooltip>
+                </span>
+              ) : null}
             </DropdownMenuItem>
           );
         })}

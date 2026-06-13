@@ -100,12 +100,10 @@ export function ActiveContextButton({
     // and setScopeSelections clears project/task — so dispatch top-down.
     const org = sel.organizationId ? organizations.find((o) => o.id === sel.organizationId) : null;
     dispatch(setOrganization({ id: sel.organizationId, name: org?.name ?? null }));
-    const byType: Record<string, string | null> = {};
-    for (const sid of sel.scopeIds) {
-      const type = organizations.flatMap((o) => o.scope_types).find((t) => t.scopes.some((s) => s.id === sid));
-      if (type) byType[type.id] = sid;
-    }
-    dispatch(setScopeSelections(byType));
+    // Multi-select (2026-06-12): scope_selections is keyed by scope id.
+    const byScope: Record<string, string | null> = {};
+    for (const sid of sel.scopeIds) byScope[sid] = sid;
+    dispatch(setScopeSelections(byScope));
     const pid = sel.projectIds[0] ?? null;
     dispatch(setProject({ id: pid, name: pid ? projectNames[pid] ?? null : null }));
     const tid = sel.taskIds[0] ?? null;

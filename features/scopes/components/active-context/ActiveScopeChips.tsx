@@ -86,10 +86,10 @@ export function ActiveScopeChips({
         />
       )}
 
-      {scopeEntries.map(([scopeTypeId, scopeId]) => (
+      {/* Multi-select (2026-06-12): scope_selections is keyed by scope id. */}
+      {scopeEntries.map(([key, scopeId]) => (
         <ScopeChip
-          key={scopeTypeId}
-          scopeTypeId={scopeTypeId}
+          key={key}
           scopeId={scopeId}
           onClear={() => {
             if (onClickChip) {
@@ -97,7 +97,7 @@ export function ActiveScopeChips({
               return;
             }
             const next: Record<string, string | null> = { ...scopeSelections };
-            delete next[scopeTypeId];
+            delete next[key];
             dispatch(setScopeSelections(next));
           }}
         />
@@ -162,18 +162,20 @@ function Chip({
 }
 
 function ScopeChip({
-  scopeTypeId,
   scopeId,
   onClear,
 }: {
-  scopeTypeId: string;
   scopeId: string;
   onClear: () => void;
 }) {
+  // The type is resolved FROM the scope (multi-select keys are scope ids,
+  // so the map key no longer carries the type).
   const selectScopeType = useMemo(() => makeSelectScopeType(), []);
   const selectScope = useMemo(() => makeSelectScope(), []);
-  const scopeType = useAppSelector((s) => selectScopeType(s, scopeTypeId));
   const scope = useAppSelector((s) => selectScope(s, scopeId));
+  const scopeType = useAppSelector((s) =>
+    selectScopeType(s, scope?.scope_type_id ?? ""),
+  );
   const label = scope?.name ?? scopeId;
   const iconName = scopeType?.icon ?? "Circle";
 

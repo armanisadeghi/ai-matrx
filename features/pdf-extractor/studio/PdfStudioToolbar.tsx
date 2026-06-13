@@ -388,25 +388,31 @@ function formatRelativeTime(iso: string): string {
  * assign via the official picker. Saves write through to the row-scope store
  * so the files table updates in lock-step.
  */
-function PdfFileContextChip({ fileId, fileName }: { fileId: string; fileName: string }) {
+function PdfFileContextChip({
+  fileId,
+  fileName,
+}: {
+  fileId: string;
+  fileName: string;
+}) {
   const es = useEntityScopes({ entityType: "file", entityId: fileId });
   const n = es.scopeIds.length;
   return (
-    <span className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5">
-      <ContextStatusButton
-        size="xs"
-        subject={{ entityType: "file", entityId: fileId, title: fileName }}
-        knownScopeCount={n}
-        writeMode="live"
-        onSaved={(r) => {
-          if (!r.ok) return;
-          setRowScopes("file", fileId, r.selection.scopeIds.filter((id) => !id.startsWith("new:")));
-          void es.refresh();
-        }}
-      />
-      <span className="text-[10px] text-muted-foreground">
-        {n === 0 ? "no context" : `${n} scope${n === 1 ? "" : "s"}`}
-      </span>
-    </span>
+    <ContextStatusButton
+      size="xs"
+      showScopeLabel
+      subject={{ entityType: "file", entityId: fileId, title: fileName }}
+      knownScopeCount={n}
+      writeMode="live"
+      onSaved={(r) => {
+        if (!r.ok) return;
+        setRowScopes(
+          "file",
+          fileId,
+          r.selection.scopeIds.filter((id) => !id.startsWith("new:")),
+        );
+        void es.refresh();
+      }}
+    />
   );
 }

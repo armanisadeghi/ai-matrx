@@ -163,7 +163,11 @@ export function AgentConversationColumn({
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}
           >
-            <div className={centerWrap}>{landingContent}</div>
+            {/* Landing surface (e.g. /chat/new greeting) renders raw — it is
+                NOT a conversation/scroll surface, so the edge-to-edge width
+                wrapper deliberately does not apply here. It owns its own
+                width + vertical centering. */}
+            {landingContent}
           </motion.div>
         ) : (
           <motion.div

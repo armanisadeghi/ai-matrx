@@ -25,6 +25,7 @@
  */
 
 import type { RootState } from "@/lib/redux/store";
+import { buildWorkingDocumentContextValue } from "@/features/agents/utils/workingDocumentContext";
 import {
   selectCleanedSegmentForRecording,
   selectRawSegmentsForRecording,
@@ -47,27 +48,17 @@ function pad2(n: number): string {
 }
 
 /**
- * Rich context-object value for the working document. The backend treats a
- * value as the rich form only when it is a dict with `content` AND every key
- * in the allowed set {content, mutable, persist, source, type, label,
- * description, max_inline_chars, summary_agent_id}. `mutable: true` makes the
- * server inject `ctx_patch`; `source` routes writes to the studio_document
- * writeback handler.
+ * Rich context-object value for the working document. Delegates to the shared
+ * `buildWorkingDocumentContextValue` (the single working_document value shape
+ * across the app) with a `studio_document` binding, so the server still routes
+ * `ctx_patch` writes to the studio_document writeback handler and Scribe stays
+ * in lockstep with the generic working-document primitive.
  */
 export function buildWorkingDocumentValue(documentId: string, content: string) {
-  return {
-    content,
-    mutable: true,
-    persist: "auto",
-    type: "text",
-    label: "Working Document",
-    description:
-      "The collaborative document you build with the user. Read it with " +
-      "ctx_get(working_document); apply every change with ctx_patch on " +
-      "working_document. Never discard the user's content.",
-    source: { kind: "studio_document", id: documentId, field: "content" },
-    max_inline_chars: 0,
-  };
+  return buildWorkingDocumentContextValue(content, {
+    kind: "studio_document",
+    id: documentId,
+  });
 }
 
 /**

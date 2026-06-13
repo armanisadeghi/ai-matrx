@@ -1067,6 +1067,21 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
 
+  // ── Working Document ──────────────────────────────────────────────────────
+  // Reusable collaborative document attached to a conversation. Multi-instance
+  // (one window per conversation, keyed by conversationId). Ephemeral: unbound
+  // content lives in Redux only, so the window is not restored across reloads.
+  {
+    slug: "working-document-window",
+    overlayId: "workingDocumentWindow",
+    kind: "window",
+    label: "Working Document",
+    defaultData: { conversationId: null },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+    instanceMode: "multi",
+  },
+
   // ── Non-window overlays (widgets / sheets / modals) ───────────────────────
 
   {

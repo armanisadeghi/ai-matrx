@@ -62,6 +62,7 @@ export function SearchableList({
   options,
   orphanOptions = [],
   selectedId,
+  selectedIds,
   onSelect,
   placeholder,
   emptyText = "Nothing found",
@@ -69,12 +70,18 @@ export function SearchableList({
   options: PickerOption[];
   orphanOptions?: PickerOption[];
   selectedId: string | null;
+  /** Multi-select mode: when provided, EVERY listed id renders checked and
+   *  `selectedId` is ignored for check state (kept for the clear affordance). */
+  selectedIds?: string[];
   onSelect: (id: string | null) => void;
   placeholder: string;
   emptyText?: string;
 }) {
   const [search, setSearch] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const isSelected = (id: string): boolean =>
+    selectedIds ? selectedIds.includes(id) : selectedId === id;
+  const hasSelection = selectedIds ? selectedIds.length > 0 : !!selectedId;
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -122,10 +129,10 @@ export function SearchableList({
         {filtered.map((opt) => (
           <FlyoutItem
             key={opt.id}
-            selected={selectedId === opt.id}
+            selected={isSelected(opt.id)}
             onSelect={() => onSelect(opt.id)}
           >
-            {selectedId === opt.id ? (
+            {isSelected(opt.id) ? (
               <Check className="h-3 w-3 flex-shrink-0" />
             ) : (
               <span className="w-3 flex-shrink-0" />
@@ -147,10 +154,10 @@ export function SearchableList({
             {filteredOrphans.map((opt) => (
               <FlyoutItem
                 key={opt.id}
-                selected={selectedId === opt.id}
+                selected={isSelected(opt.id)}
                 onSelect={() => onSelect(opt.id)}
               >
-                {selectedId === opt.id ? (
+                {isSelected(opt.id) ? (
                   <Check className="h-3 w-3 flex-shrink-0" />
                 ) : (
                   <span className="w-3 flex-shrink-0" />
@@ -162,7 +169,7 @@ export function SearchableList({
         )}
       </div>
 
-      {selectedId && (
+      {hasSelection && (
         <>
           <div className="mx-2 my-0.5 border-t border-border/50" />
           <FlyoutItem selected={false} onSelect={() => onSelect(null)}>
@@ -275,6 +282,7 @@ export function ContextRow({
   selectedName,
   accentClass,
   selectedId,
+  selectedIds,
   options,
   orphanOptions,
   onSelect,
@@ -286,6 +294,8 @@ export function ContextRow({
   selectedName: string | null;
   accentClass: string;
   selectedId: string | null;
+  /** Multi-select mode: every listed id renders checked in the flyout. */
+  selectedIds?: string[];
   options: PickerOption[];
   orphanOptions?: PickerOption[];
   onSelect: (id: string | null) => void;
@@ -342,6 +352,7 @@ export function ContextRow({
         options={options}
         orphanOptions={orphanOptions}
         selectedId={selectedId}
+        selectedIds={selectedIds}
         onSelect={onSelect}
         placeholder={placeholder ?? `Search ${label.toLowerCase()}…`}
         emptyText={emptyText}

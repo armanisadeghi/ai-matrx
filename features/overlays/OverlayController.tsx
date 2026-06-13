@@ -615,6 +615,10 @@ const SingleMessageWindow = dynamic(
     import("@/features/window-panels/windows/messaging/SingleMessageWindow"),
   { ssr: false },
 );
+const WorkingDocumentWindow = dynamic(
+  () => import("@/features/window-panels/windows/WorkingDocumentWindow"),
+  { ssr: false },
+);
 const SmartCodeEditorWindow = dynamic(
   () =>
     import("@/features/window-panels/windows/smart-code-editor/SmartCodeEditorWindow").then(
@@ -1252,6 +1256,9 @@ export default function OverlayController() {
     shareModal: useAppSelector((s) => selectOpenInstances(s, "shareModal")),
     singleMessageWindow: useAppSelector((s) =>
       selectOpenInstances(s, "singleMessageWindow"),
+    ),
+    workingDocumentWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "workingDocumentWindow"),
     ),
     smartCodeEditorWindow: useAppSelector((s) =>
       selectOpenInstances(s, "smartCodeEditorWindow"),
@@ -3899,6 +3906,31 @@ export default function OverlayController() {
               dispatch(
                 closeOverlay({
                   overlayId: "singleMessageWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : null
+            }
+          />
+        );
+      })}
+
+      {/* workingDocumentWindow — multi-instance */}
+      {instancesById.workingDocumentWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        return (
+          <WorkingDocumentWindow
+            key={inst.instanceId}
+            isOpen
+            instanceId={inst.instanceId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "workingDocumentWindow",
                   instanceId: inst.instanceId,
                 }),
               )

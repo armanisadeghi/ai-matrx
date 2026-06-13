@@ -47,6 +47,9 @@ import {
   isInjectionConsumedEvent,
   type ConversationIdData,
   type ConversationLabeledData,
+  type ContextChangedData,
+  type ContextPersistedData,
+  type ContextPersistFailedData,
   type MemoryBufferSpawnedData,
   type MemoryContextInjectedData,
   type MemoryErrorData,
@@ -98,6 +101,8 @@ import {
   recordReflectorCompleted,
 } from "../observational-memory/observational-memory.slice";
 import { assertConversationIdMatches } from "../utils/assert-conversation-id";
+import { syncWorkingDocumentFromAgentThunk } from "../instance-working-document/instance-working-document.thunks";
+import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
 import { StreamingJsonTracker } from "@/utils/json/streaming-json-tracker";
 import { StreamBlockAccumulator } from "../utils/stream-block-accumulator";
 import type { ExtractedJsonSnapshot } from "@/features/agents/types/request.types";
@@ -657,6 +662,31 @@ export async function processStream({
               data: d as MemoryErrorData,
             }),
           );
+        } else if (
+          d.type === "context_changed" ||
+          d.type === "context_persisted"
+        ) {
+          // A mutable context object was patched/persisted server-side
+          // (ctx_patch / ctx_create). The event carries no new content (schema
+          // limitation), so for the working document we re-read its bound
+          // source to reflect the agent's edit. Non-fatal — unbound docs have
+          // nothing durable to re-read and are a safe no-op.
+          const cd = d as ContextChangedData | ContextPersistedData;
+          if (cd.key === WORKING_DOCUMENT_CONTEXT_KEY) {
+            void dispatch(
+              syncWorkingDocumentFromAgentThunk({ conversationId }),
+            );
+          }
+        } else if (d.type === "context_persist_failed") {
+          // Server failed to persist a mutable context object. Surface loudly
+          // (a recovery/observability signal) but never break the turn.
+          const cd = d as ContextPersistFailedData;
+          if (cd.key === WORKING_DOCUMENT_CONTEXT_KEY) {
+            console.error(
+              "[working-document] backend failed to persist working document",
+              { conversationId, error: cd.error },
+            );
+          }
         } else if (isMediaBlockData(d)) {
           // ── Phase 0 canonical path ─────────────────────────────────────────
           // Python's new `media_block` event carries the full

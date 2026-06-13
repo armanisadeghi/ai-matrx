@@ -277,17 +277,23 @@ export function ActiveScopePicker({
   );
 
   const handleSelectScope = useCallback(
-    (typeId: string, scopeId: string | null, scopeTypeOrgId?: string) => {
+    (scopeType: ScopeTypeNode, scopeId: string | null) => {
+      // MULTI-SELECT (2026-06-12): scope_selections is keyed by scope id —
+      // clicking toggles a scope in/out; null clears every scope of the type.
       const next: Record<string, string | null> = { ...scopeSelections };
-      if (scopeId) next[typeId] = scopeId;
-      else delete next[typeId];
+      if (scopeId === null) {
+        for (const s of scopeType.scopes) delete next[s.id];
+      } else if (next[scopeId]) {
+        delete next[scopeId];
+      } else {
+        next[scopeId] = scopeId;
+      }
       dispatch(setScopeSelections(next));
-      // Auto-promote the scope's org to active context when the user
-      // picks a scope from an org that isn't the current active org.
-      // This is the Surface A path so we're allowed to dispatch
-      // setOrganization here.
-      if (scopeId && scopeTypeOrgId && scopeTypeOrgId !== orgId) {
-        const org = organizationsById[scopeTypeOrgId];
+      // Auto-promote the scope's org to active context when the user adds a
+      // scope from an org that isn't the current active org. Surface A path,
+      // so dispatching setOrganization here is sanctioned.
+      if (scopeId && !scopeSelections[scopeId] && scopeType.organization_id !== orgId) {
+        const org = organizationsById[scopeType.organization_id];
         if (org) dispatch(setOrganization({ id: org.id, name: org.name }));
       }
     },
@@ -409,7 +415,7 @@ export function ActiveScopePicker({
                 e.preventDefault();
                 handleClearAll();
               }}
-              className="text-muted-foreground/40 hover:text-muted-foreground transition-colors mr-0.5"
+              className="text-muted-foreground hover:text-foreground transition-colors mr-0.5"
             >
               <X className="h-2.5 w-2.5" />
             </button>
@@ -454,10 +460,16 @@ export function ActiveScopePicker({
           )}
 
           {allScopeTypes.map((scopeType) => {
-            const selectedScopeId = scopeSelections[scopeType.id] ?? null;
-            const selectedScope = selectedScopeId
-              ? scopeType.scopes.find((s) => s.id === selectedScopeId)
-              : null;
+            // Multi-select: any number of this type's scopes can be active.
+            const selectedScopes = scopeType.scopes.filter(
+              (s) => !!scopeSelections[s.id],
+            );
+            const selectedLabel =
+              selectedScopes.length === 0
+                ? null
+                : selectedScopes.length === 1
+                  ? selectedScopes[0].name
+                  : `${selectedScopes.length} selected`;
             const scopeOptions: PickerOption[] = scopeType.scopes.map((s) => ({
               id: s.id,
               name: s.name,
@@ -469,13 +481,12 @@ export function ActiveScopePicker({
                   <DynamicIcon name={scopeType.icon} {...props} />
                 )}
                 label={scopeTypeRowLabel(scopeType)}
-                selectedName={selectedScope?.name ?? null}
-                selectedId={selectedScopeId}
+                selectedName={selectedLabel}
+                selectedId={selectedScopes[0]?.id ?? null}
+                selectedIds={selectedScopes.map((s) => s.id)}
                 accentClass="text-emerald-500"
                 options={scopeOptions}
-                onSelect={(id) =>
-                  handleSelectScope(scopeType.id, id, scopeType.organization_id)
-                }
+                onSelect={(id) => handleSelectScope(scopeType, id)}
                 emptyText={`No ${scopeType.label_plural.toLowerCase()} yet`}
               />
             );
@@ -513,14 +524,14 @@ export function ActiveScopePicker({
           {orgId && orphanProjectsBucket.status === "unfetched" && (
             <button
               onClick={handleLoadOrphanProjects}
-              className="flex items-center gap-1.5 w-full px-2.5 py-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors rounded-md hover:bg-accent/30"
+              className="flex items-center gap-1.5 w-full px-2.5 py-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent/30"
             >
               <FolderKanban className="h-2.5 w-2.5" />
               Load other projects
             </button>
           )}
           {orphanProjectsBucket.status === "empty" && (
-            <div className="px-2.5 py-1 text-[10px] text-muted-foreground/40">
+            <div className="px-2.5 py-1 text-[11px] text-muted-foreground">
               No other projects.
             </div>
           )}
@@ -548,7 +559,7 @@ export function ActiveScopePicker({
             <div className="pt-0.5">
               <button
                 onClick={handleClearAll}
-                className="flex items-center gap-1.5 w-full px-2.5 py-1 text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors rounded-md hover:bg-accent/30"
+                className="flex items-center gap-1.5 w-full px-2.5 py-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent/30"
               >
                 <X className="h-2.5 w-2.5" />
                 Clear context

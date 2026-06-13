@@ -38,6 +38,7 @@ import {
   setDisplayFocus,
   syncInputToDisplay,
 } from "../conversation-focus/conversation-focus.slice";
+import { selectDisplayConversation } from "../conversation-focus/conversation-focus.selectors";
 import { initInstanceOverrides } from "../instance-model-overrides/instance-model-overrides.slice";
 import { buildInstanceBaseSettings } from "../instance-model-overrides/base-settings";
 import {
@@ -1330,6 +1331,15 @@ interface SetAutoClearModeArgs {
  * Disabling flips the flag and re-aligns the input slot back to the display
  * slot (so the user types into the conversation they're actually looking at) —
  * the established, pre-existing off behavior.
+ *
+ * CRITICAL: `autoClearConversation` is tracked per-conversation, but while
+ * autoclear is ON the surface holds TWO conversations — the input slot points at
+ * a freshly-prepped split (flagged `true`) while the display slot points at the
+ * still-streaming one (also flagged `true`). The flag must be flipped on BOTH,
+ * otherwise toggling off only clears the prepped convo, then `syncInputToDisplay`
+ * re-aligns the input onto the display convo whose flag is still `true` — the
+ * toggle silently bounces back ON and the next submit splits again. Keeping the
+ * two slots in lockstep is what makes the toggle actually stick.
  */
 export const setAutoClearMode = createAsyncThunk<
   void,
@@ -1339,6 +1349,17 @@ export const setAutoClearMode = createAsyncThunk<
   "instances/setAutoClearMode",
   async ({ conversationId, value, surfaceKey }, { dispatch, getState }) => {
     dispatch(setAutoClearConversation({ conversationId, value }));
+
+    // Keep the display-slot conversation's flag in lockstep with the input slot
+    // so the mode is consistent across the autoclear split (see note above).
+    if (surfaceKey) {
+      const displayId = selectDisplayConversation(surfaceKey)(getState());
+      if (displayId && displayId !== conversationId) {
+        dispatch(
+          setAutoClearConversation({ conversationId: displayId, value }),
+        );
+      }
+    }
 
     if (!value) {
       if (surfaceKey) dispatch(syncInputToDisplay(surfaceKey));
