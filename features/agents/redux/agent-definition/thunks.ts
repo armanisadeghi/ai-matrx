@@ -81,6 +81,39 @@ import {
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 
+const AGENT_LIST_RPC_PAGE_SIZE = 100;
+
+function mergeAgentListRows(dispatch: AppDispatch, rows: AgentListRow[]) {
+  for (const row of rows) {
+    dispatch(
+      mergePartialAgent({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        category: row.category,
+        tags: row.tags ?? [],
+        agentType: row.agent_type,
+        modelId: row.model_id,
+        isActive: row.is_active,
+        isArchived: row.is_archived,
+        isFavorite: row.is_favorite,
+        userId: row.user_id,
+        organizationId: row.organization_id,
+        projectId: row.project_id ?? null,
+        taskId: row.task_id ?? null,
+        sourceAgentId: row.source_agent_id,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        isVersion: false,
+        isOwner: row.is_owner,
+        accessLevel: row.access_level,
+        sharedByEmail: row.shared_by_email,
+      }),
+    );
+    dispatch(setAgentFetchStatus({ id: row.id, status: "list" }));
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Read thunks
 // ---------------------------------------------------------------------------
@@ -95,43 +128,32 @@ export const fetchAgentsList = createAsyncThunk<void, void, ThunkApi>(
   async (_, { dispatch }) => {
     dispatch(setAgentsStatus("loading"));
 
-    const { data, error } = await supabase.rpc("agx_get_list");
+    let offset = 0;
+    let totalFetched = 0;
 
-    if (error) {
-      dispatch(setAgentsError(error.message));
-      dispatch(setAgentsStatus("failed"));
-      throw pgErrorToError(error);
+    while (true) {
+      const { data, error } = await supabase.rpc("agx_get_list", {
+        p_limit: AGENT_LIST_RPC_PAGE_SIZE,
+        p_offset: offset,
+      });
+
+      if (error) {
+        dispatch(setAgentsError(error.message));
+        dispatch(setAgentsStatus("failed"));
+        throw pgErrorToError(error);
+      }
+
+      const rows = (data ?? []) as AgentListRow[];
+      mergeAgentListRows(dispatch, rows);
+      totalFetched += rows.length;
+
+      if (rows.length < AGENT_LIST_RPC_PAGE_SIZE) break;
+      offset += AGENT_LIST_RPC_PAGE_SIZE;
     }
 
-    const rows = (data ?? []) as AgentListRow[];
-
-    for (const row of rows) {
-      dispatch(
-        mergePartialAgent({
-          id: row.id,
-          name: row.name,
-          description: row.description,
-          category: row.category,
-          tags: row.tags ?? [],
-          agentType: row.agent_type,
-          modelId: row.model_id,
-          isActive: row.is_active,
-          isArchived: row.is_archived,
-          isFavorite: row.is_favorite,
-          userId: row.user_id,
-          organizationId: row.organization_id,
-          projectId: row.project_id ?? null,
-          taskId: row.task_id ?? null,
-          sourceAgentId: row.source_agent_id,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-          isVersion: false,
-          isOwner: row.is_owner,
-          accessLevel: row.access_level,
-          sharedByEmail: row.shared_by_email,
-        }),
-      );
-      dispatch(setAgentFetchStatus({ id: row.id, status: "list" }));
+    if (totalFetched === 0) {
+      dispatch(setAgentsStatus("succeeded"));
+      return;
     }
 
     dispatch(setAgentsStatus("succeeded"));

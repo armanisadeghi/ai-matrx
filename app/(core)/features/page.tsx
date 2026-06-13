@@ -20,7 +20,7 @@ import {
 
 export default function FeaturesIndexPage() {
   return (
-    <div className="min-h-dvh pr-[var(--shell-marketing-pr)]">
+    <div className="min-h-dvh">
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div
@@ -29,7 +29,7 @@ export default function FeaturesIndexPage() {
         />
         <div
           aria-hidden
-          className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
+          className="absolute inset-0 bg-[radial-gradient(40rem_24rem_at_88%_-4rem,hsl(var(--primary)/0.12),transparent_62%)]"
         />
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 pt-16 sm:pt-24 pb-10 sm:pb-14 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-6">

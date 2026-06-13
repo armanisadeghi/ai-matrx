@@ -185,6 +185,7 @@ export function ExperimentalAgentScreen({
           conversationId={conversationId}
           surfaceKey={`studio-assistant-experimental:${sessionId}`}
           constrainWidth
+          edgeToEdgeScroll
           hideInput={!inputOpen}
           smartInputProps={{ sendButtonVariant: "blue" }}
         />

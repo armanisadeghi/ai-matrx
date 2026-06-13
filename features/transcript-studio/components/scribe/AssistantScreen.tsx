@@ -30,6 +30,7 @@ export function AssistantScreen({ sessionId }: AssistantScreenProps) {
           conversationId={conversationId}
           surfaceKey={`studio-assistant:${sessionId}`}
           constrainWidth
+          edgeToEdgeScroll
           smartInputProps={{ sendButtonVariant: "blue" }}
         />
       </div>

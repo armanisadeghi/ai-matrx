@@ -366,6 +366,17 @@ export interface InstanceUserInputState {
    */
   lastSubmittedText: string;
   lastSubmittedUserValues: Record<string, unknown>;
+
+  /**
+   * Snapshot of the text/userValues from the FIRST submit on this instance
+   * lineage — the state the engineer had when they first clicked submit (no
+   * history yet). Captured once, never overwritten, and carried forward across
+   * autoclear splits / resets. The builder's auto-clear toggle re-applies this
+   * so the engineer can return to the exact original test inputs at any time.
+   * `undefined` until the first submit.
+   */
+  originalSubmittedText?: string;
+  originalSubmittedUserValues?: Record<string, unknown>;
 }
 
 /**

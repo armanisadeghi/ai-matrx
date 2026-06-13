@@ -478,6 +478,7 @@ export function NoteContentEditor({
             resetKey={`${noteId}:${resetGen}`}
             noteId={noteId}
             actionsSurfaceId={actionsSurfaceId}
+            largeScrollbar
             findOverlay={
               editorMode === "plain" || editorMode === "split" ? (
                 <>

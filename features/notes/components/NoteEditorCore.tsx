@@ -117,6 +117,14 @@ export interface NoteEditorCoreProps {
    * (a bar under the preview, a hover icon over the split preview pane).
    */
   actionsSurfaceId?: string;
+  /**
+   * Use the large, persistent, high-contrast scrollbar
+   * (`scrollbar-contrast-lg`) instead of the default ultra-thin one. Opt-in
+   * for long-form surfaces like the full Notes route where finding and
+   * grabbing the bar matters. Default false keeps small/embedded surfaces
+   * (quick-save popover, inline file previews) on the minimal scrollbar.
+   */
+  largeScrollbar?: boolean;
 }
 
 /**
@@ -146,7 +154,13 @@ export function NoteEditorCore({
   previewContainerRef,
   noteId,
   actionsSurfaceId,
+  largeScrollbar = false,
 }: NoteEditorCoreProps) {
+  // Long-form surfaces (full Notes route) opt into the larger, persistent,
+  // higher-contrast scrollbar; everything else keeps the default ultra-thin.
+  const previewScrollbarClass = largeScrollbar
+    ? "scrollbar-contrast-lg"
+    : "scrollbar-thin-auto";
   // Shared content source + action placement for the preview / split panes.
   const richSource: ContentSource = noteId
     ? { type: "note", noteId }
@@ -238,6 +252,9 @@ export function NoteEditorCore({
               "absolute inset-0 w-full h-full resize-none border-0",
               "focus-visible:ring-0 focus-visible:ring-offset-0",
               "text-sm leading-relaxed bg-transparent p-3 pb-[85dvh]",
+              // Notes get long — opt into the larger, persistent,
+              // higher-contrast scrollbar so it's easy to find and grab.
+              largeScrollbar && "scrollbar-contrast-lg",
               textareaClassName,
             )}
           />
@@ -260,8 +277,16 @@ export function NoteEditorCore({
           allowFullScreenEditor={true}
           editorOverlay={findOverlay}
           previewContainerRef={previewContainerRef}
-          textareaClassName={cn("pb-[85dvh]", textareaClassName)}
-          previewClassName={cn("pb-[85dvh]", previewClassName)}
+          textareaClassName={cn(
+            "pb-[85dvh]",
+            largeScrollbar && "scrollbar-contrast-lg",
+            textareaClassName,
+          )}
+          previewClassName={cn(
+            "pb-[85dvh]",
+            largeScrollbar && "scrollbar-contrast-lg",
+            previewClassName,
+          )}
           actionsSource={richSource}
           actionsVariant={actionsSurfaceId ? "remote" : "icon-only"}
           actionsSurfaceId={actionsSurfaceId}
@@ -283,7 +308,8 @@ export function NoteEditorCore({
             }
           }}
           className={cn(
-            "h-full overflow-y-auto max-w-3xl mx-auto py-2 px-4 pb-[85dvh] scrollbar-thin-auto",
+            "h-full overflow-y-auto max-w-3xl mx-auto py-2 px-4 pb-[85dvh]",
+            previewScrollbarClass,
             previewClassName,
           )}
         >

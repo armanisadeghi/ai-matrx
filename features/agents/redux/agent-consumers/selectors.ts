@@ -271,6 +271,30 @@ export function filterBuiltinTypeAgents(
 // ── Filtered agents (user + system tabs) ──────────────────────────────────────
 
 /**
+ * Factory: owned user-type agents with consumer filters applied (ignores tab).
+ * Used by the agents gallery "Mine" tab and the owned section of "All".
+ */
+export const makeSelectFilteredOwnedAgents = (consumerId: string) =>
+  createSelector(
+    selectUserTypeAgents,
+    makeSelectAgentConsumerState(consumerId),
+    (userAgents, consumer): AgentDefinitionRecord[] =>
+      filterUserTypeAgents(userAgents, { ...consumer, tab: "mine" }),
+  );
+
+/**
+ * Factory: shared user-type agents with consumer filters applied (ignores tab).
+ * Used by the agents gallery "Shared" tab and the shared section of "All".
+ */
+export const makeSelectFilteredSharedAgents = (consumerId: string) =>
+  createSelector(
+    selectUserTypeAgents,
+    makeSelectAgentConsumerState(consumerId),
+    (userAgents, consumer): AgentDefinitionRecord[] =>
+      filterUserTypeAgents(userAgents, { ...consumer, tab: "shared" }),
+  );
+
+/**
  * Factory: returns a memoized selector that filters and sorts agents for a
  * consumer. User tabs (mine / shared / all) draw from user-type agents;
  * the system tab draws from builtins.
@@ -306,26 +330,32 @@ export const makeSelectFilteredBuiltinAgents = (consumerId: string) =>
 // ── Card / list split ─────────────────────────────────────────────────────────
 
 /**
- * Factory: slices filtered user agents into the "cards" hero section.
+ * Factory: slices filtered owned agents into the "cards" hero section.
  * isMobile toggles the card limit.
  */
-export const makeSelectAgentCards = (consumerId: string, isMobile: boolean) => {
-  const selectFiltered = makeSelectFilteredAgents(consumerId);
+export const makeSelectOwnedAgentCards = (
+  consumerId: string,
+  isMobile: boolean,
+) => {
+  const selectFiltered = makeSelectFilteredOwnedAgents(consumerId);
   const limit = isMobile ? AGENT_CARDS_LIMIT_MOBILE : AGENT_CARDS_LIMIT_DESKTOP;
   return createSelector(selectFiltered, (filtered): AgentDefinitionRecord[] =>
     filtered.slice(0, limit),
   );
 };
 
+/** @deprecated Use makeSelectOwnedAgentCards — kept for call-site clarity during migration. */
+export const makeSelectAgentCards = makeSelectOwnedAgentCards;
+
 /**
- * Factory: paginated list items for user agents (everything after cards).
+ * Factory: paginated list items for owned agents (everything after cards).
  * Returns items for the current page plus pagination metadata.
  */
-export const makeSelectAgentListItems = (
+export const makeSelectOwnedAgentListItems = (
   consumerId: string,
   isMobile: boolean,
 ) => {
-  const selectFiltered = makeSelectFilteredAgents(consumerId);
+  const selectFiltered = makeSelectFilteredOwnedAgents(consumerId);
   const limit = isMobile ? AGENT_CARDS_LIMIT_MOBILE : AGENT_CARDS_LIMIT_DESKTOP;
   return createSelector(
     selectFiltered,
@@ -340,6 +370,55 @@ export const makeSelectAgentListItems = (
     } => {
       const afterCards = filtered.slice(limit);
       const pageEnd = consumer.listPage * AGENT_LIST_ITEMS_PER_PAGE;
+      const items = afterCards.slice(0, pageEnd);
+      return {
+        items,
+        hasMore: items.length < afterCards.length,
+        totalAfterCards: afterCards.length,
+      };
+    },
+  );
+};
+
+/** @deprecated Use makeSelectOwnedAgentListItems. */
+export const makeSelectAgentListItems = makeSelectOwnedAgentListItems;
+
+/**
+ * Factory: slices filtered shared agents into the "cards" hero section.
+ */
+export const makeSelectSharedAgentCards = (
+  consumerId: string,
+  isMobile: boolean,
+) => {
+  const selectFiltered = makeSelectFilteredSharedAgents(consumerId);
+  const limit = isMobile ? AGENT_CARDS_LIMIT_MOBILE : AGENT_CARDS_LIMIT_DESKTOP;
+  return createSelector(selectFiltered, (filtered): AgentDefinitionRecord[] =>
+    filtered.slice(0, limit),
+  );
+};
+
+/**
+ * Factory: paginated list items for shared agents (everything after cards).
+ */
+export const makeSelectSharedAgentListItems = (
+  consumerId: string,
+  isMobile: boolean,
+) => {
+  const selectFiltered = makeSelectFilteredSharedAgents(consumerId);
+  const limit = isMobile ? AGENT_CARDS_LIMIT_MOBILE : AGENT_CARDS_LIMIT_DESKTOP;
+  return createSelector(
+    selectFiltered,
+    makeSelectAgentConsumerState(consumerId),
+    (
+      filtered,
+      consumer,
+    ): {
+      items: AgentDefinitionRecord[];
+      hasMore: boolean;
+      totalAfterCards: number;
+    } => {
+      const afterCards = filtered.slice(limit);
+      const pageEnd = consumer.sharedPage * AGENT_LIST_ITEMS_PER_PAGE;
       const items = afterCards.slice(0, pageEnd);
       return {
         items,

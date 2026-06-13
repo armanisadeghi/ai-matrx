@@ -30,23 +30,22 @@ import {
   selectShowVariablePanel,
   selectShowAttachments,
   selectShowMicrophone,
+  selectAutoClearConversation,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import {
   setSubmitOnEnter,
-  setAutoClearConversation,
   toggleVariablePanel,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
   selectIsExecuting,
   selectShouldShowVariables,
-  selectAutoClearWithConversationHistory,
   selectShouldShowAutoClearToggle,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   smartExecute,
   cancelExecution,
 } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import { syncInputToDisplay } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import { setAutoClearMode } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 
 // ── Inline button primitive ──────────────────────────────────────────────────
 
@@ -115,9 +114,7 @@ export function InputActionButtons({
   const shouldShowVariables = useAppSelector(
     selectShouldShowVariables(conversationId),
   );
-  const autoClearWithHistory = useAppSelector(
-    selectAutoClearWithConversationHistory(conversationId),
-  );
+  const autoClear = useAppSelector(selectAutoClearConversation(conversationId));
   const shouldShowAutoClearToggle = useAppSelector(
     selectShouldShowAutoClearToggle(conversationId),
   );
@@ -174,23 +171,21 @@ export function InputActionButtons({
         {shouldShowAutoClearToggle && (
           <InputButton
             icon={RefreshCcw}
-            tooltip="Auto-clear ON — each send starts fresh (click to disable)"
-            onClick={() => {
-              const next = !autoClearWithHistory;
+            tooltip={
+              autoClear
+                ? "Auto-clear ON — each send starts fresh (click to disable)"
+                : "Auto-clear OFF — conversation continues (click to enable)"
+            }
+            onClick={() =>
               dispatch(
-                setAutoClearConversation({
+                setAutoClearMode({
                   conversationId,
-                  value: next,
+                  value: !autoClear,
+                  surfaceKey,
                 }),
-              );
-              // Flipping autoclear OFF re-aligns the input back to whatever
-              // conversation the display is showing — the user now wants the
-              // continuing multi-turn view, not the prepped-next-turn convo.
-              if (!next && surfaceKey) {
-                dispatch(syncInputToDisplay(surfaceKey));
-              }
-            }}
-            active={autoClearWithHistory}
+              )
+            }
+            active={autoClear}
           />
         )}
 

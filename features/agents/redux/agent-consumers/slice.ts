@@ -100,10 +100,27 @@ const agentConsumersSlice = createSlice({
      * Idempotent — safe to call multiple times on mount.
      * Will NOT reset state if the consumer is already registered.
      */
-    registerAgentConsumer: (state, action: PayloadAction<string>) => {
-      const id = action.payload;
-      if (!state.consumers[id]) {
-        state.consumers[id] = { ...DEFAULT_AGENT_CONSUMER_STATE };
+    registerAgentConsumer: (
+      state,
+      action: PayloadAction<
+        | string
+        | {
+            consumerId: string;
+            initial?: Partial<
+              Omit<AgentConsumerState, "listPage" | "sharedPage">
+            >;
+          }
+      >,
+    ) => {
+      const { consumerId, initial } =
+        typeof action.payload === "string"
+          ? { consumerId: action.payload, initial: undefined }
+          : action.payload;
+      if (!state.consumers[consumerId]) {
+        state.consumers[consumerId] = {
+          ...DEFAULT_AGENT_CONSUMER_STATE,
+          ...initial,
+        };
       }
     },
 

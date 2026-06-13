@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useTransition, useMemo, useRef, useEffect } from "react";
+import {
+  useState,
+  useTransition,
+  useMemo,
+  useRef,
+  useEffect,
+  type RefObject,
+} from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AgentCard } from "./AgentCard";
@@ -19,6 +26,7 @@ import {
   Search,
   Plus,
   Webhook,
+  Users,
 } from "lucide-react";
 import { DesktopFilterPanel } from "@/features/prompts/components/layouts/DesktopFilterPanel";
 import {
@@ -38,11 +46,15 @@ import { toast } from "@/lib/toast-service";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";
 import {
-  makeSelectFilteredAgents,
-  makeSelectAgentCards,
-  makeSelectAgentListItems,
+  makeSelectFilteredOwnedAgents,
+  makeSelectFilteredSharedAgents,
+  makeSelectOwnedAgentCards,
+  makeSelectOwnedAgentListItems,
+  makeSelectSharedAgentCards,
+  makeSelectSharedAgentListItems,
   selectAllAgentCategories,
   selectAllAgentTags,
+  selectTotalSharedAgentsCount,
 } from "@/features/agents/redux/agent-consumers/selectors";
 import { selectAgentsSliceStatus } from "@/features/agents/redux/agent-definition/selectors";
 import {
@@ -101,7 +113,7 @@ export function AgentsGrid() {
   } | null>(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  const consumer = useAgentConsumer(CONSUMER_ID);
+  const consumer = useAgentConsumer(CONSUMER_ID, { initialTab: "all" });
   const {
     tab: activeTab,
     sortBy,
@@ -112,6 +124,7 @@ export function AgentsGrid() {
     archFilter,
     favoritesFirst,
     listPage,
+    sharedPage,
     hasActiveFilters,
     setTab: setActiveTab,
     setSortBy,
@@ -120,6 +133,7 @@ export function AgentsGrid() {
     setArchFilter,
     toggleFavoritesFirst,
     loadMoreList,
+    loadMoreShared,
     resetFilters,
     toggleCategory,
     toggleTag,
@@ -129,32 +143,56 @@ export function AgentsGrid() {
   const [listSearchQ, setListSearchQ] = useState("");
 
   // Memoized selectors
-  const selectFiltered = useMemo(
-    () => makeSelectFilteredAgents(CONSUMER_ID),
+  const selectFilteredOwned = useMemo(
+    () => makeSelectFilteredOwnedAgents(CONSUMER_ID),
     [],
   );
-  const selectCards = useMemo(
-    () => makeSelectAgentCards(CONSUMER_ID, isMobile),
+  const selectFilteredShared = useMemo(
+    () => makeSelectFilteredSharedAgents(CONSUMER_ID),
+    [],
+  );
+  const selectOwnedCards = useMemo(
+    () => makeSelectOwnedAgentCards(CONSUMER_ID, isMobile),
     [isMobile],
   );
-  const selectListItems = useMemo(
-    () => makeSelectAgentListItems(CONSUMER_ID, isMobile),
+  const selectOwnedListItems = useMemo(
+    () => makeSelectOwnedAgentListItems(CONSUMER_ID, isMobile),
+    [isMobile],
+  );
+  const selectSharedCards = useMemo(
+    () => makeSelectSharedAgentCards(CONSUMER_ID, isMobile),
+    [isMobile],
+  );
+  const selectSharedListItems = useMemo(
+    () => makeSelectSharedAgentListItems(CONSUMER_ID, isMobile),
     [isMobile],
   );
 
-  const filteredAgents = useAppSelector(selectFiltered);
-  const agentCards = useAppSelector(selectCards);
+  const filteredOwnedAgents = useAppSelector(selectFilteredOwned);
+  const filteredSharedAgents = useAppSelector(selectFilteredShared);
+  const ownedAgentCards = useAppSelector(selectOwnedCards);
   const {
-    items: agentListItems,
-    hasMore,
-    totalAfterCards,
-  } = useAppSelector(selectListItems);
+    items: ownedAgentListItems,
+    hasMore: hasMoreOwned,
+    totalAfterCards: totalOwnedAfterCards,
+  } = useAppSelector(selectOwnedListItems);
+  const sharedAgentCards = useAppSelector(selectSharedCards);
+  const {
+    items: sharedAgentListItems,
+    hasMore: hasMoreShared,
+    totalAfterCards: totalSharedAfterCards,
+  } = useAppSelector(selectSharedListItems);
   const allCategories = useAppSelector(selectAllAgentCategories);
   const allTags = useAppSelector(selectAllAgentTags);
+  const totalSharedAgents = useAppSelector(selectTotalSharedAgentsCount);
 
-  const ownedAgents = filteredAgents.filter((a) => a.isOwner !== false);
-  const sharedAgents = filteredAgents.filter((a) => a.isOwner === false);
-  const hasShared = sharedAgents.length > 0;
+  const hasShared = filteredSharedAgents.length > 0 || totalSharedAgents > 0;
+  const filteredAgents =
+    activeTab === "shared"
+      ? filteredSharedAgents
+      : activeTab === "mine"
+        ? filteredOwnedAgents
+        : [...filteredOwnedAgents, ...filteredSharedAgents];
   // Ordered list of all filtered agent ids — drives prev/next navigation in
   // the sneak-peek modal so the user can cycle through their current results.
   const navigationIds = useMemo(
@@ -162,12 +200,13 @@ export function AgentsGrid() {
     [filteredAgents],
   );
 
-  // Sentinel for mobile infinite scroll
-  const listSentinelRef = useRef<HTMLDivElement>(null);
+  // Sentinels for mobile infinite scroll
+  const ownedSentinelRef = useRef<HTMLDivElement>(null);
+  const sharedSentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isMobile) return;
-    const el = listSentinelRef.current;
-    if (!el || !hasMore) return;
+    const el = ownedSentinelRef.current;
+    if (!el || !hasMoreOwned) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) loadMoreList();
@@ -176,7 +215,21 @@ export function AgentsGrid() {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [isMobile, hasMore, loadMoreList]);
+  }, [isMobile, hasMoreOwned, loadMoreList]);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const el = sharedSentinelRef.current;
+    if (!el || !hasMoreShared) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) loadMoreShared();
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isMobile, hasMoreShared, loadMoreShared]);
 
   // Handlers
   const handleDeleteClick = (id: string, name: string) => {
@@ -296,9 +349,13 @@ export function AgentsGrid() {
     </div>
   );
 
-  const renderShowMore = (remaining: number, onMore: () => void) =>
+  const renderShowMore = (
+    remaining: number,
+    onMore: () => void,
+    sentinelRef: RefObject<HTMLDivElement | null>,
+  ) =>
     isMobile ? (
-      <div ref={listSentinelRef} className="h-8" />
+      <div ref={sentinelRef} className="h-8" />
     ) : (
       <div className="mt-4 flex justify-center">
         <Button variant="outline" onClick={onMore} className="w-full md:w-auto">
@@ -306,6 +363,53 @@ export function AgentsGrid() {
         </Button>
       </div>
     );
+
+  const renderOwnedSection = () => (
+    <>
+      {ownedAgentCards.length > 0 && renderCards(ownedAgentCards)}
+      {ownedAgentListItems.length > 0 && (
+        <>
+          {renderList(ownedAgentListItems)}
+          {hasMoreOwned &&
+            renderShowMore(
+              totalOwnedAfterCards - ownedAgentListItems.length,
+              loadMoreList,
+              ownedSentinelRef,
+            )}
+        </>
+      )}
+    </>
+  );
+
+  const renderSharedSection = () => (
+    <>
+      {sharedAgentCards.length > 0 && renderCards(sharedAgentCards)}
+      {sharedAgentListItems.length > 0 && (
+        <>
+          {renderList(sharedAgentListItems)}
+          {hasMoreShared &&
+            renderShowMore(
+              totalSharedAfterCards - sharedAgentListItems.length,
+              loadMoreShared,
+              sharedSentinelRef,
+            )}
+        </>
+      )}
+    </>
+  );
+
+  const renderSharedDivider = () => (
+    <div className="flex items-center gap-3 my-6">
+      <div className="flex-1 border-t border-border" />
+      <div className="flex items-center gap-1.5">
+        <Users className="w-3.5 h-3.5 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground font-medium">
+          Shared with me
+        </span>
+      </div>
+      <div className="flex-1 border-t border-border" />
+    </div>
+  );
 
   return (
     <>
@@ -386,10 +490,11 @@ export function AgentsGrid() {
                     {t === "mine" ? "Mine" : t === "shared" ? "Shared" : "All"}
                     <span className="text-[10px] opacity-70">
                       {t === "mine"
-                        ? ownedAgents.length
+                        ? filteredOwnedAgents.length
                         : t === "shared"
-                          ? sharedAgents.length
-                          : filteredAgents.length}
+                          ? filteredSharedAgents.length
+                          : filteredOwnedAgents.length +
+                            filteredSharedAgents.length}
                     </span>
                   </button>
                 ))}
@@ -434,10 +539,10 @@ export function AgentsGrid() {
               {t === "mine" ? "Mine" : t === "shared" ? "Shared" : "All"}
               <span className="text-[10px] opacity-70">
                 {t === "mine"
-                  ? ownedAgents.length
+                  ? filteredOwnedAgents.length
                   : t === "shared"
-                    ? sharedAgents.length
-                    : filteredAgents.length}
+                    ? filteredSharedAgents.length
+                    : filteredOwnedAgents.length + filteredSharedAgents.length}
               </span>
             </button>
           ))}
@@ -448,7 +553,57 @@ export function AgentsGrid() {
       <div className={cn(isMobile && "pb-24 pt-10")}>
         {isLoading ? (
           <AgentsSkeleton count={isMobile ? 4 : 8} />
-        ) : filteredAgents.length === 0 && !isLoading ? (
+        ) : activeTab === "mine" ? (
+          filteredOwnedAgents.length === 0 ? (
+            <div className="border border-primary/20 rounded-xl p-8 bg-gradient-to-br from-primary/5 to-secondary/5">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="p-4 bg-primary/10 rounded-full">
+                  <Webhook className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">
+                    {hasActiveFilters
+                      ? "No agents match your filters"
+                      : "Create Your First Agent"}
+                  </h3>
+                  <p className="text-muted-foreground">
+                    {hasActiveFilters
+                      ? "Try adjusting your search or filters."
+                      : "Start building your AI agent library."}
+                  </p>
+                </div>
+                {!hasActiveFilters && (
+                  <Link href="/agents/new">
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Agent
+                    </Button>
+                  </Link>
+                )}
+                {hasActiveFilters && (
+                  <Button variant="outline" onClick={resetFilters}>
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            renderOwnedSection()
+          )
+        ) : activeTab === "shared" ? (
+          filteredSharedAgents.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">
+                {searchTerm || hasActiveFilters
+                  ? "No shared agents match your search."
+                  : "No agents have been shared with you yet."}
+              </p>
+            </div>
+          ) : (
+            renderSharedSection()
+          )
+        ) : filteredOwnedAgents.length === 0 &&
+          filteredSharedAgents.length === 0 ? (
           <div className="border border-primary/20 rounded-xl p-8 bg-gradient-to-br from-primary/5 to-secondary/5">
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="p-4 bg-primary/10 rounded-full">
@@ -483,17 +638,22 @@ export function AgentsGrid() {
           </div>
         ) : (
           <>
-            {agentCards.length > 0 && renderCards(agentCards)}
-            {agentListItems.length > 0 && (
+            {filteredOwnedAgents.length > 0 && (
               <>
-                {renderList(agentListItems)}
-                {hasMore &&
-                  renderShowMore(
-                    totalAfterCards - agentListItems.length,
-                    loadMoreList,
-                  )}
+                {hasShared && (
+                  <p className="text-xs font-medium text-muted-foreground mb-3">
+                    My Agents
+                  </p>
+                )}
+                {renderOwnedSection()}
               </>
             )}
+
+            {filteredOwnedAgents.length > 0 &&
+              filteredSharedAgents.length > 0 &&
+              renderSharedDivider()}
+
+            {filteredSharedAgents.length > 0 && renderSharedSection()}
           </>
         )}
       </div>

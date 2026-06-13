@@ -259,6 +259,7 @@ export function AgentRunnerPage({
           conversationId={conversationId}
           surfaceKey={surfaceKey}
           constrainWidth
+          edgeToEdgeScroll
           smartInputProps={{
             sendButtonVariant: "blue",
             showSubmitOnEnterToggle: true,

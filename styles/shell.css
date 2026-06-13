@@ -11,7 +11,9 @@
 
 :root {
   --shell-header-h: 2.75rem;
-  /* Marketing pages: right inset so scroll content clears the header user avatar. */
+  /* Marketing CTA banner: right inset so its action button clears the
+     fixed header user avatar. Scoped to AuthedWorkspaceCTA — NOT applied
+     page-wide (that offsets every centered section left). */
   --shell-marketing-pr: 3.5rem;
   --shell-sidebar-w: 2.75rem;
   --shell-sidebar-w-expanded: 13rem;
@@ -2068,6 +2070,80 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
 .scrollbar-thin-hover::-webkit-scrollbar-thumb { background: transparent; border-radius: 4px; }
 .scrollbar-thin-hover:hover::-webkit-scrollbar-thumb { background: hsl(var(--border) / 0.3); }
 .scrollbar-thin-hover::-webkit-scrollbar-thumb:hover { background: hsl(var(--border) / 0.5); }
+
+/* -----------------------------------------------------------------------------
+   High-contrast scrollbars (deliberate opt-in)
+   ----------------------------------------------------------------------------
+   The shell forces every scrollbar inside `.shell-main` to an ultra-thin,
+   transparent-until-hover style (see the `.shell-main *::-webkit-scrollbar*`
+   block above). That is great for chrome but bad for long-form reading
+   surfaces where the user genuinely needs to SEE and grab the scrollbar.
+
+   These two utilities intentionally override that global rule. They are
+   scoped under `.shell-main` so they out-specify (and follow in source order)
+   the global thumb/hover rules — including `.shell-main *:hover` — and they
+   are NOT gated on shell hover, so the thumb stays visible while scrolling.
+   Use sparingly; only where findability beats minimalism.
+
+   - .scrollbar-contrast    → agent conversation / chat reading column
+   - .scrollbar-contrast-lg → very long surfaces (Notes): bigger + bolder
+--------------------------------------------------------------------------- */
+
+/* Always-visible, higher-contrast scrollbar (agent conversation column) */
+.shell-main .scrollbar-contrast {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.45) transparent;
+}
+.shell-main .scrollbar-contrast:hover {
+  scrollbar-color: hsl(var(--muted-foreground) / 0.6) transparent;
+}
+.shell-main .scrollbar-contrast::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.shell-main .scrollbar-contrast::-webkit-scrollbar-track {
+  background: transparent;
+}
+.shell-main .scrollbar-contrast::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.45);
+  border-radius: 6px;
+  /* Transparent border + padding-box clip = breathing room around the thumb */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background 160ms ease;
+}
+.shell-main .scrollbar-contrast::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.7);
+  background-clip: padding-box;
+}
+
+/* Larger, even more persistent + higher-contrast scrollbar (Notes) */
+.shell-main .scrollbar-contrast-lg {
+  scrollbar-width: auto;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.55) hsl(var(--muted-foreground) / 0.08);
+}
+.shell-main .scrollbar-contrast-lg:hover {
+  scrollbar-color: hsl(var(--muted-foreground) / 0.75) hsl(var(--muted-foreground) / 0.08);
+}
+.shell-main .scrollbar-contrast-lg::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+.shell-main .scrollbar-contrast-lg::-webkit-scrollbar-track {
+  background: hsl(var(--muted-foreground) / 0.08);
+  border-radius: 6px;
+}
+.shell-main .scrollbar-contrast-lg::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.55);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background 160ms ease;
+}
+.shell-main .scrollbar-contrast-lg::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.85);
+  background-clip: padding-box;
+}
 
 /* Hide horizontal scrollbar */
 .scrollbar-h-none::-webkit-scrollbar { height: 0; }

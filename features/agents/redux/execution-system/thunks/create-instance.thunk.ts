@@ -36,12 +36,14 @@ import {
   setFocus,
   setInputFocus,
   setDisplayFocus,
+  syncInputToDisplay,
 } from "../conversation-focus/conversation-focus.slice";
 import { initInstanceOverrides } from "../instance-model-overrides/instance-model-overrides.slice";
 import { buildInstanceBaseSettings } from "../instance-model-overrides/base-settings";
 import {
   initInstanceVariables,
   setUserVariableValues,
+  resetUserVariableValues,
 } from "../instance-variable-values/instance-variable-values.slice";
 import { initInstanceResources } from "../instance-resources/instance-resources.slice";
 import {
@@ -54,7 +56,10 @@ import {
   setUserInputText,
 } from "../instance-user-input/instance-user-input.slice";
 import { initInstanceClientTools } from "../instance-client-tools/instance-client-tools.slice";
-import { initInstanceUIState } from "../instance-ui-state/instance-ui-state.slice";
+import {
+  initInstanceUIState,
+  setAutoClearConversation,
+} from "../instance-ui-state/instance-ui-state.slice";
 import { initInstanceMessages } from "../messages/messages.slice";
 import {
   InstanceOrigin,
@@ -879,6 +884,9 @@ export const startNewConversation = createAsyncThunk<
         conversationId: newConversationId,
         lastSubmittedText: currentInputEntry?.lastSubmittedText,
         lastSubmittedUserValues: currentInputEntry?.lastSubmittedUserValues,
+        originalSubmittedText: currentInputEntry?.originalSubmittedText,
+        originalSubmittedUserValues:
+          currentInputEntry?.originalSubmittedUserValues,
       }),
     );
     dispatch(initInstanceClientTools({ conversationId: newConversationId }));
@@ -1023,6 +1031,8 @@ export const startNewConversationAndExecute = createAsyncThunk<
         conversationId: newConversationId,
         lastSubmittedText: currentInput?.lastSubmittedText,
         lastSubmittedUserValues: currentInput?.lastSubmittedUserValues,
+        originalSubmittedText: currentInput?.originalSubmittedText,
+        originalSubmittedUserValues: currentInput?.originalSubmittedUserValues,
       }),
     );
     dispatch(initInstanceClientTools({ conversationId: newConversationId }));
@@ -1214,6 +1224,8 @@ export const splitInputIntoNewConversation = createAsyncThunk<
         text: carryText,
         lastSubmittedText: currentInput?.lastSubmittedText,
         lastSubmittedUserValues: currentInput?.lastSubmittedUserValues,
+        originalSubmittedText: currentInput?.originalSubmittedText,
+        originalSubmittedUserValues: currentInput?.originalSubmittedUserValues,
       }),
     );
     dispatch(initInstanceClientTools({ conversationId: newConversationId }));
@@ -1287,5 +1299,73 @@ export const splitInputIntoNewConversation = createAsyncThunk<
     dispatch(setInputFocus({ surfaceKey, conversationId: newConversationId }));
 
     return { newConversationId };
+  },
+);
+
+// =============================================================================
+// Set Auto-Clear Mode (builder testing utility)
+// =============================================================================
+
+interface SetAutoClearModeArgs {
+  /** The conversation currently bound to the surface's input slot. */
+  conversationId: string;
+  /** Target state of the auto-clear toggle. */
+  value: boolean;
+  /** Surface whose input slot is re-aligned to the display slot when toggling off. */
+  surfaceKey?: string;
+}
+
+/**
+ * Turns the builder's auto-clear testing mode on or off — pure toggle, no
+ * conversation creation/clearing/switching (the autoclear split on submit is
+ * handled automatically by smartExecute and works on its own).
+ *
+ * Enabling additionally restores the engineer to the ORIGINAL test inputs — the
+ * exact text + variable values from the FIRST submit, when there was no history
+ * (see `originalSubmitted*` on the input slice, captured once and carried across
+ * splits). This lets the engineer return to the exact state they were in when
+ * they first clicked submit and re-run it. If no original snapshot exists yet
+ * (nothing submitted), it is a plain flag flip with nothing to restore.
+ *
+ * Disabling flips the flag and re-aligns the input slot back to the display
+ * slot (so the user types into the conversation they're actually looking at) —
+ * the established, pre-existing off behavior.
+ */
+export const setAutoClearMode = createAsyncThunk<
+  void,
+  SetAutoClearModeArgs,
+  { state: RootState }
+>(
+  "instances/setAutoClearMode",
+  async ({ conversationId, value, surfaceKey }, { dispatch, getState }) => {
+    dispatch(setAutoClearConversation({ conversationId, value }));
+
+    if (!value) {
+      if (surfaceKey) dispatch(syncInputToDisplay(surfaceKey));
+      return;
+    }
+
+    // Restore the original first-submit inputs so the engineer is back to the
+    // exact state they had on their first run.
+    const entry = getState().instanceUserInput.byConversationId[conversationId];
+    const originalText = entry?.originalSubmittedText;
+    if (originalText === undefined) return; // nothing submitted yet
+
+    const originalValues = entry?.originalSubmittedUserValues ?? {};
+    // Reset to exactly the original values (drop any stray current values),
+    // then apply the originals.
+    dispatch(resetUserVariableValues(conversationId));
+    if (Object.keys(originalValues).length > 0) {
+      dispatch(
+        setUserVariableValues({ conversationId, values: originalValues }),
+      );
+    }
+    dispatch(
+      setUserInputText({
+        conversationId,
+        text: originalText,
+        userValues: originalValues,
+      }),
+    );
   },
 );

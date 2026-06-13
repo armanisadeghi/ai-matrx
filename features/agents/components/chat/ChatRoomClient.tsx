@@ -339,6 +339,7 @@ export function ChatRoomClient({
           conversationId={conversationId}
           surfaceKey={surfaceKey}
           constrainWidth
+          edgeToEdgeScroll
           smartInputProps={{
             sendButtonVariant: "blue",
             // Lives in the Chat Options (+) → Preferences tab now.

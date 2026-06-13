@@ -50,6 +50,16 @@ interface AgentConversationColumnProps {
   displayConversationId?: string;
   surfaceKey: string;
   constrainWidth?: boolean;
+  /**
+   * Only meaningful together with `constrainWidth`. When true, the *scroll
+   * area* spans the full width of the parent container while the content
+   * (transcript + input) stays centered at `max-w-3xl` inside it. This moves
+   * the vertical scrollbar from the centered column's right edge (which reads
+   * as "the middle of the page") out to the container edges — the ChatGPT /
+   * Claude layout. Default false: the whole column is constrained and the
+   * scrollbar rides the centered edge (unchanged legacy behavior).
+   */
+  edgeToEdgeScroll?: boolean;
   smartInputProps?: SmartInputForwardProps;
   /**
    * Optional empty-state surface. When provided AND the display conversation
@@ -86,6 +96,7 @@ export function AgentConversationColumn({
   displayConversationId,
   surfaceKey,
   constrainWidth = false,
+  edgeToEdgeScroll = false,
   smartInputProps,
   landingContent,
   hideInput = false,
@@ -117,11 +128,22 @@ export function AgentConversationColumn({
     });
   }, []);
 
+  // Edge-to-edge mode only applies when the column is also width-constrained.
+  const edgeScroll = constrainWidth && edgeToEdgeScroll;
+  // Centering wrapper for the content INSIDE the full-width scroll area /
+  // input region. `contents` keeps the wrapper layout-transparent so the
+  // legacy (non-edge) path renders byte-for-byte as before.
+  const centerWrap = edgeScroll ? "w-full max-w-3xl mx-auto px-2" : "contents";
+
   return (
     <div
       className={cn(
-        "h-full flex flex-col overflow-hidden px-2",
-        constrainWidth && "w-full max-w-3xl mx-auto pb-2",
+        "h-full flex flex-col overflow-hidden",
+        // Legacy: pad the whole column. Edge mode: padding lives on the
+        // centered inner wrappers instead so the scroll area runs to the edge.
+        !edgeScroll && "px-2",
+        constrainWidth && !edgeScroll && "w-full max-w-3xl mx-auto pb-2",
+        edgeScroll && "w-full pb-2",
       )}
     >
       <div className="relative flex-1 min-h-0">
@@ -141,30 +163,39 @@ export function AgentConversationColumn({
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}
           >
-            {landingContent}
+            <div className={centerWrap}>{landingContent}</div>
           </motion.div>
         ) : (
           <motion.div
             key="conversation"
             ref={scrollRef}
             onScroll={handleScroll}
-            className="absolute inset-0 overflow-y-auto pt-12"
+            className={cn(
+              "absolute inset-0 overflow-y-auto pt-12",
+              // Edge-to-edge surfaces (chat, agent run, scribe) deliberately
+              // opt into a visible, higher-contrast scrollbar — the column is
+              // a long-form reading surface where finding/grabbing the bar
+              // matters more than the shell's default minimalism.
+              edgeScroll && "scrollbar-contrast",
+            )}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2, delay: 0.05 }}
           >
-            {/* Older-history pagination trigger. Isolated component — */}
-            {/* subscribes only to the older-page flags so its re-renders */}
-            {/* never reach the message tree below. */}
-            <OlderMessagesSentinel
-              conversationId={displayId}
-              scrollRef={scrollRef}
-            />
-            <AgentConversationDisplay
-              conversationId={displayId}
-              surfaceKey={surfaceKey}
-            />
-            {afterMessages}
+            <div className={centerWrap}>
+              {/* Older-history pagination trigger. Isolated component — */}
+              {/* subscribes only to the older-page flags so its re-renders */}
+              {/* never reach the message tree below. */}
+              <OlderMessagesSentinel
+                conversationId={displayId}
+                scrollRef={scrollRef}
+              />
+              <AgentConversationDisplay
+                conversationId={displayId}
+                surfaceKey={surfaceKey}
+              />
+              {afterMessages}
+            </div>
           </motion.div>
         )}
         <div
@@ -200,6 +231,7 @@ export function AgentConversationColumn({
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+          className={edgeScroll ? "w-full max-w-3xl mx-auto px-2" : undefined}
         >
           {!hideCreatorPanel && showCreatorPanel && (
             <CreatorRunPanel

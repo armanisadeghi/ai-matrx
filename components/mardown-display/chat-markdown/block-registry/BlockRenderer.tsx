@@ -13,6 +13,7 @@ import {
   selectHideToolResults,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
+import AudioOutputBlockRenderer from "@/components/mardown-display/blocks/audio/AudioOutputBlockRenderer";
 
 /**
  * Shown in strict-mode when block.serverData is null — means Python did not
@@ -233,23 +234,14 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       // Read both; prefer the canonical fields when present.
       // TODO: collapse onto `UnifiedMediaBlock` end-to-end when audio gets
       // an `UnifiedAudioBlockRenderer` matching the image one.
+      // Resolve the playable URL through the universal file handler instead of
+      // echoing the raw `data.url`. The handler prefers the durable public/CDN
+      // URL and re-mints expiring URLs from `file_id`, so audio plays during
+      // streaming (when Python sends only a `file_id`, no minted URL) AND the
+      // "Copy link" action never leaks a raw signed S3 URL. See the renderer
+      // for the full durability rationale.
       const sd = (block.serverData ?? {}) as Record<string, unknown>;
-      const url =
-        (sd.cdnUrl as string | undefined) ??
-        (sd.signedUrl as string | undefined) ??
-        (sd.externalUrl as string | undefined) ??
-        (sd.url as string | undefined);
-      if (!url) return null;
-      return (
-        <BlockComponents.AudioOutputBlock
-          key={index}
-          url={url}
-          mimeType={
-            (sd.mimeType as string | undefined) ??
-            (sd.mime_type as string | undefined)
-          }
-        />
-      );
+      return <AudioOutputBlockRenderer key={index} data={sd} />;
     }
 
     case "thinking":

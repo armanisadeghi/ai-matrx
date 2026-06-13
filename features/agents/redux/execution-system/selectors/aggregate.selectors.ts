@@ -92,6 +92,14 @@ export const selectIsAwaitingTools =
 /**
  * True only when auto-clear is enabled and this conversation has at least one
  * history turn. If auto-clear is off, returns false without reading history.
+ *
+ * This is a "will a clear actually fire on the next submit" signal — it folds
+ * in `hasMessages`. Do NOT use it to drive the auto-clear toggle button's
+ * on/off (`active`) state or its click handler: the toggle reflects the user's
+ * setting, which must read true even on a fresh, message-less conversation.
+ * For the toggle use `selectShowAutoClearToggle` (visibility) +
+ * `selectAutoClearConversation` (state). (Misusing this selector for the
+ * button is the exact bug that broke the Agent Builder toggle.)
  */
 export const selectAutoClearWithConversationHistory =
   (conversationId: string) =>

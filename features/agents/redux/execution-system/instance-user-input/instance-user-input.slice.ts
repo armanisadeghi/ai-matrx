@@ -101,6 +101,8 @@ const instanceUserInputSlice = createSlice({
         text?: string;
         lastSubmittedText?: string;
         lastSubmittedUserValues?: Record<string, unknown>;
+        originalSubmittedText?: string;
+        originalSubmittedUserValues?: Record<string, unknown>;
       }>,
     ) {
       const {
@@ -108,6 +110,8 @@ const instanceUserInputSlice = createSlice({
         text = "",
         lastSubmittedText = "",
         lastSubmittedUserValues = {},
+        originalSubmittedText,
+        originalSubmittedUserValues,
       } = action.payload;
       state.byConversationId[conversationId] = {
         conversationId,
@@ -116,6 +120,10 @@ const instanceUserInputSlice = createSlice({
         submissionPhase: "idle",
         lastSubmittedText,
         lastSubmittedUserValues: { ...lastSubmittedUserValues },
+        originalSubmittedText,
+        originalSubmittedUserValues: originalSubmittedUserValues
+          ? { ...originalSubmittedUserValues }
+          : undefined,
         _undoPast: [],
         _undoFuture: [],
       };
@@ -253,6 +261,15 @@ const instanceUserInputSlice = createSlice({
       entry.submissionPhase = "pending";
       entry.lastSubmittedText = entry.text;
       entry.lastSubmittedUserValues = { ...userValues };
+
+      // Capture the ORIGINAL submit (first time only) — the exact inputs the
+      // engineer had when they first clicked submit. Never overwritten; carried
+      // forward across autoclear splits via initInstanceUserInput so the
+      // auto-clear toggle can always restore the original test state.
+      if (entry.originalSubmittedText === undefined) {
+        entry.originalSubmittedText = entry.text;
+        entry.originalSubmittedUserValues = { ...userValues };
+      }
     },
 
     /**
@@ -298,6 +315,10 @@ const instanceUserInputSlice = createSlice({
       if (to) {
         to.lastSubmittedText = from.lastSubmittedText;
         to.lastSubmittedUserValues = { ...from.lastSubmittedUserValues };
+        to.originalSubmittedText = from.originalSubmittedText;
+        to.originalSubmittedUserValues = from.originalSubmittedUserValues
+          ? { ...from.originalSubmittedUserValues }
+          : undefined;
       } else {
         state.byConversationId[toConversationId] = {
           conversationId: toConversationId,
@@ -306,6 +327,10 @@ const instanceUserInputSlice = createSlice({
           submissionPhase: "idle",
           lastSubmittedText: from.lastSubmittedText,
           lastSubmittedUserValues: { ...from.lastSubmittedUserValues },
+          originalSubmittedText: from.originalSubmittedText,
+          originalSubmittedUserValues: from.originalSubmittedUserValues
+            ? { ...from.originalSubmittedUserValues }
+            : undefined,
           _undoPast: [],
           _undoFuture: [],
         };

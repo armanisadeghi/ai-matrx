@@ -82,6 +82,8 @@ export function useAgentConsumer(
      * Default: false — persistent consumers (like the main agents page) keep state.
      */
     unregisterOnUnmount?: boolean;
+    /** Applied only when the consumer is first registered (idempotent). */
+    initialTab?: AgentTab;
   },
 ): UseAgentConsumerReturn {
   const dispatch = useAppDispatch();
@@ -90,7 +92,13 @@ export function useAgentConsumer(
   );
 
   useEffect(() => {
-    dispatch(registerAgentConsumer(consumerId));
+    dispatch(
+      registerAgentConsumer(
+        options?.initialTab
+          ? { consumerId, initial: { tab: options.initialTab } }
+          : consumerId,
+      ),
+    );
     return () => {
       if (options?.unregisterOnUnmount) {
         dispatch(unregisterAgentConsumer(consumerId));
