@@ -1,5 +1,6 @@
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
+import type { ImportValidationIssue } from "./agent-import-validation";
 
 // ─── Tool Index ───────────────────────────────────────────────────────────────
 
@@ -181,6 +182,7 @@ export type ConversionResult =
       success: false;
       error: string;
       warnings: string[];
+      issues?: ImportValidationIssue[];
       comingSoon?: boolean;
       needsUserInput?: NeedsUserInputHint;
     };

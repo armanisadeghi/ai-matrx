@@ -128,6 +128,7 @@ export function useFileUpload(): UseFileUploadResult {
         shareLevel: opts.shareLevel,
         changeSummary: opts.changeSummary,
         metadata: opts.metadata,
+        options: opts.options,
         concurrency: opts.concurrency,
       };
       return requestUpload(arg);

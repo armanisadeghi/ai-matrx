@@ -89,6 +89,11 @@ export function AgentBuilderRightPanel({
       surfaceKey={surfaceKey}
       smartInputProps={{
         showSubmitOnEnterToggle: true,
+        // Match the live run/chat surfaces (AgentRunnerPage, ChatRoomClient,
+        // scribe, etc.) which all use the blue send button. Without this the
+        // builder test panel fell back to the legacy "default" black
+        // bg-foreground button, which looked broken/disabled.
+        sendButtonVariant: "blue",
       }}
     />
   );

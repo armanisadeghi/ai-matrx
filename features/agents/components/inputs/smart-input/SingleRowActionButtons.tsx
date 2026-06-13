@@ -26,10 +26,8 @@ import {
   selectShowMicrophone,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { toggleVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import {
-  selectIsExecuting,
-  selectShouldShowVariables,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { useSurfaceExecution } from "@/features/agents/hooks/useSurfaceExecution";
 import {
   smartExecute,
   cancelExecution,
@@ -58,7 +56,12 @@ export function SingleRowActionButtons({
 }: SingleRowActionButtonsProps) {
   const dispatch = useAppDispatch();
 
-  const isExecuting = useAppSelector(selectIsExecuting(conversationId));
+  // Surface-aware executing state — see useSurfaceExecution. Keeps the stop
+  // affordance working under the autoclear split (build route).
+  const { isExecuting, executingConversationId } = useSurfaceExecution(
+    conversationId,
+    surfaceKey,
+  );
   const showVariablePanel = useAppSelector(
     selectShowVariablePanel(conversationId),
   );
@@ -71,11 +74,18 @@ export function SingleRowActionButtons({
   const handleSend = useCallback(() => {
     if (disableSend) return;
     if (isExecuting) {
-      dispatch(cancelExecution(conversationId));
+      dispatch(cancelExecution(executingConversationId ?? conversationId));
     } else {
       dispatch(smartExecute({ conversationId, surfaceKey }));
     }
-  }, [disableSend, isExecuting, conversationId, surfaceKey, dispatch]);
+  }, [
+    disableSend,
+    isExecuting,
+    executingConversationId,
+    conversationId,
+    surfaceKey,
+    dispatch,
+  ]);
 
   const sendBtnClass =
     sendButtonVariant === "blue"

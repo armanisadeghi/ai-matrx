@@ -152,6 +152,7 @@ const COLUMN_IDS = new Set<ColumnId>([
   "updated_at",
   "created_at",
   "access",
+  "context",
   "rag_status",
 ]);
 

@@ -37,10 +37,10 @@ import {
   toggleVariablePanel,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import {
-  selectIsExecuting,
   selectShouldShowVariables,
   selectShouldShowAutoClearToggle,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { useSurfaceExecution } from "@/features/agents/hooks/useSurfaceExecution";
 import {
   smartExecute,
   cancelExecution,
@@ -48,6 +48,16 @@ import {
 import { setAutoClearMode } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 
 // ── Inline button primitive ──────────────────────────────────────────────────
+
+/**
+ * Shared resting (idle) tint for every toolbar button in this row. Exported so
+ * the microphone — which renders its own button internally — can match the
+ * plain InputButtons pixel-for-pixel in its resting state. The icon must
+ * inherit the button color (no explicit color class) so `hover:text-foreground`
+ * applies to it.
+ */
+export const INPUT_BUTTON_IDLE_TINT =
+  "text-muted-foreground/60 hover:text-foreground hover:bg-muted/60";
 
 export function InputButton({
   icon: Icon,
@@ -68,7 +78,7 @@ export function InputButton({
       onClick={onClick}
       title={tooltip}
       className={`h-8 w-8 flex items-center justify-center rounded-full transition-colors
-        ${active ? "text-primary ring-1 ring-inset ring-primary/50 hover:bg-muted/40" : "text-muted-foreground/60 hover:text-foreground hover:bg-muted/60"}
+        ${active ? "text-primary ring-1 ring-inset ring-primary/50 hover:bg-muted/40" : INPUT_BUTTON_IDLE_TINT}
         ${className}`}
     >
       <Icon className="w-4 h-4" />
@@ -105,8 +115,14 @@ export function InputActionButtons({
 }: InputActionButtonsProps) {
   const dispatch = useAppDispatch();
 
-  // Selectors
-  const isExecuting = useAppSelector(selectIsExecuting(conversationId));
+  // Selectors. Executing state is surface-aware: under the autoclear split the
+  // run lives on the surface's display conversation while this toolbar is bound
+  // to the (fresh) input conversation — without this the button would never
+  // flip to stop and clicking it would fire a second run.
+  const { isExecuting, executingConversationId } = useSurfaceExecution(
+    conversationId,
+    surfaceKey,
+  );
   const submitOnEnter = useAppSelector(selectSubmitOnEnter(conversationId));
   const showVariablePanel = useAppSelector(
     selectShowVariablePanel(conversationId),
@@ -126,11 +142,18 @@ export function InputActionButtons({
   const handleSend = useCallback(() => {
     if (isSendDisabled) return;
     if (isExecuting) {
-      dispatch(cancelExecution(conversationId));
+      dispatch(cancelExecution(executingConversationId ?? conversationId));
     } else {
       dispatch(smartExecute({ conversationId, surfaceKey }));
     }
-  }, [isSendDisabled, isExecuting, conversationId, surfaceKey, dispatch]);
+  }, [
+    isSendDisabled,
+    isExecuting,
+    executingConversationId,
+    conversationId,
+    surfaceKey,
+    dispatch,
+  ]);
 
   const sendBtnClass =
     sendButtonVariant === "blue"
@@ -211,6 +234,8 @@ export function InputActionButtons({
             conversationId={conversationId}
             size="md"
             label="Record audio"
+            className={INPUT_BUTTON_IDLE_TINT}
+            iconClassName=""
           />
         )}
 
@@ -231,15 +256,11 @@ export function InputActionButtons({
         )}
 
         {showSendButton && (
-          <button
-            type="button"
-            tabIndex={-1}
-            title="Live audio"
-            aria-label="Live audio"
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <AudioLines className="h-4 w-4 text-muted-foreground" />
-          </button>
+          <InputButton
+            icon={AudioLines}
+            tooltip="Live audio"
+            onClick={() => {}}
+          />
         )}
       </div>
     </div>

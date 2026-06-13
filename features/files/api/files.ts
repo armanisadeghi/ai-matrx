@@ -54,6 +54,21 @@ export interface UploadFileParams {
   shareLevel?: PermissionLevel;
   changeSummary?: string;
   metadata?: Record<string, unknown>;
+  /**
+   * Per-upload options the backend reads to alter post-upload behavior —
+   * notably `rag.trigger_now` to run RAG immediately instead of waiting for
+   * the scheduled auto-RAG sweep. Serialized to the `options_json` form
+   * field alongside `metadata_json`.
+   */
+  options?: UploadOptions;
+}
+
+/** Mirrors the backend `options_json` envelope. Extend as new opts land. */
+export interface UploadOptions {
+  rag?: {
+    /** Run RAG ingest immediately on upload (skip the scheduled sweep). */
+    trigger_now?: boolean;
+  };
 }
 
 export async function uploadFile(
@@ -70,6 +85,8 @@ export async function uploadFile(
   if (params.changeSummary) form.append("change_summary", params.changeSummary);
   if (params.metadata)
     form.append("metadata_json", JSON.stringify(params.metadata));
+  if (params.options)
+    form.append("options_json", JSON.stringify(params.options));
 
   return postMultipart<FileUploadResponse>("/files/upload", form, opts);
 }
@@ -89,6 +106,8 @@ export async function uploadFileWithProgress(
   if (params.changeSummary) form.append("change_summary", params.changeSummary);
   if (params.metadata)
     form.append("metadata_json", JSON.stringify(params.metadata));
+  if (params.options)
+    form.append("options_json", JSON.stringify(params.options));
 
   return uploadWithProgress<FileUploadResponse>(
     "/files/upload",

@@ -1,9 +1,7 @@
 "use client";
 
 /**
- * Shared primitives for context picker rows — used by both:
- *   - The chat sidebar (SidebarActions / DirectContextSelection)
- *   - The preferences panel (AgentContextPreferences)
+ * Shared primitives for context picker rows — used by preferences and legacy pickers.
  *
  * Everything here is pure UI with no Redux dependency.
  */
@@ -89,10 +87,14 @@ export function SearchableList({
 
   const q = search.toLowerCase();
   const filtered = q
-    ? options.filter((o) => o.name.toLowerCase().includes(q) || idMatchesQuery(o, q))
+    ? options.filter(
+        (o) => o.name.toLowerCase().includes(q) || idMatchesQuery(o, q),
+      )
     : options;
   const filteredOrphans = q
-    ? orphanOptions.filter((o) => o.name.toLowerCase().includes(q) || idMatchesQuery(o, q))
+    ? orphanOptions.filter(
+        (o) => o.name.toLowerCase().includes(q) || idMatchesQuery(o, q),
+      )
     : orphanOptions;
 
   return (

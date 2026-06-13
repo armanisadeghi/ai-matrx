@@ -27,7 +27,6 @@ import React, {
   useEffect,
 } from "react";
 import { createPortal } from "react-dom";
-import dynamic from "next/dynamic";
 import {
   FileText,
   FolderOpen,
@@ -106,11 +105,6 @@ import { RenameFolderDialog } from "./RenameFolderDialog";
 import { cn } from "@/lib/utils";
 import type { NoteRecord } from "../redux/notes.types";
 import type { NoteSortField, NoteSortOrder, NoteGroupBy } from "../types";
-
-const DirectContextSelection = dynamic(
-  () => import("@/features/shell/components/sidebar/DirectContextSelection"),
-  { ssr: false },
-);
 
 // ── Sort field labels ───────────────────────────────────────────────────────
 const SORT_FIELDS: { field: NoteSortField; label: string }[] = [
@@ -721,12 +715,8 @@ export function NoteSidebar({
         </div>
       </div>
 
-      {/* Context filter (org/scopes/project/task — filters sidebar notes) */}
-      <div className="shrink-0 border-b border-border/20">
-        <DirectContextSelection />
-        {/* Homeless hint: notes with NO org aren't "non-matching" — they have
-            no home. Surface the count + opt-in instead of silently hiding. */}
-        {activeOrgId && homelessCount > 0 && (
+      {activeOrgId && homelessCount > 0 && (
+        <div className="shrink-0 border-b border-border/20">
           <button
             type="button"
             onClick={() => setIncludeHomeless((v) => !v)}
@@ -737,8 +727,8 @@ export function NoteSidebar({
             {homelessCount} note{homelessCount === 1 ? "" : "s"} without an
             organization — {includeHomeless ? "hide" : "show"}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Toolbar: group-by + sort + expand/collapse */}
       <div className="shrink-0 flex items-center gap-1 px-2 py-1 border-b border-border/20">

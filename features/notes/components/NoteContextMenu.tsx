@@ -5,11 +5,9 @@
 
 import dynamic from "next/dynamic";
 import { useRef, type ReactNode } from "react";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu/context-menu";
+import * as ContextMenuPrimitive from "@radix-ui/react-context-menu";
+import { ContextMenuContent } from "@/components/ui/context-menu/context-menu";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import {
   NoteContextMenuBridgeContext,
   type NoteContextMenuBridgeHandlers,
@@ -38,23 +36,39 @@ export default function NoteContextMenu({
   ...props
 }: NoteContextMenuProps) {
   const bridgeRef = useRef<NoteContextMenuBridgeHandlers | null>(null);
+  const isMounted = useIsMounted();
 
+  // Before hydration is complete, render children directly so the flex-1
+  // editor container is always present in the DOM. Without this guard the
+  // nested ContextMenu (which also uses useIsMounted) would return null on
+  // its first render, collapsing the editor column and pushing NoteMetadataBar
+  // to the top of the layout.
+  if (!isMounted) {
+    return (
+      <NoteContextMenuBridgeContext.Provider value={bridgeRef}>
+        {children}
+      </NoteContextMenuBridgeContext.Provider>
+    );
+  }
+
+  // Use the Radix primitive directly here so we bypass the wrapped ContextMenu's
+  // own useIsMounted check (which would cause a second null-render flash).
   return (
     <NoteContextMenuBridgeContext.Provider value={bridgeRef}>
-      <ContextMenu
+      <ContextMenuPrimitive.Root
         onOpenChange={(open) => {
           bridgeRef.current?.onContextMenuOpenChange(open);
         }}
       >
-        <ContextMenuTrigger
+        <ContextMenuPrimitive.Trigger
           asChild
           onMouseDown={(e) => bridgeRef.current?.onMouseDown(e)}
           onContextMenu={(e) => bridgeRef.current?.onContextMenu(e)}
         >
           {children}
-        </ContextMenuTrigger>
+        </ContextMenuPrimitive.Trigger>
         <NoteContextMenuHeavy {...props} />
-      </ContextMenu>
+      </ContextMenuPrimitive.Root>
     </NoteContextMenuBridgeContext.Provider>
   );
 }

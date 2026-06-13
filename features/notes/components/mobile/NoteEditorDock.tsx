@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * NoteEditorDock — fixed bottom action dock for the mobile note editor.
@@ -8,8 +8,8 @@
  * of Link-based navigation, since this is a contextual toolbar, not a nav bar.
  */
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   FolderOpen,
   Tag,
@@ -21,12 +21,16 @@ import {
   Trash2,
   Loader2,
   Network,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { BottomSheet, BottomSheetHeader, BottomSheetBody } from '@/components/official/bottom-sheet/BottomSheet';
-import MobileNoteToolbar from './MobileNoteToolbar';
-import { NoteContextSection } from '../NoteContextSection';
-import { useToastManager } from '@/hooks/useToastManager';
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  BottomSheet,
+  BottomSheetHeader,
+  BottomSheetBody,
+} from "@/components/official/bottom-sheet/BottomSheet";
+import MobileNoteToolbar from "./MobileNoteToolbar";
+import { NoteContextSection } from "../NoteContextSection";
+import { useToastManager } from "@/hooks/useToastManager";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -62,51 +66,82 @@ export function NoteEditorDock({
   onDelete,
   isDeleting,
 }: NoteEditorDockProps) {
-  const toast = useToastManager('notes');
+  const toast = useToastManager("notes");
   const navRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [pill, setPill] = useState<{ x: number; width: number; height: number } | null>(null);
-  const [sheetOpen, setSheetOpen] = useState<'folder-tags' | 'context' | 'more' | null>(null);
+  const [pill, setPill] = useState<{
+    x: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const [sheetOpen, setSheetOpen] = useState<
+    "folder-tags" | "context" | "more" | null
+  >(null);
 
   // Dock items definition — icons only, no labels
-  const items: { key: string; tooltip: string; Icon: LucideIcon; onPress: () => void }[] = [
+  const items: {
+    key: string;
+    tooltip: string;
+    Icon: LucideIcon;
+    onPress: () => void;
+  }[] = [
     {
-      key: 'folder',
+      key: "folder",
       tooltip: folder,
       Icon: FolderOpen,
-      onPress: () => { setActiveIndex(0); setSheetOpen('folder-tags'); },
+      onPress: () => {
+        setActiveIndex(0);
+        setSheetOpen("folder-tags");
+      },
     },
     {
-      key: 'tags',
-      tooltip: tags.length > 0 ? `${tags.length} tag${tags.length !== 1 ? 's' : ''}` : 'Tags',
+      key: "tags",
+      tooltip:
+        tags.length > 0
+          ? `${tags.length} tag${tags.length !== 1 ? "s" : ""}`
+          : "Tags",
       Icon: Tag,
-      onPress: () => { setActiveIndex(1); setSheetOpen('folder-tags'); },
+      onPress: () => {
+        setActiveIndex(1);
+        setSheetOpen("folder-tags");
+      },
     },
     {
-      key: 'copy',
-      tooltip: 'Copy',
+      key: "copy",
+      tooltip: "Copy",
       Icon: Copy,
-      onPress: () => { navigator.clipboard.writeText(content).catch(() => {}); toast.success('Copied to clipboard'); },
+      onPress: () => {
+        navigator.clipboard.writeText(content).catch(() => {});
+        toast.success("Copied to clipboard");
+      },
     },
     {
-      key: 'export',
-      tooltip: 'Export',
+      key: "export",
+      tooltip: "Export",
       Icon: Download,
-      onPress: () => { onExport(); },
+      onPress: () => {
+        onExport();
+      },
     },
     {
-      key: 'context',
-      tooltip: 'Context',
+      key: "context",
+      tooltip: "Context",
       Icon: Network,
-      onPress: () => { setActiveIndex(4); setSheetOpen('context'); },
+      onPress: () => {
+        setActiveIndex(4);
+        setSheetOpen("context");
+      },
     },
     {
-      key: 'more',
-      tooltip: 'More',
+      key: "more",
+      tooltip: "More",
       Icon: MoreHorizontal,
-      onPress: () => { setActiveIndex(5); setSheetOpen('more'); },
+      onPress: () => {
+        setActiveIndex(5);
+        setSheetOpen("more");
+      },
     },
   ];
 
@@ -114,9 +149,15 @@ export function NoteEditorDock({
   const measurePill = useCallback(() => {
     const nav = navRef.current;
     const idx = activeIndex;
-    if (!nav || idx === null) { setPill(null); return; }
+    if (!nav || idx === null) {
+      setPill(null);
+      return;
+    }
     const activeEl = itemRefs.current[idx];
-    if (!activeEl) { setPill(null); return; }
+    if (!activeEl) {
+      setPill(null);
+      return;
+    }
 
     const navRect = nav.getBoundingClientRect();
     const itemRect = activeEl.getBoundingClientRect();
@@ -135,7 +176,9 @@ export function NoteEditorDock({
     setPill({ x: clampedX, width: clampedW, height: dockH - PILL_INSET_Y * 2 });
   }, [activeIndex]);
 
-  useEffect(() => { measurePill(); }, [measurePill]);
+  useEffect(() => {
+    measurePill();
+  }, [measurePill]);
 
   useEffect(() => {
     if (!sheetOpen) setActiveIndex(null);
@@ -159,9 +202,10 @@ export function NoteEditorDock({
                 left: pill.x,
                 width: pill.width,
                 height: pill.height,
-                transition: 'left 380ms cubic-bezier(0.34, 1.56, 0.64, 1), width 380ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                transition:
+                  "left 380ms cubic-bezier(0.34, 1.56, 0.64, 1), width 380ms cubic-bezier(0.34, 1.56, 0.64, 1)",
                 zIndex: 1,
-                pointerEvents: 'none',
+                pointerEvents: "none",
               }}
             />
           )}
@@ -173,7 +217,9 @@ export function NoteEditorDock({
             return (
               <div
                 key={item.key}
-                ref={el => { itemRefs.current[i] = el; }}
+                ref={(el) => {
+                  itemRefs.current[i] = el;
+                }}
                 className="relative flex-1 flex items-center justify-center min-w-0"
               >
                 <button
@@ -181,14 +227,17 @@ export function NoteEditorDock({
                   aria-label={item.tooltip}
                   title={item.tooltip}
                   className={cn(
-                    'relative z-10 flex items-center justify-center w-full py-2.5 px-1 transition-colors duration-200',
-                    isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+                    "relative z-10 flex items-center justify-center w-full py-2.5 px-1 transition-colors duration-200",
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   <Icon
                     className={cn(
-                      'h-[20px] w-[20px] transition-all duration-200 shrink-0',
-                      isActive && 'drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]',
+                      "h-[20px] w-[20px] transition-all duration-200 shrink-0",
+                      isActive &&
+                        "drop-shadow-[0_0_6px_hsl(var(--primary)/0.4)]",
                     )}
                   />
                 </button>
@@ -200,8 +249,8 @@ export function NoteEditorDock({
 
       {/* Folder + Tags sheet */}
       <BottomSheet
-        open={sheetOpen === 'folder-tags'}
-        onOpenChange={open => setSheetOpen(open ? 'folder-tags' : null)}
+        open={sheetOpen === "folder-tags"}
+        onOpenChange={(open) => setSheetOpen(open ? "folder-tags" : null)}
         title="Note Settings"
       >
         <BottomSheetHeader title="Folder &amp; Tags" />
@@ -209,7 +258,10 @@ export function NoteEditorDock({
           <MobileNoteToolbar
             folder={folder}
             tags={tags}
-            onFolderChange={f => { onFolderChange(f); setSheetOpen(null); }}
+            onFolderChange={(f) => {
+              onFolderChange(f);
+              setSheetOpen(null);
+            }}
             onTagsChange={onTagsChange}
             onClose={() => setSheetOpen(null)}
           />
@@ -218,9 +270,10 @@ export function NoteEditorDock({
 
       {/* Context assignment sheet */}
       <BottomSheet
-        open={sheetOpen === 'context'}
-        onOpenChange={open => setSheetOpen(open ? 'context' : null)}
+        open={sheetOpen === "context"}
+        onOpenChange={(open) => setSheetOpen(open ? "context" : null)}
         title="Note Context"
+        contentClassName="bg-card border-border shadow-lg backdrop-blur-none backdrop-saturate-100"
       >
         <BottomSheetHeader title="Note Context" />
         <BottomSheetBody>
@@ -232,22 +285,28 @@ export function NoteEditorDock({
 
       {/* More actions sheet */}
       <BottomSheet
-        open={sheetOpen === 'more'}
-        onOpenChange={open => setSheetOpen(open ? 'more' : null)}
+        open={sheetOpen === "more"}
+        onOpenChange={(open) => setSheetOpen(open ? "more" : null)}
         title="Note Actions"
       >
         <BottomSheetHeader title="Note Actions" />
         <BottomSheetBody>
           <div className="px-4 py-2 space-y-1">
             <button
-              onClick={() => { onDuplicate(); setSheetOpen(null); }}
+              onClick={() => {
+                onDuplicate();
+                setSheetOpen(null);
+              }}
               className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent/50 transition-colors"
             >
               <CopyPlus className="h-5 w-5 text-muted-foreground" />
               Duplicate Note
             </button>
             <button
-              onClick={() => { toast.info('Sharing coming soon'); setSheetOpen(null); }}
+              onClick={() => {
+                toast.info("Sharing coming soon");
+                setSheetOpen(null);
+              }}
               className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent/50 transition-colors"
             >
               <Share2 className="h-5 w-5 text-muted-foreground" />
@@ -258,7 +317,10 @@ export function NoteEditorDock({
             </button>
             <div className="h-px bg-border/40 my-1" />
             <button
-              onClick={() => { setSheetOpen(null); onDelete(); }}
+              onClick={() => {
+                setSheetOpen(null);
+                onDelete();
+              }}
               disabled={isDeleting}
               className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
             >
@@ -267,7 +329,7 @@ export function NoteEditorDock({
               ) : (
                 <Trash2 className="h-5 w-5" />
               )}
-              {isDeleting ? 'Deleting...' : 'Delete Note'}
+              {isDeleting ? "Deleting..." : "Delete Note"}
             </button>
           </div>
         </BottomSheetBody>

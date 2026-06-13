@@ -2178,20 +2178,3 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   -webkit-tap-highlight-color: transparent;
 }
 .matrx-tap-pill:active { transform: scale(0.92); }
-
-/* ── Context picker: inline vs collapsed-rail popover ─────────────────────
-   DirectContextSelection twin-renders the inline ActiveScopePicker and an
-   icon-only ActiveContextButton. Default (non-shell hosts + expanded shell
-   sidebar): inline visible, icon hidden. Collapsed rail: swap — the inline
-   expansion is unusable at icon width, so the popover takes over. */
-.shell-ctx-collapsed {
-  display: none;
-}
-.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-sidebar .shell-ctx-inline {
-  display: none;
-}
-.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-sidebar .shell-ctx-collapsed {
-  display: flex;
-  justify-content: center;
-  padding: 0.25rem 0;
-}

@@ -7068,6 +7068,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent-usage/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sync Registered Usages Endpoint */
+        post: operations["sync_registered_usages_endpoint_agent_usage_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-usage/registry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Registry Diff Endpoint
+         * @description DB registry rows + the live in-code declarations, side by side.
+         */
+        get: operations["registry_diff_endpoint_agent_usage_registry_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-usage/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Scan Endpoint
+         * @description Run the weekly drift scan immediately (writes alerts + sends DMs).
+         */
+        post: operations["run_scan_endpoint_agent_usage_scan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-usage/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Report Endpoint
+         * @description Platform-wide drift rollup — proxies agx_usage_report_admin().
+         *
+         *     The RPC enforces is_super_admin() server-side via auth.uid(); we call it
+         *     through the admin connection but the gate above already restricts access.
+         */
+        get: operations["report_endpoint_agent_usage_report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/kg-cost/summary": {
         parameters: {
             query?: never;
@@ -9607,6 +9687,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/files/{file_id}/rag-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get File Rag Status
+         * @description The file's full RAG lifecycle — the canonical status contract.
+         *
+         *     Merges the latest ``cld_file_rag_jobs`` row (scheduled / running / failed /
+         *     cancelled) with the ``processed_documents`` anchor (completed). A file
+         *     ingested before scheduled auto-RAG existed (no job row) reads
+         *     ``completed`` from the document alone. Unlike ``/document`` this NEVER
+         *     404s — ``state="not_scheduled"`` is a valid answer.
+         */
+        get: operations["get_file_rag_status_files__file_id__rag_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files/{file_id}/lineage-summary": {
         parameters: {
             query?: never;
@@ -9642,12 +9748,14 @@ export interface paths {
         put?: never;
         /**
          * Ingest File For Rag
-         * @description File-centric wrapper around ``/rag/ingest``.
+         * @description On-demand RAG ingest for a file.
          *
-         *     Calls ``ingest_source`` with ``source_kind="cld_file"`` /
-         *     ``source_id=file_id``. Requires write access — ingestion writes
-         *     derived state (chunks, embeddings) and a read-only grantee shouldn't
-         *     be able to kick that off against someone else's file.
+         *     Runs through ``auto_ingest`` (budget + visibility + the 8-agent
+         *     scope-suggestion orchestrator) via the ``cld_file_rag_jobs`` lifecycle:
+         *     it ADOPTS any deferred auto-RAG job (so the file is never double-run) and
+         *     409s if a run is already in progress. Already-ingested + not ``force`` →
+         *     409 ``rag_already_complete`` (use ``/refresh`` to re-run). Requires write
+         *     access — a read-only grantee must not kick off paid derived work.
          */
         post: operations["ingest_file_for_rag_files__file_id__ingest_post"];
         delete?: never;
@@ -9667,11 +9775,38 @@ export interface paths {
         put?: never;
         /**
          * Ingest File For Rag Stream
-         * @description Streaming ingest. Emits ``rag.ingest.progress`` events at each
-         *     stage so the FE can render a live progress bar against a 500-page
-         *     PDF instead of a silent spinner.
+         * @description Streaming on-demand ingest. Emits ``rag.ingest.progress`` events at each
+         *     stage so the FE can render a live progress bar against a 500-page PDF
+         *     instead of a silent spinner. The already-complete / run-in-progress guards
+         *     fire as normal HTTP 409s BEFORE the stream opens.
          */
         post: operations["ingest_file_for_rag_stream_files__file_id__ingest_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/files/{file_id}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh File Rag
+         * @description Re-run RAG ingest on an ALREADY-completed file (the dedicated re-run
+         *     path — ``/ingest`` 409s on a completed file).
+         *
+         *     Forces a full re-extract/chunk/embed → NER → suggestions (a new
+         *     ``processed_documents`` derivative via the existing lineage chaining).
+         *     Adopts/cancels any scheduled job; 409 ``rag_not_complete`` when the file
+         *     was never ingested (use ``/ingest`` first). Streams progress.
+         */
+        post: operations["refresh_file_rag_files__file_id__refresh_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10279,13 +10414,11 @@ export interface paths {
          *     every ~30s with the ISO timestamp of the most recent change it has
          *     already processed.
          *
-         *     v1 returns only **modifications** (rows with ``updated_at > since``,
-         *     ``deleted_at IS NULL``). Soft-deletes are not surfaced through this
-         *     endpoint — they only show up via Realtime, or are picked up by the
-         *     next session's bulk down-sync. This is a deliberate tradeoff: the
-         *     Supabase client doesn't expose ``deleted_at IS NOT NULL`` cleanly via
-         *     ``list_files_async``, and adding a new public method on the foundation
-         *     matrx-utils package is intentionally out of scope for this change.
+         *     Returns only **modifications** (rows with ``updated_at > since``,
+         *     ``deleted_at IS NULL``), filtered and bounded server-side via
+         *     ``list_changed_files_async``. Soft-deletes are not surfaced through this
+         *     endpoint — they only show up via Realtime, or are picked up by the next
+         *     session's bulk down-sync.
          *
          *     Response shape:
          *         {
@@ -13744,6 +13877,11 @@ export interface components {
              * @description JSON-encoded metadata dict
              */
             metadata_json?: string | null;
+            /**
+             * Options Json
+             * @description Upload options. JSON: {"rag": {"enabled": bool|null, "trigger_now": bool}}
+             */
+            options_json?: string | null;
         };
         /** Body_upload_podcast_image_media_podcast_upload_image_post */
         Body_upload_podcast_image_media_podcast_upload_image_post: {
@@ -14517,6 +14655,10 @@ export interface components {
             /** Detected Contexts */
             detected_contexts?: {
                 [key: string]: string;
+            } | null;
+            /** Dictionary */
+            dictionary?: {
+                [key: string]: unknown;
             } | null;
             /** Organization Id */
             organization_id?: string | null;
@@ -16636,6 +16778,11 @@ export interface components {
          * @description Filter for batch dismiss. Empty body = dismiss every unrecovered row.
          */
         DismissBatchRequest: {
+            /**
+             * Ids
+             * @description When set, only dismiss these failure ids (must still be unrecovered). Other filter fields are ignored.
+             */
+            ids?: string[] | null;
             /** Table Target */
             table_target?: string | null;
             /** Error Text Contains */
@@ -17769,6 +17916,51 @@ export interface components {
             /** Field Id */
             field_id?: string | null;
         };
+        /** FileIngestResponse */
+        FileIngestResponse: {
+            /** Source Kind */
+            source_kind: string;
+            /** Source Id */
+            source_id: string;
+            /** Field Id */
+            field_id?: string | null;
+            /**
+             * Chunks Written
+             * @default 0
+             */
+            chunks_written: number;
+            /**
+             * Chunks Reused
+             * @default 0
+             */
+            chunks_reused: number;
+            /**
+             * Embeddings Written
+             * @default 0
+             */
+            embeddings_written: number;
+            /**
+             * Skipped Unchanged
+             * @default false
+             */
+            skipped_unchanged: boolean;
+            /**
+             * Embedding Model
+             * @default
+             */
+            embedding_model: string;
+            /** Skipped Reason */
+            skipped_reason?: string | null;
+            /**
+             * Suggestions Created
+             * @default 0
+             */
+            suggestions_created: number;
+            /** Error */
+            error?: string | null;
+            /** Job Id */
+            job_id?: string | null;
+        };
         /** FileLineageSummary */
         FileLineageSummary: {
             /** Parent File Id */
@@ -17917,6 +18109,57 @@ export interface components {
             /** Copy To */
             copy_to?: string | null;
         };
+        /** FileRagJobError */
+        FileRagJobError: {
+            /** Error Type */
+            error_type: string;
+            /** Message */
+            message: string;
+        };
+        /**
+         * FileRagStatusResponse
+         * @description Canonical file-RAG status contract (server + FE share this shape).
+         *
+         *     ``state`` merges the latest job row with the processed_documents anchor:
+         *     a file ingested before this feature existed (no job row) still reads
+         *     ``completed``.
+         */
+        FileRagStatusResponse: {
+            /** File Id */
+            file_id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "not_scheduled" | "scheduled" | "running" | "completed" | "failed" | "cancelled";
+            /** Job Id */
+            job_id?: string | null;
+            /** Trigger Source */
+            trigger_source?: ("auto" | "upload_flag" | "on_demand" | "refresh") | null;
+            /** Scheduled For */
+            scheduled_for?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /**
+             * Attempt Count
+             * @default 0
+             */
+            attempt_count: number;
+            /** Skipped Reason */
+            skipped_reason?: string | null;
+            error?: components["schemas"]["FileRagJobError"] | null;
+            /** Processed Document Id */
+            processed_document_id?: string | null;
+            /**
+             * Chunk Count
+             * @default 0
+             */
+            chunk_count: number;
+            /** Document Updated At */
+            document_updated_at?: string | null;
+        };
         /** FileRecord */
         FileRecord: {
             /** Id */
@@ -17970,6 +18213,11 @@ export interface components {
             /** Download Url */
             download_url?: string | null;
         };
+        /**
+         * FileRefreshRequest
+         * @description Reserved for the later ``suggestions_only`` option; empty body for v1.
+         */
+        FileRefreshRequest: Record<string, never>;
         /** FileUploadResponse */
         FileUploadResponse: {
             /** File Id */
@@ -19570,6 +19818,10 @@ export interface components {
             /** Detected Contexts */
             detected_contexts?: {
                 [key: string]: string;
+            } | null;
+            /** Dictionary */
+            dictionary?: {
+                [key: string]: unknown;
             } | null;
         };
         /** LabelCatalogEntry */
@@ -21669,6 +21921,10 @@ export interface components {
             max_images?: number | null;
             /** Max Videos */
             max_videos?: number | null;
+            /** Dictionary */
+            dictionary?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * PodcastMediaUploadResponse
@@ -22775,6 +23031,11 @@ export interface components {
          * @description Filter for batch replay. Empty body = retry every unrecovered row.
          */
         ReplayBatchRequest: {
+            /**
+             * Ids
+             * @description When set, only replay these failure ids (must still be unrecovered). Other filter fields are ignored.
+             */
+            ids?: string[] | null;
             /** Table Target */
             table_target?: string | null;
             /** Error Text Contains */
@@ -22872,6 +23133,11 @@ export interface components {
          * @description Filter for batch resolve. Empty body = resolve every unresolved row.
          */
         ResolveBatchRequest: {
+            /**
+             * Ids
+             * @description When set, only resolve these system_error ids (must still be unresolved). Other filter fields are ignored.
+             */
+            ids?: string[] | null;
             /** Kind */
             kind?: string | null;
             /** Error Text Contains */
@@ -23600,6 +23866,17 @@ export interface components {
             description?: string | null;
             /** Url Params */
             url_params?: string | null;
+        };
+        /** ScanSummary */
+        ScanSummary: {
+            /** Success */
+            success: boolean;
+            /** Result Summary */
+            result_summary: string;
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            };
         };
         /** ScheduleSaveRequest */
         ScheduleSaveRequest: {
@@ -40271,6 +40548,92 @@ export interface operations {
             };
         };
     };
+    sync_registered_usages_endpoint_agent_usage_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    registry_diff_endpoint_agent_usage_registry_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    run_scan_endpoint_agent_usage_scan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanSummary"];
+                };
+            };
+        };
+    };
+    report_endpoint_agent_usage_report_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
     summary_kg_cost_summary_get: {
         parameters: {
             query?: never;
@@ -44652,6 +45015,37 @@ export interface operations {
             };
         };
     };
+    get_file_rag_status_files__file_id__rag_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileRagStatusResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_file_lineage_summary_files__file_id__lineage_summary_get: {
         parameters: {
             query?: never;
@@ -44704,7 +45098,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["FileIngestResponse"];
                 };
             };
             /** @description Validation Error */
@@ -44730,6 +45124,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["FileIngestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_file_rag_files__file_id__refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FileRefreshRequest"];
             };
         };
         responses: {
@@ -47022,6 +47451,8 @@ export interface operations {
             query?: {
                 recovered?: "any" | "yes" | "no";
                 table_target?: string | null;
+                op_type?: ("insert" | "update" | "delete") | null;
+                error_text_contains?: string | null;
                 request_id?: string | null;
                 user_id?: string | null;
                 limit?: number;
@@ -47237,6 +47668,7 @@ export interface operations {
             query?: {
                 resolved?: "any" | "yes" | "no";
                 kind?: string | null;
+                error_text_contains?: string | null;
                 request_id?: string | null;
                 user_id?: string | null;
                 limit?: number;

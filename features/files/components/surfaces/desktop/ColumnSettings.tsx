@@ -55,6 +55,7 @@ const COLUMN_SPECS: ReadonlyArray<ColumnSpec> = [
   { id: "updated_at", label: "Last modified" },
   { id: "created_at", label: "Created" },
   { id: "access", label: "Access" },
+  { id: "context", label: "Context" },
   { id: "rag_status", label: "RAG status" },
 ];
 

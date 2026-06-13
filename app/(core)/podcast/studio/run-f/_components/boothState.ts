@@ -44,7 +44,13 @@ const ACT_ORDER: ActId[] = ["source", "script", "art", "voice", "publish"];
 
 export const INITIAL_BOOTH_STATE: BoothState = {
   status: "running",
-  acts: { source: "pending", script: "pending", art: "pending", voice: "pending", publish: "pending" },
+  acts: {
+    source: "pending",
+    script: "pending",
+    art: "pending",
+    voice: "pending",
+    publish: "pending",
+  },
   activeAct: "source",
   progress: 0,
   title: "",
@@ -86,7 +92,13 @@ export function reduce(state: BoothState, ev: PodcastDataEvent): BoothState {
         if (!next.images.some((s) => s.index === index)) {
           next.images = [
             ...next.images,
-            { index, kind: "image", prompt: "", url: null, status: "running" },
+            {
+              index,
+              kind: "image" as const,
+              prompt: "",
+              url: null,
+              status: "running" as const,
+            },
           ].sort((a, b) => a.index - b.index);
         }
       }
@@ -95,7 +107,13 @@ export function reduce(state: BoothState, ev: PodcastDataEvent): BoothState {
         if (!next.videos.some((s) => s.index === index)) {
           next.videos = [
             ...next.videos,
-            { index, kind: "video", prompt: "", url: null, status: "running" },
+            {
+              index,
+              kind: "video" as const,
+              prompt: "",
+              url: null,
+              status: "running" as const,
+            },
           ];
         }
       }
@@ -108,8 +126,10 @@ export function reduce(state: BoothState, ev: PodcastDataEvent): BoothState {
       if (ev.success) acts[act] = "done";
       const next = { ...state, acts };
       next.progress = computeProgress(acts);
-      if (ev.stage === "prepare_content" && ev.output) next.sourcePreview = ev.output;
-      if (ev.stage === "create_script" && ev.output) next.scriptPreview = ev.output;
+      if (ev.stage === "prepare_content" && ev.output)
+        next.sourcePreview = ev.output;
+      if (ev.stage === "create_script" && ev.output)
+        next.scriptPreview = ev.output;
       return next;
     }
 

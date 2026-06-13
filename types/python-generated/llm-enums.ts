@@ -103,6 +103,7 @@ export const LLM_PARAMS_KEYS = [
     'mcp_servers',
     'compaction_settings',
     'detected_contexts',
+    'dictionary',
 ] as const satisfies readonly (keyof LLMParams)[];
 
 export type LLMParamsKey = (typeof LLM_PARAMS_KEYS)[number];

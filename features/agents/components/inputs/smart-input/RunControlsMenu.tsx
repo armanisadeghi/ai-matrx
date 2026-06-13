@@ -10,6 +10,8 @@
  * One tabbed popover:
  *   - Attach   — the canonical ResourcePickerMenu (plus variant by default;
  *                opt-in anywhere via `includeAttach`)
+ *   - Context  — working context (same field as chat header; live-apply)
+ *   - Document — working document collaboration controls
  *   - Model    — per-conversation model override (RunModelPicker) + settings
  *                overrides (RunConfigOverrides). Only shown for instances
  *                that own an override layer — manual/builder-test runs read
@@ -61,6 +63,8 @@ import { useAttachResource } from "@/features/agents/components/inputs/resources
 import { WorkingDocumentControls } from "@/features/agents/components/working-document/WorkingDocumentControls";
 import { useWorkingDocumentContextSync } from "@/features/agents/hooks/useWorkingDocument";
 import { selectWorkingDocEnabled } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
+import { ActiveContextPanel } from "@/features/scopes/components/active-context/ActiveContextPanel";
+import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
 
 import {
   selectAttachmentCapabilities,
@@ -185,6 +189,7 @@ export function RunControlsMenu({
   const workingDocEnabled = useAppSelector(
     selectWorkingDocEnabled(conversationId),
   );
+  const hasActiveContext = useAppSelector(selectHasActiveContext);
 
   // The Model tab (and per-run model/settings overrides) only applies to
   // instances that own an override layer — manual/builder-test runs read the
@@ -227,6 +232,7 @@ export function RunControlsMenu({
     hasSandbox ||
     hasModelOverride ||
     workingDocEnabled ||
+    hasActiveContext ||
     !!settings?.disableToolInjection ||
     !!settings?.surfaceOverride;
 
@@ -307,6 +313,12 @@ export function RunControlsMenu({
                     aria-label="overridden"
                   />
                 )}
+                {t.id === "context" && hasActiveContext && (
+                  <span
+                    className="ml-0.5 h-1.5 w-1.5 rounded-full bg-primary"
+                    aria-label="working context set"
+                  />
+                )}
                 {t.id === "document" && workingDocEnabled && (
                   <span
                     className="ml-0.5 h-1.5 w-1.5 rounded-full bg-primary"
@@ -336,9 +348,11 @@ export function RunControlsMenu({
             </div>
           )}
           {activeTab === "context" && (
-            <div className="flex h-full items-center justify-center px-3 py-2 text-center text-xs text-muted-foreground">
-              {/* Placeholder — the context component is wired in a later round. */}
-              Context controls coming soon.
+            <div className="h-full overflow-hidden">
+              <ActiveContextPanel
+                checkboxVariant="standard"
+                sectionHeight={280}
+              />
             </div>
           )}
           {activeTab === "document" && (

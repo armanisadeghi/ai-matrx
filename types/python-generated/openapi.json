@@ -19316,6 +19316,99 @@
         }
       }
     },
+    "/agent-usage/sync": {
+      "post": {
+        "tags": [
+          "Agent Usage Admin"
+        ],
+        "summary": "Sync Registered Usages Endpoint",
+        "operationId": "sync_registered_usages_endpoint_agent_usage_sync_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Sync Registered Usages Endpoint Agent Usage Sync Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-usage/registry": {
+      "get": {
+        "tags": [
+          "Agent Usage Admin"
+        ],
+        "summary": "Registry Diff Endpoint",
+        "description": "DB registry rows + the live in-code declarations, side by side.",
+        "operationId": "registry_diff_endpoint_agent_usage_registry_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Registry Diff Endpoint Agent Usage Registry Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-usage/scan": {
+      "post": {
+        "tags": [
+          "Agent Usage Admin"
+        ],
+        "summary": "Run Scan Endpoint",
+        "description": "Run the weekly drift scan immediately (writes alerts + sends DMs).",
+        "operationId": "run_scan_endpoint_agent_usage_scan_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-usage/report": {
+      "get": {
+        "tags": [
+          "Agent Usage Admin"
+        ],
+        "summary": "Report Endpoint",
+        "description": "Platform-wide drift rollup — proxies agx_usage_report_admin().\n\nThe RPC enforces is_super_admin() server-side via auth.uid(); we call it\nthrough the admin connection but the gate above already restricts access.",
+        "operationId": "report_endpoint_agent_usage_report_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Report Endpoint Agent Usage Report Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/kg-cost/summary": {
       "get": {
         "tags": [
@@ -26237,6 +26330,49 @@
         }
       }
     },
+    "/files/{file_id}/rag-status": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Get File Rag Status",
+        "description": "The file's full RAG lifecycle — the canonical status contract.\n\nMerges the latest ``cld_file_rag_jobs`` row (scheduled / running / failed /\ncancelled) with the ``processed_documents`` anchor (completed). A file\ningested before scheduled auto-RAG existed (no job row) reads\n``completed`` from the document alone. Unlike ``/document`` this NEVER\n404s — ``state=\"not_scheduled\"`` is a valid answer.",
+        "operationId": "get_file_rag_status_files__file_id__rag_status_get",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileRagStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/files/{file_id}/lineage-summary": {
       "get": {
         "tags": [
@@ -26286,8 +26422,61 @@
           "Files"
         ],
         "summary": "Ingest File For Rag",
-        "description": "File-centric wrapper around ``/rag/ingest``.\n\nCalls ``ingest_source`` with ``source_kind=\"cld_file\"`` /\n``source_id=file_id``. Requires write access — ingestion writes\nderived state (chunks, embeddings) and a read-only grantee shouldn't\nbe able to kick that off against someone else's file.",
+        "description": "On-demand RAG ingest for a file.\n\nRuns through ``auto_ingest`` (budget + visibility + the 8-agent\nscope-suggestion orchestrator) via the ``cld_file_rag_jobs`` lifecycle:\nit ADOPTS any deferred auto-RAG job (so the file is never double-run) and\n409s if a run is already in progress. Already-ingested + not ``force`` →\n409 ``rag_already_complete`` (use ``/refresh`` to re-run). Requires write\naccess — a read-only grantee must not kick off paid derived work.",
         "operationId": "ingest_file_for_rag_files__file_id__ingest_post",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileIngestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileIngestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{file_id}/ingest/stream": {
+      "post": {
+        "tags": [
+          "Files"
+        ],
+        "summary": "Ingest File For Rag Stream",
+        "description": "Streaming on-demand ingest. Emits ``rag.ingest.progress`` events at each\nstage so the FE can render a live progress bar against a 500-page PDF\ninstead of a silent spinner. The already-complete / run-in-progress guards\nfire as normal HTTP 409s BEFORE the stream opens.",
+        "operationId": "ingest_file_for_rag_stream_files__file_id__ingest_stream_post",
         "parameters": [
           {
             "name": "file_id",
@@ -26331,14 +26520,14 @@
         }
       }
     },
-    "/files/{file_id}/ingest/stream": {
+    "/files/{file_id}/refresh": {
       "post": {
         "tags": [
           "Files"
         ],
-        "summary": "Ingest File For Rag Stream",
-        "description": "Streaming ingest. Emits ``rag.ingest.progress`` events at each\nstage so the FE can render a live progress bar against a 500-page\nPDF instead of a silent spinner.",
-        "operationId": "ingest_file_for_rag_stream_files__file_id__ingest_stream_post",
+        "summary": "Refresh File Rag",
+        "description": "Re-run RAG ingest on an ALREADY-completed file (the dedicated re-run\npath — ``/ingest`` 409s on a completed file).\n\nForces a full re-extract/chunk/embed → NER → suggestions (a new\n``processed_documents`` derivative via the existing lineage chaining).\nAdopts/cancels any scheduled job; 409 ``rag_not_complete`` when the file\nwas never ingested (use ``/ingest`` first). Streams progress.",
+        "operationId": "refresh_file_rag_files__file_id__refresh_post",
         "parameters": [
           {
             "name": "file_id",
@@ -26355,7 +26544,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/FileIngestRequest"
+                "$ref": "#/components/schemas/FileRefreshRequest"
               }
             }
           }
@@ -28303,7 +28492,7 @@
           "Sandbox Bridge"
         ],
         "summary": "List Changes",
-        "description": "Polling fallback for the in-sandbox watcher's down-direction.\n\nThe recommended live path is Supabase Realtime on ``cld_files`` (see\n``db/migrations/0002_cld_files_realtime.sql``). When Realtime isn't\navailable — sandbox missing the realtime client lib, missing Supabase\ncreds, or a transient WebSocket drop — the watcher polls this endpoint\nevery ~30s with the ISO timestamp of the most recent change it has\nalready processed.\n\nv1 returns only **modifications** (rows with ``updated_at > since``,\n``deleted_at IS NULL``). Soft-deletes are not surfaced through this\nendpoint — they only show up via Realtime, or are picked up by the\nnext session's bulk down-sync. This is a deliberate tradeoff: the\nSupabase client doesn't expose ``deleted_at IS NOT NULL`` cleanly via\n``list_files_async``, and adding a new public method on the foundation\nmatrx-utils package is intentionally out of scope for this change.\n\nResponse shape:\n    {\n        \"files\":       [{ id, file_path, file_size, mime_type,\n                          current_version, checksum, updated_at }, ...],\n        \"next_cursor\": \"<iso of most recent updated_at>\",\n        \"deletions_supported\": false\n    }",
+        "description": "Polling fallback for the in-sandbox watcher's down-direction.\n\nThe recommended live path is Supabase Realtime on ``cld_files`` (see\n``db/migrations/0002_cld_files_realtime.sql``). When Realtime isn't\navailable — sandbox missing the realtime client lib, missing Supabase\ncreds, or a transient WebSocket drop — the watcher polls this endpoint\nevery ~30s with the ISO timestamp of the most recent change it has\nalready processed.\n\nReturns only **modifications** (rows with ``updated_at > since``,\n``deleted_at IS NULL``), filtered and bounded server-side via\n``list_changed_files_async``. Soft-deletes are not surfaced through this\nendpoint — they only show up via Realtime, or are picked up by the next\nsession's bulk down-sync.\n\nResponse shape:\n    {\n        \"files\":       [{ id, file_path, file_size, mime_type,\n                          current_version, checksum, updated_at }, ...],\n        \"next_cursor\": \"<iso of most recent updated_at>\",\n        \"deletions_supported\": false\n    }",
         "operationId": "list_changes_cloud_files_changes_get",
         "parameters": [
           {
@@ -30015,6 +30204,43 @@
             }
           },
           {
+            "name": "op_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "insert",
+                    "update",
+                    "delete"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Op Type"
+            }
+          },
+          {
+            "name": "error_text_contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error Text Contains"
+            }
+          },
+          {
             "name": "request_id",
             "in": "query",
             "required": false,
@@ -30388,6 +30614,22 @@
                 }
               ],
               "title": "Kind"
+            }
+          },
+          {
+            "name": "error_text_contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error Text Contains"
             }
           },
           {
@@ -38148,6 +38390,18 @@
             ],
             "title": "Metadata Json",
             "description": "JSON-encoded metadata dict"
+          },
+          "options_json": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Options Json",
+            "description": "Upload options. JSON: {\"rag\": {\"enabled\": bool|null, \"trigger_now\": bool}}"
           }
         },
         "type": "object",
@@ -40615,6 +40869,18 @@
               }
             ],
             "title": "Detected Contexts"
+          },
+          "dictionary": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dictionary"
           },
           "organization_id": {
             "anyOf": [
@@ -46648,6 +46914,21 @@
       },
       "DismissBatchRequest": {
         "properties": {
+          "ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ids",
+            "description": "When set, only dismiss these failure ids (must still be unrecovered). Other filter fields are ignored."
+          },
           "table_target": {
             "anyOf": [
               {
@@ -49775,6 +50056,99 @@
         "type": "object",
         "title": "FileIngestRequest"
       },
+      "FileIngestResponse": {
+        "properties": {
+          "source_kind": {
+            "type": "string",
+            "title": "Source Kind"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "field_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Id"
+          },
+          "chunks_written": {
+            "type": "integer",
+            "title": "Chunks Written",
+            "default": 0
+          },
+          "chunks_reused": {
+            "type": "integer",
+            "title": "Chunks Reused",
+            "default": 0
+          },
+          "embeddings_written": {
+            "type": "integer",
+            "title": "Embeddings Written",
+            "default": 0
+          },
+          "skipped_unchanged": {
+            "type": "boolean",
+            "title": "Skipped Unchanged",
+            "default": false
+          },
+          "embedding_model": {
+            "type": "string",
+            "title": "Embedding Model",
+            "default": ""
+          },
+          "skipped_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Reason"
+          },
+          "suggestions_created": {
+            "type": "integer",
+            "title": "Suggestions Created",
+            "default": 0
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_kind",
+          "source_id"
+        ],
+        "title": "FileIngestResponse"
+      },
       "FileLineageSummary": {
         "properties": {
           "parent_file_id": {
@@ -50235,6 +50609,169 @@
         "title": "FilePatchRequest",
         "description": "Union mutation body for PATCH /files/{id} (FE-team A.2).\n\nEvery field is optional. Sub-operations run sequentially with\nbest-effort atomicity; failures accumulate in ``errors[]`` on the\nresponse envelope rather than rolling everything back."
       },
+      "FileRagJobError": {
+        "properties": {
+          "error_type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "error_type",
+          "message"
+        ],
+        "title": "FileRagJobError"
+      },
+      "FileRagStatusResponse": {
+        "properties": {
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "not_scheduled",
+              "scheduled",
+              "running",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "State"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "trigger_source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "upload_flag",
+                  "on_demand",
+                  "refresh"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Source"
+          },
+          "scheduled_for": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled For"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "attempt_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Attempt Count",
+            "default": 0
+          },
+          "skipped_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Reason"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FileRagJobError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "processed_document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Processed Document Id"
+          },
+          "chunk_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Chunk Count",
+            "default": 0
+          },
+          "document_updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "file_id",
+          "state"
+        ],
+        "title": "FileRagStatusResponse",
+        "description": "Canonical file-RAG status contract (server + FE share this shape).\n\n``state`` merges the latest job row with the processed_documents anchor:\na file ingested before this feature existed (no job row) still reads\n``completed``."
+      },
       "FileRecord": {
         "properties": {
           "id": {
@@ -50427,6 +50964,13 @@
           "file_name"
         ],
         "title": "FileRecord"
+      },
+      "FileRefreshRequest": {
+        "properties": {},
+        "additionalProperties": false,
+        "type": "object",
+        "title": "FileRefreshRequest",
+        "description": "Reserved for the later ``suggestions_only`` option; empty body for v1."
       },
       "FileUploadResponse": {
         "properties": {
@@ -54911,6 +55455,18 @@
               }
             ],
             "title": "Detected Contexts"
+          },
+          "dictionary": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dictionary"
           }
         },
         "additionalProperties": false,
@@ -60834,6 +61390,18 @@
               }
             ],
             "title": "Max Videos"
+          },
+          "dictionary": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dictionary"
           }
         },
         "type": "object",
@@ -63585,6 +64153,21 @@
       },
       "ReplayBatchRequest": {
         "properties": {
+          "ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ids",
+            "description": "When set, only replay these failure ids (must still be unrecovered). Other filter fields are ignored."
+          },
           "table_target": {
             "anyOf": [
               {
@@ -63845,6 +64428,21 @@
       },
       "ResolveBatchRequest": {
         "properties": {
+          "ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ids",
+            "description": "When set, only resolve these system_error ids (must still be unresolved). Other filter fields are ignored."
+          },
           "kind": {
             "anyOf": [
               {
@@ -65864,6 +66462,30 @@
         },
         "type": "object",
         "title": "SavedViewUpdate"
+      },
+      "ScanSummary": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "result_summary": {
+            "type": "string",
+            "title": "Result Summary"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "result_summary",
+          "metadata"
+        ],
+        "title": "ScanSummary"
       },
       "ScheduleSaveRequest": {
         "properties": {

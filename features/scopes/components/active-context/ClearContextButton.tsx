@@ -3,7 +3,7 @@
 // features/scopes/components/active-context/ClearContextButton.tsx
 //
 // Rose Eraser + "Context" label (title: Clear context). Text-only — no fill.
-// ActiveContextButton, in ActiveScopePicker, and in ContextAssignmentField
+// ActiveContextButton and ContextAssignmentField (active mode).
 // active-mode footers (pass onClick when clearing local field state too).
 
 import { Eraser } from "lucide-react";

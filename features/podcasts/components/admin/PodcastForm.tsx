@@ -382,6 +382,9 @@ export function EpisodeForm({
         duration_seconds: form.duration_seconds
           ? parseInt(form.duration_seconds, 10)
           : null,
+        host_count: null,
+        script: null,
+        speakers: null,
         is_published: form.is_published,
       };
 

@@ -25,7 +25,8 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
     {
       url: "/agents/all",
       label: "All agents",
-      description: "The agents gallery — list, filter, open, fork. Hosts the drift banner.",
+      description:
+        "The agents gallery — list, filter, open, fork. Hosts the drift banner.",
       filePath: "app/(core)/agents/all/page.tsx",
       status: "Live",
     },
@@ -72,13 +73,15 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "AgentDriftBanner",
       filePath: "features/agents/components/usages/AgentDriftBanner.tsx",
-      description: "Dismissible 'drift detected' callout on the agents page (weekly-scan-fed).",
+      description:
+        "Dismissible 'drift detected' callout on the agents page (weekly-scan-fed).",
       tier: "official",
     },
     {
       name: "NotifyOwnerDialog",
       filePath: "features/agents/components/usages/NotifyOwnerDialog.tsx",
-      description: "Sends drift notification DMs (single / org managers / inform-all).",
+      description:
+        "Sends drift notification DMs (single / org managers / inform-all).",
       tier: "official",
     },
   ],
@@ -86,7 +89,6 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
   apiRoutes: [
     {
       url: "{python}/agent-usage/sync",
-      label: "Registry sync (aidream)",
       method: "POST",
       description:
         "Sync code-declared agent usages into agx_usage_registry. Super-admin only.",
@@ -94,9 +96,9 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "{python}/agent-usage/scan",
-      label: "Run drift scan (aidream)",
       method: "POST",
-      description: "Run the weekly drift scan immediately (writes alerts + sends DMs).",
+      description:
+        "Run the weekly drift scan immediately (writes alerts + sends DMs).",
       filePath: "aidream/api/routers/agent_usage_admin.py",
     },
   ],
@@ -118,11 +120,13 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       name: "Messaging",
-      description: "Drift notifications ride the DM system (action_data deep-link chips).",
+      description:
+        "Drift notifications ride the DM system (action_data deep-link chips).",
     },
     {
       name: "Scheduling",
-      description: "The weekly drift scan is a system sch_task (agent_drift_weekly_scan).",
+      description:
+        "The weekly drift scan is a system sch_task (agent_drift_weekly_scan).",
     },
   ],
 };

@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
-  Webhook,
   CheckCircle2,
   Clock,
   ExternalLink,
   FileJson,
+  Info,
   Upload,
   Loader2,
   XCircle,
@@ -24,6 +24,14 @@ import { ToolsService } from "@/utils/supabase/tools-service";
 import { IMPORT_SOURCES, buildToolIndex } from "./import-types";
 import type { ConversionResult, ToolIndex } from "./import-types";
 import { converterRegistry } from "./agent-import-converters";
+import {
+  analyzeImportPaste,
+  blockedOnlyByQuickFixes,
+  issuesForDisplay,
+  type ImportAnalysisResult,
+  type ImportValidationIssue,
+} from "./agent-import-validation";
+import { ImportQuickFixes } from "./ImportQuickFixes";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -122,6 +130,155 @@ function Alert({
   );
 }
 
+// ─── Live validation panel ────────────────────────────────────────────────────
+
+function IssueRow({ issue }: { issue: ImportValidationIssue }) {
+  const Icon =
+    issue.severity === "error"
+      ? XCircle
+      : issue.severity === "warning"
+        ? AlertTriangle
+        : Info;
+  const tone =
+    issue.severity === "error"
+      ? "text-red-700 dark:text-red-300"
+      : issue.severity === "warning"
+        ? "text-yellow-800 dark:text-yellow-200"
+        : "text-muted-foreground";
+
+  return (
+    <li className={cn("flex items-start gap-2 text-xs leading-snug", tone)}>
+      <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+      <div className="min-w-0 flex-1">
+        {issue.path && (
+          <span className="font-mono text-[10px] opacity-80 mr-1.5">
+            {issue.path}
+          </span>
+        )}
+        <span>{issue.message}</span>
+        {issue.fix && (
+          <p className="mt-0.5 text-[11px] opacity-80">{issue.fix}</p>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function ImportAnalysisPanel({
+  analysis,
+  pastedText,
+  onPatchedText,
+}: {
+  analysis: ImportAnalysisResult;
+  pastedText: string;
+  onPatchedText: (next: string) => void;
+}) {
+  if (analysis.status === "empty" || analysis.status === "incomplete") {
+    return null;
+  }
+
+  if (analysis.status === "malformed") {
+    return <Alert variant="error">{analysis.error}</Alert>;
+  }
+
+  const errors = issuesForDisplay(analysis.issues).filter(
+    (i) => i.severity === "error",
+  );
+  const warnings = issuesForDisplay(analysis.issues).filter(
+    (i) => i.severity === "warning",
+  );
+  const infos = issuesForDisplay(analysis.issues).filter(
+    (i) => i.severity === "info",
+  );
+  const quickFixOnly = blockedOnlyByQuickFixes(
+    analysis.issues,
+    analysis.canConvert,
+  );
+  const hasIssueList = errors.length + warnings.length + infos.length > 0;
+
+  if (analysis.issues.length === 0) {
+    return (
+      <Alert variant="success">Structure looks good — ready to convert.</Alert>
+    );
+  }
+
+  if (quickFixOnly && !hasIssueList) {
+    return (
+      <ImportQuickFixes
+        pastedText={pastedText}
+        onPatchedText={onPatchedText}
+        analysis={analysis}
+      />
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 shrink-0 max-h-[45%] overflow-y-auto">
+      <ImportQuickFixes
+        pastedText={pastedText}
+        onPatchedText={onPatchedText}
+        analysis={analysis}
+      />
+
+      {hasIssueList && (
+        <div className="rounded-md border border-border bg-muted/30 p-2.5 space-y-2">
+          {analysis.canConvert ? (
+            <p className="text-xs text-green-700 dark:text-green-300 font-medium flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+              Ready to convert — review warnings below if any.
+            </p>
+          ) : errors.length > 0 ? (
+            <p className="text-xs text-red-700 dark:text-red-300 font-medium flex items-center gap-1.5">
+              <XCircle className="h-3.5 w-3.5 shrink-0" />
+              Fix {errors.length} error{errors.length === 1 ? "" : "s"} before
+              converting.
+            </p>
+          ) : null}
+
+          {errors.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-red-700/80 dark:text-red-300/80 mb-1">
+                Errors
+              </p>
+              <ul className="space-y-1.5">
+                {errors.map((issue, i) => (
+                  <IssueRow key={`e-${i}`} issue={issue} />
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {warnings.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-yellow-800/80 dark:text-yellow-200/80 mb-1">
+                Warnings
+              </p>
+              <ul className="space-y-1.5">
+                {warnings.map((issue, i) => (
+                  <IssueRow key={`w-${i}`} issue={issue} />
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {infos.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                Notes
+              </p>
+              <ul className="space-y-1.5">
+                {infos.map((issue, i) => (
+                  <IssueRow key={`i-${i}`} issue={issue} />
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Paste state ──────────────────────────────────────────────────────────────
 
 function PasteBody({
@@ -132,6 +289,7 @@ function PasteBody({
   onPastedTextChange,
   onConvert,
   isConverting,
+  analysis,
 }: {
   sourceId: string;
   sourceLabel: string;
@@ -140,6 +298,7 @@ function PasteBody({
   onPastedTextChange: (v: string) => void;
   onConvert: () => void;
   isConverting: boolean;
+  analysis: ImportAnalysisResult;
 }) {
   if (isComingSoon) {
     return (
@@ -166,9 +325,9 @@ function PasteBody({
         <span className="text-sm font-medium">Paste {sourceLabel}</span>
       </div>
       <p className="text-xs text-muted-foreground shrink-0">
-        Paste a JSON object below. Matrx accepts DB format (snake_case),
-        frontend format (camelCase), Python-style literals, and even JSON with
-        minor syntax issues.
+        Paste a JSON object below. Issues are checked as you paste — fix errors
+        before converting. Matrx accepts snake_case, camelCase, and minor syntax
+        fixes automatically.
       </p>
 
       <Textarea
@@ -181,12 +340,23 @@ function PasteBody({
         autoFocus
       />
 
+      <ImportAnalysisPanel
+        analysis={analysis}
+        pastedText={pastedText}
+        onPatchedText={onPastedTextChange}
+      />
+
       <div className="flex justify-end shrink-0 pt-1 border-t border-border">
         <Button
           variant="default"
           size="sm"
           onClick={onConvert}
-          disabled={!pastedText.trim() || isConverting}
+          disabled={
+            !pastedText.trim() ||
+            isConverting ||
+            (analysis.status === "analyzed" && !analysis.canConvert) ||
+            analysis.status === "malformed"
+          }
         >
           {isConverting ? (
             <>
@@ -268,23 +438,38 @@ function PreviewBody({
 function ErrorBody({
   error,
   warnings,
+  issues,
   onBack,
 }: {
   error: string;
   warnings: string[];
+  issues?: ImportValidationIssue[];
   onBack: () => void;
 }) {
   return (
     <div className="flex flex-col h-full min-h-0 gap-3 p-4">
       <Alert variant="error">{error}</Alert>
-      {warnings.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          {warnings.map((w, i) => (
-            <Alert key={i} variant="warning">
-              {w}
-            </Alert>
-          ))}
+      {issues && issues.length > 0 ? (
+        <div className="flex flex-col gap-1.5 max-h-[50%] overflow-y-auto rounded-md border border-border bg-muted/30 p-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Issues
+          </p>
+          <ul className="space-y-1.5">
+            {issues.map((issue, i) => (
+              <IssueRow key={i} issue={issue} />
+            ))}
+          </ul>
         </div>
+      ) : (
+        warnings.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            {warnings.map((w, i) => (
+              <Alert key={i} variant="warning">
+                {w}
+              </Alert>
+            ))}
+          </div>
+        )
       )}
       <div className="flex mt-auto pt-2 border-t border-border">
         <Button variant="outline" onClick={onBack}>
@@ -374,19 +559,25 @@ function AgentImportWindowInner({ onClose }: { onClose: () => void }) {
   const [isConverting, setIsConverting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
-  // ── Tool index (fetched once on mount)
-  const toolIndexRef = useRef<ToolIndex>(new Map());
+  // ── Tool index (fetched once on mount — state so analysis re-runs when ready)
+  const [toolIndex, setToolIndex] = useState<ToolIndex>(() => new Map());
   useEffect(() => {
     const svc = new ToolsService();
     svc
       .fetchTools()
       .then((tools) => {
-        toolIndexRef.current = buildToolIndex(tools);
+        setToolIndex(buildToolIndex(tools));
       })
       .catch(() => {
         // Non-fatal — converter will fall back to warning for unresolved tools
       });
   }, []);
+
+  const pasteAnalysis = analyzeImportPaste(
+    selectedSourceId,
+    pastedText,
+    toolIndex,
+  );
 
   // ── Source metadata
   const source = IMPORT_SOURCES.find((s) => s.id === selectedSourceId);
@@ -407,7 +598,7 @@ function AgentImportWindowInner({ onClose }: { onClose: () => void }) {
 
     setIsConverting(true);
     try {
-      const result = await converter.convert(pastedText, toolIndexRef.current);
+      const result = await converter.convert(pastedText, toolIndex);
       setConversionResult(result);
       if (result.success) {
         setPanelState("preview");
@@ -417,7 +608,7 @@ function AgentImportWindowInner({ onClose }: { onClose: () => void }) {
     } finally {
       setIsConverting(false);
     }
-  }, [selectedSourceId, pastedText]);
+  }, [selectedSourceId, pastedText, toolIndex]);
 
   // ── Import (create agent)
   const handleImport = useCallback(async () => {
@@ -495,6 +686,7 @@ function AgentImportWindowInner({ onClose }: { onClose: () => void }) {
         <ErrorBody
           error={failedResult.error}
           warnings={failedResult.warnings}
+          issues={failedResult.issues}
           onBack={() => setPanelState("paste")}
         />
       );
@@ -522,6 +714,7 @@ function AgentImportWindowInner({ onClose }: { onClose: () => void }) {
         onPastedTextChange={setPastedText}
         onConvert={handleConvert}
         isConverting={isConverting}
+        analysis={pasteAnalysis}
       />
     );
   };

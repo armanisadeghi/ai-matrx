@@ -17,7 +17,6 @@ import NavItemGroup from "./NavItemGroup";
 import RouteMenuSlot from "./RouteMenuSlot";
 import RouteHeaderSlot from "./RouteHeaderSlot";
 import ShellIcon from "../ShellIcon";
-import DirectContextSelection from "./DirectContextSelection";
 import SidebarNotesToggle from "@/features/notes/actions/SidebarNotesToggle";
 import SidebarVoicePadToggle from "../controls/SidebarVoicePadToggle";
 import SidebarAdminIndicatorToggle from "../controls/SidebarAdminIndicatorToggle";
@@ -69,8 +68,6 @@ export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
 
         {/* Standard nav — always server-rendered */}
         <div className="shell-sidebar-main-nav">
-          <DirectContextSelection />
-
           {visibleItems.map((item) =>
             item.children ? (
               <NavItemGroup key={item.href} item={item} />

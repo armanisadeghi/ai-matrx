@@ -12,91 +12,21 @@
  *   converterRegistry                   → Map<string, ImportConverter>
  */
 
-import { flexibleJsonParse } from "@/utils/json/json-utils";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import type {
   ConversionResult,
   ImportConverter,
-  ParseResult,
   ToolIndex,
 } from "./import-types";
+import {
+  analyzeImportPaste,
+  formatBlockingErrors,
+  issuesToWarningStrings,
+  sanitizeModelId,
+} from "./agent-import-validation";
+import { parsePasted } from "./agent-import-parse";
 
-// ─── parsePasted ──────────────────────────────────────────────────────────────
-
-/**
- * Robustly parses whatever the user pastes.
- *
- * Strategy order:
- *   1. Trim + early-exit on empty
- *   2. Strip markdown code fences (```json, ```python, ``` etc.)
- *   3. JSON.parse(trimmed)
- *   4. flexibleJsonParse (Python literals, unquoted keys, trailing commas)
- *   5. Extract first {...} block (handles pasted prose around the JSON)
- */
-export function parsePasted(raw: string): ParseResult {
-  const warnings: string[] = [];
-
-  if (!raw || !raw.trim()) {
-    return {
-      success: false,
-      error: "Nothing was pasted. Use the text area to paste a JSON object.",
-      warnings,
-    };
-  }
-
-  let text = raw.trim();
-
-  // Step 2: Strip markdown code fences
-  const fenceRe = /^```[\w]*\n?([\s\S]*?)\n?```$/;
-  const fenceMatch = fenceRe.exec(text);
-  if (fenceMatch) {
-    text = fenceMatch[1].trim();
-    warnings.push("Stripped markdown code fences.");
-  }
-
-  // Step 3: Standard JSON.parse
-  try {
-    const data = JSON.parse(text);
-    return { success: true, data, warnings };
-  } catch {
-    // continue
-  }
-
-  // Step 4: flexibleJsonParse (existing 4-strategy utility)
-  const flexible = flexibleJsonParse(text);
-  if (flexible.success) {
-    warnings.push(...(flexible.warnings ?? []));
-    return { success: true, data: flexible.data, warnings };
-  }
-
-  // Step 5: Extract first { ... } block
-  const firstBrace = text.indexOf("{");
-  const lastBrace = text.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    const candidate = text.slice(firstBrace, lastBrace + 1);
-    try {
-      const data = JSON.parse(candidate);
-      warnings.push("Extracted JSON block from surrounding text.");
-      return { success: true, data, warnings };
-    } catch {
-      // try flexible on extracted block
-      const flex2 = flexibleJsonParse(candidate);
-      if (flex2.success) {
-        warnings.push(
-          "Extracted JSON block from surrounding text.",
-          ...(flex2.warnings ?? []),
-        );
-        return { success: true, data: flex2.data, warnings };
-      }
-    }
-  }
-
-  return {
-    success: false,
-    error: `Could not parse as JSON. Tried standard JSON, Python-style literals, and loose key formatting. Original parse error: ${flexible.error ?? "Unknown parse error"}. Check for mismatched brackets or invalid string escaping.`,
-    warnings,
-  };
-}
+export { parsePasted } from "./agent-import-parse";
 
 // ─── normalizeAgentKeys ───────────────────────────────────────────────────────
 
@@ -202,7 +132,7 @@ export function applyAgentDefaults(
     isPublic: partial.isPublic ?? false,
     isArchived: partial.isArchived ?? false,
     isFavorite: partial.isFavorite ?? false,
-    modelId: partial.modelId ?? null,
+    modelId: sanitizeModelId(partial.modelId),
     messages: Array.isArray(partial.messages) ? partial.messages : [],
     variableDefinitions: partial.variableDefinitions ?? null,
     settings: partial.settings ?? ({} as AgentDefinition["settings"]),
@@ -271,12 +201,32 @@ export const agentJsonConverter: ImportConverter = {
   label: "Agent JSON",
 
   async convert(raw: string, toolIndex: ToolIndex): Promise<ConversionResult> {
+    const analysis = analyzeImportPaste("agent-json", raw, toolIndex);
+    if (analysis.status === "malformed") {
+      return {
+        success: false,
+        error: analysis.error,
+        warnings: analysis.parseWarnings,
+      };
+    }
+    if (analysis.status === "analyzed" && !analysis.canConvert) {
+      return {
+        success: false,
+        error: formatBlockingErrors(analysis.issues),
+        warnings: issuesToWarningStrings(analysis.issues),
+        issues: analysis.issues,
+      };
+    }
+
     const parseResult = parsePasted(raw);
     if (parseResult.success === false) {
       return { success: false, error: parseResult.error, warnings: [] };
     }
 
-    const warnings = [...parseResult.warnings];
+    const warnings =
+      analysis.status === "analyzed"
+        ? issuesToWarningStrings(analysis.issues)
+        : [...parseResult.warnings];
 
     if (
       typeof parseResult.data !== "object" ||
@@ -294,6 +244,9 @@ export const agentJsonConverter: ImportConverter = {
     const normalized = normalizeAgentKeys(
       parseResult.data as Record<string, unknown>,
     );
+    if (normalized.modelId !== undefined) {
+      normalized.modelId = sanitizeModelId(normalized.modelId);
+    }
 
     // Resolve tool names/IDs
     if (Array.isArray(normalized.tools) && normalized.tools.length > 0) {
@@ -302,10 +255,12 @@ export const agentJsonConverter: ImportConverter = {
         toolIndex,
       );
       normalized.tools = resolvedIds;
-      warnings.push(...toolWarnings);
+      if (analysis.status !== "analyzed") {
+        warnings.push(...toolWarnings);
+      }
     }
 
-    if (!normalized.name) {
+    if (!normalized.name && analysis.status !== "analyzed") {
       warnings.push(
         "The pasted agent is missing a `name` field. A default name 'Imported Agent' has been applied — you can rename it in the builder.",
       );
@@ -323,12 +278,32 @@ export const promptJsonConverter: ImportConverter = {
   label: "Prompt JSON",
 
   async convert(raw: string, toolIndex: ToolIndex): Promise<ConversionResult> {
+    const analysis = analyzeImportPaste("prompt-json", raw, toolIndex);
+    if (analysis.status === "malformed") {
+      return {
+        success: false,
+        error: analysis.error,
+        warnings: analysis.parseWarnings,
+      };
+    }
+    if (analysis.status === "analyzed" && !analysis.canConvert) {
+      return {
+        success: false,
+        error: formatBlockingErrors(analysis.issues),
+        warnings: issuesToWarningStrings(analysis.issues),
+        issues: analysis.issues,
+      };
+    }
+
     const parseResult = parsePasted(raw);
     if (parseResult.success === false) {
       return { success: false, error: parseResult.error, warnings: [] };
     }
 
-    const warnings = [...parseResult.warnings];
+    const warnings =
+      analysis.status === "analyzed"
+        ? issuesToWarningStrings(analysis.issues)
+        : [...parseResult.warnings];
 
     if (
       typeof parseResult.data !== "object" ||
@@ -366,8 +341,9 @@ export const promptJsonConverter: ImportConverter = {
       rawSettings.modelId ??
       src.model_id ??
       src.modelId;
-    if (typeof modelId === "string") {
-      partial.modelId = modelId;
+    const sanitizedModelId = sanitizeModelId(modelId);
+    if (sanitizedModelId) {
+      partial.modelId = sanitizedModelId;
     }
     const { model_id: _a, modelId: _b, ...remainingSettings } = rawSettings;
     if (Object.keys(remainingSettings).length > 0) {
@@ -379,7 +355,8 @@ export const promptJsonConverter: ImportConverter = {
       src.variable_defaults ??
       src.variableDefaults ??
       src.variables ??
-      src.variableDefinitions;
+      src.variableDefinitions ??
+      src.variable_definitions;
     if (Array.isArray(varSrc)) {
       partial.variableDefinitions = (varSrc as Record<string, unknown>[]).map(
         (v) => ({
@@ -414,10 +391,12 @@ export const promptJsonConverter: ImportConverter = {
         toolIndex,
       );
       partial.tools = resolvedIds;
-      warnings.push(...toolWarnings);
+      if (analysis.status !== "analyzed") {
+        warnings.push(...toolWarnings);
+      }
     }
 
-    if (!partial.name) {
+    if (!partial.name && analysis.status !== "analyzed") {
       warnings.push(
         "The pasted prompt is missing a `name` field. A default name 'Imported Agent' has been applied — you can rename it in the builder.",
       );

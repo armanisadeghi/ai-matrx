@@ -158,6 +158,9 @@ export type PcStudioRun = {
   episode_slug: string | null;
   /** The backend's checkpoint run id (from the podcast_run event) — for resume. */
   backend_run_id: string | null;
+  /** Cast metadata (migration pc_episode_speakers) — null on older runs. */
+  host_count: number | null;
+  speakers: PcEpisodeSpeaker[] | null;
   error: string | null;
   created_at: string;
   updated_at: string;

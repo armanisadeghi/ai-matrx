@@ -32,14 +32,6 @@ const SidebarAgentHeader = dynamic(
   { ssr: false, loading: () => <div className="h-9 border-b border-border" /> },
 );
 
-const SidebarActions = dynamic(
-  () => import("../../shell/components/sidebar/DirectContextSelection"),
-  {
-    ssr: false,
-    loading: () => <div className="h-[120px] border-b border-border" />,
-  },
-);
-
 const SidebarAgents = dynamic(() => import("./sidebar/SidebarAgents"), {
   ssr: false,
   loading: () => <div className="h-20 border-b border-border" />,
@@ -97,9 +89,6 @@ export function ChatSidebar({
     <div className="h-full flex flex-col">
       {/* Section 0: Top controls — collapse, new chat, agent picker */}
       <SidebarAgentHeader onCollapse={closeSidebar} />
-
-      {/* Section 1: Actions — fixed at top */}
-      <SidebarActions />
 
       {/* Scrollable middle: Agents + Chats together */}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-none">

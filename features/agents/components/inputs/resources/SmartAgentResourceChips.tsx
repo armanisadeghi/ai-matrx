@@ -8,7 +8,7 @@
  * Reads from instanceResources, dispatches removeResource directly.
  */
 
-import { useCallback } from "react";
+import { useCallback, type ComponentType } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   StickyNote,
@@ -45,7 +45,7 @@ function getBlockTypeDisplay(blockType: ResourceBlockType) {
   const map: Record<
     ResourceBlockType,
     {
-      icon: React.ElementType;
+      icon: ComponentType<{ className?: string }>;
       label: string;
     }
   > = {

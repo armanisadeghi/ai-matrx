@@ -758,6 +758,13 @@ export interface UploadFilesArg {
   shareLevel?: PermissionLevel;
   changeSummary?: string;
   metadata?: Record<string, unknown>;
+  /**
+   * Per-upload options forwarded to the backend `options_json` field.
+   * Notably `rag.trigger_now` to run RAG immediately on upload instead of
+   * waiting for the scheduled auto-RAG sweep. Only menu/explicit uploads set
+   * this — drag-drop leaves it unset (scheduled sweep still runs).
+   */
+  options?: { rag?: { trigger_now?: boolean } };
   /** Parallel upload ceiling. Defaults to 3. */
   concurrency?: number;
   /**

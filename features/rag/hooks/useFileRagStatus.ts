@@ -12,14 +12,17 @@
 
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setRagStatusForFile } from "@/features/files/redux/slice";
 import { isSyntheticId } from "@/features/files/virtual-sources/path";
+import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 import {
   fetchFileRagStatus,
   isRagAlreadyComplete,
@@ -27,6 +30,9 @@ import {
   triggerFileIngestNow,
   type FileRagStatus,
 } from "@/features/rag/api/rag-jobs";
+
+/** Match the `detail` shape `useFileIngest.ts` dispatches for this event. */
+const PROCESSED_EVENT = "cloud-files:document-processed";
 
 export const ragJobKeys = {
   fileStatus: (fileId: string) => ["rag", "file-status", fileId] as const,
@@ -61,6 +67,30 @@ export function useFileRagStatus(
       return false; // terminal — stop polling
     },
   });
+
+  // ── Coherence bridge ──────────────────────────────────────────────────────
+  //
+  // When the polled status transitions INTO `completed` (e.g. a scheduled or
+  // background job finished while this hook was open), keep the rest of the app
+  // in sync — the file-lookup cache, the DocumentTab probe, and the file-table
+  // RAG column — exactly as `useFileIngest` does after an on-demand ingest.
+  // Guarded to fire only on the rising edge into `completed` so it never
+  // re-dispatches on every poll.
+  const dispatch = useAppDispatch();
+  const wasCompletedRef = useRef(false);
+  const completed = query.data?.state === "completed";
+  useEffect(() => {
+    if (!fileId) return;
+    if (completed && !wasCompletedRef.current) {
+      clearFileDocumentCache(fileId);
+      window.dispatchEvent(
+        new CustomEvent(PROCESSED_EVENT, { detail: { fileId } }),
+      );
+      // Keep the file-table RAG column truthful without a separate fetch.
+      dispatch(setRagStatusForFile({ fileId, status: "indexed" }));
+    }
+    wasCompletedRef.current = completed;
+  }, [completed, fileId, dispatch]);
 
   return {
     status: query.data ?? null,

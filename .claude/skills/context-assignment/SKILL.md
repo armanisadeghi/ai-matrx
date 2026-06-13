@@ -37,6 +37,7 @@ description: Use whenever a task touches context selection, scope tagging, or th
 | Same, as an explicit modal step | `ContextAssignmentDialog` | controlled `open` |
 | Same, floating/draggable | `ContextAssignmentWindow` | inline-controlled |
 | Set the WORKING context from a header/toolbar | `ActiveContextButton` | live-apply popover; sizes `xs`/`sm`, `iconOnly` for rails |
+| Same field inside a tab panel / drawer (no trigger) | `ActiveContextPanel` | composes `ContextAssignmentField mode="active"`; default `checkboxVariant="standard"`; used by `RunControlsMenu` Context tab |
 | Clear working context (rose Eraser + "Context", app-wide) | `ClearContextButton` | dispatches `clearContext`; wired into every Surface A control |
 | Show context status per entity (amber/green nudge) | `ContextStatusButton` | pass `knownScopeCount` on list rows (bulk!), omit on single-entity surfaces |
 | Display a selection readably | `ContextSummaryChips` | compact chips for headers; org only if explicit |
@@ -45,7 +46,7 @@ description: Use whenever a task touches context selection, scope tagging, or th
 | Filter a list by context (no saving!) | `ContextAssignmentField mode="filter"` | emits via `onSelectionChange`; zero save-side effects |
 
 All in `features/scopes/components/context-assignment/` except
-`ActiveContextButton` (`features/scopes/components/active-context/` —
+`ActiveContextButton` + `ActiveContextPanel` (`features/scopes/components/active-context/` —
 Surface A writers MUST live there; ESLint + FEATURE.md enforce it).
 
 ## Hard rules
@@ -76,6 +77,7 @@ Surface A writers MUST live there; ESLint + FEATURE.md enforce it).
 - Real integrations to copy from: files table cell
   (`features/files/components/surfaces/desktop/FileContextCell.tsx`), upload
   prompt host (`features/files/components/surfaces/PageShell.tsx`), note
-  adapter (`NoteContextSection.tsx`), header button (`ChatRunHeader.tsx`).
+  adapter (`NoteContextSection.tsx`), header button (`ChatRunHeader.tsx`),
+  run-controls tab (`RunControlsMenu.tsx` Context tab → `ActiveContextPanel`).
 - Current state + open items: `docs/ctx/CONTEXT_ROLLOUT_HANDOFF.md`.
 - Architecture bible: `docs/ctx/ctx-association-architecture.md`.

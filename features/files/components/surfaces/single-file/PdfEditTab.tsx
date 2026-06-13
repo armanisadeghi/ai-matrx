@@ -261,22 +261,17 @@ export function PdfEditTab({ fileId, className }: PdfEditTabProps) {
             onRegionClick={(id) => handleSelectAnnotation(id)}
             onBackgroundClick={() => handleSelectAnnotation(null)}
           />
-          <div
-            className={cn(
-              "pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-white shadow transition-opacity",
-              mode === "draw"
-                ? "bg-sky-500/90 opacity-100"
-                : mode === "select"
-                  ? "bg-emerald-500/90 opacity-100"
-                  : "bg-slate-500/70 opacity-90",
-            )}
-          >
-            {mode === "draw"
-              ? "Draw mode — drag a rectangle over any text to label it"
-              : mode === "select"
-                ? "Select mode — click an existing annotation to edit"
-                : "View mode — read-only · switch to Draw or Select to interact"}
-          </div>
+          {/* Interaction hint — only shown in the modes that change how
+           * clicking the page behaves. View mode needs no banner (the
+           * toolbar already shows the active mode, and the document should
+           * stay unobstructed). */}
+          {mode === "draw" || mode === "select" ? (
+            <div className="pointer-events-none absolute left-1/2 top-2 z-20 -translate-x-1/2 rounded-md border border-border bg-card/90 px-2.5 py-1 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur-sm">
+              {mode === "draw"
+                ? "Drag a rectangle over any text to label it"
+                : "Click an existing annotation to edit"}
+            </div>
+          ) : null}
         </main>
 
         {/* Right rail — filtered inspector. The whitelist matches the

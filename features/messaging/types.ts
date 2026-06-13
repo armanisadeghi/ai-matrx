@@ -1,6 +1,6 @@
 /**
  * Messaging System Types
- * 
+ *
  * Core types for the real-time direct messaging system.
  * Uses auth.users(id) as UUID for user references.
  * Tables prefixed with dm_ to avoid conflicts.
@@ -10,10 +10,21 @@
 // Database Types (matching dm_ schema)
 // ============================================
 
-export type ConversationType = 'direct' | 'group';
-export type ParticipantRole = 'owner' | 'admin' | 'member';
-export type MessageType = 'text' | 'image' | 'video' | 'audio' | 'file' | 'system';
-export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+export type ConversationType = "direct" | "group";
+export type ParticipantRole = "owner" | "admin" | "member";
+export type MessageType =
+  | "text"
+  | "image"
+  | "video"
+  | "audio"
+  | "file"
+  | "system";
+export type MessageStatus =
+  | "sending"
+  | "sent"
+  | "delivered"
+  | "read"
+  | "failed";
 
 export interface Conversation {
   id: string; // UUID
@@ -42,10 +53,7 @@ export interface ConversationParticipant {
  * registry; unknown kinds render nothing (forward-compatible). `agent_drift`
  * is the first kind — see features/agents drift notifications.
  */
-export interface MessageActionData<
-  K extends string = string,
-  P = Record<string, unknown>,
-> {
+export interface MessageActionData<K extends string = string, P = unknown> {
   kind: K;
   /** Payload schema version per kind. */
   version: number;
@@ -58,7 +66,9 @@ export interface AgentDriftActionPayload {
   agent_name: string;
   alert_id?: string | null;
   severity?: string | null;
-  counts?: Partial<Record<"breaking" | "silent_breaking" | "warning" | "info", number>>;
+  counts?: Partial<
+    Record<"breaking" | "silent_breaking" | "warning" | "info", number>
+  >;
   /** Set when the notification was about one specific usage. */
   usage_type?: string;
   usage_id?: string;
@@ -170,12 +180,12 @@ export interface MessagesListResponse {
 // ============================================
 
 export interface NewMessageEvent {
-  type: 'new_message';
+  type: "new_message";
   message: Message;
 }
 
 export interface MessageUpdateEvent {
-  type: 'message_update';
+  type: "message_update";
   message: Message;
 }
 
@@ -228,7 +238,10 @@ export interface UseMessagesReturn {
   isSending: boolean;
   error: string | null;
   hasMore: boolean;
-  sendMessage: (content: string, options?: Partial<SendMessageRequest>) => Promise<void>;
+  sendMessage: (
+    content: string,
+    options?: Partial<SendMessageRequest>,
+  ) => Promise<void>;
   loadMoreMessages: () => Promise<void>;
   markAsRead: () => Promise<void>;
 }
@@ -240,7 +253,8 @@ export interface UseTypingIndicatorReturn {
   typingText: string;
 }
 
-export interface UseChatReturn extends UseMessagesReturn, UseTypingIndicatorReturn {
+export interface UseChatReturn
+  extends UseMessagesReturn, UseTypingIndicatorReturn {
   onlineUsers: UserBasicInfo[];
 }
 

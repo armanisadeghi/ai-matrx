@@ -244,6 +244,7 @@ export function useMessages(
         created_at: new Date().toISOString(),
         edited_at: null,
         client_message_id: clientMessageId,
+        action_data: null,
       };
 
       setMessages((prev) => [...prev, optimisticMessage]);

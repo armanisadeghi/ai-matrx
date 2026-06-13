@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -32,6 +33,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { createFolder } from "@/features/files/redux/thunks";
 import { setFocusedId } from "@/features/files/redux/slice";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useRagUploadPreference } from "@/features/files/handler/hooks/useRagUploadPreference";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
 
 export interface NewMenuProps {

@@ -906,6 +906,7 @@ export const uploadFiles = createAsyncThunk<
             shareLevel: arg.shareLevel,
             changeSummary: arg.changeSummary,
             metadata: arg.metadata,
+            options: arg.options,
           },
           (ev) =>
             dispatch(

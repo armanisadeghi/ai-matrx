@@ -39,6 +39,10 @@ export interface ProcessForRagButtonProps {
   force?: boolean;
   /** Compact icon-only mode for tight toolbars. Default false (label + icon). */
   iconOnly?: boolean;
+  /** Label shown in the idle/error state. Default "Process for RAG". */
+  idleLabel?: string;
+  /** Label shown once ingestion completes. Default "Indexed". */
+  completeLabel?: string;
   className?: string;
   disabled?: boolean;
   /**
@@ -167,6 +171,8 @@ export function ProcessForRagButton({
   fieldId,
   force = false,
   iconOnly = false,
+  idleLabel = "Process for RAG",
+  completeLabel = "Indexed",
   className,
   disabled,
   onComplete,
@@ -227,8 +233,8 @@ export function ProcessForRagButton({
           {isBusy
             ? "Processing…"
             : status === "complete"
-              ? "Indexed"
-              : "Process for RAG"}
+              ? completeLabel
+              : idleLabel}
         </span>
       )}
     </button>

@@ -252,7 +252,10 @@ export function FileTable({
   const contextColumnVisible = visibleIds.includes("context");
   useEffect(() => {
     if (!contextColumnVisible || files.length === 0) return;
-    primeEntityScopes("file", files.map((f) => f.id));
+    primeEntityScopes(
+      "file",
+      files.map((f) => f.id),
+    );
   }, [contextColumnVisible, files]);
 
   const refreshRagStatuses = useCallback(() => {
@@ -746,6 +749,9 @@ function columnFiltersFor(
           />
         ),
       };
+    case "context":
+      // Context is a status/assignment column — no header filter yet.
+      return { active: false, content: null };
   }
 }
 

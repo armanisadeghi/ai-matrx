@@ -60,6 +60,14 @@ export interface MicrophoneIconButtonProps {
   disabled?: boolean;
   /** Tooltip/aria-label for the idle (pre-recording) button. */
   label?: string;
+  /**
+   * Class applied to the resting (pre-engagement) and loading mic icon only.
+   * Lets a host align the idle button with sibling toolbar buttons (e.g. let
+   * the icon inherit the button's color so `hover:text-foreground` works).
+   * Defaults to `text-muted-foreground`. Never forwarded to the recording
+   * core, so recording-state effects are untouched.
+   */
+  iconClassName?: string;
 }
 
 // ── Size maps (static — no imports needed) ───────────────────────────────────
@@ -85,9 +93,11 @@ const MicrophoneIconButtonCore = lazy(
 function MicLoadingFallback({
   size,
   className,
+  iconClassName,
 }: {
   size: "xs" | "sm" | "md" | "lg";
   className?: string;
+  iconClassName?: string;
 }) {
   return (
     <div
@@ -99,7 +109,12 @@ function MicLoadingFallback({
       title="Loading…"
       aria-label="Loading voice recorder"
     >
-      <Mic className={cn(iconSizeMap[size], "text-muted-foreground")} />
+      <Mic
+        className={cn(
+          iconSizeMap[size],
+          iconClassName ?? "text-muted-foreground",
+        )}
+      />
       {/* CSS-only spinner ring — no JS needed */}
       <span
         className="absolute inset-0 rounded-full border-2 border-primary/20 border-t-primary animate-spin"
@@ -126,6 +141,7 @@ export const MicrophoneIconButton = forwardRef<
     className,
     disabled = false,
     label = "Start recording",
+    iconClassName,
   },
   ref,
 ) {
@@ -161,7 +177,12 @@ export const MicrophoneIconButton = forwardRef<
           className,
         )}
       >
-        <Mic className={cn(iconSizeMap[size], "text-muted-foreground")} />
+        <Mic
+          className={cn(
+            iconSizeMap[size],
+            iconClassName ?? "text-muted-foreground",
+          )}
+        />
       </button>
     );
   }
@@ -169,7 +190,13 @@ export const MicrophoneIconButton = forwardRef<
   // ── After engagement: lazy-load the full core ─────────────────────────────
   return (
     <Suspense
-      fallback={<MicLoadingFallback size={size} className={className} />}
+      fallback={
+        <MicLoadingFallback
+          size={size}
+          className={className}
+          iconClassName={iconClassName}
+        />
+      }
     >
       <MicrophoneIconButtonCore
         ref={coreRef}

@@ -87,7 +87,9 @@ export function UploadEpisodeDialog({
   // Audio
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioName, setAudioName] = useState<string | null>(null);
-  const [audioState, setAudioState] = useState<"idle" | "uploading" | "done" | "error">("idle");
+  const [audioState, setAudioState] = useState<
+    "idle" | "uploading" | "done" | "error"
+  >("idle");
   const [audioError, setAudioError] = useState<string | null>(null);
 
   // Visual assets (cover + optional video) via AssetUploader
@@ -135,18 +137,22 @@ export function UploadEpisodeDialog({
       );
       // Resolve to the best durable, publicly-fetchable URL string for <audio>
       // and the feed enclosure.
-      const durable =
-        normalized.fileId
-          ? await fileHandler
-              .use({ kind: "file_id", fileId: normalized.fileId })
-              .as({ kind: "html_src" })
-          : normalized.url;
+      const durable = normalized.fileId
+        ? await fileHandler
+            .use({ kind: "file_id", fileId: normalized.fileId })
+            .as({ kind: "html_src" })
+        : normalized.url;
       if (!durable) throw new Error("Upload did not return a usable URL");
       setAudioUrl(durable);
       setAudioState("done");
       if (!title.trim()) {
         // Seed a friendly title from the filename.
-        setTitle(file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim());
+        setTitle(
+          file.name
+            .replace(/\.[^.]+$/, "")
+            .replace(/[-_]+/g, " ")
+            .trim(),
+        );
       }
     } catch (e) {
       setAudioState("error");
@@ -162,7 +168,10 @@ export function UploadEpisodeDialog({
   };
 
   const canSubmit =
-    Boolean(showId) && Boolean(title.trim()) && audioState === "done" && Boolean(audioUrl);
+    Boolean(showId) &&
+    Boolean(title.trim()) &&
+    audioState === "done" &&
+    Boolean(audioUrl);
 
   const handleSubmit = async () => {
     if (!canSubmit || !audioUrl) {
@@ -193,6 +202,9 @@ export function UploadEpisodeDialog({
         display_mode: displayMode,
         episode_number: null,
         duration_seconds: null,
+        host_count: null,
+        script: null,
+        speakers: null,
         is_published: true,
       });
 
@@ -253,7 +265,9 @@ export function UploadEpisodeDialog({
           <div className="space-y-1.5">
             <Label>Audio file</Label>
             <div
-              onClick={() => audioState !== "uploading" && audioInputRef.current?.click()}
+              onClick={() =>
+                audioState !== "uploading" && audioInputRef.current?.click()
+              }
               onDrop={(e) => {
                 e.preventDefault();
                 const f = e.dataTransfer.files[0];
@@ -287,7 +301,9 @@ export function UploadEpisodeDialog({
                     <p className="truncate text-sm font-medium text-foreground">
                       {audioName ?? "Audio uploaded"}
                     </p>
-                    <p className="text-xs text-muted-foreground">Uploaded · click to replace</p>
+                    <p className="text-xs text-muted-foreground">
+                      Uploaded · click to replace
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -296,7 +312,8 @@ export function UploadEpisodeDialog({
                       setAudioUrl(null);
                       setAudioName(null);
                       setAudioState("idle");
-                      if (audioInputRef.current) audioInputRef.current.value = "";
+                      if (audioInputRef.current)
+                        audioInputRef.current.value = "";
                     }}
                     className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                     title="Remove"
@@ -376,7 +393,11 @@ export function UploadEpisodeDialog({
           >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit || saving} className="gap-2">
+          <Button
+            onClick={handleSubmit}
+            disabled={!canSubmit || saving}
+            className="gap-2"
+          >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Publish episode
           </Button>

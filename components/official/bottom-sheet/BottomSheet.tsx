@@ -16,6 +16,8 @@ interface BottomSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title?: string;
+  /** Merged onto the sheet panel — e.g. `bg-card` to override the default glass. */
+  contentClassName?: string;
   children: React.ReactNode;
 }
 
@@ -23,6 +25,7 @@ function BottomSheet({
   open,
   onOpenChange,
   title = "Bottom Sheet",
+  contentClassName,
   children,
 }: BottomSheetProps) {
   return (
@@ -33,14 +36,10 @@ function BottomSheet({
           style={{ background: "rgba(0, 0, 0, 0.08)" }}
         />
         <DrawerPrimitive.Content
-          className="fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-2xl overflow-hidden min-h-[60dvh] max-h-[90dvh]"
-          style={{
-            background: "var(--matrx-glass-bg)",
-            backdropFilter: "blur(20px) saturate(180%)",
-            WebkitBackdropFilter: "blur(20px) saturate(180%)",
-            border: "1px solid var(--matrx-glass-border-color)",
-            borderBottom: "none",
-          }}
+          className={cn(
+            "matrx-glass-thin-border shadow-glass-lg fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-2xl overflow-hidden min-h-[60dvh] max-h-[90dvh] border-b-0",
+            contentClassName,
+          )}
         >
           <VisuallyHidden>
             <DrawerPrimitive.Title>{title}</DrawerPrimitive.Title>

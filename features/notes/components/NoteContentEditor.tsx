@@ -63,10 +63,10 @@ const NoteConflictWindow = dynamic(
   { ssr: false },
 );
 
-const NoteContextMenu = dynamic(
-  () => import("@/features/notes/components/NoteContextMenu"),
-  { ssr: false },
-);
+// NoteContextMenu is imported statically — it's a small shell that already
+// lazy-loads its heavy content (NoteContextMenuHeavy) internally. Dynamic
+// import here caused a layout-breaking null state during loading.
+import NoteContextMenu from "@/features/notes/components/NoteContextMenu";
 
 interface NoteContentEditorProps {
   noteId: string;

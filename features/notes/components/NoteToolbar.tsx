@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButton";
+import { useNoteIngestStatus } from "@/features/notes/hooks/useNoteIngestStatus";
 import type { Note } from "../types";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +42,7 @@ export function NoteToolbar({
   className,
 }: NoteToolbarProps) {
   const router = useRouter();
+  const ingest = useNoteIngestStatus(activeNote?.id ?? null);
   return (
     <div
       className={cn(
@@ -170,21 +172,41 @@ export function NoteToolbar({
       )}
 
       {activeNote && (
-        <ProcessForRagButton
-          sourceKind="note"
-          sourceId={activeNote.id}
-          iconOnly
-          force
-          className="ml-1"
-          onComplete={() => {
-            toast.success("Note indexed for RAG", {
-              action: {
-                label: "View in library",
-                onClick: () => router.push("/rag/library"),
-              },
-            });
-          }}
-        />
+        <div className="ml-1 flex items-center gap-1.5">
+          <ProcessForRagButton
+            sourceKind="note"
+            sourceId={activeNote.id}
+            idleLabel="Run NER now"
+            completeLabel="Indexed"
+            force
+            onComplete={() => {
+              // ProcessForRagButton only clears the file-lookup cache for
+              // cld_file; for notes we fire the cross-component event so the
+              // "In knowledge base" dot below (and any other note surface)
+              // re-probes immediately.
+              window.dispatchEvent(
+                new CustomEvent("cloud-files:document-processed", {
+                  detail: { fileId: activeNote.id },
+                }),
+              );
+              toast.success("Note indexed for RAG", {
+                action: {
+                  label: "View in library",
+                  onClick: () => router.push("/rag/library"),
+                },
+              });
+            }}
+          />
+          {ingest.state === "ingested" && (
+            <span
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400"
+              title="This note is in the knowledge base"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              <span className="hidden sm:inline">In knowledge base</span>
+            </span>
+          )}
+        </div>
       )}
 
       <div className="ml-auto flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">

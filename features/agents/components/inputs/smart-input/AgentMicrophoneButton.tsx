@@ -37,6 +37,8 @@ interface AgentMicrophoneButtonProps {
   size?: "xs" | "sm" | "md" | "lg";
   variant?: MicVariant;
   className?: string;
+  /** Class for the resting/loading mic icon (not the recording effects). */
+  iconClassName?: string;
   /** Tooltip for the idle mic button. */
   label?: string;
   /**
@@ -51,6 +53,7 @@ export function AgentMicrophoneButton({
   size = "sm",
   variant = "icon-only",
   className,
+  iconClassName,
   label,
   onTranscribed,
 }: AgentMicrophoneButtonProps) {
@@ -142,6 +145,7 @@ export function AgentMicrophoneButton({
       variant={variant}
       size={size}
       className={className}
+      iconClassName={iconClassName}
       label={label}
       onLiveTranscript={handleLiveTranscript}
       onTranscriptionComplete={handleTranscriptionComplete}

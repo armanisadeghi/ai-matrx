@@ -557,7 +557,7 @@ selectContradictions({ entityType?, entityId? })   // returns Array<{ typeId, gl
 
 Lives under `features/scopes/components/active-context/`. The only place allowed to import from `redux/active-context-actions.ts`.
 
-- `<ActiveScopePicker />` — primary tree picker. Sidebar / nav. Multi-scope, single project, single task.
+- `<ActiveContextButton />` / `<ActiveContextPanel />` — primary Surface A controls for headers, toolbars, and tab panels. Multi-scope, single project, single task.
 - `<ActiveScopeChips />` — header / chat composer pills.
 - `<ActiveContextBreadcrumb />` — read-only display.
 - `<ContradictionBanner entityType entityId />` — rendered at the top of any entity view where global vs local conflict.
@@ -798,7 +798,7 @@ The migration order is fixed: chokepoint writes ship → mutation-heavy consumer
 **Surgical consumer migrations:**
 
 - `features/notes/redux/thunks.ts` — replace `.from('ctx_scope_assignments')` with `useScopeAssignments` / `setEntityScopes` thunk
-- `features/notes/components/NoteContextPicker.tsx`, `NoteSidebar.tsx`, `NotesView.tsx`, `mobile/MobileNotesList.tsx`
+- `features/notes/components/NoteSidebar.tsx`, `NotesView.tsx`, `mobile/MobileNotesList.tsx`
 - `features/tasks/components/TaskScopeTags.tsx`, `TaskScopeFilter.tsx`, `TasksContextSidebar.tsx`, `TaskListPane.tsx`, `TaskPreviewWindow.tsx`
 - `features/tasks/widgets/quick-create/TaskQuickCreateCore.tsx`
 - `features/tasks/redux/{selectors,thunks}.ts`
@@ -806,13 +806,15 @@ The migration order is fixed: chokepoint writes ship → mutation-heavy consumer
 - `features/research/components/{init,overview,settings}/*`
 - `features/surfaces/components/AgentSurfacesPanel.tsx`
 - `features/agent-apps/components/inputs/AgentAppHierarchyCascade.tsx`
-- `features/shell/components/sidebar/DirectContextSelection.tsx`
+- `features/shell/components/sidebar/Sidebar.tsx` (no inline context picker — use header/run surfaces)
 - `lib/api/call-api.ts` — verify it only reads `appContext` from the new location
 
 ---
 
 ## Change log
 
+- `2026-06-12` — claude: **Removed sidebar context menu** — deleted `DirectContextSelection` shim and `ActiveScopePicker` (inline sidebar picker). Unwired from shell `Sidebar`, `NoteSidebar`, `MobileNotesView`, and public `ChatSidebar`. Active context is now set only via `ActiveContextButton` / `ActiveContextPanel` / `ContextAssignmentField mode="active"` on intentional surfaces (chat header, run controls, etc.). Removed `styles/shell.css` twin-render rules.
+- `2026-06-12` — claude: **`ActiveContextPanel`** — inline Surface-A editor (`active-context/ActiveContextPanel.tsx`): same field + `appContextSlice` dispatch as `ActiveContextButton` without trigger chrome. `ActiveContextButton` now composes it inside its popover. Wired into `RunControlsMenu` Context tab (standard checkboxes, `sectionHeight=280`).
 - `2026-06-12` — claude: **`ContextSelectionSummary`** — labeled active/filter footer in `ContextAssignmentField` (Org · Scope Types group dimension · per-type scope rows · Projects · Tasks). Scope-type group selection (`selScopeTypeIds`) is wired for display; UI for whole-type picks is the next round.
 - `2026-06-12` — claude: **active context is live-apply** — `ContextAssignmentField` `mode="active"` calls `onApplyActive` on every selection change (skips mount hydration); removed the Set-context footer button. `ActiveContextButton` popover stays open while editing.
 - `2026-06-12` — claude: **`ClearContextButton`** — canonical rose + Eraser control with "Clear Context" label (`active-context/ClearContextButton.tsx` + `clear-context-styles.ts`); dispatches `clearContext` via new `selectHasActiveContext`. Wired into `ActiveContextButton` (beside non-icon triggers), `ActiveScopePicker` (collapsed header + expanded footer), and `ContextAssignmentField` active-mode footer (`onClearActive` host hook). Context lab Block 1.6 demos it.

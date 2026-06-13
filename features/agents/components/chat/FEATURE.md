@@ -144,6 +144,7 @@ When the agent calls a client-delegated tool (ask-user, widget action, capabilit
 
 ## Change log
 
+- `2026-06-12` — claude: **RunControlsMenu Context tab wired** — replaced the placeholder with `ActiveContextPanel` (same `ContextAssignmentField` + live-apply as `ChatRunHeader`'s `ActiveContextButton`; `checkboxVariant="standard"`). Tab shows a primary dot when `selectHasActiveContext`; working context counts toward the gear/plus customization badge.
 - `2026-06-10` — claude: **incognito blocks sandbox binding.** Chat incognito now lives in Redux (`chatIncognito` slice). `resolveAgentSandboxRef` skips all bindings on `chat-route` when incognito is active; `RunControlsMenu` hides the Sandbox tab; `SandboxPanel` shows a disabled explainer. `ChatRoomClient` stamps `isEphemeral` on the live instance (and passes it to `useAgentLauncher`) so execute thunks send `store:false`.
 - `2026-06-10` — claude: **incognito UI toggle (sidebar + avatar blackout).**
 - `2026-06-10` — claude: **removed header `+` (new chat lives in sidebar); added incognito ghost affordance on fresh chat routes.**

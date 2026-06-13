@@ -29,7 +29,9 @@ function asFindings(raw: unknown): UsageDriftFinding[] {
 }
 
 function asStringArray(raw: unknown): string[] {
-  return Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : [];
+  return Array.isArray(raw)
+    ? raw.filter((x): x is string => typeof x === "string")
+    : [];
 }
 
 function asNumberRecord(raw: unknown): Record<string, number> {
@@ -59,6 +61,7 @@ export function toUsagesResult(
         orgManagerUserIds: asStringArray(r.org_manager_user_ids),
         agentId: r.agent_id as string,
         agentName: (r.agent_name as string) ?? "",
+        currentVersion: Number(r.current_version) || 0,
         count: Number(r.agg_usage_count) || 0,
         breaking: Number(r.agg_breaking) || 0,
         silentBreaking: Number(r.agg_silent) || 0,
@@ -85,10 +88,14 @@ export function toUsagesResult(
       pinMode: (r.pin_mode as UsagePinMode) ?? "follow_active",
       pinnedVersionId: (r.pinned_version_id as string) ?? null,
       pinnedVersionNumber:
-        r.pinned_version_number == null ? null : Number(r.pinned_version_number),
-      versionsBehind: r.versions_behind == null ? null : Number(r.versions_behind),
+        r.pinned_version_number == null
+          ? null
+          : Number(r.pinned_version_number),
+      versionsBehind:
+        r.versions_behind == null ? null : Number(r.versions_behind),
       stalePin: Boolean(r.stale_pin),
-      isUsageActive: r.is_usage_active == null ? null : Boolean(r.is_usage_active),
+      isUsageActive:
+        r.is_usage_active == null ? null : Boolean(r.is_usage_active),
       worstSeverity: (r.severity as DriftSeverity) ?? null,
       findings: asFindings(r.findings),
       config: (r.config as Record<string, unknown>) ?? null,
@@ -112,7 +119,8 @@ export function toReportRow(r: Record<string, unknown>): AgentDriftReportRow {
     myWarning: Number(r.my_warning) || 0,
     myInfo: Number(r.my_info) || 0,
     myStalePins: Number(r.my_stale_pins) || 0,
-    othersUsageCount: r.others_usage_count == null ? null : Number(r.others_usage_count),
+    othersUsageCount:
+      r.others_usage_count == null ? null : Number(r.others_usage_count),
     othersRedflagCount:
       r.others_redflag_count == null ? null : Number(r.others_redflag_count),
     byType: asNumberRecord(r.by_type),
@@ -124,7 +132,9 @@ export function toReportRow(r: Record<string, unknown>): AgentDriftReportRow {
   };
 }
 
-export function toReportAdminRow(r: Record<string, unknown>): AgentDriftReportAdminRow {
+export function toReportAdminRow(
+  r: Record<string, unknown>,
+): AgentDriftReportAdminRow {
   return {
     agentId: r.agent_id as string,
     agentName: (r.agent_name as string) ?? "",
@@ -139,13 +149,17 @@ export function toReportAdminRow(r: Record<string, unknown>): AgentDriftReportAd
     info: Number(r.info) || 0,
     stalePins: Number(r.stale_pins) || 0,
     affectedUsers: Number(r.affected_users) || 0,
-    owners: Array.isArray(r.owners) ? (r.owners as Array<{ user_id: string }>) : [],
+    owners: Array.isArray(r.owners)
+      ? (r.owners as Array<{ user_id: string }>)
+      : [],
     byType: asNumberRecord(r.by_type),
     openAlerts: Number(r.open_alerts) || 0,
   };
 }
 
-export function toHistoryCount(r: Record<string, unknown>): AgentUsageHistoryCount {
+export function toHistoryCount(
+  r: Record<string, unknown>,
+): AgentUsageHistoryCount {
   return {
     source: r.source as string,
     total: Number(r.total) || 0,
