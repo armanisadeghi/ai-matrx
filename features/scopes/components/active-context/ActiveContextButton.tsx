@@ -56,6 +56,8 @@ export interface ActiveContextButtonProps {
   /** "xs" matches 20px-tall header rows (chat); "sm" fits sidebars/toolbars. */
   size?: "xs" | "sm";
   align?: "start" | "center" | "end";
+  /** Icon-only square trigger (collapsed rails). A dot marks set context. */
+  iconOnly?: boolean;
   /** Max width of the trigger before the summary truncates. */
   triggerClassName?: string;
   className?: string;
@@ -64,6 +66,7 @@ export interface ActiveContextButtonProps {
 export function ActiveContextButton({
   size = "sm",
   align = "start",
+  iconOnly = false,
   triggerClassName,
   className,
 }: ActiveContextButtonProps) {
@@ -130,8 +133,13 @@ export function ActiveContextButton({
           )}
           title="Working context — what your agents act within"
         >
-          <SlidersHorizontal className={cn("shrink-0 text-muted-foreground", size === "xs" ? "h-3 w-3" : "h-3.5 w-3.5")} />
-          {hasContext ? (
+          <span className="relative inline-flex shrink-0">
+            <SlidersHorizontal className={cn("shrink-0 text-muted-foreground", size === "xs" ? "h-3 w-3" : "h-3.5 w-3.5")} />
+            {iconOnly && hasContext && (
+              <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-primary" />
+            )}
+          </span>
+          {!iconOnly && (hasContext ? (
             <span className="min-w-0 overflow-hidden">
               <ContextSummaryChips
                 size="sm"
@@ -141,7 +149,7 @@ export function ActiveContextButton({
             </span>
           ) : (
             <span className="text-muted-foreground">Set context</span>
-          )}
+          ))}
         </button>
       </PopoverTrigger>
       <PopoverContent align={align} className="w-[560px] max-w-[92vw] p-0">

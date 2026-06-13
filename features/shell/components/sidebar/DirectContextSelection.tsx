@@ -1,20 +1,21 @@
 // features/shell/components/sidebar/DirectContextSelection.tsx
 //
-// THIN SHIM — Phase 2 of the scopes rebuild. The legacy implementation
-// (290 lines, 8 slice imports, scopeFilteredIds local state, fetchEntitiesByScopes
-// thunk) was deleted on 2026-05-16. This file now re-exports the new
-// <ActiveScopePicker /> from features/scopes/components/active-context/
-// so the four call sites (shell Sidebar, NoteSidebar, MobileNotesView,
-// ChatSidebar) keep their imports unchanged for one more cycle.
+// THIN SHIM — re-exports the canonical Surface A pickers from
+// features/scopes/components/active-context/ for the four call sites
+// (shell Sidebar, NoteSidebar, MobileNotesView, ChatSidebar).
 //
-// Once Phase 3 ships, the call sites will migrate to importing
-// <ActiveScopePicker /> directly and this shim is removed.
+// Twin render, CSS-switched (styles/shell.css): the inline ActiveScopePicker
+// shows in an expanded shell sidebar (and in every non-shell host, where the
+// collapsed class never activates); when the shell rail is collapsed to
+// icons, inline expansion is unusable — the icon popover takes over.
 //
-// DO NOT add features or props here. Add them to ActiveScopePicker.
+// DO NOT add features or props here. Add them to ActiveScopePicker /
+// ActiveContextButton.
 
 "use client";
 
 import { ActiveScopePicker } from "@/features/scopes/components/active-context/ActiveScopePicker";
+import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 
 export interface DirectContextSelectionProps {
   defaultExpanded?: boolean;
@@ -23,7 +24,16 @@ export interface DirectContextSelectionProps {
 export function DirectContextSelection({
   defaultExpanded = false,
 }: DirectContextSelectionProps) {
-  return <ActiveScopePicker defaultExpanded={defaultExpanded} />;
+  return (
+    <>
+      <div className="shell-ctx-inline">
+        <ActiveScopePicker defaultExpanded={defaultExpanded} />
+      </div>
+      <div className="shell-ctx-collapsed">
+        <ActiveContextButton size="sm" align="start" iconOnly />
+      </div>
+    </>
+  );
 }
 
 export default DirectContextSelection;

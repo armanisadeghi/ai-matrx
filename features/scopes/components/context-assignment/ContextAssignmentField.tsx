@@ -117,11 +117,14 @@ export interface ContextAssignmentFieldProps {
    *  "active"/"filter" modes, which have no subject entity. */
   subject?: ContextAssignmentSubject;
   /**
-   * - "assignment" — durable tagging of a subject entity (multi-select).
-   * - "active"     — working-context selection (one scope per type, single
-   *                  project/task, ORG IS EXPLICIT OPT-IN); emits, never writes.
-   * - "filter"     — pure filtering selection (multi-select everything, no
-   *                  save button, no quick-add); emits live via
+   * - "assignment" — durable tagging of a subject entity (multi-select;
+   *                  org-of-record dropdown + flat type sections).
+   * - "active"     — working-context selection (hierarchical org→type→scope
+   *                  tree; MULTI-scope as of 2026-06-12; single project/task;
+   *                  ORG IS EXPLICIT OPT-IN via the org row's checkbox);
+   *                  emits, never writes.
+   * - "filter"     — pure filtering selection (same tree; multi everything,
+   *                  no save button, no quick-add); emits live via
    *                  onSelectionChange. Has zero effect on any saving.
    */
   mode?: "assignment" | "active" | "filter";
@@ -582,7 +585,6 @@ export function ContextAssignmentField({
   const totalSelected = selScopes.size + selOrgs.size + selProjects.size + selTasks.size;
   const SubIcon = subject?.icon ?? FileText;
   const loadingTree = organizations.length === 0;
-  const showOrgSection = mode !== "assignment";
   const allowCreate = mode !== "filter";
 
   return (
@@ -599,21 +601,24 @@ export function ContextAssignmentField({
       )}
 
       <div className="space-y-3 p-4">
-        {/* org + search */}
+        {/* org-of-record dropdown (assignment only — non-assignment modes
+            browse every org in the hierarchy tree below) + search */}
         <div className="flex items-center gap-2">
-          <Select value={org?.id ?? ""} onValueChange={setOrgId}>
-            <SelectTrigger className="h-9 w-[260px] shrink-0">
-              {/* div (not span): the trigger's [&>span]:line-clamp-1 forces
-                  -webkit-box display and would break this flex row */}
-              <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-                <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate text-left"><SelectValue placeholder="Organization" /></span>
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              {organizations.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}{o.is_personal ? " (personal)" : ""}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          {mode === "assignment" && (
+            <Select value={org?.id ?? ""} onValueChange={setOrgId}>
+              <SelectTrigger className="h-9 w-[260px] shrink-0">
+                {/* div (not span): the trigger's [&>span]:line-clamp-1 forces
+                    -webkit-box display and would break this flex row */}
+                <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+                  <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate text-left"><SelectValue placeholder="Organization" /></span>
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                {organizations.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}{o.is_personal ? " (personal)" : ""}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search scopes, projects, tasks…" className="h-9 pl-9" style={{ fontSize: "16px" }} />
@@ -626,29 +631,35 @@ export function ContextAssignmentField({
             <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading your context…</div>
           ) : (
             <>
-              {/* Explicit org membership (active/filter): a scope never drags
-                  its org along — the org is context only when checked here. */}
-              {showOrgSection && (
-                <SectionShell icon={Building2} title="Organization" count={organizations.length}>
-                  {organizations.filter((o) => match(o.name)).map((o) => (
-                    <CheckRow key={o.id} on={selOrgs.has(o.id)} label={o.name} right={o.is_personal ? <span className="shrink-0 text-[11px] text-muted-foreground">personal</span> : undefined} onClick={() => toggleOrg(o.id)} />
-                  ))}
-                </SectionShell>
+              {mode !== "assignment" ? (
+                /* Hierarchical org → scope type → scope tree. One display,
+                   no duplicate org pickers; the org row's checkbox is the
+                   explicit opt-in (a scope never drags its org along). */
+                <HierarchyTree
+                  organizations={organizations}
+                  query={query}
+                  selOrgs={selOrgs}
+                  onToggleOrg={toggleOrg}
+                  selScopes={selScopes}
+                  onToggleScope={toggleScope}
+                />
+              ) : (
+                <>
+                  {scopeTypes.length === 0 && <div className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">This organization has no scopes yet.</div>}
+                  {scopeTypes.map(({ type, scopes, total }) => {
+                    const Icon = resolveIcon(type.icon);
+                    const c = resolveColor(type);
+                    return (
+                      <SectionShell key={type.id} icon={Icon} iconClass={c.fg} borderClass={c.border} title={type.label_plural} count={total} addLabel={allowCreate ? `New ${type.label_singular}` : undefined} onAdd={allowCreate ? () => setAdding(type.id) : undefined}>
+                        {adding === type.id && <InlineAdd placeholder={`New ${type.label_singular.toLowerCase()} name`} onCommit={(v) => void addScope(type.id, v)} onCancel={() => setAdding(null)} />}
+                        {scopes.length === 0 ? (
+                          <div className="px-2.5 py-1.5 text-xs text-muted-foreground">{q ? "No matches." : `No ${type.label_plural.toLowerCase()} yet.`}</div>
+                        ) : scopes.map((s) => <CheckRow key={s.id} on={selScopes.has(s.id)} label={s.name} textClass={c.fg} onClick={() => toggleScope(s.id)} />)}
+                      </SectionShell>
+                    );
+                  })}
+                </>
               )}
-
-              {scopeTypes.length === 0 && <div className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">This organization has no scopes yet.</div>}
-              {scopeTypes.map(({ type, scopes, total }) => {
-                const Icon = resolveIcon(type.icon);
-                const c = resolveColor(type);
-                return (
-                  <SectionShell key={type.id} icon={Icon} iconClass={c.fg} borderClass={c.border} title={type.label_plural} count={total} addLabel={allowCreate ? `New ${type.label_singular}` : undefined} onAdd={allowCreate ? () => setAdding(type.id) : undefined}>
-                    {adding === type.id && <InlineAdd placeholder={`New ${type.label_singular.toLowerCase()} name`} onCommit={(v) => void addScope(type.id, v)} onCancel={() => setAdding(null)} />}
-                    {scopes.length === 0 ? (
-                      <div className="px-2.5 py-1.5 text-xs text-muted-foreground">{q ? "No matches." : `No ${type.label_plural.toLowerCase()} yet.`}</div>
-                    ) : scopes.map((s) => <CheckRow key={s.id} on={selScopes.has(s.id)} label={s.name} textClass={c.fg} onClick={() => toggleScope(s.id)} />)}
-                  </SectionShell>
-                );
-              })}
 
               <SectionShell icon={Briefcase} title="Projects" count={projects.length} addLabel={allowCreate ? "New project" : undefined} onAdd={allowCreate ? () => setAdding("project") : undefined}
                 headerExtra={hiddenProjects > 0 || showAllProjects ? <MiniToggle on={showAllProjects} onChange={setShowAllProjects} label={showAllProjects ? "All orgs" : `Show all (${hiddenProjects})`} /> : undefined}>
@@ -674,7 +685,7 @@ export function ContextAssignmentField({
               <span className="text-xs text-muted-foreground">{mode === "active" ? "No active context set — the agent gets none." : mode === "filter" ? "No filters — showing everything." : "Nothing selected — saving with no associations is fine."}</span>
             ) : (
               <div className="flex flex-wrap items-center gap-1.5">
-                {showOrgSection && [...selOrgs].map((id) => <Chip key={id} label={organizations.find((o) => o.id === id)?.name ?? id} onRemove={() => toggleOrg(id)} />)}
+                {mode !== "assignment" && [...selOrgs].map((id) => <Chip key={id} label={organizations.find((o) => o.id === id)?.name ?? id} onRemove={() => toggleOrg(id)} />)}
                 {[...selScopes].map((id) => { const name = [...organizations.flatMap((o) => o.scope_types.flatMap((x) => x.scopes)), ...addedScopes].find((s) => s.id === id)?.name ?? id; const t = typeOfScope(id); const c = t ? resolveColor(t) : undefined; return <Chip key={id} label={t ? `${t.label_singular}: ${name}` : name} fg={c?.fg} border={c?.border} onRemove={() => toggle(setSelScopes, id)} />; })}
                 {[...selProjects].map((id) => <Chip key={id} label={projName(id)} onRemove={() => toggle(setSelProjects, id)} />)}
                 {[...selTasks].map((id) => <Chip key={id} label={[...allTasks, ...addedTasks].find((t) => t.id === id)?.title ?? id} onRemove={() => toggle(setSelTasks, id)} />)}
