@@ -722,6 +722,19 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
   },
 
   {
+    // Compact Custom Dictionary context selector. Opened from the dictionary
+    // indicator button on transcription/TTS surfaces; selection persists per
+    // user per surface (user_surface_state) — data carries only `surfaceKey`.
+    slug: "dictionary-selector",
+    overlayId: "dictionarySelectorWindow",
+    kind: "window",
+    label: "Dictionary Context",
+    defaultData: { surfaceKey: "_default" },
+    mobilePresentation: "drawer",
+    instanceMode: "singleton",
+  },
+
+  {
     // 4-column live transcription studio. Same `StudioView` as the route
     // at /transcription/studio, but mounted inside a floating WindowPanel so
     // users can record + watch agents work without leaving the page they're

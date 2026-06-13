@@ -127,6 +127,21 @@ export interface PodcastGenerateRequest {
   // 1 → a single asset; 0 → skip that media type entirely.
   max_images?: number;
   max_videos?: number;
+  // Resolved Custom Dictionary (terminology + pronunciation) for this run.
+  // Shape matches aidream's DictionaryConfig; the script + audio agents use it
+  // to spell terms right and pronounce them correctly. See features/dictionary.
+  dictionary?: {
+    entries: Array<{
+      term: string;
+      sounds_like?: string[];
+      pronunciation?: string | null;
+      ipa?: string | null;
+      definition?: string | null;
+      category?: string | null;
+    }>;
+    max_inline_chars?: number | null;
+    source_count?: number;
+  };
 }
 
 // ── Podcast stream events (inside `event: "data"`) ──────────────────────────

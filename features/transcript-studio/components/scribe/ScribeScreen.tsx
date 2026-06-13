@@ -44,6 +44,7 @@ import { ScribeLiveScreen } from "./ScribeLiveScreen";
 import { AssistantAgentBar } from "./AssistantAgentBar";
 import { WorkingDocumentHeader } from "./WorkingDocumentHeader";
 import { VoicePlaybackButton } from "./VoicePlaybackButton";
+import { DictionaryIndicatorButton } from "@/features/dictionary/components/DictionaryIndicatorButton";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { useStudioAutoLabel } from "../../hooks/useStudioAutoLabel";
 import { useStudioSession } from "../../hooks/useStudioSession";
@@ -240,6 +241,8 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
           {/* Voice playback stop — only renders while a voice reply is
               loading/playing, so audio can be stopped from any tab. */}
           <VoicePlaybackButton />
+          {/* Custom Dictionary context selector for this surface. */}
+          <DictionaryIndicatorButton surfaceKey="matrx-user/transcript-scribe" />
           {/* Recording control — inline, session-global. Tap to start; while
               recording it pulses red and stops. */}
           <button

@@ -94,6 +94,11 @@ import type {
   PodcastSpeaker,
 } from "../types";
 import type { PcShow } from "@/features/podcasts/types";
+import { DictionaryIndicatorButton } from "@/features/dictionary/components/DictionaryIndicatorButton";
+import { useDictionaryContext } from "@/features/dictionary/hooks/useDictionaryContext";
+
+/** Surface key the podcast studio persists its dictionary selection under. */
+const PODCAST_DICTIONARY_SURFACE = "matrx-user/podcast-studio";
 
 interface GeneratorFormProps {
   shows: PcShow[];
@@ -198,6 +203,8 @@ export function GeneratorForm({
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [advancedHostsOpen, setAdvancedHostsOpen] = useState(false);
+  // Custom Dictionary for this run (selection persists per-user for the podcast surface).
+  const { consumption: dictConsumption } = useDictionaryContext(PODCAST_DICTIONARY_SURFACE);
   const [truncate, setTruncate] = useState(true);
   /** Per-run image/video caps — default to the full set; the user dials them
    *  down to One or Skip for fast, cheap test runs. */
@@ -261,6 +268,23 @@ export function GeneratorForm({
     if (maxImages !== undefined) body.max_images = maxImages;
     const maxVideos = mediaModeToCap(videoMode);
     if (maxVideos !== undefined) body.max_videos = maxVideos;
+    // Attach the resolved dictionary so script + audio agents spell/pronounce
+    // terms correctly. Only when there's something to apply.
+    const dictEntries = dictConsumption?.resolved.entries ?? [];
+    if (dictEntries.length > 0) {
+      body.dictionary = {
+        entries: dictEntries.map((e) => ({
+          term: e.term,
+          sounds_like: e.sounds_like,
+          pronunciation: e.pronunciation,
+          ipa: e.ipa,
+          definition: e.definition,
+          category: e.category,
+        })),
+        max_inline_chars: dictConsumption?.resolved.effective_max_inline_chars ?? null,
+        source_count: dictConsumption?.resolved.source_count ?? 0,
+      };
+    }
     onGenerate(body);
   };
 
@@ -674,6 +698,15 @@ export function GeneratorForm({
           />
         </CollapsibleTrigger>
         <CollapsibleContent className="space-y-4 pt-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <Label className="text-xs text-muted-foreground">Dictionary</Label>
+              <p className="text-[11px] text-muted-foreground">
+                Apply your terminology &amp; pronunciation so names are spelled and spoken correctly.
+              </p>
+            </div>
+            <DictionaryIndicatorButton surfaceKey={PODCAST_DICTIONARY_SURFACE} variant="labeled" />
+          </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">
               Extra instruction to the research / extraction agent

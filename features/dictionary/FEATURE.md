@@ -74,14 +74,14 @@ Custom Dictionary — terminology + pronunciation entries attachable at four own
 - **Inline-policy control is shared, not forked** — `features/agents/components/context-slots-management/InlinePolicyControl.tsx` (+ `decodeInlinePolicy`/`encodeInlinePolicy`) is the one implementation used by both the dictionary manager and the agent context-slot builder.
 - **Merge dedup is most-specific-wins** (scope > scope_type > org > user); enforced in `dict_resolve_for`.
 - **Renders must be deterministic** (sorted by term) so a server-injected dictionary block stays byte-identical across turns and the LLM prompt cache holds.
-- The 3 system agents + 2 skills are seeded by `migrations/dict_system_agents_and_skills.sql`; the `dictionary` tool by aidream migration `0102`. Agent/skill/tool ids are in `features/dictionary/constants.ts`.
+- **The agent is built via the Agent Factory, never hand-inserted SQL.** `migrations/dict_system_agents_and_skills.sql` seeds the 2 skills; its 3 hand-rolled agents were dropped (`migrations/dict_drop_handrolled_agents.sql`) and replaced by the factory-built `dictionary_assistant`. The `dictionary` tool is aidream migration `0102`. Ids in `features/dictionary/constants.ts`.
 
 ---
 
 ## Related features
 
 - **Transcripts / Studio / Scribe / Cleanup** (`features/transcription-cleanup`, `features/transcript-studio`) — consuming surfaces. Cleanup shows the full merged view (`DictionaryContextCard`); studio mounts the compact `DictionaryIndicatorButton`.
-- **Agents** (`features/agents`) — 3 builtin agents (Dictionary Assistant = Claude Sonnet; Terminology Curator + Pronunciation Coach = Gemini Flash) drive the `dictionary` tool; 2 attachable skills (`dictionary-management`, `pronunciation-authoring`); shares the inline-policy control.
+- **Agents** (`features/agents`) — one builtin **Dictionary Assistant** (`ab1a868e-…`, Gemini 3.5 Flash) drives the `dictionary` tool; built via the aidream **Agent Factory** (`internal_agents/dictionary_assistant.md`), NOT a hand-rolled SQL seed. 2 attachable skills (`dictionary-management`, `pronunciation-authoring`); shares the inline-policy control.
 - **Surfaces** (`features/surfaces`) — `user_surface_state` primitive + `supports_dictionary` flag.
 - **Podcasts** — generation accepts a resolved dictionary (request `dictionary` field).
 
