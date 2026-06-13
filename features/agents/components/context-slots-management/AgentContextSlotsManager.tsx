@@ -53,6 +53,12 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { sanitizeVariableName } from "@/features/agents/utils/variable-utils";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import {
+  InlinePolicyControl,
+  decodeInlinePolicy,
+  encodeInlinePolicy,
+  type InlineMode,
+} from "@/features/agents/components/context-slots-management/InlinePolicyControl";
 import { cn } from "@/lib/utils";
 
 const CONTEXT_TYPES: ContextObjectType[] = [
@@ -88,8 +94,6 @@ const SUGGESTED_INLINE_MODE_BY_TYPE: Record<
 // ─────────────────────────────────────────────────────────────────────────────
 // Form state
 // ─────────────────────────────────────────────────────────────────────────────
-
-type InlineMode = "default" | "custom" | "never";
 
 interface SlotFormState {
   key: string;
@@ -136,18 +140,10 @@ function getSlotKey(slot: ContextSlot): string {
 function slotToForm(slot: ContextSlot): SlotFormState {
   const legacy = slot as unknown as { id?: string };
 
-  // Decode max_inline_chars into the three-mode UI.
-  let inlineMode: InlineMode = "default";
-  let inlineCustomChars = "";
-  const mic = slot.max_inline_chars;
-  if (mic === undefined || mic === null) {
-    inlineMode = "default";
-  } else if (mic === 0) {
-    inlineMode = "never";
-  } else {
-    inlineMode = "custom";
-    inlineCustomChars = String(mic);
-  }
+  // Decode max_inline_chars into the three-mode UI (shared canonical helper).
+  const { mode: inlineMode, customChars: inlineCustomChars } = decodeInlinePolicy(
+    slot.max_inline_chars,
+  );
 
   const source = slot.source;
 
@@ -183,20 +179,14 @@ function formToContextSlot(form: SlotFormState): {
   if (form.label.trim()) slot.label = form.label.trim();
   if (form.description.trim()) slot.description = form.description.trim();
 
-  // max_inline_chars
-  if (form.inlineMode === "default") {
-    // omit — server uses default 200
-  } else if (form.inlineMode === "never") {
-    slot.max_inline_chars = 0;
-  } else {
-    const raw = parseInt(form.inlineCustomChars, 10);
-    if (!Number.isFinite(raw) || raw <= 0) {
-      return {
-        slot: null,
-        error: "Custom ceiling must be a positive integer (1–5000).",
-      };
-    }
-    slot.max_inline_chars = Math.min(raw, 5000);
+  // max_inline_chars (shared canonical encode; default → omit so server uses 200).
+  const encodedInline = encodeInlinePolicy({
+    mode: form.inlineMode,
+    customChars: form.inlineCustomChars,
+  });
+  if ("error" in encodedInline) return { slot: null, error: encodedInline.error };
+  if (encodedInline.maxInlineChars !== null) {
+    slot.max_inline_chars = encodedInline.maxInlineChars;
   }
 
   if (form.summaryAgentId.trim()) {
@@ -260,7 +250,6 @@ function SlotEditorFields({
   keyRulesOk,
   formError,
 }: SlotEditorFieldsProps) {
-  const inlineCustomDisabled = form.inlineMode !== "custom";
   const sourceDisabled = !form.mutable || form.persist !== "auto";
 
   return (
@@ -358,57 +347,11 @@ function SlotEditorFields({
         title="Inline policy"
         subtitle="Controls when content is rendered inline in the manifest vs deferred behind ctx_get. The agent value is a ceiling — surfaces can lower but never raise it."
       >
-        <RadioRow
-          name="inline-mode"
-          value="default"
-          checked={form.inlineMode === "default"}
-          onChange={() =>
-            onChange({ inlineMode: "default", inlineCustomChars: "" })
+        <InlinePolicyControl
+          value={{ mode: form.inlineMode, customChars: form.inlineCustomChars }}
+          onChange={(v) =>
+            onChange({ inlineMode: v.mode, inlineCustomChars: v.customChars })
           }
-          label="Default"
-          description="Inline if content fits in 200 characters."
-        />
-        <RadioRow
-          name="inline-mode"
-          value="custom"
-          checked={form.inlineMode === "custom"}
-          onChange={() => onChange({ inlineMode: "custom" })}
-          label="Custom ceiling"
-          description="Inline up to N characters. Hard cap is 5000."
-          right={
-            <div className="flex items-center gap-1.5">
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={5000}
-                value={form.inlineCustomChars}
-                onChange={(e) =>
-                  onChange({ inlineCustomChars: e.target.value })
-                }
-                disabled={inlineCustomDisabled}
-                onFocus={() => {
-                  if (form.inlineMode !== "custom") {
-                    onChange({ inlineMode: "custom" });
-                  }
-                }}
-                placeholder="800"
-                className="h-8 w-24 text-sm"
-                style={{ fontSize: "16px" }}
-              />
-              <span className="text-[11px] text-muted-foreground">chars</span>
-            </div>
-          }
-        />
-        <RadioRow
-          name="inline-mode"
-          value="never"
-          checked={form.inlineMode === "never"}
-          onChange={() =>
-            onChange({ inlineMode: "never", inlineCustomChars: "" })
-          }
-          label="Never inline"
-          description="Always require the model to call ctx_get. Use for known-large content (page text, capture blobs, full documents)."
         />
       </Section>
 
@@ -601,49 +544,6 @@ function Field({
   children: React.ReactNode;
 }) {
   return <div className={cn("space-y-1.5", className)}>{children}</div>;
-}
-
-function RadioRow({
-  name,
-  value,
-  checked,
-  onChange,
-  label,
-  description,
-  right,
-}: {
-  name: string;
-  value: string;
-  checked: boolean;
-  onChange: () => void;
-  label: string;
-  description: string;
-  right?: React.ReactNode;
-}) {
-  return (
-    <label
-      className={cn(
-        "flex items-start gap-2.5 rounded-md border px-2.5 py-2 cursor-pointer transition-colors",
-        checked
-          ? "bg-primary/5 border-primary/40"
-          : "bg-card/40 border-border hover:bg-muted/40",
-      )}
-    >
-      <input
-        type="radio"
-        name={name}
-        value={value}
-        checked={checked}
-        onChange={onChange}
-        className="mt-1 h-3.5 w-3.5 accent-primary"
-      />
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium">{label}</div>
-        <p className="text-[11px] text-muted-foreground">{description}</p>
-      </div>
-      {right && <div className="shrink-0">{right}</div>}
-    </label>
-  );
 }
 
 function PersistSegment({

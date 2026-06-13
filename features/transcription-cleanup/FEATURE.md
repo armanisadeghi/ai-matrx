@@ -130,6 +130,7 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-06-13 — Custom Dictionary wired in: `DictionaryContextCard` (surface `matrx-user/transcripts-cleanup`) added to the sidebar Context area, showing the merged dictionary with source-level badges + inline selection. LLM cleanup context is auto-injected server-side (the surface is flagged `supports_dictionary`); no `useAiPostProcess` change. See `features/dictionary/FEATURE.md`.
 - 2026-06-12 — Clean default absorbed into the surfaces role system:
   `CleanupPad` seeds the Clean agent from the `clean` role
   (`useSurfaceAgentRoles(CLEANUP_SURFACE_NAME)`) instead of hardcoded ids;

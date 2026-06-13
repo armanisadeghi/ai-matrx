@@ -118,6 +118,7 @@ After the user-requested "go all in" pass, the page picks up:
 
 ## Change Log
 
+- **2026-06-13** — Two reusable primitives added for the Custom Dictionary feature: (1) `ui_surface.supports_dictionary` flag → surfaces so flagged get the user's dictionary auto-injected server-side (resolved into `SurfaceManifest.supports_dictionary`); seeded true for the transcription/TTS surfaces. (2) `user_surface_state` — a generic per-user, per-surface state store (`features/surfaces/user-state/` + `features/surfaces/redux/userStateSlice.ts`, hook `useSurfaceUserState`), the "Level 3" preferences primitive that replaces cookies for surface-scoped state. See `features/dictionary/FEATURE.md`.
 - **2026-06-10 (later)** — `matrx-user/transcripts-cleanup` expanded to the
   reference "expose everything" standard: 8 → 36 values (active pane,
   session identity, all container texts incl. `all_custom_outputs`,

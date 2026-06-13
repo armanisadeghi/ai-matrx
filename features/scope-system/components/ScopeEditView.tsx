@@ -24,6 +24,7 @@ import {
   selectScopeTypesLoadedForOrg,
 } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
+import { DictionarySection } from "@/features/dictionary/components/DictionarySection";
 import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
@@ -271,6 +272,16 @@ export function ScopeEditView({
 
           {/* Advanced: slug, sort order, settings JSON (reused) */}
           <ScopeAdvancedSection scope={scope} />
+
+          {/* Custom Dictionary — terminology + pronunciation for this scope */}
+          {canManage && (
+            <DictionarySection
+              level="scope"
+              ownerId={scope.id}
+              ownerName={scope.name}
+              canEdit={canManage}
+            />
+          )}
 
           {/* Danger zone */}
           <Card className="p-6">

@@ -1,4 +1,42 @@
-export function parseMarkdownToText(markdown: string): string {
+/** A term→spoken-form substitution applied before any other speech parsing. */
+export interface SpeechPronunciation {
+  from: string;
+  to: string;
+}
+
+export interface ParseMarkdownToTextOptions {
+  /**
+   * Custom Dictionary pronunciation substitutions. Applied FIRST — before the
+   * built-in abbreviation/number expansion — so a user term like "AI" wins over
+   * the generic "AI → Artificial Intelligence" expansion. Pairs should be sorted
+   * longest-first by the caller so multi-word terms replace before substrings.
+   */
+  pronunciations?: SpeechPronunciation[];
+}
+
+/** Escape a string for safe use inside a RegExp. */
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Apply dictionary pronunciation substitutions, whole-word & case-insensitive. */
+function applyPronunciations(text: string, pairs: SpeechPronunciation[]): string {
+  let out = text;
+  for (const { from, to } of pairs) {
+    const term = from.trim();
+    if (!term || !to) continue;
+    // \b only anchors on word chars; for terms with leading/trailing non-word
+    // chars fall back to a lookaround on whitespace/boundaries.
+    const re = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(term)}(?![\\p{L}\\p{N}])`, "giu");
+    out = out.replace(re, to);
+  }
+  return out;
+}
+
+export function parseMarkdownToText(
+  markdown: string,
+  options?: ParseMarkdownToTextOptions,
+): string {
   if (!markdown || typeof markdown !== "string") return "";
 
   const numberToWords = (num: string): string => {
@@ -214,7 +252,13 @@ export function parseMarkdownToText(markdown: string): string {
     return text;
   };
 
-  let result = stripLeadingMarkdown(stripReasoningTags(markdown))
+  // Custom Dictionary substitutions run FIRST so the spoken form is locked in
+  // before built-in abbreviation/number expansion can touch the same tokens.
+  const source = options?.pronunciations?.length
+    ? applyPronunciations(markdown, options.pronunciations)
+    : markdown;
+
+  let result = stripLeadingMarkdown(stripReasoningTags(source))
     // Handle Mermaid diagrams first (before other processing)
     .replace(/```mermaid[\s\S]*?```/g, "Please see the diagram provided.")
     // Replace code blocks (programming languages)

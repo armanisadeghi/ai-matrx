@@ -595,6 +595,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  dictionarySelectorWindow: {
+    label: "Dictionary Context",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   whatsappMedia: {
     label: "Whatsapp Media",
     instanceMode: "singleton",

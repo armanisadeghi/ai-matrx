@@ -68,6 +68,12 @@ export interface UseCartesiaStreamingSpeakerOptions {
   firstChunkMax?: number;
   /** Override the subsequent-chunk size (default 400 chars). */
   nextChunkMax?: number;
+  /**
+   * Opt this surface into Custom Dictionary pronunciation. Aliases are resolved
+   * once per stream; single-word terms substitute reliably, multi-word terms in
+   * the live (incremental) path may occasionally straddle a flush boundary.
+   */
+  dictionarySurfaceKey?: string;
 }
 
 type CartesiaWs = ReturnType<CartesiaClient["tts"]["websocket"]>;
@@ -85,6 +91,7 @@ export function useCartesiaStreamingSpeaker({
   initialLoading = false,
   firstChunkMax,
   nextChunkMax,
+  dictionarySurfaceKey,
 }: UseCartesiaStreamingSpeakerOptions = {}) {
   const [phase, setPhase] = useState<SpeakerPhase>(
     initialLoading ? "fetching-token" : "idle",
@@ -96,6 +103,31 @@ export function useCartesiaStreamingSpeaker({
   const mountedRef = useRef(true);
   /** AbortController for the current speak session. */
   const sessionRef = useRef<AbortController | null>(null);
+
+  // Custom Dictionary pronunciation pairs, resolved once per stream/speak.
+  const pronunciationsRef = useRef<{ from: string; to: string }[]>([]);
+  const loadPronunciations = useCallback(async () => {
+    if (!dictionarySurfaceKey) {
+      pronunciationsRef.current = [];
+      return;
+    }
+    try {
+      const { resolveDictionaryTtsAliases } = await import(
+        "@/features/dictionary/ttsBridge"
+      );
+      pronunciationsRef.current = await resolveDictionaryTtsAliases(dictionarySurfaceKey);
+    } catch {
+      pronunciationsRef.current = [];
+    }
+  }, [dictionarySurfaceKey]);
+  /** Build parse options from the resolved aliases (reads a ref; stable). */
+  const parseOpts = useCallback(
+    () =>
+      pronunciationsRef.current.length
+        ? { pronunciations: pronunciationsRef.current }
+        : undefined,
+    [],
+  );
 
   // ── Incremental streaming session ──────────────────────────────────────
   // For live TTS that is fed text as it arrives (token deltas), rather than the
@@ -224,8 +256,9 @@ export function useCartesiaStreamingSpeaker({
    */
   const speak = useCallback(
     async (inputText: string) => {
+      await loadPronunciations();
       const processed = processMarkdown
-        ? parseMarkdownToText(inputText)
+        ? parseMarkdownToText(inputText, parseOpts())
         : inputText;
       if (!processed.trim()) {
         toast.error("Nothing to speak");
@@ -312,6 +345,8 @@ export function useCartesiaStreamingSpeaker({
       nextChunkMax,
       ensureConnection,
       setPhaseIfMounted,
+      loadPronunciations,
+      parseOpts,
     ],
   );
 
@@ -382,6 +417,7 @@ export function useCartesiaStreamingSpeaker({
       streamRef.current?.session.abort();
       const session = new AbortController();
       sessionRef.current = session;
+      await loadPronunciations();
       await ensureConnection();
       if (session.signal.aborted) return;
       const contextId = cryptoRandomId();
@@ -409,6 +445,7 @@ export function useCartesiaStreamingSpeaker({
     language,
     speed,
     setPhaseIfMounted,
+    loadPronunciations,
   ]);
 
   /**
@@ -437,7 +474,7 @@ export function useCartesiaStreamingSpeaker({
         const ready = unsent.slice(0, cut);
         st.sentLen += cut;
 
-        const cleaned = processMarkdown ? parseMarkdownToText(ready) : ready;
+        const cleaned = processMarkdown ? parseMarkdownToText(ready, parseOpts()) : ready;
         if (!cleaned.trim()) return;
         const chunks = chunkTextForSpeech(cleaned, {
           lang: language,
@@ -457,6 +494,7 @@ export function useCartesiaStreamingSpeaker({
       firstChunkMax,
       nextChunkMax,
       dispatchChunk,
+      parseOpts,
     ],
   );
 
@@ -474,7 +512,7 @@ export function useCartesiaStreamingSpeaker({
         const remaining = fullText.slice(st.sentLen);
         st.sentLen = fullText.length;
         const cleaned = processMarkdown
-          ? parseMarkdownToText(remaining)
+          ? parseMarkdownToText(remaining, parseOpts())
           : remaining;
         const chunks = cleaned.trim()
           ? chunkTextForSpeech(cleaned, {
@@ -512,6 +550,7 @@ export function useCartesiaStreamingSpeaker({
       firstChunkMax,
       nextChunkMax,
       dispatchChunk,
+      parseOpts,
     ],
   );
 

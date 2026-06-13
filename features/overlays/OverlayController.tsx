@@ -690,6 +690,13 @@ const WhatsAppMediaWindow = dynamic(
     ),
   { ssr: false },
 );
+const DictionarySelectorWindow = dynamic(
+  () =>
+    import("@/features/dictionary/components/DictionarySelectorWindow").then(
+      (m) => ({ default: m.DictionarySelectorWindow }),
+    ),
+  { ssr: false },
+);
 const WhatsAppSettingsWindow = dynamic(
   () =>
     import("@/features/whatsapp-clone/windows/WhatsAppSettingsWindow").then(
@@ -939,6 +946,9 @@ export default function OverlayController() {
     whatsappShellWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "whatsappShellWindow"),
     ),
+    dictionarySelectorWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "dictionarySelectorWindow"),
+    ),
   };
 
   const dataById = {
@@ -1167,6 +1177,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     whatsappShellWindow: useAppSelector((s) =>
       selectOverlayData(s, "whatsappShellWindow"),
+    ) as Record<string, unknown> | null,
+    dictionarySelectorWindow: useAppSelector((s) =>
+      selectOverlayData(s, "dictionarySelectorWindow"),
     ) as Record<string, unknown> | null,
   };
 
@@ -4281,6 +4294,26 @@ export default function OverlayController() {
             initialTabId={
               data?.initialTabId as never
             } /* TODO: review — MediaTabId is a non-exported local type */
+          />
+        );
+      })()}
+
+      {/* dictionarySelectorWindow — singleton */}
+      {(() => {
+        const isOpen = isOpenById.dictionarySelectorWindow;
+        const data = dataById.dictionarySelectorWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        const surfaceKey = (data?.surfaceKey as string) ?? "_default";
+        return (
+          <DictionarySelectorWindow
+            isOpen
+            surfaceKey={surfaceKey}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "dictionarySelectorWindow" }))
+            }
           />
         );
       })()}

@@ -7,6 +7,7 @@ import {
   Brain,
   Mic,
   Volume2,
+  BookA,
   Mail,
   Video,
   Image as ImageIcon,
@@ -63,6 +64,7 @@ const MessagingTab = lazyTab(() => import("./tabs/MessagingTab"));
 const AppearanceTab = lazyTab(() => import("./tabs/AppearanceTab"));
 const VoiceTab = lazyTab(() => import("./tabs/VoiceTab"));
 const TextToSpeechTab = lazyTab(() => import("./tabs/TextToSpeechTab"));
+const DictionaryTab = lazyTab(() => import("./tabs/DictionaryTab"));
 const AssistantTab = lazyTab(() => import("./tabs/AssistantTab"));
 const EmailTab = lazyTab(() => import("./tabs/EmailTab"));
 const TextGenerationTab = lazyTab(() => import("./tabs/TextGenerationTab"));
@@ -352,6 +354,16 @@ export const settingsRegistry: SettingsTabDef[] = [
     searchKeywords: ["microphone", "test", "troubleshoot", "permissions"],
     component: VoiceMicTab,
     persistence: "local-only",
+  },
+  {
+    id: "voice.dictionary",
+    label: "Dictionary",
+    icon: BookA,
+    parentId: "voice",
+    description: "Your personal terminology & pronunciation for transcription and speech.",
+    searchKeywords: ["dictionary", "pronunciation", "terminology", "glossary", "keyterms", "spelling"],
+    component: DictionaryTab,
+    persistence: "synced",
   },
 
   // ── Communication ─────────────────────────────────────────────────────────

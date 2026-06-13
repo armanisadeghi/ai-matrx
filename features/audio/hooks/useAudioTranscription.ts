@@ -37,8 +37,17 @@ export function useAudioTranscription() {
       if (options?.language) {
         formData.append('language', options.language);
       }
-      if (options?.prompt) {
-        formData.append('prompt', options.prompt);
+      // Explicit prompt wins; otherwise apply Custom Dictionary biasing when the
+      // caller opted in via dictionarySurfaceKey. Best-effort, never blocks.
+      let prompt = options?.prompt ?? '';
+      if (!prompt && options?.dictionarySurfaceKey) {
+        const { resolveDictionarySttPrompt } = await import(
+          '@/features/dictionary/sttBridge'
+        );
+        prompt = await resolveDictionarySttPrompt(options.dictionarySurfaceKey);
+      }
+      if (prompt) {
+        formData.append('prompt', prompt);
       }
 
       // Call transcription API

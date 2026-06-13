@@ -252,6 +252,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Agent feedback API / MCP server | `app/api/mcp/FEATURE.md` |
 | Audio pipeline (TTS, audio, podcasts) | `features/audio/FEATURE.md` |
 | Image Manager hub | `features/image-manager/FEATURE.md` |
+| Custom Dictionary (terminology + pronunciation; user/org/scope-type/scope) | `features/dictionary/FEATURE.md` |
 
 ---
 

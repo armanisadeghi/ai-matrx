@@ -37,11 +37,18 @@ export interface UseCartesiaSpeakerOptions {
   processMarkdown?: boolean;
   /** Which default voice applies when the user hasn't set one. */
   purpose?: VoicePurpose;
+  /**
+   * Opt this surface into Custom Dictionary pronunciation. When set, the
+   * spoken text is rewritten with the surface's resolved pronunciation
+   * substitutions before synthesis. See features/dictionary/ttsBridge.ts.
+   */
+  dictionarySurfaceKey?: string;
 }
 
 export function useCartesiaSpeaker({
   processMarkdown = true,
   purpose = 'assistant',
+  dictionarySurfaceKey,
 }: UseCartesiaSpeakerOptions = {}) {
   const [phase, setPhase] = useState<SpeakerPhase>('idle');
 
@@ -113,7 +120,14 @@ export function useCartesiaSpeaker({
   }, []);
 
   const speak = useCallback(async (inputText: string) => {
-    const processed = processMarkdown ? parseMarkdownToText(inputText) : inputText;
+    let pronunciations: Awaited<ReturnType<typeof import('@/features/dictionary/ttsBridge').resolveDictionaryTtsAliases>> = [];
+    if (dictionarySurfaceKey) {
+      const { resolveDictionaryTtsAliases } = await import('@/features/dictionary/ttsBridge');
+      pronunciations = await resolveDictionaryTtsAliases(dictionarySurfaceKey);
+    }
+    const processed = processMarkdown
+      ? parseMarkdownToText(inputText, pronunciations.length ? { pronunciations } : undefined)
+      : inputText;
     if (!processed.trim()) {
       toast.error('Nothing to speak');
       return;
@@ -150,7 +164,7 @@ export function useCartesiaSpeaker({
       toast.error('Speech playback failed', { description: msg });
       if (mountedRef.current) setPhase('error');
     }
-  }, [voiceId, language, speed, processMarkdown, ensureConnection]);
+  }, [voiceId, language, speed, processMarkdown, dictionarySurfaceKey, ensureConnection]);
 
   const pause = useCallback(async () => {
     if (playerRef.current && phase === 'playing') {

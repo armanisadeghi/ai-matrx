@@ -97,7 +97,7 @@ import agentContentBlockReducer from "@/features/agents/redux/agent-content-bloc
 import { sklReducer } from "@/features/agent-connections/redux/skl/slice";
 import { skillsReducer } from "@/features/skills/redux/skillsSlice";
 import { dictionaryReducer } from "@/features/dictionary/redux/dictionarySlice";
-import { surfaceUserStateReducer } from "@/features/surfaces/user-state/slice";
+import { surfaceUserStateReducer } from "@/features/surfaces/redux/userStateSlice";
 import { agentConnectionsUiReducer } from "@/features/agent-connections/redux/ui/slice";
 import { agentAppReducer } from "@/features/agents/redux/agent-apps/slice";
 import agentAppConsumersReducer from "@/features/agent-apps/redux/agent-app-consumers/slice";

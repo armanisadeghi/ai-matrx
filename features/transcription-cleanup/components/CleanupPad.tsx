@@ -42,6 +42,7 @@ import {
   ArrowDownToLine,
   ArrowUpToLine,
   BookOpen,
+  BookA,
   ChevronDown,
   CircleStop,
   Loader2,
@@ -90,6 +91,7 @@ import type {
   SessionContextItem,
 } from "@/features/transcript-studio/types";
 import { CleanupContextPanel } from "./CleanupContextPanel";
+import { DictionaryContextCard } from "@/features/dictionary/components/DictionaryContextCard";
 import {
   CleanupSessionList,
   CleanupSessionsToolbar,
@@ -1436,6 +1438,9 @@ export default function CleanupPad({
           initialItems={session.loaded?.contextItems ?? null}
           onChange={handleContextChange}
         />
+
+        <SidebarSectionLabel icon={BookA} label="Dictionary" />
+        <DictionaryContextCard surfaceKey="matrx-user/transcripts-cleanup" />
       </div>
 
       <div className="shrink-0 border-t border-border p-3">

@@ -13,6 +13,7 @@ import {
   selectScopeTypesLoadedForOrg,
 } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { ScopeTypeSettingsForm } from "./forms/ScopeTypeSettingsForm";
+import { DictionarySection } from "@/features/dictionary/components/DictionarySection";
 import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
@@ -143,6 +144,16 @@ export function ScopeTypeEditView({
           </Link>
           .
         </Card>
+      )}
+
+      {/* Custom Dictionary — terminology + pronunciation for this scope type */}
+      {canManage && (
+        <DictionarySection
+          level="scope_type"
+          ownerId={scopeType.id}
+          ownerName={scopeType.label_singular}
+          canEdit={canManage}
+        />
       )}
 
       {/* The two nested systems this type owns */}

@@ -28,6 +28,7 @@ import {
   Crown,
   Shield,
   SlidersHorizontal,
+  BookA,
   User as UserIcon,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -43,6 +44,7 @@ import { OrgEmailTab } from "./OrgEmailTab";
 import { OrgPrivacyTab } from "./OrgPrivacyTab";
 import { OrgScopeTree } from "./OrgScopeTree";
 import { OrgModuleSettings } from "./OrgModuleSettings";
+import { DictionarySection } from "@/features/dictionary/components/DictionarySection";
 
 interface OrgManageProps {
   organization: Organization;
@@ -99,6 +101,12 @@ export function OrgManage({
       id: "modules",
       label: "Modules",
       icon: SlidersHorizontal,
+      show: canManageSettings,
+    },
+    {
+      id: "dictionary",
+      label: "Dictionary",
+      icon: BookA,
       show: canManageSettings,
     },
     {
@@ -307,6 +315,18 @@ export function OrgManage({
               canEdit={canManageSettings}
             />
           </SectionCard>
+        )}
+
+        {/* Custom Dictionary — org-wide terminology + pronunciation */}
+        {canManageSettings && (
+          <section id="dictionary" className="scroll-mt-16">
+            <DictionarySection
+              level="organization"
+              ownerId={displayOrganization.id}
+              ownerName={displayOrganization.name}
+              canEdit={canManageSettings}
+            />
+          </section>
         )}
 
         {/* Privacy — OrgPrivacyTab self-cards */}

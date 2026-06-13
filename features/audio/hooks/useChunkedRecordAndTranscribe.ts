@@ -144,6 +144,11 @@ export function useChunkedRecordAndTranscribe({
     transcriptionOptionsRef.current = transcriptionOptions;
   }, [transcriptionOptions]);
 
+  // Custom Dictionary keyterm biasing: resolved once per recording start when a
+  // surface opts in via `dictionarySurfaceKey`. Applied per chunk when the
+  // caller hasn't passed an explicit `prompt`.
+  const dictPromptRef = useRef<string>("");
+
   const sessionRelativeSec = useCallback(() => {
     if (!startTimeRef.current) return 0;
     const elapsed =
@@ -262,10 +267,13 @@ export function useChunkedRecordAndTranscribe({
       if (fullBlob.size < AUDIO_LIMITS.MIN_CHUNK_BYTES) return null;
 
       try {
+        const baseOpts = transcriptionOptionsRef.current;
         const result = await uploadAndTranscribeFull(
           fullBlob,
           userIdRef.current || "anonymous",
-          transcriptionOptionsRef.current,
+          baseOpts?.prompt || !dictPromptRef.current
+            ? baseOpts
+            : { ...baseOpts, prompt: dictPromptRef.current },
         );
         return result;
       } catch (err) {
@@ -424,7 +432,8 @@ export function useChunkedRecordAndTranscribe({
           new File([blobToSend], `chunk.${ext}`, { type: blobToSend.type }),
         );
         if (opts?.language) form.append("language", opts.language);
-        if (opts?.prompt) form.append("prompt", opts.prompt);
+        const effectivePrompt = opts?.prompt || dictPromptRef.current;
+        if (effectivePrompt) form.append("prompt", effectivePrompt);
 
         // Bound the request: on bad networks a chunk fetch can hang
         // indefinitely, leaving `pendingRef` > 0 forever so `maybeFireFinal`
@@ -645,6 +654,19 @@ export function useChunkedRecordAndTranscribe({
       chunkTimingsRef.current.clear();
       setLiveTranscript("");
       setFailedChunkCount(0);
+
+      // Resolve dictionary keyterm biasing for surfaces that opted in. Best-
+      // effort + non-blocking: fire it off; chunks fall back to "" until it
+      // lands (first chunk is ~3 s out, the RPC is faster). Never await here.
+      const dictSurfaceKey = transcriptionOptionsRef.current?.dictionarySurfaceKey;
+      dictPromptRef.current = "";
+      if (dictSurfaceKey && !transcriptionOptionsRef.current?.prompt) {
+        void import("@/features/dictionary/sttBridge").then(({ resolveDictionarySttPrompt }) =>
+          resolveDictionarySttPrompt(dictSurfaceKey).then((p) => {
+            dictPromptRef.current = p;
+          }),
+        );
+      }
 
       // Shared mic manager: reuses a warm grant so mobile doesn't re-prompt
       // on every recording. Released (not hard-stopped) on teardown.

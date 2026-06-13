@@ -71,6 +71,7 @@ export const OVERLAY_IDS = [
   "creatorHub",
   "cropStudioWindow",
   "curatedIconPickerWindow",
+  "dictionarySelectorWindow",
   "diffViewerWindow",
   "emailDialog",
   "emailDialogWindow",

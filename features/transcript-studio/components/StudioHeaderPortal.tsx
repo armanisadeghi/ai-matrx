@@ -20,6 +20,7 @@ import type { StudioSession } from "../types";
 import { EditableSessionTitle } from "./EditableSessionTitle";
 import { RecordButton } from "./recording/RecordButton";
 import { SaveAsTranscriptButton } from "./conversion/SaveAsTranscriptButton";
+import { DictionaryIndicatorButton } from "@/features/dictionary/components/DictionaryIndicatorButton";
 
 interface StudioHeaderPortalProps {
   session: StudioSession;
@@ -42,6 +43,7 @@ export function StudioHeaderPortal({ session }: StudioHeaderPortalProps) {
             variant="icon"
           />
           <RecordButton sessionId={session.id} />
+          <DictionaryIndicatorButton surfaceKey="matrx-user/transcript-studio" />
         </div>
         <div className="pointer-events-auto min-w-0 flex-1 truncate text-right">
           <EditableSessionTitle
