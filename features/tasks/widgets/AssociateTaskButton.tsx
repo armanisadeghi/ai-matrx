@@ -31,7 +31,8 @@ import {
   fetchTasksForEntity,
   selectTasksForEntity,
 } from "@/features/tasks/redux/taskAssociationsSlice";
-import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
+import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
+import { selectFullContextStatus } from "@/features/agent-context/redux/hierarchySlice";
 import type { TaskWithProject } from "@/features/tasks/types";
 
 export interface AssociateTaskButtonProps {
@@ -85,6 +86,7 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
   const [showCreate, setShowCreate] = useState(false);
 
   const allTasks = useAppSelector(selectAllTasksFlat);
+  const hierarchyStatus = useAppSelector(selectFullContextStatus);
   const existing = useAppSelector(selectTasksForEntity(entityType, entityId));
   const existingIds = useMemo(
     () => new Set(existing.map((x) => x.task_id)),
@@ -96,6 +98,9 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
 
   useEffect(() => {
     if (open) {
+      // Task suggestions read from selectAllTasksFlat, which depends on
+      // fetchFullContext() hydrating the agent-context tasks slice.
+      dispatch(fetchFullContext() as never);
       dispatch(fetchTasksForEntity({ entityType, entityId }));
     }
   }, [open, dispatch, entityType, entityId]);
@@ -207,11 +212,7 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
             )}
           </button>
         ) : (
-          <Button
-            size="sm"
-            variant="outline"
-            className={cn("h-7", className)}
-          >
+          <Button size="sm" variant="outline" className={cn("h-7", className)}>
             <Link2 className="w-3.5 h-3.5 mr-1" />
             {label_text}
             {existing.length > 0 && (
@@ -271,7 +272,11 @@ export default function AssociateTaskButton(props: AssociateTaskButtonProps) {
                   <Loader2 className="w-3 h-3 animate-spin" /> Working...
                 </div>
               )}
-              {suggestions.length === 0 ? (
+              {hierarchyStatus === "loading" && suggestions.length === 0 ? (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-3 justify-center">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Loading tasks...
+                </div>
+              ) : suggestions.length === 0 ? (
                 <p className="text-xs text-muted-foreground px-3 py-3 text-center">
                   {query ? "No matches" : "No tasks yet"}
                 </p>

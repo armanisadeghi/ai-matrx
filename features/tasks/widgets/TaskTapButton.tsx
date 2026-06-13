@@ -14,7 +14,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Search, Check, CircleDashed, CheckCircle2, X } from "lucide-react";
+import {
+  Plus,
+  Loader2,
+  Search,
+  Check,
+  CircleDashed,
+  CheckCircle2,
+  X,
+} from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -25,8 +33,9 @@ import { selectAllTasksFlat } from "@/features/tasks/redux/selectors";
 import {
   fetchTasksForEntity,
   selectTasksForEntity,
-  selectTasksForEntityLoading,
 } from "@/features/tasks/redux/taskAssociationsSlice";
+import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
+import { selectFullContextStatus } from "@/features/agent-context/redux/hierarchySlice";
 
 type Variant = "glass" | "transparent" | "solid" | "group";
 
@@ -87,20 +96,28 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
   const [query, setQuery] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState(prePopulate?.title ?? "");
-  const [newDescription, setNewDescription] = useState(prePopulate?.description ?? "");
+  const [newDescription, setNewDescription] = useState(
+    prePopulate?.description ?? "",
+  );
 
   const linked = useAppSelector((s) =>
-    entityType && entityId
-      ? selectTasksForEntity(entityType, entityId)(s)
-      : [],
+    entityType && entityId ? selectTasksForEntity(entityType, entityId)(s) : [],
   );
   const allTasks = useAppSelector(selectAllTasksFlat);
-  const linkedIds = useMemo(() => new Set(linked.map((l) => l.task_id)), [linked]);
-  const { associate, dissociate, createAndAssociate, isBusy } = useAssociateTask();
+  const hierarchyStatus = useAppSelector(selectFullContextStatus);
+  const linkedIds = useMemo(
+    () => new Set(linked.map((l) => l.task_id)),
+    [linked],
+  );
+  const { associate, dissociate, createAndAssociate, isBusy } =
+    useAssociateTask();
 
   useEffect(() => {
-    if (open && entityType && entityId) {
-      dispatch(fetchTasksForEntity({ entityType, entityId }));
+    if (open) {
+      dispatch(fetchFullContext() as never);
+      if (entityType && entityId) {
+        dispatch(fetchTasksForEntity({ entityType, entityId }));
+      }
     }
   }, [open, dispatch, entityType, entityId]);
 
@@ -129,7 +146,9 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
   }, [allTasks, query]);
 
   const source: TaskSource | null =
-    entityType && entityId ? { entity_type: entityType, entity_id: entityId, label, metadata } : null;
+    entityType && entityId
+      ? { entity_type: entityType, entity_id: entityId, label, metadata }
+      : null;
 
   const handlePick = async (taskId: string) => {
     if (!source) return;
@@ -165,7 +184,9 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
         <div className={cn("relative inline-flex", className)}>
           <TapButton
             variant={variant}
-            ariaLabel={ariaLabel ?? (entityType ? "Attach to task" : "Create task")}
+            ariaLabel={
+              ariaLabel ?? (entityType ? "Attach to task" : "Create task")
+            }
             onClick={() => setOpen((v) => !v)}
             className={cn(linkedCount > 0 && "text-primary")}
           />
@@ -235,7 +256,12 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
                     <Loader2 className="w-3 h-3 animate-spin" /> Working...
                   </div>
                 )}
-                {suggestions.length === 0 ? (
+                {hierarchyStatus === "loading" && suggestions.length === 0 ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-3 justify-center">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Loading
+                    tasks...
+                  </div>
+                ) : suggestions.length === 0 ? (
                   <p className="text-xs text-muted-foreground px-3 py-3 text-center">
                     {query ? "No matches" : "No tasks yet"}
                   </p>

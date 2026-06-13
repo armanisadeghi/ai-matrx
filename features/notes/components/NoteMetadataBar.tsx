@@ -177,7 +177,7 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
 
   return (
     <>
-      <div className="flex items-center gap-2 py-1 px-4 border-t border-border/20 shrink-0 overflow-hidden min-h-[1.625rem] bg-red-500">
+      <div className="relative z-10 flex items-center gap-2 py-1 px-4 border-t border-border/20 shrink-0 overflow-hidden min-h-[1.625rem] bg-background">
         {/* Folder selector */}
         <div className="shrink-0">
           <button
@@ -296,7 +296,7 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
           ctx_scope_assignments; project/task FKs via the note save pipeline).
           Replaces the old glassy NoteContextPicker. */}
       {scopePickerOpen && (
-        <div className="border border-red-500 px-2 bg-blue-500 shrink-0">
+        <div className="relative z-10 border-t border-border/20 px-2 bg-background shrink-0">
           <NoteContextSection noteId={noteId} />
         </div>
       )}
