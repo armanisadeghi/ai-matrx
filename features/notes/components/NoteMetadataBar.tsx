@@ -43,7 +43,7 @@ import {
 import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsDisplay";
 import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";
 import { cn } from "@/lib/utils";
-import { NoteContextPicker } from "./NoteContextPicker";
+import { NoteContextSection } from "./NoteContextSection";
 import { computeNoteStats, formatStatNumber } from "../utils/noteStats";
 
 interface NoteMetadataBarProps {
@@ -292,10 +292,12 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
         </span>
       </div>
 
-      {/* Context picker panel — full hierarchy (org/scopes/project/task) */}
+      {/* Context panel — the official assignment field (scopes live via
+          ctx_scope_assignments; project/task FKs via the note save pipeline).
+          Replaces the old glassy NoteContextPicker. */}
       {scopePickerOpen && (
         <div className="border-t border-border/20 px-2 bg-muted/20 shrink-0">
-          <NoteContextPicker noteId={noteId} />
+          <NoteContextSection noteId={noteId} />
         </div>
       )}
 

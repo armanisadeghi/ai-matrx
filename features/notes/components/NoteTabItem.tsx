@@ -46,6 +46,7 @@ import { useNoteDelete } from "../hooks/useNoteDelete";
 import { useIsOwner } from "@/utils/permissions";
 import { cn } from "@/lib/utils";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
+import { NoteContextStatusIcon } from "./NoteContextSection";
 import {
   AlertDialog,
   AlertDialogPortal,
@@ -301,6 +302,9 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
             >
               <Info />
             </button>
+            {/* Context shortcut — amber = no context yet (nudge), green = set.
+                Same picker + same save behavior as the note-footer panel. */}
+            <NoteContextStatusIcon noteId={noteId} />
             <button
               className={cn(actionBtnClass, "hover:text-destructive")}
               onClick={requestDelete}

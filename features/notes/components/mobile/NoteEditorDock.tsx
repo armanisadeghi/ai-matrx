@@ -25,7 +25,7 @@ import {
 import { cn } from '@/lib/utils';
 import { BottomSheet, BottomSheetHeader, BottomSheetBody } from '@/components/official/bottom-sheet/BottomSheet';
 import MobileNoteToolbar from './MobileNoteToolbar';
-import { NoteContextPicker } from '../NoteContextPicker';
+import { NoteContextSection } from '../NoteContextSection';
 import { useToastManager } from '@/hooks/useToastManager';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -225,7 +225,7 @@ export function NoteEditorDock({
         <BottomSheetHeader title="Note Context" />
         <BottomSheetBody>
           <div className="px-2 py-2">
-            <NoteContextPicker noteId={noteId} />
+            <NoteContextSection noteId={noteId} />
           </div>
         </BottomSheetBody>
       </BottomSheet>

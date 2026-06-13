@@ -53,6 +53,7 @@ import {
   ListTodo,
   Tag,
   RotateCcw,
+  TriangleAlert,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { idMatchesQuery } from "@/utils/search-scoring";
@@ -180,22 +181,45 @@ export function NoteSidebar({
   });
 
   // ── Filter notes by active context (org + scopes + project + task) ─
-  const contextFiltered = useMemo(() => {
+  //
+  // No-value ≠ non-matching: a note from ANOTHER org is excluded outright,
+  // but a note with NO org at all is merely "homeless" — we hide it from the
+  // scoped view yet surface a count + opt-in toggle so users are nudged
+  // toward assigning context instead of silently losing notes. Display-only:
+  // zero effect on any saving behavior.
+  const [includeHomeless, setIncludeHomeless] = useState(false);
+  const { contextFiltered, homelessCount } = useMemo(() => {
     let result = allNotes;
-    if (activeOrgId)
+    let homeless: typeof allNotes = [];
+    if (activeOrgId) {
+      homeless = result.filter((n) => n.organization_id == null);
       result = result.filter((n) => n.organization_id === activeOrgId);
+    }
     if (scopeFilteredNoteIds)
       result = result.filter((n) => scopeFilteredNoteIds.has(n.id));
-    if (activeProjectId)
+    if (activeProjectId) {
       result = result.filter((n) => n.project_id === activeProjectId);
-    if (activeTaskId) result = result.filter((n) => n.task_id === activeTaskId);
-    return result;
+      homeless = homeless.filter(
+        (n) => n.project_id == null || n.project_id === activeProjectId,
+      );
+    }
+    if (activeTaskId) {
+      result = result.filter((n) => n.task_id === activeTaskId);
+      homeless = homeless.filter(
+        (n) => n.task_id == null || n.task_id === activeTaskId,
+      );
+    }
+    return {
+      contextFiltered: includeHomeless ? [...result, ...homeless] : result,
+      homelessCount: homeless.length,
+    };
   }, [
     allNotes,
     activeOrgId,
     scopeFilteredNoteIds,
     activeProjectId,
     activeTaskId,
+    includeHomeless,
   ]);
 
   // ── Local UI state ─────────────────────────────────────────────────
@@ -700,6 +724,20 @@ export function NoteSidebar({
       {/* Context filter (org/scopes/project/task — filters sidebar notes) */}
       <div className="shrink-0 border-b border-border/20">
         <DirectContextSelection />
+        {/* Homeless hint: notes with NO org aren't "non-matching" — they have
+            no home. Surface the count + opt-in instead of silently hiding. */}
+        {activeOrgId && homelessCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setIncludeHomeless((v) => !v)}
+            className="flex w-full items-center gap-1.5 px-2.5 py-1 text-[10px] text-amber-600/80 hover:text-amber-600 dark:text-amber-400/80 dark:hover:text-amber-400 transition-colors"
+            title="These notes have no organization assigned — open one and use its context shield to give it a home."
+          >
+            <TriangleAlert className="h-2.5 w-2.5 shrink-0" />
+            {homelessCount} note{homelessCount === 1 ? "" : "s"} without an
+            organization — {includeHomeless ? "hide" : "show"}
+          </button>
+        )}
       </div>
 
       {/* Toolbar: group-by + sort + expand/collapse */}

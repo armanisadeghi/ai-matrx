@@ -39,7 +39,7 @@ import {
 } from "../redux/selectors";
 import { cn } from "@/lib/utils";
 import { computeNoteStats, formatStatNumber } from "../utils/noteStats";
-import { NoteContextPicker } from "./NoteContextPicker";
+import { NoteContextSection } from "./NoteContextSection";
 
 interface NoteInfoPanelProps {
   noteId: string;
@@ -249,7 +249,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
       {/* ── Context (org → scopes → project → task) ──────────────────── */}
       <SectionHeader icon={Hash} label="Context" />
       <div className="px-1">
-        <NoteContextPicker noteId={noteId} />
+        <NoteContextSection noteId={noteId} />
       </div>
 
       {/* ── Tags ──────────────────────────────────────────────────────── */}
