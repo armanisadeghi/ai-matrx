@@ -5,7 +5,10 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { idMatchesQuery } from "@/utils/search-scoring";
-import { selectConversations, selectMessagingIsLoading } from "../redux/messagingSlice";
+import {
+  selectConversations,
+  selectMessagingIsLoading,
+} from "../redux/messagingSlice";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Plus, MessageSquare, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { parseTimestamp } from "@/utils/datetime";
 import type { ConversationWithDetails } from "../types";
 import { NewConversationDialog } from "./NewConversationDialog";
 
@@ -44,7 +48,9 @@ export function ConversationList({
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<
+    string | null
+  >(null);
 
   // Read conversations from Redux (centralized state managed by MessagingInitializer)
   const conversations = useAppSelector(selectConversations);
@@ -66,8 +72,8 @@ export function ConversationList({
   });
 
   // Highlight derives from explicit prop first, then the URL.
-  const urlConversationId = pathname.includes('/messages/')
-    ? pathname.split('/messages/')[1]?.split('/')[0]
+  const urlConversationId = pathname.includes("/messages/")
+    ? pathname.split("/messages/")[1]?.split("/")[0]
     : null;
   const currentConversationId = activeConversationId ?? urlConversationId;
 
@@ -99,7 +105,8 @@ export function ConversationList({
   const formatTime = (dateString: string | null | undefined): string => {
     if (!dateString) return "";
     try {
-      const date = new Date(dateString);
+      // Naive (zone-less) timestamps from `conversation`/`messages` are UTC.
+      const date = parseTimestamp(dateString) ?? new Date(dateString);
       const now = new Date();
       const diffMs = now.getTime() - date.getTime();
       const diffSec = Math.floor(diffMs / 1000);
@@ -113,9 +120,12 @@ export function ConversationList({
       if (diffHour < 24) return `${diffHour}h ago`;
       if (diffDay < 7) return `${diffDay}d ago`;
       if (diffWeek < 4) return `${diffWeek}w ago`;
-      
+
       // For older messages, show date
-      return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      return date.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      });
     } catch {
       return "";
     }
@@ -238,10 +248,10 @@ function ConversationItem({
 }: ConversationItemProps) {
   const { display_name, display_image, last_message, updated_at } =
     conversation;
-  
+
   // If the conversation is currently selected (user is viewing it), it cannot be "unread"
   // This is the final UI-level safety net against stale unread counts
-  const unread_count = isSelected ? 0 : (conversation.unread_count || 0);
+  const unread_count = isSelected ? 0 : conversation.unread_count || 0;
 
   return (
     <Link
@@ -251,7 +261,7 @@ function ConversationItem({
         "relative w-full flex items-start gap-3 px-3 py-2.5 text-left transition-colors",
         "hover:bg-zinc-100 dark:hover:bg-zinc-800",
         isSelected && "bg-zinc-100 dark:bg-zinc-800",
-        isPending && "opacity-50 cursor-not-allowed"
+        isPending && "opacity-50 cursor-not-allowed",
       )}
       aria-disabled={isPending}
     >
@@ -263,7 +273,10 @@ function ConversationItem({
       )}
       {/* Avatar */}
       <Avatar className="h-10 w-10 shrink-0">
-        <AvatarImage src={display_image || undefined} alt={display_name || ""} />
+        <AvatarImage
+          src={display_image || undefined}
+          alt={display_name || ""}
+        />
         <AvatarFallback className="bg-primary/10 text-primary text-sm">
           {getInitials(display_name)}
         </AvatarFallback>
@@ -278,7 +291,7 @@ function ConversationItem({
               "text-sm font-medium truncate",
               unread_count && unread_count > 0
                 ? "text-zinc-900 dark:text-zinc-100"
-                : "text-zinc-700 dark:text-zinc-300"
+                : "text-zinc-700 dark:text-zinc-300",
             )}
           >
             {display_name || "Unknown"}
@@ -300,7 +313,7 @@ function ConversationItem({
               "text-xs truncate",
               unread_count && unread_count > 0
                 ? "text-zinc-600 dark:text-zinc-300"
-                : "text-zinc-500 dark:text-zinc-400"
+                : "text-zinc-500 dark:text-zinc-400",
             )}
           >
             {last_message?.content || "No messages yet"}

@@ -5,6 +5,8 @@
  * prettified rounding — fractional cents and exact token counts matter.
  */
 
+import { parseTimestamp } from "@/utils/datetime";
+
 export function formatCostUsd(
   cost: number | null | undefined,
   fractionDigits = 4,
@@ -30,23 +32,19 @@ export function formatDurationMs(ms: number | null | undefined): string {
 }
 
 export function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  } catch {
-    return iso;
-  }
+  const d = parseTimestamp(iso);
+  if (!d) return iso ?? "—";
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 export function formatRelativeTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const then = new Date(iso).getTime();
+  const then = parseTimestamp(iso)?.getTime() ?? NaN;
   if (Number.isNaN(then)) return "—";
   const diff = Date.now() - then;
   if (diff < 1000) return "just now";

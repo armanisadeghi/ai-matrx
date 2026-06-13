@@ -8,8 +8,8 @@
  *
  *   /files/<folder/path...>?
  *     view=grid                        (omit when "list")
- *     sort=updated_at                  (omit when "name")
- *     dir=desc                         (omit when "asc")
+ *     sort=name                        (omit when "updated_at" — the default)
+ *     dir=asc                          (omit when "desc" — the default)
  *     kind=files                       (omit when "all")
  *     details=extended                 (omit when "compact")
  *     chip=recents                     (omit when null)
@@ -188,8 +188,10 @@ export function serializeUiToParams(ui: SerializableUiState): URLSearchParams {
   const params = new URLSearchParams();
 
   if (ui.viewMode !== "list") params.set(PARAM.view, ui.viewMode);
-  if (ui.sortBy !== "name") params.set(PARAM.sort, ui.sortBy);
-  if (ui.sortDir !== "asc") params.set(PARAM.dir, ui.sortDir);
+  // Default sort is `updated_at desc` (newest first) — omit it so a fresh
+  // view stays at a clean `/files` URL. Any other sort/dir is serialized.
+  if (ui.sortBy !== "updated_at") params.set(PARAM.sort, ui.sortBy);
+  if (ui.sortDir !== "desc") params.set(PARAM.dir, ui.sortDir);
   if (ui.kindFilter !== "all") params.set(PARAM.kind, ui.kindFilter);
   if (ui.detailsLevel !== "compact") {
     params.set(PARAM.details, ui.detailsLevel);

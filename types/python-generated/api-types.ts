@@ -11280,6 +11280,106 @@ export interface paths {
         patch: operations["update_saved_view_admin_saved_views__view_id__patch"];
         trace?: never;
     };
+    "/admin/app-logs/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Query */
+        get: operations["query_admin_app_logs_query_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/app-logs/unclassified": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Unclassified
+         * @description Convenience preset — only rows the system could not categorize.
+         */
+        get: operations["unclassified_admin_app_logs_unclassified_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/app-logs/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stats
+         * @description Facet counts for the dashboard filter bar within the active window.
+         */
+        get: operations["stats_admin_app_logs_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/app-logs/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Files
+         * @description List raw log files on the server: the stdlib firehose (run_py.log and any
+         *     rotated *.log in $LOG_DIR) + the .matrx-debug tool-trace files.
+         */
+        get: operations["list_files_admin_app_logs_files_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/app-logs/files/{filename}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get File
+         * @description Stream one raw log file as text/plain. Filename is sanitized to a bare
+         *     ``*.log`` basename (defends against ``../`` traversal); searched in $LOG_DIR
+         *     then the .matrx-debug dir.
+         */
+        get: operations["get_file_admin_app_logs_files__filename__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/scheduling/validate-cron": {
         parameters: {
             query?: never;
@@ -13164,6 +13264,90 @@ export interface components {
             conversation_id?: string | null;
             /** Is New */
             is_new?: boolean | null;
+        };
+        /**
+         * AppLogEntry
+         * @description One row from public.app_log (the durable general-log store).
+         */
+        AppLogEntry: {
+            /** Id */
+            id: string;
+            /**
+             * Ts
+             * Format: date-time
+             */
+            ts: string;
+            /** Level */
+            level: string;
+            /** Level No */
+            level_no: number;
+            /** Logger Name */
+            logger_name: string;
+            /** Feature */
+            feature: string;
+            /** Route */
+            route?: string | null;
+            /** Message */
+            message: string;
+            /** Exc Type */
+            exc_type?: string | null;
+            /** Traceback */
+            traceback?: string | null;
+            /** Request Id */
+            request_id?: string | null;
+            /** User Id */
+            user_id?: string | null;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Process Pid */
+            process_pid?: number | null;
+            /** Host Role */
+            host_role?: string | null;
+            /**
+             * Classified
+             * @default true
+             */
+            classified: boolean;
+            metadata?: components["schemas"]["JsonValue"] | null;
+        };
+        /** AppLogListResponse */
+        AppLogListResponse: {
+            /** Entries */
+            entries: components["schemas"]["AppLogEntry"][];
+            /** Count */
+            count: number;
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Filter Summary */
+            filter_summary: string;
+        };
+        /**
+         * AppLogStatsResponse
+         * @description Facet counts for the dashboard filter bar, within the active window.
+         */
+        AppLogStatsResponse: {
+            /** Total */
+            total: number;
+            /** By Level */
+            by_level: {
+                [key: string]: number;
+            };
+            /** By Feature */
+            by_feature: {
+                [key: string]: number;
+            };
+            /** By Route */
+            by_route: {
+                [key: string]: number;
+            };
+            /** Unclassified */
+            unclassified: number;
+            /** Filter Summary */
+            filter_summary: string;
         };
         /** ArchiveRequest */
         ArchiveRequest: {
@@ -20469,6 +20653,36 @@ export interface components {
             tools: components["schemas"]["ToolRecord"][];
             /** Count */
             count: number;
+        };
+        /** LogFileListResponse */
+        LogFileListResponse: {
+            /** Files */
+            files: components["schemas"]["LogFileSummary"][];
+            /** Count */
+            count: number;
+            /** Log Dir */
+            log_dir: string;
+            /** Debug Dir */
+            debug_dir: string;
+        };
+        /** LogFileSummary */
+        LogFileSummary: {
+            /** Name */
+            name: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "stdlib" | "tool-trace";
+            /** Size Bytes */
+            size_bytes: number;
+            /**
+             * Modified At
+             * Format: date-time
+             */
+            modified_at: string;
+            /** Is Current */
+            is_current: boolean;
         };
         /** ManifestFact */
         ManifestFact: {
@@ -48002,6 +48216,180 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    query_admin_app_logs_query_get: {
+        parameters: {
+            query?: {
+                /** @description ISO-8601 lower bound on ts. Default 6h ago. */
+                since?: string | null;
+                /** @description ISO-8601 upper bound on ts. */
+                until?: string | null;
+                /** @description Exact level name match (e.g. ERROR). */
+                level?: string | null;
+                /** @description Level floor by name (e.g. WARNING). */
+                min_level?: string | null;
+                /** @description Subsystem tag (e.g. rag, tools). */
+                feature?: string | null;
+                /** @description Exact API route match. */
+                route?: string | null;
+                /** @description Logger name prefix match. */
+                logger?: string | null;
+                user_id?: string | null;
+                /** @description None=both; false=Unclassified only. */
+                classified?: boolean | null;
+                /** @description Substring match on message (ILIKE). */
+                text?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppLogListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unclassified_admin_app_logs_unclassified_get: {
+        parameters: {
+            query?: {
+                /** @description ISO-8601 lower bound. Default 6h ago. */
+                since?: string | null;
+                until?: string | null;
+                text?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppLogListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stats_admin_app_logs_stats_get: {
+        parameters: {
+            query?: {
+                /** @description ISO-8601 lower bound. Default 6h ago. */
+                since?: string | null;
+                until?: string | null;
+                feature?: string | null;
+                route?: string | null;
+                text?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppLogStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_files_admin_app_logs_files_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogFileListResponse"];
+                };
+            };
+        };
+    };
+    get_file_admin_app_logs_files__filename__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                filename: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

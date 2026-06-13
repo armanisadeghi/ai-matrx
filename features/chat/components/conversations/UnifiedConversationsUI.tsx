@@ -1,30 +1,39 @@
 // features\chat\components\conversations\UnifiedConversationsUI.tsx
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Search, PenSquare, Maximize2, Minimize2, Menu, X, ArrowLeft } from 'lucide-react';
-import clsx from 'clsx';
-import { useConversationPanel } from '@/features/chat/hooks/useConversationPanel';
-import { ConversationContextMenu, useContextMenu } from './ConversationContextMenu';
-import ResponseColumn from '@/features/chat/components/response/ResponseColumn';
-import { getChatActionsWithThunks } from '@/lib/redux/entity/custom-actions/chatActions';
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Search,
+  PenSquare,
+  Maximize2,
+  Minimize2,
+  Menu,
+  X,
+  ArrowLeft,
+} from "lucide-react";
+import clsx from "clsx";
+import { useConversationPanel } from "@/features/chat/hooks/useConversationPanel";
+import {
+  ConversationContextMenu,
+  useContextMenu,
+} from "./ConversationContextMenu";
+import ResponseColumn from "@/features/chat/components/response/ResponseColumn";
+import { getChatActionsWithThunks } from "@/lib/redux/entity/custom-actions/chatActions";
 import { useAppDispatch } from "@/lib/redux/hooks";
 
 /**
  * Unified Conversations UI that handles both desktop and mobile layouts
  */
 export const UnifiedConversationsUI: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const chatActions = getChatActionsWithThunks();
 
-    const dispatch = useAppDispatch();
-    const chatActions = getChatActionsWithThunks();
+  useEffect(() => {
+    dispatch(chatActions.initialize());
+  }, []);
 
-    useEffect(() => {
-        dispatch(chatActions.initialize());
-    }, []);
-
-
-    const {
+  const {
     expanded,
     setExpanded,
     contentSearch,
@@ -37,7 +46,7 @@ export const UnifiedConversationsUI: React.FC = () => {
     handlePreviewConversation,
     handleCoordinatedFetch,
     handleCreateNewChat,
-    formatRelativeTime
+    formatRelativeTime,
   } = useConversationPanel();
 
   // Context menu state using our custom hook
@@ -53,15 +62,15 @@ export const UnifiedConversationsUI: React.FC = () => {
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < 1024); // 1024px is the 'lg' breakpoint in Tailwind
     };
-    
+
     // Initial check
     checkIfMobile();
-    
+
     // Check on resize
-    window.addEventListener('resize', checkIfMobile);
-    
+    window.addEventListener("resize", checkIfMobile);
+
     return () => {
-      window.removeEventListener('resize', checkIfMobile);
+      window.removeEventListener("resize", checkIfMobile);
     };
   }, []);
 
@@ -95,14 +104,16 @@ export const UnifiedConversationsUI: React.FC = () => {
 
   // Get the title of the currently selected conversation
   const getSelectedConversationTitle = () => {
-    if (!selectedConversation) return 'Conversations';
-    
+    if (!selectedConversation) return "Conversations";
+
     for (const section of Object.keys(groupedConversations)) {
-      const convo = groupedConversations[section]?.find(c => c.id === selectedConversation);
-      if (convo) return convo.label || 'Untitled Conversation';
+      const convo = groupedConversations[section]?.find(
+        (c) => c.id === selectedConversation,
+      );
+      if (convo) return convo.label || "Untitled Conversation";
     }
-    
-    return 'Chat';
+
+    return "Chat";
   };
 
   // Render the conversation list (used in both mobile and desktop)
@@ -116,24 +127,31 @@ export const UnifiedConversationsUI: React.FC = () => {
           <div>
             {conversations.map((convo) => {
               const isCurrent = selectedConversation === convo.id;
-              const date = new Date(convo.updatedAt || convo.createdAt);
-              
+              // Pass the raw timestamp string (not a pre-built Date) so the
+              // formatter's naive-UTC handling applies — `conversation` is a
+              // `timestamp without time zone` column.
+              const date = convo.updatedAt || convo.createdAt;
+
               return (
                 <div
                   key={convo.id}
-                  onClick={() => mobile ? handleMobileSelect(convo.id) : handleSelectConversation(convo.id)}
+                  onClick={() =>
+                    mobile
+                      ? handleMobileSelect(convo.id)
+                      : handleSelectConversation(convo.id)
+                  }
                   onContextMenu={(e) => handleContextMenu(e, convo.id)}
                   className={clsx(
                     "px-4 py-3 cursor-pointer transition-colors duration-200",
-                    isCurrent 
-                      ? "bg-gray-100 dark:bg-gray-800 border-r-4 border-blue-500 dark:border-blue-600" 
-                      : "hover:bg-gray-50 dark:hover:bg-gray-900"
+                    isCurrent
+                      ? "bg-gray-100 dark:bg-gray-800 border-r-4 border-blue-500 dark:border-blue-600"
+                      : "hover:bg-gray-50 dark:hover:bg-gray-900",
                   )}
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                        {convo.label || 'Untitled Conversation'}
+                        {convo.label || "Untitled Conversation"}
                       </h3>
                       {(expanded || mobile) && (
                         <div className="w-full overflow-y-auto overflow-x-hidden scrollbar-hide pb-8 z-1">
@@ -163,22 +181,24 @@ export const UnifiedConversationsUI: React.FC = () => {
 
   // Mobile sidebar component
   const MobileSidebar = () => (
-    <div 
+    <div
       className={clsx(
         "fixed inset-0 z-50 lg:hidden",
-        sidebarOpen ? "block" : "hidden"
+        sidebarOpen ? "block" : "hidden",
       )}
     >
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-gray-900/50"
         onClick={() => setSidebarOpen(false)}
       />
-      
+
       {/* Sidebar content */}
       <div className="fixed inset-y-0 left-0 w-full max-w-xs bg-white dark:bg-gray-950 shadow-xl flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Conversations</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Conversations
+          </h2>
           <button
             onClick={() => setSidebarOpen(false)}
             className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -186,7 +206,7 @@ export const UnifiedConversationsUI: React.FC = () => {
             <X size={20} />
           </button>
         </div>
-        
+
         {/* Search Section */}
         <div className="p-4 space-y-3">
           <div className="relative">
@@ -209,7 +229,7 @@ export const UnifiedConversationsUI: React.FC = () => {
               className="w-full pl-10 pr-4 py-2 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600"
             />
           </div>
-          
+
           {/* Create New Chat Button */}
           <button
             onClick={() => {
@@ -222,7 +242,7 @@ export const UnifiedConversationsUI: React.FC = () => {
             Create New Chat
           </button>
         </div>
-        
+
         {/* Conversation List */}
         <div className="flex-grow overflow-y-auto">
           {renderConversationList(true)}
@@ -236,12 +256,14 @@ export const UnifiedConversationsUI: React.FC = () => {
     <div
       className={clsx(
         "flex-none flex flex-col border-r border-border bg-white dark:bg-gray-950 transition-all duration-300 ease-in-out",
-        expanded ? "w-96" : "w-72"
+        expanded ? "w-96" : "w-72",
       )}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Conversations</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Conversations
+        </h2>
         <div className="flex space-x-2">
           <button
             onClick={() => setExpanded(!expanded)}
@@ -317,14 +339,14 @@ export const UnifiedConversationsUI: React.FC = () => {
           <PenSquare size={20} />
         </button>
       </header>
-      
+
       {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop sidebar - hidden on mobile */}
         <div className="hidden lg:block">
           <DesktopSidebar />
         </div>
-        
+
         {/* Main content */}
         <main className="flex-1 bg-gray-50 dark:bg-gray-900 overflow-auto">
           {selectedConversation ? (
@@ -335,8 +357,12 @@ export const UnifiedConversationsUI: React.FC = () => {
           ) : (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-300">Select a conversation</h2>
-                <p className="mt-2 text-gray-500 dark:text-gray-400">or start a new one</p>
+                <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-300">
+                  Select a conversation
+                </h2>
+                <p className="mt-2 text-gray-500 dark:text-gray-400">
+                  or start a new one
+                </p>
                 {isMobile && (
                   <button
                     onClick={() => setSidebarOpen(true)}
@@ -350,10 +376,10 @@ export const UnifiedConversationsUI: React.FC = () => {
           )}
         </main>
       </div>
-      
+
       {/* Mobile sidebar */}
       <MobileSidebar />
-      
+
       {/* Context Menu */}
       <ConversationContextMenu
         isOpen={contextMenu.isOpen}

@@ -5,11 +5,17 @@ import {
   isYesterday,
   differenceInCalendarDays,
 } from "date-fns";
+import { parseTimestamp } from "@/utils/datetime";
+
+/** Parse a backend timestamp, treating naive (zone-less) strings as UTC. */
+function toDate(iso: string | null | undefined): Date {
+  return parseTimestamp(iso) ?? new Date(NaN);
+}
 
 export function formatConversationTime(iso: string | null | undefined): string {
   if (!iso) return "";
   try {
-    const d = new Date(iso);
+    const d = toDate(iso);
     if (isToday(d)) return format(d, "h:mm a");
     if (isYesterday(d)) return "Yesterday";
     if (isThisWeek(d)) return format(d, "EEEE");
@@ -21,7 +27,7 @@ export function formatConversationTime(iso: string | null | undefined): string {
 
 export function formatBubbleTime(iso: string): string {
   try {
-    return format(new Date(iso), "h:mm a");
+    return format(toDate(iso), "h:mm a");
   } catch {
     return "";
   }
@@ -29,7 +35,7 @@ export function formatBubbleTime(iso: string): string {
 
 export function formatDateSeparator(iso: string): string {
   try {
-    const d = new Date(iso);
+    const d = toDate(iso);
     if (isToday(d)) return "Today";
     if (isYesterday(d)) return "Yesterday";
     const days = differenceInCalendarDays(new Date(), d);
@@ -42,7 +48,7 @@ export function formatDateSeparator(iso: string): string {
 
 export function formatLinkTime(iso: string): string {
   try {
-    return format(new Date(iso), "M/d/yy, h:mm a");
+    return format(toDate(iso), "M/d/yy, h:mm a");
   } catch {
     return "";
   }
@@ -50,7 +56,7 @@ export function formatLinkTime(iso: string): string {
 
 export function formatMonthHeader(iso: string): string {
   try {
-    return format(new Date(iso), "MMMM");
+    return format(toDate(iso), "MMMM");
   } catch {
     return "";
   }
@@ -58,8 +64,8 @@ export function formatMonthHeader(iso: string): string {
 
 export function formatRangeHeader(startIso: string, endIso: string): string {
   try {
-    const a = format(new Date(startIso), "MMM d, yyyy");
-    const b = format(new Date(endIso), "MMM d, yyyy");
+    const a = format(toDate(startIso), "MMM d, yyyy");
+    const b = format(toDate(endIso), "MMM d, yyyy");
     return `${a} – ${b}`;
   } catch {
     return "";

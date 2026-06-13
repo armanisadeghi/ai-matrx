@@ -15,6 +15,7 @@ import type {
 } from "@/features/files/types";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
 import { idMatchesQuery } from "@/utils/search-scoring";
+import { compareTimestamps } from "@/utils/datetime";
 
 const EMPTY_SORTED_IDS: string[] = [];
 
@@ -148,16 +149,13 @@ function compareStrings(a: string, b: string): number {
   return a.localeCompare(b, undefined, { sensitivity: "base", numeric: true });
 }
 
-/** Stable numeric date compare. Falsy / unparsable strings sort last. */
+/**
+ * Stable numeric date compare. Falsy / unparsable strings sort last.
+ * Routes through the canonical parser so naive (zone-less) UTC timestamps
+ * compare on the correct instant rather than a local-shifted one.
+ */
 function compareDates(a: string, b: string): number {
-  const ta = a ? Date.parse(a) : NaN;
-  const tb = b ? Date.parse(b) : NaN;
-  // Push NaNs to the end deterministically (regardless of direction
-  // sign applied by the caller — see `sortChildren`).
-  if (Number.isNaN(ta) && Number.isNaN(tb)) return 0;
-  if (Number.isNaN(ta)) return 1;
-  if (Number.isNaN(tb)) return -1;
-  return ta - tb;
+  return compareTimestamps(a, b);
 }
 
 /**

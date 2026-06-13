@@ -1,5 +1,7 @@
 // Formatting utilities for CX Dashboard
 
+import { parseTimestamp } from "@/utils/datetime";
+
 export function formatCost(cost: number | null | undefined): string {
   if (cost === null || cost === undefined) return "$0.00";
   if (cost < 0.01) return `$${cost.toFixed(6)}`;
@@ -24,8 +26,9 @@ export function formatDuration(ms: number | null | undefined): string {
 }
 
 export function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleString("en-US", {
+  const d = parseTimestamp(dateStr);
+  if (!d) return "-";
+  return d.toLocaleString("en-US", {
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -34,8 +37,9 @@ export function formatDate(dateStr: string | null | undefined): string {
 }
 
 export function formatDateFull(dateStr: string | null | undefined): string {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleString("en-US", {
+  const d = parseTimestamp(dateStr);
+  if (!d) return "-";
+  return d.toLocaleString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -46,7 +50,7 @@ export function formatDateFull(dateStr: string | null | undefined): string {
 }
 
 export function formatRelativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const diff = Date.now() - (parseTimestamp(dateStr)?.getTime() ?? NaN);
   const mins = Math.floor(diff / 60_000);
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
@@ -60,7 +64,7 @@ export function formatRelativeTime(dateStr: string): string {
 export function computeDuration(
   startDate: string | null | undefined,
   endDate: string | null | undefined,
-  storedDuration: number | null | undefined
+  storedDuration: number | null | undefined,
 ): number | null {
   if (storedDuration && storedDuration > 0) return storedDuration;
   if (startDate && endDate) {
@@ -85,7 +89,9 @@ export function statusColor(status: string): string {
   }
 }
 
-export function statusBadgeVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
+export function statusBadgeVariant(
+  status: string,
+): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case "completed":
       return "default";

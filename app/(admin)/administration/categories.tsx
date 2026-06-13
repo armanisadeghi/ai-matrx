@@ -648,6 +648,13 @@ export const adminCategories = [
         icon: <IconUsers />,
         link: "/administration/admins",
       },
+      {
+        title: "Users",
+        description:
+          "View every account and flip the onboarding flag. New users are routed to /welcome instead of the dashboard on login.",
+        icon: <IconUsers />,
+        link: "/administration/users",
+      },
     ],
   },
 

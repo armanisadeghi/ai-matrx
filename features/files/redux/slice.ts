@@ -238,8 +238,11 @@ const initialState: CloudFilesState = {
   },
   ui: {
     viewMode: "list",
-    sortBy: "name",
-    sortDir: "asc",
+    // Files lists always open most-recently-updated first. Folders still
+    // group above files (see `compareNodes`); within each group the newest
+    // edit floats to the top.
+    sortBy: "updated_at",
+    sortDir: "desc",
     kindFilter: "all",
     detailsLevel: "compact",
     columnFilters: {

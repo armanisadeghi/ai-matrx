@@ -30,6 +30,7 @@ import {
 } from "@/features/files/redux/tree-utils";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
 import { idMatchesQuery } from "@/utils/search-scoring";
+import { toEpochMs } from "@/utils/datetime";
 import { isExcludedFromRecents } from "@/features/files/utils/folder-conventions";
 import type { CloudFilesSection } from "./section";
 import type { FilterChipKey } from "./FilterChips";
@@ -57,7 +58,7 @@ function passesModifiedFilter(
   filter: ModifiedFilter,
 ): boolean {
   if (filter === "any") return true;
-  const updated = new Date(updatedAt).getTime();
+  const updated = toEpochMs(updatedAt);
   if (Number.isNaN(updated)) return true;
   const now = Date.now();
   const day = 24 * 60 * 60 * 1000;
@@ -179,7 +180,8 @@ export function buildRows({
 
     // Recents shows what the user worked on — never system/AI-generated output
     // (scraper captures, variants, Image Studio generations, temp staging).
-    if (filter === "recents" && isExcludedFromRecents(file.filePath)) return false;
+    if (filter === "recents" && isExcludedFromRecents(file.filePath))
+      return false;
 
     if (section === "photos") {
       const mime = (file.mimeType ?? "").toLowerCase();
@@ -230,11 +232,7 @@ export function buildRows({
       }
       if (columnFilters.rag.length > 0) {
         if (
-          !passesRagFilter(
-            file.id,
-            columnFilters.rag,
-            ragStatusByFileId ?? {},
-          )
+          !passesRagFilter(file.id, columnFilters.rag, ragStatusByFileId ?? {})
         )
           return false;
       }
@@ -255,7 +253,8 @@ export function buildRows({
       const isShared = folder.visibility === "shared";
       if (!(hasGrants || isPublic || isShared)) return false;
     }
-    if (!matchesQuery(folder.folderName) && !idMatchesQuery(folder, q)) return false;
+    if (!matchesQuery(folder.folderName) && !idMatchesQuery(folder, q))
+      return false;
     if (!matchesNameFilter(folder.folderName)) return false;
     if (columnFilters) {
       // Folders don't have a `fileSize` to filter on — size filter when set

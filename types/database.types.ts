@@ -2556,6 +2556,69 @@ export type Database = {
           },
         ]
       }
+      app_log: {
+        Row: {
+          classified: boolean
+          conversation_id: string | null
+          created_at: string
+          exc_type: string | null
+          feature: string
+          host_role: string | null
+          id: string
+          level: string
+          level_no: number
+          logger_name: string
+          message: string
+          metadata: Json
+          process_pid: number | null
+          request_id: string | null
+          route: string | null
+          traceback: string | null
+          ts: string
+          user_id: string | null
+        }
+        Insert: {
+          classified?: boolean
+          conversation_id?: string | null
+          created_at?: string
+          exc_type?: string | null
+          feature?: string
+          host_role?: string | null
+          id?: string
+          level?: string
+          level_no?: number
+          logger_name?: string
+          message?: string
+          metadata?: Json
+          process_pid?: number | null
+          request_id?: string | null
+          route?: string | null
+          traceback?: string | null
+          ts?: string
+          user_id?: string | null
+        }
+        Update: {
+          classified?: boolean
+          conversation_id?: string | null
+          created_at?: string
+          exc_type?: string | null
+          feature?: string
+          host_role?: string | null
+          id?: string
+          level?: string
+          level_no?: number
+          logger_name?: string
+          message?: string
+          metadata?: Json
+          process_pid?: number | null
+          request_id?: string | null
+          route?: string | null
+          traceback?: string | null
+          ts?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           created_at: string
