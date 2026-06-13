@@ -37,6 +37,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
+  Clock,
   ExternalLink,
   Layers,
   Loader2,
@@ -55,6 +56,8 @@ import {
   useFileIngest,
   type UseFileIngestState,
 } from "@/features/rag/hooks/useFileIngest";
+import { useFileRagStatus } from "@/features/rag/hooks/useFileRagStatus";
+import type { FileRagState } from "@/features/rag/api/rag-jobs";
 
 export interface DocumentTabProps {
   fileId: string;
@@ -81,6 +84,12 @@ export function DocumentTab({
   const file = useAppSelector((s) => selectFileById(s, fileId));
   const { state, refresh } = useFileDocument(fileId);
   const ingest = useFileIngest(fileId);
+
+  // Only probe the scheduled/running auto-RAG lifecycle when the document is
+  // absent — a found doc is already indexed, and probing it would poll a
+  // finished file. The hook itself stops polling on any terminal state.
+  const isAbsent = state.status === "absent";
+  const { status: ragStatus } = useFileRagStatus(fileId, { enabled: isAbsent });
 
   // Re-probe whenever ingest completes anywhere in the app.
   useEffect(() => {
@@ -151,6 +160,8 @@ export function DocumentTab({
       <NotIngestedCard
         fileName={file?.fileName ?? null}
         ingest={ingest}
+        ragState={ragStatus?.state ?? null}
+        scheduledFor={ragStatus?.scheduled_for ?? null}
         className={className}
       />
     );
@@ -248,9 +259,18 @@ export function DocumentTab({
 // "Not ingested yet" CTA — primary action is the streaming reprocess.
 // ---------------------------------------------------------------------------
 
+function formatScheduledTime(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
 function NotIngestedCard({
   fileName,
   ingest,
+  ragState,
+  scheduledFor,
   className,
 }: {
   fileName: string | null;
@@ -260,8 +280,25 @@ function NotIngestedCard({
     cancel: () => void;
     reset: () => void;
   };
+  /** Scheduled auto-RAG lifecycle state, when known. */
+  ragState?: FileRagState | null;
+  scheduledFor?: string | null;
   className?: string;
 }) {
+  // A background/scheduled auto-RAG job may already be queued for this file.
+  // Surface it so the user knows processing is coming without re-triggering.
+  const scheduledHint =
+    ragState === "scheduled"
+      ? (() => {
+          const t = formatScheduledTime(scheduledFor ?? null);
+          return t
+            ? `Auto-processing scheduled for ${t}…`
+            : "Auto-processing is scheduled…";
+        })()
+      : ragState === "running"
+        ? "A background job is already processing this file…"
+        : null;
+
   const subtitle =
     ingest.status === "error"
       ? `Ingest failed: ${ingest.error}`
@@ -287,6 +324,17 @@ function NotIngestedCard({
         </h3>
         <p className="text-xs text-muted-foreground break-words">{subtitle}</p>
       </div>
+
+      {scheduledHint ? (
+        <div className="inline-flex items-center gap-1.5 rounded-md bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+          {ragState === "running" ? (
+            <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+          ) : (
+            <Clock className="h-3 w-3" aria-hidden="true" />
+          )}
+          <span>{scheduledHint}</span>
+        </div>
+      ) : null}
 
       <div className="flex items-center gap-2">
         <button

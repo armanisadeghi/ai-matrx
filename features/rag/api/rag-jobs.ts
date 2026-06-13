@@ -106,6 +106,13 @@ export function isRagAlreadyComplete(err: unknown): err is BackendApiError {
   if (!(err instanceof BackendApiError)) return false;
   if (err.status !== 409) return false;
   if (err.code === "rag_already_complete") return true;
-  const blob = `${err.detail ?? ""}${JSON.stringify(err.details ?? "")}`;
+  // FastAPI serializes HTTPException(detail={...}) as {"detail": {...}}, and
+  // parseHttpError lands that object in `err.detail` — so it must be
+  // JSON.stringify'd, NOT template-coerced (which would give "[object Object]"
+  // and drop the nested code). `err.message` carries the FastAPI string too.
+  const blob =
+    JSON.stringify(err.detail ?? "") +
+    JSON.stringify(err.details ?? "") +
+    (err.message ?? "");
   return blob.includes("rag_already_complete");
 }

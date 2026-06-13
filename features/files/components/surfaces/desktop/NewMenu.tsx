@@ -44,6 +44,7 @@ export interface NewMenuProps {
 export function NewMenu({ parentFolderId, className }: NewMenuProps) {
   const dispatch = useAppDispatch();
   const { uploadMany: upload } = useFileUpload();
+  const { triggerNow, setTriggerNow } = useRagUploadPreference();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const folderInputRef = useRef<HTMLInputElement | null>(null);
   const folderNameInputRef = useRef<HTMLInputElement | null>(null);
@@ -52,12 +53,21 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
+  // Menu uploads opt into instant RAG when the preference is on. Drag-drop
+  // never sets this — the scheduled auto-RAG sweep still covers those.
+  const uploadOptions = triggerNow
+    ? { rag: { trigger_now: true } }
+    : undefined;
+
   const handleUploadFiles = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files ?? []);
       if (files.length) {
         void (async () => {
-          const result = await upload(files, { parentFolderId });
+          const result = await upload(files, {
+            parentFolderId,
+            options: uploadOptions,
+          });
           // Focus the last successfully uploaded file so it's highlighted
           if (result?.uploaded?.length) {
             dispatch(setFocusedId(result.uploaded[result.uploaded.length - 1]));
@@ -66,7 +76,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
       }
       event.target.value = "";
     },
-    [dispatch, upload, parentFolderId],
+    [dispatch, upload, parentFolderId, uploadOptions],
   );
 
   const handleUploadFolder = useCallback(
@@ -74,7 +84,10 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
       const files = Array.from(event.target.files ?? []);
       if (files.length) {
         void (async () => {
-          const result = await upload(files, { parentFolderId });
+          const result = await upload(files, {
+            parentFolderId,
+            options: uploadOptions,
+          });
           if (result?.uploaded?.length) {
             dispatch(setFocusedId(result.uploaded[result.uploaded.length - 1]));
           }
@@ -82,7 +95,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
       }
       event.target.value = "";
     },
-    [dispatch, upload, parentFolderId],
+    [dispatch, upload, parentFolderId, uploadOptions],
   );
 
   const handleCreateFolder = useCallback(async () => {
@@ -141,6 +154,15 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
             <FolderPlus className="mr-2 h-4 w-4" />
             New folder
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuCheckboxItem
+            checked={triggerNow}
+            onCheckedChange={setTriggerNow}
+            // Keep the menu open so toggling doesn't dismiss the dropdown.
+            onSelect={(e) => e.preventDefault()}
+          >
+            Process for RAG immediately
+          </DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

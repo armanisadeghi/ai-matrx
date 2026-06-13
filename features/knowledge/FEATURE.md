@@ -58,19 +58,23 @@ Keep it honest — do not let the page imply capabilities that do not exist.
 | Create custom agent | Live | `features/agents/` → `/agents/new`, `/agents/[id]/build` |
 | Run → inspect → edit → re-test | Live | `/agents/[id]/run`, `/agents/[id]/build`, execution-system redux |
 | Agent battle (model/cost/quality compare) | Live | `features/agent-comparison/` ("Agent Battle") → `/agents/battle/*`, `/agents/compare`. **Judge/auto-score model = Phase 2, not built** |
-| Extraction as **automated on-ingest step / trigger / schedule** | Missing | `run-all` automates stages *within one run*; there is **no** user-facing automation/trigger/scheduled-job builder that fires on upload |
+| Extraction as **automated on-ingest step / trigger / schedule** | Live | Uploaded files auto-schedule for RAG (≈5 min) via the backend auto-RAG sweep; lifecycle is surfaced by `features/rag/api/rag-jobs.ts` + `useFileRagStatus` + `FileRagStatusChip`. Instant opt-in via the New-menu "Process for RAG immediately" toggle (`options_json.rag.trigger_now`), plus on-demand trigger/refresh per file. (A visual *automation/trigger builder* is still future — the standing on-ingest behavior itself is live.) |
 | Chat agent | Live | `features/agents/components/chat/` → `/chat` |
 | Save output as Note + edit | Live | `features/notes/` → `/notes`; `features/notes/actions/*` save buttons |
 | Trigger RAG | Live | `features/rag/components/ProcessForRagButton.tsx` + per-stage actions |
-| Trigger **NER manually** | Missing | NER runs as a **backend batch** (see `features/kg-suggestions/`, `features/kg-graph/`); no "run NER now" button |
+| Trigger **NER manually** | Live | "Run NER now" in the note toolbar (`features/notes/components/NoteToolbar.tsx` → `ProcessForRagButton sourceKind="note"`); the note's "In knowledge base" indicator reads `processed_documents` directly (`features/notes/hooks/useNoteIngestStatus.ts`). The standing backend batch (`features/kg-suggestions/`, `features/kg-graph/`) still runs too |
 | Knowledge graph visualization | Live | `features/kg-graph/` → `/knowledge-graph`, `/scopes/[scopeId]/graph`; admin `features/administration/kg-inspector/` |
 | Manual RAG search | Live | `features/rag/components/search/RagSearchExperience.tsx` → `/rag/search` |
 | Agent uses RAG → cited answer | Live | Search Lab agent chat + `rag_search` tool renderer (`features/tool-call-visualization/renderers/rag-search/`), `citationHrefFor()` |
 
 **Real gaps to build:** (a) CSV/tabular as a knowledge/RAG ingest source; (b) a
-user-facing automation/trigger layer (auto-run extraction/NER on ingest or on a
-schedule); (c) a manual "run NER now" control; (d) the battle judge model for
-auto-scoring.
+user-facing automation/trigger *builder* UI (the standing auto-RAG-on-upload
+behavior is live; a visual rule/trigger editor is not); (c) the battle judge
+model for auto-scoring.
+
+**Recently landed (2026-06-12):** auto-RAG-on-upload (scheduled ≈5 min, instant
+opt-in toggle, on-demand trigger/refresh) and a manual "Run NER now" control on
+notes — gaps (b-auto) and (c-NER) from the original audit.
 
 ---
 
@@ -100,8 +104,9 @@ makes something real happen. The 14 conceptual steps:
     (e.g. Opus) agent hit the RAG, reason it out, and respond like a pro — cited
     and traceable.
 
-Steps 6, 7 (on-ingest automation) and the manual NER trigger in 10 require the
-"real gaps" above to be built first. Everything else is live today and the
+Steps 6, 7 (on-ingest automation) and the manual NER trigger in step 10 are now
+**live** (auto-RAG-on-upload + the notes "Run NER now" control). Everything in
+the walkthrough is live today except CSV-as-knowledge (step 1, partial); the
 `/knowledge` page links straight to each surface.
 
 ### Implementation notes for the wizard (when built)

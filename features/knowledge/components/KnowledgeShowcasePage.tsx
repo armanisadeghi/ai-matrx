@@ -159,15 +159,17 @@ const WALKTHROUGH: WalkthroughStep[] = [
     n: 6,
     title: "Automate the extraction",
     description:
-      "Make that extraction a standing step on the document process. The on-ingest automation/trigger layer is still being built.",
-    state: "planned",
+      "Uploaded files auto-schedule for RAG (≈5 min after arrival). Toggle “Process for RAG immediately” in the New menu to skip the wait, or trigger/refresh any file on demand.",
+    state: "built",
+    href: "/files",
   },
   {
     n: 7,
     title: "Upload again, watch it run",
     description:
-      "Drop a new document and watch the automated extraction fire on its own.",
-    state: "planned",
+      "Drop a new document and watch its RAG lifecycle move scheduled → running → indexed right on the file — no manual step required.",
+    state: "built",
+    href: "/files",
   },
   {
     n: 8,
@@ -188,9 +190,9 @@ const WALKTHROUGH: WalkthroughStep[] = [
     n: 10,
     title: "Trigger RAG / NER",
     description:
-      "Process the note for RAG. NER runs as a backend batch today; a one-click 'run NER now' control is still being built.",
-    state: "partial",
-    href: "/rag/library",
+      "Process the note for RAG, then hit “Run NER now” right in the note toolbar — entities lift out on demand instead of waiting for the backend batch.",
+    state: "built",
+    href: "/notes",
   },
   {
     n: 11,
