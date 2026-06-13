@@ -143,6 +143,14 @@ export interface PdfDocumentRendererProps {
   error?: string | null;
 
   /**
+   * Caller-owned retry. When set, the error-card "Retry" calls this
+   * (e.g. drop the cached bytes and re-download) instead of the internal
+   * cache-busting nonce — required for `blob:` sources, which can't carry
+   * a `?retry=` query param.
+   */
+  onRetry?: () => void;
+
+  /**
    * Optional controlled page (1-based). When set, the parent owns the
    * page state and the renderer emits changes via `onPageChange`. Used
    * by the PDF Studio to drive scroll sync from the text panes.
@@ -230,6 +238,7 @@ export default function PdfDocumentRenderer({
   bytesLoaded = 0,
   bytesTotal = null,
   error,
+  onRetry,
   pageNumber: controlledPage,
   onPageChange,
   renderOverlay,
@@ -361,14 +370,13 @@ export default function PdfDocumentRenderer({
       const headers = remoteHeadersKey
         ? (JSON.parse(remoteHeadersKey) as Record<string, string>)
         : undefined;
+      // Cache-bust only http(s) URLs — a `blob:` URL is immutable and can't
+      // carry a query string (`blob:…?retry=1` is invalid and won't load).
+      const isHttp = /^https?:/i.test(remoteUrl);
       const url =
-        retryNonce > 0
+        retryNonce > 0 && isHttp
           ? `${remoteUrl}${remoteUrl.includes("?") ? "&" : "?"}retry=${retryNonce}`
           : remoteUrl;
-      // pdfjs accepts `url + httpHeaders + withCredentials` here and
-      // will issue partial-content Range requests against `url` rather
-      // than a single full-body GET. The SW intercepts those requests
-      // and serves cached bytes as 206 when available.
       return {
         url,
         httpHeaders: headers,
@@ -652,23 +660,16 @@ export default function PdfDocumentRenderer({
           <p className="max-w-md text-xs text-muted-foreground break-words">
             {combinedError}
           </p>
-          {/* "Failed to fetch" is a network/CORS/service-worker error, not an
-            * HTTP status — say WHERE we tried so localhost-vs-prod backend
-            * confusion is visible at a glance. */}
-          {remoteUrl && String(combinedError).includes("Failed to fetch") ? (
-            <p className="max-w-md text-[10px] text-muted-foreground/80 break-words">
-              Couldn&apos;t reach{" "}
-              <span className="font-mono">{new URL(remoteUrl).host}</span> — if
-              you&apos;re on a dev build, check the backend is running; on a
-              long-lived tab, Retry bypasses the cached service worker.
-            </p>
-          ) : null}
         </div>
         <button
           type="button"
           onClick={() => {
             setLoadError(null);
-            setRetryNonce((n) => n + 1);
+            // Prefer the caller's retry (drops the cached bytes + re-downloads
+            // — the correct recovery for a blob source). Fall back to the
+            // internal cache-bust nonce for legacy http(s) callers.
+            if (onRetry) onRetry();
+            else setRetryNonce((n) => n + 1);
           }}
           className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
         >

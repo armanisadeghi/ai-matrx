@@ -1,198 +1,120 @@
 "use client";
 
 /**
- * features/files/hooks/usePdfRemoteSource.ts
+ * features/pdf/hooks/usePdfRemoteSource.ts
  *
- * Resolve a cloud-files PDF (by `fileId`) to a `{ remoteUrl, headers }`
- * pair that `<PdfDocumentRenderer/>` can hand to pdfjs for progressive
- * Range-based rendering.
+ * Resolve a cloud-files PDF (by `fileId`) to a source pdfjs can render.
  *
- * Why a dedicated hook (vs reusing `useFileBlob`)
- * ───────────────────────────────────────────────
- * `useFileBlob` pre-fetches the entire file and returns a `blob:` URL.
- * That defeats pdfjs's native Range / progressive support — the first
- * page can't paint until the whole document has downloaded, which can
- * be many MB. Range mode lets pdfjs request the cross-reference table
- * and the first page's bytes; the rest stream in as the user scrolls.
+ * 2026-06-13 — REWRITTEN to fix the caching + reliability disaster.
+ * ─────────────────────────────────────────────────────────────────
+ * The previous version handed pdfjs a *network* URL (`/files/{id}/download`)
+ * and let it Range-fetch progressively. That sounded clever but was broken:
  *
- * The blob-cache Service Worker (`public/blob-sw.js`) intercepts
- * `/files/{id}/download` fetches and serves 206 Partial Content from
- * IndexedDB when the file is already cached — so the progressive path
- * works for both warm and cold caches:
- *   - **Cold**  → pdfjs Range fetch → backend → 206 → render that page.
- *   - **Warm**  → pdfjs Range fetch → SW intercepts → 206 from IDB
- *                 (no network at all).
+ *   1. NO CACHING. The blob-cache Service Worker is READ-ONLY for that path
+ *      — nothing ever populated it from pdfjs Range fetches (see `sw.ts`
+ *      handleFetch: on a miss it `fetch()`es but never stores). So every
+ *      view re-hit the network. The same PDF rendered twice on one page
+ *      downloaded twice. Cross-page, cross-tab — never cached. (Backend
+ *      also sends `Cache-Control: private, max-age=0`, so the browser HTTP
+ *      cache didn't save it either.)
+ *   2. UNRELIABLE. pdfjs uses `fetch` with an Authorization header → a
+ *      *preflighted* CORS request. CDN-hosted (public) files 302-redirect
+ *      cross-origin, and browsers refuse to follow a cross-origin redirect
+ *      of a preflighted request → silent "Failed to fetch". And a cold
+ *      backend / SW miss could hang with no error → "Preparing document…"
+ *      forever.
  *
- * The hook itself is tiny — just resolve the Python URL + grab the
- * current Supabase access token. No state machine, no fetch, no
- * Object URL ownership. The browser's HTTP cache and the SW cache
- * handle persistence.
+ * THE FIX: route through the canonical cached byte path — `useFileBlob`
+ * (XMLHttpRequest, which handles the CDN redirect correctly; module-level
+ * LRU cache + IndexedDB; real download progress). We hand pdfjs a `blob:`
+ * URL, which is:
+ *   - INSTANT on every re-open (same page, other page, after a reload via
+ *     IDB) — the bytes are already in memory.
+ *   - BULLETPROOF — no CORS, no redirect, no Range-streaming SW dance, no
+ *     auth header. pdfjs reads it straight from memory.
+ *
+ * Tradeoff: the first view downloads the whole file before page 1 paints
+ * (no progressive first-paint). For real-world docs (a few MB) that's a
+ * blink, and it's cached forever after. Correctness + caching beats a
+ * progressive first-paint that never cached.
  */
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/utils/supabase/client";
-import {
-  pythonBaseUrl,
-  pythonFileInlineUrl,
-} from "@/features/files/handler/utils/python-base";
+import { useEffect } from "react";
+import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 
 export interface UsePdfRemoteSourceResult {
-  /** Backend URL pdfjs should range-fetch. `null` while session is loading. */
+  /** A `blob:` URL pdfjs renders from memory. `null` until bytes are ready. */
   remoteUrl: string | null;
-  /** Headers to apply to every byte fetch (Authorization, Accept). */
+  /** Always `{}` for a `blob:` URL — kept for the renderer's prop shape. */
   headers: Record<string, string>;
-  /** True until the session is read at least once. */
+  /** True until the bytes are resolved (cache hit = false immediately). */
   loading: boolean;
-  /** Last error from session lookup (rare — only logged). */
+  /** Surfaced load error (network / decode), or `null`. */
   error: string | null;
-  /**
-   * True when the backing `cld_files` row is gone — it doesn't exist or was
-   * soft-deleted (moved to trash). The S3 binary can't be served in either
-   * case, so the backend returns 401/404 and pdfjs surfaces a raw "Failed to
-   * fetch" card. Callers should render a graceful "source unavailable" state
-   * instead of attempting the fetch.
-   *
-   * Determined by a single PK lookup on `cld_files`. Stays `false` while the
-   * check is in flight and on any transient query error (fail-open — we'd
-   * rather attempt the fetch than wrongly hide a healthy file).
-   */
+  /** True when the backing file's bytes are gone (deleted / 404). */
   sourceMissing: boolean;
+  /** Bytes downloaded so far during an active fetch (0 on a cache hit). */
+  bytesLoaded: number;
+  /** Total bytes when known. */
+  bytesTotal: number | null;
+  /** Drop the cached bytes and re-fetch from the network. */
+  retry: () => void;
 }
+
+const MISSING_RE =
+  /not.?found|\b404\b|\b410\b|no longer|been deleted|unavailable|does not exist/i;
 
 export function usePdfRemoteSource(
   fileId: string | null,
 ): UsePdfRemoteSourceResult {
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(!!fileId);
-  const [error, setError] = useState<string | null>(null);
-  const [sourceMissing, setSourceMissing] = useState<boolean>(false);
-  // For CDN-hosted (public) files the `/download` endpoint 302-redirects to
-  // the CDN. pdfjs sends an Authorization header (a *preflighted* request),
-  // and browsers refuse to follow a cross-origin redirect of a preflighted
-  // request → "Failed to fetch". Private files stream THROUGH the API (same
-  // origin, no redirect) and work fine. So for CDN files we resolve the
-  // direct, CORS-friendly CDN url up front and hand it to pdfjs with NO auth
-  // header (a simple Range GET — no preflight, no redirect). `null` = use the
-  // normal streaming path. Fail-safe: any resolution failure leaves this null.
-  const [directUrl, setDirectUrl] = useState<string | null>(null);
+  const { url, loading, error, bytesLoaded, bytesTotal, retry } =
+    useFileBlob(fileId);
 
-  // Read the access token once on mount (and again whenever the active
-  // session changes — `onAuthStateChange` fires for sign-in / sign-out /
-  // token refresh). pdfjs will reuse the same token for every Range
-  // request inside a single document load; if the token expires
-  // mid-render, the next Range fetch returns 401 and pdfjs surfaces a
-  // load error which the renderer turns into an error card. The user
-  // refreshing or re-opening the file picks up the fresh token.
+  // A 404 / not-found / deleted error means the original binary is gone —
+  // the caller should render the graceful "source unavailable" panel rather
+  // than a scary error card.
+  const sourceMissing = !!error && MISSING_RE.test(error);
+
+  // Lightweight, PDF-scoped console visibility (the user asked to SEE what's
+  // happening on every load). One line per resolution, with timing.
   useEffect(() => {
-    if (!fileId) {
-      setToken(null);
-      setLoading(false);
-      setSourceMissing(false);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    // Reset on every new fileId so a stale flag from a previous (broken)
-    // file never leaks onto a healthy one.
-    setSourceMissing(false);
-    setDirectUrl(null);
-
-    void (async () => {
-      // Session token first — needed both for the byte fetches and for the
-      // CDN-url resolve below.
-      let tok: string | null = null;
-      try {
-        const { data, error: sessionError } = await supabase.auth.getSession();
-        if (cancelled) return;
-        if (sessionError) setError(sessionError.message);
-        tok = data.session?.access_token ?? null;
-        setToken(tok);
-      } catch (e) {
-        if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Session lookup failed");
-      }
-
-      // Source-health probe + storage backend. A single PK lookup. If the row
-      // is absent (deleted + RLS-filtered, or genuinely gone) or carries a
-      // `deleted_at`, the binary is unreachable and the caller should degrade
-      // gracefully. Fail-open on query errors.
-      const { data: row, error: lookupError } = await supabase
-        .from("cld_files")
-        .select("id, deleted_at, storage_uri")
-        .eq("id", fileId)
-        .maybeSingle();
-      if (cancelled) return;
-      const missing = !lookupError && (!row || row.deleted_at != null);
-      if (!lookupError) setSourceMissing(missing);
-
-      // CDN-hosted file → resolve the direct CORS-friendly url (see the
-      // `directUrl` comment). Only for the CDN bucket, so the common private
-      // path is byte-for-byte unchanged. Fail-safe: any failure → keep null
-      // and fall back to the streaming path.
-      const uri = row?.storage_uri ?? "";
-      if (!missing && tok && uri.startsWith("s3://cdn.")) {
-        try {
-          const res = await fetch(
-            `${pythonBaseUrl()}/files/${encodeURIComponent(fileId)}/url`,
-            { headers: { Authorization: `Bearer ${tok}` } },
-          );
-          if (res.ok) {
-            const j = (await res.json()) as { url?: unknown };
-            // Guard: never hand pdfjs a signed s3.amazonaws.com url — S3 sends
-            // no CORS header for our origins, so the fetch would fail. Only use
-            // a genuinely CORS-friendly CDN url; otherwise stream via the API.
-            if (
-              !cancelled &&
-              typeof j.url === "string" &&
-              !j.url.includes("s3.amazonaws.com")
-            ) {
-              setDirectUrl(j.url);
-            }
-          }
-        } catch {
-          // ignore — streaming path is the fallback
-        }
-      }
-
-      if (!cancelled) setLoading(false);
-    })();
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (cancelled) return;
-      setToken(session?.access_token ?? null);
-    });
+    if (!fileId) return;
+    const startedAt =
+      typeof performance !== "undefined" ? performance.now() : Date.now();
+    // eslint-disable-next-line no-console
+    console.info(`[pdf-load] ▶ resolving bytes — ${fileId}`);
     return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
+      const now =
+        typeof performance !== "undefined" ? performance.now() : Date.now();
+      // eslint-disable-next-line no-console
+      console.info(
+        `[pdf-load] ◼ unmounted ${fileId} after ${Math.round(now - startedAt)}ms`,
+      );
     };
   }, [fileId]);
 
-  if (!fileId) {
-    return {
-      remoteUrl: null,
-      headers: {},
-      loading: false,
-      error: null,
-      sourceMissing: false,
-    };
-  }
-
-  // Direct CDN url → fetch it as-is, no auth header (simple Range GET, no
-  // cross-origin-redirect-of-a-preflighted-request trap). Otherwise stream
-  // through the API with the bearer token.
-  if (directUrl) {
-    return { remoteUrl: directUrl, headers: {}, loading, error, sourceMissing };
-  }
-
-  const headers: Record<string, string> = token
-    ? { Authorization: `Bearer ${token}` }
-    : {};
+  useEffect(() => {
+    if (!fileId) return;
+    if (url) {
+      // eslint-disable-next-line no-console
+      console.info(
+        `[pdf-load] ✓ bytes ready — ${fileId}` +
+          (bytesTotal ? ` (${(bytesTotal / 1024).toFixed(0)} KB)` : ""),
+      );
+    } else if (error) {
+      // eslint-disable-next-line no-console
+      console.warn(`[pdf-load] ✗ bytes failed — ${fileId}: ${error}`);
+    }
+  }, [url, error, bytesTotal, fileId]);
 
   return {
-    remoteUrl: pythonFileInlineUrl(fileId),
-    headers,
+    remoteUrl: url,
+    headers: {},
     loading,
-    error,
+    error: sourceMissing ? null : error,
     sourceMissing,
+    bytesLoaded,
+    bytesTotal,
+    retry,
   };
 }

@@ -115,8 +115,16 @@ export function PdfCldFileViewer({
   pageNumber?: number;
   onPageChange?: (page: number) => void;
 }) {
-  const { remoteUrl, headers, loading, error, sourceMissing } =
-    usePdfRemoteSource(fileId);
+  const {
+    remoteUrl,
+    headers,
+    loading,
+    error,
+    sourceMissing,
+    bytesLoaded,
+    bytesTotal,
+    retry,
+  } = usePdfRemoteSource(fileId);
   if (sourceMissing) {
     return (
       <PdfSourceUnavailable
@@ -133,6 +141,9 @@ export function PdfCldFileViewer({
       fileName={fileName ?? null}
       loading={loading}
       error={error}
+      onRetry={retry}
+      bytesLoaded={bytesLoaded}
+      bytesTotal={bytesTotal}
       pageNumber={pageNumber}
       onPageChange={onPageChange}
       className="border-0"

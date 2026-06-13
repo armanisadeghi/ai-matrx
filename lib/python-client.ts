@@ -151,6 +151,12 @@ export interface RequestOptions {
   /** Override base URL (tests, staging, etc.). */
   baseUrlOverride?: string;
   /**
+   * Hard timeout (ms) for byte downloads via `downloadBlobWithProgress`.
+   * Defaults to 90s. Past this the request rejects with a retryable error
+   * instead of hanging forever.
+   */
+  timeoutMs?: number;
+  /**
    * Override the guest fingerprint sent as `X-Guest-Fingerprint`. By default
    * we read it synchronously from the fingerprint service. Pass an explicit
    * value when calling from a context that has a different identity (e.g.
@@ -575,6 +581,11 @@ export async function downloadBlobWithProgress(
     const xhr = new XMLHttpRequest();
     xhr.open("GET", url, true);
     xhr.responseType = "blob";
+    // Hard ceiling so a cold backend / dead connection can never hang the
+    // download forever (the "Preparing document… (no error, no log)" class).
+    // 90s is generous for a cold container + a large file; past it we'd
+    // rather surface a clear, retryable error than spin indefinitely.
+    xhr.timeout = opts.timeoutMs ?? 90_000;
     if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     if (fingerprint) xhr.setRequestHeader("X-Guest-Fingerprint", fingerprint);
     if (opts.idempotencyKey)
@@ -583,6 +594,18 @@ export async function downloadBlobWithProgress(
       xhr.setRequestHeader("X-Cloud-Files-Bypass", opts.cloudFilesBypass);
     xhr.setRequestHeader("X-Request-Id", requestId);
     xhr.setRequestHeader("Accept", "*/*");
+
+    xhr.addEventListener("timeout", () => {
+      reject(
+        new BackendApiError({
+          code: "internal",
+          detail: `Download timed out after ${Math.round(xhr.timeout / 1000)}s`,
+          userMessage:
+            "The file took too long to load — the server may be warming up. Please retry.",
+          requestId,
+        }),
+      );
+    });
 
     xhr.addEventListener("progress", (ev) => {
       onProgress({

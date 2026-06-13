@@ -47,6 +47,17 @@ import * as Files from "@/features/files/api/files";
 import { extractErrorMessage } from "@/utils/errors";
 import { getCached, hydrateFromIdb, setCached } from "./blob-cache";
 
+/**
+ * In-flight dedup. When two components mount with the SAME fileId before
+ * either download finishes (e.g. the same PDF rendered in two panes on one
+ * page — the exact bug a user hit), they must share ONE network download,
+ * not race two. Keyed by fileId; cleared when the download settles.
+ */
+const inflightDownloads = new Map<
+  string,
+  Promise<{ blob: Blob; filename: string | null }>
+>();
+
 export interface UseFileBlobResult {
   /** `blob:`-scheme URL safe to feed into any browser API. `null` until ready. */
   url: string | null;
@@ -146,23 +157,40 @@ export function useFileBlob(fileId: string | null): UseFileBlobResult {
         return;
       }
 
-      // 3. IDB miss — fetch with progress.
+      // 3. IDB miss — fetch with progress, deduplicated across simultaneous
+      //    mounts of the same fileId so two panes never double-download.
       try {
-        const { blob: b } = await Files.downloadFileWithProgress(
-          fileId,
-          (ev) => {
+        let download = inflightDownloads.get(fileId);
+        if (!download) {
+          download = Files.downloadFileWithProgress(fileId, (ev) => {
             if (cancelled) return;
             setBytesLoaded(ev.loaded);
             if (ev.total !== null) setBytesTotal(ev.total);
-          },
-        );
+          }).then(({ blob, filename }) => ({ blob, filename }));
+          inflightDownloads.set(fileId, download);
+          void download.finally(() => {
+            // Only clear if it's still the same promise (a later retry may
+            // have replaced it).
+            if (inflightDownloads.get(fileId) === download) {
+              inflightDownloads.delete(fileId);
+            }
+          });
+        }
+        const { blob: b } = await download;
         if (cancelled) return;
-        const objectUrl = URL.createObjectURL(b);
-        // Insert into both cache tiers. From now on the cache owns the URL —
-        // do NOT revoke it on unmount; the cache will do it on eviction.
-        setCached(fileId, b, objectUrl, { mimeType: b.type });
+        // Another mount of this fileId may have already cached the bytes
+        // while we awaited the shared download — reuse its URL if so.
+        const already = getCached(fileId);
+        const objectUrl = already?.url ?? URL.createObjectURL(b);
+        if (!already) {
+          // Insert into both cache tiers. From now on the cache owns the URL —
+          // do NOT revoke it on unmount; the cache will do it on eviction.
+          setCached(fileId, b, objectUrl, { mimeType: b.type });
+        }
         setBlob(b);
         setUrl(objectUrl);
+        setBytesLoaded(b.size);
+        setBytesTotal(b.size);
         setLoading(false);
       } catch (err) {
         if (cancelled) return;

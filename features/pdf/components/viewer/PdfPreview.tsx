@@ -71,6 +71,9 @@ export default function PdfPreview({
     loading: sessionLoading,
     error: sessionError,
     sourceMissing,
+    bytesLoaded,
+    bytesTotal,
+    retry,
   } = usePdfRemoteSource(fileId);
   const file = useAppSelector((s) =>
     fileId ? selectFileById(s, fileId) : null,
@@ -92,6 +95,9 @@ export default function PdfPreview({
         fileName={file?.fileName ?? null}
         loading={sessionLoading}
         error={sessionError}
+        onRetry={retry}
+        bytesLoaded={bytesLoaded}
+        bytesTotal={bytesTotal}
         pageNumber={pageNumber}
         onPageChange={onPageChange}
         renderOverlay={renderOverlay}
