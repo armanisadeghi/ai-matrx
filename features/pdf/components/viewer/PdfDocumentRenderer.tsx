@@ -798,7 +798,22 @@ export default function PdfDocumentRenderer({
       </div>
 
       {/* Scrollable viewport — measured with ResizeObserver. */}
-      <div ref={containerRef} className="min-h-0 flex-1 overflow-auto">
+      <div ref={containerRef} className="relative min-h-0 flex-1 overflow-auto">
+        {/* Full-size loading overlay covering the pdfjs PARSE phase (bytes
+          * already in hand, document not yet rendered). Without this, pdfjs's
+          * own in-<Document> `loading` placeholder renders in a height-less
+          * flex container and collapses to a tiny box — the "loading is a
+          * tiny box in a sea of white" bug. The overlay fills the viewport
+          * until the first page is parsed (numPages > 0). */}
+        {numPages === 0 && !loadError ? (
+          <div className="absolute inset-0 z-10">
+            <PdfLoadingState
+              fileName={fileName ?? null}
+              bytesLoaded={bytesLoaded}
+              bytesTotal={bytesTotal ?? null}
+            />
+          </div>
+        ) : null}
         <Document
           file={documentFile}
           onLoadSuccess={({ numPages: n }) => {
@@ -806,14 +821,7 @@ export default function PdfDocumentRenderer({
             setPageNumber((p) => Math.min(p, n));
           }}
           onLoadError={(err) => setLoadError(err.message)}
-          loading={
-            <PdfLoadingState
-              fileName={fileName ?? null}
-              bytesLoaded={bytesLoaded}
-              bytesTotal={bytesTotal ?? null}
-              className="bg-transparent"
-            />
-          }
+          loading={null}
           className="flex w-full flex-col items-center"
         >
           <div className="relative my-4 shadow-sm">
