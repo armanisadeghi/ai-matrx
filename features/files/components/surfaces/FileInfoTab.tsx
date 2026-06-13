@@ -39,6 +39,7 @@ import { useFileActions } from "@/features/files/components/core/FileActions/use
 import { formatFileSize } from "@/features/files/utils/format";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
+import { FileRagStatusChip } from "@/features/rag/components/FileRagStatusChip";
 import {
   fileInfoHumanSummary,
   type FileInfoSnapshot,
@@ -280,6 +281,16 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
            */}
           {file.source.kind === "real" ? (
             <Section title="RAG / document">
+              {/*
+               * Lifecycle chip — the scheduled auto-RAG state (scheduled /
+               * running / completed / failed) from /files/{id}/rag-status,
+               * with Process-now / Refresh actions. Complements the
+               * document-lookup detail below (chunks / pages / viewer link).
+               */}
+              <Row
+                label="Lifecycle"
+                value={<FileRagStatusChip fileId={fileId} showActions />}
+              />
               {docState.state.status === "found" ? (
                 <>
                   <Row
