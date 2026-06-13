@@ -1,15 +1,15 @@
 // features/dictionary/constants.ts
 //
-// Stable identifiers for the Custom Dictionary system. The agent + skill UUIDs
-// are seeded by migrations/dict_system_agents_and_skills.sql — keep them in sync.
+// Stable identifiers for the Custom Dictionary system. The skill UUIDs are
+// seeded by migrations/dict_system_agents_and_skills.sql. The agent is built via
+// the aidream Agent Factory (internal_agents/dictionary_assistant.md), NOT a
+// hand-rolled SQL seed — its UUID is assigned at build time.
 
 import type { DictLevel } from "@/features/dictionary/types";
 
-/** Builtin dictionary agents (agx_agent ids). */
+/** Builtin Dictionary Assistant agent — factory-built (agx_agent id). */
 export const DICTIONARY_AGENT_IDS = {
-  assistant: "a91c7000-0000-4000-a000-000000000001",
-  terminologyCurator: "a91c7000-0000-4000-a000-000000000002",
-  pronunciationCoach: "a91c7000-0000-4000-a000-000000000003",
+  assistant: "ab1a868e-b866-4ade-9383-fd63b0928c7c",
 } as const;
 
 /** Internal skills (skl_definitions ids). */
