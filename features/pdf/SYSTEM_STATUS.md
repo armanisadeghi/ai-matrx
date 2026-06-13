@@ -1,3 +1,33 @@
+# PDF System — Canonical Status (2026-06-13)
+
+## 2026-06-13 — reliability + caching overhaul (verified in-browser)
+- **CACHING FIXED (was the #1 defect).** The viewer used an uncached Range-
+  streaming path — the same PDF re-downloaded every view (even twice on one
+  page, ~30s). Now routed through the canonical cached byte path
+  (`useFileBlob`: XHR + module LRU + IndexedDB). **Verified: re-selecting a
+  file makes ZERO new network requests** and renders from cache; survives
+  page reloads (IDB). Two simultaneous mounts of one file share ONE download.
+- **RELIABILITY FIXED.** pdfjs `fetch` + auth header + the CDN cross-origin
+  302 silently failed; a cold backend hung forever ("Preparing document…",
+  no error). A `blob:` URL is bulletproof (no CORS/redirect/auth). 90s XHR
+  timeout → clear retryable error instead of an infinite spinner. `[pdf-load]`
+  console logging on every resolve.
+- **Missing-source files** (S3 object gone — orphaned by the 2026-05 storage
+  migration) now return **404 → graceful "original unavailable" panel** (was
+  a scary 500). Backend `_map_exc` maps S3 NoSuchKey → 404.
+- **Loading state rebuilt** to fill the ENTIRE area: large page skeleton,
+  diagonal shimmer, neutral PDF mark, real download progress bar (was a tiny
+  red box).
+- **Inline NER shipped:** Analysis tab now has an **Entities** section
+  (`GET /files/{id}/entities`, grouped by category) — trigger from the
+  Overview Knowledge panel, review entities here.
+- **Test-file caveat:** of the seed PDFs, `t.pdf` and the ACOEM guideline are
+  **dead-source** (their S3 bytes are gone) and will show the unavailable
+  panel; `ap-world-history-guide.pdf` is the real working file. For the demo,
+  upload a fresh PDF (lands in the private bucket, always works).
+
+---
+
 # PDF System — Canonical Status (2026-06-12)
 
 **The rule:** one purpose → one implementation. The component listed here is the *same* one mounted in production AND on the demo bench. There is no second version anywhere.
