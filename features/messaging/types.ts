@@ -36,6 +36,35 @@ export interface ConversationParticipant {
   is_archived: boolean;
 }
 
+/**
+ * Generic actionable-message envelope carried on `dm_messages.action_data`.
+ * The bubble renders `kind` into deep-link chips via the message-action
+ * registry; unknown kinds render nothing (forward-compatible). `agent_drift`
+ * is the first kind — see features/agents drift notifications.
+ */
+export interface MessageActionData<
+  K extends string = string,
+  P = Record<string, unknown>,
+> {
+  kind: K;
+  /** Payload schema version per kind. */
+  version: number;
+  payload: P;
+}
+
+/** Payload for `kind: "agent_drift"`. */
+export interface AgentDriftActionPayload {
+  agent_id: string;
+  agent_name: string;
+  alert_id?: string | null;
+  severity?: string | null;
+  counts?: Partial<Record<"breaking" | "silent_breaking" | "warning" | "info", number>>;
+  /** Set when the notification was about one specific usage. */
+  usage_type?: string;
+  usage_id?: string;
+  usage_label?: string;
+}
+
 export interface Message {
   id: string; // UUID
   conversation_id: string; // UUID
@@ -52,6 +81,8 @@ export interface Message {
   created_at: string;
   edited_at: string | null;
   client_message_id: string | null;
+  /** Generic actionable-message envelope (deep-link chips). Null for plain DMs. */
+  action_data: MessageActionData | null;
 }
 
 // ============================================

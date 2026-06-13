@@ -365,35 +365,11 @@ export interface AgentExecutionFull {
   context_slots: ContextSlot[] | null;
 }
 
-/** Returned by `agx_check_drift(agent_id?)`. */
-export interface AgentDriftItem {
-  reference_type: "shortcut" | "app" | "derived_agent";
-  reference_id: string;
-  reference_name: string;
-  agent_id: string;
-  agent_name: string;
-  version_pinned_to: number;
-  current_version: number;
-  versions_behind: number;
-}
-
-/** Returned by `agx_check_references(agent_id)`. */
-export interface AgentReference {
-  reference_type: "shortcut" | "app" | "derived_agent";
-  reference_id: string;
-  reference_name: string;
-  use_latest: boolean;
-  is_behind: boolean;
-}
-
-/** Returned by `agx_accept_version(type, ref_id)`. */
-export interface AcceptVersionResult {
-  success: boolean;
-  error?: string;
-  reference_type?: string;
-  reference_id?: string;
-  accepted_version?: number;
-}
+// AgentDriftItem / AgentReference / AcceptVersionResult were removed when the
+// legacy agx_check_drift / agx_check_references / agx_accept_version RPCs were
+// dropped. Find Usages + Drift Detection now lives in
+// features/agents/redux/usages/ (agx_usage_scan / agx_usage_report /
+// agx_usage_update_to_active) with its own typed shapes.
 
 /** Returned by `agx_update_from_source(agent_id)`. */
 export interface UpdateFromSourceResult {
@@ -501,16 +477,6 @@ type _Check_AgentExecutionFull =
   AgentExecutionFull extends DbRpcRow<"agx_get_execution_full"> ? true : false;
 declare const _agentExecutionFull: _Check_AgentExecutionFull;
 true satisfies typeof _agentExecutionFull;
-
-type _Check_AgentDriftItem =
-  AgentDriftItem extends DbRpcRow<"agx_check_drift"> ? true : false;
-declare const _agentDriftItem: _Check_AgentDriftItem;
-true satisfies typeof _agentDriftItem;
-
-type _Check_AgentReference =
-  AgentReference extends DbRpcRow<"agx_check_references"> ? true : false;
-declare const _agentReference: _Check_AgentReference;
-true satisfies typeof _agentReference;
 
 // ---------------------------------------------------------------------------
 // Runtime records & slice state

@@ -12,8 +12,6 @@
  *   fetchFullAgent               — complete row, marks record clean
  *   fetchAgentVersionHistory     — paginated version list (returns data, no slice storage)
  *   fetchAgentVersionSnapshot    — full version snapshot → stored in agents map (isVersion = true)
- *   checkAgentDrift              — what references are behind? (returns data, no slice storage)
- *   checkAgentReferences         — what references this agent? (returns data, no slice storage)
  *
  * Write thunks:
  *   saveAgentField               — optimistic single-field save with rollback
@@ -25,8 +23,11 @@
  * RPC action thunks:
  *   duplicateAgent               — calls agx_duplicate_agent(), loads copy into state
  *   promoteAgentVersion          — calls agx_promote_version(), reloads live row
- *   acceptAgentVersion           — accept latest for a shortcut/app/derived ref
  *   updateAgentFromSource        — reset derived agent to its source agent's data
+ *
+ * Find Usages + Drift Detection moved to features/agents/redux/usages/ — the
+ * old agx_check_drift / agx_check_references / agx_accept_version RPCs were
+ * replaced by agx_usage_scan / agx_usage_report / agx_usage_update_to_active.
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
@@ -43,9 +44,6 @@ import type {
   AgentListRow,
   AgentExecutionMinimal,
   AgentExecutionFull,
-  AgentDriftItem,
-  AgentReference,
-  AcceptVersionResult,
   UpdateFromSourceResult,
   PromoteVersionResult,
   AgentVersionSnapshot,
@@ -926,47 +924,6 @@ export const fetchAgentAccessLevel = createAsyncThunk<
 });
 
 // ---------------------------------------------------------------------------
-// Drift & references
-// ---------------------------------------------------------------------------
-
-/**
- * Returns all references that are behind (pointing to an older version).
- * Pass agentId to check drift for one specific agent, or omit to check all.
- * Returns data directly — drift UI renders from the returned array.
- */
-export const checkAgentDrift = createAsyncThunk<
-  AgentDriftItem[],
-  string | undefined,
-  ThunkApi
->("agentDefinition/checkDrift", async (agentId) => {
-  const params = agentId ? { p_agent_id: agentId } : {};
-  const { data, error } = await supabase.rpc("agx_check_drift", params);
-
-  if (error) throw pgErrorToError(error);
-
-  return (data ?? []) as AgentDriftItem[];
-});
-
-/**
- * Returns all shortcuts, apps, and derived agents that reference a specific agent.
- * Use before deleting an agent to warn the user about broken references.
- * Returns data directly — not stored in Redux.
- */
-export const checkAgentReferences = createAsyncThunk<
-  AgentReference[],
-  string,
-  ThunkApi
->("agentDefinition/checkReferences", async (agentId) => {
-  const { data, error } = await supabase.rpc("agx_check_references", {
-    p_agent_id: agentId,
-  });
-
-  if (error) throw pgErrorToError(error);
-
-  return (data ?? []) as AgentReference[];
-});
-
-// ---------------------------------------------------------------------------
 // Version management
 // ---------------------------------------------------------------------------
 
@@ -1000,32 +957,6 @@ export const purgeAgentVersions = createAsyncThunk<
   if (error) throw pgErrorToError(error);
 
   return data as unknown as PurgeVersionsResult;
-});
-
-// ---------------------------------------------------------------------------
-// Drift resolution
-// ---------------------------------------------------------------------------
-
-/**
- * Accepts the latest version for a single reference (shortcut, app, or derived agent).
- * After success the reference is no longer "behind".
- *
- * type: 'shortcut' | 'app' | 'derived_agent'
- * refId: the id of the referencing entity
- */
-export const acceptAgentVersion = createAsyncThunk<
-  AcceptVersionResult,
-  { type: "shortcut" | "app" | "derived_agent"; refId: string },
-  ThunkApi
->("agentDefinition/acceptVersion", async ({ type, refId }) => {
-  const { data, error } = await supabase.rpc("agx_accept_version", {
-    p_reference_type: type,
-    p_reference_id: refId,
-  });
-
-  if (error) throw pgErrorToError(error);
-
-  return data as unknown as AcceptVersionResult;
 });
 
 // ---------------------------------------------------------------------------

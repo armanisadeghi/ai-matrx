@@ -85,8 +85,17 @@ dm_messages
 ├── deleted_at (TIMESTAMPTZ)
 ├── deleted_for_everyone (BOOLEAN)
 ├── created_at, edited_at (TIMESTAMPTZ)
-└── client_message_id (TEXT, for deduplication)
+├── client_message_id (TEXT, for deduplication)
+└── action_data (JSONB) — actionable-message envelope (see below)
 ```
+
+### Actionable messages (`action_data`)
+
+A message can carry a generic **`action_data`** envelope `{ kind, version, payload }` that renders as deep-link chips below the bubble.
+
+- **Registry, not switch:** `actions/messageActionRegistry.tsx` maps `kind` → chip renderer. Unknown kinds render nothing (forward-compatible). Add a kind there; every bubble that carries it gets chips. First kind: `agent_drift` ("Review usages" opens the Find Usages window; "Drift report" links to `/reports/agent-drift`).
+- **Render:** `MessageBubble` mounts `<MessageActionChips>`; chips are cycle-safe (the registry imports opener hooks + the pure agents `severity.ts`, never agents components).
+- **Send:** `service/sendDirectActionMessage.ts` is the reusable "system notify a user" primitive — find/create a direct conversation + send with `actionData`. Pass `actionData` through `getMessagingService().sendMessage(..., { actionData })`. Domain copy for drift lives in `features/agents/.../driftMessageTemplate.ts` (kept in lockstep with the aidream Python template).
 
 ### Key SQL Functions
 

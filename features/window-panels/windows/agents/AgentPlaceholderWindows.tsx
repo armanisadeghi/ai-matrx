@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  PartyPopper,
-  Layers,
-  Database,
-  Search,
-  ShieldCheck,
-} from "lucide-react";
+import { PartyPopper, Layers, Database } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
@@ -133,24 +127,10 @@ export function AgentDataStorageWindow(props: PlaceholderProps) {
   );
 }
 
-export function AgentFindUsagesWindow(props: PlaceholderProps) {
-  return (
-    <PlaceholderWindowShell
-      {...props}
-      slug="agent-find-usages-window"
-      overlayId="agentFindUsagesWindow"
-      title="Find Usages"
-      icon={Search}
-      description="See every place this agent is referenced — conversations, shortcuts, agent apps, workflows, and embedded surfaces."
-      bullets={[
-        "Linked conversations and runs",
-        "Shortcuts and quick actions",
-        "Published agent apps",
-        "Workflow steps and agent connections",
-      ]}
-    />
-  );
-}
+// AgentFindUsagesWindow + AgentAdminFindUsagesWindow used to be coming-soon
+// placeholders here. They now live in `AgentFindUsagesWindow.tsx` /
+// `AgentAdminFindUsagesWindow.tsx` with real implementations (the find-usages
+// + drift detection engine), wired directly from OverlayController.
 
 // ── Admin placeholders ─────────────────────────────────────────────────────
 
@@ -161,22 +141,3 @@ export function AgentFindUsagesWindow(props: PlaceholderProps) {
 // AgentAdminShortcutWindow used to be a coming-soon placeholder here.
 // It now lives in `AgentShortcutQuickCreateWindow.tsx` with a real
 // implementation, and is wired directly from OverlayController.
-
-export function AgentAdminFindUsagesWindow(props: PlaceholderProps) {
-  return (
-    <PlaceholderWindowShell
-      {...props}
-      slug="agent-admin-find-usages-window"
-      overlayId="agentAdminFindUsagesWindow"
-      title="Find Usages (Admin)"
-      icon={ShieldCheck}
-      description="Admin-wide lookup showing every reference to this agent across all users, orgs, and system surfaces."
-      bullets={[
-        "Cross-tenant usage counts",
-        "Per-org adoption heatmap",
-        "Orphaned references and broken links",
-        "Bulk rewrite or unlink actions",
-      ]}
-    />
-  );
-}

@@ -180,6 +180,23 @@ export const primaryNavItems: ShellNavItem[] = [
     description: "Deep research with Automated topic analysis",
     color: "purple",
   },
+  {
+    label: "Reports",
+    href: "/reports",
+    iconName: "FileChartColumn",
+    section: "primary",
+    profileMenu: true,
+    dashboard: true,
+    description: "Cross-cutting reports — agent drift and more",
+    color: "amber",
+    children: [
+      {
+        label: "Agent Drift",
+        href: "/reports/agent-drift",
+        iconName: "GitCompareArrows",
+      },
+    ],
+  },
 
   {
     label: "Tasks",
@@ -447,6 +464,14 @@ export const adminNavItems: ShellNavItem[] = [
     section: "admin",
     category: "primary",
     color: "violet",
+  },
+  {
+    label: "Reports",
+    href: "/administration/reports",
+    iconName: "FileChartColumn",
+    section: "admin",
+    category: "primary",
+    color: "amber",
   },
   {
     label: "Admins & Levels",

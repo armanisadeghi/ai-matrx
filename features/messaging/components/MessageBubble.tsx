@@ -12,6 +12,7 @@ import { Check, CheckCheck, Clock, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { MessageWithSender, MessageStatus } from "../types";
+import { MessageActionChips } from "./MessageActionChips";
 
 interface MessageBubbleProps {
   message: MessageWithSender;
@@ -26,8 +27,15 @@ export function MessageBubble({
   showAvatar = true,
   showSenderName = false,
 }: MessageBubbleProps) {
-  const { content, status, created_at, sender, edited_at, deleted_for_everyone } =
-    message;
+  const {
+    content,
+    status,
+    created_at,
+    sender,
+    edited_at,
+    deleted_for_everyone,
+    action_data,
+  } = message;
 
   // Get sender display name
   const senderName =
@@ -130,6 +138,7 @@ export function MessageBubble({
           )}
         >
           <span className="text-sm whitespace-pre-wrap break-words block">{content}</span>
+          <MessageActionChips actionData={action_data} isOwn={isOwn} />
         </div>
       </div>
 

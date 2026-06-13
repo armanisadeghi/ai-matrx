@@ -19,7 +19,7 @@ import type {
   RealtimeChannel,
   RealtimePresenceState,
 } from "@supabase/supabase-js";
-import type { Message, MessageType } from "@/features/messaging/types";
+import type { Message, MessageType, MessageActionData } from "@/features/messaging/types";
 import {
   BRIDGE_BROADCAST_EVENT,
   bridgeChannelName,
@@ -70,6 +70,7 @@ interface MessageInsert {
   media_metadata?: Record<string, unknown>;
   reply_to_id?: string;
   client_message_id?: string;
+  action_data?: MessageActionData;
 }
 
 interface SendMessageOptions {
@@ -79,6 +80,8 @@ interface SendMessageOptions {
   mediaMetadata?: Record<string, unknown>;
   replyToId?: string;
   clientMessageId?: string;
+  /** Generic actionable-message envelope (deep-link chips). */
+  actionData?: MessageActionData;
 }
 
 // ============================================
@@ -341,6 +344,7 @@ export class MessagingService {
       media_metadata: options?.mediaMetadata,
       reply_to_id: options?.replyToId,
       client_message_id: clientMessageId,
+      action_data: options?.actionData,
     };
 
     // 1. INSERT to database

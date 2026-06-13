@@ -92,9 +92,12 @@ import { conversationListReducer } from "@/features/agents/redux/conversation-li
 import { conversationHistoryReducer } from "@/features/agents/redux/conversation-history/slice";
 import agentShortcutReducer from "@/features/agents/redux/agent-shortcuts/slice";
 import agentShortcutCategoryReducer from "@/features/agents/redux/agent-shortcut-categories/slice";
+import agentUsagesReducer from "@/features/agents/redux/usages/usages.slice";
 import agentContentBlockReducer from "@/features/agents/redux/agent-content-blocks/slice";
 import { sklReducer } from "@/features/agent-connections/redux/skl/slice";
 import { skillsReducer } from "@/features/skills/redux/skillsSlice";
+import { dictionaryReducer } from "@/features/dictionary/redux/dictionarySlice";
+import { surfaceUserStateReducer } from "@/features/surfaces/user-state/slice";
 import { agentConnectionsUiReducer } from "@/features/agent-connections/redux/ui/slice";
 import { agentAppReducer } from "@/features/agents/redux/agent-apps/slice";
 import agentAppConsumersReducer from "@/features/agent-apps/redux/agent-app-consumers/slice";
@@ -316,12 +319,17 @@ export const slimReducerMap = {
   conversationHistory: conversationHistoryReducer,
   agentShortcut: agentShortcutReducer,
   agentShortcutCategory: agentShortcutCategoryReducer,
+  agentUsages: agentUsagesReducer,
   agentContentBlock: agentContentBlockReducer,
   skl: sklReducer,
   // New skills slice — canonical source going forward. Backed by /api/skills
   // (the Python backend), not Supabase. The old `skl` key is retained for
   // render-blocks / render-components / resources until those move too.
   skills: skillsReducer,
+  // Custom Dictionary (terminology + pronunciation) + the generic per-surface
+  // user-state store it rides on.
+  dictionary: dictionaryReducer,
+  surfaceUserState: surfaceUserStateReducer,
   agentConnectionsUi: agentConnectionsUiReducer,
   agentApp: agentAppReducer,
   agentAppConsumers: agentAppConsumersReducer,

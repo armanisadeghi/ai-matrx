@@ -40,9 +40,11 @@ import {
   Search,
   Upload,
   ExternalLink,
+  FileChartColumn,
 } from "lucide-react";
 import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import {
@@ -91,6 +93,7 @@ const THIS_AGENT_ITEMS: MenuItem[] = [
   { label: "Full Screen Editor", icon: Maximize2, soon: true },
   { label: "Matrx Agent Optimizer", icon: Atom },
   { label: "Find Usages", icon: Search },
+  { label: "Drift Report", icon: FileChartColumn },
 ];
 
 // Actions that produce something new from this agent
@@ -313,7 +316,10 @@ export function AgentOptionsMenu({
       )
     : AGENT_MANAGEMENT_ITEMS;
 
-  const adminItems = ADMIN_ITEMS;
+  // Admin actions (incl. "Find Usages (Admin)") are super-admin only. The
+  // server RPCs enforce is_super_admin() regardless; this hides the entry.
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const adminItems = isSuperAdmin ? ADMIN_ITEMS : [];
 
   const handleDesktopItemClick = async (label: string) => {
     console.log("[AGENT OPTIONS MENU] Clicked item:", label);
@@ -496,11 +502,15 @@ export function AgentOptionsMenu({
         <DropdownMenuContent align="end" className="w-80">
           {/* ── This Agent ── */}
           {THIS_AGENT_ITEMS.map(({ label, icon: Icon, soon }) => {
-            if (label === "View All Versions") {
+            if (label === "View All Versions" || label === "Drift Report") {
+              const href =
+                label === "Drift Report"
+                  ? "/reports/agent-drift"
+                  : `${basePath}/${agentId}/latest?tab=history`;
               return (
                 <DropdownMenuItem key={label} asChild>
                   <Link
-                    href={`${basePath}/${agentId}/latest?tab=history`}
+                    href={href}
                     className="flex items-center gap-2 cursor-pointer"
                     onClick={() => setOpen(false)}
                   >
@@ -674,7 +684,10 @@ function MobileMenuContent({
         (item) => item.label !== "Convert to Template",
       )
     : AGENT_MANAGEMENT_ITEMS;
-  const adminItems = ADMIN_ITEMS;
+  // Admin actions (incl. "Find Usages (Admin)") are super-admin only. The
+  // server RPCs enforce is_super_admin() regardless; this hides the entry.
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const adminItems = isSuperAdmin ? ADMIN_ITEMS : [];
 
   const handleItem = async (label: string) => {
     if (label === "Edit Agent Info") {
@@ -757,11 +770,15 @@ function MobileMenuContent({
       {/* ── This Agent ── */}
       <div className="py-1">
         {THIS_AGENT_ITEMS.map(({ label, icon: Icon, soon }) => {
-          if (label === "View All Versions") {
+          if (label === "View All Versions" || label === "Drift Report") {
+            const href =
+              label === "Drift Report"
+                ? "/reports/agent-drift"
+                : `${basePath}/${agentId}/latest?tab=history`;
             return (
               <Link
                 key={label}
-                href={`${basePath}/${agentId}/latest?tab=history`}
+                href={href}
                 onClick={onClose}
                 className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted/50 active:bg-muted/70 transition-colors"
               >

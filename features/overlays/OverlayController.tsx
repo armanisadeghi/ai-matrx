@@ -76,7 +76,7 @@ const StateViewerWindow = dynamic(
 );
 const AgentAdminFindUsagesWindow = dynamic(
   () =>
-    import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then(
+    import("@/features/window-panels/windows/agents/AgentAdminFindUsagesWindow").then(
       (m) => ({ default: m.AgentAdminFindUsagesWindow }),
     ),
   { ssr: false },
@@ -155,7 +155,7 @@ const AgentDebugWindow = dynamic(
 );
 const AgentFindUsagesWindow = dynamic(
   () =>
-    import("@/features/window-panels/windows/agents/AgentPlaceholderWindows").then(
+    import("@/features/window-panels/windows/agents/AgentFindUsagesWindow").then(
       (m) => ({ default: m.AgentFindUsagesWindow }),
     ),
   { ssr: false },
