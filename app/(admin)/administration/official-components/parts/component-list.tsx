@@ -261,6 +261,51 @@ export const componentList: ComponentEntry[] = [
     ],
   },
   {
+    id: "item-row",
+    name: "Item Row",
+    path: "components/official/item/ItemRow.tsx",
+    description:
+      "Reusable list row: full-width label with a deepening right-edge fade (no ellipsis), hover-revealed kebab, inline rename, and right-click menu. The standard sidebar/list/tree row.",
+    categories: ["navigation", "data-display", "interactive"],
+    tags: [
+      "row",
+      "list",
+      "sidebar",
+      "tree",
+      "kebab",
+      "context menu",
+      "rename",
+      "fade",
+    ],
+  },
+  {
+    id: "item-menu",
+    name: "Item Menu",
+    path: "components/official/item/ItemMenu.tsx",
+    description:
+      "Schema-driven menu: non-blocking dropdown on desktop (no backdrop), right-click context menu, and bottom drawer with submenu drill-in on mobile. Sections, destructive items, shortcuts, async actions.",
+    categories: ["navigation", "interactive", "feedback"],
+    tags: [
+      "menu",
+      "dropdown",
+      "context menu",
+      "submenu",
+      "drawer",
+      "actions",
+      "shortcuts",
+      "mobile",
+    ],
+  },
+  {
+    id: "editable-label",
+    name: "Editable Label",
+    path: "components/official/item/EditableLabel.tsx",
+    description:
+      "Inline rename-in-place text: click or double-click to edit, Enter/blur commits, Esc cancels. Used by Item Row and by header/title surfaces.",
+    categories: ["inputs", "text", "interactive"],
+    tags: ["inline edit", "rename", "editable", "title", "text"],
+  },
+  {
     id: "full-screen-overlay",
     name: "Full Screen Overlay",
     path: "components/official/FullScreenOverlay.tsx",

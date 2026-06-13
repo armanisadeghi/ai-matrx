@@ -1388,6 +1388,89 @@
   .min-h-lvh {
     min-height: 100lvh;
   }
+
+  /* ── Item system (components/official/item/) — label fade + indicator shift ──
+     The row owns `--item-fade-w` (width of the fully-transparent zone at the
+     line end); the label reads it. Registered as <length> below so it
+     interpolates → the fade slides DEEPER on hover; unsupported browsers snap.
+     Mask acts on alpha, so it fades into whatever bg is behind (zero dark-mode
+     work). One generous constant clears the kebab + shifted indicators. */
+  .item-row {
+    --item-fade-w: 0px;
+  }
+  .item-row:hover,
+  .item-row:focus-within,
+  .item-row[data-active="true"],
+  .item-row:has([data-state="open"]) {
+    --item-fade-w: 2.75rem;
+  }
+  @media (pointer: coarse) {
+    /* Kebab is always visible on touch → permanent deep fade. */
+    .item-row {
+      --item-fade-w: 2.75rem;
+    }
+  }
+
+  .item-fade {
+    overflow: hidden;
+    white-space: nowrap;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      black calc(100% - var(--item-fade-w) - 1.25rem),
+      transparent calc(100% - var(--item-fade-w))
+    );
+    mask-image: linear-gradient(
+      to right,
+      black calc(100% - var(--item-fade-w) - 1.25rem),
+      transparent calc(100% - var(--item-fade-w))
+    );
+    transition: --item-fade-w 160ms ease-out;
+  }
+  :where([dir="rtl"]) .item-fade {
+    -webkit-mask-image: linear-gradient(
+      to left,
+      black calc(100% - var(--item-fade-w) - 1.25rem),
+      transparent calc(100% - var(--item-fade-w))
+    );
+    mask-image: linear-gradient(
+      to left,
+      black calc(100% - var(--item-fade-w) - 1.25rem),
+      transparent calc(100% - var(--item-fade-w))
+    );
+  }
+
+  /* Trailing indicators glide left out of the kebab's landing zone, in sync. */
+  .item-shift {
+    transition: transform 160ms ease-out;
+  }
+  .item-row:hover .item-shift,
+  .item-row:focus-within .item-shift,
+  .item-row[data-active="true"] .item-shift,
+  .item-row:has([data-state="open"]) .item-shift {
+    transform: translateX(-1.625rem);
+  }
+  :where([dir="rtl"]) .item-row:hover .item-shift,
+  :where([dir="rtl"]) .item-row:focus-within .item-shift,
+  :where([dir="rtl"]) .item-row[data-active="true"] .item-shift,
+  :where([dir="rtl"]) .item-row:has([data-state="open"]) .item-shift {
+    transform: translateX(1.625rem);
+  }
+  @media (pointer: coarse) {
+    .item-row .item-shift {
+      transform: translateX(-1.625rem);
+    }
+    :where([dir="rtl"]) .item-row .item-shift {
+      transform: translateX(1.625rem);
+    }
+  }
+}
+
+/* Registered so `--item-fade-w` interpolates (smooth deepening fade). Must live
+   at the top level (not inside @layer). inherits:true — row sets, label reads. */
+@property --item-fade-w {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
 }
 
 .pointer-events-none {

@@ -23,7 +23,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Loader2, MoreHorizontal, Search, Star, X } from "lucide-react";
+import { Loader2, Search, Star, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fetchConversationHistory } from "@/features/agents/redux/conversation-history/thunks";
@@ -38,12 +38,9 @@ import {
   setScopeSearch,
 } from "@/features/agents/redux/conversation-history/slice";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import {
-  useConversationRowMenu,
-  type ConversationRowMenuData,
-  type MenuAnchor,
-} from "@/features/agents/components/conversation-actions/useConversationRowMenu";
-import { ConversationRowMenu } from "@/features/agents/components/conversation-actions/ConversationRowMenu";
+import { ItemRow } from "@/components/official/item/ItemRow";
+import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
+import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 
 export interface ChatHistorySidebarProps {
   /** Unique scope key — shares fetched state across mounts with the same id. */
@@ -165,25 +162,6 @@ export function ChatHistorySidebar({
     dispatch(setScopeSearch({ scopeId, searchTerm: "" }));
   }, [dispatch, scopeId]);
 
-  // ── Row context menu (singleton — one menu shared by every row) ────────
-  const rowMenu = useConversationRowMenu();
-
-  const openRowMenu = useCallback(
-    (conv: ConversationListItem, anchor: MenuAnchor) => {
-      const data: ConversationRowMenuData = {
-        conversationId: conv.conversationId,
-        title: conv.title,
-        isFavorite: conv.isFavorite ?? false,
-        isArchived: conv.status === "archived",
-        excludeFromKg: conv.excludeFromKg ?? false,
-        isOwner: true,
-        href: `/chat/${conv.conversationId}`,
-      };
-      rowMenu.openForRow(data, anchor);
-    },
-    [rowMenu],
-  );
-
   return (
     <div className={cn("flex h-full min-h-0 flex-col bg-card", className)}>
       {headerSlot}
@@ -266,7 +244,6 @@ export function ChatHistorySidebar({
                 conv={conv}
                 active={conv.conversationId === activeConversationId}
                 onOpen={onOpenConversation}
-                onOpenMenu={openRowMenu}
               />
             ))}
           </Section>
@@ -292,9 +269,6 @@ export function ChatHistorySidebar({
           </div>
         )}
       </div>
-
-      {/* Singleton row context menu — one DOM portal, every row anchors to it */}
-      <ConversationRowMenu {...rowMenu.menuProps} />
     </div>
   );
 }
@@ -324,70 +298,57 @@ interface RowProps {
   conv: ConversationListItem;
   active: boolean;
   onOpen?: (conv: ConversationListItem) => void;
-  onOpenMenu?: (conv: ConversationListItem, anchor: MenuAnchor) => void;
 }
 
-const Row: React.FC<RowProps> = ({ conv, active, onOpen, onOpenMenu }) => {
+const Row: React.FC<RowProps> = ({ conv, active, onOpen }) => {
+  const dispatch = useAppDispatch();
   const title = conv.title?.trim() || untitled(conv);
-  const menuBtnRef = useRef<HTMLButtonElement>(null);
   const isStreaming = useAppSelector(selectIsStreaming(conv.conversationId));
 
   return (
-    <div
-      className={cn(
-        "group relative mx-1 flex h-8 items-center gap-1.5 rounded-lg px-2 text-sm cursor-pointer",
-        "text-foreground/90 transition-colors",
-        active
-          ? "bg-accent text-foreground"
-          : "hover:bg-accent/60 hover:text-foreground",
-      )}
-      onClick={() => onOpen?.(conv)}
-      onContextMenu={(e) => {
-        if (!onOpenMenu) return;
-        e.preventDefault();
-        onOpenMenu(conv, e);
+    <ItemRow
+      className="mx-1"
+      label={title}
+      active={active}
+      onOpen={() => onOpen?.(conv)}
+      menu={() =>
+        buildConversationMenu({
+          conversationId: conv.conversationId,
+          title: conv.title,
+          isFavorite: conv.isFavorite ?? false,
+          isArchived: conv.status === "archived",
+          excludeFromKg: conv.excludeFromKg ?? false,
+          isOwner: true,
+          href: `/chat/${conv.conversationId}`,
+          dispatch,
+        })
+      }
+      rename={{
+        value: conv.title ?? "",
+        emptyFallback: untitled(conv),
+        onCommit: (next) =>
+          void dispatch(
+            renameConversation({
+              conversationId: conv.conversationId,
+              title: next,
+            }),
+          ),
       }}
-    >
-      {/* Title owns the shared left edge — no leading glyph, so every row's
-          text starts at the exact same x as the section labels. */}
-      <span className="min-w-0 flex-1 truncate">{title}</span>
-
-      {/* Indicators live on the RIGHT so they never shift the title. */}
-      {isStreaming ? (
-        <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-        </span>
-      ) : conv.isFavorite ? (
-        <Star
-          className="h-3 w-3 shrink-0 text-amber-500"
-          fill="currentColor"
-          aria-hidden
-        />
-      ) : null}
-
-      {onOpenMenu && (
-        <button
-          ref={menuBtnRef}
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (menuBtnRef.current) onOpenMenu(conv, menuBtnRef.current);
-          }}
-          className={cn(
-            "flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
-            "text-muted-foreground hover:bg-background hover:text-foreground",
-            "opacity-100 md:opacity-0 md:group-hover:opacity-100",
-            "md:focus-visible:opacity-100",
-            active && "md:opacity-100",
-          )}
-          aria-label="More options"
-          title="More options"
-        >
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
-      )}
-    </div>
+      trailing={
+        isStreaming ? (
+          <span className="relative flex h-1.5 w-1.5" aria-hidden>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+          </span>
+        ) : conv.isFavorite ? (
+          <Star
+            className="h-3 w-3 text-amber-500"
+            fill="currentColor"
+            aria-hidden
+          />
+        ) : null
+      }
+    />
   );
 };
 
