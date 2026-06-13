@@ -73,6 +73,7 @@ import {
   setActiveFileId,
   setActiveFolderId,
   setChipFilter,
+  setFocusedId,
   setSearchQuery,
   setUiBatch,
 } from "@/features/files/redux/slice";
@@ -260,7 +261,9 @@ function PageShellDesktop({
   // bytes start moving; we open the prompt immediately and hand it a deferred
   // that onUploaded resolves — Save inside the prompt awaits it, so the
   // user-picks-first and upload-finishes-first races both just work.
-  const [uploadPromptNames, setUploadPromptNames] = useState<string[] | null>(null);
+  const [uploadPromptNames, setUploadPromptNames] = useState<string[] | null>(
+    null,
+  );
   const uploadIdsPromise = useRef<Promise<string[]>>(Promise.resolve([]));
   const uploadIdsResolve = useRef<((ids: string[]) => void) | null>(null);
   const handleUploadStart = useCallback((started: File[]) => {
@@ -269,10 +272,37 @@ function PageShellDesktop({
     });
     setUploadPromptNames(started.map((f) => f.name));
   }, []);
-  const handleUploadedIds = useCallback((ids: string[]) => {
-    uploadIdsResolve.current?.(ids);
-    uploadIdsResolve.current = null;
-  }, []);
+  const handleUploadedIds = useCallback(
+    (ids: string[]) => {
+      uploadIdsResolve.current?.(ids);
+      uploadIdsResolve.current = null;
+      // Highlight + scroll the most recently uploaded file into view so it
+      // never silently lands somewhere deep in a paginated list.
+      const last = ids[ids.length - 1];
+      if (last) dispatch(setFocusedId(last));
+    },
+    [dispatch],
+  );
+
+  // Reveal a finished file from the upload tray: scope the list to its
+  // folder (so the row exists), open the preview pane, and focus/scroll the
+  // row. This is the deterministic "take me to it" path — no hunting through
+  // pages to find a just-uploaded file.
+  const handleOpenUploadedFile = useCallback(
+    (fileId: string) => {
+      const file = filesById[fileId];
+      if (file && file.parentFolderId !== activeFolderId) {
+        // Only re-scope for folder-browsing sections; "all" Home already
+        // lists every file regardless of folder.
+        if (section !== "all") {
+          dispatch(setActiveFolderId(file.parentFolderId ?? null));
+        }
+      }
+      dispatch(setActiveFileId(fileId));
+      dispatch(setFocusedId(fileId));
+    },
+    [dispatch, filesById, activeFolderId, section],
+  );
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const active = event.active.data.current as
@@ -660,6 +690,7 @@ function PageShellDesktop({
                         className="h-full w-full"
                         onUploadStart={handleUploadStart}
                         onUploaded={handleUploadedIds}
+                        onOpenFile={handleOpenUploadedFile}
                       >
                         <OnboardingEmptyState />
                       </FileUploadDropzone>
@@ -677,6 +708,7 @@ function PageShellDesktop({
                         className="h-full w-full"
                         onUploadStart={handleUploadStart}
                         onUploaded={handleUploadedIds}
+                        onOpenFile={handleOpenUploadedFile}
                       >
                         {viewMode === "grid" ? (
                           <FileGrid
@@ -799,7 +831,9 @@ function PageShellDesktop({
         <CloudFileEditorHost />
         <UploadContextPrompt
           open={uploadPromptNames !== null}
-          onOpenChange={(o) => { if (!o) setUploadPromptNames(null); }}
+          onOpenChange={(o) => {
+            if (!o) setUploadPromptNames(null);
+          }}
           fileNames={uploadPromptNames ?? []}
           awaitFileIds={() => uploadIdsPromise.current}
         />

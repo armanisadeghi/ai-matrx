@@ -269,16 +269,28 @@ export function FileTable({
   // whenever the user changes context (section / folder / filters /
   // search / sort / visible columns).
   const resetKey = `${section}|${searchQuery}|${filter ?? ""}|${kindFilter}|${sortBy}:${sortDir}|${JSON.stringify(columnFilters)}|${visibleIds.join(",")}`;
-  const { visibleCount, hasMore, sentinelRef } = useInfiniteWindow({
-    total: rows.length,
-    initial: 50,
-    pageSize: 50,
-    resetKey,
-  });
+  const { visibleCount, hasMore, sentinelRef, ensureIndexVisible } =
+    useInfiniteWindow({
+      total: rows.length,
+      initial: 50,
+      pageSize: 50,
+      resetKey,
+    });
   const visibleRows = useMemo(
     () => rows.slice(0, visibleCount),
     [rows, visibleCount],
   );
+
+  // When a row gets focused programmatically (e.g. a just-uploaded file),
+  // grow the window so its row actually mounts — otherwise FileTableRow's
+  // scrollIntoView never fires because the node isn't rendered.
+  useEffect(() => {
+    if (!focusedId) return;
+    const idx = rows.findIndex((r) =>
+      r.kind === "file" ? r.file.id === focusedId : r.folder.id === focusedId,
+    );
+    if (idx >= 0) ensureIndexVisible(idx);
+  }, [focusedId, rows, ensureIndexVisible]);
 
   // Resolve "Parent/Child" path for a given folder id. Cached per-render via
   // `useCallback` + `Map`; folder hierarchies are typically <5 levels deep so

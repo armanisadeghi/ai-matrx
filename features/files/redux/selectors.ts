@@ -487,6 +487,22 @@ export const selectActiveUploads = createSelector(
     ),
 );
 
+/**
+ * Every tracked upload — active AND recently completed (success/error) that
+ * hasn't been cleared yet — ordered oldest-first so the tray reads top-to-
+ * bottom in upload order. The tray auto-dismisses successful entries after a
+ * delay, so this map stays bounded. Completed entries are what let a user see
+ * WHAT they just uploaded (and jump to it) instead of watching the progress
+ * card vanish into a paginated list.
+ */
+export const selectVisibleUploads = createSelector(
+  [selectAllUploads],
+  (uploads): UploadState[] =>
+    (Object.values(uploads) as UploadState[])
+      .slice()
+      .sort((a, b) => a.startedAt - b.startedAt),
+);
+
 export const selectOverallUploadProgress = createSelector(
   [selectActiveUploads],
   (active): { loaded: number; total: number; percent: number } => {

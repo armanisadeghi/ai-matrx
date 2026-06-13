@@ -17,7 +17,7 @@ import { useDropzone } from "react-dropzone";
 import { Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectActiveUploads } from "@/features/files/redux/selectors";
+import { selectVisibleUploads } from "@/features/files/redux/selectors";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { UploadProgressList } from "./UploadProgressList";
 import type { UploadFilesArg } from "@/features/files/types";
@@ -44,6 +44,8 @@ export interface FileUploadDropzoneProps {
   onUploadStart?: (files: File[]) => void;
   onUploaded?: (fileIds: string[]) => void;
   onError?: (message: string) => void;
+  /** Reveal a finished file from the upload tray (opens preview + scrolls). */
+  onOpenFile?: (fileId: string) => void;
   /** Optional window event name that opens the native file picker. */
   pickerEventName?: string;
 }
@@ -60,10 +62,11 @@ export function FileUploadDropzone({
   onUploadStart,
   onUploaded,
   onError,
+  onOpenFile,
   pickerEventName,
 }: FileUploadDropzoneProps) {
   const { uploadMany: upload } = useFileUpload();
-  const activeUploads = useAppSelector(selectActiveUploads);
+  const visibleUploads = useAppSelector(selectVisibleUploads);
   const [pasteHighlight, setPasteHighlight] = useState(false);
 
   const handleUpload = useCallback(
@@ -80,9 +83,7 @@ export function FileUploadDropzone({
           // `failed` is `{ name, error }[]` — surface BOTH the file and the
           // real backend reason. Joining objects rendered "[object Object]"
           // to the user, hiding every actual failure cause (CORS, 413, 401…).
-          const message = failed
-            .map((f) => `${f.name}: ${f.error}`)
-            .join("; ");
+          const message = failed.map((f) => `${f.name}: ${f.error}`).join("; ");
           onError(message);
         }
       } catch (err) {
@@ -181,8 +182,12 @@ export function FileUploadDropzone({
             </p>
           ) : null}
         </div>
-        {activeUploads.length > 0 ? (
-          <UploadProgressList uploads={activeUploads} />
+        {visibleUploads.length > 0 ? (
+          <UploadProgressList
+            uploads={visibleUploads}
+            onOpenFile={onOpenFile}
+            className="w-full"
+          />
         ) : null}
       </div>
     );
@@ -207,9 +212,12 @@ export function FileUploadDropzone({
           </div>
         </div>
       ) : null}
-      {activeUploads.length > 0 ? (
+      {visibleUploads.length > 0 ? (
         <div className="absolute bottom-3 right-3 z-20 w-80 max-w-[90%]">
-          <UploadProgressList uploads={activeUploads} />
+          <UploadProgressList
+            uploads={visibleUploads}
+            onOpenFile={onOpenFile}
+          />
         </div>
       ) : null}
     </div>

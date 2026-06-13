@@ -27,13 +27,7 @@
 
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export interface UseInfiniteWindowOptions {
   /** Total number of items to potentially render. */
@@ -69,6 +63,12 @@ export interface UseInfiniteWindowResult {
   loadMore: () => void;
   /** Reset to the initial window. Useful for "scroll to top" buttons. */
   reset: () => void;
+  /**
+   * Grow the window (if needed) so the item at `index` is rendered. Used to
+   * reveal a programmatically-focused row (e.g. a just-uploaded file) that
+   * would otherwise sit below the fold. Never shrinks the window.
+   */
+  ensureIndexVisible: (index: number) => void;
 }
 
 const DEFAULT_INITIAL = 50;
@@ -110,6 +110,20 @@ export function useInfiniteWindow({
   const reset = useCallback(() => {
     setVisibleCount(Math.min(initial, Math.max(0, total)));
   }, [initial, total]);
+
+  // Reveal a specific index. Bumps the cursor just past the target (plus a
+  // small buffer so the row isn't flush against the sentinel) without ever
+  // shrinking the current window.
+  const ensureIndexVisible = useCallback(
+    (index: number) => {
+      if (index < 0) return;
+      setVisibleCount((c) => {
+        const needed = Math.min(index + pageSize, total);
+        return Math.max(c, needed);
+      });
+    },
+    [pageSize, total],
+  );
 
   // ── Sentinel observer ─────────────────────────────────────────────
   //
@@ -158,7 +172,14 @@ export function useInfiniteWindow({
   hasMoreRef.current = hasMore;
 
   return useMemo(
-    () => ({ visibleCount, hasMore, sentinelRef, loadMore, reset }),
-    [visibleCount, hasMore, sentinelRef, loadMore, reset],
+    () => ({
+      visibleCount,
+      hasMore,
+      sentinelRef,
+      loadMore,
+      reset,
+      ensureIndexVisible,
+    }),
+    [visibleCount, hasMore, sentinelRef, loadMore, reset, ensureIndexVisible],
   );
 }

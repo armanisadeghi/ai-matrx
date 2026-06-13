@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -130,16 +130,27 @@ export function FileGrid({
   // breakpoint, which fills the viewport on every screen size. Reset
   // when the user navigates between sections / searches / filters.
   const resetKey = `${section}|${searchQuery}|${filter ?? ""}|${kindFilter}|${sortBy}:${sortDir}`;
-  const { visibleCount, hasMore, sentinelRef } = useInfiniteWindow({
-    total: rows.length,
-    initial: 60,
-    pageSize: 60,
-    resetKey,
-  });
+  const { visibleCount, hasMore, sentinelRef, ensureIndexVisible } =
+    useInfiniteWindow({
+      total: rows.length,
+      initial: 60,
+      pageSize: 60,
+      resetKey,
+    });
   const visibleRows = useMemo(
     () => rows.slice(0, visibleCount),
     [rows, visibleCount],
   );
+
+  // Reveal a programmatically-focused cell (e.g. just-uploaded file) that
+  // would otherwise sit below the rendered window.
+  useEffect(() => {
+    if (!focusedId) return;
+    const idx = rows.findIndex((r) =>
+      r.kind === "file" ? r.file.id === focusedId : r.folder.id === focusedId,
+    );
+    if (idx >= 0) ensureIndexVisible(idx);
+  }, [focusedId, rows, ensureIndexVisible]);
 
   const [shareTarget, setShareTarget] = useState<ShareDialogState | null>(null);
 

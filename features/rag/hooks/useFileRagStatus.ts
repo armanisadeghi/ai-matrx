@@ -4,20 +4,18 @@
  * React Query hook for a file's scheduled auto-RAG lifecycle, plus the
  * on-demand trigger / refresh actions.
  *
- * Polling is conditional: tight while a job is `running`, relaxed while
- * `scheduled`, and OFF on any terminal state — so an open dialog doesn't
- * poll a finished file forever, and a closed dialog (query unmounted) stops
- * entirely.
+ * Live updates come from a Supabase Realtime subscription on
+ * `cld_file_rag_jobs` (see `rag-job-realtime.ts`) — every status transition
+ * the server writes invalidates this query, so the badge flips within a
+ * round-trip instead of on a 3s timer. A slow safety-net refetch (only while
+ * non-terminal) covers a dropped channel; terminal states never refetch, so a
+ * closed dialog (query unmounted) and a finished file both go quiet.
  */
 
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setRagStatusForFile } from "@/features/files/redux/slice";
@@ -30,6 +28,7 @@ import {
   triggerFileIngestNow,
   type FileRagStatus,
 } from "@/features/rag/api/rag-jobs";
+import { subscribeToFileRagJob } from "@/features/rag/hooks/rag-job-realtime";
 
 /** Match the `detail` shape `useFileIngest.ts` dispatches for this event. */
 const PROCESSED_EVENT = "cloud-files:document-processed";
@@ -38,8 +37,9 @@ export const ragJobKeys = {
   fileStatus: (fileId: string) => ["rag", "file-status", fileId] as const,
 };
 
-const RUNNING_POLL_MS = 3_000;
-const SCHEDULED_POLL_MS = 15_000;
+// Realtime drives updates; this is only a resilience fallback for a dropped
+// channel, and only while a job is still in flight. Terminal states never poll.
+const SAFETY_POLL_MS = 60_000;
 
 export interface UseFileRagStatusResult {
   status: FileRagStatus | null;
@@ -55,6 +55,8 @@ export function useFileRagStatus(
   const enabled =
     (opts.enabled ?? true) && !!fileId && !isSyntheticId(fileId ?? "");
 
+  const qc = useQueryClient();
+
   const query = useQuery({
     queryKey: ragJobKeys.fileStatus(fileId ?? "none"),
     queryFn: ({ signal }) => fetchFileRagStatus(fileId as string, signal),
@@ -62,11 +64,22 @@ export function useFileRagStatus(
     staleTime: 5_000,
     refetchInterval: (q) => {
       const state = q.state.data?.state;
-      if (state === "running") return RUNNING_POLL_MS;
-      if (state === "scheduled") return SCHEDULED_POLL_MS;
-      return false; // terminal — stop polling
+      // Non-terminal: slow safety net only (realtime is the primary path).
+      if (state === "running" || state === "scheduled") return SAFETY_POLL_MS;
+      return false; // terminal — never refetch
     },
   });
+
+  // ── Realtime: flip the moment the server writes a transition ───────────────
+  // One refcounted channel per fileId; an INSERT/UPDATE/DELETE to this file's
+  // `cld_file_rag_jobs` row invalidates the query, which re-reads the merged
+  // `/files/{id}/rag-status` contract exactly once per real transition.
+  useEffect(() => {
+    if (!enabled || !fileId) return;
+    return subscribeToFileRagJob(fileId, () => {
+      void qc.invalidateQueries({ queryKey: ragJobKeys.fileStatus(fileId) });
+    });
+  }, [enabled, fileId, qc]);
 
   // ── Coherence bridge ──────────────────────────────────────────────────────
   //
