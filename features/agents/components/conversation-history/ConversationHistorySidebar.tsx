@@ -34,7 +34,6 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
-  MoreHorizontal,
   Search,
   Star,
   StarOff,
@@ -56,13 +55,12 @@ import {
 } from "@/features/agents/redux/conversation-history/slice";
 import type { HistoryGrouping } from "@/features/agents/redux/conversation-history/types";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import { setConversationFavorite } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import {
-  useConversationRowMenu,
-  type ConversationRowMenuData,
-  type MenuAnchor,
-} from "@/features/agents/components/conversation-actions/useConversationRowMenu";
-import { ConversationRowMenu } from "@/features/agents/components/conversation-actions/ConversationRowMenu";
+  renameConversation,
+  setConversationFavorite,
+} from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
+import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
+import { ItemRow } from "@/components/official/item/ItemRow";
 import { toast } from "sonner";
 
 export interface ConversationHistorySidebarProps {
@@ -153,11 +151,6 @@ export interface ConversationHistorySidebarProps {
    */
   sectionHeaderClassName?: string;
 }
-
-// ── Layout constants ─────────────────────────────────────────────────────────
-
-const ROW_BG = "hover:bg-accent/60";
-const ACTIVE_ROW_BG = "bg-accent text-accent-foreground";
 
 export const ConversationHistorySidebar: React.FC<
   ConversationHistorySidebarProps
@@ -299,30 +292,17 @@ export const ConversationHistorySidebar: React.FC<
     return scope.items.filter((i) => isFavoriteResolved(i.conversationId));
   }, [scope.items, isFavoriteResolved]);
 
-  // ── Row context menu (shared singleton across all rows) ──────────────────
-  const rowMenu = useConversationRowMenu();
-
-  const defaultHref = useCallback(
-    (conv: ConversationListItem): string => `/chat/${conv.conversationId}`,
-    [],
-  );
-
-  const openRowMenu = useCallback(
-    (conv: ConversationListItem, anchor: MenuAnchor) => {
-      const href = (getConversationHref ?? defaultHref)(conv);
-      const data: ConversationRowMenuData = {
-        conversationId: conv.conversationId,
-        title: conv.title,
-        isFavorite: isFavoriteResolved(conv.conversationId),
-        isArchived: conv.status === "archived",
-        excludeFromKg: conv.excludeFromKg ?? false,
-        isOwner: true,
-        href,
-        surfaceKey,
-      };
-      rowMenu.openForRow(data, anchor);
-    },
-    [rowMenu, getConversationHref, defaultHref, isFavoriteResolved, surfaceKey],
+  // ── Row context menu href resolver ───────────────────────────────────────
+  // Each <ItemRow> builds its OWN menu (kebab + right-click) via
+  // `buildConversationMenu`. The parent only owns the surface-specific href
+  // convention + surfaceKey; rows reuse the exact href the old singleton menu
+  // computed (`getConversationHref` override, else `/chat/<id>`).
+  const resolveHref = useCallback(
+    (conv: ConversationListItem): string =>
+      getConversationHref
+        ? getConversationHref(conv)
+        : `/chat/${conv.conversationId}`,
+    [getConversationHref],
   );
 
   const empty =
@@ -395,7 +375,8 @@ export const ConversationHistorySidebar: React.FC<
                 onOpen={onOpenConversation}
                 isFavorite={isFavoriteResolved(conv.conversationId)}
                 onToggleFavorite={onToggleFavoriteResolved}
-                onOpenMenu={openRowMenu}
+                resolveHref={resolveHref}
+                surfaceKey={surfaceKey}
               />
             ))}
           </Section>
@@ -420,7 +401,8 @@ export const ConversationHistorySidebar: React.FC<
                   onOpen={onOpenConversation}
                   isFavorite={isFavoriteResolved(conv.conversationId)}
                   onToggleFavorite={onToggleFavoriteResolved}
-                  onOpenMenu={openRowMenu}
+                  resolveHref={resolveHref}
+                  surfaceKey={surfaceKey}
                 />
               ))}
             </Section>
@@ -445,7 +427,8 @@ export const ConversationHistorySidebar: React.FC<
                   onOpen={onOpenConversation}
                   isFavorite={isFavoriteResolved(conv.conversationId)}
                   onToggleFavorite={onToggleFavoriteResolved}
-                  onOpenMenu={openRowMenu}
+                  resolveHref={resolveHref}
+                  surfaceKey={surfaceKey}
                   showAgentHint={false}
                 />
               ))}
@@ -480,10 +463,6 @@ export const ConversationHistorySidebar: React.FC<
           </div>
         )}
       </div>
-
-      {/* Singleton context menu for every row in this sidebar. Mounting once
-          keeps the dialog/portal cost flat regardless of list length. */}
-      <ConversationRowMenu {...rowMenu.menuProps} />
     </div>
   );
 };
@@ -619,8 +598,10 @@ interface RowProps {
   onOpen?: (conv: ConversationListItem) => void;
   isFavorite: boolean;
   onToggleFavorite?: (conv: ConversationListItem) => void;
-  /** Open the row context menu (singleton, owned by the sidebar). */
-  onOpenMenu?: (conv: ConversationListItem, anchor: MenuAnchor) => void;
+  /** Resolves the surface-specific href for the row's menu (new tab / copy). */
+  resolveHref: (conv: ConversationListItem) => string;
+  /** Agent-run focus key — when set, Duplicate jumps focus to the new copy. */
+  surfaceKey?: string;
   showAgentHint?: boolean;
 }
 
@@ -630,77 +611,90 @@ const Row: React.FC<RowProps> = ({
   onOpen,
   isFavorite,
   onToggleFavorite,
-  onOpenMenu,
+  resolveHref,
+  surfaceKey,
   showAgentHint = true,
 }) => {
+  const dispatch = useAppDispatch();
   const title = conv.title?.trim() || untitled(conv);
-  const menuBtnRef = useRef<HTMLButtonElement>(null);
-  return (
-    <div
-      className={cn(
-        "group flex items-center gap-1.5 px-2 text-[12px]",
-        "h-6 cursor-pointer",
-        ROW_BG,
-        active && ACTIVE_ROW_BG,
-      )}
-      onClick={() => onOpen?.(conv)}
-      onContextMenu={(e) => {
-        if (!onOpenMenu) return;
+
+  // Standalone star toggle — a real one-click button (NOT a menu entry), kept
+  // in the trailing slot so users can pin/unpin without opening the menu.
+  // Pin/Unpin ALSO exists in the kebab menu for discoverability + keyboard.
+  const star = onToggleFavorite ? (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
         e.preventDefault();
-        onOpenMenu(conv, e);
+        onToggleFavorite(conv);
       }}
+      className={cn(
+        "flex h-4 w-4 items-center justify-center rounded-sm",
+        // Hidden until hover unless already pinned (ItemRow's group/item drives
+        // the reveal). Always visible on touch.
+        isFavorite
+          ? "opacity-100"
+          : "opacity-0 group-hover/item:opacity-100 [@media(pointer:coarse)]:opacity-100",
+      )}
+      aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+      title={isFavorite ? "Remove from favorites" : "Add to favorites"}
     >
-      <StreamingDot conversationId={conv.conversationId} />
-      <span className="min-w-0 flex-1 truncate">{title}</span>
-      <span className="shrink-0 text-[10px] text-muted-foreground">
-        {formatRelative(conv.updatedAt)}
-      </span>
-      {onToggleFavorite && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleFavorite(conv);
-          }}
-          className={cn(
-            "flex h-4 w-4 shrink-0 items-center justify-center rounded-sm opacity-0 group-hover:opacity-100",
-            isFavorite && "opacity-100",
-          )}
-          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-          title={isFavorite ? "Remove from favorites" : "Add to favorites"}
-        >
-          {isFavorite ? (
-            <Star size={11} className="text-amber-500" fill="currentColor" />
-          ) : (
-            <StarOff size={11} className="text-muted-foreground" />
-          )}
-        </button>
+      {isFavorite ? (
+        <Star size={11} className="text-amber-500" fill="currentColor" />
+      ) : (
+        <StarOff size={11} className="text-muted-foreground" />
       )}
-      {onOpenMenu && (
-        // Always rendered so right-click + keyboard ⋯ have a stable anchor.
-        // Hidden on desktop until row hover, always visible on mobile so
-        // touch users don't need long-press.
-        <button
-          ref={menuBtnRef}
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (menuBtnRef.current) onOpenMenu(conv, menuBtnRef.current);
-          }}
-          className={cn(
-            "flex h-4 w-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground",
-            "opacity-100 md:opacity-0 md:group-hover:opacity-100",
-          )}
-          aria-label="More options"
-          title="More options"
-        >
-          <MoreHorizontal size={12} />
-        </button>
-      )}
-      {showAgentHint && conv.agentId && (
+    </button>
+  ) : null;
+
+  const meta = formatRelative(conv.updatedAt);
+
+  // The agent hint (sr-only) only matters in date grouping where the agent is
+  // not implied by the section header; folded into the trailing slot so the
+  // dense row stays a single ItemRow.
+  const trailing =
+    showAgentHint && conv.agentId ? (
+      <>
         <span className="sr-only">agent {conv.agentId}</span>
-      )}
-    </div>
+        {star}
+      </>
+    ) : (
+      star
+    );
+
+  return (
+    <ItemRow
+      label={title}
+      size="sm"
+      active={active}
+      onOpen={() => onOpen?.(conv)}
+      leading={<StreamingDot conversationId={conv.conversationId} />}
+      secondaryLabel={meta || undefined}
+      trailing={trailing}
+      menu={() =>
+        buildConversationMenu({
+          conversationId: conv.conversationId,
+          title: conv.title,
+          isFavorite,
+          isArchived: conv.status === "archived",
+          excludeFromKg: conv.excludeFromKg ?? false,
+          isOwner: true,
+          href: resolveHref(conv),
+          surfaceKey,
+          dispatch,
+        })
+      }
+      rename={{
+        value: conv.title ?? "",
+        emptyFallback: untitled(conv),
+        onCommit: (next) =>
+          void dispatch(
+            renameConversation({ conversationId: conv.conversationId, title: next }),
+          ),
+      }}
+      kebabAriaLabel={`Options for ${title}`}
+    />
   );
 };
 

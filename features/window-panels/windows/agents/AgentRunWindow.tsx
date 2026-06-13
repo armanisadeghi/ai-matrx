@@ -36,13 +36,10 @@ import React, {
 import {
   AlertTriangle,
   Brain,
-  ChevronRight,
   Loader2,
   MessageSquare,
-  MoreHorizontal,
   RotateCw,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -74,12 +71,9 @@ import { AgentOptionsMenu } from "@/features/agents/components/shared/AgentOptio
 import { PlusTapButton } from "@/components/icons/tap-buttons";
 import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
-import {
-  useConversationRowMenu,
-  type ConversationRowMenuData,
-  type MenuAnchor,
-} from "@/features/agents/components/conversation-actions/useConversationRowMenu";
-import { ConversationRowMenu } from "@/features/agents/components/conversation-actions/ConversationRowMenu";
+import { ItemRow } from "@/components/official/item/ItemRow";
+import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
+import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 
 const SOURCE_FEATURE: SourceFeature = "agent-run-window";
 
@@ -103,12 +97,10 @@ function AgentRunWindowSidebar({
   agentId,
   activeConversationId,
   onSelect,
-  onOpenMenu,
 }: {
   agentId: string | null;
   activeConversationId: string | null;
   onSelect: (conversationId: string) => void;
-  onOpenMenu: (conv: ConversationListItem, anchor: MenuAnchor) => void;
 }) {
   const dispatch = useAppDispatch();
 
@@ -189,9 +181,9 @@ function AgentRunWindowSidebar({
             <ConversationListRow
               key={conv.conversationId}
               conv={conv}
+              fallbackAgentId={agentId}
               isActive={conv.conversationId === activeConversationId}
               onSelect={() => onSelect(conv.conversationId)}
-              onOpenMenu={onOpenMenu}
             />
           ))}
       </div>
@@ -201,73 +193,58 @@ function AgentRunWindowSidebar({
 
 function ConversationListRow({
   conv,
+  fallbackAgentId,
   isActive,
   onSelect,
-  onOpenMenu,
 }: {
   conv: ConversationListItem;
+  fallbackAgentId: string | null;
   isActive: boolean;
   onSelect: () => void;
-  onOpenMenu: (conv: ConversationListItem, anchor: MenuAnchor) => void;
 }) {
-  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const dispatch = useAppDispatch();
   const date = formatDate(conv.updatedAt);
+  const targetAgentId = conv.agentId ?? fallbackAgentId;
+  const href = targetAgentId
+    ? `/agents/${targetAgentId}/run?conversationId=${conv.conversationId}`
+    : "";
   return (
-    <div
-      className={cn(
-        "group flex items-start gap-2 w-full pr-1 transition-colors border-l-2",
-        isActive
-          ? "border-primary bg-primary/8 text-primary"
-          : "border-transparent hover:bg-muted/40 text-foreground",
-      )}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        onOpenMenu(conv, e);
+    <ItemRow
+      label={conv.title?.trim() || "Untitled"}
+      active={isActive}
+      size="sm"
+      onOpen={onSelect}
+      menu={() =>
+        buildConversationMenu({
+          conversationId: conv.conversationId,
+          title: conv.title,
+          isFavorite: conv.isFavorite ?? false,
+          isArchived: conv.status === "archived",
+          excludeFromKg: conv.excludeFromKg ?? false,
+          isOwner: true,
+          href,
+          dispatch,
+        })
+      }
+      rename={{
+        value: conv.title ?? "",
+        emptyFallback: "Untitled",
+        onCommit: (next) =>
+          void dispatch(
+            renameConversation({
+              conversationId: conv.conversationId,
+              title: next,
+            }),
+          ),
       }}
-    >
-      <button
-        type="button"
-        onClick={onSelect}
-        className="flex-1 min-w-0 flex items-start gap-2 px-2 py-1.5 text-left"
-      >
-        <div className="flex-1 min-w-0">
-          <p
-            className={cn(
-              "text-xs font-medium truncate leading-tight",
-              isActive ? "text-primary" : "text-foreground",
-            )}
-          >
-            {conv.title?.trim() || "Untitled"}
-          </p>
-          <div className="flex items-center gap-1 mt-0.5">
-            <MessageSquare className="w-2.5 h-2.5 text-muted-foreground/70 shrink-0" />
-            <span className="text-[10px] text-muted-foreground/70">
-              {conv.messageCount}
-              {date ? ` · ${date}` : ""}
-            </span>
-          </div>
-        </div>
-        {isActive && (
-          <ChevronRight className="w-3 h-3 text-primary shrink-0 mt-0.5" />
-        )}
-      </button>
-      <button
-        ref={menuBtnRef}
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          if (menuBtnRef.current) onOpenMenu(conv, menuBtnRef.current);
-        }}
-        className={cn(
-          "shrink-0 self-start mt-1.5 flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground",
-          "opacity-100 md:opacity-0 md:group-hover:opacity-100",
-        )}
-        aria-label="More options"
-        title="More options"
-      >
-        <MoreHorizontal size={12} />
-      </button>
-    </div>
+      trailing={
+        <span className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
+          <MessageSquare className="w-2.5 h-2.5 text-muted-foreground/70 shrink-0" />
+          {conv.messageCount}
+          {date ? ` · ${date}` : ""}
+        </span>
+      }
+    />
   );
 }
 
@@ -575,25 +552,6 @@ function AgentRunWindowInner({
     setSelectedConversationId(conversationId);
   }, []);
 
-  const rowMenu = useConversationRowMenu();
-  const openRowMenu = useCallback(
-    (conv: ConversationListItem, anchor: MenuAnchor) => {
-      const targetAgentId = conv.agentId ?? agentId;
-      if (!targetAgentId) return;
-      const data: ConversationRowMenuData = {
-        conversationId: conv.conversationId,
-        title: conv.title,
-        isFavorite: conv.isFavorite ?? false,
-        isArchived: conv.status === "archived",
-        excludeFromKg: conv.excludeFromKg ?? false,
-        isOwner: true,
-        href: `/agents/${targetAgentId}/run?conversationId=${conv.conversationId}`,
-      };
-      rowMenu.openForRow(data, anchor);
-    },
-    [agentId, rowMenu],
-  );
-
   const handleNewRunCleared = useCallback(() => {
     setSelectedConversationId(null);
   }, []);
@@ -628,7 +586,6 @@ function AgentRunWindowInner({
           agentId={agentId}
           activeConversationId={activeConversationId}
           onSelect={handleConversationSelect}
-          onOpenMenu={openRowMenu}
         />
       }
       sidebarDefaultSize={220}
@@ -658,8 +615,6 @@ function AgentRunWindowInner({
           </div>
         </div>
       )}
-
-      <ConversationRowMenu {...rowMenu.menuProps} />
     </WindowPanel>
   );
 }

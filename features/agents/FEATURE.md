@@ -203,95 +203,34 @@ import { JsonInspector } from "@/components/official-candidate/json-inspector/Js
 
 ## Conversation row context menu (cross-surface)
 
-Every conversation-list surface in the app uses the **same** singleton context menu — one menu instance per list, opened by either a hover-revealed `⋯` button or a right-click `onContextMenu`. The menu is built declaratively from a single registry and dispatches optimistic thunks against shared slices, so a Rename / Pin / Archive / Delete fired from any surface immediately updates every other surface that's listing the same conversation (no re-fetch).
+Every conversation-list surface renders rows with the shared **`ItemRow`** primitive (`@/components/official/item/ItemRow`) — full-width label with a deepening edge fade, hover/touch-revealed `⋯`, right-click, and inline rename. **Read [`components/official/item/README.md`](../../components/official/item/README.md) before changing row or menu behavior.** The menu is built declaratively from one registry and dispatches optimistic thunks against shared slices, so Rename / Pin / Archive / Delete from any surface updates every other surface listing the same conversation (no re-fetch).
 
-### Anatomy (`features/agents/components/conversation-actions/`)
+### Anatomy
 
-| File | Role |
+| Piece | Role |
 |---|---|
-| `conversationActionRegistry.tsx` | Pure factory `(ctx) => MenuItem[]`. Items: Rename, Pin/Unpin, Open in new tab, Copy link, Duplicate, Share…, Archive/Unarchive, Delete. Every action calls `ctx.onCloseMenu()` **before** opening a modal so the menu closes and z-index doesn't fight the dialog. |
-| `useConversationRowMenu.ts` | Singleton hook. Manages `isOpen` / `data` / `anchorElement`. Anchor accepts an `HTMLElement` (for `⋯` clicks), a `React.MouseEvent` (for right-click), or `{ x, y }` (programmatic) — synthesizes a zero-size anchor element at the coordinates so `AdvancedMenu`'s positioner Just Works. |
-| `ConversationRowMenu.tsx` | Thin wrapper around `AdvancedMenu` + the Rename `TextInputDialog`. Consumes the hook's `menuProps` spread. |
+| `conversationActionRegistry.tsx#buildConversationMenu(ctx)` | Pure `(ctx) => ItemMenuConfig`. Sections: **Actions** (Rename, Pin/Unpin, Open in new tab, Copy link), **Manage** (Duplicate, Share…, Archive/Unarchive, Exclude/Include KG), **Danger** (Delete). Rename is an `intent: "rename"` entry — `ItemRow` turns it into inline edit; the row also passes a `rename` prop dispatching `renameConversation`. The menu closes itself (Radix) before any overlay/confirm opens; **no backdrop**. |
+| `ItemRow` | Owns its own kebab + right-click menu (both forced `z-[9999]`, so they layer above floating windows), the fade, and inline rename. Per-row — there is **no singleton menu instance**. |
 
 ### Data + thunks
 
 The menu is fully DB-backed:
 
 - `cx_conversation.is_favorite` — boolean column, partial index on `(user_id, updated_at desc) where is_favorite = true and deleted_at is null`. RLS lets the owner write directly; no RPC needed.
-- `get_agent_conversations` RPC returns `is_favorite` in its row shape; `fetchGlobalConversations` selects it too. The mapping helpers (`mapRpcRowToConversationListItem`, `buildConversationListItemFromExecution`) populate `ConversationListItem.isFavorite`.
-- All actions live in `features/agents/redux/conversation-list/conversation-row-actions.thunks.ts`:
-  - `renameConversation` — optimistic against `conversationList` + `conversationHistory` slices, direct Supabase update, reverts on failure.
-  - `setConversationFavorite` — same pattern, writes `is_favorite`.
-  - `setConversationArchived` — same pattern, writes `status`.
+- `get_agent_conversations` RPC returns `is_favorite`; `fetchGlobalConversations` selects it too. Mapping helpers (`mapRpcRowToConversationListItem`, `buildConversationListItemFromExecution`) populate `ConversationListItem.isFavorite` / `excludeFromKg`.
+- Actions live in `features/agents/redux/conversation-list/conversation-row-actions.thunks.ts`:
+  - `renameConversation` — optimistic across `conversationList`, `conversationHistory`, `messages`, `conversations` slices, direct Supabase update, reverts on failure.
+  - `setConversationFavorite` / `setConversationArchived` / `setConversationExcludeFromKg` — same pattern, write `is_favorite` / `status` / `exclude_from_kg`.
   - `duplicateConversation` — wraps the **server** `forkConversationServer` with no selector + `Copy of <title>`.
-- `softDeleteConversation` (existing thunk in `execution-system/message-crud/`) was enhanced to dispatch `removeConversationFromScopes({ conversationId })` so every `ConversationHistorySidebar` consumer drops the row without a re-fetch.
+- `softDeleteConversation` (in `execution-system/message-crud/`) dispatches `removeConversationFromScopes({ conversationId })` so every list drops the row without a re-fetch.
 
-### Wired consumers (single source of truth — every conversation list)
+### Wired consumers (every conversation list)
 
-| Surface | File |
-|---|---|
-| Chat / Code / Agent-apps history | `features/agents/components/conversation-history/ConversationHistorySidebar.tsx` |
-| Runner shell sidebar (large route) | `features/agents/components/shell/AgentRunSidebarMenu.tsx` |
-| Runner in-page sidebar (legacy) | `features/agents/components/run/run-sidebar/AgentRunsSidebar.tsx` |
-| Agent chat assistant widget | `features/agents/components/agent-widgets/AgentChatHistorySidebar.tsx` |
-| Quick chat history window | `features/window-panels/windows/agents/ChatHistoryWindow.tsx` |
-| Per-agent run history window | `features/window-panels/windows/agents/AgentRunHistoryWindow.tsx` |
-| Agent-run-as-window | `features/window-panels/windows/agents/AgentRunWindow.tsx` |
-| Builder "History" tab | `features/window-panels/windows/agents/AgentContentHistoryPanel.tsx` |
-| Code editor history panel | `features/code-editor/agent-code-editor/components/parts/CodeEditorHistoryPanel.tsx` (DRAFT rows still use Trash2; real conversations get the menu) |
+`ConversationHistorySidebar.tsx` (chat/code/agent-apps) · `shell/AgentRunSidebarMenu.tsx` · `run/run-sidebar/AgentRunsSidebar.tsx` · `agent-widgets/AgentChatHistorySidebar.tsx` · `chat/ChatHistorySidebar.tsx` (`/chat`) · `window-panels/windows/agents/{ChatHistoryWindow,AgentRunHistoryWindow,AgentRunWindow,AgentContentHistoryPanel}.tsx` · `code-editor/agent-code-editor/components/parts/CodeEditorHistoryPanel.tsx` (DRAFT rows keep their own `Trash2`; real conversations get the menu).
 
-### How to add the menu to a new conversation list (5-minute drop-in)
+### Add the menu to a new conversation list
 
-```tsx
-import {
-  useConversationRowMenu,
-  type ConversationRowMenuData,
-  type MenuAnchor,
-} from "@/features/agents/components/conversation-actions/useConversationRowMenu";
-import { ConversationRowMenu } from "@/features/agents/components/conversation-actions/ConversationRowMenu";
-import { MoreHorizontal } from "lucide-react";
-
-function MyList(/* ... */) {
-  const rowMenu = useConversationRowMenu();
-  const openRowMenu = useCallback(
-    (conv: ConversationListItem, anchor: MenuAnchor) => {
-      const data: ConversationRowMenuData = {
-        conversationId: conv.conversationId,
-        title: conv.title,
-        isFavorite: conv.isFavorite ?? false,
-        isArchived: conv.status === "archived",
-        isOwner: true,
-        // Canonical link for "Open in new tab" / "Copy link":
-        href: `/agents/${conv.agentId}/run?conversationId=${conv.conversationId}`,
-      };
-      rowMenu.openForRow(data, anchor);
-    },
-    [rowMenu],
-  );
-
-  return (
-    <>
-      {conversations.map((conv) => (
-        <Row
-          key={conv.conversationId}
-          conv={conv}
-          onOpenMenu={openRowMenu}      // wire to ⋯ button (anchor = button ref)
-                                         // and onContextMenu (anchor = MouseEvent)
-        />
-      ))}
-      {/* mount once per list */}
-      <ConversationRowMenu {...rowMenu.menuProps} />
-    </>
-  );
-}
-```
-
-The row component must:
-1. Render a `MoreHorizontal` button — `opacity-100 md:opacity-0 md:group-hover:opacity-100` (always visible on mobile, hover-revealed on desktop).
-2. Wire `onContextMenu={(e) => { e.preventDefault(); onOpenMenu(conv, e); }}` on its outer wrapper.
-3. `e.stopPropagation()` on the menu button's `onClick` so it doesn't also fire row selection.
-
-That's it — Rename / Pin / Archive / Delete / Duplicate / Share / Open in new tab / Copy link all light up automatically and stay consistent across every surface.
+Render an `<ItemRow>` per conversation: `menu={() => buildConversationMenu({ conversationId, title, isFavorite, isArchived, excludeFromKg, isOwner: true, href, surfaceKey?, dispatch })}` (pass the surface's canonical `href` for Open/Copy-link; set `surfaceKey` only where Duplicate should jump focus). Add `rename={{ value: title, emptyFallback, onCommit: (next) => dispatch(renameConversation({ conversationId, title: next })) }}` so the menu's Rename works. `trailing` holds indicators (streaming dot, a standalone star toggle); `size="sm"` for dense rows. The kebab, right-click, fade, and rename come for free.
 
 ---
 
@@ -357,6 +296,7 @@ A reusable editable document the user and the agent co-author. Attach it to **an
 ## Change log
 
 - `2026-06-13` — **Custom Dictionary** (`features/dictionary/FEATURE.md`): 3 builtin agents seeded (`migrations/dict_system_agents_and_skills.sql`) — Dictionary Assistant (Claude Sonnet), Terminology Curator + Pronunciation Coach (Gemini Flash) — driving the `dictionary` multi-action tool (aidream migration `0102`); 2 attachable skills (`dictionary-management`, `pronunciation-authoring`). The context-slot **inline-policy control was extracted** to `components/context-slots-management/InlinePolicyControl.tsx` (+ `decodeInlinePolicy`/`encodeInlinePolicy`) and is now shared by `AgentContextSlotsManager` and the dictionary manager — one implementation, no fork.
+- `2026-06-12` — **Conversation rows on the `ItemRow` primitive; singleton row-menu annihilated.** Every conversation list (chat sidebar, `/code` history, runner sidebars, the 4 agent windows, code-editor history) now renders `@/components/official/item/ItemRow` — full-width label with a deepening edge fade (no truncate), hover/touch kebab, right-click, and inline rename. The legacy singleton (`useConversationRowMenu.ts` + `ConversationRowMenu.tsx` + the `getConversationRowActions` factory + the `AdvancedMenu` dim-backdrop) is **deleted**; `conversationActionRegistry.tsx` now exports one `buildConversationMenu(ctx) => ItemMenuConfig`. Menus are non-modal (no backdrop) and forced `z-[9999]` so they layer above floating windows; Rename is an `intent: "rename"` entry the row turns into inline edit (dispatching `renameConversation`). See the "Conversation row context menu" section above + [`components/official/item/README.md`](../../components/official/item/README.md).
 - `2026-06-12` — **Find Usages + Drift Detection (full subsystem).** Replaced the stub "Find Usages" / "Find Usages (Admin)" windows and the legacy `agx_check_drift`/`agx_check_references`/`agx_accept_version` RPCs (dropped) with a real subsystem — see the **Find Usages & Drift** section above. DB (`migrations/agx_usage_001`–`004`): `agx_usage_registry` (code-pinned usages) + `agx_drift_alert` (weekly-scan ledger, kg-suggestions-style lifecycle) + `dm_messages.action_data` (deep-link chips) + the scan engine `agx_usage_scan_core` and its user/admin/report/history/remediation RPCs (severity tiers `breaking`/`silent_breaking`/`warning`/`info`, effective-definition drift, agent→versions→scan); hardened `agx_purge_versions` (added auth gate + preserves every pin holder, not just shortcuts). Frontend: `redux/usages/` (`agentUsages` slice) + `components/usages/` engine/strip/rows/detail/aggregate/notify + `severity.ts` map + real `AgentFindUsagesWindow`/`AgentAdminFindUsagesWindow` (menu admin item now `selectIsSuperAdmin`-gated) + `AgentDriftBanner` on `/agents/all` + messaging `action_data` chips (`messageActionRegistry`, `MessageActionChips`, `sendDirectActionMessage`). New **Reports module** (`features/reports/`, `/reports` + `/reports/agent-drift` + admin variants, sidebar/dashboard nav) with Agent Drift as report #1. Backend (aidream): `matrx_ai/agents/usage_registry.py` declaration collector (~42 hardcoded agent pins across 8 modules converted to `declare_*` — declaration IS the source), `services/agent_usage/` (startup registry sync, weekly drift scan, DM notifier), `/agent-usage/*` super-admin router, weekly `sch_task`. Seeded `/agents/admin` + `/reports/admin` maps. Live-verified: registry sync (42 rows, 0 broken pins), drift scan (30 alert groups, dedup clean). **Pending:** prod deploy + aimatrx.com end-to-end re-verify of the windows/report/banner/DM-chips and the weekly cron's first real fire.
 - `2026-06-12` — **Reusable working document (extracted from Scribe).** A collaborative editable doc that attaches to any conversation with one `conversationId` prop — see the **Working document** section above. New 11th execution-instance slice `instanceWorkingDocument` (`redux/execution-system/instance-working-document/`, `byConversationId`, cleared on `destroyInstance`) holding `enabled/content/title/binding/saving/agentRevision`. New `hooks/useWorkingDocument.ts` (draft + 800ms debounce, agent-edit merge while not typing, debounced `saveNoteField` when bound, note seed-on-bind, `openAsWindow`) + `useWorkingDocumentContextSync` (effect-only, mounted in `RunControlsMenu` so the live `working_document` `instanceContext` entry tracks the doc whether or not the editor is open). New `utils/workingDocumentContext.ts#buildWorkingDocumentContextValue` is now **the single `working_document` value shape**: `mutable:true`; bound (note / studio_document) → `persist:"auto"` + `source`, unbound → `persist:"client"`. Scribe's `buildWorkingDocumentValue` (`features/transcript-studio/service/assistantContextBuilder.ts`) delegates here (binding `kind:"studio_document"`) — zero behaviour change, one builder. UI: `components/working-document/WorkingDocumentPanel.tsx` (core) + `WorkingDocumentControls.tsx` drive a new **Document** tab in `RunControlsMenu` (enable toggle, `NotePickerPopover` bind/unbind, open-as-window, active dot). Window: `features/window-panels/windows/WorkingDocumentWindow.tsx` + opener `features/overlays/openers/workingDocumentWindow.tsx` (overlay id `workingDocumentWindow`, multi-instance per conversation, ephemeral) wired into `OverlayController`/`catalogue`/`overlay-ids`/`windowRegistryMetadata`. `process-stream.ts` now handles `context_changed` / `context_persisted` (→ `syncWorkingDocumentFromAgentThunk`, re-reads the bound source since the event carries no content) and `context_persist_failed` (logged loudly, non-fatal). **Caveat:** unbound docs can't reflect an agent edit until the backend ships content in the event (see Working document section). Lint clean; live agent-writeback reflection for bound notes pending end-to-end verification.
 - `2026-06-12` — **`/agents/all` gallery: owned + shared stacked with independent pagination.** AgentsGrid now mirrors PromptsGrid — default "All" tab shows owned agents first, a "Shared with me" divider, then shared agents; Mine/Shared tabs filter to one side. Fixed `hasShared` (was derived from the filtered list on the Mine tab, so tabs never appeared). Added owned/shared selector factories + `sharedPage` pagination. `fetchAgentsList` now drains all `agx_get_list` RPC pages so shared rows aren't truncated by the SSR seed limit.

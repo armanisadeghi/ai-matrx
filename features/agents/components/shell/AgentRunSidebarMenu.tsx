@@ -3,26 +3,18 @@
 // AgentRunSidebarMenu — conversation history grouped by agent version.
 // Controls (back, agent selector, new run) live in the shell header, not here.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import {
-  Loader2,
-  ChevronRight,
-  ChevronDown,
-  MoreHorizontal,
-} from "lucide-react";
+import { Loader2, ChevronRight, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.thunks";
 import { makeSelectAgentConversations } from "@/features/agents/redux/conversation-list/conversation-list.selectors";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
-import {
-  useConversationRowMenu,
-  type ConversationRowMenuData,
-  type MenuAnchor,
-} from "@/features/agents/components/conversation-actions/useConversationRowMenu";
-import { ConversationRowMenu } from "@/features/agents/components/conversation-actions/ConversationRowMenu";
+import { ItemRow } from "@/components/official/item/ItemRow";
+import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
+import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 
 interface AgentRunSidebarMenuProps {
   expanded: boolean;
@@ -110,28 +102,6 @@ export default function AgentRunSidebarMenu({
     router.push(`/agents/${agentId}/run?conversationId=${convId}`);
   };
 
-  // Singleton row menu — one instance per sidebar, every row opens the same one.
-  const rowMenu = useConversationRowMenu();
-
-  const openRowMenu = useCallback(
-    (conv: ConversationListItem, anchor: MenuAnchor) => {
-      if (!agentId) return;
-      const data: ConversationRowMenuData = {
-        conversationId: conv.conversationId,
-        title: conv.title,
-        isFavorite: conv.isFavorite ?? false,
-        isArchived: conv.status === "archived",
-        excludeFromKg: conv.excludeFromKg ?? false,
-        isOwner: true,
-        // Runner-route href — new tab + copy link land on the runner, not /chat.
-        href: `/agents/${agentId}/run?conversationId=${conv.conversationId}`,
-        surfaceKey: `agent-run:${agentId}`,
-      };
-      rowMenu.openForRow(data, anchor);
-    },
-    [agentId, rowMenu],
-  );
-
   if (!agentId) return null;
 
   // Collapsed: version number badges
@@ -203,14 +173,12 @@ export default function AgentRunSidebarMenu({
             key={version}
             version={version}
             items={items}
+            agentId={agentId}
             activeConversationId={conversationIdFromUrl}
             onSelect={handleConversationSelect}
-            onOpenMenu={openRowMenu}
           />
         ))}
       </div>
-
-      <ConversationRowMenu {...rowMenu.menuProps} />
     </div>
   );
 }
@@ -218,15 +186,15 @@ export default function AgentRunSidebarMenu({
 function VersionGroup({
   version,
   items,
+  agentId,
   activeConversationId,
   onSelect,
-  onOpenMenu,
 }: {
   version: number;
   items: ConversationListItem[];
+  agentId: string;
   activeConversationId: string | undefined;
   onSelect: (convId: string) => void;
-  onOpenMenu: (conv: ConversationListItem, anchor: MenuAnchor) => void;
 }) {
   const hasActive = items.some(
     (c) => c.conversationId === activeConversationId,
@@ -268,9 +236,9 @@ function VersionGroup({
             <ConversationRow
               key={conv.conversationId}
               conv={conv}
+              agentId={agentId}
               isActive={conv.conversationId === activeConversationId}
               onSelect={() => onSelect(conv.conversationId)}
-              onOpenMenu={onOpenMenu}
             />
           ))}
         </div>
@@ -281,65 +249,57 @@ function VersionGroup({
 
 function ConversationRow({
   conv,
+  agentId,
   isActive,
   onSelect,
-  onOpenMenu,
 }: {
   conv: ConversationListItem;
+  agentId: string;
   isActive: boolean;
   onSelect: () => void;
-  onOpenMenu: (conv: ConversationListItem, anchor: MenuAnchor) => void;
 }) {
-  // Single ref shared by the row's <div> and the ⋯ button so the menu can
-  // anchor to either click target (left-click on row would feel wrong, so
-  // the menu only opens on context menu or ⋯ click).
-  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const dispatch = useAppDispatch();
+  const title = conv.title?.trim() || "Untitled";
+  // Runner-route href — new tab + copy link land on the runner, not /chat.
+  const href = `/agents/${agentId}/run?conversationId=${conv.conversationId}`;
+
   return (
-    <div
-      className={cn(
-        "group flex items-center gap-2 w-full pr-1 transition-colors rounded-sm",
-        isActive
-          ? "bg-[var(--shell-pill-bg)] text-[var(--shell-pill-text)]"
-          : "hover:bg-[var(--matrx-glass-bg-hover)] text-[var(--shell-nav-text)]",
-      )}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        onOpenMenu(conv, e);
+    <ItemRow
+      className="mx-1"
+      size="sm"
+      label={title}
+      secondaryLabel={
+        conv.updatedAt ? formatRelativeDate(conv.updatedAt) : undefined
+      }
+      active={isActive}
+      onOpen={onSelect}
+      menu={() =>
+        buildConversationMenu({
+          conversationId: conv.conversationId,
+          title: conv.title,
+          isFavorite: conv.isFavorite ?? false,
+          isArchived: conv.status === "archived",
+          excludeFromKg: conv.excludeFromKg ?? false,
+          isOwner: true,
+          href,
+          surfaceKey: `agent-run:${agentId}`,
+          dispatch,
+        })
+      }
+      rename={{
+        value: conv.title ?? "",
+        emptyFallback: "Untitled",
+        onCommit: (next) =>
+          void dispatch(
+            renameConversation({
+              conversationId: conv.conversationId,
+              title: next,
+            }),
+          ),
       }}
-    >
-      <button
-        type="button"
-        onClick={onSelect}
-        className="flex-1 min-w-0 flex items-center gap-2 px-2 py-1.5 text-left"
-      >
-        <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-medium truncate">
-            {conv.title?.trim() || "Untitled"}
-          </p>
-          {conv.updatedAt && (
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              {formatRelativeDate(conv.updatedAt)}
-            </p>
-          )}
-        </div>
-        {isActive && <ChevronRight className="w-3 h-3 shrink-0" />}
-      </button>
-      <button
-        ref={menuBtnRef}
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          if (menuBtnRef.current) onOpenMenu(conv, menuBtnRef.current);
-        }}
-        className={cn(
-          "shrink-0 flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground",
-          "opacity-100 md:opacity-0 md:group-hover:opacity-100",
-        )}
-        aria-label="More options"
-        title="More options"
-      >
-        <MoreHorizontal size={12} />
-      </button>
-    </div>
+      trailing={
+        isActive ? <ChevronRight className="w-3 h-3 shrink-0" /> : undefined
+      }
+    />
   );
 }

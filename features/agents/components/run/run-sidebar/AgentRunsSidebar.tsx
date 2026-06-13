@@ -1,14 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import {
-  Loader2,
-  ChevronRight,
-  MessageSquare,
-  MoreHorizontal,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, ChevronRight, MessageSquare } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentById,
@@ -21,12 +15,9 @@ import type { ConversationListItem } from "@/features/agents/redux/conversation-
 import { AgentLauncherSidebarTester } from "../../run-controls/AgentLauncherSidebarTester";
 import { SidebarHeader } from "./SidebarHeader";
 import { ConversationHoverPreview } from "@/features/agents/components/previews/ConversationHoverPreview";
-import {
-  useConversationRowMenu,
-  type ConversationRowMenuData,
-  type MenuAnchor,
-} from "@/features/agents/components/conversation-actions/useConversationRowMenu";
-import { ConversationRowMenu } from "@/features/agents/components/conversation-actions/ConversationRowMenu";
+import { ItemRow } from "@/components/official/item/ItemRow";
+import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
+import { renameConversation } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 
 interface AgentRunsSidebarProps {
   agentId: string;
@@ -95,26 +86,6 @@ export function AgentRunsSidebar({
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  // Singleton row menu — one instance, every row shares it.
-  const rowMenu = useConversationRowMenu();
-
-  const openRowMenu = useCallback(
-    (conv: ConversationListItem, anchor: MenuAnchor) => {
-      const data: ConversationRowMenuData = {
-        conversationId: conv.conversationId,
-        title: conv.title,
-        isFavorite: conv.isFavorite ?? false,
-        isArchived: conv.status === "archived",
-        excludeFromKg: conv.excludeFromKg ?? false,
-        isOwner: true,
-        href: `/agents/${agentId}/run?conversationId=${conv.conversationId}`,
-        surfaceKey,
-      };
-      rowMenu.openForRow(data, anchor);
-    },
-    [agentId, surfaceKey, rowMenu],
-  );
-
   const agentName = useAppSelector((state) => selectAgentName(state, agentId));
 
   const conversationSectionLoading = convStatus === "loading";
@@ -164,9 +135,10 @@ export function AgentRunsSidebar({
             <ConversationListRow
               key={conv.conversationId}
               conv={conv}
+              agentId={agentId}
+              surfaceKey={surfaceKey}
               isActive={conv.conversationId === activeConversationId}
               onSelect={() => handleConversationSelect(conv.conversationId)}
-              onOpenMenu={openRowMenu}
             />
           ))}
         </div>
@@ -177,31 +149,35 @@ export function AgentRunsSidebar({
           surfaceKey={launcherSurfaceKey}
         />
       </div>
-
-      <ConversationRowMenu {...rowMenu.menuProps} />
     </div>
   );
 }
 
 function ConversationListRow({
   conv,
+  agentId,
+  surfaceKey,
   isActive,
   onSelect,
-  onOpenMenu,
 }: {
   conv: ConversationListItem;
+  agentId: string;
+  surfaceKey: string;
   isActive: boolean;
   onSelect: () => void;
-  onOpenMenu: (conv: ConversationListItem, anchor: MenuAnchor) => void;
 }) {
+  const dispatch = useAppDispatch();
+  const title = conv.title?.trim() ? conv.title : "Untitled";
   const date = conv.updatedAt
     ? new Date(conv.updatedAt).toLocaleDateString(undefined, {
         month: "short",
         day: "numeric",
       })
     : null;
-
-  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const meta = `${conv.messageCount} msg${conv.messageCount === 1 ? "" : "s"}${
+    date ? ` · ${date}` : ""
+  }`;
+  const href = `/agents/${agentId}/run?conversationId=${conv.conversationId}`;
 
   return (
     <ConversationHoverPreview
@@ -210,61 +186,46 @@ function ConversationListRow({
       align="start"
       onOpen={onSelect}
     >
-      <div
-        className={cn(
-          "group flex items-center gap-2 w-full pr-1 transition-colors",
-          isActive
-            ? "bg-primary/10 text-primary"
-            : "hover:bg-muted/50 text-foreground",
-        )}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          onOpenMenu(conv, e);
+      <ItemRow
+        className="mx-1"
+        size="md"
+        label={title}
+        leading={
+          <MessageSquare className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
+        }
+        secondaryLabel={meta}
+        active={isActive}
+        onOpen={onSelect}
+        menu={() =>
+          buildConversationMenu({
+            conversationId: conv.conversationId,
+            title: conv.title,
+            isFavorite: conv.isFavorite ?? false,
+            isArchived: conv.status === "archived",
+            excludeFromKg: conv.excludeFromKg ?? false,
+            isOwner: true,
+            href,
+            surfaceKey,
+            dispatch,
+          })
+        }
+        rename={{
+          value: conv.title ?? "",
+          emptyFallback: "Untitled",
+          onCommit: (next) =>
+            void dispatch(
+              renameConversation({
+                conversationId: conv.conversationId,
+                title: next,
+              }),
+            ),
         }}
-      >
-        <button
-          type="button"
-          onClick={onSelect}
-          className="flex-1 min-w-0 flex items-center gap-2 px-3 py-2 text-left"
-        >
-          <div className="flex-1 min-w-0">
-            <p
-              className={cn(
-                "text-xs font-medium truncate",
-                isActive && "text-primary",
-              )}
-            >
-              {conv.title?.trim() ? conv.title : "Untitled"}
-            </p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <MessageSquare className="w-2.5 h-2.5 text-muted-foreground shrink-0" />
-              <span className="text-[10px] text-muted-foreground">
-                {conv.messageCount} msg{conv.messageCount === 1 ? "" : "s"}
-                {date ? ` · ${date}` : ""}
-              </span>
-            </div>
-          </div>
-          {isActive && (
+        trailing={
+          isActive ? (
             <ChevronRight className="w-3 h-3 text-primary shrink-0" />
-          )}
-        </button>
-        <button
-          ref={menuBtnRef}
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (menuBtnRef.current) onOpenMenu(conv, menuBtnRef.current);
-          }}
-          className={cn(
-            "shrink-0 flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground",
-            "opacity-100 md:opacity-0 md:group-hover:opacity-100",
-          )}
-          aria-label="More options"
-          title="More options"
-        >
-          <MoreHorizontal size={12} />
-        </button>
-      </div>
+          ) : undefined
+        }
+      />
     </ConversationHoverPreview>
   );
 }

@@ -13,7 +13,8 @@
  *
  * Backed by the same Redux pipeline as ConversationHistorySidebar:
  * `fetchConversationHistory` thunk + `makeSelectGroupedByDate` selector +
- * `useConversationRowMenu` for the kebab. We just render it differently.
+ * the `ItemRow` primitive (`buildConversationMenu` for the kebab). We just
+ * render it differently.
  */
 
 import React, {
