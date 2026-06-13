@@ -18,6 +18,7 @@ import {
   Copy,
   Code2,
   Download,
+  Expand,
   FolderUp,
   Maximize2,
   Palette,
@@ -50,6 +51,7 @@ import {
   saveMermaidToWorkspace,
 } from "@/components/mermaid/export";
 import { MermaidRenderer } from "@/components/mermaid/MermaidRenderer";
+import { MermaidFullscreen } from "@/components/mermaid/MermaidFullscreen";
 import { preloadMermaid } from "@/components/mermaid/runtime";
 import {
   resolveMermaidTheme,
@@ -118,6 +120,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
 
   const [showSource, setShowSource] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [svgEl, setSvgEl] = useState<SVGSVGElement | null>(null);
 
   // Start downloading the engine chunk while tokens are still arriving.
@@ -318,6 +321,16 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
               <Code2 className="h-3.5 w-3.5" />
             </button>
 
+            <button
+              type="button"
+              aria-label="View fullscreen"
+              title="View fullscreen"
+              className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+              onClick={() => setFullscreen(true)}
+            >
+              <Expand className="h-3.5 w-3.5" />
+            </button>
+
             {isCanvasAvailable && (
               <button
                 type="button"
@@ -346,6 +359,15 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
             <CodeBlock code={source} language="mermaid" fontSize={13} />
           </Suspense>
         </div>
+      )}
+
+      {fullscreen && (
+        <MermaidFullscreen
+          source={source}
+          options={renderOptions}
+          title={title ?? catalog.label}
+          onClose={() => setFullscreen(false)}
+        />
       )}
     </div>
   );

@@ -10,6 +10,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Play, RotateCcw, Square } from "lucide-react";
 
 import { MermaidRenderer } from "@/components/mermaid/MermaidRenderer";
+import MermaidBlock from "@/components/mardown-display/blocks/mermaid/MermaidBlock";
 import { getFeaturedCatalogEntries, MERMAID_CATALOG } from "@/components/mermaid/catalog";
 import { detectDiagramType } from "@/components/mermaid/diagram-type";
 import type { MermaidRenderOptions } from "@/components/mermaid/types";
@@ -42,6 +43,16 @@ export default function MermaidPlaygroundPage() {
           <span className="font-medium text-foreground">{detected}</span>
         </p>
       </header>
+
+      {/* Chat block — the real MermaidBlock with its full header toolbar
+          (style / export / copy / source / fullscreen / edit). */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-medium">Chat block (full toolbar)</h2>
+        <MermaidBlock content={MERMAID_CATALOG.flowchart.starterTemplate} />
+        <p className="text-xs text-muted-foreground">
+          The Expand icon in the header opens the diagram fullscreen (Esc to exit).
+        </p>
+      </section>
 
       {/* Live editor */}
       <section className="space-y-2">
