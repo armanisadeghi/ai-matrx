@@ -1,5 +1,6 @@
 import React from "react";
 import { MarkdownErrorBoundary } from "./MarkdownErrorBoundary";
+import { BlockFallback } from "./BlockFallback";
 import { RenderBlock } from "../block-registry/BlockRenderer";
 import dynamic from "next/dynamic";
 
@@ -90,9 +91,7 @@ export const SafeBlockRenderer: React.FC<SafeBlockRendererProps> = ({
       <div className="contents" {...blockContextTags(block, index)}>
         <MarkdownErrorBoundary
           fallback={
-            <div className="py-2 px-1 text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap break-words border-l-2 border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
-              {block.content || "[Block rendering failed]"}
-            </div>
+            <BlockFallback block={block} isStreamActive={isStreamActive} />
           }
         >
           <BlockRenderer
@@ -113,10 +112,6 @@ export const SafeBlockRenderer: React.FC<SafeBlockRendererProps> = ({
     );
   } catch (error) {
     console.error("[MarkdownStream] Error rendering block:", error);
-    return (
-      <div className="py-2 px-1 text-sm text-neutral-600 dark:text-neutral-400 whitespace-pre-wrap break-words border-l-2 border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
-        {block.content || "[Block rendering failed]"}
-      </div>
-    );
+    return <BlockFallback block={block} isStreamActive={isStreamActive} />;
   }
 };

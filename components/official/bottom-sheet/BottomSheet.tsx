@@ -31,13 +31,10 @@ function BottomSheet({
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerPortal>
-        <DrawerPrimitive.Overlay
-          className="fixed inset-0 z-50"
-          style={{ background: "rgba(0, 0, 0, 0.08)" }}
-        />
+        <DrawerPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40" />
         <DrawerPrimitive.Content
           className={cn(
-            "matrx-glass-thin-border shadow-glass-lg fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-2xl overflow-hidden min-h-[60dvh] max-h-[90dvh] border-b-0",
+            "fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-2xl overflow-hidden min-h-[60dvh] max-h-[90dvh] bg-card text-card-foreground border border-b-0 border-border shadow-lg",
             contentClassName,
           )}
         >

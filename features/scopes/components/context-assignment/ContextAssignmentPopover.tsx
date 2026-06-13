@@ -21,8 +21,7 @@ import {
   type ContextAssignmentFieldProps,
 } from "./ContextAssignmentField";
 
-export interface ContextAssignmentPopoverProps
-  extends ContextAssignmentFieldProps {
+export interface ContextAssignmentPopoverProps extends ContextAssignmentFieldProps {
   /** The element that opens the popover. */
   trigger: React.ReactNode;
   align?: "start" | "center" | "end";
@@ -48,7 +47,13 @@ export function ContextAssignmentPopover({
       <PopoverContent
         align={align}
         side={side}
-        className={cn("w-[560px] max-w-[92vw] p-0", contentClassName)}
+        className={cn(
+          // Heavy field mounts on open; the default fade-in-0 makes the panel
+          // flash see-through while it janks. Start the enter animation already
+          // opaque (keep the zoom) so it never reads as transparent.
+          "w-[560px] max-w-[92vw] p-0 [--tw-enter-opacity:1] border-4 border-red-500",
+          contentClassName,
+        )}
       >
         {open && (
           <ContextAssignmentField

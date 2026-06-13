@@ -5,7 +5,7 @@
  * camelCase lives everywhere else. One converter per direction, per shape.
  */
 
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import type {
   CategoryRow,
   CategoryRowWire,
@@ -28,6 +28,29 @@ type SklCategoryRow = Database["public"]["Tables"]["skl_categories"]["Row"];
 /** Supabase-generated Row shape for skl_resources — reads + writes go
  * direct (no backend endpoint today). */
 type SklResourceRow = Database["public"]["Tables"]["skl_resources"]["Row"];
+
+/** Supabase-generated Row shape for skl_definitions — reads go direct via
+ * the Supabase client (RLS gates visibility to public + system + own +
+ * org/project/task membership). The optional embedded `skl_skill_projects`
+ * comes from the `*, skl_skill_projects(project_id)` select. */
+type SklDefinitionRow = Database["public"]["Tables"]["skl_definitions"]["Row"];
+export type SklDefinitionRowWithProjects = SklDefinitionRow & {
+  skl_skill_projects?: { project_id: string }[] | null;
+};
+
+/** Coerce a `Json` column known to hold a string[] into a real string[]. */
+function jsonToStringArray(value: Json | null | undefined): string[] {
+  return Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === "string")
+    : [];
+}
+
+/** Coerce a `Json` config column into a plain object (never an array). */
+function jsonToConfig(value: Json | null | undefined): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
 
 // ---------------------------------------------------------------------------
 // Wire → view model (inbound)
@@ -62,6 +85,40 @@ export function wireToSkillRow(wire: SkillRowWire): SkillRow {
   };
 }
 
+/** Adapter for rows read straight off `skl_definitions` via Supabase
+ * (`.from('skl_definitions').select('*, skl_skill_projects(project_id)')`).
+ * The canonical read path — replaces the legacy Python `/api/skills` GET. */
+export function supabaseRowToSkillRow(
+  row: SklDefinitionRowWithProjects,
+): SkillRow {
+  return {
+    id: row.id,
+    skillId: row.skill_id,
+    label: row.label,
+    description: row.description,
+    skillType: (row.skill_type ?? "reference") as SkillType,
+    body: row.body ?? null,
+    iconName: row.icon_name ?? null,
+    modelPreference: row.model_preference ?? null,
+    allowedTools: jsonToStringArray(row.allowed_tools),
+    triggerPatterns: jsonToStringArray(row.trigger_patterns),
+    disableAutoInvocation: Boolean(row.disable_auto_invocation),
+    platformTargets: jsonToStringArray(row.platform_targets),
+    version: row.version ?? null,
+    config: jsonToConfig(row.config),
+    categoryId: row.category_id ?? null,
+    parentSkillId: row.parent_skill_id ?? null,
+    isActive: Boolean(row.is_active),
+    isSystem: Boolean(row.is_system),
+    isPublic: Boolean(row.is_public),
+    sortOrder: row.sort_order ?? 0,
+    userId: row.user_id ?? null,
+    organizationId: row.organization_id ?? null,
+    projectId: row.project_id ?? null,
+    projectIds: (row.skl_skill_projects ?? []).map((p) => p.project_id),
+  };
+}
+
 export function wireToCategoryRow(wire: CategoryRowWire): CategoryRow {
   return {
     id: wire.id,
@@ -74,7 +131,7 @@ export function wireToCategoryRow(wire: CategoryRowWire): CategoryRow {
     sortOrder: wire.sort_order ?? 0,
     isActive: Boolean(wire.is_active),
     // user_id may be absent on Python wire shape; preserve when present.
-    userId: wire.user_id === undefined ? undefined : wire.user_id ?? null,
+    userId: wire.user_id === undefined ? undefined : (wire.user_id ?? null),
   };
 }
 

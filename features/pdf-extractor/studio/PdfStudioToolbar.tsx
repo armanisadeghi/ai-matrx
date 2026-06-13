@@ -16,9 +16,6 @@
 import React from "react";
 import {
   ArrowLeft,
-  ChevronRight,
-  Layers,
-  GitBranch,
   Zap,
   ExternalLink,
   Loader2,
@@ -26,14 +23,20 @@ import {
   RefreshCw,
   PartyPopper,
   ClipboardList,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import {
+  OverflowToolbar,
+  type ToolbarAction,
+} from "@/components/official/toolbar/OverflowToolbar";
 import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
 import { setRowScopes } from "@/features/scopes/components/context-assignment/data";
+import { PdfStudioDocTitle } from "./PdfStudioDocTitle";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
 
 export interface PdfStudioToolbarProps {
@@ -54,6 +57,10 @@ export interface PdfStudioToolbarProps {
   liveStatus?: string | null;
   onOpenSource: () => void;
   onOpenCopyPages: () => void;
+  /** Commit a new document name (renames doc + backing cloud file). */
+  onRename: (newName: string) => void | Promise<void>;
+  /** Archive (soft-delete) the active doc from the studio. */
+  onDeleteDoc: (id: string) => Promise<void>;
 }
 
 export function PdfStudioToolbar({
@@ -70,6 +77,8 @@ export function PdfStudioToolbar({
   liveStatus,
   onOpenSource,
   onOpenCopyPages,
+  onRename,
+  onDeleteDoc,
 }: PdfStudioToolbarProps) {
   if (!doc) {
     return (
@@ -88,6 +97,57 @@ export function PdfStudioToolbar({
     );
   }
 
+  const hasSource =
+    (doc.sourceKind === "cld_file" && !!doc.sourceId) ||
+    !!doc.source?.startsWith("http://") ||
+    !!doc.source?.startsWith("https://");
+
+  // Most-important-first: the overflow menu collapses from the END, so the
+  // primary "Pipeline" action survives the longest, obvious icon-only actions
+  // (Find / Source) collapse first.
+  const toolbarActions: ToolbarAction[] = [
+    {
+      id: "pipeline",
+      label: "Pipeline",
+      icon: Zap,
+      tone: "primary",
+      onSelect: onRunPipeline,
+      disabled: pipelineRunning || aiCleanRunning,
+      running: pipelineRunning,
+      runningLabel: "Running…",
+    },
+    {
+      id: "ai-clean",
+      label: "AI Clean",
+      icon: PartyPopper,
+      onSelect: onRunAiClean,
+      disabled: aiCleanRunning || pipelineRunning,
+      running: aiCleanRunning,
+      runningLabel: "Cleaning…",
+    },
+    {
+      id: "copy-pages",
+      label: "Copy Pages",
+      icon: ClipboardList,
+      onSelect: onOpenCopyPages,
+    },
+    {
+      id: "find",
+      label: "Find",
+      icon: Search,
+      hideLabel: true,
+      onSelect: onOpenFind,
+    },
+    {
+      id: "source",
+      label: "Open source",
+      icon: ExternalLink,
+      hideLabel: true,
+      onSelect: onOpenSource,
+      hidden: !hasSource,
+    },
+  ];
+
   return (
     <div className="shrink-0 border-b border-border bg-card/40">
       {/* Row 1 — title + provenance breadcrumb + chips */}
@@ -100,42 +160,42 @@ export function PdfStudioToolbar({
           <ArrowLeft className="w-4 h-4" />
         </Link>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-sm font-semibold truncate" title={doc.name}>
-              {doc.name}
-            </h1>
-            <span className="text-[10px] font-mono text-muted-foreground shrink-0">
-              {doc.id.slice(0, 8)}
-            </span>
-          </div>
-
-          {/* Provenance breadcrumb */}
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5 min-w-0">
-            <Layers className="w-2.5 h-2.5" />
-            <span>{doc.derivationKind}</span>
-            {doc.parentProcessedId && (
-              <>
-                <ChevronRight className="w-2.5 h-2.5" />
-                <GitBranch className="w-2.5 h-2.5" />
-                <span title={doc.parentProcessedId}>
-                  parent {doc.parentProcessedId.slice(0, 8)}
-                </span>
-              </>
-            )}
-            {doc.sourceKind && (
-              <>
-                <ChevronRight className="w-2.5 h-2.5" />
-                <span>{doc.sourceKind}</span>
-              </>
-            )}
-          </div>
+        <div className="min-w-0 flex-[2]">
+          <PdfStudioDocTitle
+            doc={doc}
+            onRename={onRename}
+            onDeleteDoc={onDeleteDoc}
+          />
         </div>
 
-        {/* Chips */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Context status for the underlying cloud file — the same entity
-              the files table/preview tag, so all three surfaces stay in sync. */}
+        {/* Actions — consistent compact buttons that collapse the ones that
+            don't fit into a single overflow (…) menu. Chips moved to row 2 so
+            this row keeps room for the primary actions before collapsing. */}
+        <OverflowToolbar
+          className="flex-[3]"
+          leading={
+            <PdfSurfaceSwitcher
+              current="extractor-studio"
+              fileId={doc.sourceKind === "cld_file" ? doc.sourceId : null}
+              processedDocumentId={doc.id}
+              size="icon"
+            />
+          }
+          actions={toolbarActions}
+        />
+      </div>
+
+      {/* Row 2 — page nav + chips + density */}
+      <div className="flex items-center gap-2 px-4 pb-2 min-w-0">
+        <PageJumper
+          activePage={activePage}
+          totalPages={doc.totalPages ?? pageRowCount}
+          onJumpToPage={onJumpToPage}
+        />
+        {/* Chips — metadata + context status for the underlying cloud file
+            (the same entity the files table/preview tag, so all three surfaces
+            stay in sync). */}
+        <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto scrollbar-thin">
           {doc.sourceKind === "cld_file" && doc.sourceId && (
             <PdfFileContextChip fileId={doc.sourceId} fileName={doc.name} />
           )}
@@ -144,99 +204,7 @@ export function PdfStudioToolbar({
           {!hasPageRows && <Chip tone="amber">no per-page</Chip>}
           {doc.cleanContent && <Chip tone="emerald">cleaned</Chip>}
         </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <PdfSurfaceSwitcher
-            current="extractor-studio"
-            fileId={doc.sourceKind === "cld_file" ? doc.sourceId : null}
-            processedDocumentId={doc.id}
-            size="icon"
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-[11px] gap-1"
-            onClick={onOpenFind}
-            title="Find in document — Cmd+F"
-          >
-            <Search className="w-3 h-3" />
-            Find
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-[11px] gap-1"
-            onClick={onRunAiClean}
-            disabled={aiCleanRunning || pipelineRunning}
-            title="Run AI cleanup on the extracted text — populates clean_content"
-          >
-            {aiCleanRunning ? (
-              <>
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Cleaning…
-              </>
-            ) : (
-              <>
-                <PartyPopper className="w-3 h-3" />
-                AI Clean
-              </>
-            )}
-          </Button>
-          <Button
-            size="sm"
-            className="h-7 text-[11px] gap-1"
-            onClick={onRunPipeline}
-            disabled={pipelineRunning || aiCleanRunning}
-            title="Re-run extract → cleanup → chunk → AI"
-          >
-            {pipelineRunning ? (
-              <>
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Running…
-              </>
-            ) : (
-              <>
-                <Zap className="w-3 h-3" />
-                Pipeline
-              </>
-            )}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 text-[11px] gap-1"
-            onClick={onOpenCopyPages}
-            title="Copy page range to clipboard with structured tags"
-          >
-            <ClipboardList className="w-3 h-3" />
-            Copy Pages
-          </Button>
-          {((doc.sourceKind === "cld_file" && doc.sourceId) ||
-            doc.source?.startsWith("http://") ||
-            doc.source?.startsWith("https://")) && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-[11px] gap-1"
-              onClick={onOpenSource}
-              title="Open source PDF in a new tab"
-            >
-              <ExternalLink className="w-3 h-3" />
-              Source
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Row 2 — page nav + density */}
-      <div className="flex items-center gap-2 px-4 pb-2">
-        <PageJumper
-          activePage={activePage}
-          totalPages={doc.totalPages ?? pageRowCount}
-          onJumpToPage={onJumpToPage}
-        />
-        <div className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground">
+        <div className="ml-auto shrink-0 flex items-center gap-1 text-[10px] text-muted-foreground">
           <RefreshCw className="w-2.5 h-2.5" />
           updated {formatRelativeTime(doc.updatedAt)}
         </div>
@@ -316,20 +284,20 @@ function PageJumper({
   };
 
   return (
-    <div className="flex items-center gap-1 text-[11px]">
+    <div className="flex items-center text-[11px]">
       <button
         type="button"
-        className="h-6 px-2 rounded border border-border bg-background hover:bg-accent disabled:opacity-50"
+        className="flex h-6 w-6 items-center justify-center rounded-l-md border border-border bg-background hover:bg-accent disabled:opacity-50"
         onClick={() =>
           activePage && activePage > 1 && onJumpToPage(activePage - 1)
         }
         disabled={!activePage || activePage <= 1}
         title="Previous page (k)"
+        aria-label="Previous page"
       >
-        ‹
+        <ChevronLeft className="h-3.5 w-3.5" />
       </button>
-      <span className="flex items-center gap-1 px-2 h-6 rounded border border-border bg-background text-[11px]">
-        Page
+      <span className="flex h-6 items-center gap-1 border-y border-border bg-background px-2 text-[11px]">
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -340,9 +308,11 @@ function PageJumper({
               (e.target as HTMLInputElement).blur();
             }
           }}
-          className="w-10 text-center bg-transparent outline-none tabular-nums"
+          // 16px on mobile prevents iOS focus-zoom; 11px on desktop keeps
+          // the number the same size as the rest of the count.
+          className="w-7 bg-transparent text-center text-base tabular-nums outline-none md:text-[11px]"
           inputMode="numeric"
-          style={{ fontSize: "16px" }}
+          aria-label="Current page"
         />
         <span className="text-muted-foreground">
           / {total.toLocaleString()}
@@ -350,7 +320,7 @@ function PageJumper({
       </span>
       <button
         type="button"
-        className="h-6 px-2 rounded border border-border bg-background hover:bg-accent disabled:opacity-50"
+        className="flex h-6 w-6 items-center justify-center rounded-r-md border border-border bg-background hover:bg-accent disabled:opacity-50"
         onClick={() =>
           activePage &&
           total &&
@@ -359,8 +329,9 @@ function PageJumper({
         }
         disabled={!activePage || !total || activePage >= total}
         title="Next page (j)"
+        aria-label="Next page"
       >
-        ›
+        <ChevronRight className="h-3.5 w-3.5" />
       </button>
     </div>
   );

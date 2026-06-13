@@ -66,7 +66,23 @@ Studio docs were archived" — but that was `processed_documents`, not the
 user-facing PDFs are dead.** If it's a meaningful %, that alone explains the
 "fails sometimes" with no code bug at all.
 
-**REQUIRED — audit the scope (do this first):**
+**TOOLING NOW EXISTS (2026-06-13):** a recurring data-integrity system was
+built — don't re-write the audit script. See `lib/integrity/` (registry +
+runner), the admin page `/administration/data-integrity`, and the CLI
+`pnpm check:data-integrity[:strict]`. It already covers: visible files marked
+`unrecoverable://` (the in-place dead-source flag — **the current state of the
+known-dead ACOEM file**), empty `storage_uri`, dangling folder/bridge/duplicate
+references, orphaned/deleted-source `processed_documents`, and an opt-in live S3
+byte probe (`--probe` / "Run all + probe"). Live state at build time: **2**
+visible-unrecoverable files (errors), **2** processed_documents on soft-deleted
+sources (warnings); all other referential checks clean across 6,501 live files.
+
+The byte probe still needs a **backend service endpoint** for a true cross-user
+audit — today it only covers files the caller's JWT can access (no cross-user
+service token exists). Add a new check to `lib/integrity/checks.ts` to extend
+coverage; both surfaces pick it up automatically.
+
+**Original required-audit note (now implemented above):**
 ```
 # For every PDF cld_files row, probe /files/{id}/download (range 0-0) and
 # bucket by status. 200/206 = ok; 404 = dead source; 500 = backend bug.

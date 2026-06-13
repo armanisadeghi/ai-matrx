@@ -42,18 +42,22 @@ delete / categorise / ingest, plus the per-agent `skill_config` picker.
   central stream pump (`process-stream.ts`) when a `resource_changed`
   event has `kind` starting in `"skill"`.
 
-**API endpoints** (Python backend — aidream)
-- `GET    /api/skills` — list visible (system + public + own); supports
-  `?category_id`, `?is_public_only`, `?project_id`, `?limit`.
-- `GET    /api/skills/categories` — flat category list.
-- `GET    /api/skills/{skill_ref}` — UUID or `skill_id` business key.
-- `POST   /api/skills` — create (`is_public` honored; `is_system` forced
-  to false server-side).
-- `PATCH  /api/skills/{skill_id}` — update (owner / admin only).
-- `DELETE /api/skills/{skill_id}` — soft-deactivate (owner / admin only).
-- `POST   /api/skills/ingest` — admin-only filesystem ingest.
-- `POST   /api/skills/{skill_id}/projects/{project_id}` — associate.
-- `DELETE /api/skills/{skill_id}/projects/{project_id}` — disassociate.
+**Data access** — reads and owned-row writes go **Supabase-direct** per
+CLAUDE.md doctrine (React → Supabase, no Next.js/Python hop). RLS gates
+everything. Only **system rows** (`is_system` / `user_id IS NULL`, which RLS
+can't write) and the **filesystem ingest** still hit the Python admin
+endpoints. (The old `/api/skills` GET hop 404'd anyway once `callApi`
+stripped the `/api` prefix — that is the bug this layout fixes.)
+
+- List / get / categories / resources — Supabase direct
+  (`skl_definitions` + `skl_skill_projects(project_id)` join,
+  `skl_categories`, `skl_resources`); RLS = system + public + own + org +
+  project + task.
+- Create / patch / delete — Supabase direct for owned/org/project rows;
+  Python `POST/PATCH/DELETE /api/skills[/{id}]` for system rows (admin).
+- Project association — Supabase direct upsert/delete on `skl_skill_projects`.
+- `POST /api/skills/ingest` — admin-only filesystem ingest (genuine server
+  operation; stays on Python).
 
 **Redux slice(s)**
 - `features/skills/redux/skillsSlice.ts` — state shape: `skills`,
@@ -92,13 +96,14 @@ delete / categorise / ingest, plus the per-agent `skill_config` picker.
 
 1. User opens the agent-connections window and selects "Skills" in the
    sidebar (rendered by `features/agent-connections/components/sections/SkillsSection.tsx`).
-2. `useSkills()` loads `/api/skills`; the slice fills `skills.byId`.
+2. `useSkills()` loads via `fetchSkills` (Supabase direct); the slice fills `skills.byId`.
 3. The user clicks a row → SkillsSection enters `detail` mode, rendering
    `<SkillDetailEditor>` (`features/skills/components/SkillDetailEditor.tsx`).
 4. The editor seeds a `SkillDraft` via `skillRowToDraft` and tracks a
    `changed` set as the user edits.
-5. Save → `patchSkillFromDraft` thunk computes the patch body and posts
-   `PATCH /api/skills/{id}`. The slice upserts the new row.
+5. Save → `patchSkillFromDraft` thunk computes the patch and writes it
+   (Supabase direct for owned rows; Python `PATCH /api/skills/{id}` for
+   system rows). The slice upserts the new row.
 
 ### 2. Sandbox auto-discovery surfaces new skills
 
@@ -221,6 +226,17 @@ Phases A–K of [`/.claude/plans/immutable-imagining-dove.md`](../../../../.clau
 
 ## Change log
 
+- `2026-06-13` — claude: **reads + owned-row writes moved to Supabase-direct.**
+  `fetchSkills` / `fetchSkillById` (list/get) now read `skl_definitions`
+  straight from Supabase (RLS-gated, with the `skl_skill_projects(project_id)`
+  join) instead of the Python `GET /api/skills` — which 404'd in prod because
+  `callApi.buildUrl` strips the `/api` prefix (`/api/skills` → `/skills` → 404).
+  `createSkill` / `patchSkill` / `deleteSkill` now smart-dispatch like the
+  category thunks: Supabase-direct for owned/org/project rows, Python admin
+  endpoint only for system rows (`is_system` / `user_id IS NULL`, which RLS
+  can't write). Project association upsert/delete also moved Supabase-direct.
+  New `supabaseRowToSkillRow` converter in `skillsConverters.ts`. Ingest stays
+  on Python (genuine filesystem op).
 - `2026-05-27` — claude: finishing pass (phases H–K). Full category CRUD
   + drag-to-reparent via @dnd-kit; admin category POST/PATCH/DELETE
   endpoints on the Python router; SkillResourcesPanel with Supabase-

@@ -50,6 +50,31 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
 
   const refresh = useCallback(() => setBumper((b) => b + 1), []);
 
+  // Archive (soft-delete) a document. `archived_at` is the canonical
+  // "removed from view" state the studio query already filters on, so the
+  // text/per-page rows survive for recovery while the doc disappears from
+  // every studio list. Optimistically drops the row, restores on failure.
+  const deleteDoc = useCallback(
+    async (id: string) => {
+      if (!userId) throw new Error("Not signed in");
+      let prev: StudioDocSummary[] = [];
+      setDocs((cur) => {
+        prev = cur;
+        return cur.filter((d) => d.id !== id);
+      });
+      const { error: err } = await supabase
+        .from("processed_documents")
+        .update({ archived_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("owner_id", userId);
+      if (err) {
+        setDocs(prev);
+        throw new Error(err.message);
+      }
+    },
+    [userId],
+  );
+
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
@@ -187,6 +212,7 @@ export function usePdfStudioDocs(opts?: { pageSize?: number }) {
     loading,
     error,
     refresh,
+    deleteDoc,
     search,
     setSearch,
     sortBy,

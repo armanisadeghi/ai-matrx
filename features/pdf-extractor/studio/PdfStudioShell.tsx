@@ -37,6 +37,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/utils/supabase/client";
+import { renameFile } from "@/features/files/redux/thunks";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import {
@@ -202,6 +204,55 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     didInitRef.current = true;
     void selectDocById(initialDocumentId);
   }, [initialDocumentId, selectDocById]);
+
+  const handleDeleteDoc = useCallback(
+    async (id: string) => {
+      await docsState.deleteDoc(id);
+      // If we just deleted the doc we're viewing, drop it and return to the
+      // studio root so the user isn't left staring at a deleted document.
+      if (activeDoc?.id === id) {
+        setActiveDoc(null);
+        dispatch(clearActiveDoc());
+        router.push("/tools/pdf-extractor");
+      }
+    },
+    [docsState, activeDoc, dispatch, router],
+  );
+
+  const handleRenameDoc = useCallback(
+    async (newName: string) => {
+      if (!activeDoc) return;
+      const trimmed = newName.trim();
+      if (!trimmed || trimmed === activeDoc.name) return;
+      const previousName = activeDoc.name;
+      // Optimistic — the toolbar reflects the new name instantly.
+      setActiveDoc((d) => (d ? { ...d, name: trimmed } : d));
+      try {
+        // `processed_documents.name` is the studio's source of truth for the
+        // title — persist it authoritatively.
+        const { error } = await supabase
+          .from("processed_documents")
+          .update({ name: trimmed })
+          .eq("id", activeDoc.id);
+        if (error) throw new Error(error.message);
+        // Keep the backing cloud file in lock-step so the /files route and
+        // every other surface show the same name. Best-effort — a file
+        // rename failure shouldn't roll back the doc rename.
+        if (activeDoc.sourceKind === "cld_file" && activeDoc.sourceId) {
+          void dispatch(
+            renameFile({ fileId: activeDoc.sourceId, newName: trimmed }),
+          )
+            .unwrap()
+            .catch(() => undefined);
+        }
+        docsState.refresh();
+      } catch (err) {
+        setActiveDoc((d) => (d ? { ...d, name: previousName } : d));
+        toast.error(err instanceof Error ? err.message : "Rename failed");
+      }
+    },
+    [activeDoc, dispatch, docsState, toast],
+  );
 
   const handleSelectDoc = useCallback(
     (summary: StudioDocSummary) => {
@@ -521,6 +572,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               docsState={docsState}
               activeDocId={activeDoc?.id ?? null}
               onSelectDoc={handleSelectDoc}
+              onDeleteDoc={handleDeleteDoc}
               onAddDocs={() => setUploadOpen(true)}
               view={sidebarView}
               onChangeView={handleChangeSidebarView}
@@ -579,6 +631,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
           liveStatus={liveStatus}
           onOpenSource={handleOpenSource}
           onOpenCopyPages={() => setCopyPagesOpen(true)}
+          onRename={handleRenameDoc}
+          onDeleteDoc={handleDeleteDoc}
         />
 
         {/* Hidden-panes restore strip */}

@@ -671,6 +671,14 @@ export const adminCategories = [
     iconColor: "text-amber-600",
     features: [
       {
+        title: "Data Integrity",
+        description:
+          "On-demand referential + storage integrity audit for the file system and PDF document bridge: dead/unrecoverable sources, dangling folder/bridge references, orphaned processed documents, plus an opt-in live S3 byte probe. Same checks run in CI via pnpm check:data-integrity.",
+        icon: <IconShieldLock />,
+        link: "/administration/data-integrity",
+        isNew: true,
+      },
+      {
         title: "Local Storage Admin",
         description:
           "Inspect, edit, and manage browser localStorage and cookies with import/export support.",

@@ -26,6 +26,7 @@ import type { RootState } from "@/lib/redux/store";
 import { supabase } from "@/utils/supabase/client";
 import { selectUserId, selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import type { components } from "@/types/python-generated/api-types";
+import type { Database } from "@/types/database.types";
 
 /** Generated body types from the synced OpenAPI schema. Replaces the
  * earlier `as never` casts so the call sites are fully type-checked. */
@@ -42,10 +43,22 @@ import {
   draftToPatchBody,
   supabaseRowToCategoryRow,
   supabaseRowToResourceRow,
+  supabaseRowToSkillRow,
   wireToCategoryRow,
   wireToIngestReport,
   wireToSkillRow,
 } from "./skillsConverters";
+
+/** Columns selected for every skill read, plus the project-membership join.
+ * Used by `fetchSkills` + `fetchSkillById` so both return identical shapes. */
+const SKILL_SELECT = "*, skl_skill_projects(project_id)";
+
+/** True when the value looks like a UUID (vs. a `skill_id` business key). */
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
 import type {
   CategoryRow,
   CategoryRowWire,
@@ -78,27 +91,48 @@ export const fetchSkills = createAsyncThunk<
 >("skills/fetchSkills", async (args, { dispatch }) => {
   dispatch(skillsActions.skillsLoading());
 
-  const queryParams: Record<string, string | number | boolean> = {};
-  if (args?.categoryId) queryParams.category_id = args.categoryId;
-  if (args?.isPublicOnly) queryParams.is_public_only = true;
-  if (args?.projectId) queryParams.project_id = args.projectId;
-  if (args?.limit) queryParams.limit = args.limit;
+  // Supabase direct — RLS gates visibility (public + system + own + org +
+  // project + task membership), so this is a plain client-side read. No
+  // server round-trip: the Python `/api/skills` GET was a needless hop
+  // (and 404'd once `callApi` stripped the `/api` prefix).
+  let query = supabase
+    .from("skl_definitions")
+    .select(SKILL_SELECT)
+    .eq("is_active", true);
 
-  const result = await dispatch(
-    callApi({
-      path: "/api/skills",
-      method: "GET",
-      queryParams,
-    }),
-  );
+  if (args?.categoryId) query = query.eq("category_id", args.categoryId);
+  if (args?.isPublicOnly) query = query.eq("is_public", true);
 
-  if (result.error) {
-    dispatch(skillsActions.skillsError(result.error.message));
-    throw new Error(result.error.message);
+  // Project filter: resolve the skill ids associated with the project via
+  // the join table first, then restrict the main query. Keeps the embedded
+  // `skl_skill_projects` list complete (full membership, not just this one).
+  if (args?.projectId) {
+    const { data: assoc, error: assocError } = await supabase
+      .from("skl_skill_projects")
+      .select("skill_id")
+      .eq("project_id", args.projectId);
+    if (assocError) {
+      dispatch(skillsActions.skillsError(assocError.message));
+      throw new Error(assocError.message);
+    }
+    const ids = (assoc ?? []).map((r) => r.skill_id);
+    if (ids.length === 0) {
+      dispatch(skillsActions.skillsReceived([]));
+      return [];
+    }
+    query = query.in("id", ids);
   }
 
-  const data = result.data as { count?: number; skills?: SkillRowWire[] } | undefined;
-  const rows = (data?.skills ?? []).map(wireToSkillRow);
+  query = query.order("sort_order", { ascending: true });
+  if (args?.limit) query = query.limit(args.limit);
+
+  const { data, error } = await query;
+  if (error) {
+    dispatch(skillsActions.skillsError(error.message));
+    throw new Error(error.message);
+  }
+
+  const rows = (data ?? []).map(supabaseRowToSkillRow);
   dispatch(skillsActions.skillsReceived(rows));
   return rows;
 });
@@ -108,20 +142,21 @@ export const fetchSkillById = createAsyncThunk<
   { skillRef: string },
   { state: RootState }
 >("skills/fetchSkillById", async ({ skillRef }, { dispatch }) => {
-  const result = await dispatch(
-    callApi({
-      path: "/api/skills/{skill_ref}",
-      method: "GET",
-      pathParams: { skill_ref: skillRef },
-    }),
-  );
+  // Supabase direct — `skill_ref` is either the row UUID or the `skill_id`
+  // business key. RLS gates visibility, so no server hop is needed.
+  const { data, error } = await supabase
+    .from("skl_definitions")
+    .select(SKILL_SELECT)
+    .eq(isUuid(skillRef) ? "id" : "skill_id", skillRef)
+    .eq("is_active", true)
+    .maybeSingle();
 
-  if (result.error) {
-    if (result.error.status === 404) return null;
-    throw new Error(result.error.message);
+  if (error) {
+    throw new Error(error.message);
   }
+  if (!data) return null;
 
-  const row = wireToSkillRow(result.data as SkillRowWire);
+  const row = supabaseRowToSkillRow(data);
   dispatch(skillsActions.skillUpserted(row));
   return row;
 });
@@ -153,8 +188,7 @@ export const fetchSkillCategories = createAsyncThunk<
   const rows = (data ?? []).map(supabaseRowToCategoryRow);
   rows.sort(
     (a, b) =>
-      (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
-      a.label.localeCompare(b.label),
+      (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.label.localeCompare(b.label),
   );
   dispatch(skillsActions.categoriesReceived(rows));
   return rows;
@@ -168,19 +202,60 @@ export const createSkill = createAsyncThunk<
   SkillRow,
   { draft: SkillDraft },
   { state: RootState }
->("skills/createSkill", async ({ draft }, { dispatch }) => {
-  const body = draftToCreateBody(draft) satisfies SkillCreateBody;
-  const result = await dispatch(
-    callApi({
-      path: "/api/skills",
-      method: "POST",
-      body,
-    }),
-  );
-  if (result.error) {
-    throw new Error(result.error.message);
+>("skills/createSkill", async ({ draft }, { dispatch, getState }) => {
+  const state = getState();
+  const isAdmin = selectIsSuperAdmin(state);
+  const userId = selectUserId(state);
+  const wantsSystem = Boolean(draft.isSystem) && isAdmin;
+
+  // System skills (user_id IS NULL) can't be inserted under RLS — route
+  // admins through the Python admin endpoint which uses the service role.
+  if (wantsSystem) {
+    const body = draftToCreateBody(draft) satisfies SkillCreateBody;
+    const result = await dispatch(
+      callApi({
+        path: "/api/skills",
+        method: "POST",
+        body,
+      }),
+    );
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    const row = wireToSkillRow(result.data as SkillRowWire);
+    dispatch(skillsActions.skillUpserted(row));
+    return row;
   }
-  const row = wireToSkillRow(result.data as SkillRowWire);
+
+  // Personal skill — Supabase direct. RLS stamps + validates ownership.
+  const wire = draftToCreateBody(draft);
+  const insertPayload = {
+    skill_id: wire.skill_id,
+    label: wire.label,
+    description: wire.description,
+    skill_type:
+      wire.skill_type as Database["public"]["Enums"]["skl_skill_type"],
+    body: wire.body,
+    icon_name: wire.icon_name ?? null,
+    model_preference: wire.model_preference ?? null,
+    allowed_tools: wire.allowed_tools ?? [],
+    trigger_patterns: wire.trigger_patterns ?? [],
+    disable_auto_invocation: wire.disable_auto_invocation,
+    platform_targets: wire.platform_targets ?? [],
+    version: wire.version ?? null,
+    config: wire.config ?? {},
+    category_id: wire.category_id ?? null,
+    parent_skill_id: wire.parent_skill_id ?? null,
+    is_public: wire.is_public,
+    user_id: userId,
+  };
+  const { data, error } = await supabase
+    .from("skl_definitions")
+    .insert(insertPayload)
+    .select(SKILL_SELECT)
+    .single();
+  if (error) throw new Error(error.message);
+  const row = supabaseRowToSkillRow(data);
   dispatch(skillsActions.skillUpserted(row));
   return row;
 });
@@ -189,20 +264,40 @@ export const patchSkill = createAsyncThunk<
   SkillRow,
   { skillId: string; patch: SkillPatchWire },
   { state: RootState }
->("skills/patchSkill", async ({ skillId, patch }, { dispatch }) => {
-  const body = patch satisfies SkillPatchBody;
-  const result = await dispatch(
-    callApi({
-      path: "/api/skills/{skill_id}",
-      method: "PATCH",
-      pathParams: { skill_id: skillId },
-      body,
-    }),
-  );
-  if (result.error) {
-    throw new Error(result.error.message);
+>("skills/patchSkill", async ({ skillId, patch }, { dispatch, getState }) => {
+  const cached = getState().skills.skills.byId[skillId];
+  const isSystemRow = cached ? cached.isSystem || !cached.userId : false;
+
+  // System rows bypass RLS via the Python admin endpoint. Owned/org/project
+  // rows go Supabase direct.
+  if (isSystemRow) {
+    const body = patch satisfies SkillPatchBody;
+    const result = await dispatch(
+      callApi({
+        path: "/api/skills/{skill_id}",
+        method: "PATCH",
+        pathParams: { skill_id: skillId },
+        body,
+      }),
+    );
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    const row = wireToSkillRow(result.data as SkillRowWire);
+    dispatch(skillsActions.skillUpserted(row));
+    return row;
   }
-  const row = wireToSkillRow(result.data as SkillRowWire);
+
+  // Supabase direct — `patch` is already snake_case (SkillPatchWire), which
+  // matches the column names on skl_definitions one-for-one.
+  const { data, error } = await supabase
+    .from("skl_definitions")
+    .update(patch as Database["public"]["Tables"]["skl_definitions"]["Update"])
+    .eq("id", skillId)
+    .select(SKILL_SELECT)
+    .single();
+  if (error) throw new Error(error.message);
+  const row = supabaseRowToSkillRow(data);
   dispatch(skillsActions.skillUpserted(row));
   return row;
 });
@@ -231,17 +326,31 @@ export const deleteSkill = createAsyncThunk<
   string,
   { skillId: string },
   { state: RootState }
->("skills/deleteSkill", async ({ skillId }, { dispatch }) => {
-  const result = await dispatch(
-    callApi({
-      path: "/api/skills/{skill_id}",
-      method: "DELETE",
-      pathParams: { skill_id: skillId },
-    }),
-  );
-  if (result.error) {
-    throw new Error(result.error.message);
+>("skills/deleteSkill", async ({ skillId }, { dispatch, getState }) => {
+  const cached = getState().skills.skills.byId[skillId];
+  const isSystemRow = cached ? cached.isSystem || !cached.userId : false;
+
+  if (isSystemRow) {
+    const result = await dispatch(
+      callApi({
+        path: "/api/skills/{skill_id}",
+        method: "DELETE",
+        pathParams: { skill_id: skillId },
+      }),
+    );
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+  } else {
+    // Supabase direct soft-deactivate — mirrors the Python endpoint's
+    // semantics (is_active=false, reversible via patch).
+    const { error } = await supabase
+      .from("skl_definitions")
+      .update({ is_active: false })
+      .eq("id", skillId);
+    if (error) throw new Error(error.message);
   }
+
   dispatch(skillsActions.skillRemoved(skillId));
   return skillId;
 });
@@ -289,15 +398,16 @@ export const addSkillProject = createAsyncThunk<
 >(
   "skills/addSkillProject",
   async ({ skillId, projectId }, { dispatch, getState }) => {
-    const result = await dispatch(
-      callApi({
-        path: "/api/skills/{skill_id}/projects/{project_id}",
-        method: "POST",
-        pathParams: { skill_id: skillId, project_id: projectId },
-      }),
-    );
-    if (result.error) {
-      throw new Error(result.error.message);
+    // Supabase direct — RLS gates the join by skill or project ownership.
+    const userId = selectUserId(getState());
+    const { error } = await supabase
+      .from("skl_skill_projects")
+      .upsert(
+        { skill_id: skillId, project_id: projectId, created_by: userId },
+        { onConflict: "skill_id,project_id", ignoreDuplicates: true },
+      );
+    if (error) {
+      throw new Error(error.message);
     }
     // Optimistically merge into the row's projectIds.
     const row = getState().skills.skills.byId[skillId];
@@ -320,15 +430,14 @@ export const removeSkillProject = createAsyncThunk<
 >(
   "skills/removeSkillProject",
   async ({ skillId, projectId }, { dispatch, getState }) => {
-    const result = await dispatch(
-      callApi({
-        path: "/api/skills/{skill_id}/projects/{project_id}",
-        method: "DELETE",
-        pathParams: { skill_id: skillId, project_id: projectId },
-      }),
-    );
-    if (result.error) {
-      throw new Error(result.error.message);
+    // Supabase direct — RLS gates the join by skill or project ownership.
+    const { error } = await supabase
+      .from("skl_skill_projects")
+      .delete()
+      .eq("skill_id", skillId)
+      .eq("project_id", projectId);
+    if (error) {
+      throw new Error(error.message);
     }
     const row = getState().skills.skills.byId[skillId];
     if (row) {
@@ -462,9 +571,11 @@ export const updateCategoryThunk = createAsyncThunk<
       throw new Error("Only admins can edit system categories.");
     }
     const wireBody: CategoryPatchBody = {};
-    if (patch.categoryKey !== undefined) wireBody.category_key = patch.categoryKey;
+    if (patch.categoryKey !== undefined)
+      wireBody.category_key = patch.categoryKey;
     if (patch.label !== undefined) wireBody.label = patch.label;
-    if (patch.description !== undefined) wireBody.description = patch.description;
+    if (patch.description !== undefined)
+      wireBody.description = patch.description;
     if (patch.iconName !== undefined) wireBody.icon_name = patch.iconName;
     if (patch.color !== undefined) wireBody.color = patch.color;
     if (patch.parentCategoryId !== undefined)
@@ -488,9 +599,11 @@ export const updateCategoryThunk = createAsyncThunk<
 
   // Supabase direct — owned/org-admin row.
   const updateBody: Record<string, unknown> = {};
-  if (patch.categoryKey !== undefined) updateBody.category_key = patch.categoryKey;
+  if (patch.categoryKey !== undefined)
+    updateBody.category_key = patch.categoryKey;
   if (patch.label !== undefined) updateBody.label = patch.label;
-  if (patch.description !== undefined) updateBody.description = patch.description;
+  if (patch.description !== undefined)
+    updateBody.description = patch.description;
   if (patch.iconName !== undefined) updateBody.icon_name = patch.iconName;
   if (patch.color !== undefined) updateBody.color = patch.color;
   if (patch.parentCategoryId !== undefined)
@@ -656,9 +769,7 @@ export const fetchSkillResourcesThunk = createAsyncThunk<
     .order("sort_order", { ascending: true });
 
   if (error) {
-    dispatch(
-      skillsActions.resourcesError({ skillId, error: error.message }),
-    );
+    dispatch(skillsActions.resourcesError({ skillId, error: error.message }));
     throw new Error(error.message);
   }
 
@@ -714,92 +825,79 @@ export const updateSkillResourceThunk = createAsyncThunk<
   ResourceRow,
   { resourceId: string; patch: ResourcePatchInput },
   { state: RootState }
->(
-  "skills/updateResource",
-  async ({ resourceId, patch }, { dispatch }) => {
-    const updateBody: Record<string, unknown> = {};
-    if (patch.resourceType !== undefined)
-      updateBody.resource_type = patch.resourceType;
-    if (patch.filename !== undefined) updateBody.filename = patch.filename;
-    if (patch.content !== undefined) updateBody.content = patch.content;
-    if (patch.mimeType !== undefined) updateBody.mime_type = patch.mimeType;
-    if (patch.sortOrder !== undefined) updateBody.sort_order = patch.sortOrder;
-    if (patch.isActive !== undefined) updateBody.is_active = patch.isActive;
+>("skills/updateResource", async ({ resourceId, patch }, { dispatch }) => {
+  const updateBody: Record<string, unknown> = {};
+  if (patch.resourceType !== undefined)
+    updateBody.resource_type = patch.resourceType;
+  if (patch.filename !== undefined) updateBody.filename = patch.filename;
+  if (patch.content !== undefined) updateBody.content = patch.content;
+  if (patch.mimeType !== undefined) updateBody.mime_type = patch.mimeType;
+  if (patch.sortOrder !== undefined) updateBody.sort_order = patch.sortOrder;
+  if (patch.isActive !== undefined) updateBody.is_active = patch.isActive;
 
-    if (Object.keys(updateBody).length === 0) {
-      throw new Error("Empty resource patch.");
-    }
+  if (Object.keys(updateBody).length === 0) {
+    throw new Error("Empty resource patch.");
+  }
 
-    const { data, error } = await supabase
-      .from("skl_resources")
-      .update(updateBody)
-      .eq("id", resourceId)
-      .select()
-      .single();
-    if (error) throw new Error(error.message);
+  const { data, error } = await supabase
+    .from("skl_resources")
+    .update(updateBody)
+    .eq("id", resourceId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
 
-    const row = supabaseRowToResourceRow(data);
-    dispatch(skillsActions.resourceUpserted(row));
-    return row;
-  },
-);
+  const row = supabaseRowToResourceRow(data);
+  dispatch(skillsActions.resourceUpserted(row));
+  return row;
+});
 
 export const deleteSkillResourceThunk = createAsyncThunk<
   string,
   { resourceId: string; skillId: string },
   { state: RootState }
->(
-  "skills/deleteResource",
-  async ({ resourceId, skillId }, { dispatch }) => {
-    // Soft-delete (mirrors skill delete semantics — admins can re-activate
-    // by setting is_active=true via patch).
-    const { error } = await supabase
-      .from("skl_resources")
-      .update({ is_active: false })
-      .eq("id", resourceId);
-    if (error) throw new Error(error.message);
-    dispatch(skillsActions.resourceRemoved({ skillId, resourceId }));
-    return resourceId;
-  },
-);
+>("skills/deleteResource", async ({ resourceId, skillId }, { dispatch }) => {
+  // Soft-delete (mirrors skill delete semantics — admins can re-activate
+  // by setting is_active=true via patch).
+  const { error } = await supabase
+    .from("skl_resources")
+    .update({ is_active: false })
+    .eq("id", resourceId);
+  if (error) throw new Error(error.message);
+  dispatch(skillsActions.resourceRemoved({ skillId, resourceId }));
+  return resourceId;
+});
 
 export const reorderSkillResourcesThunk = createAsyncThunk<
   void,
   { skillId: string; orderedIds: string[] },
   { state: RootState }
->(
-  "skills/reorderResources",
-  async ({ skillId, orderedIds }, { dispatch }) => {
-    // One sequential update per touched row — Supabase doesn't have a
-    // batch UPDATE primitive for per-row values. Fail-soft: if one row
-    // fails to renumber the others still get applied.
-    const failures: string[] = [];
-    for (let i = 0; i < orderedIds.length; i += 1) {
-      const id = orderedIds[i];
-      try {
-        await dispatch(
-          updateSkillResourceThunk({
-            resourceId: id,
-            patch: { sortOrder: i },
-          }),
-        ).unwrap();
-      } catch (err) {
-        failures.push(id);
-        console.warn(
-          "[skills.resources.reorder] failed to renumber",
-          id,
-          err,
-        );
-      }
+>("skills/reorderResources", async ({ skillId, orderedIds }, { dispatch }) => {
+  // One sequential update per touched row — Supabase doesn't have a
+  // batch UPDATE primitive for per-row values. Fail-soft: if one row
+  // fails to renumber the others still get applied.
+  const failures: string[] = [];
+  for (let i = 0; i < orderedIds.length; i += 1) {
+    const id = orderedIds[i];
+    try {
+      await dispatch(
+        updateSkillResourceThunk({
+          resourceId: id,
+          patch: { sortOrder: i },
+        }),
+      ).unwrap();
+    } catch (err) {
+      failures.push(id);
+      console.warn("[skills.resources.reorder] failed to renumber", id, err);
     }
-    // Apply the slice reorder regardless so the UI is consistent.
-    dispatch(skillsActions.resourcesReordered({ skillId, orderedIds }));
-    if (failures.length) {
-      throw new Error(
-        `Failed to renumber ${failures.length} resource${
-          failures.length === 1 ? "" : "s"
-        }.`,
-      );
-    }
-  },
-);
+  }
+  // Apply the slice reorder regardless so the UI is consistent.
+  dispatch(skillsActions.resourcesReordered({ skillId, orderedIds }));
+  if (failures.length) {
+    throw new Error(
+      `Failed to renumber ${failures.length} resource${
+        failures.length === 1 ? "" : "s"
+      }.`,
+    );
+  }
+});

@@ -83,6 +83,19 @@ export const useGoogleAPI = () => {
   return context;
 };
 
+/**
+ * Non-throwing variant of {@link useGoogleAPI}. Returns `null` when no
+ * `GoogleAPIProvider` is present in the tree instead of throwing.
+ *
+ * Use this in components that may render OUTSIDE the provider (e.g. a
+ * presentation Slideshow shown on the admin markdown-tester, in chat, or
+ * anywhere a `presentation` JSON block is rendered) so the absence of the
+ * Google integration degrades the relevant feature (Google Slides export)
+ * rather than crashing the whole subtree.
+ */
+export const useGoogleAPIOptional = (): GoogleAPIContextType | null =>
+  useContext(GoogleAPIContext);
+
 interface GoogleAPIProviderProps {
   children: React.ReactNode;
   scopes?: string[];

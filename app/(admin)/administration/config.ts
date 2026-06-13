@@ -9,32 +9,36 @@ import { adminCategories } from "./categories";
  * Extracts all features with 'link' property and converts them to pages
  */
 function extractPagesFromCategories(): ModulePage[] {
-    const pages: ModulePage[] = [];
-    
-    adminCategories.forEach(category => {
-        category.features.forEach(feature => {
-            // Only include features that have a link (actual pages)
-            if (feature.link) {
-                pages.push({
-                    title: feature.title,
-                    path: feature.link.replace('/administration/', ''), // Make path relative
-                    relative: true,
-                    description: feature.description,
-                    icon: feature.icon,
-                });
-            }
+  const pages: ModulePage[] = [];
+
+  adminCategories.forEach((category) => {
+    category.features.forEach((feature) => {
+      // Only include features that have a link (actual pages)
+      if (feature.link) {
+        pages.push({
+          title: feature.title,
+          path: feature.link.replace("/administration/", ""), // Make path relative
+          relative: true,
+          description: feature.description,
+          icon: feature.icon,
         });
+      }
     });
-    
-    return pages;
+  });
+
+  return pages;
 }
 
 // Export the extracted pages
 export const pages = extractPagesFromCategories();
 
-// Filter out any invalid pages (legacy support)
-export const filteredPages = pages.filter(page => page.path !== 'link-here');
+// Filter out any invalid pages (legacy support), then sort A–Z for the header dropdown
+export const filteredPages = pages
+  .filter((page) => page.path !== "link-here")
+  .sort((a, b) =>
+    a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
+  );
 
 // Module configuration
-export const MODULE_HOME = '/administration';
-export const MODULE_NAME = 'Administration';
+export const MODULE_HOME = "/administration";
+export const MODULE_NAME = "Administration";

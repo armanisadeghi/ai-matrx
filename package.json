@@ -49,6 +49,8 @@
     "check:doctrine:strict": "tsx scripts/check-doctrine.ts --strict",
     "check:migrations": "tsx scripts/check-migrations.ts",
     "check:migrations:strict": "tsx scripts/check-migrations.ts --strict",
+    "check:data-integrity": "tsx scripts/check-data-integrity.ts",
+    "check:data-integrity:strict": "tsx scripts/check-data-integrity.ts --strict",
     "check:bundle": "tsx scripts/check-bundle-size.ts",
     "check:bundle:capture": "tsx scripts/check-bundle-size.ts --capture",
     "check:bundle:update": "tsx scripts/check-bundle-size.ts --update-baseline",

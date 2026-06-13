@@ -124,6 +124,17 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
     [router, selectDocById],
   );
 
+  const handleDeleteDoc = useCallback(
+    async (id: string) => {
+      await docsState.deleteDoc(id);
+      if (activeDoc?.id === id) {
+        setActiveDoc(null);
+        router.push("/tools/pdf-extractor");
+      }
+    },
+    [docsState, activeDoc, router],
+  );
+
   // Upload hand-off — same shape as desktop. Auto-opens the first new doc
   // in the reader so the manager goes from "drop file" to "reading" with
   // zero extra taps.
@@ -449,6 +460,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
                 docsState={docsState}
                 activeDocId={activeDoc?.id ?? null}
                 onSelectDoc={onSelectDoc}
+                onDeleteDoc={handleDeleteDoc}
                 onAddDocs={() => {
                   setDrawer("none");
                   setUploadOpen(true);

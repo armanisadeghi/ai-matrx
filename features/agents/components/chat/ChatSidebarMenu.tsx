@@ -123,17 +123,14 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
     (agentId: string) => router.push(`/chat/a/${encodeURIComponent(agentId)}`),
     [router],
   );
-  // `+` starts a NEW conversation with the ACTIVE agent (the agent route
-  // always mints a fresh one). No active agent → the default greeting
-  // landing. Matches ChatRunHeader's handleNewChat so the rail and header
-  // behave identically.
+  // `+` always lands on the canonical new-chat surface (`/chat/new`), which
+  // mounts the default agent + greeting. Routing unconditionally here means
+  // the button works from any chat URL — including `/chat/a/[agentId]`, where
+  // the old "reuse the active agent" branch produced a same-URL `router.push`
+  // no-op and the button looked dead.
   const handleNewChat = useCallback(() => {
-    if (activeAgentId) {
-      router.push(`/chat/a/${encodeURIComponent(activeAgentId)}`);
-    } else {
-      router.push("/chat/new");
-    }
-  }, [router, activeAgentId]);
+    router.push("/chat/new");
+  }, [router]);
 
   return (
     // gap-0.5 (= 0.125rem) matches `.shell-sidebar-main-nav` / `route-nav`

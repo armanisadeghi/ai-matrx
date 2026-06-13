@@ -31,13 +31,17 @@ import {
   CheckCircle2,
   FileX2,
   Plus,
+  MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ItemMenu, ItemContextMenu } from "@/components/official/item/ItemMenu";
 import {
   usePdfStudioDocs,
   type StudioDocSummary,
 } from "./hooks/usePdfStudioDocs";
+import { buildPdfDocMenu } from "./pdfDocMenu";
 import { PdfStudioSidebarToggle } from "./PdfStudioSidebarToggle";
 import { PdfStudioPagesNav } from "./PdfStudioPagesNav";
 import type { SidebarView } from "../state/types";
@@ -49,6 +53,8 @@ interface PdfStudioSidebarProps {
   docsState: StudioDocsState;
   activeDocId: string | null;
   onSelectDoc: (doc: StudioDocSummary) => void;
+  /** Archive (soft-delete) a doc. Owns optimistic update + active cleanup. */
+  onDeleteDoc: (id: string) => Promise<void>;
   /** Opens the upload drawer. When omitted the `+ Add` button is hidden. */
   onAddDocs?: () => void;
   /** Which view to render: files list or pages list. */
@@ -66,6 +72,7 @@ export function PdfStudioSidebar({
   docsState,
   activeDocId,
   onSelectDoc,
+  onDeleteDoc,
   onAddDocs,
   view,
   onChangeView,
@@ -222,6 +229,7 @@ export function PdfStudioSidebar({
                   doc={d}
                   active={activeDocId === d.id}
                   onClick={() => onSelectDoc(d)}
+                  onDeleteDoc={onDeleteDoc}
                 />
               ))
             )}
@@ -257,72 +265,110 @@ function DocRow({
   doc,
   active,
   onClick,
+  onDeleteDoc,
 }: {
   doc: StudioDocSummary;
   active: boolean;
   onClick: () => void;
+  onDeleteDoc: (id: string) => Promise<void>;
 }) {
+  const isMobile = useIsMobile();
   const isDerivative = !!doc.parentProcessedId;
-  return (
-    <button
-      type="button"
+  // Lazy form — the menu config is only built when the kebab / context menu
+  // opens, so a long list doesn't construct N configs per render.
+  const menu = () => buildPdfDocMenu({ doc, onDelete: onDeleteDoc });
+
+  const row = (
+    <div
       data-doc-id={doc.id}
-      onClick={onClick}
       className={cn(
-        "w-full flex items-start gap-2 px-2 py-1.5 rounded-md text-left transition-colors group",
+        "group/item relative rounded-md transition-colors",
         active
           ? "bg-primary/10 border-l-2 border-primary"
           : "border-l-2 border-transparent hover:bg-accent/50",
       )}
     >
-      <div
-        className={cn(
-          "shrink-0 w-6 h-6 rounded flex items-center justify-center mt-0.5",
-          active ? "bg-primary/20" : "bg-muted",
-        )}
+      <button
+        type="button"
+        onClick={onClick}
+        className="w-full flex items-start gap-2 px-2 py-1.5 pr-7 rounded-md text-left"
       >
-        {isDerivative ? (
-          <GitBranch
-            className={cn(
-              "w-3 h-3",
-              active ? "text-primary" : "text-muted-foreground",
-            )}
-          />
-        ) : (
-          <Layers
-            className={cn(
-              "w-3 h-3",
-              active ? "text-primary" : "text-muted-foreground",
-            )}
-          />
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p
+        <div
           className={cn(
-            "text-[11px] font-medium leading-tight truncate",
-            active ? "text-foreground" : "text-foreground/80",
+            "shrink-0 w-6 h-6 rounded flex items-center justify-center mt-0.5",
+            active ? "bg-primary/20" : "bg-muted",
           )}
         >
-          {doc.name}
-        </p>
-        <p className="text-[9px] text-muted-foreground/70 leading-tight truncate mt-0.5">
-          {doc.totalPages != null
-            ? `${doc.totalPages.toLocaleString()} pages · `
-            : ""}
-          {doc.derivationKind} · {formatRelativeTime(doc.createdAt)}
-        </p>
-        {doc.sourceMissing && (
-          <span className="mt-0.5 inline-flex items-center gap-1 text-[9px] text-amber-600 dark:text-amber-400">
-            <FileX2 className="w-2.5 h-2.5" />
-            Original file removed · text only
-          </span>
+          {isDerivative ? (
+            <GitBranch
+              className={cn(
+                "w-3 h-3",
+                active ? "text-primary" : "text-muted-foreground",
+              )}
+            />
+          ) : (
+            <Layers
+              className={cn(
+                "w-3 h-3",
+                active ? "text-primary" : "text-muted-foreground",
+              )}
+            />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p
+            className={cn(
+              "text-[11px] font-medium leading-tight truncate",
+              active ? "text-foreground" : "text-foreground/80",
+            )}
+          >
+            {doc.name}
+          </p>
+          <p className="text-[9px] text-muted-foreground/70 leading-tight truncate mt-0.5">
+            {doc.totalPages != null
+              ? `${doc.totalPages.toLocaleString()} pages · `
+              : ""}
+            {doc.derivationKind} · {formatRelativeTime(doc.createdAt)}
+          </p>
+          {doc.sourceMissing && (
+            <span className="mt-0.5 inline-flex items-center gap-1 text-[9px] text-amber-600 dark:text-amber-400">
+              <FileX2 className="w-2.5 h-2.5" />
+              Original file removed · text only
+            </span>
+          )}
+        </div>
+        {active && (
+          <CheckCircle2 className="w-3 h-3 text-primary shrink-0 mt-0.5" />
         )}
-      </div>
-      {active && (
-        <CheckCircle2 className="w-3 h-3 text-primary shrink-0 mt-0.5" />
-      )}
-    </button>
+      </button>
+
+      {/* Kebab — revealed on hover/focus, always visible on touch. */}
+      <ItemMenu config={menu} align="end">
+        <button
+          type="button"
+          aria-label={`Options for ${doc.name}`}
+          aria-haspopup="menu"
+          onClick={(e) => e.stopPropagation()}
+          className={cn(
+            "absolute right-1 top-1.5 flex h-5 w-5 items-center justify-center rounded-md",
+            "text-muted-foreground hover:bg-background hover:text-foreground",
+            "opacity-0 transition-opacity",
+            "group-hover/item:opacity-100 group-focus-within/item:opacity-100",
+            "data-[state=open]:opacity-100 [@media(pointer:coarse)]:opacity-100",
+          )}
+        >
+          <MoreHorizontal className="w-3.5 h-3.5" />
+        </button>
+      </ItemMenu>
+    </div>
+  );
+
+  // Right-click opens the same menu (disabled on touch, where the kebab is
+  // always visible).
+  return (
+    <ItemContextMenu config={menu} enabled={!isMobile}>
+      {row}
+    </ItemContextMenu>
   );
 }
 
