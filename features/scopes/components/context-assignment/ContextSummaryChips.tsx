@@ -21,6 +21,7 @@ import { Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayName";
 
 export interface ContextSummaryInput {
   organizationId?: string | null;
@@ -49,7 +50,8 @@ export function ContextSummaryChips({
 }: ContextSummaryChipsProps) {
   const { organizations } = useScopeTree();
   const allTypes = organizations.flatMap((o) => o.scope_types);
-  const chipCls = size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-1 text-xs";
+  const chipCls =
+    size === "sm" ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-1 text-xs";
 
   const scopeChips = (value.scopeIds ?? []).map((id) => {
     const type = allTypes.find((t) => t.scopes.some((s) => s.id === id));
@@ -57,42 +59,88 @@ export function ContextSummaryChips({
     const c = type ? resolveColor(type) : undefined;
     return {
       id,
-      label: type && scope ? `${type.label_singular}: ${scope.name}` : id.slice(0, 8),
+      label:
+        type && scope
+          ? `${type.label_singular}: ${scope.name}`
+          : id.slice(0, 8),
       fg: c?.fg,
       border: c?.border,
     };
   });
 
-  const orgName = value.organizationId
-    ? value.organizationName ?? organizations.find((o) => o.id === value.organizationId)?.name ?? "Organization"
-    : null;
+  const orgRecord = value.organizationId
+    ? organizations.find((o) => o.id === value.organizationId)
+    : undefined;
+  const orgName = orgRecord
+    ? formatOrgDisplayName(orgRecord)
+    : value.organizationId
+      ? (value.organizationName ?? "Organization")
+      : null;
 
-  const empty = !orgName && scopeChips.length === 0 && !value.projectId && !value.taskId;
+  const empty =
+    !orgName && scopeChips.length === 0 && !value.projectId && !value.taskId;
   if (empty) {
-    return <span className={cn("text-muted-foreground", size === "sm" ? "text-[11px]" : "text-xs", className)}>{emptyText}</span>;
+    return (
+      <span
+        className={cn(
+          "text-muted-foreground",
+          size === "sm" ? "text-[11px]" : "text-xs",
+          className,
+        )}
+      >
+        {emptyText}
+      </span>
+    );
   }
 
   return (
     <div className={cn("flex flex-wrap items-center gap-1", className)}>
       {orgName && (
-        <span className={cn("inline-flex items-center gap-1 rounded-md border border-border bg-transparent font-medium text-foreground", chipCls)}>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 rounded-md border border-border bg-transparent font-medium text-foreground",
+            chipCls,
+          )}
+        >
           <Building2 className="h-3 w-3 shrink-0 text-muted-foreground" />
           <span className="max-w-[140px] truncate">{orgName}</span>
         </span>
       )}
       {scopeChips.map((s) => (
-        <span key={s.id} className={cn("inline-flex items-center rounded-md border bg-transparent font-medium", s.fg ?? "text-foreground", s.border ?? "border-border", chipCls)}>
+        <span
+          key={s.id}
+          className={cn(
+            "inline-flex items-center rounded-md border bg-transparent font-medium",
+            s.fg ?? "text-foreground",
+            s.border ?? "border-border",
+            chipCls,
+          )}
+        >
           <span className="max-w-[160px] truncate">{s.label}</span>
         </span>
       ))}
       {value.projectId && (
-        <span className={cn("inline-flex items-center rounded-md border border-border bg-transparent font-medium text-foreground", chipCls)}>
-          <span className="max-w-[140px] truncate">{value.projectName ?? "Project"}</span>
+        <span
+          className={cn(
+            "inline-flex items-center rounded-md border border-border bg-transparent font-medium text-foreground",
+            chipCls,
+          )}
+        >
+          <span className="max-w-[140px] truncate">
+            {value.projectName ?? "Project"}
+          </span>
         </span>
       )}
       {value.taskId && (
-        <span className={cn("inline-flex items-center rounded-md border border-border bg-transparent font-medium text-foreground", chipCls)}>
-          <span className="max-w-[140px] truncate">{value.taskName ?? "Task"}</span>
+        <span
+          className={cn(
+            "inline-flex items-center rounded-md border border-border bg-transparent font-medium text-foreground",
+            chipCls,
+          )}
+        >
+          <span className="max-w-[140px] truncate">
+            {value.taskName ?? "Task"}
+          </span>
         </span>
       )}
     </div>

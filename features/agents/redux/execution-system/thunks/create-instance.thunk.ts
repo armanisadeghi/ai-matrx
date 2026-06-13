@@ -1340,6 +1340,16 @@ interface SetAutoClearModeArgs {
  * re-aligns the input onto the display convo whose flag is still `true` — the
  * toggle silently bounces back ON and the next submit splits again. Keeping the
  * two slots in lockstep is what makes the toggle actually stick.
+ *
+ * RESTORE PATH: the variable panel only renders on a conversation with NO turns
+ * (see `selectShouldShowVariables` — it hides the moment any message exists). So
+ * when the conversation the user is sitting on already has history, restoring the
+ * originals *in place* would silently hide the variables (text would come back
+ * but the variable panel wouldn't). Instead we route through the system's own
+ * fresh-conversation primitive (`startNewConversation`) — the same machinery the
+ * submit/autoclear flow uses — seeded with the ORIGINAL snapshot. That lands the
+ * engineer on a clean conversation showing the original variables + original
+ * input: exactly the first-submit state. With no history, we restore in place.
  */
 export const setAutoClearMode = createAsyncThunk<
   void,
@@ -1368,13 +1378,45 @@ export const setAutoClearMode = createAsyncThunk<
 
     // Restore the original first-submit inputs so the engineer is back to the
     // exact state they had on their first run.
-    const entry = getState().instanceUserInput.byConversationId[conversationId];
+    const state = getState();
+    const entry = state.instanceUserInput.byConversationId[conversationId];
     const originalText = entry?.originalSubmittedText;
-    if (originalText === undefined) return; // nothing submitted yet
+    if (originalText === undefined) return; // nothing submitted yet — plain flip
 
     const originalValues = entry?.originalSubmittedUserValues ?? {};
-    // Reset to exactly the original values (drop any stray current values),
-    // then apply the originals.
+    const hasHistory =
+      (state.messages?.byConversationId[conversationId]?.orderedIds?.length ??
+        0) > 0;
+
+    // Has history → spin a fresh conversation through the system primitive so
+    // the variable panel can render, then seed it with the originals.
+    if (hasHistory && surfaceKey) {
+      const newConversationId = await dispatch(
+        startNewConversation({
+          currentConversationId: conversationId,
+          surfaceKey,
+        }),
+      ).unwrap();
+      if (Object.keys(originalValues).length > 0) {
+        dispatch(
+          setUserVariableValues({
+            conversationId: newConversationId,
+            values: originalValues,
+          }),
+        );
+      }
+      dispatch(
+        setUserInputText({
+          conversationId: newConversationId,
+          text: originalText,
+          userValues: originalValues,
+        }),
+      );
+      return;
+    }
+
+    // No history (already a clean slate) → restore in place. Reset to exactly
+    // the original values (drop any stray current values), then apply originals.
     dispatch(resetUserVariableValues(conversationId));
     if (Object.keys(originalValues).length > 0) {
       dispatch(

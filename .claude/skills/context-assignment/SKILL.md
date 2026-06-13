@@ -36,9 +36,11 @@ description: Use whenever a task touches context selection, scope tagging, or th
 | Same, without blocking the page | `ContextAssignmentPopover` | trigger = your button |
 | Same, as an explicit modal step | `ContextAssignmentDialog` | controlled `open` |
 | Same, floating/draggable | `ContextAssignmentWindow` | inline-controlled |
-| Set the WORKING context from a header/toolbar | `ActiveContextButton` | the ONLY drop-in Surface A writer; sizes `xs`/`sm`, `iconOnly` for rails |
+| Set the WORKING context from a header/toolbar | `ActiveContextButton` | live-apply popover; sizes `xs`/`sm`, `iconOnly` for rails |
+| Clear working context (rose Eraser + "Context", app-wide) | `ClearContextButton` | dispatches `clearContext`; wired into every Surface A control |
 | Show context status per entity (amber/green nudge) | `ContextStatusButton` | pass `knownScopeCount` on list rows (bulk!), omit on single-entity surfaces |
-| Display a selection readably | `ContextSummaryChips` | "Client: Acme", org only if explicit |
+| Display a selection readably | `ContextSummaryChips` | compact chips for headers; org only if explicit |
+| Labeled active/filter breakdown in the field footer | `ContextSelectionSummary` | Org · Scope Types (group) · per-type scopes · Projects · Tasks |
 | Prompt for context during an upload | `UploadContextPrompt` | Save awaits `awaitFileIds()` — handles both races |
 | Filter a list by context (no saving!) | `ContextAssignmentField mode="filter"` | emits via `onSelectionChange`; zero save-side effects |
 

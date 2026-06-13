@@ -28,79 +28,71 @@ export function WorkingDocumentControls({
 
   return (
     <div className="flex h-full flex-col">
-      {/* Settings */}
-      <div className="shrink-0 space-y-2 border-b border-border px-3 py-2.5">
-        <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5 transition-colors hover:bg-muted/40">
-          <span className="flex flex-col">
-            <span className="text-sm font-medium text-foreground">
-              Working document
-            </span>
-            <span className="text-xs text-muted-foreground">
-              A shared, living document the agent edits each round
-            </span>
-          </span>
-          <Switch checked={enabled} onCheckedChange={setEnabled} />
-        </label>
+      {/* Single control row — toggle, binding, bind/change, open-as-window */}
+      <div className="flex shrink-0 items-center gap-1.5 border-b border-border px-2 py-1.5">
+        <Switch
+          checked={enabled}
+          onCheckedChange={setEnabled}
+          aria-label="Toggle working document"
+        />
 
         <div
           className={cn(
-            "flex items-center gap-2 rounded-lg border border-border px-3 py-2",
+            "flex min-w-0 flex-1 items-center gap-1",
             !enabled && "pointer-events-none opacity-50",
           )}
         >
-          <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-sm font-medium text-foreground">
-              {isBound ? binding.label || "Bound note" : "No bound source"}
-            </span>
-            <span className="truncate text-xs text-muted-foreground">
-              {isBound
-                ? "Edits sync to this note (debounced)"
-                : "Bind a note to keep the document"}
-            </span>
-          </div>
+          <Link2
+            className={cn(
+              "h-3.5 w-3.5 shrink-0",
+              isBound ? "text-primary" : "text-muted-foreground",
+            )}
+          />
+          <span className="truncate text-xs text-muted-foreground">
+            {isBound ? binding.label || "Bound note" : "Unbound (not saved)"}
+          </span>
           {isBound && (
             <button
               type="button"
               onClick={unbind}
               aria-label="Unbind note"
-              className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
           )}
-          <NotePickerPopover
-            onSelectNote={(noteId) => bindToNote(noteId)}
-            align="end"
-            trigger={
-              <button
-                type="button"
-                className="shrink-0 rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
-              >
-                {isBound ? "Change" : "Bind note"}
-              </button>
-            }
-          />
         </div>
 
-        {enabled && (
-          <button
-            type="button"
-            onClick={openAsWindow}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            <Maximize2 className="h-4 w-4" />
-            Open as window
-          </button>
-        )}
+        <NotePickerPopover
+          onSelectNote={(noteId) => bindToNote(noteId)}
+          align="end"
+          trigger={
+            <button
+              type="button"
+              disabled={!enabled}
+              className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+            >
+              {isBound ? "Change" : "Bind note"}
+            </button>
+          }
+        />
+        <button
+          type="button"
+          onClick={openAsWindow}
+          disabled={!enabled}
+          aria-label="Open as window"
+          title="Open as window"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+        >
+          <Maximize2 className="h-4 w-4" />
+        </button>
       </div>
 
-      {/* Embedded editor */}
+      {/* Editor — gets all remaining space (panel header suppressed) */}
       <div className="min-h-0 flex-1">
         <WorkingDocumentPanel
           conversationId={conversationId}
-          showEnableToggle={false}
-          showOpenInWindow={false}
+          showHeader={false}
           className="bg-transparent"
         />
       </div>

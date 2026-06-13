@@ -78,7 +78,11 @@ export function ChatRunHeader({
       </div>
       {/* Working context — sets appContextSlice, which execute-instance reads
           and stamps onto every run. Sized to match the compact agent picker. */}
-      <ActiveContextButton size="xs" triggerClassName="max-w-[320px]" />
+      <ActiveContextButton
+        size="xs"
+        triggerClassName="max-w-[320px]"
+        checkboxVariant="standard"
+      />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
 import AudioOutputBlockRenderer from "@/components/mardown-display/blocks/audio/AudioOutputBlockRenderer";
+import VideoOutputBlockRenderer from "@/components/mardown-display/blocks/videos/VideoOutputBlockRenderer";
 
 /**
  * Shown in strict-mode when block.serverData is null — means Python did not
@@ -290,31 +291,15 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     }
 
     case "video_output": {
-      // Same dual-shape handling as `audio_output`. See that case.
-      // Phase 1c: matrx-owned videos now carry `posterUrl` — the
-      // browser displays a real frame as the `<video>` poster before
-      // playback instead of a black square.
+      // Resolve through the file handler (`VideoOutputBlockRenderer`) instead
+      // of echoing the raw `data.url` — identical durability fix to
+      // `audio_output`: the handler prefers the durable public/CDN URL and
+      // re-mints expiring URLs from `file_id`, so video plays during streaming
+      // (when Python sends only a `file_id`, no minted URL) AND "Copy link"
+      // never leaks a raw signed S3 URL. The renderer also resolves the
+      // Phase-1c `posterUrl` the same way. See the renderer for the rationale.
       const sd = (block.serverData ?? {}) as Record<string, unknown>;
-      const url =
-        (sd.cdnUrl as string | undefined) ??
-        (sd.signedUrl as string | undefined) ??
-        (sd.externalUrl as string | undefined) ??
-        (sd.url as string | undefined);
-      if (!url) return null;
-      return (
-        <BlockComponents.VideoOutputBlock
-          key={index}
-          url={url}
-          mimeType={
-            (sd.mimeType as string | undefined) ??
-            (sd.mime_type as string | undefined)
-          }
-          posterUrl={
-            (sd.posterUrl as string | undefined) ??
-            (sd.poster_url as string | undefined)
-          }
-        />
-      );
+      return <VideoOutputBlockRenderer key={index} data={sd} />;
     }
 
     case "media_block": {
@@ -530,14 +515,15 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       // Audio that streamed in as a markdown/text link (the splitter's
       // `detectAudioMarkdown`). The URL is on `block.src`, mirroring the
       // markdown `image`/`video` cases. This is the live-stream twin of the
-      // server-side `audio_output` case above — both render the same player —
-      // so an audio-only turn shows a player mid-stream, not a bare link.
+      // server-side `audio_output` case above — both go through
+      // `AudioOutputBlockRenderer` so the URL is resolved durably (file_id
+      // recovery / public-URL preference) and "Copy link" never leaks a raw
+      // signed S3 URL, even for an audio-only turn shown mid-stream.
       if (!block.src) return null;
       return (
-        <BlockComponents.AudioOutputBlock
+        <AudioOutputBlockRenderer
           key={index}
-          url={block.src}
-          mimeType={audioMimeFromUrl(block.src)}
+          data={{ url: block.src, mimeType: audioMimeFromUrl(block.src) }}
           title={block.alt && block.alt !== "Audio" ? block.alt : undefined}
         />
       );

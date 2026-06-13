@@ -28,6 +28,12 @@ interface WorkingDocumentPanelProps {
   showOpenInWindow?: boolean;
   /** Show the enable/disable switch in the header. Default true. */
   showEnableToggle?: boolean;
+  /**
+   * Render the title/binding/actions header. Default true. Set false when the
+   * host already provides its own control row (e.g. the Smart Input Document
+   * tab) so the editor gets the full height.
+   */
+  showHeader?: boolean;
 }
 
 export function WorkingDocumentPanel({
@@ -35,6 +41,7 @@ export function WorkingDocumentPanel({
   className,
   showOpenInWindow = true,
   showEnableToggle = true,
+  showHeader = true,
 }: WorkingDocumentPanelProps) {
   const {
     enabled,
@@ -68,70 +75,72 @@ export function WorkingDocumentPanel({
   return (
     <div className={cn("flex h-full min-h-0 flex-col bg-card", className)}>
       {/* Header */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
-        <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-sm font-medium text-foreground">
-            {title || "Working document"}
-          </span>
-          <span className="flex items-center gap-1 truncate text-[11px] text-muted-foreground">
-            {isBound ? (
-              <>
-                <Link2 className="h-3 w-3 shrink-0" />
-                <span className="truncate">
-                  Synced to note{binding.label ? ` · ${binding.label}` : ""}
-                </span>
-              </>
-            ) : (
-              "Not saved — bind a note to keep it"
-            )}
-          </span>
-        </div>
-
-        {enabled && (
-          <>
-            <button
-              type="button"
-              onClick={() => void handleCopy()}
-              disabled={!draft.trim()}
-              aria-label={hasCopied ? "Copied" : "Copy document"}
-              className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-full transition-colors",
-                draft.trim()
-                  ? hasCopied
-                    ? "text-green-500 hover:bg-accent"
-                    : "text-foreground hover:bg-accent"
-                  : "text-muted-foreground/40",
-              )}
-            >
-              {hasCopied ? (
-                <Check className="h-4 w-4" />
+      {showHeader && (
+        <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+          <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate text-sm font-medium text-foreground">
+              {title || "Working document"}
+            </span>
+            <span className="flex items-center gap-1 truncate text-[11px] text-muted-foreground">
+              {isBound ? (
+                <>
+                  <Link2 className="h-3 w-3 shrink-0" />
+                  <span className="truncate">
+                    Synced to note{binding.label ? ` · ${binding.label}` : ""}
+                  </span>
+                </>
               ) : (
-                <Copy className="h-4 w-4" />
+                "Not saved — bind a note to keep it"
               )}
-            </button>
-            {showOpenInWindow && (
+            </span>
+          </div>
+
+          {enabled && (
+            <>
               <button
                 type="button"
-                onClick={openAsWindow}
-                aria-label="Open as window"
-                title="Open as window"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent"
+                onClick={() => void handleCopy()}
+                disabled={!draft.trim()}
+                aria-label={hasCopied ? "Copied" : "Copy document"}
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-full transition-colors",
+                  draft.trim()
+                    ? hasCopied
+                      ? "text-green-500 hover:bg-accent"
+                      : "text-foreground hover:bg-accent"
+                    : "text-muted-foreground/40",
+                )}
               >
-                <Maximize2 className="h-4 w-4" />
+                {hasCopied ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
               </button>
-            )}
-          </>
-        )}
+              {showOpenInWindow && (
+                <button
+                  type="button"
+                  onClick={openAsWindow}
+                  aria-label="Open as window"
+                  title="Open as window"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </button>
+              )}
+            </>
+          )}
 
-        {showEnableToggle && (
-          <Switch
-            checked={enabled}
-            onCheckedChange={setEnabled}
-            aria-label="Toggle working document"
-          />
-        )}
-      </div>
+          {showEnableToggle && (
+            <Switch
+              checked={enabled}
+              onCheckedChange={setEnabled}
+              aria-label="Toggle working document"
+            />
+          )}
+        </div>
+      )}
 
       {/* Body */}
       {enabled ? (

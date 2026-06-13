@@ -76,6 +76,7 @@ import {
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import type { ScopeTypeNode } from "@/features/scopes/types";
 import { cn } from "@/utils/cn";
+import { ClearContextButton } from "./ClearContextButton";
 
 export interface ActiveScopePickerProps {
   /** Start expanded (e.g., inside a bottom sheet). Default: false. */
@@ -409,16 +410,13 @@ export function ActiveScopePicker({
             {collapsedLabel ?? "Set Context"}
           </span>
           {hasAnyContext && !reallyExpanded && (
-            <button
-              onMouseDown={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                handleClearAll();
-              }}
-              className="text-muted-foreground hover:text-foreground transition-colors mr-0.5"
-            >
-              <X className="h-2.5 w-2.5" />
-            </button>
+            <ClearContextButton
+              size="xs"
+              onClick={handleClearAll}
+              hideWhenEmpty={false}
+              visible
+              className="mr-0.5"
+            />
           )}
           <ChevronDown
             className={cn(
@@ -556,14 +554,14 @@ export function ActiveScopePicker({
           />
 
           {hasAnyContext && (
-            <div className="pt-0.5">
-              <button
+            <div className="px-1.5 pt-0.5">
+              <ClearContextButton
+                size="xs"
                 onClick={handleClearAll}
-                className="flex items-center gap-1.5 w-full px-2.5 py-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent/30"
-              >
-                <X className="h-2.5 w-2.5" />
-                Clear context
-              </button>
+                hideWhenEmpty={false}
+                visible
+                className="w-full justify-center"
+              />
             </div>
           )}
         </div>

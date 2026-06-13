@@ -57,6 +57,19 @@ export const selectActiveScopeIds = createSelector(
   (sel): string[] => Object.values(sel),
 );
 
+/** True when any working-context dimension is set in appContextSlice. */
+export const selectHasActiveContext = createSelector(
+  selectActiveOrganizationId,
+  selectActiveProjectId,
+  selectActiveTaskId,
+  selectActiveScopeIds,
+  (organizationId, projectId, taskId, scopeIds) =>
+    !!organizationId ||
+    !!projectId ||
+    !!taskId ||
+    scopeIds.length > 0,
+);
+
 /**
  * Returns the active scope id for a given scope_type, or null.
  */
