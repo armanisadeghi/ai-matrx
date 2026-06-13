@@ -505,6 +505,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: false,
   },
+  scopeEditWindow: {
+    label: "Scope Editor",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   scraperWindow: {
     label: "Scraper Window",
     instanceMode: "singleton",

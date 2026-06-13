@@ -45,6 +45,7 @@ import {
   Circle,
   FolderOpen,
   Loader2,
+  Pencil,
   Plus,
   Save,
   Search,
@@ -65,11 +66,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import {
@@ -82,11 +82,16 @@ import {
 import { ClearContextButton } from "@/features/scopes/components/active-context/ClearContextButton";
 import { ContextSelectionSummary } from "./ContextSelectionSummary";
 import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayName";
+import { useOpenScopeEditWindow } from "@/features/overlays/openers/scopeEditWindow";
 import type {
   OrgNode,
   ScopeTypeNode,
   ScopeAssignmentEntityType,
 } from "@/features/scopes/types";
+
+/** Sentinel org value: no org filter — show / span every organization.
+ *  Default for assignment mode unless a `defaultOrganizationId` is passed. */
+export const ALL_ORGS = "__all_orgs__";
 
 /* ── public contract ─────────────────────────────────────────────────────── */
 
@@ -202,7 +207,7 @@ function CheckRow({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted"
+      className="group flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted"
     >
       {checkboxVariant === "standard" ? (
         <Checkbox
@@ -226,6 +231,37 @@ function CheckRow({
       <span className={cn("min-w-0 flex-1 truncate", textClass)}>{label}</span>
       {right}
     </button>
+  );
+}
+
+function RowEditButton({
+  label,
+  onEdit,
+}: {
+  label: string;
+  onEdit: () => void;
+}) {
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      aria-label={label}
+      title={label}
+      onClick={(e) => {
+        e.stopPropagation();
+        onEdit();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          onEdit();
+        }
+      }}
+      className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+    >
+      <Pencil className="h-3 w-3" />
+    </span>
   );
 }
 
@@ -611,8 +647,8 @@ export function ContextAssignmentField({
     "task",
   );
   const dispatch = useAppDispatch();
+  const openScopeEdit = useOpenScopeEditWindow();
   const { organizations } = useScopeTree();
-  const activeOrgId = useAppSelector(selectActiveOrganizationId);
 
   // Tree: idempotent ensure (no-refetch policy — a no-op when already loaded).
   useEffect(() => {
@@ -636,27 +672,31 @@ export function ContextAssignmentField({
     };
   }, []);
 
-  // Org: default → active → richest. Always changeable afterwards.
+  // Org: an explicitly-passed `defaultOrganizationId` wins; otherwise the
+  // default is "All organizations" (nothing filtered out). Always changeable.
   const [orgId, setOrgId] = useState<string | null>(
     defaultOrganizationId ?? null,
   );
   useEffect(() => {
     if (orgId || organizations.length === 0) return;
-    const fallback =
-      activeOrgId && organizations.some((o) => o.id === activeOrgId)
-        ? activeOrgId
-        : [...organizations].sort(
-            (a, b) => b.scope_types.length - a.scope_types.length,
-          )[0].id;
     setOrgId(
       defaultOrganizationId &&
         organizations.some((o) => o.id === defaultOrganizationId)
         ? defaultOrganizationId
-        : fallback,
+        : ALL_ORGS,
     );
-  }, [organizations, orgId, defaultOrganizationId, activeOrgId]);
-  const org: OrgNode | undefined =
-    organizations.find((o) => o.id === orgId) ?? organizations[0];
+  }, [organizations, orgId, defaultOrganizationId]);
+
+  // "All organizations" mode: no org-of-record, no org-based filtering.
+  const isAllOrgs = orgId === ALL_ORGS;
+  const org: OrgNode | undefined = isAllOrgs
+    ? undefined
+    : organizations.find((o) => o.id === orgId);
+  // Orgs whose scopes are shown in the assignment tree (one, or all).
+  const orgsInView: OrgNode[] = useMemo(
+    () => (isAllOrgs ? organizations : org ? [org] : []),
+    [isAllOrgs, organizations, org],
+  );
 
   // Selection state
   const [query, setQuery] = useState("");
@@ -729,26 +769,34 @@ export function ContextAssignmentField({
   const q = query.trim().toLowerCase();
   const match = (s: string) => !q || s.toLowerCase().includes(q);
 
-  const scopeTypes = useMemo(
+  // Assignment scope sections, grouped per org-in-view (one org, or all of
+  // them when "All organizations" is selected — nothing filtered out).
+  const scopeGroups = useMemo(
     () =>
-      (org?.scope_types ?? []).map((t) => {
-        const extra = addedScopes
-          .filter((a) => a.typeId === t.id)
-          .map((a) => ({ id: a.id, name: a.name }));
-        const all = [
-          ...t.scopes.map((s) => ({ id: s.id, name: s.name })),
-          ...extra,
-        ];
-        return {
-          type: t,
-          scopes: all.filter((s) => match(s.name)),
-          total: all.length,
-        };
-      }),
-    [org, addedScopes, q],
+      orgsInView.map((o) => ({
+        org: o,
+        types: o.scope_types.map((t) => {
+          const extra = addedScopes
+            .filter((a) => a.typeId === t.id)
+            .map((a) => ({ id: a.id, name: a.name }));
+          const all = [
+            ...t.scopes.map((s) => ({ id: s.id, name: s.name })),
+            ...extra,
+          ];
+          return {
+            type: t,
+            scopes: all.filter((s) => match(s.name)),
+            total: all.length,
+          };
+        }),
+      })),
+    [orgsInView, addedScopes, q],
   );
+  const hasAnyScopeType = scopeGroups.some((g) => g.types.length > 0);
 
-  const inScope = (oid: string | null) => oid === org?.id || oid == null;
+  // "All orgs" never filters projects/tasks by org.
+  const inScope = (oid: string | null) =>
+    isAllOrgs || oid === org?.id || oid == null;
   const projOrgOf = (pid: string | null) =>
     pid
       ? ([...allProjects, ...addedProjects].find((p) => p.id === pid)?.orgId ??
@@ -787,11 +835,13 @@ export function ContextAssignmentField({
   );
 
   const typeById = (id: string): ScopeTypeNode | undefined =>
-    org?.scope_types.find((t) => t.id === id);
+    (org?.scope_types ?? organizations.flatMap((o) => o.scope_types)).find(
+      (t) => t.id === id,
+    );
   // Non-assignment modes browse ALL orgs (hierarchy tree), so type resolution
   // must search every org — not just the browse org.
   const typeOfScope = (id: string): ScopeTypeNode | undefined =>
-    (mode === "assignment"
+    (mode === "assignment" && !isAllOrgs
       ? org?.scope_types.find((t) => t.scopes.some((s) => s.id === id))
       : organizations
           .flatMap((o) => o.scope_types)
@@ -813,16 +863,17 @@ export function ContextAssignmentField({
       if (t) s.add(t.id);
     });
     return s;
-  }, [selScopes, org, addedScopes]);
+  }, [selScopes, org, addedScopes, isAllOrgs, organizations]);
 
   // Lateral suggestions from REAL project↔scope links (suggest, never force).
   const suggestions = useMemo(() => {
-    if (mode !== "assignment" || !org)
+    if (mode !== "assignment" || orgsInView.length === 0)
       return [] as { id: string; label: string; kind: "project" | "scope" }[];
     const out: { id: string; label: string; kind: "project" | "scope" }[] = [];
     const seen = new Set<string>();
+    const allProjectsInView = orgsInView.flatMap((o) => o.projects);
     selScopes.forEach((sid) => {
-      org.projects.forEach((p) => {
+      allProjectsInView.forEach((p) => {
         if (
           p.scope_ids.includes(sid) &&
           !selProjects.has(p.id) &&
@@ -834,10 +885,11 @@ export function ContextAssignmentField({
       });
     });
     selProjects.forEach((pid) => {
-      const p = org.projects.find((x) => x.id === pid);
+      const p = allProjectsInView.find((x) => x.id === pid);
       p?.scope_ids.forEach((sid) => {
         if (selScopes.has(sid) || seen.has(sid)) return;
-        const sc = org.scope_types
+        const sc = orgsInView
+          .flatMap((o) => o.scope_types)
           .flatMap((t) => t.scopes)
           .find((s) => s.id === sid);
         if (sc) {
@@ -847,7 +899,7 @@ export function ContextAssignmentField({
       });
     });
     return out.slice(0, 4);
-  }, [mode, selScopes, selProjects, org]);
+  }, [mode, selScopes, selProjects, orgsInView]);
 
   const toggle = (
     set: React.Dispatch<React.SetStateAction<Set<string>>>,
@@ -893,10 +945,12 @@ export function ContextAssignmentField({
 
   const onApplyActiveRef = useRef(onApplyActive);
   onApplyActiveRef.current = onApplyActive;
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  onSelectionChangeRef.current = onSelectionChange;
   const skipInitialActiveApply = useRef(true);
 
   useEffect(() => {
-    onSelectionChange?.(selection);
+    onSelectionChangeRef.current?.(selection);
     if (mode !== "active") return;
     if (skipInitialActiveApply.current) {
       skipInitialActiveApply.current = false;
@@ -907,18 +961,19 @@ export function ContextAssignmentField({
     else if (writeMode === "preview") {
       console.log("[context-assignment] ACTIVE selection (live) →", selection);
     }
-  }, [selection, mode, writeMode, onSelectionChange]);
+  }, [selection, mode, writeMode]);
 
   /* quick-adds */
-  async function addScope(typeId: string, name: string) {
+  async function addScope(typeId: string, name: string, orgIdForAdd?: string) {
     const v = name.trim();
-    if (!v || !org) return;
+    const targetOrgId = orgIdForAdd ?? org?.id;
+    if (!v || !targetOrgId) return;
     if (writeMode === "live") {
       try {
         const { createScope } =
           await import("@/features/agent-context/redux/scope/scopesSlice");
         const created = await dispatch(
-          createScope({ org_id: org.id, type_id: typeId, name: v }),
+          createScope({ org_id: targetOrgId, type_id: typeId, name: v }),
         ).unwrap();
         setSelScopes((p) => new Set(p).add(created.id));
         setAdding(null);
@@ -934,7 +989,7 @@ export function ContextAssignmentField({
     }
     const id = `new:scope:${typeId}:${v}`;
     console.log("[context-assignment] create scope (preview) →", {
-      org_id: org.id,
+      org_id: targetOrgId,
       scope_type_id: typeId,
       name: v,
     });
@@ -1133,7 +1188,7 @@ export function ContextAssignmentField({
             browse every org in the hierarchy tree below) + search */}
         <div className="flex items-center gap-2">
           {mode === "assignment" && (
-            <Select value={org?.id ?? ""} onValueChange={setOrgId}>
+            <Select value={orgId ?? ""} onValueChange={setOrgId}>
               <SelectTrigger className="h-9 w-[260px] shrink-0">
                 {/* div (not span): the trigger's [&>span]:line-clamp-1 forces
                     -webkit-box display and would break this flex row */}
@@ -1145,6 +1200,7 @@ export function ContextAssignmentField({
                 </div>
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value={ALL_ORGS}>All organizations</SelectItem>
                 {organizations.map((o) => (
                   <SelectItem key={o.id} value={o.id}>
                     {formatOrgDisplayName(o)}
@@ -1193,56 +1249,93 @@ export function ContextAssignmentField({
                 />
               ) : (
                 <>
-                  {scopeTypes.length === 0 && (
+                  {!hasAnyScopeType && (
                     <div className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
-                      This organization has no scopes yet.
+                      {isAllOrgs
+                        ? "No scopes in any organization yet."
+                        : "This organization has no scopes yet."}
                     </div>
                   )}
-                  {scopeTypes.map(({ type, scopes, total }) => {
-                    const Icon = resolveIcon(type.icon);
-                    const c = resolveColor(type);
+                  {scopeGroups.map(({ org: groupOrg, types }) => {
+                    if (types.length === 0) return null;
                     return (
-                      <SectionShell
-                        key={type.id}
-                        icon={Icon}
-                        iconClass={c.fg}
-                        borderClass={c.border}
-                        title={type.label_plural}
-                        count={total}
-                        defaultOpen={defaultScopeTypeOpen}
-                        addLabel={
-                          allowCreate ? `New ${type.label_singular}` : undefined
-                        }
-                        onAdd={
-                          allowCreate ? () => setAdding(type.id) : undefined
-                        }
-                      >
-                        {adding === type.id && (
-                          <InlineAdd
-                            placeholder={`New ${type.label_singular.toLowerCase()} name`}
-                            onCommit={(v) => void addScope(type.id, v)}
-                            onCancel={() => setAdding(null)}
-                          />
-                        )}
-                        {scopes.length === 0 ? (
-                          <div className="px-2.5 py-1.5 text-xs text-muted-foreground">
-                            {q
-                              ? "No matches."
-                              : `No ${type.label_plural.toLowerCase()} yet.`}
+                      <div key={groupOrg.id} className="space-y-2">
+                        {isAllOrgs && (
+                          <div className="flex items-center gap-1.5 px-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            <Building2 className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">
+                              {formatOrgDisplayName(groupOrg)}
+                            </span>
                           </div>
-                        ) : (
-                          scopes.map((s) => (
-                            <CheckRow
-                              key={s.id}
-                              on={selScopes.has(s.id)}
-                              label={s.name}
-                              textClass={c.fg}
-                              checkboxVariant={checkboxVariant}
-                              onClick={() => toggleScope(s.id)}
-                            />
-                          ))
                         )}
-                      </SectionShell>
+                        {types.map(({ type, scopes, total }) => {
+                          const Icon = resolveIcon(type.icon);
+                          const c = resolveColor(type);
+                          return (
+                            <SectionShell
+                              key={type.id}
+                              icon={Icon}
+                              iconClass={c.fg}
+                              borderClass={c.border}
+                              title={type.label_plural}
+                              count={total}
+                              defaultOpen={defaultScopeTypeOpen}
+                              addLabel={
+                                allowCreate
+                                  ? `New ${type.label_singular}`
+                                  : undefined
+                              }
+                              onAdd={
+                                allowCreate
+                                  ? () => setAdding(type.id)
+                                  : undefined
+                              }
+                            >
+                              {adding === type.id && (
+                                <InlineAdd
+                                  placeholder={`New ${type.label_singular.toLowerCase()} name`}
+                                  onCommit={(v) =>
+                                    void addScope(type.id, v, groupOrg.id)
+                                  }
+                                  onCancel={() => setAdding(null)}
+                                />
+                              )}
+                              {scopes.length === 0 ? (
+                                <div className="px-2.5 py-1.5 text-xs text-muted-foreground">
+                                  {q
+                                    ? "No matches."
+                                    : `No ${type.label_plural.toLowerCase()} yet.`}
+                                </div>
+                              ) : (
+                                scopes.map((s) => (
+                                  <CheckRow
+                                    key={s.id}
+                                    on={selScopes.has(s.id)}
+                                    label={s.name}
+                                    textClass={c.fg}
+                                    checkboxVariant={checkboxVariant}
+                                    onClick={() => toggleScope(s.id)}
+                                    right={
+                                      allowCreate ? (
+                                        <RowEditButton
+                                          label={`Edit ${type.label_singular}`}
+                                          onEdit={() =>
+                                            openScopeEdit({
+                                              scopeId: s.id,
+                                              scopeTypeId: type.id,
+                                              organizationId: groupOrg.id,
+                                            })
+                                          }
+                                        />
+                                      ) : undefined
+                                    }
+                                  />
+                                ))
+                              )}
+                            </SectionShell>
+                          );
+                        })}
+                      </div>
                     );
                   })}
                 </>

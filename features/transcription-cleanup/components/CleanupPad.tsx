@@ -133,20 +133,35 @@ const SIDE_COLUMN_TOP_BAND =
 const RECORD_BAND =
   "flex shrink-0 items-center justify-center border-b border-border px-4 py-3 min-h-[4.5rem]";
 
-function SidebarSectionLabel({
+/**
+ * Shared pane-header bar — one fixed height and padding for every data pane
+ * (Transcript / Clean / Custom title row) so headers read as a single system.
+ */
+const PANE_HEADER =
+  "flex h-9 shrink-0 items-center justify-between gap-2 border-b border-border bg-muted/30 px-3";
+
+/**
+ * The single section-heading treatment used everywhere on this page: a small
+ * tinted icon chip + tight uppercase label. Reused by both pane headers and the
+ * sidebar so spacing, sizing, and weight never drift between sections.
+ */
+function SectionHeading({
   icon: Icon,
   label,
   accent = "muted",
+  children,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   accent?: "muted" | "primary";
+  /** Inline trailing affordances (status pills, badges). */
+  children?: React.ReactNode;
 }) {
   return (
-    <div className="mb-1.5 mt-4 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <span className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
       <span
         className={cn(
-          "inline-flex h-5 w-5 items-center justify-center rounded-md",
+          "inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md",
           accent === "primary" ? "bg-primary/10" : "bg-muted",
         )}
       >
@@ -157,7 +172,46 @@ function SidebarSectionLabel({
           )}
         />
       </span>
-      {label}
+      <span className="truncate">{label}</span>
+      {children}
+    </span>
+  );
+}
+
+/** Consistent inline status pill (Queued / Thinking / Ready) for pane headers. */
+function StatusPill({
+  tone,
+  children,
+}: {
+  tone: "primary" | "success";
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[10px] font-medium normal-case tracking-normal",
+        tone === "success"
+          ? "bg-green-500/10 text-green-600 dark:text-green-400"
+          : "bg-primary/10 text-primary",
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function SidebarSectionLabel({
+  icon,
+  label,
+  accent = "muted",
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  accent?: "muted" | "primary";
+}) {
+  return (
+    <div className="mb-1.5 mt-3.5">
+      <SectionHeading icon={icon} label={label} accent={accent} />
     </div>
   );
 }
@@ -243,9 +297,10 @@ function useStreamPulse(phase: AiProcessPhase): {
 }
 
 /**
- * Layout-safe processing/done border for a pane. Renders an inset, glowing ring
- * over the pane body (pointer-events-none) — primary + breathing while running,
- * a bright green one-shot flash on completion — without affecting content size.
+ * Layout-safe processing/done border for a pane. A single inset glow overlay
+ * (pointer-events-none, no transform) whose opacity is animated — so it breathes
+ * smoothly while a run streams and fades cleanly on completion, with no
+ * sub-pixel ring jitter. Honors `prefers-reduced-motion` (static glow, no pulse).
  */
 function StreamPulseBorder({
   running,
@@ -259,24 +314,40 @@ function StreamPulseBorder({
     <div
       aria-hidden
       className={cn(
-        "pointer-events-none absolute inset-0 z-20 ring-2 ring-inset",
+        "pointer-events-none absolute inset-0 z-20 rounded-[inherit]",
         doneFlash
-          ? "animate-done-flash shadow-[inset_0_0_18px_rgba(34,197,94,0.35)] ring-[3px] ring-green-500/80"
-          : "animate-slowPulse shadow-[inset_0_0_16px_hsl(var(--primary)/0.18)] ring-primary/55",
+          ? "animate-stream-done shadow-[inset_0_0_0_1.5px_rgba(34,197,94,0.85),inset_0_0_24px_rgba(34,197,94,0.28)] motion-reduce:animate-none"
+          : "animate-stream-breathe shadow-[inset_0_0_0_1.5px_hsl(var(--primary)/0.55),inset_0_0_22px_hsl(var(--primary)/0.16)] motion-reduce:animate-none motion-reduce:opacity-80",
       )}
     />
   );
 }
 
-/** Stable initial slot (fixed id — SSR-safe; new slots mint uuids on click). */
-function initialSlot(): CleanupCustomSlot {
-  return {
-    id: "slot-1",
-    agentId: null,
-    source: "clean",
-    autoRun: false,
-    docKind: CLEANUP_DOC_KIND,
-  };
+/**
+ * Stable initial slots (fixed ids — SSR-safe; new slots mint uuids on click).
+ * A fresh session opens with TWO custom outputs split by input source: one
+ * driven by the RAW transcript, one by the CLEANED text — the two distinct
+ * post-processing paths a user wants side by side. Slot 1 keeps the legacy
+ * `cleanup_custom` docKind for back-compat; slot 2 gets its own stable docKind.
+ * Both DB-backed (own `studio_documents` row per docKind + `custom_slots`).
+ */
+function initialSlots(): CleanupCustomSlot[] {
+  return [
+    {
+      id: "slot-1",
+      agentId: null,
+      source: "raw",
+      autoRun: false,
+      docKind: CLEANUP_DOC_KIND,
+    },
+    {
+      id: "slot-2",
+      agentId: null,
+      source: "clean",
+      autoRun: false,
+      docKind: makeSlotDocKind("slot-2", false),
+    },
+  ];
 }
 
 interface CleanupPadProps {
@@ -340,7 +411,7 @@ export default function CleanupPad({
   }, [surfaceRoles.status, cleanRole?.effectiveAgentId, cleanAgentPicked]);
 
   // Custom slots — one visible at a time, each with its own agent/source/autorun.
-  const [slots, setSlots] = useState<CleanupCustomSlot[]>([initialSlot()]);
+  const [slots, setSlots] = useState<CleanupCustomSlot[]>(initialSlots);
   const [activeSlotIdx, setActiveSlotIdx] = useState(0);
   const slotsRef = useRef(slots);
   slotsRef.current = slots;
@@ -559,7 +630,7 @@ export default function CleanupPad({
     );
 
     const loadedSlots = (
-      loaded.customSlots.length > 0 ? loaded.customSlots : [initialSlot()]
+      loaded.customSlots.length > 0 ? loaded.customSlots : initialSlots()
     )
       .slice(0, MAX_CUSTOM_SLOTS)
       .map((slot) => {
@@ -1100,7 +1171,7 @@ export default function CleanupPad({
     try {
       clearLocalContent();
       contextItemsRef.current = [];
-      setSlots([initialSlot()]);
+      setSlots(initialSlots());
       setActiveSlotIdx(0);
       await session.createNew();
       setDrawerOpen(false);
@@ -1476,18 +1547,12 @@ export default function CleanupPad({
   );
   const transcriptPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-muted/30 px-3 py-2">
-        <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-muted">
-            <AudioLines className="h-3 w-3 text-muted-foreground" />
-          </span>
-          Transcript
+      <div className={PANE_HEADER}>
+        <SectionHeading icon={AudioLines} label="Transcript">
           {isTranscriptLocked && (pendingPrefix || pendingSuffix) ? (
-            <span className="rounded-full bg-primary/10 px-1.5 py-px font-normal normal-case text-primary">
-              Queued
-            </span>
+            <StatusPill tone="primary">Queued</StatusPill>
           ) : null}
-        </span>
+        </SectionHeading>
         <div className="flex shrink-0 items-center gap-1">
           {isTranscriptLocked ? (
             <>
@@ -1565,28 +1630,22 @@ export default function CleanupPad({
   );
   const cleanPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex shrink-0 items-center justify-between border-b border-border bg-muted/30 px-3 py-2">
-        <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-primary/10">
-            <Stars className="h-3 w-3 text-primary" />
-          </span>
-          Clean
+      <div className={PANE_HEADER}>
+        <SectionHeading icon={Stars} label="Clean" accent="primary">
           {cleanThinking && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-px font-normal normal-case text-primary">
+            <StatusPill tone="primary">
               Thinking
-              <span className="inline-flex gap-0.5">
+              <span className="ml-0.5 inline-flex gap-0.5">
                 <span className="h-1 w-1 animate-bounce rounded-full bg-primary/70 [animation-delay:-0.3s]" />
                 <span className="h-1 w-1 animate-bounce rounded-full bg-primary/70 [animation-delay:-0.15s]" />
                 <span className="h-1 w-1 animate-bounce rounded-full bg-primary/70" />
               </span>
-            </span>
+            </StatusPill>
           )}
           {cleanAi.phase === "complete" && responseValue.trim() && (
-            <span className="rounded-full bg-green-500/10 px-1.5 py-px font-normal normal-case text-green-600 dark:text-green-400">
-              Ready
-            </span>
+            <StatusPill tone="success">Ready</StatusPill>
           )}
-        </span>
+        </SectionHeading>
         <div className="flex items-center gap-1">
           <Loader2
             className={cn(
@@ -1658,22 +1717,12 @@ export default function CleanupPad({
   const customTopBand = (
     <div className={SIDE_COLUMN_TOP_BAND}>
       <div className="flex items-center justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/10">
-            <Wand2 className="h-3 w-3 text-primary" />
-          </span>
-          Custom
-          {activeThinking && (
-            <span className="rounded-full bg-primary/10 px-1.5 py-px font-normal normal-case text-primary">
-              Thinking
-            </span>
-          )}
+        <SectionHeading icon={Wand2} label="Custom" accent="primary">
+          {activeThinking && <StatusPill tone="primary">Thinking</StatusPill>}
           {activeAi.phase === "complete" && activeSlotValue.trim() && (
-            <span className="rounded-full bg-green-500/10 px-1.5 py-px font-normal normal-case text-green-600 dark:text-green-400">
-              Ready
-            </span>
+            <StatusPill tone="success">Ready</StatusPill>
           )}
-        </span>
+        </SectionHeading>
         <div className="flex shrink-0 items-center gap-1">
           <Loader2
             className={cn(

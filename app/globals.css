@@ -545,6 +545,36 @@
     }
   }
 
+  /* Stream-status border treatment — opacity-only (no transform), so the glow
+     breathes smoothly with zero sub-pixel jitter. `stream-breathe` runs while a
+     run streams; `stream-done` plays once on completion, then the element is
+     unmounted. GPU-cheap and respects reduced-motion at the call site. */
+  --animate-stream-breathe: stream-breathe 2.6s ease-in-out infinite;
+  --animate-stream-done: stream-done 1.1s cubic-bezier(0.22, 1, 0.36, 1)
+    forwards;
+
+  @keyframes stream-breathe {
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes stream-done {
+    0% {
+      opacity: 0;
+    }
+    22% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
   @keyframes audio-shimmer {
     0% {
       transform: translateX(-100%);

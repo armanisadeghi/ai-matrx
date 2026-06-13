@@ -62,8 +62,11 @@ Surface A writers MUST live there; ESLint + FEATURE.md enforce it).
   `active-context/` components only. Entity FKs (e.g. a note's project_id)
   → that feature's save pipeline, applied from `onSaved`'s selection (see
   `features/notes/components/NoteContextSection.tsx` as the template).
-- **Org default-but-changeable.** Surfaces that "enforce" an org pass
-  `defaultOrganizationId`; the user can always switch.
+- **Org default-but-changeable.** Assignment mode defaults to **"All
+  organizations"** (`ALL_ORGS` sentinel — nothing filtered, scope sections
+  grouped per org, `selection.organizationId = null`). Surfaces that "enforce"
+  an org pass `defaultOrganizationId` to override that default; the user can
+  always switch (including back to All).
 - **No layout shift.** Fixed section heights; fixed-size check targets;
   status icons swap glyphs, never dimensions.
 - **Project/task durable links** log-and-toast until the `ctx_associations`

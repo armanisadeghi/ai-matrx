@@ -121,7 +121,11 @@ proof that explicit mappings (not name-matching) deliver values. Shortcut
 ## Custom slots
 
 Up to `MAX_CUSTOM_SLOTS` (3) custom outputs, one visible at a time (tab
-pills + add/remove in the Custom header). Each slot: its own any-agent
+pills + add/remove in the Custom header). A fresh session opens with **two**
+slots — slot 1 sourced from the RAW transcript, slot 2 from the CLEANED text —
+the two distinct post-processing paths side by side (`initialSlots()`); the DB
+backs each independently (own `studio_documents` row per `docKind` +
+`custom_slots`). Each slot: its own any-agent
 dropdown, Raw|Clean input source, Auto-run toggle, and its own
 `studio_documents` row. The streaming runtimes are a FIXED hook pool
 (`slotAi0..2`) — raise `MAX_CUSTOM_SLOTS` and add a hook instance together.
@@ -130,6 +134,19 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-06-13 — UX consistency + smoother stream affordances:
+  fresh sessions now open with **two** custom slots (slot 1 = raw source,
+  slot 2 = clean source) via `initialSlots()` — the DB already backed
+  per-slot docKinds, so no schema change. Section headers unified under one
+  `SectionHeading` primitive (tinted icon chip + tight `text-[11px]`
+  uppercase label) and a shared `PANE_HEADER` bar (fixed `h-9`, uniform
+  padding) across Transcript / Clean / Custom + the sidebar (`SidebarSectionLabel`
+  now wraps `SectionHeading`); status pills standardized via `StatusPill`.
+  `StreamPulseBorder` rewritten to opacity-only glow (no `transform`) on new
+  `stream-breathe` / `stream-done` keyframes (`globals.css`) — eliminates the
+  jerky scale-pulse; honors `prefers-reduced-motion`. (Note: the lingering
+  tab mic indicator after stopping is expected — `micStream.ts` keeps the OS
+  grant warm for a 3-min keepalive so mobile doesn't re-prompt every record.)
 - 2026-06-13 — Custom Dictionary wired in: `DictionaryContextCard` (surface `matrx-user/transcripts-cleanup`) added to the sidebar Context area, showing the merged dictionary with source-level badges + inline selection. LLM cleanup context is auto-injected server-side (the surface is flagged `supports_dictionary`); no `useAiPostProcess` change. See `features/dictionary/FEATURE.md`.
 - 2026-06-12 — Clean default absorbed into the surfaces role system:
   `CleanupPad` seeds the Clean agent from the `clean` role

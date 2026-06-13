@@ -47,6 +47,7 @@ import type { FilesystemAdapter } from "@/features/code/adapters/FilesystemAdapt
 import type { ProcessAdapter } from "@/features/code/adapters/ProcessAdapter";
 import type { ContentEditorSeedDocument } from "@/features/window-panels/windows/content-editors/useOpenContentEditorWindow";
 import type { HierarchyCreationWindowData } from "@/features/window-panels/windows/context-scopes/HierarchyCreationWindow";
+import type { ScopeEditWindowData } from "@/features/window-panels/windows/context-scopes/ScopeEditWindow";
 import type { AssetPreset } from "@/features/files/types";
 import type { JsonTruncatorTab } from "@/components/official-candidate/json-truncator/JsonTruncator";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";
@@ -403,6 +404,11 @@ const GalleryWindow = dynamic(
 const HierarchyCreationWindow = dynamic(
   () =>
     import("@/features/window-panels/windows/context-scopes/HierarchyCreationWindow"),
+  { ssr: false },
+);
+const ScopeEditWindow = dynamic(
+  () =>
+    import("@/features/window-panels/windows/context-scopes/ScopeEditWindow"),
   { ssr: false },
 );
 const HtmlPreviewBridge = dynamic(
@@ -842,6 +848,9 @@ export default function OverlayController() {
     hierarchyCreationWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "hierarchyCreationWindow"),
     ),
+    scopeEditWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "scopeEditWindow"),
+    ),
     imagePeekHost: useAppSelector((s) =>
       selectIsOverlayOpen(s, "imagePeekHost"),
     ),
@@ -1069,6 +1078,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     hierarchyCreationWindow: useAppSelector((s) =>
       selectOverlayData(s, "hierarchyCreationWindow"),
+    ) as Record<string, unknown> | null,
+    scopeEditWindow: useAppSelector((s) =>
+      selectOverlayData(s, "scopeEditWindow"),
     ) as Record<string, unknown> | null,
     imagePeekHost: useAppSelector((s) =>
       selectOverlayData(s, "imagePeekHost"),
@@ -2812,6 +2824,27 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "hierarchyCreationWindow" }))
             }
             data={data?.data as HierarchyCreationWindowData | undefined}
+          />
+        );
+      })()}
+
+      {/* scopeEditWindow */}
+      {(() => {
+        const isOpen = isOpenById.scopeEditWindow;
+        const data = dataById.scopeEditWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <ScopeEditWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "scopeEditWindow" }))
+            }
+            data={
+              (data ?? undefined) as unknown as ScopeEditWindowData | undefined
+            }
           />
         );
       })()}

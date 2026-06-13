@@ -31,12 +31,22 @@ function BottomSheet({
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerPortal>
-        <DrawerPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40" />
+        <DrawerPrimitive.Overlay
+          className="fixed inset-0 z-50"
+          style={{ background: "rgba(0, 0, 0, 0.08)" }}
+        />
         <DrawerPrimitive.Content
           className={cn(
-            "fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-2xl overflow-hidden min-h-[60dvh] max-h-[90dvh] bg-card text-card-foreground border border-b-0 border-border shadow-lg",
+            "fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-2xl overflow-hidden min-h-[60dvh] max-h-[90dvh]",
             contentClassName,
           )}
+          style={{
+            background: "var(--matrx-glass-bg)",
+            backdropFilter: "blur(20px) saturate(180%)",
+            WebkitBackdropFilter: "blur(20px) saturate(180%)",
+            border: "1px solid var(--matrx-glass-border-color)",
+            borderBottom: "none",
+          }}
         >
           <VisuallyHidden>
             <DrawerPrimitive.Title>{title}</DrawerPrimitive.Title>

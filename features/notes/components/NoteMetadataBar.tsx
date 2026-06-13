@@ -177,33 +177,42 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
 
   return (
     <>
-      <div className="relative z-10 flex items-center gap-2 py-1 px-4 border-t border-border/20 shrink-0 overflow-hidden min-h-[1.625rem] bg-background">
+      {/* Context panel — renders ABOVE the bar (like the folder dropdown),
+          rather than expanding the bar inline. The official assignment field
+          (scopes live via ctx_scope_assignments; project/task FKs via the note
+          save pipeline). Replaces the old glassy NoteContextPicker. */}
+      {scopePickerOpen && (
+        <div className="relative z-10 border-t border-border/20 px-2 bg-background shrink-0">
+          <NoteContextSection noteId={noteId} />
+        </div>
+      )}
+
+      <div className="relative z-10 flex items-center gap-2.5 py-1.5 px-4 border-t border-border/20 shrink-0 overflow-hidden min-h-[2.25rem] bg-background">
         {/* Folder selector */}
         <div className="shrink-0">
           <button
             ref={folderBtnRef}
             onClick={toggleFolderMenu}
-            className="flex items-center gap-1 text-[0.625rem] text-muted-foreground hover:text-foreground cursor-pointer transition-colors [&_svg]:w-3 [&_svg]:h-3"
+            className="flex items-center gap-1 text-xs text-foreground hover:text-primary cursor-pointer transition-colors [&_svg]:w-3.5 [&_svg]:h-3.5"
           >
             <FolderOpen />
-            <span className="max-w-[80px] truncate">{folder}</span>
-            <ChevronDown className="w-2! h-2! opacity-50" />
+            <span className="max-w-[120px] truncate">{folder}</span>
+            <ChevronDown className="w-3! h-3! opacity-60" />
           </button>
         </div>
 
-        {/* Context toggle — shows summary pill, expands full picker below */}
-        {/* Context toggle + scope tags */}
+        {/* Context toggle — shows summary pill, expands full picker above */}
         <button
           onClick={() => setScopePickerOpen((v) => !v)}
           className={cn(
-            "flex items-center gap-0.5 px-1.5 py-0.5 text-[0.5625rem] rounded-full cursor-pointer transition-colors shrink-0",
+            "flex items-center gap-1 px-2 py-0.5 text-xs rounded-full cursor-pointer transition-colors shrink-0",
             noteOrgId || noteProjId || noteTaskId
               ? "bg-primary/10 text-primary"
-              : "text-muted-foreground hover:text-foreground border border-dashed border-border/50",
+              : "text-foreground hover:text-primary border border-dashed border-border",
           )}
           title="Set context for this note"
         >
-          <Network className="w-2.5 h-2.5" />
+          <Network className="w-3 h-3" />
           {noteTaskId
             ? ctxTaskName && noteTaskId === ctxTaskId
               ? ctxTaskName
@@ -221,7 +230,7 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
         <ScopeTagsDisplay
           entityType="note"
           entityId={noteId}
-          className="shrink-0 [&_.badge]:text-[0.5rem] [&_.badge]:py-0 [&_.badge]:px-1"
+          className="shrink-0 [&_.badge]:text-[0.625rem] [&_.badge]:py-0 [&_.badge]:px-1.5"
         />
         {/* Task links + quick attach */}
         <TaskChipRow
@@ -233,16 +242,19 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
         />
 
         {/* Tags */}
-        <div className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto">
+        <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto">
+          <span className="text-xs font-medium text-foreground shrink-0">
+            Tags
+          </span>
           {tags.map((tag) => (
             <span
               key={tag}
-              className="flex items-center gap-0.5 px-1.5 py-0.5 text-[0.5625rem] bg-muted rounded-full text-muted-foreground shrink-0"
+              className="flex items-center gap-1 px-2 py-0.5 text-xs bg-muted rounded-full text-foreground shrink-0"
             >
               {tag}
               <button
                 onClick={() => handleRemoveTag(tag)}
-                className="cursor-pointer hover:text-foreground [&_svg]:w-2 [&_svg]:h-2"
+                className="cursor-pointer text-muted-foreground hover:text-foreground [&_svg]:w-2.5 [&_svg]:h-2.5"
               >
                 <X />
               </button>
@@ -261,14 +273,14 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
                 }
               }}
               onBlur={handleAddTag}
-              className="w-16 px-1 py-0.5 text-[0.5625rem] bg-muted rounded border border-border outline-none shrink-0"
-              placeholder="tag..."
+              className="w-28 px-2 py-1 text-xs bg-muted rounded-md border border-border outline-none focus:border-primary shrink-0"
+              placeholder="Add tag…"
               style={{ fontSize: "16px" }}
             />
           ) : (
             <button
               onClick={() => setAddingTag(true)}
-              className="flex items-center justify-center w-4 h-4 text-muted-foreground hover:text-foreground cursor-pointer [&_svg]:w-2.5 [&_svg]:h-2.5 shrink-0"
+              className="flex items-center justify-center w-5 h-5 rounded-md text-foreground hover:text-primary hover:bg-accent cursor-pointer [&_svg]:w-3.5 [&_svg]:h-3.5 shrink-0"
             >
               <Plus />
             </button>
@@ -276,11 +288,11 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
         </div>
 
         {/* Status + word count */}
-        <span className={cn("text-[0.5625rem] shrink-0", statusColor)}>
+        <span className={cn("text-xs font-medium shrink-0", statusColor)}>
           {saveStatus}
         </span>
         <span
-          className="text-[0.5625rem] text-muted-foreground/50 shrink-0 tabular-nums"
+          className="text-xs text-foreground shrink-0 tabular-nums"
           title={`${formatStatNumber(stats.words)} words · ${formatStatNumber(
             stats.characters,
           )} characters · ${formatStatNumber(stats.lines)} lines · ~${
@@ -291,15 +303,6 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
           {formatStatNumber(stats.characters)} chars
         </span>
       </div>
-
-      {/* Context panel — the official assignment field (scopes live via
-          ctx_scope_assignments; project/task FKs via the note save pipeline).
-          Replaces the old glassy NoteContextPicker. */}
-      {scopePickerOpen && (
-        <div className="relative z-10 border-t border-border/20 px-2 bg-background shrink-0">
-          <NoteContextSection noteId={noteId} />
-        </div>
-      )}
 
       {/* Folder dropdown — portaled to <body> so it escapes the metadata
           row's overflow clip and sits above window panels. */}
@@ -316,7 +319,7 @@ export function NoteMetadataBar({ noteId }: NoteMetadataBarProps) {
               <button
                 key={f}
                 className={cn(
-                  "w-full text-left px-3 py-1.5 text-[0.625rem] cursor-pointer transition-colors",
+                  "w-full text-left px-3 py-1.5 text-xs cursor-pointer transition-colors",
                   f === folder
                     ? "bg-primary/10 text-primary font-medium"
                     : "text-foreground hover:bg-accent",

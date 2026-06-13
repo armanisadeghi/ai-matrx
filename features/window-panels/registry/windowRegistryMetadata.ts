@@ -520,6 +520,22 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "drawer",
   },
 
+  // ── Scope Editor ──────────────────────────────────────────────────────────
+  {
+    slug: "scope-edit-window",
+    overlayId: "scopeEditWindow",
+    kind: "window",
+    label: "Scope Editor",
+    defaultData: {
+      scopeId: null,
+      scopeTypeId: null,
+      organizationId: null,
+      parentScopeId: null,
+    },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+
   // ── Canvas Viewer ─────────────────────────────────────────────────────────
   {
     slug: "canvas-viewer-window",
