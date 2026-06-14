@@ -739,8 +739,10 @@ function JourneyOutline({ doc, apply }: { doc: JourneyDoc; apply: Apply }) {
                   key={`${task.id}-${task.score}`}
                   aria-label={`Score for ${task.name}`}
                   onBlur={(e) => {
-                    const score = Number(e.target.value);
-                    if (Number.isFinite(score) && score !== task.score) apply({ type: "editTask", id: task.id, score });
+                    const raw = Number(e.target.value);
+                    if (!Number.isFinite(raw)) return;
+                    const score = Math.max(1, Math.min(5, Math.round(raw)));
+                    if (score !== task.score) apply({ type: "editTask", id: task.id, score });
                   }}
                   className="h-7 w-14 shrink-0 text-right text-base sm:text-sm"
                 />

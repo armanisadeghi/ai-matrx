@@ -117,7 +117,9 @@ function serialize(doc: QuadrantDoc): string {
   const out: string[] = [...doc.frontmatter];
   const pointById = new Map(doc.points.map((p) => [p.id, p]));
   const emitted = new Set<string>();
-  let headerIdx = -1;
+  // Anchor new singletons after the last existing header/title/axis/quadrant
+  // line (so a freshly-set axis lands after an existing title, not before it).
+  let singletonAnchor = -1;
 
   for (const line of doc.sourceLines) {
     const indent = /^(\s*)/.exec(line.text)?.[1] ?? "";
@@ -127,20 +129,23 @@ function serialize(doc: QuadrantDoc): string {
     }
     switch (line.ref.entity) {
       case "header":
-        headerIdx = out.length;
         out.push(line.text);
+        singletonAnchor = out.length - 1;
         break;
       case "title":
         if (doc.title === undefined) break;
         out.push(qdoc.dirty.title ? `${indent}title ${doc.title}` : line.text);
+        singletonAnchor = out.length - 1;
         break;
       case "xAxis":
         if (doc.xAxis === undefined) break;
         out.push(qdoc.dirty.xAxis ? `${indent}x-axis ${doc.xAxis}` : line.text);
+        singletonAnchor = out.length - 1;
         break;
       case "yAxis":
         if (doc.yAxis === undefined) break;
         out.push(qdoc.dirty.yAxis ? `${indent}y-axis ${doc.yAxis}` : line.text);
+        singletonAnchor = out.length - 1;
         break;
       case "quadrant": {
         const idx = Number(line.ref.id);
@@ -148,6 +153,7 @@ function serialize(doc: QuadrantDoc): string {
         if (label === undefined) break;
         const dirtyKey = `q${idx}` as "q0" | "q1" | "q2" | "q3";
         out.push(qdoc.dirty[dirtyKey] ? `${indent}quadrant-${idx + 1} ${label}` : line.text);
+        singletonAnchor = out.length - 1;
         break;
       }
       case "point": {
@@ -162,8 +168,8 @@ function serialize(doc: QuadrantDoc): string {
     }
   }
 
-  // Singletons set for the first time → insert just after the header, in
-  // canonical order. Points → append at the end.
+  // Singletons set for the first time → insert after the last existing
+  // header/title/axis/quadrant line, before any points. Points → append.
   const inserts: string[] = [];
   if (doc.title !== undefined && !qdoc.present.has("title")) inserts.push(`  title ${doc.title}`);
   if (doc.xAxis !== undefined && !qdoc.present.has("xAxis")) inserts.push(`  x-axis ${doc.xAxis}`);
@@ -173,7 +179,7 @@ function serialize(doc: QuadrantDoc): string {
       inserts.push(`  quadrant-${i + 1} ${doc.quadrantLabels[i]}`);
     }
   }
-  if (inserts.length > 0 && headerIdx >= 0) out.splice(headerIdx + 1, 0, ...inserts);
+  if (inserts.length > 0 && singletonAnchor >= 0) out.splice(singletonAnchor + 1, 0, ...inserts);
 
   const additions: string[] = [];
   for (const p of doc.points) {

@@ -92,7 +92,7 @@ export function MermaidViewport({
   const lastFrameWidthRef = useRef(0);
 
   const [scale, setScale] = useState(1);
-  const [overview, setOverview] = useState<{ fits: boolean }>({ fits: true });
+  const [canPan, setCanPan] = useState(false);
 
   const dragRef = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
   const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -114,9 +114,7 @@ export function MermaidViewport({
     el.style.maxWidth = "none";
     el.style.width = `${Math.round(nat.w * s)}px`;
     el.style.height = `${Math.round(nat.h * s)}px`;
-    const { fh } = frameSize();
-    setOverview({ fits: nat.h * s <= fh });
-  }, [frameSize]);
+  }, []);
 
   /** Recompute and apply the auto-fit scale (resets the manual-override flag). */
   const fit = useCallback(() => {
@@ -139,6 +137,19 @@ export function MermaidViewport({
     userAdjustedRef.current = true;
     setScale((s) => clampScale(s * factor));
   }, []);
+
+  // Latest fit/applyScale/scale held in refs so the injection effect below can
+  // call them WITHOUT depending on them — otherwise a `maxFrameHeight` change
+  // (e.g. window resize) would recreate those callbacks, re-run the injection
+  // effect, re-set innerHTML, and wipe the user's scroll/pan position.
+  const fitRef = useRef(fit);
+  const applyScaleRef = useRef(applyScale);
+  const scaleRef = useRef(scale);
+  useEffect(() => {
+    fitRef.current = fit;
+    applyScaleRef.current = applyScale;
+    scaleRef.current = scale;
+  });
 
   // Inject the SVG. This is an effect (not a ref callback) so it re-runs when
   // `svg` changes — progressive streaming re-renders swap the markup in place.
@@ -170,21 +181,35 @@ export function MermaidViewport({
 
     onSvgMounted?.(el);
 
-    // Re-fit on new content unless the user has taken manual control.
-    if (userAdjustedRef.current) applyScale(scale);
-    else fit();
+    // Re-fit on new content unless the user has taken manual control (via refs,
+    // so a frame-height change never re-injects and wipes scroll).
+    if (userAdjustedRef.current) applyScaleRef.current(scaleRef.current);
+    else fitRef.current();
 
     return () => {
       onSvgMounted?.(null);
     };
-    // `scale` intentionally read, not depended on: a scale change is handled by
-    // the apply effect below; re-injecting on every zoom would wipe pan position.
-  }, [svg, onSvgMounted, fit, applyScale]);
+  }, [svg, onSvgMounted]);
 
-  // Apply scale whenever it changes (zoom buttons, fit, pinch).
+  // Apply scale whenever it changes (zoom buttons, fit, pinch). applyScale is
+  // pure DOM (no setState), so this effect can't cascade renders.
   useEffect(() => {
     applyScale(scale);
   }, [scale, applyScale]);
+
+  // Grab-cursor hint: observe the inner host (which resizes with the SVG) and
+  // read the frame's real scroll overflow. setState in a ResizeObserver
+  // callback is async — never the synchronous setState-in-effect the rules ban.
+  useEffect(() => {
+    const frame = frameRef.current;
+    const host = hostRef.current;
+    if (!frame || !host || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      setCanPan(frame.scrollWidth > frame.clientWidth + 1 || frame.scrollHeight > frame.clientHeight + 1);
+    });
+    ro.observe(host);
+    return () => ro.disconnect();
+  }, []);
 
   // Re-fit on frame WIDTH changes only (window resize, sidebar toggle). Height
   // is read fresh inside fit() — subscribing to height would oscillate, since
@@ -247,8 +272,6 @@ export function MermaidViewport({
     if (pointersRef.current.size < 2) pinchRef.current = null;
     dragRef.current = null;
   };
-
-  const canPan = !overview.fits || scale > 1;
 
   return (
     <div className={cn("group/viewport relative", className)}>
