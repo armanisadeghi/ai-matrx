@@ -131,7 +131,7 @@ function PaneHeader({
       </span>
       {activePage != null && (
         <span className="text-[10px] text-muted-foreground">
-          · p.{activePage}
+          · Page {activePage}
           {total > 0 && ` · ${rowCount}${total > rowCount ? `/${total}` : ""}`}
         </span>
       )}
@@ -339,7 +339,8 @@ function ChunkCard({
         )}
         {chunk.page_numbers && chunk.page_numbers.length > 0 && (
           <Badge variant="outline" className="text-[10px] px-1 py-0">
-            pp.{chunk.page_numbers.join(",")}
+            {chunk.page_numbers.length === 1 ? "Page" : "Pages"}{" "}
+            {chunk.page_numbers.join(", ")}
           </Badge>
         )}
         {chunk.has_oai_embedding ? (

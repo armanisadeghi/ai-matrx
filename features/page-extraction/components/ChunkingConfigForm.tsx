@@ -43,7 +43,9 @@ import { selectAgentById } from "@/features/agents/redux/agent-definition/select
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import {
   clearDraft,
+  clearRun,
   ensureDraft,
+  invalidateResults,
   patchDraft,
   selectJobForFile,
   setEditing,
@@ -70,7 +72,8 @@ import {
   saveTemplateFromDraft,
   validateDraft,
 } from "@/features/page-extraction/services/run-from-draft";
-import { getJob } from "@/features/page-extraction/api/jobs";
+import { clearJobResults, getJob } from "@/features/page-extraction/api/jobs";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type {
   PageExtractionJob,
   SourceVariationKind,
@@ -157,6 +160,41 @@ export function ChunkingConfigForm({
     await launch(fileId, loadedJob);
   }, [selectedJobId, loadedJob, launch, fileId]);
 
+  // Delete every run this template produced — chunk runs + result rows —
+  // while keeping the template. Canonical wipe via `clearJobResults`
+  // (the same RPC the Results tab's "Clear data" uses), surfaced here so
+  // it's discoverable in the Chunked Runs tab where templates are managed.
+  const [deletingRunData, setDeletingRunData] = useState(false);
+  const handleDeleteRunData = useCallback(async () => {
+    if (!selectedJobId || !loadedJob) return;
+    const ok = await confirm({
+      title: "Delete run data",
+      description:
+        "Permanently delete every run this template produced — all chunk " +
+        "runs and result rows. The template itself stays, so you can run " +
+        "it again. This cannot be undone.",
+      confirmLabel: "Delete run data",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    setDeletingRunData(true);
+    try {
+      await clearJobResults(selectedJobId);
+      dispatch(clearRun({ jobId: selectedJobId }));
+      dispatch(invalidateResults());
+      const fresh = await getJob(selectedJobId);
+      if (fresh) {
+        setLoadedJob(fresh);
+        upsertJobInCache(fileId, fresh);
+      }
+      toast.success("Deleted run data");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDeletingRunData(false);
+    }
+  }, [selectedJobId, loadedJob, dispatch, fileId, toast]);
+
   // Mode transitions ------------------------------------------------
 
   const enterNewTemplate = () => {
@@ -230,6 +268,9 @@ export function ChunkingConfigForm({
           running={streamRunning}
           onEdit={enterEditExisting}
           onRun={handleRunSelected}
+          hasRunData={!!loadedJob.latest_run_id}
+          deletingRunData={deletingRunData}
+          onDeleteRunData={handleDeleteRunData}
         />
       )}
       {rerunDialog}

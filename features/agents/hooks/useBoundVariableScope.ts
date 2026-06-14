@@ -26,7 +26,7 @@ import {
 } from "@/features/scopes/redux/selectors/active-context";
 import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
 import { makeSelectResolvedContext } from "@/features/scopes/redux/selectors/resolved-context";
-import { selectScopeTypeLabelMap } from "@/features/agent-context/redux/scope/scopeTypesSlice";
+import { makeSelectScopeTypeLabelMapForOrg } from "@/features/scopes/redux/selectors/tree";
 import {
   listScopeTypeItems,
   selectAllContextItems,
@@ -70,9 +70,11 @@ export function useBoundVariableScope(conversationId: string): BoundVarInfo[] {
   const orgId = useAppSelector(selectActiveOrganizationId);
   const activeScopeIds = useAppSelector(selectActiveScopeIds);
   const activeSelections = useAppSelector(selectActiveScopeSelections);
-  const labelMap = useAppSelector((s) =>
-    orgId ? selectScopeTypeLabelMap(s, orgId) : {},
+  const selectScopeTypeLabelMap = useMemo(
+    makeSelectScopeTypeLabelMapForOrg,
+    [],
   );
+  const labelMap = useAppSelector((s) => selectScopeTypeLabelMap(s, orgId));
   const allItems = useAppSelector(selectAllContextItems);
   const loadedTypes = useAppSelector((s) => s.contextItems.loadedTypes);
 

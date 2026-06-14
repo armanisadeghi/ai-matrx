@@ -17,10 +17,8 @@ export default async function PdfExtractorStudioDocPage({ params }: PageProps) {
   const { id } = await params;
 
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-background">
-      <Suspense fallback={null}>
-        <PdfStudioRouteClient initialDocumentId={id} />
-      </Suspense>
-    </div>
+    <Suspense fallback={null}>
+      <PdfStudioRouteClient initialDocumentId={id} />
+    </Suspense>
   );
 }

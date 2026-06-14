@@ -20,6 +20,8 @@ export interface TileFrameProps {
   featured?: boolean;
   /** Highlight when this tile is the focused one. */
   active?: boolean;
+  /** Always-visible control slot (e.g. the context picker) before the hover controls. */
+  contextSlot?: React.ReactNode;
   tabBar?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
@@ -35,6 +37,7 @@ export function TileFrame({
   onDelete,
   featured,
   active,
+  contextSlot,
   tabBar,
   children,
   className,
@@ -60,6 +63,9 @@ export function TileFrame({
         <span className="text-xs font-medium text-foreground truncate flex-1 min-w-0">
           {title}
         </span>
+
+        {/* Always-visible control slot (context picker) */}
+        {contextSlot ? <div className="shrink-0">{contextSlot}</div> : null}
 
         {/* Controls — appear on hover; pin persists visible when active */}
         <div className="flex items-center gap-0.5 opacity-0 group-hover/tile:opacity-100 focus-within:opacity-100 transition-opacity">

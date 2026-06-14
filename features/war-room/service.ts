@@ -5,7 +5,6 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
-import type { Json } from "@/types/database.types";
 import { DEFAULT_SESSION_TITLE } from "./constants";
 import type {
   CreateSessionInput,
@@ -70,7 +69,7 @@ export async function createSession(
       color: input.color ?? null,
       organization_id: input.organizationId ?? null,
       project_id: input.projectId ?? null,
-      context_scope_ids: (input.contextScopeIds ?? []) as unknown as Json,
+      context_scope_ids: input.contextScopeIds ?? [],
       last_opened_at: new Date().toISOString(),
     })
     .select("*")

@@ -21,6 +21,7 @@ import { TileFrame } from "../shared/TileFrame";
 import { TileTabBar } from "./TileTabBar";
 import { TileNotesTab } from "./TileNotesTab";
 import { TileTaskTab } from "./TileTaskTab";
+import { TileContextOverride } from "./TileContextOverride";
 
 export function WarRoomTile({
   tileId,
@@ -57,6 +58,7 @@ export function WarRoomTile({
       onTogglePin={() => dispatch(toggleTilePin(tileId, !tile.is_pinned))}
       onHide={() => dispatch(toggleTileHide(tileId, true))}
       onDelete={handleDelete}
+      contextSlot={<TileContextOverride tileId={tileId} />}
       tabBar={
         <TileTabBar
           active={activeTab}

@@ -19,6 +19,7 @@ import {
   loadWarRoomSession,
 } from "@/features/war-room/redux/thunks";
 import { WarRoomGallery } from "./WarRoomGallery";
+import { SessionContextButton } from "./SessionContextButton";
 
 export function WarRoomShell({ sessionId }: { sessionId: string }) {
   const dispatch = useAppDispatch();
@@ -54,6 +55,11 @@ export function WarRoomShell({ sessionId }: { sessionId: string }) {
         <h1 className="text-sm font-semibold text-foreground truncate">
           {session?.title ?? "War Room"}
         </h1>
+        {session ? (
+          <div className="ml-auto shrink-0">
+            <SessionContextButton sessionId={sessionId} />
+          </div>
+        ) : null}
       </header>
 
       {/* Body */}

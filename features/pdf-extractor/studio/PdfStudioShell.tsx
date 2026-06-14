@@ -553,19 +553,19 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       <div
         className={cn(
           "shrink-0 hidden md:flex flex-col border-r border-border transition-all duration-200",
-          sidebarOpen ? "w-64" : "w-8",
+          sidebarOpen ? "w-64" : "w-11",
         )}
       >
         {sidebarOpen ? (
           <>
-            <div className="flex items-center justify-end px-2 py-1 border-b border-border shrink-0">
+            <div className="flex items-center justify-end px-2 py-3 border-b border-border shrink-0">
               <button
                 type="button"
                 onClick={() => setSidebarOpen(false)}
-                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                title="Collapse sidebar"
+                className="rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                title="Collapse inspector"
               >
-                <PanelLeftClose className="w-4 h-4" />
+                <PanelRightClose className="w-5 h-5" />
               </button>
             </div>
             <PdfStudioSidebar
@@ -719,19 +719,19 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       <div
         className={cn(
           "shrink-0 hidden lg:flex flex-col border-l border-border transition-all duration-200",
-          inspectorOpen ? "w-80 xl:w-96" : "w-8",
+          inspectorOpen ? "w-80 xl:w-96" : "w-11",
         )}
       >
         {inspectorOpen ? (
           <>
-            <div className="flex items-center justify-start px-2 py-1 border-b border-border shrink-0">
+            <div className="flex items-center justify-start px-2 py-3 border-b border-border shrink-0">
               <button
                 type="button"
                 onClick={() => setInspectorOpen(false)}
-                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                className="rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                 title="Collapse inspector"
               >
-                <PanelRightClose className="w-4 h-4" />
+                <PanelRightClose className="w-5 h-5" />
               </button>
             </div>
             {activeDoc ? (

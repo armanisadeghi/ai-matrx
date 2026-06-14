@@ -23,7 +23,7 @@
 
 "use client";
 
-import { Edit3, Loader2, Play } from "lucide-react";
+import { Edit3, Loader2, Play, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SOURCE_VARIATION_BY_KIND } from "@/features/page-extraction/constants";
 import { formatPageRange } from "@/features/page-extraction/utils/chunk-preview";
@@ -43,6 +43,18 @@ export interface TemplateReadOnlyViewProps {
   running: boolean;
   onEdit: () => void;
   onRun: () => void | Promise<void>;
+  /**
+   * Whether this template has produced run data (chunks + results) that
+   * can be deleted. When false the Delete-run-data control is hidden.
+   */
+  hasRunData?: boolean;
+  /** True while a delete-run-data request is in flight. */
+  deletingRunData?: boolean;
+  /**
+   * Delete every run this template produced — chunk runs + result rows —
+   * while keeping the template itself. Optional; omit to hide the control.
+   */
+  onDeleteRunData?: () => void | Promise<void>;
 }
 
 export function TemplateReadOnlyView({
@@ -52,6 +64,9 @@ export function TemplateReadOnlyView({
   running,
   onEdit,
   onRun,
+  hasRunData = false,
+  deletingRunData = false,
+  onDeleteRunData,
 }: TemplateReadOnlyViewProps) {
   // Show wiring keyed by agent variable, with the surface key that fills
   // it. Prefer the non-alias source key when multiple legacy keys point
@@ -206,6 +221,34 @@ export function TemplateReadOnlyView({
           </Row>
         )}
       </dl>
+
+      {/* Footer — danger zone. Only shown once this template has run data
+          to delete. Distinct from "delete template" (removes the template
+          itself) and from clearing the Results table — this wipes the
+          chunk runs AND result rows for every run, keeping the template. */}
+      {hasRunData && onDeleteRunData && (
+        <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-border">
+          <span className="text-[10px] text-muted-foreground leading-snug">
+            Delete this template&apos;s run data (chunks + results). The
+            template stays so you can run it again.
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-[10px] shrink-0 text-destructive hover:text-destructive border-destructive/40 hover:border-destructive/70"
+            onClick={() => void onDeleteRunData()}
+            disabled={deletingRunData}
+            title="Delete all run data (chunk runs + result rows) for this template"
+          >
+            {deletingRunData ? (
+              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+            ) : (
+              <Trash2 className="w-3 h-3 mr-1" />
+            )}
+            Delete run data
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

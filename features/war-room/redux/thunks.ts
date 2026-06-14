@@ -151,6 +151,57 @@ export const leaveWarRoomSession =
     dispatch(setActiveSession(null));
   };
 
+// ── Context (controlled selection carried by the records) ──────────────
+// These persist org + scope onto ctx_war_room_* rows ONLY. They NEVER write
+// appContextSlice (global active context) or ctx_scope_assignments.
+
+export interface ContextSelectionInput {
+  organizationId: string | null;
+  scopeIds: string[];
+}
+
+export const setSessionContextThunk =
+  (sessionId: string, ctx: ContextSelectionInput) =>
+  async (dispatch: AppDispatch) => {
+    try {
+      const updated = await service.updateSession(sessionId, {
+        organization_id: ctx.organizationId,
+        context_scope_ids: ctx.scopeIds,
+      });
+      dispatch(sessionUpserted(updated));
+    } catch {
+      toast.error("Couldn't update the War Room context");
+    }
+  };
+
+export const setTileContextOverrideThunk =
+  (tileId: string, ctx: ContextSelectionInput) =>
+  async (dispatch: AppDispatch) => {
+    try {
+      const updated = await service.updateTile(tileId, {
+        context_organization_id: ctx.organizationId,
+        context_scope_ids: ctx.scopeIds,
+      });
+      dispatch(tileUpserted(updated));
+    } catch {
+      toast.error("Couldn't update the tile context");
+    }
+  };
+
+/** Reset a tile back to inheriting the session's context (override → NULL). */
+export const clearTileContextOverrideThunk =
+  (tileId: string) => async (dispatch: AppDispatch) => {
+    try {
+      const updated = await service.updateTile(tileId, {
+        context_organization_id: null,
+        context_scope_ids: null,
+      });
+      dispatch(tileUpserted(updated));
+    } catch {
+      toast.error("Couldn't reset the tile context");
+    }
+  };
+
 // ── Tiles ─────────────────────────────────────────────────────────────
 
 export const createTile =

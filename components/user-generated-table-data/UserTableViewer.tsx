@@ -66,6 +66,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import TableReferenceModal from "./TableReferenceModal";
+import ColumnHeaderMenu from "./ColumnHeaderMenu";
 
 interface UserTable {
   id: string;
@@ -139,6 +140,15 @@ const UserTableViewer = ({
 
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Per-column filter state. Maps field_name -> filter substring. Applied
+  // client-side over the full dataset (loaded on demand) so filtering works
+  // across pages, not just the current server page.
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>(
+    {},
+  );
+  const [fullDatasetCache, setFullDatasetCache] = useState<any[] | null>(null);
+  const [loadingFullDataset, setLoadingFullDataset] = useState(false);
 
   // Row action state
   const [selectedRowId, setSelectedRowId] = useState(null);
@@ -325,6 +335,9 @@ const UserTableViewer = ({
     forceReload = false,
   ) => {
     setLoading(true);
+    // Any server reload makes the client-side filter cache stale; drop it so
+    // the filter effect re-fetches fresh full data when filters are active.
+    setFullDatasetCache(null);
     try {
       // Load table metadata and fields (always reload if forceReload is true)
       let currentTableInfo = tableInfo;
@@ -474,6 +487,93 @@ const UserTableViewer = ({
     }
   }, [tableId, showTableSelector]);
 
+  // --- Column filtering -------------------------------------------------
+
+  // Cap on how many rows we pull for client-side column filtering. Large
+  // tables beyond this filter only across the loaded subset.
+  const FILTER_FETCH_CAP = 5000;
+
+  const hasColumnFilters = Object.values(columnFilters).some(
+    (v) => v.trim() !== "",
+  );
+
+  // Load the full dataset (sans server sort/pagination) so column filters can
+  // run across every row. Respects the active global search term so the two
+  // compose. Triggered lazily the first time a column filter becomes active.
+  const loadFullDataset = async () => {
+    try {
+      setLoadingFullDataset(true);
+      const { data: allData, error } = await supabase.rpc(
+        "get_user_table_data_paginated_v2",
+        {
+          p_table_id: tableId,
+          p_limit: Math.min(Math.max(totalCount, 1), FILTER_FETCH_CAP),
+          p_offset: 0,
+          p_sort_field: null,
+          p_sort_direction: "asc",
+          p_search_term: searchTerm || null,
+        },
+      );
+
+      if (error) throw error;
+      assertRpcSuccessEnvelope(allData);
+      if (!allData.success)
+        throw new Error(allData.error || "Failed to load data for filtering");
+
+      const payload = allData as typeof allData & { data: unknown[] };
+      setFullDatasetCache(payload.data as any[]);
+    } catch (err) {
+      console.error("Error loading full dataset for filtering:", err);
+    } finally {
+      setLoadingFullDataset(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!hasColumnFilters) return;
+    if (fullDatasetCache || loadingFullDataset) return;
+    if (totalCount === 0) return;
+    void loadFullDataset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasColumnFilters, fullDatasetCache, loadingFullDataset, totalCount]);
+
+  // Update a single column's filter. Resets to page 1; when the last filter is
+  // cleared we re-sync with the server page so pagination stays authoritative.
+  const handleColumnFilterChange = (fieldName: string, value: string) => {
+    const next = { ...columnFilters };
+    if (value.trim()) {
+      next[fieldName] = value;
+    } else {
+      delete next[fieldName];
+    }
+    setColumnFilters(next);
+    setCurrentPage(1);
+
+    const stillFiltering = Object.values(next).some((v) => v.trim() !== "");
+    if (!stillFiltering) {
+      loadTableData(1, limit, sortField, sortDirection, searchTerm);
+    }
+  };
+
+  // Apply active column filters to a row set (case-insensitive substring).
+  const applyColumnFilters = (rows: any[]): any[] => {
+    if (!hasColumnFilters) return rows;
+    const active = Object.entries(columnFilters).filter(([, v]) =>
+      v.trim(),
+    );
+    return rows.filter((row) =>
+      active.every(([fieldName, term]) => {
+        const value = row?.data?.[fieldName];
+        if (value === null || value === undefined) return false;
+        const haystack =
+          typeof value === "object"
+            ? JSON.stringify(value)
+            : String(value);
+        return haystack.toLowerCase().includes(term.trim().toLowerCase());
+      }),
+    );
+  };
+
   // Live updates from other clients (or our own writes that bypass the
   // local refetch). Debounced so a 1k-row bulk import doesn't trigger 1k
   // refetches; a single refetch ~400ms after the burst stops is enough.
@@ -517,6 +617,12 @@ const UserTableViewer = ({
   const handlePageChange = (page) => {
     setCurrentPage(page);
 
+    // When column filters are active, pagination is purely client-side over
+    // the filtered set — the derived slice handles it, no server fetch.
+    if (hasColumnFilters) {
+      return;
+    }
+
     // If we have client-side sorted data cached, use it for pagination
     if (allSortedData && allSortedData.length > 0 && sortField) {
       const startIndex = (page - 1) * limit;
@@ -533,6 +639,11 @@ const UserTableViewer = ({
     setLimit(numLimit);
     // Reset to first page when changing limit
     setCurrentPage(1);
+
+    // Column filters paginate client-side over the derived slice.
+    if (hasColumnFilters) {
+      return;
+    }
 
     // If we have client-side sorted data cached, use it
     if (allSortedData && allSortedData.length > 0 && sortField) {
@@ -617,12 +728,20 @@ const UserTableViewer = ({
     });
   };
 
-  // Handle sorting
-  const handleSort = async (field) => {
+  // Handle sorting. Pass an explicit direction to set it directly (used by the
+  // per-column header menu); omit it to toggle asc/desc on repeated clicks.
+  const handleSort = async (field, explicitDirection?: "asc" | "desc") => {
     const newDirection =
-      field === sortField && sortDirection === "asc" ? "desc" : "asc";
+      explicitDirection ??
+      (field === sortField && sortDirection === "asc" ? "desc" : "asc");
     setSortField(field);
     setSortDirection(newDirection);
+
+    // While column filters are active, sorting is applied client-side over the
+    // filtered set in the render derivation — no server round-trip needed.
+    if (hasColumnFilters) {
+      return;
+    }
 
     // Get the declared data type for type-aware sorting
     const fieldDataType = getFieldDataType(field);
@@ -691,6 +810,16 @@ const UserTableViewer = ({
       // Fall back to server-side sorting for large datasets or when searching
       setAllSortedData(null);
       loadTableData(currentPage, limit, field, newDirection);
+    }
+  };
+
+  // Clear the active sort and restore the table's natural/server order.
+  const clearSort = () => {
+    setSortField(null);
+    setSortDirection("asc");
+    setAllSortedData(null);
+    if (!hasColumnFilters) {
+      loadTableData(currentPage, limit, null, "asc", searchTerm);
     }
   };
 
@@ -1215,6 +1344,35 @@ const UserTableViewer = ({
       </div>
     );
 
+  // Derive the rows actually shown. When column filters are active we filter
+  // (and sort) the full dataset client-side, then paginate the result. With no
+  // filters we defer entirely to the server-driven `data`.
+  let displayRows = data;
+  let effectiveTotalCount = totalCount;
+  let effectiveTotalPages = totalPages;
+
+  if (hasColumnFilters) {
+    const source = fullDatasetCache ?? data;
+    let filtered = applyColumnFilters(source);
+    if (sortField) {
+      filtered = smartSort(
+        filtered,
+        sortField,
+        sortDirection,
+        getFieldDataType(sortField),
+      );
+    }
+    effectiveTotalCount = filtered.length;
+    effectiveTotalPages = Math.max(1, Math.ceil(filtered.length / limit));
+    const startIndex = (currentPage - 1) * limit;
+    displayRows = filtered.slice(startIndex, startIndex + limit);
+  }
+
+  // True while we're fetching the full dataset for a freshly-applied filter.
+  const filteringInProgress =
+    hasColumnFilters && loadingFullDataset && !fullDatasetCache;
+  const showLoadingRow = loading || filteringInProgress;
+
   return (
     <div className="space-y-4 p-2">
       {/* Table header with optional selector */}
@@ -1393,37 +1551,61 @@ const UserTableViewer = ({
       />
 
       {/* Table */}
-      <div className="border rounded-xl border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto scrollbar-none">
-          <Table className="table-fixed w-full">
-            <TableHeader className="bg-gray-100 dark:bg-gray-800">
-              <TableRow>
-                {fields.map((field) => (
+      <div className="border rounded-xl border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm [&>div]:max-h-[70dvh] [&>div]:overflow-auto">
+        <Table className="table-fixed w-full">
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              {fields.map((field) => {
+                const isSorted = sortField === field.field_name;
+                const filterValue = columnFilters[field.field_name] ?? "";
+                return (
                   <TableHead
                     key={field.id}
-                    className="cursor-pointer font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 text-center py-3 min-w-[150px]"
-                    onClick={() => handleSort(field.field_name)}
+                    className="sticky top-0 z-20 bg-gray-100 dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300 py-3 min-w-[150px] border-b border-gray-200 dark:border-gray-700"
                   >
-                    <div className="flex flex-col items-center gap-0.5 truncate">
-                      <div className="flex items-center gap-1">
-                        <span className="truncate">{field.display_name}</span>
-                        {sortField === field.field_name && (
-                          <span>{sortDirection === "asc" ? "↑" : "↓"}</span>
-                        )}
-                      </div>
-                      <span className="text-[10px] font-normal uppercase tracking-wider text-muted-foreground">
-                        {field.data_type}
-                      </span>
+                    <div className="flex items-center justify-between gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSort(field.field_name)}
+                        className="flex min-w-0 flex-1 flex-col items-start gap-0.5 rounded px-1 py-0.5 hover:bg-gray-200/70 dark:hover:bg-gray-700/70"
+                        title={`Sort by ${field.display_name}`}
+                      >
+                        <div className="flex w-full items-center gap-1">
+                          <span className="truncate">{field.display_name}</span>
+                          {isSorted && (
+                            <span className="flex-shrink-0">
+                              {sortDirection === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-normal uppercase tracking-wider text-muted-foreground">
+                          {field.data_type}
+                        </span>
+                      </button>
+                      <ColumnHeaderMenu
+                        fieldName={field.field_name}
+                        displayName={field.display_name}
+                        isSorted={isSorted}
+                        sortDirection={sortDirection}
+                        filterValue={filterValue}
+                        onSortAsc={() => handleSort(field.field_name, "asc")}
+                        onSortDesc={() => handleSort(field.field_name, "desc")}
+                        onClearSort={clearSort}
+                        onFilterChange={(value) =>
+                          handleColumnFilterChange(field.field_name, value)
+                        }
+                      />
                     </div>
                   </TableHead>
-                ))}
-                <TableHead className="w-[140px] text-gray-700 dark:text-gray-300 text-center py-3 flex-shrink-0">
-                  Actions
-                </TableHead>
-              </TableRow>
-            </TableHeader>
+                );
+              })}
+              <TableHead className="sticky top-0 z-20 bg-gray-100 dark:bg-gray-800 w-[140px] text-gray-700 dark:text-gray-300 text-center py-3 border-b border-gray-200 dark:border-gray-700">
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
             <TableBody>
-              {loading ? (
+              {showLoadingRow ? (
                 <TableRow>
                   <TableCell
                     colSpan={fields.length + 1}
@@ -1431,21 +1613,23 @@ const UserTableViewer = ({
                   >
                     <div className="flex justify-center items-center">
                       <Loader className="animate-spin h-5 w-5 mr-3 text-primary" />
-                      Loading data...
+                      {filteringInProgress ? "Filtering data..." : "Loading data..."}
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : data.length === 0 ? (
+              ) : displayRows.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={fields.length + 1}
                     className="text-center py-8"
                   >
-                    No data found
+                    {hasColumnFilters
+                      ? "No rows match the current filters"
+                      : "No data found"}
                   </TableCell>
                 </TableRow>
               ) : (
-                data.map((row, index) => (
+                displayRows.map((row, index) => (
                   <TableRow
                     key={row.id}
                     className={`
@@ -1632,11 +1816,10 @@ const UserTableViewer = ({
               )}
             </TableBody>
           </Table>
-        </div>
       </div>
 
       {/* Pagination */}
-      {!loading && data.length > 0 && (
+      {!loading && displayRows.length > 0 && (
         <div className="flex justify-between items-center mt-4">
           <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
             <Select value={String(limit)} onValueChange={handleLimitChange}>
@@ -1676,7 +1859,10 @@ const UserTableViewer = ({
                 </SelectItem>
               </SelectContent>
             </Select>
-            <span className="ml-4 whitespace-nowrap">of {totalCount} rows</span>
+            <span className="ml-4 whitespace-nowrap">
+              of {effectiveTotalCount} rows
+              {hasColumnFilters && " (filtered)"}
+            </span>
           </div>
 
           <Pagination>
@@ -1690,10 +1876,10 @@ const UserTableViewer = ({
                 />
               </PaginationItem>
 
-              {[...Array(Math.min(5, totalPages))].map((_, i) => {
+              {[...Array(Math.min(5, effectiveTotalPages))].map((_, i) => {
                 const pageNum = currentPage <= 3 ? i + 1 : currentPage + i - 2;
 
-                if (pageNum > totalPages) return null;
+                if (pageNum > effectiveTotalPages) return null;
 
                 return (
                   <PaginationItem key={pageNum}>
@@ -1710,10 +1896,12 @@ const UserTableViewer = ({
               <PaginationItem>
                 <PaginationNext
                   onClick={() =>
-                    handlePageChange(Math.min(totalPages, currentPage + 1))
+                    handlePageChange(
+                      Math.min(effectiveTotalPages, currentPage + 1),
+                    )
                   }
                   className={
-                    currentPage === totalPages
+                    currentPage === effectiveTotalPages
                       ? "pointer-events-none opacity-50"
                       : ""
                   }

@@ -108,16 +108,17 @@ export function RunProgressBar({ jobId }: { jobId: string | null }) {
             <Button
               size="sm"
               variant="ghost"
-              className="h-5 px-1 text-[10px] text-muted-foreground hover:text-destructive"
+              className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
               disabled={deleting}
               onClick={() => void handleDeleteRun()}
               title="Delete this entire run (chunks + results); the template stays"
             >
               {deleting ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
               ) : (
-                <Trash2 className="w-3 h-3" />
+                <Trash2 className="w-3 h-3 mr-1" />
               )}
+              Delete run
             </Button>
           )}
         </div>

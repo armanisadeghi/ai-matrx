@@ -19,6 +19,7 @@ import type {
 } from "@/features/scopes/types";
 
 const empty: never[] = [];
+const EMPTY_LABEL_MAP: Record<string, string> = {};
 
 // ─── Root accessors ────────────────────────────────────────────────
 
@@ -148,7 +149,7 @@ export const makeSelectScopeNameMapForOrg = () =>
     selectOrganizations,
     (_: RootState, orgId: string | null | undefined) => orgId,
     (byId, orgId): Record<string, string> => {
-      if (!orgId || !byId[orgId]) return {};
+      if (!orgId || !byId[orgId]) return EMPTY_LABEL_MAP;
       const out: Record<string, string> = {};
       for (const t of byId[orgId].scope_types) {
         for (const s of t.scopes) {
@@ -170,7 +171,7 @@ export const makeSelectScopeTypeLabelMapForOrg = () =>
     selectOrganizations,
     (_: RootState, orgId: string | null | undefined) => orgId,
     (byId, orgId): Record<string, string> => {
-      if (!orgId || !byId[orgId]) return {};
+      if (!orgId || !byId[orgId]) return EMPTY_LABEL_MAP;
       const out: Record<string, string> = {};
       for (const t of byId[orgId].scope_types) {
         out[t.id] = t.label_singular;

@@ -63,7 +63,7 @@ export function PdfStudioPagesNav({
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium tabular-nums">
-                        p.{p.pageNumber}
+                        Page {p.pageNumber}
                       </span>
                       {p.sectionKind && (
                         <Badge

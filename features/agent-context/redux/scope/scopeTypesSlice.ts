@@ -226,12 +226,16 @@ export const selectChildScopeTypes = createSelector(
     types.filter((t) => t.parent_type_id === parentTypeId),
 );
 
+const EMPTY_SCOPE_TYPE_LABEL_MAP: Record<string, string> = {};
+
 export const selectScopeTypeLabelMap = createSelector(
   [selectAllScopeTypes, (_state: StateWithScopeTypes, orgId: string) => orgId],
-  (types, orgId) =>
-    Object.fromEntries(
-      types
-        .filter((t) => t.organization_id === orgId)
-        .map((t) => [t.id, t.label_singular]),
-    ),
+  (types, orgId) => {
+    const entries = types
+      .filter((t) => t.organization_id === orgId)
+      .map((t) => [t.id, t.label_singular] as const);
+    return entries.length === 0
+      ? EMPTY_SCOPE_TYPE_LABEL_MAP
+      : Object.fromEntries(entries);
+  },
 );
