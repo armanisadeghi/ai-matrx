@@ -19238,6 +19238,7 @@ export type Database = {
           detached_at: string | null
           ended_at: string | null
           id: string
+          safety_id: string | null
           segment_index: number
           session_id: string
           started_at: string
@@ -19253,6 +19254,7 @@ export type Database = {
           detached_at?: string | null
           ended_at?: string | null
           id?: string
+          safety_id?: string | null
           segment_index: number
           session_id: string
           started_at: string
@@ -19268,6 +19270,7 @@ export type Database = {
           detached_at?: string | null
           ended_at?: string | null
           id?: string
+          safety_id?: string | null
           segment_index?: number
           session_id?: string
           started_at?: string
