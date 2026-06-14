@@ -1,6 +1,15 @@
 # Mermaid Render Block — Handoff & Honest Status
 
-**Date:** 2026-06-12 (updated 2026-06-13) · **Author:** claude · **Status:** Live on web (pushed) and **user-confirmed working**; remaining gaps documented below.
+**Date:** 2026-06-12 (updated 2026-06-14) · **Author:** claude · **Status:** Live on web (pushed) and **user-confirmed working**; remaining gaps documented below.
+
+> **2026-06-14 update — viewport sizing overhaul + review fixes.** After a verification pass that disproved several phantom "critical bugs" (the `\nend` repeat, a missing `getById`, an extract-fence regex race, a double error-card — all checked and false), this session shipped:
+> - **Axis-aware fit viewport with a readability floor** (`MermaidViewport` rewrite) — the fix for "diagrams get too tall / too squished". A diagram now fits its *constraining* axis to a **bounded frame** and scrolls the other (tall flowchart → fill width, scroll down; wide mind map → fill height, scroll across), never auto-shrinking below 50% of natural size (readability floor) and never auto-upscaling past natural. Scaling is explicit SVG px width/height (vector-crisp, real scrollbars, accurate visual-mode hit-testing). Frame-height policy threaded through every consumer: chat caps at ~60vh (responsive), workbench/fullscreen/public-share fill their bounded parents (`fillHeight`). New controls: scale readout, Fit, Actual-size, grab-pan. **Verified live**: flowchart in a bounded 432px frame (scrolls), 1886px mind map floored at 50% (fills height, scrolls horizontally — no squish), + unit-proven fit math.
+> - **Code-mode draft-loss fix** — `CodeModePane` flushes the pending debounced edit on unmount (was silently dropping the last <400ms of typing).
+> - **CodeMirror dark theme** — `theme="none"` → built-in `dark`/`light` keyed to app theme (closes §5.5).
+> - **Fidelity gate transparency** — a serializer *throwing* now reports an internal-error message + diagnostics instead of a misleading "advanced syntax" downgrade (§5.3 partial). Comparison normalization deliberately NOT loosened — that would mask real content loss in mindmap/timeline/quoted-labels.
+> - **svg-id-map loud degrade** — if mermaid renders nodes but none match the id regex (a version drift), it now screams with the file to fix + the first unmatched id, instead of silently disabling visual mode (closes the §5.1 silent-degrade gap).
+>
+> Deferred by the user to the *next* stage (after "the basics work"): the operational turn-on — seeding a Diagram Editor agent, attaching the skill to chat agents, the chat-block per-type agent menu (§4.1–4.3, §7), and live e2e confirmation of the chained flows (§3).
 
 > **2026-06-13 update — confirmed live by the user.** Diagrams render and edit in chat. Two additions shipped after first review: (a) **18 content blocks** in a new **"Diagrams"** context-menu category — one per diagram type (human labels) + 4 combos + the general "Any Diagram (all types)" — applied + live-verified (closes §7.2's operational turn-on); (b) a **fullscreen** view from the block header (Expand → full-viewport overlay, Esc to exit), browser-verified. The replication skill (§ below) is now being written, per the original plan to document the process after live confirmation.
 
