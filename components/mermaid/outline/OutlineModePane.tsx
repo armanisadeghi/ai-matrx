@@ -33,13 +33,17 @@ import { cn } from "@/lib/utils";
 import type { MermaidEditorAction } from "../workbench/useMermaidEditor";
 import type { MermaidOp } from "../model/ops";
 import type {
+  ErDoc,
   FlowDirection,
   FlowchartDoc,
+  JourneyDoc,
   MermaidDoc,
   MindmapDoc,
   MindmapNode,
   PieDoc,
+  QuadrantDoc,
   SequenceDoc,
+  StateDoc,
   TimelineDoc,
 } from "../model/types";
 
@@ -75,6 +79,14 @@ export function OutlineModePane({ doc, unavailableReason, dispatch }: OutlineMod
       return <PieOutline doc={doc} apply={apply} />;
     case "timeline":
       return <TimelineOutline doc={doc} apply={apply} />;
+    case "journey":
+      return <JourneyOutline doc={doc} apply={apply} />;
+    case "quadrant":
+      return <QuadrantOutline doc={doc} apply={apply} />;
+    case "state":
+      return <StateOutline doc={doc} apply={apply} />;
+    case "er":
+      return <ErOutline doc={doc} apply={apply} />;
     default:
       return null;
   }
@@ -666,6 +678,363 @@ function TimelineOutline({ doc, apply }: { doc: TimelineDoc; apply: Apply }) {
           ))}
         </div>
       ))}
+    </div>
+  );
+}
+
+// ─── User Journey ─────────────────────────────────────────────────────────────
+
+function JourneyOutline({ doc, apply }: { doc: JourneyDoc; apply: Apply }) {
+  return (
+    <div className="h-full overflow-y-auto p-3">
+      <SectionHeading>Title</SectionHeading>
+      <RowShell>
+        <InlineTextEdit
+          value={doc.title ?? ""}
+          placeholder="Journey title"
+          ariaLabel="Journey title"
+          onCommit={(title) => apply({ type: "setTitle", title })}
+        />
+      </RowShell>
+
+      <SectionHeading
+        action={<AddButton label="Add section" onClick={() => apply({ type: "addSection", title: "New section" })} />}
+      >
+        Sections
+      </SectionHeading>
+      {doc.sections.map((section) => (
+        <div key={section.id} className="pb-2">
+          {section.title !== undefined && (
+            <RowShell className="bg-muted/40">
+              <InlineTextEdit
+                value={section.title}
+                ariaLabel={`Rename section ${section.title}`}
+                className="font-medium"
+                onCommit={(title) => apply({ type: "renameSection", id: section.id, title })}
+              />
+              <IconAction
+                label="Add task"
+                onClick={() => apply({ type: "addTask", sectionId: section.id, name: "New task", score: 3, actors: [] })}
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </IconAction>
+              <IconAction label="Delete section" destructive onClick={() => apply({ type: "deleteSection", id: section.id })}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </IconAction>
+            </RowShell>
+          )}
+          <div className="ml-2 space-y-0.5 border-l border-border pl-2">
+            {section.tasks.map((task) => (
+              <RowShell key={task.id}>
+                <InlineTextEdit
+                  value={task.name}
+                  ariaLabel={`Rename ${task.name}`}
+                  onCommit={(name) => apply({ type: "editTask", id: task.id, name })}
+                />
+                <Input
+                  type="number"
+                  min={1}
+                  max={5}
+                  defaultValue={task.score}
+                  key={`${task.id}-${task.score}`}
+                  aria-label={`Score for ${task.name}`}
+                  onBlur={(e) => {
+                    const score = Number(e.target.value);
+                    if (Number.isFinite(score) && score !== task.score) apply({ type: "editTask", id: task.id, score });
+                  }}
+                  className="h-7 w-14 shrink-0 text-right text-base sm:text-sm"
+                />
+                <InlineTextEdit
+                  value={task.actors.join(", ")}
+                  placeholder="actors"
+                  ariaLabel={`Actors for ${task.name}`}
+                  className="max-w-32 text-xs"
+                  onCommit={(value) =>
+                    apply({
+                      type: "editTask",
+                      id: task.id,
+                      actors: value.split(",").map((a) => a.trim()).filter(Boolean),
+                    })
+                  }
+                />
+                <IconAction label="Delete task" destructive onClick={() => apply({ type: "deleteTask", id: task.id })}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </IconAction>
+              </RowShell>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Quadrant ─────────────────────────────────────────────────────────────────
+
+const QUADRANT_NAMES = ["Top-right", "Top-left", "Bottom-left", "Bottom-right"];
+
+function QuadrantOutline({ doc, apply }: { doc: QuadrantDoc; apply: Apply }) {
+  return (
+    <div className="h-full overflow-y-auto p-3">
+      <SectionHeading>Title</SectionHeading>
+      <RowShell>
+        <InlineTextEdit
+          value={doc.title ?? ""}
+          placeholder="Chart title"
+          ariaLabel="Chart title"
+          onCommit={(title) => apply({ type: "setTitle", title })}
+        />
+      </RowShell>
+
+      <SectionHeading>Axes</SectionHeading>
+      <RowShell>
+        <span className="w-12 shrink-0 text-xs text-muted-foreground">X</span>
+        <InlineTextEdit
+          value={doc.xAxis ?? ""}
+          placeholder="Low --> High"
+          ariaLabel="X axis"
+          onCommit={(text) => apply({ type: "setXAxis", text })}
+        />
+      </RowShell>
+      <RowShell>
+        <span className="w-12 shrink-0 text-xs text-muted-foreground">Y</span>
+        <InlineTextEdit
+          value={doc.yAxis ?? ""}
+          placeholder="Low --> High"
+          ariaLabel="Y axis"
+          onCommit={(text) => apply({ type: "setYAxis", text })}
+        />
+      </RowShell>
+
+      <SectionHeading>Quadrant labels</SectionHeading>
+      {QUADRANT_NAMES.map((name, index) => (
+        <RowShell key={index}>
+          <span className="w-24 shrink-0 text-xs text-muted-foreground">{name}</span>
+          <InlineTextEdit
+            value={doc.quadrantLabels[index] ?? ""}
+            placeholder="Label"
+            ariaLabel={`${name} quadrant label`}
+            onCommit={(text) => apply({ type: "setQuadrantLabel", index, text })}
+          />
+        </RowShell>
+      ))}
+
+      <SectionHeading
+        action={<AddButton label="Add point" onClick={() => apply({ type: "addPoint", label: "New point", x: 0.5, y: 0.5 })} />}
+      >
+        Points
+      </SectionHeading>
+      <div className="space-y-0.5">
+        {doc.points.map((point) => (
+          <RowShell key={point.id}>
+            <InlineTextEdit
+              value={point.label}
+              ariaLabel={`Rename ${point.label}`}
+              onCommit={(label) => apply({ type: "editPoint", id: point.id, label })}
+            />
+            <Input
+              type="number"
+              min={0}
+              max={1}
+              step={0.05}
+              defaultValue={point.x}
+              key={`${point.id}-x-${point.x}`}
+              aria-label={`X for ${point.label}`}
+              onBlur={(e) => {
+                const x = Number(e.target.value);
+                if (Number.isFinite(x) && x !== point.x) apply({ type: "editPoint", id: point.id, x });
+              }}
+              className="h-7 w-16 shrink-0 text-right text-base sm:text-sm"
+            />
+            <Input
+              type="number"
+              min={0}
+              max={1}
+              step={0.05}
+              defaultValue={point.y}
+              key={`${point.id}-y-${point.y}`}
+              aria-label={`Y for ${point.label}`}
+              onBlur={(e) => {
+                const y = Number(e.target.value);
+                if (Number.isFinite(y) && y !== point.y) apply({ type: "editPoint", id: point.id, y });
+              }}
+              className="h-7 w-16 shrink-0 text-right text-base sm:text-sm"
+            />
+            <IconAction label="Delete point" destructive onClick={() => apply({ type: "deletePoint", id: point.id })}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </IconAction>
+          </RowShell>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+
+function StateOutline({ doc, apply }: { doc: StateDoc; apply: Apply }) {
+  const stateName = (id: string) => (id === "[*]" ? "start / end" : id);
+
+  return (
+    <div className="h-full overflow-y-auto p-3">
+      <SectionHeading
+        action={<AddButton label="Add state" onClick={() => apply({ type: "addState", name: `State${doc.states.length + 1}` })} />}
+      >
+        States
+      </SectionHeading>
+      <div className="space-y-0.5">
+        {doc.states.map((state) => (
+          <RowShell key={state.id}>
+            <span className="max-w-[30%] shrink-0 truncate font-medium text-sm">{state.id}</span>
+            <InlineTextEdit
+              value={state.description ?? ""}
+              placeholder="description"
+              ariaLabel={`Description for ${state.id}`}
+              className="text-xs"
+              onCommit={(description) => apply({ type: "setStateDescription", id: state.id, description })}
+            />
+            <IconAction label="Delete state" destructive onClick={() => apply({ type: "deleteState", id: state.id })}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </IconAction>
+          </RowShell>
+        ))}
+        {doc.states.length === 0 && <p className="px-1.5 py-1 text-xs text-muted-foreground">No named states yet.</p>}
+      </div>
+
+      <SectionHeading
+        action={
+          doc.states.length >= 1 ? (
+            <AddButton
+              label="Add transition"
+              onClick={() => apply({ type: "addTransition", from: "[*]", to: doc.states[0].id })}
+            />
+          ) : undefined
+        }
+      >
+        Transitions
+      </SectionHeading>
+      <div className="space-y-0.5">
+        {doc.transitions.map((t) => (
+          <RowShell key={t.id}>
+            <span className="w-20 shrink-0 truncate text-sm">{stateName(t.from)}</span>
+            <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="w-20 shrink-0 truncate text-sm">{stateName(t.to)}</span>
+            <InlineTextEdit
+              value={t.label ?? ""}
+              placeholder="label"
+              ariaLabel="Transition label"
+              className="text-xs"
+              onCommit={(label) => apply({ type: "setTransitionLabel", id: t.id, label })}
+            />
+            <IconAction label="Reverse" onClick={() => apply({ type: "reverseTransition", id: t.id })}>
+              <ArrowDown className="h-3.5 w-3.5 rotate-90" />
+            </IconAction>
+            <IconAction label="Delete transition" destructive onClick={() => apply({ type: "deleteTransition", id: t.id })}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </IconAction>
+          </RowShell>
+        ))}
+        {doc.transitions.length === 0 && <p className="px-1.5 py-1 text-xs text-muted-foreground">No transitions yet.</p>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Entity Relationship ──────────────────────────────────────────────────────
+
+const ER_LEFT_CARD: Array<{ value: string; label: string }> = [
+  { value: "||", label: "exactly one" },
+  { value: "|o", label: "zero or one" },
+  { value: "}|", label: "one or more" },
+  { value: "}o", label: "zero or more" },
+];
+const ER_RIGHT_CARD: Array<{ value: string; label: string }> = [
+  { value: "||", label: "exactly one" },
+  { value: "o|", label: "zero or one" },
+  { value: "|{", label: "one or more" },
+  { value: "o{", label: "zero or more" },
+];
+
+function erEntityName(id: string): string {
+  return id.startsWith('"') && id.endsWith('"') ? id.slice(1, -1) : id;
+}
+
+function ErOutline({ doc, apply }: { doc: ErDoc; apply: Apply }) {
+  return (
+    <div className="h-full overflow-y-auto p-3">
+      <SectionHeading>Entities</SectionHeading>
+      <div className="flex flex-wrap gap-1.5 pb-1">
+        {doc.entities.map((e) => (
+          <span
+            key={e.id}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2.5 py-0.5 text-xs"
+          >
+            {erEntityName(e.id)}
+            {e.blockRaw && <span className="text-[10px] text-muted-foreground">attrs</span>}
+          </span>
+        ))}
+        {doc.entities.length === 0 && <p className="px-1.5 py-1 text-xs text-muted-foreground">No entities yet.</p>}
+      </div>
+      <p className="pb-1 text-[11px] text-muted-foreground">Entity attributes are edited in Code mode.</p>
+
+      <SectionHeading
+        action={
+          doc.entities.length >= 2 ? (
+            <AddButton
+              label="Add relationship"
+              onClick={() => apply({ type: "addRelationship", left: doc.entities[0].id, right: doc.entities[1].id })}
+            />
+          ) : undefined
+        }
+      >
+        Relationships
+      </SectionHeading>
+      <div className="space-y-0.5">
+        {doc.relationships.map((r) => (
+          <RowShell key={r.id}>
+            <span className="w-20 shrink-0 truncate text-sm">{erEntityName(r.left)}</span>
+            <Select value={r.leftCard} onValueChange={(leftCard) => apply({ type: "setRelationshipCardinality", id: r.id, leftCard })}>
+              <SelectTrigger className="h-7 w-28 shrink-0 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ER_LEFT_CARD.map((c) => (
+                  <SelectItem key={c.value} value={c.value} className="text-xs">
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={r.rightCard} onValueChange={(rightCard) => apply({ type: "setRelationshipCardinality", id: r.id, rightCard })}>
+              <SelectTrigger className="h-7 w-28 shrink-0 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ER_RIGHT_CARD.map((c) => (
+                  <SelectItem key={c.value} value={c.value} className="text-xs">
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="w-20 shrink-0 truncate text-sm">{erEntityName(r.right)}</span>
+            <InlineTextEdit
+              value={r.label}
+              placeholder="label"
+              ariaLabel="Relationship label"
+              className="text-xs"
+              onCommit={(label) => apply({ type: "setRelationshipLabel", id: r.id, label })}
+            />
+            <IconAction label="Reverse" onClick={() => apply({ type: "reverseRelationship", id: r.id })}>
+              <ArrowDown className="h-3.5 w-3.5 rotate-90" />
+            </IconAction>
+            <IconAction label="Delete relationship" destructive onClick={() => apply({ type: "deleteRelationship", id: r.id })}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </IconAction>
+          </RowShell>
+        ))}
+        {doc.relationships.length === 0 && <p className="px-1.5 py-1 text-xs text-muted-foreground">No relationships yet.</p>}
+      </div>
     </div>
   );
 }

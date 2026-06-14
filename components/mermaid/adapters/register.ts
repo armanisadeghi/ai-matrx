@@ -6,10 +6,14 @@
  */
 
 import { registerAdapter } from "../model/adapter";
+import { erAdapter } from "./er";
 import { flowchartAdapter } from "./flowchart";
+import { journeyAdapter } from "./journey";
 import { mindmapAdapter } from "./mindmap";
 import { pieAdapter } from "./pie";
+import { quadrantAdapter } from "./quadrant";
 import { sequenceAdapter } from "./sequence";
+import { stateAdapter } from "./state";
 import { timelineAdapter } from "./timeline";
 
 registerAdapter(flowchartAdapter);
@@ -17,5 +21,9 @@ registerAdapter(mindmapAdapter);
 registerAdapter(sequenceAdapter);
 registerAdapter(pieAdapter);
 registerAdapter(timelineAdapter);
+registerAdapter(journeyAdapter);
+registerAdapter(quadrantAdapter);
+registerAdapter(stateAdapter);
+registerAdapter(erAdapter);
 
 export {};

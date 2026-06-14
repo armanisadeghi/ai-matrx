@@ -96,7 +96,7 @@ export const MERMAID_CATALOG: Record<MermaidDiagramType, MermaidCatalogEntry> = 
     icon: Boxes,
     description: "States and the transitions between them.",
     starterTemplate: "stateDiagram-v2\n  [*] --> Idle\n  Idle --> Running : start\n  Running --> Idle : stop\n  Running --> [*] : finish",
-    support: "code-only",
+    support: "full",
     featured: true,
   },
   er: {
@@ -104,7 +104,7 @@ export const MERMAID_CATALOG: Record<MermaidDiagramType, MermaidCatalogEntry> = 
     icon: Database,
     description: "Data entities and how they relate.",
     starterTemplate: "erDiagram\n  CUSTOMER ||--o{ ORDER : places\n  ORDER ||--|{ LINE_ITEM : contains",
-    support: "code-only",
+    support: "full",
     featured: true,
   },
   gantt: {
@@ -120,7 +120,7 @@ export const MERMAID_CATALOG: Record<MermaidDiagramType, MermaidCatalogEntry> = 
     icon: Footprints,
     description: "A user's experience through a process, step by step.",
     starterTemplate: "journey\n  title My Day\n  section Morning\n    Wake up: 5: Me\n    Coffee: 5: Me\n  section Work\n    Meetings: 2: Me, Team",
-    support: "code-only",
+    support: "full",
   },
   class: {
     label: "Class Diagram",
@@ -134,7 +134,7 @@ export const MERMAID_CATALOG: Record<MermaidDiagramType, MermaidCatalogEntry> = 
     icon: Grid2x2,
     description: "Items plotted across four quadrants.",
     starterTemplate: "quadrantChart\n  title Reach vs Effort\n  x-axis Low Effort --> High Effort\n  y-axis Low Reach --> High Reach\n  Item A: [0.3, 0.8]\n  Item B: [0.7, 0.4]",
-    support: "code-only",
+    support: "full",
   },
   git: {
     label: "Git Graph",
