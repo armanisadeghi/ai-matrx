@@ -14,6 +14,7 @@ import { linter, lintGutter, type Diagnostic as CmDiagnostic } from "@codemirror
 import { EditorView } from "@codemirror/view";
 
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 
 import { MermaidRenderer } from "../MermaidRenderer";
@@ -31,10 +32,19 @@ interface CodeModePaneProps {
 
 export function CodeModePane({ source, options, dispatch }: CodeModePaneProps) {
   const isMobile = useIsMobile();
+  const isDark = useAppSelector((s) => s.theme.mode) === "dark";
   const [draft, setDraft] = useState(source);
   const [ladder, setLadder] = useState<LadderResult | null>(null);
   const [previewOpen, setPreviewOpen] = useState(true);
   const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Hold the not-yet-committed value + a live dispatch so the unmount cleanup
+  // can flush it — closing the workbench within the debounce window must never
+  // silently drop the last keystrokes.
+  const pendingValueRef = useRef<string | null>(null);
+  const dispatchRef = useRef(dispatch);
+  useEffect(() => {
+    dispatchRef.current = dispatch;
+  });
 
   // External source changes (undo, ops from other modes, AI apply) win over the
   // local draft. React's render-phase state-adjustment pattern (not an effect)
@@ -49,8 +59,11 @@ export function CodeModePane({ source, options, dispatch }: CodeModePaneProps) {
 
   const handleChange = (value: string) => {
     setDraft(value);
+    pendingValueRef.current = value;
     if (commitTimer.current) clearTimeout(commitTimer.current);
     commitTimer.current = setTimeout(() => {
+      commitTimer.current = null;
+      pendingValueRef.current = null;
       dispatch({ type: "SET_SOURCE", source: value });
     }, COMMIT_DEBOUNCE_MS);
   };
@@ -58,6 +71,10 @@ export function CodeModePane({ source, options, dispatch }: CodeModePaneProps) {
   useEffect(() => {
     return () => {
       if (commitTimer.current) clearTimeout(commitTimer.current);
+      // Flush a pending edit so an unmount mid-debounce doesn't lose it.
+      if (pendingValueRef.current != null) {
+        dispatchRef.current({ type: "SET_SOURCE", source: pendingValueRef.current });
+      }
     };
   }, []);
 
@@ -85,7 +102,7 @@ export function CodeModePane({ source, options, dispatch }: CodeModePaneProps) {
         onChange={handleChange}
         height="100%"
         style={{ flex: 1, minHeight: 0, fontSize: 13 }}
-        theme="none"
+        theme={isDark ? "dark" : "light"}
         extensions={[lintGutter(), mermaidLinter, EditorView.lineWrapping]}
         basicSetup={{ foldGutter: false, highlightActiveLine: true }}
         className="h-full min-h-0 [&_.cm-editor]:h-full [&_.cm-editor]:bg-card [&_.cm-scroller]:font-mono"

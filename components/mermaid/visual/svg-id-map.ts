@@ -30,7 +30,8 @@ export function extractEdgePair(domId: string): { from: string; to: string } | n
 /** Stamp data-mmid attributes onto mapped elements; returns mapped node count. */
 export function stampSvg(svg: SVGSVGElement): number {
   let mapped = 0;
-  svg.querySelectorAll<SVGGraphicsElement>("g.node[id]").forEach((g) => {
+  const nodeCandidates = svg.querySelectorAll<SVGGraphicsElement>("g.node[id]");
+  nodeCandidates.forEach((g) => {
     const nodeId = extractNodeId(g.id);
     if (nodeId) {
       g.setAttribute("data-mmid", nodeId);
@@ -39,6 +40,18 @@ export function stampSvg(svg: SVGSVGElement): number {
       mapped++;
     }
   });
+  // Loud recovery (CLAUDE.md): if mermaid rendered nodes but NONE matched our id
+  // regex, the DOM contract drifted — almost certainly a mermaid upgrade. Visual
+  // mode will silently disable (outline + code still work), so scream here with
+  // the exact place to fix rather than leaving "dead clicks".
+  if (nodeCandidates.length > 0 && mapped === 0) {
+    console.error(
+      `[mermaid svg-id-map] ${nodeCandidates.length} flowchart node(s) rendered but 0 matched NODE_ID_RE ` +
+        `(${NODE_ID_RE}). mermaid's DOM id format likely changed — visual editing is disabling. ` +
+        `Re-check components/mermaid/visual/svg-id-map.ts against the current mermaid output. ` +
+        `First unmatched id: "${nodeCandidates[0].id}".`,
+    );
+  }
   svg.querySelectorAll<SVGGraphicsElement>("path.flowchart-link[id], path[id^='L_'], path[id^='L-']").forEach((p) => {
     const pair = extractEdgePair(p.id);
     if (pair) {

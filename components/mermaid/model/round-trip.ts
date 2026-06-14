@@ -39,6 +39,10 @@ export function parseWithFidelityGate(
   try {
     serialized = adapter.serialize(outcome.doc);
   } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    // A serializer throwing is an adapter BUG, not "advanced syntax" — say so,
+    // and carry the real message so the workbench/console can show it instead
+    // of burying it. Still downgrade (code-only never loses content).
     console.warn(
       `[MermaidFidelityGate] ${adapter.diagramType} serialize threw during gate — downgrading to code-only`,
       err,
@@ -46,8 +50,8 @@ export function parseWithFidelityGate(
     return {
       outcome: {
         status: "code-only",
-        reason: "serializer failed on this document",
-        diagnostics: [],
+        reason: `the ${adapter.diagramType} structural editor hit an internal error (${detail}) — please report it`,
+        diagnostics: [{ line: 1, message: `serialize failed: ${detail}`, severity: "error" }],
       },
     };
   }
