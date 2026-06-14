@@ -17,6 +17,13 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D6 — Window geometry restore keyed by `overlayId`, but windows register by `id`/slug
+**Severity: low — saved window size/position silently doesn't restore for affected windows; no data loss.**
+
+**What.** `WindowPersistenceManager` builds restore entries keyed by `overlayId` (`windowEntries[overlayId] = { id: overlayId, … }`) and `restoreWindowState` only applies geometry when `state.windows[overlayId]` exists. But `WindowPanel` registers in `windowManagerSlice` under its `id` prop (the registry **slug**), which differs from `overlayId` for many windows — e.g. `agentSettingsWindow` registers as `agent-settings-window`. For those, the saved rect/state is silently skipped on load (the window opens at its default center instead). Discovered while fixing the silent-render class (D-fix 2026-06-14); the new render watchdog side-steps it for *detection* via `ackOverlayRender` (resolves the real window id), but persistence restore itself is still mismatched.
+
+**Fence.** Cosmetic only — the window still opens and is visible (the silent-render guard guarantees that); just not at its remembered geometry. Fix is to key restore by the slug-derived window id (the same id `WindowPanel` uses), in `WindowPersistenceManager` + `restoreWindowState`.
+
 ### D3 — Agent Find Usages + Drift: prod re-verify + DM sender identity
 **Severity: low — built and locally verified; two follow-ups.**
 

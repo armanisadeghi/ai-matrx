@@ -56,6 +56,10 @@ import {
 } from "@/lib/redux/slices/windowManagerSlice";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getStaticEntryByOverlayId } from "./registry/windowRegistryMetadata";
+import {
+  ackOverlayRender,
+  clearOverlayRender,
+} from "./diagnostics/overlayRenderWatchdog";
 import type { OverlayId } from "./registry/overlay-ids";
 import MobileDrawerSurface from "./mobile/MobileDrawerSurface";
 import MobileCardSurface from "./mobile/MobileCardSurface";
@@ -587,6 +591,16 @@ export function WindowPanel({
     setPortalTarget(document.body);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Render acknowledgement ────────────────────────────────────────────────
+  // Tell the render watchdog which window-manager id actually rendered this
+  // overlay, so it can verify the panel became visible (and never false-flag a
+  // window whose `id` differs from its registry slug). See overlayRenderWatchdog.
+  useEffect(() => {
+    if (!overlayId) return;
+    ackOverlayRender(overlayId, id);
+    return () => clearOverlayRender(overlayId, id);
+  }, [overlayId, id]);
 
   // Backward compat: legacy `actions` maps to actionsRight
   const resolvedActionsRight = actionsRight ?? actions ?? null;

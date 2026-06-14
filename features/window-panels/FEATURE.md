@@ -233,6 +233,8 @@ All three live under `lib/redux/slices/`:
 - `closeAllInstancesOfOverlay({ overlayId })` — nukes every instance of one overlay.
 - `pruneStaleInstances({ olderThanMs })` — GC for closed multi-instance entries. Called from the idle sweep in `WindowPersistenceManager`.
 
+`windowManagerSlice` invariant: `registerWindow`/`unregisterWindow` keep the global `windowsHidden` flag from ever stranding `true`, and `revealWindow(id, viewport)` is the single "bring this window into view" primitive. See [`## Silent-render guard`](#silent-render-guard).
+
 ---
 
 ## Persistence
@@ -262,6 +264,16 @@ Moving, resizing, toggling the sidebar, or switching tabs does **not** trigger a
 **Instance GC** — every 30 minutes (idle-only via `requestIdleCallback`), `pruneStaleInstances({ olderThanMs: 30min })` sweeps closed multi-instance entries that haven't been reopened. Singleton slots are preserved regardless so stable-reference selectors don't thrash.
 
 **Ephemeral overlays** — registry entries with `ephemeral: true` never write to DB. Use for debug panels, one-shot tool dialogs, and callback-group windows whose caller-side state can't survive reload.
+
+---
+
+## Silent-render guard
+
+A triggered panel must **never** silently fail to appear. Two layers enforce it via `overlayRenderWatchdogMiddleware` ([`diagnostics/overlayRenderWatchdog.ts`](./diagnostics/overlayRenderWatchdog.ts)):
+
+**Reveal-on-open (proactive).** Every `openOverlay`/`toggleOverlay` for a `kind: "window"` overlay dispatches `revealWindow(id, viewport)`. `revealWindow` restores a minimized window, clamps an off-screen rect back into view, raises z-index, and clears `windowsHidden` — so re-triggering an already-open window is never a no-op. `windowManagerSlice` hardening: `registerWindow` clears `windowsHidden` (a newly opened window is always shown); `unregisterWindow` resets `windowsHidden` at zero windows (the global hide-all can't strand `true` and silently hide the next open).
+
+**Watchdog (loud recovery).** ~2.5 s after an open, the middleware runs the pure `diagnoseOverlayRender` against live Redux + viewport state. If no visible panel is on screen — **no `WindowPanel` mounted**, `windowsHidden` still on, off-screen, or zero-size — it `console.error`s with diagnostics and shows a self-healing `toast.error` ("Show it" → `revealWindow`). Scoped to **singleton window-kind** overlays; minimized and popped-out states count as OK (parked, not failed). `WindowPanel` calls `ackOverlayRender(overlayId, id)` so the watchdog resolves the real window id even when it differs from the slug. Tests: `__tests__/overlayRenderWatchdog.test.ts`, `__tests__/windowManagerReveal.test.ts`.
 
 ---
 
@@ -556,6 +568,7 @@ A re-entry into the viewport resets the dwell timer — a glance outside doesn't
 
 ## Change log
 
+- **2026-06-14** — **Silent-render guard** (see [`## Silent-render guard`](#silent-render-guard)). Root-caused a class of silent window-panel non-renders: stale in-memory `windowManagerSlice` state retained across client-side navigation (reset only on full reload) — chiefly the global `windowsHidden` flag rendering every panel `visibility:hidden`, plus re-opening a minimized/off-screen window being a no-op. Fix: `revealWindow` primitive + reveal-on-open middleware; `registerWindow`/`unregisterWindow` can no longer strand `windowsHidden`; new `overlayRenderWatchdogMiddleware` loudly reports + self-heals any "opened but not visible" panel. 17 new tests.
 - **2026-05-07** — Image Viewer toolbar now includes icon-only rotate-left, rotate-right, flip-horizontal, and flip-vertical preview transforms. The existing reset control restores zoom, pan, rotation, and flip state together.
 - **2026-05-06** — **Pre-launch audit & cleanup.** Registered `curatedIconPickerWindow` (was lazy-imported ad-hoc by `IconInputWithValidation`, bypassing the registry — converted to the callbackManager pattern under `windows/icons/`). Repaired `pnpm check:registry` (parser was broken since the `.map()` refactor; reported 0 entries / 73 false errors). New script also detects orphan windows by grepping for `<WindowPanel>` importers and requires either registry registration or an `@registry-status: sub-component | inline-window` marker. Added markers to 7 legitimate sub-component / inline-window files (`ScraperFloatingWorkspace`, `PdfExtractorWorkspace`, `AgentGateInput`, `CreatorRunPanel`, `CropPreviewWindow`, `InitialCropWindow`, `SettingsShell`). Filled 3 missing URL hydrators (`file_preview`, `crop_studio`, `messages`). Added one-shot `window_sessions` slug migration (`quick-ai-results` → `quick-chat-history`) in `WindowPersistenceManager`. Deleted legacy `components/overlays/OverlayController.tsx` (orphan dead code, 85 KB, 2,586 LOC). Added dev-only `/admin/window-panels-smoketest` page that probes every registered overlay's lazy import + initial mount.
 - **2026-05-04** — Added `messagesWindow` (sidebar list + chat thread, singleton, `urlSync: messages`) and `singleMessageWindow` (single `ChatThread`, multi-instance keyed by `conversationId`). Both reuse `ConversationList` + `ChatThread` from `features/messaging/`. Avatar dropdown's "Direct Messages" `LinkMenuItem` replaced with a new `MessagesMenuItem` that opens `messagesWindow` and shows the unread badge. Messaging islands (`LazyMessagingInitializer`, `MessagingSideSheet`) moved from `(a)`-only `DeferredIslands` to app-wide `DeferredSingletons` so messaging works on every authenticated route. `LazyMessagingInitializer` now mounts as soon as a user is authenticated (was gated on `isOpen || isAvailable`) so the dropdown badge is accurate from first paint.

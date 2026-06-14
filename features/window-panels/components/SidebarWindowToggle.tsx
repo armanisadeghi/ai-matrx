@@ -283,7 +283,11 @@ export default function SidebarWindowToggle() {
                       : "Keep windows running, hide from view"
                   }
                   onClick={() => act(() => dispatch(toggleWindowsHidden()))}
-                  disabled={!hasWindows}
+                  // Always allow "Show All" while hidden — otherwise the flag
+                  // could strand `true` after the last window closes, silently
+                  // hiding the next opened panel. (The slice now also resets it
+                  // at zero windows; this keeps the control reachable too.)
+                  disabled={!hasWindows && !hidden}
                 />
 
                 {/* ── Per-window list ───────────────────────────────────────────── */}

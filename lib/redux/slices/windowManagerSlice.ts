@@ -180,6 +180,10 @@ const windowManagerSlice = createSlice({
         popoutMode: null,
         prePopoutRect: null,
       };
+      // Opening a brand-new window is an explicit "show me" intent. Never let a
+      // stale global hide-all (windowsHidden) silently render it invisible —
+      // that is the silent-failure class this slice must structurally prevent.
+      if (state.windowsHidden) state.windowsHidden = false;
     },
 
     /** Update just the title (e.g. when prop changes). */
@@ -214,6 +218,13 @@ const windowManagerSlice = createSlice({
         state.popoutCandidateId = null;
       }
       delete state.windows[action.payload];
+      // A global hide-all flag is meaningless with zero windows and otherwise
+      // strands `true` (the sidebar "Show All" control is disabled when there
+      // are no windows), which would silently hide the NEXT window the user
+      // opens. Reset it so the flag can never outlive the windows it governs.
+      if (Object.keys(state.windows).length === 0) {
+        state.windowsHidden = false;
+      }
     },
 
     /** Bring a window to the top of the z stack. */
@@ -242,6 +253,63 @@ const windowManagerSlice = createSlice({
         win.preMinimizedRect = null;
       }
       win.state = "windowed";
+      win.zIndex = state.nextZIndex++;
+    },
+
+    /**
+     * Bring an already-registered window unconditionally into view — the
+     * single "show me this panel" primitive used by the open path.
+     *
+     * Re-triggering a menu/opener for a window that is already open must never
+     * be a silent no-op. Before this existed, an open dispatch only updated
+     * overlay-slice data; if the window was minimized, dragged off-screen, or
+     * suppressed by `windowsHidden`, the user saw nothing. `revealWindow`:
+     *   - restores a minimized window to its pre-minimized rect,
+     *   - clamps the rect back into the current viewport (off-screen rescue),
+     *   - raises it to the top of the z-stack,
+     *   - clears the global hide-all flag.
+     *
+     * No-op when the window isn't registered yet (first open — `registerWindow`
+     * handles that). Popped-out windows keep their OS-managed frame; we only
+     * clear the global hide so the rest of the desktop is visible.
+     *
+     * Caller supplies viewport dimensions (reducers can't read `window`).
+     */
+    revealWindow(
+      state,
+      action: PayloadAction<{
+        id: string;
+        viewportWidth: number;
+        viewportHeight: number;
+      }>,
+    ) {
+      const { id, viewportWidth, viewportHeight } = action.payload;
+      const win = state.windows[id];
+      if (!win) return;
+      if (state.windowsHidden) state.windowsHidden = false;
+      if (win.popoutMode !== null) return; // OS frame owns popout visibility
+      if (win.traySlot !== null) {
+        state.trayCount = Math.max(0, state.trayCount - 1);
+        Object.values(state.windows).forEach((w) => {
+          if (w.traySlot !== null && w.traySlot > win.traySlot!) {
+            w.traySlot -= 1;
+          }
+        });
+        win.traySlot = null;
+      }
+      if (win.state === "minimized") {
+        if (win.preMinimizedRect) {
+          win.windowed = win.preMinimizedRect;
+          win.preMinimizedRect = null;
+        }
+        win.state = "windowed";
+      }
+      if (win.state === "windowed") {
+        win.windowed = clampRectToViewport(win.windowed, {
+          width: viewportWidth,
+          height: viewportHeight,
+        });
+      }
       win.zIndex = state.nextZIndex++;
     },
 
@@ -650,6 +718,7 @@ export const {
   unregisterWindow,
   focusWindow,
   restoreWindow,
+  revealWindow,
   maximizeWindow,
   minimizeWindow,
   minimizeAll,
