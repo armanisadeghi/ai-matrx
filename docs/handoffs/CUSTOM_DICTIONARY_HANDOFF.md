@@ -27,12 +27,13 @@ Terminology + pronunciation entries at four owner levels (**user / organization 
 
 ---
 
-## REMAINING — Item 1 (product decision): shortcut + widget launch
+## DONE — shortcut + widget launch
 
-The Dictionary Assistant is built and works, but is **not yet launched as a widget**. Per the product owner it should open as a small pop-up / side-panel (a **shortcut** with a panel `displayMode` — `floating-chat` / `sidebar` / `chat-assistant`), **not** the full `/chat` route.
+The "Ask assistant" buttons now open the Dictionary Assistant as a **floating-chat widget**, not the `/chat` route.
 
-- **Interim state:** `features/dictionary/hooks/useOpenDictionaryAssistant.ts` (used by the "Ask assistant" button in `DictionaryManager`) currently `router.push`es to `/chat/a/<agentId>`. This is functional but is the chat-screen behavior the owner asked us to avoid.
-- **To finish:** create an `agx_shortcut` row pointing at agent `ab1a868e-…` with a panel `displayMode` (recommend `floating-chat` or `sidebar`), then change `useOpenDictionaryAssistant` to launch that shortcut via the shortcut launch path (`features/agents/redux/execution-system/thunks/launch-conversation.thunk.ts` / `createInstanceFromShortcut`) instead of `router.push`. The product owner said they would set up the widget; coordinate on shortcut **scope** (system-wide vs per-user) and **category** before creating the row. Shortcut model + displayMode list: `features/agent-shortcuts/FEATURE.md`.
+- **Shortcut:** global `agx_shortcut` `5c1c7000-0000-4000-a000-000000000001` (all scope cols NULL → every user), `display_mode='floating-chat'`, `allow_chat=true`, `use_latest=true`, category "Audio Transcription". Seeded by `migrations/dict_assistant_shortcut.sql`. DB row verified.
+- **Launch:** `features/dictionary/hooks/useOpenDictionaryAssistant.ts` calls `useAgentLauncher().launchShortcut(DICTIONARY_ASSISTANT_SHORTCUT_ID, scope, { config: { displayMode: "floating-chat" } })`, passing the owner the user launched from as scope. This mirrors the proven context-menu launch path; dispatching it opens the `agentFloatingChat` overlay automatically.
+- **Verification note:** the DB row + the wiring (typecheck + lint clean) are verified, but a live screenshot of the widget opening was blocked locally by an unrelated **broken mermaid build** (`components/mermaid/adapters/register.ts` imports a missing `./er`) committed by a concurrent session — it errors every `(core)` route. Validate the widget once that build is green (see "How to validate").
 
 ---
 
@@ -49,6 +50,18 @@ Then re-verify in production (not yet done — local-only so far):
 - Podcast generation carries the dictionary into the script + audio agents.
 
 ---
+
+## How to validate (exact routes / clicks / expectations)
+
+> Prereq: the app must build (the concurrent mermaid `./er` import must be resolved). Sign in as a normal user.
+
+1. **Personal dictionary (entry system).** Go to **`/user-settings/voice/dictionary`**. Click **Add** → fill Term (e.g. "Rejuvina"), Pronunciation ("reh-juh-VEE-nah"), Sounds-like → **Save**. **Expect:** row appears in the table + "Entry added" toast; reload → it persists. Open **Advanced** → CSV template download + import + inline-policy override.
+2. **Assistant widget (agentic).** On that same page click **Ask assistant**. **Expect:** a floating chat window opens in place (NOT a navigation to `/chat`). Type *"Add Rejuvina to my personal dictionary, people mishear it"*. **Expect (after aidream deploy — see below):** the agent proposes an entry + pronunciation, asks to confirm, then writes it (refresh the table to see it). Repeat the same launch from an org/scope editor's **Custom Dictionary → Ask assistant**.
+3. **Org / scope dictionaries.** `/organizations/[orgId]/settings` → **Dictionary** section; and a scope-type/scope **edit** page → **Custom Dictionary** section. Same manager UI + Ask assistant.
+4. **Transcription/TTS surfaces.** Open `/transcripts/cleanup` → the sidebar **Dictionary** card (merged view + **Sources** opens the selector window). The transcript **studio** header and **scribe** header show the dictionary icon+count; **podcast studio → Create → Advanced** shows a **Dictionary** control.
+5. **Admin map.** `/dictionary/admin` lists every route/window/component/slice the feature owns.
+
+**The simple concept (what to confirm feels easy):** anyone opens their Dictionary, either types entries directly (clean table, Add/Import) OR clicks **Ask assistant** and just talks — "add my product names", "how do you say X" — and the agent fills the dictionary for them. Same pattern at every level (personal / org / scope) and on every transcription/TTS surface.
 
 ## Weaknesses & improvement opportunities (true improvements)
 
