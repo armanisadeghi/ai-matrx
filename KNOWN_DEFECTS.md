@@ -17,6 +17,23 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D7 — Scribe: mobile mic re-prompts + recoverable-but-orphaned audio
+**Severity: high — violates the platform's "never lose audio" promise on mobile. Investigated 2026-06-14; recovery half is a known, scoped fix, the permission half needs device testing.**
+
+**What.** On mobile, `/transcripts/scribe` (a) re-prompts for mic permission repeatedly and (b) has dropped audio + lost transcripts.
+
+**Findings (the recorder engine itself is sound).** `useChunkedRecordAndTranscribe` already: shares one warm OS grant via `features/audio/micStream.ts` (ref-counted + 3-min keepalive, so repeated record taps don't re-prompt), persists every chunk to IndexedDB *before* transcription, runs a stop-time full-blob fallback when any chunk failed, bounds chunk fetches with `AbortController`, and flushes on `pagehide`. So the loss is NOT in capture.
+
+**Two real causes:**
+1. **Re-prompts** are not from the recorder (it reuses the warm grant). The likely source is **iOS ending/​muting the mic track on interruption** (lock screen, app switch, an incoming call, or switching the scribe Record↔Live tabs where `features/voice-agent/audio/audioCapture.ts` opens its *own* `AudioContext` and may clone the track). When the track's `readyState` flips off, `micStream.acquireMicStream` drops it and the next acquire re-prompts. There is **no `track.onended`/`onmute` handling** in `micStream.ts` and **no interruption/visibility recovery**, so this is silent and unmitigated. NOTE: graceful re-acquire on iOS inherently re-prompts — the real mitigation is keeping the grant + context warm across tab switches and surfacing the interruption loudly rather than silently re-acquiring.
+2. **Lost audio/transcript** has a concrete, documented hole: the crash-safe IndexedDB id (`safetyId`, on `ChunkCompleteInfo` + `useChunkedRecordAndTranscribe.getSafetyId()`) is **never written to the `studio_recording_segments` row**. So when a recording is stranded (page reload/crash/back-to-back start before finalize, or chunks never uploaded on bad network), `reconcileStuckRecordingsThunk` can derive `t_end` from raw chunks but **cannot recover the AUDIO** — it lives only in IndexedDB keyed by a `safetyId` the row doesn't know. `AudioRecoveryProvider` handles same-device orphans by scanning IndexedDB, but isn't linked to the specific stranded segment.
+
+**The fix (scoped, ready to build — needs go-ahead because it touches the live DB + the never-lose-audio path).**
+- **Recovery (high value, low risk):** add `safety_id text` to `studio_recording_segments` (migration); write it at `startRecordingSegmentThunk`/finalize (the studio already threads `safetyId` into `uploadRecordingAudioThunk`); extend `reconcileStuckRecordingsThunk` to, for any segment with `audio_path IS NULL` + a `safety_id`, pull the blob from `audioSafetyStore.getAudioBlob(safety_id)` and re-run `uploadRecordingAudioThunk`. Closes the loss for same-device-after-reload; a future cross-device path needs the blob uploaded eagerly (chunk-by-chunk) not just kept in IndexedDB.
+- **Permissions (needs device testing):** add `track.onended`/`onmute` listeners + a `navigator.permissions` change watcher to `micStream.ts` that **screams** (loud recovery doctrine) instead of silently re-acquiring; keep the AudioContext/stream warm across the Record/Agent/Live tab switches (don't let the Live tab's separate context tear the shared grant down); consider one canonical AudioContext rather than one per `useChunkedRecordAndTranscribe` instance to avoid iOS context exhaustion.
+
+**Fence.** Capture already never loses audio locally (IndexedDB-first). The gap is *recovery linkage* (safety_id on the row) and *interruption visibility* (loud track-end handling). Both are additive — neither weakens the existing safety net.
+
 ### D6 — Window geometry restore keyed by `overlayId`, but windows register by `id`/slug
 **Severity: low — saved window size/position silently doesn't restore for affected windows; no data loss.**
 
