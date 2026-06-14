@@ -13,6 +13,7 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import { useScopeAutoSave } from "@/features/scope-system/hooks/useScopeAutoSave";
 import type { ScopeContextRow } from "@/features/scope-system/redux/scopeValuesSlice";
 import { EditContextItemSheet } from "./EditContextItemSheet";
@@ -37,6 +38,19 @@ interface ScopeFieldInputProps {
   headerSlot?: React.ReactNode;
 }
 
+/** Stable string key for change-detection across primitive and structured values. */
+function canonical(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "object") {
+    try {
+      return JSON.stringify(v);
+    } catch {
+      return "";
+    }
+  }
+  return String(v).trim();
+}
+
 function rowToString(row: ScopeContextRow): string {
   if (row.value_text != null) return row.value_text;
   if (row.value_number != null) return String(row.value_number);
@@ -53,6 +67,20 @@ function rowToString(row: ScopeContextRow): string {
   return "";
 }
 
+/**
+ * The value to seed a custom Smart-Input component with: structured values come
+ * straight from value_json; everything else falls back to a string.
+ */
+function rowToComponentValue(row: ScopeContextRow): unknown {
+  if (row.value_json != null) return row.value_json;
+  if (row.value_number != null) return String(row.value_number);
+  if (row.value_text != null) return row.value_text;
+  if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
+  if (row.value_date != null) return row.value_date;
+  if (row.value_document_url != null) return row.value_document_url;
+  return "";
+}
+
 export function ScopeFieldInput({
   scopeId,
   row,
@@ -61,8 +89,13 @@ export function ScopeFieldInput({
   nameHref,
   headerSlot,
 }: ScopeFieldInputProps) {
-  const initial = rowToString(row);
-  const [value, setValue] = useState(initial);
+  const hasCustom = !!row.custom_component;
+  const initialValue: unknown = hasCustom
+    ? rowToComponentValue(row)
+    : rowToString(row);
+  const initialKey = canonical(initialValue);
+
+  const [value, setValue] = useState<unknown>(initialValue);
   const [editingItem, setEditingItem] = useState(false);
   const [editingValue, setEditingValue] = useState(false);
   const isDirtyRef = useRef(false);
@@ -70,25 +103,58 @@ export function ScopeFieldInput({
     scopeId,
     row.item_id,
     row.value_type,
-    initial,
+    initialValue,
   );
+
+  // Keep the latest commit closure reachable from the debounce timer / unmount flush.
+  const commitRef = useRef(commit);
+  commitRef.current = commit;
+  const pendingRef = useRef<{ v: unknown } | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleCommit = (v: unknown) => {
+    pendingRef.current = { v };
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      const p = pendingRef.current;
+      pendingRef.current = null;
+      if (p) {
+        isDirtyRef.current = false;
+        void commitRef.current(p.v);
+      }
+    }, 600);
+  };
+
+  // Flush a pending edit on unmount so a quick navigate doesn't drop it.
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      const p = pendingRef.current;
+      pendingRef.current = null;
+      if (p) void commitRef.current(p.v);
+    };
+  }, []);
 
   // Sync local input ONLY when the underlying stored value actually changes
   // (refetch landed new data, sibling save happened, etc.) AND the user is
   // not currently mid-edit. Without the isDirty guard, an in-flight render
   // would clobber the user's keystrokes.
   //
-  // Deps are the primitive `initial` only — never include a hook-returned
+  // Deps are the canonical primitive key only — never include a hook-returned
   // function here; those are fresh closures per render and re-trigger this
   // effect on every keystroke, wiping the value back to `initial`.
   useEffect(() => {
     if (isDirtyRef.current) return;
     // Intentional store→input sync when not mid-edit; see the comment above.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setValue(initial);
-  }, [initial]);
+    setValue(initialValue);
+    // initialValue is recomputed each render; key it off the canonical string.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialKey]);
 
   const isJsonType = row.value_type === "object" || row.value_type === "array";
+  const stringValue = typeof value === "string" ? value : canonical(value);
 
   return (
     <>
@@ -127,7 +193,7 @@ export function ScopeFieldInput({
             {headerSlot}
             <FieldStatus
               status={status}
-              hasValue={row.has_value || value.trim().length > 0}
+              hasValue={row.has_value || canonical(value).length > 0}
             />
             <Button
               type="button"
@@ -142,11 +208,24 @@ export function ScopeFieldInput({
             </Button>
           </div>
         </div>
-        {row.value_type === "date" ? (
+        {hasCustom ? (
+          <VariableInputComponent
+            value={value}
+            onChange={(v) => {
+              isDirtyRef.current = true;
+              setValue(v);
+              scheduleCommit(v);
+            }}
+            variableName={row.display_name}
+            customComponent={row.custom_component ?? undefined}
+            hideLabel
+            compact
+          />
+        ) : row.value_type === "date" ? (
           <Input
             id={`field-${row.item_id}`}
             type="date"
-            value={value}
+            value={stringValue}
             onChange={(e) => {
               isDirtyRef.current = true;
               setValue(e.target.value);
@@ -160,7 +239,7 @@ export function ScopeFieldInput({
         ) : (
           <ProTextarea
             id={`field-${row.item_id}`}
-            value={value}
+            value={stringValue}
             onChange={(e) => {
               isDirtyRef.current = true;
               setValue(e.target.value);

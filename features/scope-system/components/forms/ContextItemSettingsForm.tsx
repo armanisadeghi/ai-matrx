@@ -22,7 +22,6 @@ import {
   deleteContextItem,
   selectContextItemById,
   listScopeTypeItems,
-  type ContextValueType,
   type ContextFetchHint,
   type ContextSensitivity,
 } from "@/features/scope-system/redux/contextItemsSlice";
@@ -33,6 +32,9 @@ import {
   DEFAULT_CATEGORIES,
 } from "@/features/agent-context/constants";
 import { toSlug, isValidSlug, isReservedSlug } from "@/features/scope-system/utils/slugify";
+import { CustomComponentConfigurator } from "@/features/agents/components/variables-management/CustomComponentConfigurator";
+import { componentToValueType } from "@/features/scope-system/utils/componentValueType";
+import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 
 interface ContextItemSettingsFormProps {
   itemId: string;
@@ -63,7 +65,9 @@ export function ContextItemSettingsForm({
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
-  const [valueType, setValueType] = useState<ContextValueType>("string");
+  const [customComponent, setCustomComponent] = useState<
+    VariableCustomComponent | undefined
+  >(undefined);
   const [fetchHint, setFetchHint] = useState<ContextFetchHint>("on_demand");
   const [sensitivity, setSensitivity] = useState<ContextSensitivity>("internal");
   const [tagInput, setTagInput] = useState("");
@@ -78,7 +82,7 @@ export function ContextItemSettingsForm({
     setSlug(item.slug ?? "");
     setDescription(item.description ?? "");
     setCategory(item.category ?? "");
-    setValueType(item.value_type);
+    setCustomComponent(item.custom_component ?? undefined);
     setFetchHint(item.fetch_hint);
     setSensitivity(item.sensitivity);
     setTags(item.tags ?? []);
@@ -117,6 +121,8 @@ export function ContextItemSettingsForm({
     }
     setBusy(true);
     try {
+      // The chosen component drives the storage discriminator; keep value_type in sync.
+      const derivedValueType = componentToValueType(customComponent);
       await dispatch(
         updateContextItem({
           id: item.id,
@@ -124,7 +130,8 @@ export function ContextItemSettingsForm({
           slug: trimmedSlug || null,
           description: description.trim(),
           category: category.trim() || null,
-          value_type: valueType,
+          value_type: derivedValueType,
+          custom_component: customComponent ?? null,
           fetch_hint: fetchHint,
           sensitivity,
           tags,
@@ -175,7 +182,7 @@ export function ContextItemSettingsForm({
     );
   }
 
-  const valueTypeChanged = valueType !== item.value_type;
+  const derivedValueType = componentToValueType(customComponent);
 
   return (
     <div className="space-y-5">
@@ -248,54 +255,56 @@ export function ContextItemSettingsForm({
         </datalist>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs">Value type</Label>
-          <Select
-            value={valueType}
-            onValueChange={(v) => setValueType(v as ContextValueType)}
-            disabled={busy}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(VALUE_TYPE_CONFIG) as ContextValueType[]).map((k) => (
-                <SelectItem key={k} value={k}>
-                  {VALUE_TYPE_CONFIG[k].label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {valueTypeChanged && (
-            <p className="text-[10px] text-amber-700 dark:text-amber-300 inline-flex items-start gap-1">
-              <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
-              Existing values won&apos;t auto-convert.
-            </p>
-          )}
+      {/* ── Input component (shared with the Agent Builder) ──────────────── */}
+      <div className="space-y-2 rounded-lg border border-border p-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-medium">Input component</Label>
+          <span className="text-[10px] text-muted-foreground">
+            stored as{" "}
+            <code className="font-mono">
+              {VALUE_TYPE_CONFIG[derivedValueType]?.label ?? derivedValueType}
+            </code>
+          </span>
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Fetch hint</Label>
-          <Select
-            value={fetchHint}
-            onValueChange={(v) => setFetchHint(v as ContextFetchHint)}
-            disabled={busy}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(FETCH_HINT_CONFIG) as ContextFetchHint[]).map((k) => (
-                <SelectItem key={k} value={k}>
-                  {FETCH_HINT_CONFIG[k].label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-[10px] text-muted-foreground">
-            {FETCH_HINT_CONFIG[fetchHint].description}
+        <p className="text-[10px] text-muted-foreground">
+          The same components used in the Agent Builder. The storage type is
+          derived automatically from the component you pick.
+        </p>
+        <CustomComponentConfigurator
+          value={customComponent}
+          onChange={setCustomComponent}
+          readonly={busy}
+        />
+        {derivedValueType !== item.value_type && (
+          <p className="text-[10px] text-amber-700 dark:text-amber-300 inline-flex items-start gap-1">
+            <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
+            Storage type changes to {derivedValueType} on save — existing values
+            won&apos;t auto-convert.
           </p>
-        </div>
+        )}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs">Fetch hint</Label>
+        <Select
+          value={fetchHint}
+          onValueChange={(v) => setFetchHint(v as ContextFetchHint)}
+          disabled={busy}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(FETCH_HINT_CONFIG) as ContextFetchHint[]).map((k) => (
+              <SelectItem key={k} value={k}>
+                {FETCH_HINT_CONFIG[k].label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-[10px] text-muted-foreground">
+          {FETCH_HINT_CONFIG[fetchHint].description}
+        </p>
       </div>
 
       <div className="space-y-1.5">

@@ -8,6 +8,7 @@ import {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { isUuid } from "@/features/scope-system/utils/slugify";
+import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import type {
   ContextValueType,
   ContextFetchHint,
@@ -31,6 +32,13 @@ export interface ContextItem {
   description: string;
   category: string | null;
   value_type: ContextValueType;
+  /**
+   * Optional custom input component (the Agent-Builder VariableCustomComponent
+   * shape: type + options + picklist binding + min/max/toggle labels). When set,
+   * the per-scope value is authored and entered with the matching Smart-Input
+   * component instead of a bare textarea. NULL = legacy primitive item.
+   */
+  custom_component?: VariableCustomComponent | null;
   fetch_hint: ContextFetchHint;
   sensitivity: ContextSensitivity;
   status: ContextItemStatus | string;
@@ -83,6 +91,7 @@ export const updateContextItem = createAsyncThunk(
     description?: string;
     category?: string | null;
     value_type?: ContextValueType;
+    custom_component?: VariableCustomComponent | null;
     fetch_hint?: ContextFetchHint;
     sensitivity?: ContextSensitivity;
     tags?: string[];
@@ -99,6 +108,8 @@ export const updateContextItem = createAsyncThunk(
     if (params.description !== undefined) patch.description = params.description;
     if (params.category !== undefined) patch.category = params.category;
     if (params.value_type !== undefined) patch.value_type = params.value_type;
+    if (params.custom_component !== undefined)
+      patch.custom_component = params.custom_component;
     if (params.fetch_hint !== undefined) patch.fetch_hint = params.fetch_hint;
     if (params.sensitivity !== undefined) patch.sensitivity = params.sensitivity;
     if (params.tags !== undefined) patch.tags = params.tags;

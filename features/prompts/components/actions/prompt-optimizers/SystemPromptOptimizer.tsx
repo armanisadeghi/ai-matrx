@@ -9,17 +9,16 @@
 
 import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { submitChatFastAPI as createAndSubmitTask } from "@/lib/redux/socket-io/thunks/submitChatFastAPI";
+import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
+import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
+import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
+import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import {
-  selectPrimaryResponseTextByTaskId,
-  selectPrimaryResponseEndedByTaskId,
-} from "@/lib/redux/socket-io/selectors/socket-response-selectors";
-import { supabase } from "@/utils/supabase/client";
-import { v4 as uuidv4 } from "uuid";
-import {
-  normalizePromptMessagesFromDb,
-  normalizePromptSettingsFromDb,
-} from "@/features/prompts/utils/normalize-prompt-db-json";
+  selectLatestAccumulatedText,
+  selectIsStreaming,
+  selectStreamPhase,
+  type StreamPhase,
+} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +29,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Check, X, Loader2, Copy, Zap } from "lucide-react";
+import { Check, X, Loader2, Copy, Zap, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { usePromptsBasePath } from "@/features/prompts/hooks/usePromptsBasePath";
@@ -48,7 +47,11 @@ interface SystemPromptOptimizerProps {
   onAcceptAsCopy?: (optimizedObject: any) => void;
 }
 
-const OPTIMIZER_PROMPT_ID = "6e4e6335-dc04-4946-9435-561352db5b26";
+// New agent system: this optimizer is powered by a system shortcut (the
+// "Improve System Prompt" agent) rather than the deprecated prompt system.
+// scope.selection → the shortcut's `current_system_message` variable; the
+// optional additional guidance rides along as runtime.userInput.
+const OPTIMIZER_SHORTCUT = getSystemShortcut("improve-system-prompt-01");
 
 export function SystemPromptOptimizer({
   isOpen,
@@ -60,21 +63,57 @@ export function SystemPromptOptimizer({
   onAcceptAsCopy,
 }: SystemPromptOptimizerProps) {
   const dispatch = useAppDispatch();
+  const trigger = useShortcutTrigger();
   const router = useRouter();
   const basePath = usePromptsBasePath();
 
   const [additionalGuidance, setAdditionalGuidance] = useState("");
   const [showGuidanceInput, setShowGuidanceInput] = useState(false);
-  const [isOptimizing, setIsOptimizing] = useState(false);
-  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [isFullOptimizerOpen, setIsFullOptimizerOpen] = useState(false);
   const [isSavingCopy, setIsSavingCopy] = useState(false);
 
-  // Watch streaming text - exactly like PromptRunner
-  const rawStreamingText = useAppSelector((state) =>
-    currentTaskId
-      ? selectPrimaryResponseTextByTaskId(currentTaskId)(state)
-      : "",
+  // ── Optimizer-shortcut readiness ─────────────────────────────────────────
+  // Warm the shortcut as soon as the dialog opens so the user never waits at
+  // click time, and surface load failures as a real error state.
+  const optimizerShortcut = useAppSelector(
+    (state) => state.agentShortcut.shortcuts[OPTIMIZER_SHORTCUT.id] ?? null,
+  );
+  const [shortcutLoadError, setShortcutLoadError] = useState<string | null>(
+    null,
+  );
+  const shortcutReady = optimizerShortcut !== null;
+
+  useEffect(() => {
+    if (!isOpen || shortcutReady) return;
+    let cancelled = false;
+    setShortcutLoadError(null);
+    dispatch(ensureShortcutLoaded(OPTIMIZER_SHORTCUT.id))
+      .unwrap()
+      .catch((err) => {
+        if (cancelled) return;
+        setShortcutLoadError(
+          err instanceof Error ? err.message : "Failed to load optimizer",
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, shortcutReady, dispatch]);
+
+  // ── Streaming selectors (keyed by conversationId) ────────────────────────
+  const rawStreamingText = useAppSelector(
+    conversationId ? selectLatestAccumulatedText(conversationId) : () => "",
+  );
+
+  const streamPhase: StreamPhase = useAppSelector(
+    conversationId
+      ? selectStreamPhase(conversationId)
+      : () => "idle" as StreamPhase,
+  );
+
+  const isStreaming = useAppSelector(
+    conversationId ? selectIsStreaming(conversationId) : () => false,
   );
 
   // Strip a leading <reasoning>...</reasoning> block — models sometimes emit one
@@ -84,18 +123,19 @@ export function SystemPromptOptimizer({
     ? rawStreamingText.replace(/^\s*<reasoning>[\s\S]*?<\/reasoning>\s*/i, "")
     : rawStreamingText;
 
-  const isResponseEnded = useAppSelector((state) =>
-    currentTaskId
-      ? selectPrimaryResponseEndedByTaskId(currentTaskId)(state)
-      : false,
-  );
+  const isOptimizing =
+    (streamPhase !== "idle" &&
+      streamPhase !== "complete" &&
+      streamPhase !== "error") ||
+    isStreaming;
 
-  // Reset when response ends
+  // ── Cleanup on unmount ───────────────────────────────────────────────────
   useEffect(() => {
-    if (isResponseEnded && isOptimizing) {
-      setIsOptimizing(false);
-    }
-  }, [isResponseEnded, isOptimizing]);
+    return () => {
+      if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleOptimize = async () => {
     if (!currentSystemMessage.trim()) {
@@ -103,74 +143,28 @@ export function SystemPromptOptimizer({
       return;
     }
 
-    setIsOptimizing(true);
+    // Tear down any prior run before starting a fresh one (re-optimize).
+    if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
+    setConversationId(null);
 
     try {
-      // 1. Fetch prompt
-      const { data: prompt, error: promptError } = await supabase
-        .from("prompts")
-        .select("*")
-        .eq("id", OPTIMIZER_PROMPT_ID)
-        .single();
-
-      if (promptError || !prompt) {
-        throw new Error("Optimizer prompt not found");
-      }
-
-      const templateMessages = normalizePromptMessagesFromDb(prompt.messages);
-      const templateSettings = normalizePromptSettingsFromDb(prompt.settings);
-
-      // 2. Replace variables in messages
-      const messages = templateMessages.map((msg) => {
-        let content = msg.content;
-        content = content.replace(
-          /{{current_system_message}}/g,
-          currentSystemMessage,
-        );
-        if (additionalGuidance.trim()) {
-          content = content.replace(
-            /{{additional_guidance}}/g,
-            additionalGuidance,
-          );
-        }
-        return {
-          role: msg.role,
-          content,
-        };
+      // The shortcut owns the agent + variable routing. We override its
+      // persisted display mode (modal-full) to "direct" with autoRun so the
+      // stream renders into THIS dialog instead of opening a separate modal.
+      // onConversationCreated mounts the streaming selectors immediately.
+      await trigger(OPTIMIZER_SHORTCUT.id, {
+        scope: { selection: currentSystemMessage },
+        runtime: { userInput: additionalGuidance.trim() || undefined },
+        config: { displayMode: "direct", autoRun: true },
+        sourceFeature: "agent-builder",
+        onConversationCreated: (id) => setConversationId(id),
       });
-
-      // 3. Build chat config
-      const modelId = templateSettings.model_id;
-      if (!modelId) {
-        throw new Error("No model specified in prompt");
-      }
-
-      const chatConfig = {
-        model_id: modelId,
-        messages,
-        stream: true,
-        ...templateSettings,
-      };
-
-      // 4. Submit task — set taskId BEFORE dispatch so streaming UI mounts immediately
-      const taskId = uuidv4();
-      setCurrentTaskId(taskId);
-
-      await dispatch(
-        createAndSubmitTask({
-          service: "chat_service",
-          taskName: "direct_chat",
-          taskData: { chat_config: chatConfig },
-          customTaskId: taskId,
-        }),
-      ).unwrap();
     } catch (error) {
       console.error("Optimization error:", error);
       toast.error("Failed to optimize", {
         description: error instanceof Error ? error.message : "Unknown error",
       });
-      setIsOptimizing(false);
-      setCurrentTaskId(null);
+      setConversationId(null);
     }
   };
 
@@ -258,10 +252,10 @@ export function SystemPromptOptimizer({
   };
 
   const handleClose = () => {
-    setCurrentTaskId(null);
+    if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
+    setConversationId(null);
     setAdditionalGuidance("");
     setShowGuidanceInput(false);
-    setIsOptimizing(false);
     setIsSavingCopy(false);
     onClose();
   };
@@ -363,6 +357,17 @@ export function SystemPromptOptimizer({
 
           {/* Optional Additional Guidance */}
           <div className="px-6 py-3 border-t space-y-2">
+            {shortcutLoadError && (
+              <div className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/30 text-xs text-destructive">
+                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium">Optimizer unavailable</div>
+                  <div className="text-[11px] opacity-80">
+                    {shortcutLoadError}
+                  </div>
+                </div>
+              </div>
+            )}
             {!showGuidanceInput ? (
               <Button
                 variant="ghost"
@@ -450,13 +455,23 @@ export function SystemPromptOptimizer({
               ) : (
                 <Button
                   onClick={handleOptimize}
-                  disabled={isOptimizing || !currentSystemMessage.trim()}
+                  disabled={
+                    isOptimizing ||
+                    !currentSystemMessage.trim() ||
+                    !shortcutReady ||
+                    !!shortcutLoadError
+                  }
                   className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                 >
                   {isOptimizing ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Optimizing...
+                    </>
+                  ) : !shortcutReady && !shortcutLoadError ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Loading...
                     </>
                   ) : (
                     <>

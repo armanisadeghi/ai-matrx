@@ -8,6 +8,7 @@ import {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { ContextValueType, ContextItem } from "./contextItemsSlice";
+import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 
 /**
  * One row returned by `get_scope_context(scope_id, null, true)`.
@@ -22,6 +23,8 @@ export interface ScopeContextRow {
   description?: string;
   category?: string | null;
   value_type: ContextValueType;
+  /** When set, the value is entered with this Smart-Input component (Agent-Builder parity). */
+  custom_component?: VariableCustomComponent | null;
   fetch_hint?: string;
   sensitivity?: string;
   has_value: boolean;

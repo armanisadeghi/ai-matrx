@@ -442,6 +442,11 @@ function HierarchyTree({
   onToggleScope,
   defaultExpandedSections,
   checkboxVariant = "custom",
+  allowCreate = false,
+  addingTypeId = null,
+  onStartAdd,
+  onCancelAdd,
+  onCommitAddScope,
 }: {
   organizations: OrgNode[];
   query: string;
@@ -451,6 +456,11 @@ function HierarchyTree({
   onToggleScope: (id: string) => void;
   defaultExpandedSections?: DefaultExpandedSections;
   checkboxVariant?: ContextCheckboxVariant;
+  allowCreate?: boolean;
+  addingTypeId?: string | null;
+  onStartAdd?: (typeId: string) => void;
+  onCancelAdd?: () => void;
+  onCommitAddScope?: (typeId: string, orgId: string, name: string) => void;
 }) {
   const defaultOrgOpen = levelInitiallyExpanded(defaultExpandedSections, "org");
   const defaultTypeOpen = levelInitiallyExpanded(
@@ -555,31 +565,55 @@ function HierarchyTree({
                 ).length;
                 return (
                   <div key={t.id} className="ml-5">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        flip(setTypeOverrides, t.id, defaultTypeOpen)
-                      }
-                      className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left hover:bg-muted"
-                    >
-                      {typeOpen ? (
-                        <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-                      )}
-                      <TIcon className={cn("h-3.5 w-3.5 shrink-0", c.fg)} />
-                      <span className={cn("min-w-0 truncate text-sm", c.fg)}>
-                        {t.label_plural}
-                      </span>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {t.scopes.length}
-                      </span>
-                      {selectedInType > 0 && (
-                        <span className="shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
-                          {selectedInType}
+                    <div className="flex items-center gap-1 rounded-md px-0.5 py-0.5 hover:bg-muted">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          flip(setTypeOverrides, t.id, defaultTypeOpen)
+                        }
+                        className="flex min-w-0 flex-1 items-center gap-1.5 px-1 py-1 text-left"
+                      >
+                        {typeOpen ? (
+                          <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        )}
+                        <TIcon className={cn("h-3.5 w-3.5 shrink-0", c.fg)} />
+                        <span className={cn("min-w-0 truncate text-sm", c.fg)}>
+                          {t.label_plural}
                         </span>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {t.scopes.length}
+                        </span>
+                        {selectedInType > 0 && (
+                          <span className="shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
+                            {selectedInType}
+                          </span>
+                        )}
+                      </button>
+                      {allowCreate && onStartAdd && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTypeOverrides((p) => ({ ...p, [t.id]: true }));
+                            onStartAdd(t.id);
+                          }}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+                        >
+                          <Plus className="h-3 w-3" />
+                          New
+                        </button>
                       )}
-                    </button>
+                    </div>
+                    {typeOpen && addingTypeId === t.id && onCommitAddScope && (
+                      <div className="ml-5">
+                        <InlineAdd
+                          placeholder={`New ${t.label_singular.toLowerCase()} name`}
+                          onCommit={(v) => onCommitAddScope(t.id, o.id, v)}
+                          onCancel={() => onCancelAdd?.()}
+                        />
+                      </div>
+                    )}
                     {typeOpen &&
                       (scopes.length === 0 ? (
                         <div className="ml-6 px-1.5 py-0.5 text-xs text-muted-foreground">
@@ -1042,23 +1076,52 @@ export function ContextAssignmentField({
     setSelTasks((p) => new Set(p).add(id));
     setAdding(null);
   }
-  function addProject(name: string) {
+  async function addProject(name: string) {
     const v = name.trim();
     if (!v) return;
-    // Live project creation carries slug/membership semantics — wired during
-    // per-surface rollout. Loud in live mode so it can't silently no-op.
-    if (writeMode === "live")
-      console.warn(
-        "[context-assignment] live project quick-add not wired yet — logged only",
-      );
-    console.log("[context-assignment] create project →", {
+    const targetOrgId = org?.id ?? [...selOrgs][0] ?? null;
+    if (writeMode === "live") {
+      try {
+        const { createProject } = await import("@/features/projects/service");
+        const { generateProjectSlug } =
+          await import("@/features/projects/types");
+        const result = await createProject({
+          name: v,
+          slug: generateProjectSlug(v),
+          organizationId: targetOrgId ?? undefined,
+        });
+        if (!result.success || !result.project) {
+          throw new Error(result.error ?? "Failed to create project");
+        }
+        invalidateAssignableData("projects");
+        const created = result.project;
+        setAddedProjects((p) => [
+          ...p,
+          {
+            id: created.id,
+            name: created.name,
+            orgId: created.organizationId ?? null,
+            isPersonal: created.isPersonal,
+          },
+        ]);
+        setSelProjects((p) => new Set(p).add(created.id));
+        setAdding(null);
+        toast.success(`Created project "${v}"`);
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Couldn't create the project",
+        );
+      }
+      return;
+    }
+    console.log("[context-assignment] create project (preview) →", {
       name: v,
-      org_id: org?.id ?? null,
+      org_id: targetOrgId,
     });
     const id = `new:project:${v}`;
     setAddedProjects((p) => [
       ...p,
-      { id, name: v, orgId: org?.id ?? null, isPersonal: false },
+      { id, name: v, orgId: targetOrgId, isPersonal: false },
     ]);
     setSelProjects((p) => new Set(p).add(id));
     setAdding(null);
@@ -1246,6 +1309,17 @@ export function ContextAssignmentField({
                   onToggleScope={toggleScope}
                   defaultExpandedSections={defaultExpandedSections}
                   checkboxVariant={checkboxVariant}
+                  allowCreate={allowCreate}
+                  addingTypeId={
+                    adding && adding !== "project" && adding !== "task"
+                      ? adding
+                      : null
+                  }
+                  onStartAdd={(typeId) => setAdding(typeId)}
+                  onCancelAdd={() => setAdding(null)}
+                  onCommitAddScope={(typeId, orgIdForAdd, name) =>
+                    void addScope(typeId, name, orgIdForAdd)
+                  }
                 />
               ) : (
                 <>
@@ -1365,7 +1439,7 @@ export function ContextAssignmentField({
                 {adding === "project" && (
                   <InlineAdd
                     placeholder="New project name"
-                    onCommit={addProject}
+                    onCommit={(v) => void addProject(v)}
                     onCancel={() => setAdding(null)}
                   />
                 )}

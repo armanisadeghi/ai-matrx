@@ -38,6 +38,7 @@ import type { JsonExtractionConfig } from "@/features/agents/types/instance.type
 
 export type SystemShortcutFeature =
   | "agent-generator"
+  | "agent-builder"
   | "code-editor"
   | "notes"
   | "chat-route"
@@ -80,6 +81,12 @@ export const SYSTEM_SHORTCUTS = {
         maxResults: 5,
       },
     },
+  },
+  "improve-system-prompt-01": {
+    label: "Improve System Prompt",
+    id: "45dc1b29-4869-4105-be4a-df71b64eaa2b",
+    feature: "agent-builder",
+    description: "Improves the system prompt for an agent.",
   },
   "image-studio-describe-01": {
     label: "Image Studio — Describe v1",
