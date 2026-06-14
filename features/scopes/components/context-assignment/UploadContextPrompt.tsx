@@ -20,11 +20,13 @@ import React from "react";
 import { UploadCloud } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import {
   ContextAssignmentField,
   type ContextSelection,
 } from "./ContextAssignmentField";
+import { ContextSheet } from "./ContextSheet";
 import { invalidateAssignableData } from "./data";
 
 export interface UploadContextPromptProps {
@@ -49,31 +51,81 @@ export function UploadContextPrompt({
   onAssigned,
 }: UploadContextPromptProps) {
   const dispatch = useAppDispatch();
+  const isMobile = useIsMobile();
   const count = fileNames.length;
   const title = count === 1 ? fileNames[0] : `${count} files`;
 
-  async function submit(sel: ContextSelection): Promise<{ ok: boolean; error?: string }> {
-    if (sel.scopeIds.length === 0 && sel.projectIds.length === 0 && sel.taskIds.length === 0) {
+  async function submit(
+    sel: ContextSelection,
+  ): Promise<{ ok: boolean; error?: string }> {
+    if (
+      sel.scopeIds.length === 0 &&
+      sel.projectIds.length === 0 &&
+      sel.taskIds.length === 0
+    ) {
       return { ok: true }; // explicit opt-out is allowed — close quietly
     }
     // THE race rule: wait for the upload (instant when already done).
     const fileIds = await awaitFileIds();
-    if (fileIds.length === 0) return { ok: false, error: "Upload failed — nothing to assign" };
+    if (fileIds.length === 0)
+      return { ok: false, error: "Upload failed — nothing to assign" };
     const realScopeIds = sel.scopeIds.filter((id) => !id.startsWith("new:"));
     for (const fileId of fileIds) {
       const res = await dispatch(
-        setEntityScopes({ entityType: "file", entityId: fileId, scopeIds: realScopeIds }),
+        setEntityScopes({
+          entityType: "file",
+          entityId: fileId,
+          scopeIds: realScopeIds,
+        }),
       );
       if (!res.ok) return { ok: false, error: res.error };
     }
     if (sel.projectIds.length > 0 || sel.taskIds.length > 0) {
-      console.warn("[upload-context] project/task associations await the ctx_associations migration — logged only", {
-        fileIds, projectIds: sel.projectIds, taskIds: sel.taskIds,
-      });
+      console.warn(
+        "[upload-context] project/task associations await the ctx_associations migration — logged only",
+        {
+          fileIds,
+          projectIds: sel.projectIds,
+          taskIds: sel.taskIds,
+        },
+      );
     }
     invalidateAssignableData("bulk");
     onAssigned?.(fileIds, sel);
     return { ok: true };
+  }
+
+  const subject = {
+    entityType: "file" as const,
+    entityId: "",
+    title: count === 1 ? title : `${count} files uploading`,
+    subtitle: "Where does this belong? Assign now — the upload keeps running.",
+    icon: UploadCloud,
+  };
+
+  if (isMobile) {
+    return (
+      <ContextSheet
+        open={open}
+        onOpenChange={onOpenChange}
+        title={count === 1 ? title : `${count} files`}
+      >
+        {open && (
+          <ContextAssignmentField
+            mode="assignment"
+            writeMode="live"
+            fill
+            subject={subject}
+            defaultOrganizationId={defaultOrganizationId}
+            onSubmitSelection={submit}
+            onSaved={(r) => {
+              if (r.ok) onOpenChange(false);
+            }}
+            className="rounded-none border-0"
+          />
+        )}
+      </ContextSheet>
+    );
   }
 
   return (
@@ -84,16 +136,12 @@ export function UploadContextPrompt({
           <ContextAssignmentField
             mode="assignment"
             writeMode="live"
-            subject={{
-              entityType: "file",
-              entityId: "",
-              title: count === 1 ? title : `${count} files uploading`,
-              subtitle: "Where does this belong? Assign now — the upload keeps running.",
-              icon: UploadCloud,
-            }}
+            subject={subject}
             defaultOrganizationId={defaultOrganizationId}
             onSubmitSelection={submit}
-            onSaved={(r) => { if (r.ok) onOpenChange(false); }}
+            onSaved={(r) => {
+              if (r.ok) onOpenChange(false);
+            }}
             className="border-0"
           />
         )}

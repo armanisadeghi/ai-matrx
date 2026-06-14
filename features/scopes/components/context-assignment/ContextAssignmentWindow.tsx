@@ -14,13 +14,14 @@
 
 import React from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   ContextAssignmentField,
   type ContextAssignmentFieldProps,
 } from "./ContextAssignmentField";
+import { ContextSheet } from "./ContextSheet";
 
-export interface ContextAssignmentWindowProps
-  extends ContextAssignmentFieldProps {
+export interface ContextAssignmentWindowProps extends ContextAssignmentFieldProps {
   open: boolean;
   onClose: () => void;
   /** Close the window automatically after a successful save. Default false —
@@ -35,7 +36,34 @@ export function ContextAssignmentWindow({
   onSaved,
   ...fieldProps
 }: ContextAssignmentWindowProps) {
+  const isMobile = useIsMobile();
   if (!open) return null;
+
+  const handleSaved: ContextAssignmentFieldProps["onSaved"] = (r) => {
+    onSaved?.(r);
+    if (r.ok && closeOnSaved) onClose();
+  };
+
+  if (isMobile) {
+    return (
+      <ContextSheet
+        open={open}
+        onOpenChange={(o) => {
+          if (!o) onClose();
+        }}
+        title={fieldProps.subject?.title ?? "Organize"}
+      >
+        <ContextAssignmentField
+          {...fieldProps}
+          fill
+          hideSubject
+          className="rounded-none border-0"
+          onSaved={handleSaved}
+        />
+      </ContextSheet>
+    );
+  }
+
   return (
     <WindowPanel
       title={`Organize — ${fieldProps.subject.title}`}
@@ -49,10 +77,7 @@ export function ContextAssignmentWindow({
         <ContextAssignmentField
           {...fieldProps}
           className="rounded-none border-0"
-          onSaved={(r) => {
-            onSaved?.(r);
-            if (r.ok && closeOnSaved) onClose();
-          }}
+          onSaved={handleSaved}
         />
       </div>
     </WindowPanel>

@@ -13,10 +13,16 @@ import {
 } from "@/features/audio/utils/audio-mime";
 
 interface UploadResult {
-  /** cld_files UUID — replaces the legacy storage path. */
+  /**
+   * cld_files UUID — the only durable handle. Everything downstream
+   * (transcripts.audio_file_path, playback, download, delete) keys off
+   * this id. We intentionally do NOT return a `filePath`: the backend
+   * relocates `origin: "transcripts"` uploads under the hidden system
+   * namespace (`system-files/transcripts/Recordings/...`), so any path the
+   * client constructs would be wrong. See
+   * docs/files/transcript-recordings-system-relocation.md.
+   */
   fileId: string;
-  /** Logical path on the cloud-files tree. */
-  filePath: string;
   filename: string;
   size: number;
 }
@@ -107,8 +113,13 @@ export async function saveAudioToStorage(
       const normalized = await fileHandler.upload(
         { kind: "file", file },
         {
+          // `folderPath` is a hint; the backend remaps `origin: "transcripts"`
+          // uploads to the hidden system root `system-files/transcripts/...`.
           folderPath: "Transcripts/Recordings",
           visibility: "private",
+          // `origin: "transcripts"` is the REQUIRED signal that triggers
+          // server-side relocation + hiding. Drop it and the recording lands
+          // in the user namespace and reappears in the file tree.
           metadata: { origin: "transcripts", recorded_by: userId },
         },
       );
@@ -121,7 +132,6 @@ export async function saveAudioToStorage(
 
       return {
         fileId: normalized.fileId,
-        filePath: `Transcripts/Recordings/${filename}`,
         filename,
         size: audioBlob.size,
       };

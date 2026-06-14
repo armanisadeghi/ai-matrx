@@ -150,6 +150,25 @@ const instanceVariableValuesSlice = createSlice({
     },
 
     /**
+     * Merge scope-resolved values into the existing map (does NOT replace).
+     * Used by the bound-variable runtime to fold in values resolved from the active
+     * scope without clobbering any values set at instance creation.
+     */
+    mergeScopeVariableValues(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        values: Record<string, unknown>;
+      }>,
+    ) {
+      const { conversationId, values } = action.payload;
+      const entry = state.byConversationId[conversationId];
+      if (entry) {
+        Object.assign(entry.scopeValues, values);
+      }
+    },
+
+    /**
      * Reset all user values — fall back entirely to scope + defaults.
      */
     resetUserVariableValues(state, action: PayloadAction<string>) {
@@ -198,6 +217,7 @@ export const {
   setUserVariableValues,
   clearUserVariableValue,
   setScopeVariableValues,
+  mergeScopeVariableValues,
   resetUserVariableValues,
   updateInstanceDefinitions,
   removeInstanceVariables,

@@ -177,8 +177,14 @@ export interface ContextAssignmentFieldProps {
   onSelectionChange?: (selection: ContextSelection) => void;
   /** Hide the subject header row (popover/dialog hosts often provide one). */
   hideSubject?: boolean;
-  /** Fixed height of the scrolling section area (px). Default 440. */
+  /** Fixed height of the scrolling section area (px). Default 440.
+   *  Ignored when `fill` is set. */
   sectionHeight?: number;
+  /** Fill the host's height instead of using a fixed `sectionHeight`: the card
+   *  becomes a flex column, the section list becomes the single scroll area, and
+   *  the footer pins to the bottom. Use inside a bottom sheet / drawer / window
+   *  so there is no nested scrolling. Default false. */
+  fill?: boolean;
   /** Which collapsible section levels start expanded. Default: all collapsed. */
   defaultExpandedSections?: DefaultExpandedSections;
   /** `standard` uses the app Checkbox primitive. Default: `custom`. */
@@ -664,6 +670,7 @@ export function ContextAssignmentField({
   onSelectionChange,
   hideSubject = false,
   sectionHeight = 440,
+  fill = false,
   defaultExpandedSections,
   checkboxVariant = "custom",
   className,
@@ -1224,12 +1231,13 @@ export function ContextAssignmentField({
     <div
       className={cn(
         "overflow-hidden rounded-xl border border-border bg-card",
+        fill && "flex h-full min-h-0 flex-col",
         className,
       )}
     >
       {/* subject */}
       {subject && !hideSubject && (
-        <div className="flex items-center gap-3 border-b border-border p-4">
+        <div className="flex shrink-0 items-center gap-3 border-b border-border p-4">
           <div className="rounded-lg bg-muted p-2 text-muted-foreground">
             <SubIcon className="h-5 w-5" />
           </div>
@@ -1246,13 +1254,15 @@ export function ContextAssignmentField({
         </div>
       )}
 
-      <div className="space-y-3 p-4">
+      <div
+        className={cn("space-y-3 p-4", fill && "flex min-h-0 flex-1 flex-col")}
+      >
         {/* org-of-record dropdown (assignment only — non-assignment modes
             browse every org in the hierarchy tree below) + search */}
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
           {mode === "assignment" && (
             <Select value={orgId ?? ""} onValueChange={setOrgId}>
-              <SelectTrigger className="h-9 w-[260px] shrink-0">
+              <SelectTrigger className="h-9 w-full shrink-0 sm:w-[260px]">
                 {/* div (not span): the trigger's [&>span]:line-clamp-1 forces
                     -webkit-box display and would break this flex row */}
                 <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
@@ -1284,10 +1294,14 @@ export function ContextAssignmentField({
           </div>
         </div>
 
-        {/* sections — fixed height: expanding/collapsing never resizes the card */}
+        {/* sections — fixed height (card mode) or flex-fill single scroll area
+            (fill mode, e.g. inside a bottom sheet — no nested scrolling) */}
         <div
-          className="space-y-2 overflow-y-auto pr-1"
-          style={{ height: sectionHeight }}
+          className={cn(
+            "space-y-2 overflow-y-auto overscroll-contain pr-1",
+            fill && "min-h-0 flex-1",
+          )}
+          style={fill ? undefined : { height: sectionHeight }}
         >
           {loadingTree ? (
             <div className="flex h-full items-center justify-center gap-2 text-xs text-muted-foreground">
@@ -1524,7 +1538,7 @@ export function ContextAssignmentField({
         </div>
 
         {/* footer */}
-        <div className="flex items-start justify-between gap-3 border-t border-border pt-3">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-t border-border pt-3">
           <div
             className={cn(
               "min-w-0 flex-1 overflow-y-auto",

@@ -16,10 +16,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   ContextAssignmentField,
   type ContextAssignmentFieldProps,
 } from "./ContextAssignmentField";
+import { ContextSheet } from "./ContextSheet";
 
 export interface ContextAssignmentPopoverProps extends ContextAssignmentFieldProps {
   /** The element that opens the popover. */
@@ -41,6 +43,36 @@ export function ContextAssignmentPopover({
   ...fieldProps
 }: ContextAssignmentPopoverProps) {
   const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  const handleSaved: ContextAssignmentFieldProps["onSaved"] = (r) => {
+    onSaved?.(r);
+    if (r.ok && closeOnSaved) setOpen(false);
+  };
+
+  if (isMobile) {
+    return (
+      <>
+        <span onClick={() => setOpen(true)}>{trigger}</span>
+        <ContextSheet
+          open={open}
+          onOpenChange={setOpen}
+          title={fieldProps.subject?.title ?? "Organize"}
+        >
+          {open && (
+            <ContextAssignmentField
+              {...fieldProps}
+              fill
+              hideSubject
+              className="rounded-none border-0"
+              onSaved={handleSaved}
+            />
+          )}
+        </ContextSheet>
+      </>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
@@ -54,10 +86,7 @@ export function ContextAssignmentPopover({
             {...fieldProps}
             sectionHeight={fieldProps.sectionHeight ?? 320}
             className="border-0"
-            onSaved={(r) => {
-              onSaved?.(r);
-              if (r.ok && closeOnSaved) setOpen(false);
-            }}
+            onSaved={handleSaved}
           />
         )}
       </PopoverContent>

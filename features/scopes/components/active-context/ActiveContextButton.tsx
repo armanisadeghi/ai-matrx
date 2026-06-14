@@ -27,6 +27,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { ContextSheet } from "@/features/scopes/components/context-assignment/ContextSheet";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
@@ -65,6 +67,7 @@ export function ActiveContextButton({
   className,
 }: ActiveContextButtonProps) {
   const [open, setOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const orgId = useAppSelector(selectOrganizationId);
   const orgName = useAppSelector(selectOrganizationName);
@@ -83,66 +86,95 @@ export function ActiveContextButton({
   const sizeCls =
     size === "xs" ? "h-5 px-1.5 text-xs gap-1" : "h-8 px-2 text-xs gap-1.5";
 
+  const triggerButton = (
+    <button
+      type="button"
+      onClick={isMobile ? () => setOpen(true) : undefined}
+      className={cn(
+        "inline-flex w-full min-w-0 items-center rounded-md font-medium transition-colors",
+        "bg-background text-foreground/80 hover:bg-muted/50 hover:text-foreground",
+        size === "sm" && "border border-border",
+        sizeCls,
+        triggerClassName,
+      )}
+      title="Working context — what your agents act within"
+    >
+      <span className="relative inline-flex shrink-0">
+        <SlidersHorizontal
+          className={cn(
+            "shrink-0 text-muted-foreground",
+            size === "xs" ? "h-3 w-3" : "h-3.5 w-3.5",
+          )}
+        />
+        {iconOnly && hasContext && (
+          <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-primary" />
+        )}
+      </span>
+      {!iconOnly &&
+        (hasContext ? (
+          <span className="min-w-0 overflow-hidden">
+            <ContextSummaryChips
+              size="sm"
+              className="flex-nowrap"
+              value={{
+                organizationId: orgId,
+                organizationName: orgName,
+                scopeIds,
+                projectId,
+                projectName,
+                taskId,
+                taskName,
+              }}
+            />
+          </span>
+        ) : (
+          <span className="text-muted-foreground">Set context</span>
+        ))}
+    </button>
+  );
+
   return (
     <div className={cn("flex min-w-0 items-center gap-1", className)}>
       <div className="min-w-0 flex-1">
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className={cn(
-                "inline-flex w-full min-w-0 items-center rounded-md font-medium transition-colors",
-                "bg-background text-foreground/80 hover:bg-muted/50 hover:text-foreground",
-                size === "sm" && "border border-border",
-                sizeCls,
-                triggerClassName,
-              )}
-              title="Working context — what your agents act within"
+        {isMobile ? (
+          <>
+            {triggerButton}
+            <ContextSheet
+              open={open}
+              onOpenChange={setOpen}
+              title="Working context"
+              headerTrailing={
+                hasContext ? (
+                  <ClearContextButton
+                    size="sm"
+                    onCleared={() => setOpen(false)}
+                  />
+                ) : undefined
+              }
             >
-              <span className="relative inline-flex shrink-0">
-                <SlidersHorizontal
-                  className={cn(
-                    "shrink-0 text-muted-foreground",
-                    size === "xs" ? "h-3 w-3" : "h-3.5 w-3.5",
-                  )}
+              {open && (
+                <ActiveContextPanel checkboxVariant={checkboxVariant} fill />
+              )}
+            </ContextSheet>
+          </>
+        ) : (
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
+            <PopoverContent
+              align={align}
+              className="w-[560px] max-w-[92vw] p-0"
+            >
+              {open && (
+                <ActiveContextPanel
+                  checkboxVariant={checkboxVariant}
+                  sectionHeight={300}
                 />
-                {iconOnly && hasContext && (
-                  <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-primary" />
-                )}
-              </span>
-              {!iconOnly &&
-                (hasContext ? (
-                  <span className="min-w-0 overflow-hidden">
-                    <ContextSummaryChips
-                      size="sm"
-                      className="flex-nowrap"
-                      value={{
-                        organizationId: orgId,
-                        organizationName: orgName,
-                        scopeIds,
-                        projectId,
-                        projectName,
-                        taskId,
-                        taskName,
-                      }}
-                    />
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">Set context</span>
-                ))}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align={align} className="w-[560px] max-w-[92vw] p-0">
-            {open && (
-              <ActiveContextPanel
-                checkboxVariant={checkboxVariant}
-                sectionHeight={300}
-              />
-            )}
-          </PopoverContent>
-        </Popover>
+              )}
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
-      {!iconOnly && hasContext && (
+      {!iconOnly && hasContext && !isMobile && (
         <ClearContextButton size={size} onCleared={() => setOpen(false)} />
       )}
     </div>

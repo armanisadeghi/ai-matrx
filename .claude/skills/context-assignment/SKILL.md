@@ -69,6 +69,15 @@ Surface A writers MUST live there; ESLint + FEATURE.md enforce it).
   always switch (including back to All).
 - **No layout shift.** Fixed section heights; fixed-size check targets;
   status icons swap glyphs, never dimensions.
+- **Mobile = one bottom sheet.** Every wrapper (`ContextAssignmentPopover`,
+  `ContextAssignmentDialog`, `ContextAssignmentWindow`, `UploadContextPrompt`,
+  `ActiveContextButton`) switches to `ContextSheet` on `useIsMobile()` — never a
+  desktop popover/dialog/window on a phone. `ContextSheet` (built on the
+  `BottomSheet` primitive) hosts the body with **`fill`**, which makes the
+  field's own section list the single scroll area and pins the footer. Never set
+  a fixed `sectionHeight` inside a sheet (that re-introduces nested scrolling) —
+  pass `fill` instead. The field's org-of-record row stacks (`flex-col
+  sm:flex-row`) so it never overflows a narrow screen.
 - **Project/task durable links** log-and-toast until the `ctx_associations`
   migration (docs/ctx/ctx-association-architecture.md) lands — keep it loud,
   never silent.

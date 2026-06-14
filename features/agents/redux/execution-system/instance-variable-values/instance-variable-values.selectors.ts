@@ -86,6 +86,41 @@ export const selectResolvedVariables = (conversationId: string) =>
   );
 
 /**
+ * Variables to PUT ON THE REQUEST — the three-tier merge, but a scope-bound variable
+ * the user hasn't explicitly set is OMITTED. The server resolves bound variables
+ * authoritatively from the active scope; sending an unfilled (null) value would clobber
+ * that scope value (client value wins). A user override (present in userValues) is sent
+ * and correctly wins. Unbound variables keep their exact prior behavior (incl. null).
+ */
+export const selectVariablesForRequest = (conversationId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.instanceVariableValues.byConversationId[conversationId],
+    (entry) => {
+      if (!entry) return EMPTY_RECORD;
+      const { definitions, userValues, scopeValues } = entry;
+      const out: Record<string, unknown> = {};
+      for (const def of definitions) {
+        const isBound = !!(def.binding?.itemKey || def.binding?.contextItemId);
+        if (def.name in userValues) {
+          out[def.name] = userValues[def.name];
+          continue;
+        }
+        // Bound + no explicit override → let the server fill it from scope.
+        if (isBound) continue;
+        if (def.name in scopeValues) {
+          out[def.name] = scopeValues[def.name];
+        } else if (def.defaultValue !== undefined && def.defaultValue !== null) {
+          out[def.name] = def.defaultValue;
+        } else {
+          out[def.name] = null;
+        }
+      }
+      return Object.keys(out).length === 0 ? EMPTY_RECORD : out;
+    },
+  );
+
+/**
  * Variables that are required but have no value.
  * Used by the UI to show validation errors before execution.
  */

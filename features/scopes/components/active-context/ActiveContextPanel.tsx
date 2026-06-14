@@ -35,12 +35,16 @@ import { cn } from "@/lib/utils";
 export interface ActiveContextPanelProps {
   checkboxVariant?: ContextCheckboxVariant;
   sectionHeight?: number;
+  /** Fill the host height (bottom sheet / drawer) instead of a fixed section
+   *  height — single scroll area, pinned footer. Default false. */
+  fill?: boolean;
   className?: string;
 }
 
 export function ActiveContextPanel({
   checkboxVariant = "standard",
   sectionHeight = 300,
+  fill = false,
   className,
 }: ActiveContextPanelProps) {
   const dispatch = useAppDispatch();
@@ -90,6 +94,7 @@ export function ActiveContextPanel({
       mode="active"
       hideSubject
       sectionHeight={sectionHeight}
+      fill={fill}
       checkboxVariant={checkboxVariant}
       className={cn("border-0", className)}
       initialSelection={{

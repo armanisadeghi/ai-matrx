@@ -11,7 +11,7 @@
  * Prop: conversationId only.
  */
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { ChevronRight, ChevronUp } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
@@ -32,6 +32,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setExpandedVariableId } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { VariableInputComponent } from "./input-components/VariableInputComponent";
+import { BoundVariableChips } from "./BoundVariableChips";
 import { formatText } from "@/utils/text/text-case-converter";
 import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
 
@@ -66,6 +67,16 @@ export function AgentVariablesInline({
     selectExpandedVariableId(conversationId),
   );
 
+  // Scope-bound variables render as informative chips (BoundVariableChips); only the
+  // remaining "plain" variables get normal inline input rows.
+  const plainDefs = useMemo(
+    () =>
+      definitions.filter(
+        (d) => !(d.binding?.itemKey || d.binding?.contextItemId),
+      ),
+    [definitions],
+  );
+
   const handleValueChange = useCallback(
     (name: string, value: unknown) => {
       dispatch(setUserVariableValue({ conversationId, name, value }));
@@ -85,7 +96,7 @@ export function AgentVariablesInline({
       if (e.key !== "Enter" || e.shiftKey) return;
       e.preventDefault();
 
-      const isLast = index === definitions.length - 1;
+      const isLast = index === plainDefs.length - 1;
       if (!isLast) {
         // Move focus to next variable input
         const container = (e.currentTarget as HTMLElement).closest(
@@ -102,18 +113,20 @@ export function AgentVariablesInline({
         onSubmit?.();
       }
     },
-    [definitions.length, submitOnEnter, onSubmit],
+    [plainDefs.length, submitOnEnter, onSubmit],
   );
 
   if (!shouldShowVariables || !showVariablePanel || definitions.length === 0)
     return null;
 
   return (
-    <div
-      className="max-h-72 overflow-y-auto w-full shrink-0 divide-y divide-border/40"
-      data-variable-inputs
-    >
-      {definitions.map((variable, index) => {
+    <div className="w-full shrink-0">
+      <BoundVariableChips conversationId={conversationId} />
+      <div
+        className="max-h-72 overflow-y-auto w-full divide-y divide-border/40"
+        data-variable-inputs
+      >
+        {plainDefs.map((variable, index) => {
         const isExpanded = expandedVariableId === variable.name;
         const rawValue =
           userValues[variable.name] ?? variable.defaultValue ?? "";
@@ -232,7 +245,8 @@ export function AgentVariablesInline({
             </button>
           </div>
         );
-      })}
+        })}
+      </div>
     </div>
   );
 }

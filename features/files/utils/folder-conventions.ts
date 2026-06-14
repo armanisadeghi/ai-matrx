@@ -177,23 +177,37 @@ export const CloudFolders = {
    */
   GENERATIONS: "generations",
 
-  // ── System-managed user content (browsable, but NOT in Recents) ─────────
-  // These DO belong to the user and stay visible in the Files browser, but
-  // they're machine-named, high-volume, and background-produced — so they
-  // must never pollute the Recents stream (your "entire reality" on open).
+  /**
+   * Recorded audio captured by the Transcripts / voice features. As of
+   * 2026-06-14 the backend relocates every `origin: "transcripts"` upload
+   * here, UNDER the hidden `system-files/` root — one
+   * `recording_<iso>_<rand>.webm` per capture (80+ for an active user).
+   * Because it's under `system-files/`, `isSystemPath` already hides it
+   * from the tree, folder views, AND Recents — no separate predicate
+   * needed. Managed exclusively via the Transcripts UI (by `cld_files.id`).
+   * See docs/files/transcript-recordings-system-relocation.md.
+   */
+  TRANSCRIPT_RECORDINGS: "system-files/transcripts/Recordings",
 
   /**
-   * Recorded audio captured by the transcription / voice features. The
-   * server writes one `recording_<iso>_<rand>.webm` per capture here —
-   * easily 80+ per active user. Browsable under Audio/Transcripts, but
-   * excluded from Recents (see `isExcludedFromRecents`).
+   * LEGACY user-namespace location for transcript recordings, before the
+   * 2026-06-14 backend relocation to `system-files/transcripts/...`. Kept
+   * ONLY as a defensive Recents guard: the backend is supposed to relocate
+   * every `origin: "transcripts"` upload, but a straggler with correct
+   * metadata was still observed landing here in prod, so we keep filtering
+   * this path out of Recents until the backend hook is airtight.
    */
-  TRANSCRIPT_RECORDINGS: "Transcripts/Recordings",
+  TRANSCRIPT_RECORDINGS_LEGACY: "Transcripts/Recordings",
+
+  // ── System-managed user content (browsable, but NOT in Recents) ─────────
+  // Lives under USER roots (so it stays visible in the Files browser), but
+  // is machine-named, high-volume, and background-produced — so it must
+  // never pollute the Recents stream (your "entire reality" on open).
 
   /**
    * Per-tool generated image variants — `tool-images/<id>/v/<name>.jpg`,
    * multiple sizes per source. Machine-produced output, excluded from
-   * Recents.
+   * Recents (see `isSystemManagedContentPath`).
    */
   TOOL_IMAGES: "tool-images",
 } as const;
@@ -305,21 +319,24 @@ export function isSystemPath(path: string | null | undefined): boolean {
  *
  * Distinct from `isSystemPath` (fully-hidden backend infra) and
  * `isGeneratedContentPath` (AI output under legacy user roots): these are
- * the server's predefined capture/output folders that a user CAN open on
+ * predefined output folders under USER roots that a user CAN open on
  * purpose but should not see flooding their first screen.
  *
- *  - `Transcripts/Recordings/...` — recorded audio from the
- *    transcription / voice features (one `.webm` per capture; the single
- *    biggest Recents polluter).
  *  - `tool-images/<id>/v/...` — per-tool generated image variants.
+ *  - `Transcripts/Recordings/...` — LEGACY recording location. Recordings
+ *    now live under `system-files/transcripts/...` (hidden by `isSystemPath`),
+ *    but the backend relocation hook has been seen to miss uploads that
+ *    carry the correct `origin: "transcripts"` metadata, so we keep this
+ *    legacy path as a defensive Recents guard. (Loud-recovery note: a file
+ *    actually present here means a backend relocation miss.)
  */
 export function isSystemManagedContentPath(
   path: string | null | undefined,
 ): boolean {
   if (!path) return false;
   const roots = [
-    CloudFolders.TRANSCRIPT_RECORDINGS, // "Transcripts/Recordings"
     CloudFolders.TOOL_IMAGES, // "tool-images"
+    CloudFolders.TRANSCRIPT_RECORDINGS_LEGACY, // "Transcripts/Recordings" (defensive)
   ];
   return roots.some((root) => path === root || path.startsWith(`${root}/`));
 }
@@ -351,14 +368,15 @@ export function isGeneratedContentPath(
  * True when a file/folder path must be excluded from the **Recents** stream.
  * Recents is for things the user actually worked on — never background output.
  * Covers:
- *  - backend infra (`isSystemPath`: `system-files/`, `generations/`,
+ *  - backend infra (`isSystemPath`: `system-files/` — which now includes
+ *    transcript recordings at `system-files/transcripts/...` — `generations/`,
  *    `.matrx-tmp/`),
  *  - system/AI-generated user-root content (`isGeneratedContentPath`:
  *    `Images/Generated`, `Generated`, agent-block assets), and
- *  - system-managed user content (`isSystemManagedContentPath`:
- *    `Transcripts/Recordings` recorded audio, `tool-images` variants) —
- *    the high-volume, machine-named files that flood Recents but stay
- *    browsable in the tree.
+ *  - system-managed user-root content (`isSystemManagedContentPath`:
+ *    `tool-images` variants + the legacy `Transcripts/Recordings` guard) —
+ *    high-volume machine-named files that flood Recents but stay browsable
+ *    in the tree.
  */
 export function isExcludedFromRecents(
   path: string | null | undefined,

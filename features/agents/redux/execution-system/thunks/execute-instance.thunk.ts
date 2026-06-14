@@ -31,7 +31,7 @@ import {
   selectEditorResourceXml,
   selectResourcePayloads,
 } from "../instance-resources/instance-resources.selectors";
-import { selectResolvedVariables } from "../instance-variable-values/instance-variable-values.selectors";
+import { selectVariablesForRequest } from "../instance-variable-values/instance-variable-values.selectors";
 import { selectSettingsOverridesForApi } from "../instance-model-overrides/instance-model-overrides.selectors";
 import { selectContextPayload } from "../instance-context/instance-context.selectors";
 import {
@@ -120,8 +120,9 @@ export function assembleRequest(
 
   // Resources → ContentBlock[] (editor pills are filtered out by the selector)
   const resourcePayloads = selectResourcePayloads(conversationId)(state);
-  // Variables (three-tier resolved — uses instance-owned definitions snapshot)
-  const variables = selectResolvedVariables(conversationId)(state);
+  // Variables for the request — three-tier merge, but untouched scope-bound vars are
+  // omitted so the server resolves them from the active scope (see selector).
+  const variables = selectVariablesForRequest(conversationId)(state);
 
   // Build user_input
   let user_input: AssembledAgentStartRequest["user_input"];

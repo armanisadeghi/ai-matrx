@@ -85,7 +85,7 @@ import {
 } from "../messages/messages.selectors";
 import { generateRequestId } from "../utils/ids";
 import { setInstanceStatus } from "../conversations/conversations.slice";
-import { selectResolvedVariables } from "../instance-variable-values/instance-variable-values.selectors";
+import { selectVariablesForRequest } from "../instance-variable-values/instance-variable-values.selectors";
 import { selectContextPayload } from "../instance-context/instance-context.selectors";
 import { selectResourcePayloads } from "../instance-resources/instance-resources.selectors";
 import { resolveBackendForConversation } from "./resolve-base-url";
@@ -301,7 +301,7 @@ export async function assembleManualRequest(
     (agent.settings ?? {}) as Record<string, unknown>,
   );
 
-  const variables = selectResolvedVariables(conversationId)(state);
+  const variables = selectVariablesForRequest(conversationId)(state);
   const context = selectContextPayload(conversationId)(state);
 
   // ── Tool wire shape — unified through buildToolInjection ────────────────
