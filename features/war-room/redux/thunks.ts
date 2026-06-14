@@ -5,8 +5,12 @@
 
 import { toast } from "sonner";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import { create as createNote } from "@/features/notes/service/notesApi";
+import { create as createNote, update as updateNoteApi } from "@/features/notes/service/notesApi";
 import { upsertNoteFromServer } from "@/features/notes/redux/slice";
+import { createTaskThunk } from "@/features/tasks/redux/thunks";
+import { upsertTaskWithLevel } from "@/features/agent-context/redux/tasksSlice";
+import type { TaskRecord } from "@/features/agent-context/redux/tasksSlice";
+import * as taskService from "@/features/tasks/services/taskService";
 import * as service from "../service";
 import type {
   CreateSessionInput,
@@ -107,6 +111,8 @@ export const loadWarRoomSession =
 
       dispatch(sessionUpserted(session));
       dispatch(tilesLoadedForSession({ sessionId: id, tiles }));
+      // Hydrate linked tasks into the agent-context slice (fire-and-forget).
+      void dispatch(hydrateTileTasks(tiles));
 
       // Group audio links per tile.
       const byTile = new Map<
@@ -183,6 +189,76 @@ export const createTileNote =
     } catch {
       toast.error("Couldn't create the note");
       return null;
+    }
+  };
+
+/** Map a ctx_tasks row to the agent-context TaskRecord shape (full-data). */
+function toTaskRecord(t: NonNullable<Awaited<ReturnType<typeof taskService.getTaskById>>>): TaskRecord {
+  return {
+    id: t.id,
+    title: t.title,
+    status: t.status,
+    priority: t.priority,
+    due_date: t.due_date,
+    assignee_id: t.assignee_id,
+    project_id: t.project_id,
+    parent_task_id: t.parent_task_id,
+    organization_id: t.organization_id ?? "",
+    description: t.description,
+    created_at: t.created_at,
+    user_id: t.user_id,
+  };
+}
+
+/**
+ * Create a task and anchor it to the tile. The created task lands in the
+ * agent-context tasks slice (createTaskThunk upserts it); we link it to the
+ * tile and keep the tile's note associated with the same task.
+ */
+export const createTileTask =
+  (tileId: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState) => {
+    try {
+      const tile = getState().warRoom.tilesById[tileId];
+      if (!tile || tile.task_id) return tile?.task_id ?? null;
+      const taskId = await dispatch(createTaskThunk({ title: "New task" })).unwrap();
+      if (!taskId) return null;
+      await service.updateTile(tileId, { task_id: taskId });
+      dispatch(setTileLink({ id: tileId, taskId }));
+      // Keep the tile's notepad associated with the task (best effort).
+      if (tile.note_id) void updateNoteApi(tile.note_id, { task_id: taskId });
+      return taskId;
+    } catch {
+      toast.error("Couldn't create the task");
+      return null;
+    }
+  };
+
+/** Load a task's subtasks into the agent-context slice so they survive a fresh
+ *  room load (hydrateTileTasks only loads the parent). Idempotent. */
+export const loadTileSubtasks =
+  (taskId: string) => async (dispatch: AppDispatch) => {
+    try {
+      const subs = await taskService.getSubtasks(taskId);
+      for (const s of subs) {
+        dispatch(upsertTaskWithLevel({ record: toTaskRecord(s), level: "full-data" }));
+      }
+    } catch {
+      /* non-fatal */
+    }
+  };
+
+/** Pull the tiles' linked tasks into the agent-context slice so the Task tab
+ *  can render them after a fresh room load. Fire-and-forget. */
+export const hydrateTileTasks =
+  (tiles: WarRoomTile[]) => async (dispatch: AppDispatch) => {
+    const taskIds = [
+      ...new Set(tiles.map((t) => t.task_id).filter((id): id is string => !!id)),
+    ];
+    if (taskIds.length === 0) return;
+    const tasks = await Promise.all(taskIds.map((id) => taskService.getTaskById(id)));
+    for (const t of tasks) {
+      if (t) dispatch(upsertTaskWithLevel({ record: toTaskRecord(t), level: "full-data" }));
     }
   };
 

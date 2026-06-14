@@ -6,7 +6,7 @@
 // Wave 2 renders minimal placeholder bodies so layout, tabs, and pin/hide are
 // testable; Wave 3 wires real task/notes/audio content into each tab.
 
-import { ListChecks, Mic, LayoutGrid } from "lucide-react";
+import { ListChecks, Mic } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { selectTileById } from "@/features/war-room/redux/selectors";
@@ -20,6 +20,7 @@ import type { TileTab } from "@/features/war-room/types";
 import { TileFrame } from "../shared/TileFrame";
 import { TileTabBar } from "./TileTabBar";
 import { TileNotesTab } from "./TileNotesTab";
+import { TileTaskTab } from "./TileTaskTab";
 
 export function WarRoomTile({
   tileId,
@@ -78,16 +79,10 @@ function TileTabContent({
   sessionId: string;
 }) {
   switch (tab) {
+    case "task":
+      return <TileTaskTab tileId={tileId} sessionId={sessionId} />;
     case "notes":
       return <TileNotesTab tileId={tileId} sessionId={sessionId} />;
-    case "task":
-      return (
-        <TabPlaceholder
-          Icon={ListChecks}
-          label="Task"
-          hint="Name, subtasks, attachments, comments"
-        />
-      );
     case "audio":
       return (
         <TabPlaceholder
@@ -98,18 +93,40 @@ function TileTabContent({
       );
     case "combined":
       return (
-        <div className="h-full overflow-y-auto flex flex-col">
-          <div className="min-h-48 shrink-0 border-b border-border/60">
+        <div className="h-full overflow-y-auto flex flex-col divide-y divide-border/60">
+          <CombinedSection label="Task">
+            <TileTaskTab tileId={tileId} sessionId={sessionId} />
+          </CombinedSection>
+          <CombinedSection label="Notes">
             <TileNotesTab tileId={tileId} sessionId={sessionId} />
-          </div>
-          <TabPlaceholder
-            Icon={LayoutGrid}
-            label="Task & Audio"
-            hint="Wired up in a later pass"
-          />
+          </CombinedSection>
+          <CombinedSection label="Audio">
+            <TabPlaceholder
+              Icon={Mic}
+              label="Audio"
+              hint="Record and transcribe into this tile"
+            />
+          </CombinedSection>
         </div>
       );
   }
+}
+
+function CombinedSection({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="shrink-0">
+      <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground bg-muted/30">
+        {label}
+      </div>
+      <div className="min-h-44">{children}</div>
+    </section>
+  );
 }
 
 function TabPlaceholder({
