@@ -2646,6 +2646,36 @@ export type Database = {
         }
         Relationships: []
       }
+      app_log_norm_exception: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string | null
+          match: string
+          replace_pattern: string
+          replacement: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          match: string
+          replace_pattern: string
+          replacement?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          match?: string
+          replace_pattern?: string
+          replacement?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           created_at: string
@@ -6831,6 +6861,196 @@ export type Database = {
           },
           {
             foreignKeyName: "user_active_context_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ctx_war_room_sessions: {
+        Row: {
+          active_tile_id: string | null
+          color: string | null
+          context_scope_ids: Json
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_deleted: boolean
+          is_public: boolean
+          last_opened_at: string | null
+          organization_id: string | null
+          project_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_tile_id?: string | null
+          color?: string | null
+          context_scope_ids?: Json
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_public?: boolean
+          last_opened_at?: string | null
+          organization_id?: string | null
+          project_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_tile_id?: string | null
+          color?: string | null
+          context_scope_ids?: Json
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_deleted?: boolean
+          is_public?: boolean
+          last_opened_at?: string | null
+          organization_id?: string | null
+          project_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctx_war_room_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ctx_war_room_tile_audio_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          position: number
+          studio_session_id: string
+          tile_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          position?: number
+          studio_session_id: string
+          tile_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          position?: number
+          studio_session_id?: string
+          tile_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctx_war_room_tile_audio_sessions_studio_session_id_fkey"
+            columns: ["studio_session_id"]
+            isOneToOne: false
+            referencedRelation: "studio_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctx_war_room_tile_audio_sessions_tile_id_fkey"
+            columns: ["tile_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_war_room_tiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ctx_war_room_tiles: {
+        Row: {
+          active_tab: string
+          context_organization_id: string | null
+          context_scope_ids: Json | null
+          created_at: string
+          id: string
+          is_deleted: boolean
+          is_hidden: boolean
+          is_pinned: boolean
+          note_id: string | null
+          position: number
+          session_id: string
+          task_id: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_tab?: string
+          context_organization_id?: string | null
+          context_scope_ids?: Json | null
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          is_hidden?: boolean
+          is_pinned?: boolean
+          note_id?: string | null
+          position?: number
+          session_id: string
+          task_id?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_tab?: string
+          context_organization_id?: string | null
+          context_scope_ids?: Json | null
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          is_hidden?: boolean
+          is_pinned?: boolean
+          note_id?: string | null
+          position?: number
+          session_id?: string
+          task_id?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctx_war_room_tiles_context_organization_id_fkey"
+            columns: ["context_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctx_war_room_tiles_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctx_war_room_tiles_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_war_room_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctx_war_room_tiles_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "ctx_tasks"

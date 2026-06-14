@@ -60,6 +60,7 @@ import schedulingRunsReducer from "@/features/scheduling/redux/runs/slice";
 import pageExtractionReducer from "@/features/page-extraction/redux/pageExtractionSlice";
 import { pdfStudioReducer } from "@/features/pdf-extractor/state/pdfStudioSlice";
 import transcriptStudioReducer from "@/features/transcript-studio/redux/slice";
+import warRoomReducer from "@/features/war-room/redux/slice";
 import recordingsReducer from "@/lib/redux/slices/recordingsSlice";
 import kgSuggestionsReducer from "@/lib/redux/slices/kgSuggestionsSlice";
 import { codeFilesReducer } from "@/features/code-files/redux/slice";
@@ -239,6 +240,8 @@ export const slimReducerMap = {
   noteVersions: noteVersionsReducer,
   notes: notesReducer,
   transcriptStudio: transcriptStudioReducer,
+  // War Room — session-based multitasking command center (features/war-room)
+  warRoom: warRoomReducer,
   recordings: recordingsReducer,
   codeFiles: codeFilesReducer,
 
