@@ -10,14 +10,13 @@ import {
   Inbox,
   Loader2,
   MoreHorizontal,
-  Pause,
   Play,
   RotateCcw,
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { requestScribeAudioSeek } from "../../state/scribeAudioBus";
 import {
   selectCleanedSegmentForRecording,
   selectRawSegmentsForRecording,
@@ -79,11 +78,6 @@ export function RecordingCard({
       ? raws[raws.length - 1]!.tEnd - raws[0]!.tStart
       : (recording.tEnd ?? 0) - recording.tStart;
 
-  const audioSrc = useFileSrc(
-    recording.audioPath ? { kind: "file_id", fileId: recording.audioPath } : null,
-  );
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const uploading = useAppSelector((s) =>
@@ -91,7 +85,7 @@ export function RecordingCard({
   );
   const finalizing = !recording.endedAt;
   const busy = finalizing || uploading;
-  const canPlay = Boolean(audioSrc);
+  const canPlay = Boolean(recording.audioPath) && !busy;
   // Auto-clean runs in the background on stop and can silently miss (network,
   // empty raw race, agent failure). Surface it so a miss is visible + fixable.
   const needsCleaning =
@@ -143,12 +137,18 @@ export function RecordingCard({
     }
   };
 
-  const togglePlay = (e: React.MouseEvent) => {
+  // Playback is owned by the one shared SessionAudioPlayer (mounted at the
+  // ScribeScreen level), so a card tap seeks the session timeline to this
+  // recording's start — and the user gets full scrub / ±10s / speed there,
+  // which the old per-card hidden <audio> never offered.
+  const playInSession = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const el = audioRef.current;
-    if (!el) return;
-    if (isPlaying) el.pause();
-    else void el.play();
+    if (!canPlay) return;
+    requestScribeAudioSeek({
+      sessionId,
+      sessionSeconds: recording.tStart,
+      autoplay: true,
+    });
   };
 
   // ── Action handlers (shared by swipe actions and the More sheet) ──
@@ -364,19 +364,13 @@ export function RecordingCard({
           </p>
         </div>
 
-        {/* Play */}
+        {/* Play in the shared session player */}
         <button
           type="button"
-          onClick={togglePlay}
+          onClick={playInSession}
           disabled={!canPlay}
           aria-label={
-            busy
-              ? "Saving audio"
-              : canPlay
-                ? isPlaying
-                  ? "Pause audio"
-                  : "Play audio"
-                : "Audio unavailable"
+            busy ? "Saving audio" : canPlay ? "Play audio" : "Audio unavailable"
           }
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
@@ -387,24 +381,10 @@ export function RecordingCard({
         >
           {busy ? (
             <Loader2 className="h-4 w-4 animate-spin" />
-          ) : isPlaying ? (
-            <Pause className="h-5 w-5" />
           ) : (
             <Play className="h-5 w-5" />
           )}
         </button>
-
-        {audioSrc && (
-          <audio
-            ref={audioRef}
-            src={audioSrc}
-            preload="none"
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-            onEnded={() => setIsPlaying(false)}
-            className="hidden"
-          />
-        )}
       </div>
 
       <ActionSheet

@@ -38,6 +38,8 @@ import {
   type SessionTranscriptMode,
 } from "./SessionTranscriptViewer";
 import { ScribeCaptureScreen } from "./ScribeCaptureScreen";
+import { SessionAudioPlayer } from "./SessionAudioPlayer";
+import { ScribeCitationProvider } from "../../state/ScribeCitationContext";
 import { AssistantScreen } from "./AssistantScreen";
 import { ExperimentalAgentScreen } from "./ExperimentalAgentScreen";
 import { ScribeLiveScreen } from "./ScribeLiveScreen";
@@ -187,6 +189,7 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   }, [sessionId, dispatch]);
 
   return (
+   <ScribeCitationProvider sessionId={sessionId}>
     <div className="flex h-dvh flex-col overflow-hidden bg-textured">
       {/* Header (shell chrome is hidden on this route — see shell.css) */}
       <header className="flex shrink-0 items-center gap-2 border-b border-border bg-card/95 px-3 pt-[env(safe-area-inset-top)] backdrop-blur">
@@ -324,6 +327,12 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
         </div>
       </main>
 
+      {/* Session audio transport — one shared player across every tab. Surfaces
+          only once a recording card or an agent `<audiocite>` citation seeks it
+          (or the user plays the session), giving full scrub / ±10s / speed that
+          the per-card play button never had. */}
+      <SessionAudioPlayer sessionId={sessionId} />
+
       <ActionSheet
         open={menuOpen}
         onOpenChange={setMenuOpen}
@@ -357,5 +366,6 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
         }}
       />
     </div>
+   </ScribeCitationProvider>
   );
 }

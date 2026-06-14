@@ -47,6 +47,32 @@ function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
 
+/** mm:ss for a seconds offset (display anchor alongside the raw seconds). */
+function clock(totalSec: number): string {
+  const sec = Math.max(0, Math.floor(totalSec));
+  return `${Math.floor(sec / 60)}:${pad2(sec % 60)}`;
+}
+
+/**
+ * The instruction that teaches the assistant to cite moments in the session
+ * audio. Emitted once whenever the session has any transcript, so the agent can
+ * footnote its answers with playable references. `start`/`end` are the same
+ * seconds-from-session-start anchors shown inline in every `recording_NN_raw`
+ * entry; the UI resolves which session and renders a play button, so the agent
+ * never needs an id — just the seconds.
+ */
+const AUDIO_CITATION_INSTRUCTION =
+  "When you refer to something the user said, cite the exact moment in the " +
+  "recording with an inline tag: `<audiocite start=\"S\" end=\"E\">short label</audiocite>` " +
+  "where S and E are seconds from the start of the session (use the `[t=…s]` " +
+  "anchors that prefix each line of the `recording_NN_raw` transcripts). The " +
+  "user's app turns this into a button that plays that exact slice of audio — " +
+  "like a citation that plays. Prefer a tight span around the relevant words " +
+  "(a few seconds to ~30s). Use it whenever pointing to, quoting, or asking " +
+  "about a specific part of what was recorded, so the user can hear precisely " +
+  "what you mean. Write the tag inline in your sentence; do not invent seconds " +
+  "that aren't anchored in the transcript.";
+
 /**
  * Rich context-object value for the working document. Delegates to the shared
  * `buildWorkingDocumentContextValue` (the single working_document value shape
@@ -77,16 +103,24 @@ export function buildAssistantContextEntries(
     const n = pad2(idx + 1);
 
     const raws = selectRawSegmentsForRecording(sessionId, rec.id)(state);
-    const rawText = raws
-      .map((r) => r.text)
-      .join(" ")
+    // Prefix each chunk with its session-relative time anchor so the assistant
+    // can map words to seconds and emit precise `<audiocite>` references. The
+    // plain joined text is unchanged for cleaning (which reads raw via the
+    // selector, not this string), so this enrichment is assistant-only.
+    const rawWithAnchors = raws
+      .filter((r) => r.text?.trim())
+      .map(
+        (r) =>
+          `[t=${r.tStart.toFixed(1)}s ${clock(r.tStart)}] ${r.text.trim()}`,
+      )
+      .join("\n")
       .trim();
-    if (rawText) {
+    if (rawWithAnchors) {
       entries.push({
         key: `recording_${n}_raw`,
-        value: rawText,
+        value: rawWithAnchors,
         type: "text",
-        label: `Recording ${idx + 1} — raw transcript`,
+        label: `Recording ${idx + 1} — raw transcript (with [t=…s] time anchors for audio citations)`,
       });
     }
 
@@ -126,6 +160,17 @@ export function buildAssistantContextEntries(
         "Session — full AI-cleaned transcript (same content as the recordings, " +
         "tidied). Prefer this when quoting or summarizing; fall back to all_raw " +
         "only when you need exact verbatim wording.",
+    });
+  }
+
+  // Teach the assistant to cite audio moments — only once there's something to
+  // cite (any raw transcript present means anchors exist).
+  if (allRaw) {
+    entries.push({
+      key: "audio_citations",
+      value: AUDIO_CITATION_INSTRUCTION,
+      type: "text",
+      label: "How to cite audio moments (audiocite)",
     });
   }
 
