@@ -81,6 +81,7 @@ export type SourceFeature =
   | "transcription-cleanup"
   | "transcripts"
   | "transcript-studio"
+  | "dictionary"
   | "agent-run-window"
   | "agent-run-history-window"
   | "agent-runs-sidebar"

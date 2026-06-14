@@ -208,9 +208,127 @@ export interface TimelineDoc extends DocBase {
   sections: TimelineSection[];
 }
 
+// ─── User Journey ─────────────────────────────────────────────────────────────
+
+export interface JourneyTask {
+  id: string; // synthetic j{n}
+  name: string;
+  /** Satisfaction score, conventionally 1-5. */
+  score: number;
+  /** Actor names assigned to the task (comma-separated in source). */
+  actors: string[];
+  raw?: string;
+  dirty?: boolean;
+}
+
+export interface JourneySection {
+  id: string;
+  /** undefined = the implicit section before any `section` line. */
+  title?: string;
+  tasks: JourneyTask[];
+  raw?: string;
+  dirty?: boolean;
+}
+
+export interface JourneyDoc extends DocBase {
+  kind: "journey";
+  title?: string;
+  sections: JourneySection[];
+}
+
+// ─── Quadrant Chart ───────────────────────────────────────────────────────────
+
+export interface QuadrantPoint {
+  id: string; // synthetic q{n}
+  label: string;
+  x: number; // 0-1
+  y: number; // 0-1
+  raw?: string;
+  dirty?: boolean;
+}
+
+export interface QuadrantDoc extends DocBase {
+  kind: "quadrant";
+  title?: string;
+  /** Axis labels: "Low --> High" forms, stored verbatim of the text portion. */
+  xAxis?: string;
+  yAxis?: string;
+  /** quadrant-1..4 labels (top-right, top-left, bottom-left, bottom-right). */
+  quadrantLabels: (string | undefined)[];
+  points: QuadrantPoint[];
+}
+
+// ─── State ──────────────────────────────────────────────────────────────────
+
+export interface StateNode {
+  id: string; // the state identifier as written ([*] is the pseudostate)
+  /** Optional human description (from `id : desc` or `state "desc" as id`). */
+  description?: string;
+  raw?: string; // declaration line, when explicitly declared
+  dirty?: boolean;
+  added?: boolean;
+}
+
+export interface StateTransition {
+  id: string; // synthetic st{n}
+  from: string;
+  to: string;
+  label?: string;
+  raw?: string;
+  dirty?: boolean;
+  added?: boolean;
+}
+
+export interface StateDoc extends DocBase {
+  kind: "state";
+  /** stateDiagram (v1) vs stateDiagram-v2 — preserved verbatim. */
+  header: string;
+  states: StateNode[];
+  transitions: StateTransition[];
+}
+
+// ─── Entity Relationship ──────────────────────────────────────────────────────
+
+/** Mermaid ER cardinality token (as written next to the entity). */
+export type ErCardinality = "|o" | "||" | "}o" | "}|" | "o|" | "o{" | "|{";
+
+export interface ErRelationship {
+  id: string; // synthetic r{n}
+  left: string;
+  right: string;
+  leftCard: string; // raw token e.g. "||"
+  rightCard: string; // raw token e.g. "o{"
+  identifying: boolean; // "--" vs ".."
+  label: string;
+  raw?: string;
+  dirty?: boolean;
+  added?: boolean;
+}
+
+export interface ErEntity {
+  id: string; // entity name
+  /** Whole `NAME { … }` attribute block, verbatim lines (header..close). */
+  blockRaw?: string[];
+}
+
+export interface ErDoc extends DocBase {
+  kind: "er";
+  entities: ErEntity[];
+  relationships: ErRelationship[];
+}
+
 // ─── Union + parse outcome ──────────────────────────────────────────────────
 
-export type MermaidDoc = FlowchartDoc | MindmapDoc | SequenceDoc | PieDoc | TimelineDoc;
+export type MermaidDoc =
+  | FlowchartDoc
+  | MindmapDoc
+  | SequenceDoc
+  | PieDoc
+  | TimelineDoc
+  | JourneyDoc
+  | QuadrantDoc
+  | StateDoc
+  | ErDoc;
 
 export type ParseOutcome =
   | { status: "ok"; doc: MermaidDoc }

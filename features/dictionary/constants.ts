@@ -12,6 +12,12 @@ export const DICTIONARY_AGENT_IDS = {
   assistant: "ab1a868e-b866-4ade-9383-fd63b0928c7c",
 } as const;
 
+/**
+ * Global shortcut that launches the Dictionary Assistant as a floating-chat
+ * widget (NOT the /chat route). Seeded by migrations/dict_assistant_shortcut.sql.
+ */
+export const DICTIONARY_ASSISTANT_SHORTCUT_ID = "5c1c7000-0000-4000-a000-000000000001";
+
 /** Internal skills (skl_definitions ids). */
 export const DICTIONARY_SKILL_IDS = {
   management: "d1c70000-0000-4000-a000-000000000001",

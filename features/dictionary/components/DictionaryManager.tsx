@@ -33,7 +33,7 @@ import {
   encodeInlinePolicy,
   type InlinePolicyValue,
 } from "@/features/agents/components/context-slots-management/InlinePolicyControl";
-import { DICT_LEVEL_LABELS, DICTIONARY_AGENT_IDS } from "@/features/dictionary/constants";
+import { DICT_LEVEL_LABELS } from "@/features/dictionary/constants";
 import type { DictEntry, DictEntryDraft, DictLevel } from "@/features/dictionary/types";
 
 interface Props {
@@ -179,7 +179,7 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
           size="sm"
           variant="outline"
           className="gap-1.5"
-          onClick={() => openAssistant({ level, ownerName, agentId: DICTIONARY_AGENT_IDS.assistant })}
+          onClick={() => void openAssistant({ level, ownerId, ownerName })}
         >
           <MessageSquare className="h-4 w-4" /> Ask assistant
         </Button>

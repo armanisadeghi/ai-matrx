@@ -72,4 +72,47 @@ export type TimelineOp =
   | { type: "deleteEvent"; rowId: string; eventIndex: number }
   | { type: "deleteRow"; id: string };
 
-export type MermaidOp = FlowchartOp | MindmapOp | SequenceOp | PieOp | TimelineOp;
+export type JourneyOp =
+  | { type: "setTitle"; title: string }
+  | { type: "addSection"; title: string }
+  | { type: "renameSection"; id: string; title: string }
+  | { type: "deleteSection"; id: string }
+  | { type: "addTask"; sectionId: string; name: string; score?: number; actors?: string[] }
+  | { type: "editTask"; id: string; name?: string; score?: number; actors?: string[] }
+  | { type: "deleteTask"; id: string };
+
+export type QuadrantOp =
+  | { type: "setTitle"; title: string }
+  | { type: "setXAxis"; text: string }
+  | { type: "setYAxis"; text: string }
+  | { type: "setQuadrantLabel"; index: number; text: string } // index 0-3
+  | { type: "addPoint"; label: string; x?: number; y?: number }
+  | { type: "editPoint"; id: string; label?: string; x?: number; y?: number }
+  | { type: "deletePoint"; id: string };
+
+export type StateOp =
+  | { type: "addState"; name: string }
+  | { type: "setStateDescription"; id: string; description: string }
+  | { type: "deleteState"; id: string } // cascades transitions
+  | { type: "addTransition"; from: string; to: string; label?: string }
+  | { type: "setTransitionLabel"; id: string; label: string }
+  | { type: "reverseTransition"; id: string }
+  | { type: "deleteTransition"; id: string };
+
+export type ErOp =
+  | { type: "addRelationship"; left: string; right: string; label?: string }
+  | { type: "setRelationshipLabel"; id: string; label: string }
+  | { type: "setRelationshipCardinality"; id: string; leftCard?: string; rightCard?: string; identifying?: boolean }
+  | { type: "reverseRelationship"; id: string }
+  | { type: "deleteRelationship"; id: string };
+
+export type MermaidOp =
+  | FlowchartOp
+  | MindmapOp
+  | SequenceOp
+  | PieOp
+  | TimelineOp
+  | JourneyOp
+  | QuadrantOp
+  | StateOp
+  | ErOp;
