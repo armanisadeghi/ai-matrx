@@ -5,6 +5,8 @@
 
 import { toast } from "sonner";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { create as createNote } from "@/features/notes/service/notesApi";
+import { upsertNoteFromServer } from "@/features/notes/redux/slice";
 import * as service from "../service";
 import type {
   CreateSessionInput,
@@ -24,6 +26,7 @@ import {
   setListStatus,
   setTileActiveTab,
   setTileHidden,
+  setTileLink,
   setTilePinned,
   setTilesStatus,
   setTileSaveState,
@@ -153,6 +156,32 @@ export const createTile =
       return tile;
     } catch {
       toast.error("Couldn't create the tile");
+      return null;
+    }
+  };
+
+/**
+ * Ensure the tile's Notes tab has a backing note. Creates one via the notes
+ * programmatic API (no notes-page tab side effects), registers it in the notes
+ * slice, links it to the tile, and keeps note.task_id in sync with the tile.
+ */
+export const createTileNote =
+  (tileId: string, sessionId: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState) => {
+    try {
+      const tile = getState().warRoom.tilesById[tileId];
+      if (!tile || tile.note_id) return tile?.note_id ?? null;
+      const note = await createNote({
+        content: "",
+        label: "War Room note",
+        task_id: tile.task_id ?? undefined,
+      });
+      dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
+      await service.updateTile(tileId, { note_id: note.id });
+      dispatch(setTileLink({ id: tileId, noteId: note.id }));
+      return note.id;
+    } catch {
+      toast.error("Couldn't create the note");
       return null;
     }
   };

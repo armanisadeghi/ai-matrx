@@ -6,7 +6,7 @@
 // Wave 2 renders minimal placeholder bodies so layout, tabs, and pin/hide are
 // testable; Wave 3 wires real task/notes/audio content into each tab.
 
-import { ListChecks, NotebookPen, Mic, LayoutGrid } from "lucide-react";
+import { ListChecks, Mic, LayoutGrid } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { selectTileById } from "@/features/war-room/redux/selectors";
@@ -19,6 +19,7 @@ import {
 import type { TileTab } from "@/features/war-room/types";
 import { TileFrame } from "../shared/TileFrame";
 import { TileTabBar } from "./TileTabBar";
+import { TileNotesTab } from "./TileNotesTab";
 
 export function WarRoomTile({
   tileId,
@@ -62,24 +63,66 @@ export function WarRoomTile({
         />
       }
     >
-      <TileTabBody tab={activeTab} />
+      <TileTabContent tab={activeTab} tileId={tileId} sessionId={sessionId} />
     </TileFrame>
   );
 }
 
-function TileTabBody({ tab }: { tab: TileTab }) {
-  const config: Record<
-    TileTab,
-    { Icon: typeof ListChecks; label: string; hint: string }
-  > = {
-    task: { Icon: ListChecks, label: "Task", hint: "Name, subtasks, attachments, comments" },
-    notes: { Icon: NotebookPen, label: "Notes", hint: "A free-form notepad for this thread" },
-    audio: { Icon: Mic, label: "Audio", hint: "Record and transcribe into this tile" },
-    combined: { Icon: LayoutGrid, label: "All", hint: "Task, notes, and audio together" },
-  };
-  const { Icon, label, hint } = config[tab];
+function TileTabContent({
+  tab,
+  tileId,
+  sessionId,
+}: {
+  tab: TileTab;
+  tileId: string;
+  sessionId: string;
+}) {
+  switch (tab) {
+    case "notes":
+      return <TileNotesTab tileId={tileId} sessionId={sessionId} />;
+    case "task":
+      return (
+        <TabPlaceholder
+          Icon={ListChecks}
+          label="Task"
+          hint="Name, subtasks, attachments, comments"
+        />
+      );
+    case "audio":
+      return (
+        <TabPlaceholder
+          Icon={Mic}
+          label="Audio"
+          hint="Record and transcribe into this tile"
+        />
+      );
+    case "combined":
+      return (
+        <div className="h-full overflow-y-auto flex flex-col">
+          <div className="min-h-48 shrink-0 border-b border-border/60">
+            <TileNotesTab tileId={tileId} sessionId={sessionId} />
+          </div>
+          <TabPlaceholder
+            Icon={LayoutGrid}
+            label="Task & Audio"
+            hint="Wired up in a later pass"
+          />
+        </div>
+      );
+  }
+}
+
+function TabPlaceholder({
+  Icon,
+  label,
+  hint,
+}: {
+  Icon: typeof ListChecks;
+  label: string;
+  hint: string;
+}) {
   return (
-    <div className="h-full grid place-items-center text-center px-3">
+    <div className="h-full min-h-32 grid place-items-center text-center px-3">
       <div className="text-muted-foreground">
         <Icon className="size-6 mx-auto mb-1.5 opacity-50" />
         <p className="text-xs font-medium text-foreground/80">{label}</p>
