@@ -24,11 +24,11 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 **Fence.** Cosmetic only — the window still opens and is visible (the silent-render guard guarantees that); just not at its remembered geometry. Fix is to key restore by the slug-derived window id (the same id `WindowPanel` uses), in `WindowPersistenceManager` + `restoreWindowState`.
 
-### D3 — Agent Find Usages + Drift: prod re-verify + DM sender identity
-**Severity: low — built and locally verified; two follow-ups.**
+### D3 — Agent Find Usages + Drift: never browser/prod-verified + DM sender identity
+**Severity: low — built, every RPC server-verified; full checklist in [`docs/handoffs/AGENT_FIND_USAGES_DRIFT_HANDOFF.md`](docs/handoffs/AGENT_FIND_USAGES_DRIFT_HANDOFF.md).**
 
-**What.** The Find Usages + Drift subsystem (see [`features/agents/FEATURE.md`](features/agents/FEATURE.md) → Find Usages & Drift) is live-verified against the shared DB locally (registry sync: 42 rows, 0 broken pins; weekly scan: 30 alert groups, dedup clean), but two items remain open:
-1. **Prod deploy + aimatrx.com end-to-end re-verify.** The aidream side (startup registry sync, weekly `agent_drift_weekly_scan` cron, `/agent-usage/*` router, DM send) and the UI surfaces (both windows, `/reports/agent-drift`, the agents-page banner, DM action chips) were exercised locally / via stubs; the weekly cron's first real fire and an actual DM landing in a recipient's inbox need a production run.
+**What.** The Find Usages + Drift subsystem (see [`features/agents/FEATURE.md`](features/agents/FEATURE.md) → Find Usages & Drift) is verified at the data/RPC layer (registry sync 42 rows/0 broken pins; weekly scan 30 groups dedup-clean; report deterministic; remediation repins v1→v3; history-counts works post-`agx_usage_005`). Open:
+1. **Never exercised in a browser or on prod.** The DM *send* has never actually inserted a row (stubbed in every test); aidream isn't deployed (startup sync / weekly cron / `/agent-usage/*` HTTP endpoints unrun over a real request); the windows, agents-page banner, DM chips, and the remediation/notify click flows weren't browser-driven (the shared `AgentUsagesEngine` WAS, via the report drill-in). Run the §5 checklist in the handoff after deploy.
 2. **DM sender identity.** Drift DMs send from the platform operator's *personal* super-admin user (`4cf62e4e-…`, env-overridable via `MATRX_SYSTEM_DM_SENDER_USER_ID`). A dedicated "Matrx System" bot auth-user is the clean later swap — purely cosmetic (messages show a real human's name as sender until then).
 
 **Fence.** The weekly scan fingerprint-dedups so a re-verify run can't double-notify; the registry sync writes only on real deployments (`strict_startup_gates`) so a laptop can't mark prod keys vanished. Broken code pins scream (`record_error` + red log) without crashing boot.
