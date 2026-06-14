@@ -27,7 +27,10 @@ import { AlertTriangle, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectActiveRunByJob } from "@/features/page-extraction/redux/selectors";
+import {
+  selectActiveRunByJob,
+  selectResultsRefreshNonce,
+} from "@/features/page-extraction/redux/selectors";
 import {
   Table,
   TableBody,
@@ -138,6 +141,14 @@ function SingleJobResultsTable({
     // run-progress signals above are the intended triggers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completedChunks, runStatus]);
+
+  // Refetch when results are deleted out-of-band (e.g. an entire run is
+  // deleted) — Realtime doesn't reliably deliver DELETEs.
+  const resultsNonce = useAppSelector(selectResultsRefreshNonce);
+  useEffect(() => {
+    if (resultsNonce > 0) refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resultsNonce]);
 
   // Defensive: the backend persists flat rows, but if a wrapper
   // (`{ items: [...] }`) ever reaches storage it would otherwise render as
@@ -548,6 +559,14 @@ function AllResultsTable({
   const { results, loading, error, refetch } =
     useExtractionResultsForFile(fileId);
   const { jobs } = useExtractionJobs(fileId);
+
+  // Refetch when results are deleted out-of-band (e.g. an entire run is
+  // deleted) — Realtime doesn't reliably deliver DELETEs.
+  const resultsNonce = useAppSelector(selectResultsRefreshNonce);
+  useEffect(() => {
+    if (resultsNonce > 0) refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resultsNonce]);
 
   // Same defensive normalization as the single-template view, via the shared
   // rule — so the All view can never silently swallow a wrapped payload.

@@ -30,6 +30,11 @@ import { cn } from "@/utils/cn";
 import { extractErrorMessage } from "@/utils/errors";
 import { useSuggestionsQuery } from "@/features/kg-suggestions/hooks/useSuggestionsQuery";
 import { KgSuggestionRowItem } from "@/features/kg-suggestions/components/KgSuggestionRowItem";
+import {
+  SourcePreviewProvider,
+  useSourcePreviewController,
+} from "@/features/kg-suggestions/components/source-preview/SourcePreviewContext";
+import { SourcePreviewPanel } from "@/features/kg-suggestions/components/source-preview/SourcePreviewPanel";
 import { SuggestionsFilterBar } from "./SuggestionsFilterBar";
 import { SuggestionsTable } from "./SuggestionsTable";
 
@@ -54,6 +59,10 @@ export function SuggestionsManager() {
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  // Source preview floats in a non-blocking, resizable panel beside the table —
+  // review the document a suggestion came from without losing your place.
+  const { target, openPreview, closePreview } = useSourcePreviewController();
 
   const pageSize = query.pageSize ?? 50;
   const page = query.page ?? 0;
@@ -191,124 +200,135 @@ export function SuggestionsManager() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      {/* Summary strip */}
-      <div className="flex items-center gap-3 border-b border-border px-3 py-1.5 text-[11px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-          {pendingCount} pending
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <Clock className="h-3 w-3 text-amber-500" />
-          {deferredCount} deferred
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <Star className="h-3 w-3 text-amber-500" />
-          {starredCount} starred
-        </span>
-        <button
-          type="button"
-          onClick={refresh}
-          className="ml-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent hover:text-foreground transition-colors"
-        >
-          <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
-          Refresh
-        </button>
-      </div>
-
-      <SuggestionsFilterBar query={query} patchQuery={patchQuery} rows={rows} />
-
-      {/* Bulk action bar */}
-      {selected.size > 0 ? (
-        <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-primary/5 px-3 py-1.5 text-[11px]">
-          <span className="font-medium text-foreground">
-            {selected.size} selected
+    <SourcePreviewProvider value={{ openPreview }}>
+      <div className="flex h-full min-h-0 flex-col">
+        {/* Summary strip */}
+        <div className="flex items-center gap-3 border-b border-border px-3 py-1.5 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            {pendingCount} pending
           </span>
-          <BulkButton
-            icon={<Check className="h-3 w-3" />}
-            label="Accept"
-            className="text-success hover:bg-success/10"
-            onClick={() =>
-              void runBulk("Accepted", (id) =>
-                accept(id).catch((e) => {
-                  throw new Error(extractErrorMessage(e));
-                }),
-              )
-            }
-          />
-          <BulkButton
-            icon={<Clock className="h-3 w-3" />}
-            label="Defer"
-            className="text-muted-foreground hover:bg-accent"
-            onClick={() => void runBulk("Deferred", (id) => defer(id))}
-          />
-          <BulkButton
-            icon={<X className="h-3 w-3" />}
-            label="Reject"
-            className="text-destructive hover:bg-destructive/10"
-            onClick={() => void runBulk("Rejected", (id) => reject(id))}
-          />
-          <BulkButton
-            icon={<Star className="h-3 w-3" />}
-            label="Star"
-            className="text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
-            onClick={() => void runBulk("Starred", (id) => star(id, true))}
-          />
+          <span className="inline-flex items-center gap-1">
+            <Clock className="h-3 w-3 text-amber-500" />
+            {deferredCount} deferred
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Star className="h-3 w-3 text-amber-500" />
+            {starredCount} starred
+          </span>
           <button
             type="button"
-            onClick={clearSelection}
-            className="ml-1 rounded px-2 py-0.5 text-muted-foreground hover:bg-accent transition-colors"
+            onClick={refresh}
+            className="ml-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-accent hover:text-foreground transition-colors"
           >
-            Clear
+            <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} />
+            Refresh
           </button>
         </div>
-      ) : null}
 
-      {/* Scroll body — heavy hitters lead; the table owns the vertical scroll so
+        <SuggestionsFilterBar
+          query={query}
+          patchQuery={patchQuery}
+          rows={rows}
+        />
+
+        {/* Bulk action bar */}
+        {selected.size > 0 ? (
+          <div className="flex flex-wrap items-center gap-1.5 border-b border-border bg-primary/5 px-3 py-1.5 text-[11px]">
+            <span className="font-medium text-foreground">
+              {selected.size} selected
+            </span>
+            <BulkButton
+              icon={<Check className="h-3 w-3" />}
+              label="Accept"
+              className="text-success hover:bg-success/10"
+              onClick={() =>
+                void runBulk("Accepted", (id) =>
+                  accept(id).catch((e) => {
+                    throw new Error(extractErrorMessage(e));
+                  }),
+                )
+              }
+            />
+            <BulkButton
+              icon={<Clock className="h-3 w-3" />}
+              label="Defer"
+              className="text-muted-foreground hover:bg-accent"
+              onClick={() => void runBulk("Deferred", (id) => defer(id))}
+            />
+            <BulkButton
+              icon={<X className="h-3 w-3" />}
+              label="Reject"
+              className="text-destructive hover:bg-destructive/10"
+              onClick={() => void runBulk("Rejected", (id) => reject(id))}
+            />
+            <BulkButton
+              icon={<Star className="h-3 w-3" />}
+              label="Star"
+              className="text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+              onClick={() => void runBulk("Starred", (id) => star(id, true))}
+            />
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="ml-1 rounded px-2 py-0.5 text-muted-foreground hover:bg-accent transition-colors"
+            >
+              Clear
+            </button>
+          </div>
+        ) : null}
+
+        {/* Scroll body — heavy hitters lead; the table owns the vertical scroll so
           its header stays sticky. On mobile everything shares one scroll area. */}
-      {isMobile ? (
-        <div className="flex-1 min-h-0 overflow-auto">
-          {heavySection}
-          {mainArea}
-        </div>
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col">
-          {hasHeavy ? (
-            <div className="max-h-[45%] shrink-0 overflow-y-auto">
-              {heavySection}
-            </div>
-          ) : null}
-          <div className="min-h-0 flex-1 overflow-auto">{mainArea}</div>
-        </div>
-      )}
+        {isMobile ? (
+          <div className="flex-1 min-h-0 overflow-auto">
+            {heavySection}
+            {mainArea}
+          </div>
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col">
+            {hasHeavy ? (
+              <div className="max-h-[45%] shrink-0 overflow-y-auto">
+                {heavySection}
+              </div>
+            ) : null}
+            <div className="min-h-0 flex-1 overflow-auto">{mainArea}</div>
+          </div>
+        )}
 
-      {/* Pagination footer */}
-      <div className="flex items-center justify-between border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground pb-safe">
-        <span className="tabular-nums">
-          {from}–{to} of {total}
-        </span>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            disabled={!hasPrev}
-            onClick={() => patchQuery({ page: page - 1 })}
-            className="inline-flex items-center gap-0.5 rounded px-2 py-1 hover:bg-accent disabled:opacity-40 transition-colors"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-            Prev
-          </button>
-          <button
-            type="button"
-            disabled={!hasNext}
-            onClick={() => patchQuery({ page: page + 1 })}
-            className="inline-flex items-center gap-0.5 rounded px-2 py-1 hover:bg-accent disabled:opacity-40 transition-colors"
-          >
-            Next
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
+        {/* Pagination footer */}
+        <div className="flex items-center justify-between border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground pb-safe">
+          <span className="tabular-nums">
+            {from}–{to} of {total}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              disabled={!hasPrev}
+              onClick={() => patchQuery({ page: page - 1 })}
+              className="inline-flex items-center gap-0.5 rounded px-2 py-1 hover:bg-accent disabled:opacity-40 transition-colors"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Prev
+            </button>
+            <button
+              type="button"
+              disabled={!hasNext}
+              onClick={() => patchQuery({ page: page + 1 })}
+              className="inline-flex items-center gap-0.5 rounded px-2 py-1 hover:bg-accent disabled:opacity-40 transition-colors"
+            >
+              Next
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+      <SourcePreviewPanel
+        target={target}
+        onClose={closePreview}
+        position="right"
+      />
+    </SourcePreviewProvider>
   );
 }
 

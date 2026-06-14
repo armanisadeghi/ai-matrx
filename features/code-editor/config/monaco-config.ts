@@ -1,12 +1,12 @@
 /**
  * Monaco Editor Configuration
  * Sets up language services for syntax highlighting and IntelliSense
- * 
+ *
  * IMPORTANT: This is lazy-loaded - only runs when Monaco Editor is actually used
  */
 
-import { loader } from '@monaco-editor/react';
-import { getAllTypeDefinitions } from './type-definitions';
+import { loader } from "@monaco-editor/react";
+import { registerJsonMonacoThemes } from "./syntax-themes";
 
 // Track if configuration has been initiated
 let configurationPromise: Promise<void> | null = null;
@@ -27,8 +27,8 @@ export function configureMonaco(): Promise<void> {
     // Configure the loader to use CDN (default, but explicit)
     loader.config({
       paths: {
-        vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@latest/min/vs'
-      }
+        vs: "https://cdn.jsdelivr.net/npm/monaco-editor@latest/min/vs",
+      },
     });
 
     // Initialize Monaco and configure language services
@@ -43,10 +43,10 @@ export function configureMonaco(): Promise<void> {
       noEmit: true,
       esModuleInterop: true,
       jsx: monaco.languages.typescript.JsxEmit.React,
-      reactNamespace: 'React',
+      reactNamespace: "React",
       allowJs: true,
       checkJs: false, // Don't check JS files for TypeScript errors
-      typeRoots: ['node_modules/@types'],
+      typeRoots: ["node_modules/@types"],
     });
 
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
@@ -57,10 +57,10 @@ export function configureMonaco(): Promise<void> {
       noEmit: true,
       esModuleInterop: true,
       jsx: monaco.languages.typescript.JsxEmit.React,
-      reactNamespace: 'React',
+      reactNamespace: "React",
       allowJs: true,
       checkJs: false,
-      typeRoots: ['node_modules/@types'],
+      typeRoots: ["node_modules/@types"],
       // Enable all TypeScript features
       strict: false, // Disable strict mode to be more lenient
       noImplicitAny: false,
@@ -91,15 +91,21 @@ export function configureMonaco(): Promise<void> {
     // ===== Add common library definitions for better IntelliSense =====
     // Add type definitions for React, Lucide icons, and UI components
     const typeDefinitions = getAllTypeDefinitions();
-    
+
     // Add a version/timestamp to force Monaco to recognize type definition updates
     // Change this version number when you update type definitions to bust the cache
-    const VERSION = 'v2';
-    
+    const VERSION = "v2";
+
     typeDefinitions.forEach(({ content, filePath }) => {
       const versionedPath = `${filePath}?${VERSION}`;
-      monaco.languages.typescript.javascriptDefaults.addExtraLib(content, versionedPath);
-      monaco.languages.typescript.typescriptDefaults.addExtraLib(content, versionedPath);
+      monaco.languages.typescript.javascriptDefaults.addExtraLib(
+        content,
+        versionedPath,
+      );
+      monaco.languages.typescript.typescriptDefaults.addExtraLib(
+        content,
+        versionedPath,
+      );
     });
 
     // Add console definitions for convenience
@@ -113,11 +119,19 @@ export function configureMonaco(): Promise<void> {
       }
       declare var console: Console;
     `;
-    
-    monaco.languages.typescript.javascriptDefaults.addExtraLib(consoleLib, 'ts:filename/console.d.ts');
-    monaco.languages.typescript.typescriptDefaults.addExtraLib(consoleLib, 'ts:filename/console.d.ts');
+
+    monaco.languages.typescript.javascriptDefaults.addExtraLib(
+      consoleLib,
+      "ts:filename/console.d.ts",
+    );
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(
+      consoleLib,
+      "ts:filename/console.d.ts",
+    );
 
     // ===== JSON Configuration =====
+    registerJsonMonacoThemes(monaco);
+
     monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
       validate: true,
       allowComments: true,
@@ -130,4 +144,3 @@ export function configureMonaco(): Promise<void> {
 
   return configurationPromise;
 }
-

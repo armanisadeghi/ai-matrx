@@ -69,11 +69,17 @@ export function PdfStudioDocTitle({
   if (isCloudFile && doc.sourceId) {
     return (
       <div className="flex min-w-0 flex-1 items-center gap-1">
-        <FileRightClickMenu fileId={doc.sourceId}>
+        <FileRightClickMenu
+          fileId={doc.sourceId}
+          onDeleted={() => onDeleteDoc(doc.id)}
+        >
           <div className="min-w-0 flex-1">{label}</div>
         </FileRightClickMenu>
         <Tooltip>
-          <FileContextMenu fileId={doc.sourceId}>
+          <FileContextMenu
+            fileId={doc.sourceId}
+            onDeleted={() => onDeleteDoc(doc.id)}
+          >
             <TooltipTrigger asChild>
               <button
                 type="button"

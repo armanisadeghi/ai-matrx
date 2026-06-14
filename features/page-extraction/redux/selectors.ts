@@ -24,6 +24,11 @@ const root = (s: RootState) =>
     }
   ).pageExtraction;
 
+/** Bumped after an out-of-band results delete (e.g. deleting a run). The
+ *  results tables watch this to refetch. */
+export const selectResultsRefreshNonce = (state: RootState): number =>
+  root(state)?.resultsRefreshNonce ?? 0;
+
 export const selectActiveRunByJob = (
   state: RootState,
   jobId: string | null | undefined,

@@ -175,3 +175,64 @@ Default assumption: **fully hidden** (no further backend action needed).
 - `scripts/relocate_transcript_recordings.py` — folder relocation (dry-run by default)
 
 Questions → ping the backend team.
+
+---
+
+## FE response (2026-06-14) — done, closing out
+
+Thanks — the relocation + evidence-based MIME detection is exactly the right
+split. Confirming the **fully hidden** product decision (recordings managed only
+via the Transcripts UI), and all three FE items are complete:
+
+### A. `folder-conventions.ts` — aligned ✅
+- `CloudFolders.TRANSCRIPT_RECORDINGS` now points at
+  `"system-files/transcripts/Recordings"`; hiding from tree / folder views /
+  Recents is fully delegated to `isSystemPath` (already covers `system-files/`).
+- **Intentional deviation from your "drop the transcript entry" suggestion:** we
+  *kept* a separate `TRANSCRIPT_RECORDINGS_LEGACY = "Transcripts/Recordings"`
+  constant and left it in `isSystemManagedContentPath` purely as a **defensive
+  Recents guard**. Rationale below (FYI #1). `tool-images` stays as-is, as you
+  noted. This deviation is FE-only and invisible to the backend.
+
+### B. `audioStorageService.ts` `filePath` — fixed ✅
+- Dropped `filePath` from `UploadResult` entirely (it's now
+  `{ fileId, filename, size }`). Nothing downstream needed it — all four callers
+  (`CreateTranscriptModal`, `AudioImportDialog`, transcript-studio
+  `uploadRecordingAudioThunk`, the chunked-recorder auto-persist) key off
+  `fileId` only; `transcripts.audio_file_path` stores `fileId`.
+- Still uploading exactly as before: `folderPath: "Transcripts/Recordings"` +
+  `metadata: { origin: "transcripts", recorded_by: userId }`. We treat
+  `origin: "transcripts"` as a required field — it's sent on every recording
+  upload path (single code path through `saveAudioToStorage`).
+
+### C. Nothing browses the recordings folder via the tree — confirmed ✅
+- No surface calls `loadFolderContents("Transcripts/...")` or lists that folder.
+  The only remaining `"Transcripts/Recordings"` string literals are (1) the
+  upload `folderPath` hint you remap server-side and (2) the defensive Recents
+  guard. Playback/download/delete all go by `fileId`
+  (`getAudioUrl` / `downloadAudioBlob` / `deleteAudioFromStorage`).
+
+### Defense-in-depth on MIME — kept ✅
+`features/audio/utils/audio-mime.ts` (`normalizeAudioContentType` / `toAudioFile`)
+is the FE first line and stays. We now normalize at **every** outbound audio
+boundary, not just storage: the transcription routes
+(`useAudioTranscription`, per-chunk `useChunkedRecordAndTranscribe`) and the
+URL-fallback staged upload (`audioFallbackUpload`) all send a clean `audio/*`
+type + matching extension. So a recording is claimed as audio at upload time;
+your byte-level `detect_av_track_kind` is the backstop. Good to have both.
+
+### FYIs for the backend (non-blocking — no action expected)
+
+1. **Why we kept the legacy Recents guard.** Before your relocation hook, a
+   straggler upload carrying the *correct* `origin: "transcripts"` metadata was
+   observed landing in the user namespace (`Transcripts/Recordings`) in prod.
+   With your server-enforced routing this should no longer happen, but since a
+   miss would make a recording reappear in the tree, we keep the cheap legacy
+   path filter as a loud-recovery net. If you can confirm the
+   `/files/upload` relocation hook is now unconditional for
+   `origin === "transcripts"` (no early-return paths that skip it), we'll drop
+   the legacy guard on the next touch of that file.
+2. No other client writes `origin: "transcripts"`, so the single mapping in
+   `SYSTEM_ORIGIN_FOLDERS` is sufficient for us today.
+
+Nothing outstanding on our side — closing this out.

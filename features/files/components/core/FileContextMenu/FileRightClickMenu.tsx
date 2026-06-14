@@ -62,12 +62,19 @@ export interface FileRightClickMenuProps {
   children: React.ReactNode;
   /** When true, the right-click trigger is disabled (no menu opens). */
   disabled?: boolean;
+  /**
+   * Fired after the file is successfully deleted. Lets a host surface that
+   * tracks its own list keyed off the file react (e.g. the PDF studio
+   * archives the matching `processed_documents` row). Receives the file id.
+   */
+  onDeleted?: (fileId: string) => void | Promise<void>;
 }
 
 export function FileRightClickMenu({
   fileId,
   children,
   disabled,
+  onDeleted,
 }: FileRightClickMenuProps) {
   const a = useFileMenuActions(fileId);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -143,8 +150,8 @@ export function FileRightClickMenu({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete file?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will move the file to trash. You can restore it from
-              versions for 30 days before bytes are removed.
+              This will move the file to trash. You can restore it from versions
+              for 30 days before bytes are removed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -152,7 +159,15 @@ export function FileRightClickMenu({
             <AlertDialogAction
               onClick={() => {
                 setConfirmOpen(false);
-                void a.deleteFile();
+                void (async () => {
+                  try {
+                    await a.deleteFile();
+                    await onDeleted?.(fileId);
+                  } catch (err) {
+                    // eslint-disable-next-line no-console
+                    console.warn("[FileRightClickMenu] delete failed:", err);
+                  }
+                })();
               }}
             >
               Delete

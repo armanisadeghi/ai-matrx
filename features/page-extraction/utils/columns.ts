@@ -345,22 +345,34 @@ export const COLUMN_SOURCE_META: Record<
 > = {
   agent: {
     label: "Agent",
-    hint: "Filled from the extraction agent's output.",
-    editable: false,
+    hint: "Filled from the extraction agent's output. Double-click to override.",
+    editable: true,
   },
   validation: {
     label: "Validation",
-    hint: "Filled by a later validation/dedup pass (Push 2).",
-    editable: false,
+    hint: "Filled by a later validation/dedup pass. Double-click to override.",
+    editable: true,
   },
   manual: {
     label: "Manual",
-    hint: "Filled by a human in the Results table.",
+    hint: "Filled by a human in the Results table. Double-click to edit.",
     editable: true,
   },
   system: {
     label: "System",
-    hint: "Filled automatically by the pipeline.",
+    hint: "Page anchor filled automatically by the pipeline. Read-only.",
     editable: false,
   },
 };
+
+/**
+ * The payload key a cell edit must WRITE to for a given column. Reads
+ * (`cellValueFor`) and writes have to agree: `agent` columns read from
+ * `payload[agentField ?? key]`, everything else from `payload[key]`. System
+ * columns are not writable (the page anchor isn't a payload field).
+ */
+export function editKeyFor(col: ExtractionColumn): string | null {
+  if (col.source === "system") return null;
+  if (col.source === "agent") return col.agentField ?? col.key;
+  return col.key;
+}

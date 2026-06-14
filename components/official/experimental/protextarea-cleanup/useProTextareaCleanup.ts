@@ -28,6 +28,7 @@ import {
 } from "@/features/transcription-cleanup/hooks/useAiPostProcess";
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
 import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
+import type { SessionContextItem } from "@/features/transcript-studio/types";
 
 export interface UseProTextareaCleanupOptions {
   /**
@@ -52,8 +53,17 @@ export interface UseProTextareaCleanupResult {
   /** True while the model is in a thinking block (before visible output). */
   isThinking: boolean;
   error: string | null;
-  /** Launch `agentId` over `text`. No-op (returns false) without both. */
-  run: (text: string, agentId: string) => Promise<boolean>;
+  /**
+   * Launch `agentId` over `text`. No-op (returns false) without both.
+   * `contextItems` are passed straight to the agent as context entries (an
+   * item whose `key` matches a declared slot fills it; otherwise it rides as
+   * ad-hoc context) — same handling as the cleanup page.
+   */
+  run: (
+    text: string,
+    agentId: string,
+    contextItems?: SessionContextItem[],
+  ) => Promise<boolean>;
   /** Clear all streaming state (call on cancel / before a fresh run). */
   reset: () => void;
 }
@@ -75,15 +85,26 @@ export function useProTextareaCleanup(
   );
 
   const run = useCallback(
-    async (text: string, agentId: string): Promise<boolean> => {
+    async (
+      text: string,
+      agentId: string,
+      contextItems: SessionContextItem[] = [],
+    ): Promise<boolean> => {
       if (!agentId) return false;
       if (!text.trim()) return false;
       ai.reset();
       const launched = await ai.process({
         agentId,
         text,
-        contextItems: [],
-        scope: { content: text },
+        contextItems,
+        // Mirror the cleanup surface's input contract: the raw text is offered
+        // under BOTH canonical names. `raw_transcript_text` is the surface's
+        // primary input (what agents/bindings target); the manifest makes it
+        // double as `content` for name-matched agents that declare `content`.
+        // `useAiPostProcess` then binds these onto the agent by explicit
+        // surface mapping or exact name match, and still guarantees delivery
+        // of `text` (heuristic → single var → user_input) if neither matches.
+        scope: { content: text, raw_transcript_text: text },
       });
       return launched !== null;
     },

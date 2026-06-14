@@ -7,8 +7,12 @@ import { cn } from "@/lib/utils";
  * gradient pill ("Sign Up") opens the guest user menu via the same
  * hidden checkbox toggle (`#shell-user-menu`) that the authenticated
  * trigger uses, so the panel/backdrop wiring is identical. An adjacent
- * "Sign In" link is shown on `sm+` viewports and routes straight to
- * `/login` (no menu intermediary).
+ * "Sign In" link routes straight to `/login` (no menu intermediary).
+ *
+ * Sign In is shown at every breakpoint — including mobile — because our
+ * own users frequently land here after being logged out (cookie expiry, a
+ * refresh on a public route). Hiding login on mobile left them with only a
+ * "Sign Up" pill, which is the wrong door for a returning account holder.
  *
  * Footprint matches `UserMenuTrigger` (h-11 wrapper, 32 × 32 inner) so
  * the header layout stays pixel-stable across auth states.
@@ -19,7 +23,7 @@ export default function GuestUserMenuTrigger() {
       <Link
         href="/login"
         className={cn(
-          "hidden sm:inline-flex items-center h-7 px-2 rounded-md text-xs font-medium",
+          "inline-flex items-center h-7 px-2 rounded-md text-xs font-medium",
           "text-foreground hover:bg-[var(--matrx-glass-bg-hover)] transition-colors",
         )}
       >

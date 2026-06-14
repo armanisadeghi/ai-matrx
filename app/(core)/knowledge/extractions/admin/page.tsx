@@ -93,7 +93,24 @@ const PAGE_EXTRACTION_ADMIN_MAP: FeatureAdminMap = {
       name: "ExportMenu",
       filePath: "features/page-extraction/data-review/ExportMenu.tsx",
       description:
-        "Download (CSV / XLSX / JSON), copy (table / AI-friendly Markdown), and Send to (new workbook / new data table).",
+        "Download (CSV / XLSX / JSON) + copy (table / AI-friendly Markdown).",
+      tier: "internal",
+      status: "Live",
+    },
+    {
+      name: "SendToMenu",
+      filePath: "features/page-extraction/data-review/SendToMenu.tsx",
+      description:
+        "Discoverable header button: push the dataset to a new Workbook or Data table, then raise the open-chooser.",
+      tier: "internal",
+      status: "Live",
+    },
+    {
+      name: "OpenDestinationDialog",
+      filePath:
+        "features/page-extraction/data-review/OpenDestinationDialog.tsx",
+      description:
+        "Reusable post-create chooser — Open here / Open in new tab / Open as window (window only for window-panel-capable targets). Responsive (Drawer/Dialog).",
       tier: "internal",
       status: "Live",
     },

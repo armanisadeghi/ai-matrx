@@ -67,6 +67,7 @@ import {
   buildMergedDuplicateView,
   cellValueFor,
   COLUMN_SOURCE_META,
+  editKeyFor,
   humanizeKey,
   inferColumnsFromRows,
   normalizeResultRows,
@@ -80,6 +81,7 @@ import type {
 
 import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
 import { ExportMenu } from "./ExportMenu";
+import { SendToMenu } from "./SendToMenu";
 import { RunsPopover } from "./RunsPopover";
 import { deleteResultRows, duplicateJob } from "./data";
 import { cellToString } from "./export";
@@ -252,23 +254,24 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
   const commitEdit = useCallback(async () => {
     if (!editing) return;
     const row = displayRows.find((r) => r.id === editing.rowId);
+    const col = columns.find((c) => c.key === editing.key);
     setEditing(null);
-    if (!row || editing.rowId.includes("#")) return;
-    const prev = cellToString(
-      cellValueFor(row, columns.find((c) => c.key === editing.key)!),
-    );
+    if (!row || !col || editing.rowId.includes("#")) return;
+    const writeKey = editKeyFor(col);
+    if (!writeKey) return;
+    const prev = cellToString(cellValueFor(row, col));
     if (prev === editDraft) return;
     try {
       await updateResultPayloadField({
         resultId: row.id,
         currentPayload: row.payload,
-        key: editing.key,
+        key: writeKey,
         value: editDraft,
       });
       setResults((rs) =>
         rs.map((r) =>
           r.id === row.id
-            ? { ...r, payload: { ...r.payload, [editing.key]: editDraft } }
+            ? { ...r, payload: { ...r.payload, [writeKey]: editDraft } }
             : r,
         ),
       );
@@ -447,6 +450,12 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
             selectedRunId={selectedRunId}
             onSelectRun={setSelectedRunId}
             onChanged={() => void loadResults()}
+          />
+          <SendToMenu
+            name={job?.name ?? "extraction"}
+            columns={exportColumns}
+            rows={exportRows}
+            disabled={loading}
           />
           <ExportMenu
             name={job?.name ?? "extraction"}
@@ -682,7 +691,17 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                       return (
                         <td
                           key={c.key}
-                          className="max-w-[360px] px-3 py-1.5 align-top"
+                          className={cn(
+                            "max-w-[360px] px-3 py-1.5 align-top",
+                            editable &&
+                              !row.id.includes("#") &&
+                              "cursor-text hover:bg-primary/5",
+                          )}
+                          title={
+                            editable && !row.id.includes("#")
+                              ? "Double-click to edit"
+                              : undefined
+                          }
                           onDoubleClick={() => {
                             if (editable && !row.id.includes("#")) {
                               setEditing({ rowId: row.id, key: c.key });
@@ -704,23 +723,23 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                               style={{ fontSize: "16px" }}
                             />
                           ) : (
-                            <div
-                              className={cn(
-                                "whitespace-pre-wrap break-words",
-                                editable && "cursor-text",
-                              )}
-                            >
-                              {value || (
-                                <span className="text-muted-foreground/40">
-                                  —
-                                </span>
-                              )}
-                              {c.key === visibleColumns[0]?.key &&
-                                mergedCount > 0 && (
-                                  <span className="ml-1.5 rounded bg-secondary/15 px-1 py-0.5 text-[10px] font-medium text-secondary">
-                                    +{mergedCount} merged
+                            <div className="flex items-start gap-1 whitespace-pre-wrap break-words">
+                              <span className="min-w-0 flex-1">
+                                {value || (
+                                  <span className="text-muted-foreground/40">
+                                    —
                                   </span>
                                 )}
+                                {c.key === visibleColumns[0]?.key &&
+                                  mergedCount > 0 && (
+                                    <span className="ml-1.5 rounded bg-secondary/15 px-1 py-0.5 text-[10px] font-medium text-secondary">
+                                      +{mergedCount} merged
+                                    </span>
+                                  )}
+                              </span>
+                              {editable && !row.id.includes("#") && (
+                                <Pencil className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-60" />
+                              )}
                             </div>
                           )}
                         </td>

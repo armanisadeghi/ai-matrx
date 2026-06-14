@@ -12,7 +12,7 @@ import {
   CheckCircle2,
   WrapText,
   Type,
-  Maximize2
+  Maximize2,
 } from "lucide-react";
 import {
   Tooltip,
@@ -25,6 +25,7 @@ import type { editor } from "monaco-editor";
 import { configureMonaco } from "../../config/monaco-config";
 import { CodeEditorContextMenu } from "../CodeEditorContextMenu";
 import { getFileExtension } from "@/features/code-editor/config/languages";
+import { resolveMonacoEditorTheme } from "@/features/code-editor/config/syntax-themes";
 
 interface CodeEditorProps {
   language?: string;
@@ -88,9 +89,10 @@ const SmallCodeEditor = ({
       ? controlledMinimap
       : internalMinimapEnabled;
 
-  // SIMPLE FIX: Just use built-in Monaco themes - they work perfectly
-  // Custom themes can interfere with syntax highlighting token rules
-  const editorTheme = mode === "dark" ? "vs-dark" : "vs";
+  const editorTheme = resolveMonacoEditorTheme(
+    language,
+    mode === "dark" ? "dark" : "light",
+  );
 
   // Generate a unique file path with extension based on language
   // This helps Monaco recognize TypeScript/TSX files correctly

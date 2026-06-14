@@ -37,6 +37,8 @@ import type { ColumnType } from "@/features/page-extraction/types";
 
 export interface PushResult {
   ok: boolean;
+  /** Id of the created resource (workbook id / table id). */
+  id?: string;
   /** Relative URL to open the created resource. */
   href?: string;
   error?: string;
@@ -120,7 +122,11 @@ export async function pushToWorkbook(
     });
     if (isServiceFailure(saved)) return { ok: false, error: saved.error };
 
-    return { ok: true, href: `/workbooks/${created.data.id}` };
+    return {
+      ok: true,
+      id: created.data.id,
+      href: `/workbooks/${created.data.id}`,
+    };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
@@ -190,11 +196,12 @@ export async function pushToDataset(
     if (failures > 0) {
       return {
         ok: true,
+        id: created.tableId,
         href: `/data/${created.tableId}`,
         error: `${failures} of ${rows.length} rows failed to copy.`,
       };
     }
-    return { ok: true, href: `/data/${created.tableId}` };
+    return { ok: true, id: created.tableId, href: `/data/${created.tableId}` };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }

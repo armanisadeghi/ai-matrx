@@ -195,6 +195,14 @@ export interface PageExtractionState {
    * run this" flow from being buried under the editor every time.
    */
   editingByFile: Record<string, boolean>;
+  /**
+   * Monotonic counter bumped whenever results are deleted out-of-band (e.g.
+   * deleting an entire run). The results hooks fetch their own rows and the
+   * Realtime channel only reliably delivers INSERT/UPDATE (DELETE carries just
+   * the PK under the default replica identity), so this is the explicit
+   * "your rows may have changed underneath you — refetch" signal.
+   */
+  resultsRefreshNonce: number;
 }
 
 const initialState: PageExtractionState = {
@@ -203,6 +211,7 @@ const initialState: PageExtractionState = {
   viewedJobByFile: {},
   draftsByFile: {},
   editingByFile: {},
+  resultsRefreshNonce: 0,
 };
 
 const slice = createSlice({
@@ -445,6 +454,12 @@ const slice = createSlice({
       delete state.activeRuns[action.payload.jobId];
     },
 
+    /** Signal result-reading hooks to refetch (used after an out-of-band
+     *  delete such as removing an entire run). */
+    invalidateResults(state) {
+      state.resultsRefreshNonce += 1;
+    },
+
     // ── Chunking config draft ────────────────────────────────────────────
 
     ensureDraft(state, action: PayloadAction<{ fileId: string }>) {
@@ -512,6 +527,7 @@ export const {
   runCompleted,
   runFailed,
   clearRun,
+  invalidateResults,
   ensureDraft,
   patchDraft,
   toggleDraftVariation,

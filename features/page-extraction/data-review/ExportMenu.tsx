@@ -3,24 +3,20 @@
 /**
  * features/page-extraction/data-review/ExportMenu.tsx
  *
- * The single export surface for an extraction dataset: file downloads
- * (CSV / XLSX / JSON), clipboard (table + AI-friendly markdown), and the two
- * structured push targets (Workbook, typed Dataset). All formats are built
- * from the same (columns, rows) view via ./export + ./export-targets, so what
- * you download is exactly what you copy or push.
+ * File/clipboard export for an extraction dataset: downloads (CSV / XLSX / JSON)
+ * and clipboard (table + AI-friendly markdown). All formats are built from the
+ * same (columns, rows) view via ./export, so what you download is exactly what
+ * you copy. Pushing into other Matrx systems (Workbook / Data table) lives in
+ * the sibling, more-discoverable <SendToMenu>.
  */
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Braces,
   ClipboardCopy,
   Download,
   FileSpreadsheet,
   FileText,
-  Loader2,
   Sparkles,
-  Table2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,7 +41,6 @@ import {
   type ExportColumn,
   type ExportRow,
 } from "./export";
-import { pushToDataset, pushToWorkbook } from "./export-targets";
 import type { ColumnType } from "@/features/page-extraction/types";
 
 export interface ExportMenuColumn extends ExportColumn {
@@ -63,8 +58,6 @@ export function ExportMenu({
   rows: ExportRow[];
   disabled?: boolean;
 }) {
-  const router = useRouter();
-  const [pushing, setPushing] = useState<"workbook" | "dataset" | null>(null);
   const slug = fileSlug(name);
   const empty = rows.length === 0 || columns.length === 0;
 
@@ -79,45 +72,11 @@ export function ExportMenu({
     }
   };
 
-  const push = async (target: "workbook" | "dataset") => {
-    setPushing(target);
-    try {
-      const res =
-        target === "workbook"
-          ? await pushToWorkbook(name, columns, rows)
-          : await pushToDataset(name, columns, rows);
-      if (!res.ok) {
-        toast.error(
-          target === "workbook"
-            ? "Could not create workbook"
-            : "Could not create dataset",
-          { description: res.error },
-        );
-        return;
-      }
-      toast.success(
-        target === "workbook" ? "Workbook created" : "Dataset created",
-        {
-          description: res.error ?? "Click to open",
-          action: res.href
-            ? { label: "Open", onClick: () => router.push(res.href!) }
-            : undefined,
-        },
-      );
-    } finally {
-      setPushing(null);
-    }
-  };
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" disabled={disabled || empty}>
-          {pushing ? (
-            <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
-          ) : (
-            <Download className="h-4 w-4 sm:mr-2" />
-          )}
+          <Download className="h-4 w-4 sm:mr-2" />
           <span className="hidden sm:inline">Export</span>
         </Button>
       </DropdownMenuTrigger>
@@ -164,27 +123,6 @@ export function ExportMenu({
           onClick={() => void copy(toMarkdownTable(columns, rows), "Markdown")}
         >
           <Sparkles className="mr-2 h-4 w-4" /> Copy for AI
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel>Send to</DropdownMenuLabel>
-        <DropdownMenuItem
-          disabled={!!pushing}
-          onSelect={(e) => {
-            e.preventDefault();
-            void push("workbook");
-          }}
-        >
-          <FileSpreadsheet className="mr-2 h-4 w-4" /> New workbook
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          disabled={!!pushing}
-          onSelect={(e) => {
-            e.preventDefault();
-            void push("dataset");
-          }}
-        >
-          <Table2 className="mr-2 h-4 w-4" /> New data table
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

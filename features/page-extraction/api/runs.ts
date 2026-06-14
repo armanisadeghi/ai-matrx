@@ -41,6 +41,26 @@ export async function updateResultPayloadField(opts: {
   if (error) throw error;
 }
 
+/**
+ * Permanently delete one entire run: the run row plus everything it produced
+ * (its `page_extraction_page_runs` chunks and `page_extraction_results` rows)
+ * via the `ON DELETE CASCADE` FK chain. The owning job's `latest_run_id` FK is
+ * `ON DELETE SET NULL`, so it self-clears if it pointed here — and
+ * `getLatestRunId` falls back to the newest remaining run, so the job still
+ * resolves a "latest" execution afterward. RLS owner-write applies.
+ *
+ * This is distinct from `clearJobResults` (which wipes ALL runs for the
+ * template) and from archiving the template (`deleteJob`, which keeps the
+ * data queryable).
+ */
+export async function deleteRun(runId: string): Promise<void> {
+  const { error } = await db
+    .from("page_extraction_runs")
+    .delete()
+    .eq("id", runId);
+  if (error) throw error;
+}
+
 export async function getRun(runId: string): Promise<PageExtractionRun | null> {
   const { data, error } = await db
     .from("page_extraction_runs")

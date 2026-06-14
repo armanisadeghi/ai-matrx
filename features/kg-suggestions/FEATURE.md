@@ -35,16 +35,37 @@ one click and never destructive. Phase F of the Knowledge-Graph plan.
   button-with-count-badge that opens the global drawer; dropped into `/scopes`.
 - `KgSuggestionRowItem` (`components/KgSuggestionRowItem.tsx`) — the ONE shared
   DECISION CARD used by every surface above. For a slot-fill it resolves and
-  shows: the SOURCE (note/task title + one-click "Open" into a window panel),
-  the TARGET path in plain words (org › scope-type › scope › item, + "View"
-  link), the CHANGE (current value → suggested, with a loud overwrite warning
-  + destructive ConfirmDialog when a value already exists), every field on the
-  target scope (targeted one highlighted), confidence, match-kind, and a
-  "Detected …" timestamp. Heavy-hitter rows keep the lightweight "promote to a
-  scope" treatment. Accept/reject/defer come from the hook. The value card also
-  exposes a DEFER-WITH-NOTE popover (the small note icon beside "Defer") and
-  renders any existing `decision_note` so deferred rows explain themselves when
-  they resurface.
+  shows: the SOURCE (resolved title for any kind + a kind-agnostic **"Preview
+  source"** action — `PreviewSourceButton`), the TARGET path in plain words
+  (org › scope-type › scope › item, + "View" link), the CHANGE (current value →
+  suggested, with a loud overwrite warning + destructive ConfirmDialog when a
+  value already exists), every field on the target scope (targeted one
+  highlighted), confidence, match-kind, and a "Detected …" timestamp.
+  Heavy-hitter rows keep the lightweight "promote to a scope" treatment but now
+  also surface the source line + snippet + "Preview source". Accept/reject/defer
+  come from the hook. The value card also exposes a DEFER-WITH-NOTE popover (the
+  small note icon beside "Defer") and renders any existing `decision_note` so
+  deferred rows explain themselves when they resurface. The snippet block is a
+  one-click preview trigger when a host provides a preview controller.
+
+**Source preview** (`components/source-preview/`) — review the document a
+suggestion came from, with its `context_snippet` highlighted, in a non-blocking
+panel that NEVER dismisses the inbox.
+- `SuggestionSourcePreview` (`source-preview/SuggestionSourcePreview.tsx`) — the
+  read surface: header (kind icon + title + meta + "Open" link-out), the
+  verbatim snippet callout (the guaranteed evidence, always shown), and the
+  source body with the snippet highlighted + scrolled into view. Degrades to
+  snippet-only + link-out when no body is loadable.
+- `SourcePreviewPanel` (`source-preview/SourcePreviewPanel.tsx`) — wraps the
+  preview in the reusable `MatrxDynamicPanel` ("flexible panel" — fixed,
+  resizable, repositionable, no backdrop). Mounted only while a target is
+  active; the outer wrapper carries `data-source-preview-panel`. Lazy-loads the
+  panel via `next/dynamic` (`ssr:false`).
+- `SourcePreviewContext` (`source-preview/SourcePreviewContext.tsx`) — the host
+  owns the active target via `useSourcePreviewController`, exposes only
+  `openPreview` to descendant cards via `SourcePreviewProvider`, and renders the
+  panel itself. A card calls `useOpenSourcePreview()`; absent a provider (compact
+  popover/chip), the card falls back to a window open / new-tab link-out.
 
 **Management surface** (`components/manager/`, route `/suggestions`) — a
 dedicated power-user table for triaging EVERY suggestion (any status), distinct
@@ -68,9 +89,21 @@ from the three cache-keyed inbox views.
 **Enrichment layer** (resolves opaque ids → human-readable decision context)
 - `service/kgEnrichmentService.ts` (`enrichSuggestion`) — combines the scopes
   chokepoint's `resolveSuggestionTarget` (org/type/scope/item path, all items,
-  current values) with a source-title lookup (notes via `fetchNoteById`).
+  current values) with a source-title lookup. Title resolution is delegated to
+  `sourcePreviewService.resolveSourceTitle` (multi-kind: note/task/project/
+  transcript/conversation/file/code_file + ingested-doc fallback) — no longer
+  notes-only.
+- `service/sourcePreviewService.ts` — the SOURCE read layer. `resolveSourceTitle`
+  (lightweight, per-kind, used by the always-on card line) and `loadSourcePreview`
+  (full body — direct-Supabase per kind: notes/ctx_tasks/ctx_projects/transcripts
+  /cx_conversation/user_files/code_files; bodies for files/scraped/unknown kinds
+  come from the ingested `processed_documents.clean_content`/`content`). Never
+  throws — degrades to a `notFound` doc. `sourceLinkFor` is the chunk-less
+  link-out router (sibling of `rag/api/search.ts#citationHrefFor`).
 - `hooks/useKgSuggestionEnrichment.ts` — per-card resolver with a module-level
   promise cache keyed by suggestion id (dedupes repeat/concurrent resolves).
+- `hooks/useSourcePreviewDoc.ts` — on-demand source-body loader, promise-cached
+  by `kind:id` (mirrors the enrichment hook's caching).
 - `scopesService.resolveSuggestionTarget({ scopeId, contextItemId })` — the
   read RPC-shaped method (in the ctx_* chokepoint) returning
   `ResolvedSuggestionTarget` (`features/scopes/types.ts`).
@@ -242,6 +275,18 @@ by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
   upserts `user_preferences.auto_rag_enabled`. Optimistic; rolls back + toasts
   on error.
 
+**5. Preview a source (non-blocking review)**
+- A host (`GlobalSuggestionsDrawer`, `SuggestionsManager`) calls
+  `useSourcePreviewController`, wraps its cards in `SourcePreviewProvider`, and
+  renders `<SourcePreviewPanel>`.
+- A card's "Preview source" button / snippet → `useOpenSourcePreview()` sets the
+  host's local target → `SourcePreviewPanel` mounts a `MatrxDynamicPanel` and
+  `SuggestionSourcePreview` loads the body (`useSourcePreviewDoc`) and highlights
+  the snippet. The inbox surface never unmounts.
+- In the drawer, the Sheet/Drawer guards `onInteractOutside` /
+  `onPointerDownOutside` / `onEscapeKeyDown` while previewing, so reviewing the
+  source can't dismiss the inbox; Escape closes the preview first.
+
 ---
 
 ## Invariants & gotchas
@@ -251,6 +296,16 @@ by the aidream auto-ingest NER orchestrator, read/decided by the FE directly)
   (per CLAUDE.md, confirms are only for destructive paths). Results are toasts.
 - **One shared row.** Every surface renders `KgSuggestionRowItem` — never fork
   the row UX. Accept/reject/defer come from the hook, not the component.
+- **Source preview is non-blocking, host-owned, and never dismisses the inbox.**
+  The preview target lives in the HOST's local state (`useSourcePreviewController`),
+  not Redux — opening it must not touch the suggestion cache or close the drawer.
+  Reuse `MatrxDynamicPanel` for the surface; don't add a new panel primitive. A
+  card requests a preview via `useOpenSourcePreview()` and MUST tolerate a `null`
+  controller (compact surfaces) by falling back to a link-out, never crashing.
+- **One source read layer.** Source titles + bodies + link-outs come from
+  `sourcePreviewService` (and `useSourcePreviewDoc` for bodies). Don't re-query
+  source tables ad hoc from a card or fork a second title resolver — extend the
+  per-kind switch there.
 - **Cross-surface sync via normalized cache.** A decision removes the row from
   every list key, so a note chip and the global drawer update together. Don't
   add a parallel per-surface cache.
@@ -366,6 +421,24 @@ end-to-end runtime needs NER to produce live rows in both ledgers.
 
 ## Change log
 
+- `2026-06-14` — **Source preview + non-blocking review.** Suggestions now show
+  the actual document they came from, with the `context_snippet` highlighted in
+  context, in a resizable non-blocking panel that never dismisses the inbox. New
+  `service/sourcePreviewService.ts` (multi-kind direct-Supabase source titles +
+  bodies + `processed_documents` fallback + `sourceLinkFor` link-out router),
+  `hooks/useSourcePreviewDoc.ts` (promise-cached body loader), and
+  `components/source-preview/` (`SuggestionSourcePreview` read surface +
+  `SourcePreviewPanel` wrapping the reusable `MatrxDynamicPanel` +
+  `SourcePreviewContext` host controller / card hook). `kgEnrichmentService`
+  delegates title resolution to the new service (was notes-only → now all common
+  kinds). `KgSuggestionRowItem` replaces the notes-only "Open" with a
+  kind-agnostic `PreviewSourceButton` across the link / slot-fill / heavy-hitter
+  variants and makes the snippet a preview trigger; absent a host controller it
+  falls back to a window open / new-tab. `GlobalSuggestionsDrawer` and
+  `SuggestionsManager` host the controller + panel; the drawer guards
+  Sheet/Drawer outside-interaction so previewing can't close the inbox. (The
+  manager uses the same floating `MatrxDynamicPanel` rather than an inline split
+  — one reused, resizable, repositionable surface across both inboxes.)
 - `2026-06-08` — **Suggestions manager + defer-with-note + star/seen.** One
   Supabase migration (`kg_014`) added `decision_note` / `viewed_at` /
   `is_starred` to both ledgers, org/scope/item manager indexes, and two

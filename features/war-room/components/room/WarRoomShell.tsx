@@ -18,6 +18,7 @@ import {
   leaveWarRoomSession,
   loadWarRoomSession,
 } from "@/features/war-room/redux/thunks";
+import { WarRoomGallery } from "./WarRoomGallery";
 
 export function WarRoomShell({ sessionId }: { sessionId: string }) {
   const dispatch = useAppDispatch();
@@ -73,12 +74,7 @@ export function WarRoomShell({ sessionId }: { sessionId: string }) {
             </div>
           </div>
         ) : (
-          <div className="h-full grid place-items-center text-center px-4">
-            <div className="text-muted-foreground">
-              <LayoutGrid className="size-8 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">The tile gallery arrives in Wave 2.</p>
-            </div>
-          </div>
+          <WarRoomGallery sessionId={sessionId} />
         )}
       </div>
     </div>

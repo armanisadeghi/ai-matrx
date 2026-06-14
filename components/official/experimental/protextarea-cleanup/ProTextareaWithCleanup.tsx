@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/popover";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { supabase } from "@/utils/supabase/client";
+import type { SessionContextItem } from "@/features/transcript-studio/types";
 import { TranscriptionResult } from "@/features/audio/types";
 import { VoiceTroubleshootingModal } from "@/features/audio/components/VoiceTroubleshootingModal";
 import {
@@ -96,6 +97,12 @@ export interface ProTextareaWithCleanupProps extends React.TextareaHTMLAttribute
    * shared cleanup surface "clean" role (same default as the cleanup page).
    */
   cleanupAgentId?: string | null;
+  /**
+   * Context blocks the host page wants the cleanup agent to receive. Each item
+   * whose `key` matches an agent-declared context slot fills that slot; the
+   * rest ride as ad-hoc context entries (same handling as the cleanup page).
+   */
+  cleanupContextItems?: SessionContextItem[];
   /** When provided, renders a prominent submit button at the bottom-right. */
   onSubmit?: () => void;
   /** Force-disable the submit button regardless of content. */
@@ -139,6 +146,7 @@ export const ProTextareaWithCleanup = React.forwardRef<
       showCopyButton = true,
       enableCleanup = false,
       cleanupAgentId,
+      cleanupContextItems,
       onSubmit,
       submitDisabled,
       isSubmitting = false,
@@ -178,6 +186,11 @@ export const ProTextareaWithCleanup = React.forwardRef<
     const cleanup = useProTextareaCleanup({ agentId: cleanupAgentId });
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuMode, setMenuMode] = useState<"menu" | "cleanup">("menu");
+    // Latest context items, mirrored so the async run never reads a stale prop.
+    const cleanupContextRef = useRef<SessionContextItem[]>(
+      cleanupContextItems ?? [],
+    );
+    cleanupContextRef.current = cleanupContextItems ?? [];
     // The agent the user has chosen for cleanup (seeded from the surface
     // default). The user picks from the same agent list the cleanup page uses;
     // nothing runs until they click "Clean up".
@@ -415,7 +428,7 @@ export const ProTextareaWithCleanup = React.forwardRef<
         toast.info("Choose a cleanup agent first");
         return;
       }
-      void cleanup.run(text, cleanupAgent);
+      void cleanup.run(text, cleanupAgent, cleanupContextRef.current);
     }, [cleanup, cleanupAgent, valueAsString]);
 
     const applyCleanup = useCallback(() => {

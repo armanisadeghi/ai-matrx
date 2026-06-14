@@ -83,6 +83,13 @@ export interface FileContextMenuProps {
   onShare?: () => void;
   onMove?: () => void;
   disabled?: boolean;
+  /**
+   * Fired after a file is successfully deleted (single or each batch item).
+   * Lets a host surface that tracks its own list keyed off the file react —
+   * e.g. the PDF studio archives the matching `processed_documents` row and
+   * drops it from its sidebar. Receives the deleted file's id.
+   */
+  onDeleted?: (fileId: string) => void | Promise<void>;
 }
 
 export function FileContextMenu({
@@ -92,6 +99,7 @@ export function FileContextMenu({
   onShare,
   onMove,
   disabled,
+  onDeleted,
 }: FileContextMenuProps) {
   const dispatch = useAppDispatch();
   const actions = useFileActions(fileId);
@@ -213,12 +221,13 @@ export function FileContextMenu({
     try {
       await runBatch(async (id) => {
         await dispatch(deleteFileThunk({ fileId: id })).unwrap();
+        await onDeleted?.(id);
       });
       dispatch(clearSelection());
     } finally {
       setBusy(null);
     }
-  }, [dispatch, runBatch]);
+  }, [dispatch, runBatch, onDeleted]);
 
   // ── Duplicate (client-side) ──────────────────────────────────────────
   // The backend doesn't expose a copyFile endpoint yet (logged in
@@ -549,9 +558,9 @@ export function FileContextMenu({
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {/* PDF surfaces — driven by the canonical registry
-                    * (features/pdf/surfaces/registry). One entry per surface,
-                    * identical everywhere this menu appears; adding a surface
-                    * to the registry adds it to every menu and switcher. */}
+                   * (features/pdf/surfaces/registry). One entry per surface,
+                   * identical everywhere this menu appears; adding a surface
+                   * to the registry adds it to every menu and switcher. */}
                   {file?.mimeType === "application/pdf"
                     ? PDF_SURFACES.filter((s) => s.id !== "rag-library").map(
                         (surface) => {
@@ -658,8 +667,16 @@ export function FileContextMenu({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                void actions.delete({ hard: false });
                 setConfirmOpen(false);
+                void (async () => {
+                  try {
+                    await actions.delete({ hard: false });
+                    await onDeleted?.(fileId);
+                  } catch (err) {
+                    // eslint-disable-next-line no-console
+                    console.warn("[FileContextMenu] delete failed:", err);
+                  }
+                })();
               }}
             >
               Delete

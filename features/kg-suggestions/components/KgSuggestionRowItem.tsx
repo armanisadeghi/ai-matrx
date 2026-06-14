@@ -32,6 +32,7 @@ import {
   ChevronDown,
   Clock,
   ExternalLink,
+  Eye,
   FileText,
   Link2,
   Network,
@@ -58,6 +59,8 @@ import {
 } from "@/features/scope-system/utils/scopeRoutes";
 import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindow";
 import { useKgSuggestionEnrichment } from "@/features/kg-suggestions/hooks/useKgSuggestionEnrichment";
+import { useOpenSourcePreview } from "@/features/kg-suggestions/components/source-preview/SourcePreviewContext";
+import { sourceLinkFor } from "@/features/kg-suggestions/service/sourcePreviewService";
 import type {
   ResolvedSuggestionItem,
   ResolvedSuggestionValue,
@@ -136,7 +139,7 @@ export function KgSuggestionRowItem({
   const target = enrichment?.target ?? null;
   const source = enrichment?.source ?? null;
 
-  const openNoteInWindow = useOpenNoteInWindow();
+  const openSourcePreview = useOpenSourcePreview();
 
   const confidencePct = Math.round(
     Math.max(0, Math.min(1, row.confidence)) * 100,
@@ -192,6 +195,28 @@ export function KgSuggestionRowItem({
             {matchLabel("heavy_hitter")}
           </Badge>
         </div>
+
+        {/* Where it came from — source + evidence the user can review. */}
+        {row.context_snippet ? (
+          <div className="mt-2 text-[11px] text-foreground/70 line-clamp-2 border-l-2 border-border pl-2">
+            “{row.context_snippet}”
+          </div>
+        ) : null}
+        <div className="mt-1.5 flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground">
+            Found in {SOURCE_KIND_LABEL[row.source_kind] ?? row.source_kind}
+          </span>
+          <PreviewSourceButton
+            kind={row.source_kind}
+            id={row.source_id}
+            snippet={row.context_snippet}
+            title={source?.title ?? null}
+            openableAsNote={source?.openableAs === "note"}
+            label="Preview source"
+            className="ml-auto"
+          />
+        </div>
+
         <div className="mt-2 flex items-center justify-end gap-1.5">
           <DeferControl
             busy={busy}
@@ -233,11 +258,6 @@ export function KgSuggestionRowItem({
       target && target.org.slug
         ? scopeHref(target.org.slug, target.scope_type, target.scope)
         : null;
-    const openLinkSource = () => {
-      if (source?.openableAs === "note") {
-        openNoteInWindow({ noteId: source.id, title: source.title ?? "Note" });
-      }
-    };
     const scopeTypeLabel = target?.scope_type?.label_singular ?? null;
     const scopeName = target?.scope.name ?? null;
     const acceptVerb = scopeTypeLabel
@@ -341,22 +361,36 @@ export function KgSuggestionRowItem({
               <span className="min-w-0 flex-1 pt-0.5 text-foreground/90 truncate">
                 {sourceTitle}
               </span>
-              {source?.openableAs === "note" ? (
-                <button
-                  type="button"
-                  onClick={openLinkSource}
-                  className="shrink-0 inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-1 text-[11px] text-foreground hover:bg-accent transition-colors"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Open {linkSourceLabel}
-                </button>
-              ) : null}
+              <PreviewSourceButton
+                kind={row.source_kind}
+                id={row.source_id}
+                snippet={row.context_snippet}
+                title={source?.title ?? null}
+                openableAsNote={source?.openableAs === "note"}
+                label="Preview source"
+              />
             </div>
 
             {row.context_snippet ? (
-              <div className="text-[11px] text-foreground/70 line-clamp-2 border-l-2 border-border pl-2">
+              <button
+                type="button"
+                onClick={() =>
+                  openSourcePreview?.({
+                    kind: row.source_kind,
+                    id: row.source_id,
+                    snippet: row.context_snippet,
+                    title: source?.title ?? null,
+                  })
+                }
+                className={cn(
+                  "block w-full text-left text-[11px] text-foreground/70 line-clamp-2 border-l-2 border-border pl-2",
+                  openSourcePreview &&
+                    "hover:text-foreground hover:border-primary/60 transition-colors cursor-pointer",
+                )}
+                title={openSourcePreview ? "Preview source" : undefined}
+              >
                 “{row.context_snippet}”
-              </div>
+              </button>
             ) : null}
 
             <div className="flex items-center gap-2 flex-wrap">
@@ -458,15 +492,6 @@ export function KgSuggestionRowItem({
       return;
     }
     doAccept();
-  };
-
-  const openSource = () => {
-    if (source?.openableAs === "note") {
-      openNoteInWindow({
-        noteId: source.id,
-        title: source.title ?? "Note",
-      });
-    }
   };
 
   return (
@@ -614,16 +639,14 @@ export function KgSuggestionRowItem({
                     : `Untitled ${sourceKindLabel}`)}
               </div>
             </div>
-            {source?.openableAs === "note" ? (
-              <button
-                type="button"
-                onClick={openSource}
-                className="shrink-0 inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-1 text-[11px] text-foreground hover:bg-accent transition-colors"
-              >
-                <ExternalLink className="h-3 w-3" />
-                Open
-              </button>
-            ) : null}
+            <PreviewSourceButton
+              kind={row.source_kind}
+              id={row.source_id}
+              snippet={row.context_snippet}
+              title={source?.title ?? null}
+              openableAsNote={source?.openableAs === "note"}
+              label="Preview"
+            />
           </div>
 
           {/* Target path */}
@@ -692,9 +715,25 @@ export function KgSuggestionRowItem({
 
           {/* Context snippet */}
           {!compact && row.context_snippet ? (
-            <div className="text-[11px] text-muted-foreground/80 line-clamp-2 border-l-2 border-border pl-2">
+            <button
+              type="button"
+              onClick={() =>
+                openSourcePreview?.({
+                  kind: row.source_kind,
+                  id: row.source_id,
+                  snippet: row.context_snippet,
+                  title: source?.title ?? null,
+                })
+              }
+              className={cn(
+                "block w-full text-left text-[11px] text-muted-foreground/80 line-clamp-2 border-l-2 border-border pl-2",
+                openSourcePreview &&
+                  "hover:text-foreground hover:border-primary/60 transition-colors cursor-pointer",
+              )}
+              title={openSourcePreview ? "Preview source" : undefined}
+            >
               “{row.context_snippet}”
-            </div>
+            </button>
           ) : null}
 
           {/* Meta */}
@@ -946,6 +985,70 @@ function RejectButton({
     >
       <X className="h-3 w-3" />
       Reject
+    </button>
+  );
+}
+
+/**
+ * One review affordance for ANY source kind. When a host surface (drawer /
+ * manager) provides a source-preview controller, this opens the non-blocking
+ * floating preview panel beside the inbox (review without dismissing it). On
+ * compact surfaces with no host (popover / per-slot panel), it degrades to
+ * opening a note in a floating window or the source's native page in a new tab.
+ * Hidden only when there's nothing to show.
+ */
+function PreviewSourceButton({
+  kind,
+  id,
+  snippet,
+  title,
+  openableAsNote,
+  label,
+  className,
+}: {
+  kind: string;
+  id: string;
+  snippet: string | null;
+  title: string | null;
+  openableAsNote: boolean;
+  label?: string;
+  className?: string;
+}) {
+  const openPreview = useOpenSourcePreview();
+  const openNoteInWindow = useOpenNoteInWindow();
+  const href = sourceLinkFor(kind, id);
+  const inPanel = !!openPreview;
+  const canFallback = openableAsNote || !!href;
+
+  if (!id || (!inPanel && !canFallback)) return null;
+
+  const handle = () => {
+    if (openPreview) {
+      openPreview({ kind, id, snippet, title });
+      return;
+    }
+    if (openableAsNote) {
+      openNoteInWindow({ noteId: id, title: title ?? "Note" });
+      return;
+    }
+    if (href) window.open(href, "_blank", "noopener,noreferrer");
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handle}
+      className={cn(
+        "shrink-0 inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-1 text-[11px] text-foreground hover:bg-accent transition-colors",
+        className,
+      )}
+    >
+      {inPanel ? (
+        <Eye className="h-3 w-3" />
+      ) : (
+        <ExternalLink className="h-3 w-3" />
+      )}
+      {label ?? (inPanel ? "Preview" : "Open")}
     </button>
   );
 }

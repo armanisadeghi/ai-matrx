@@ -5,18 +5,20 @@
 //   - the TARGET: org → scope-type → scope → item path, every item on the
 //     scope, and the current value each holds (resolved through the scopes
 //     chokepoint, `scopesService.resolveSuggestionTarget`).
-//   - the SOURCE: a readable title for the note/task/… the entity came from,
-//     plus whether it can be opened in a window panel.
+//   - the SOURCE: a readable title for the note/task/project/transcript/file/
+//     conversation/… the entity came from (resolved per-kind by
+//     `sourcePreviewService.resolveSourceTitle`), plus whether it can be popped
+//     into a floating notes window.
 //
 // Read-only. Lives outside the scopes chokepoint because it only orchestrates
-// the chokepoint's read method + a notes/title lookup; it never touches ctx_*
-// tables directly.
+// the chokepoint's read method + the source title lookup; it never touches
+// ctx_* tables directly.
 
 "use client";
 
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
-import { fetchNoteById } from "@/features/notes/service/notesService";
+import { resolveSourceTitle } from "@/features/kg-suggestions/service/sourcePreviewService";
 import type { ResolvedSuggestionTarget } from "@/features/scopes/types";
 import type { KgSuggestionRow } from "@/features/kg-suggestions/types";
 
@@ -41,21 +43,6 @@ export interface EnrichedSuggestion {
 const OPENABLE: Record<string, KgOpenableSourceKind> = {
   note: "note",
 };
-
-async function resolveSourceTitle(
-  kind: string,
-  id: string,
-): Promise<string | null> {
-  try {
-    if (kind === "note") {
-      const note = await fetchNoteById(id);
-      return note?.label?.trim() || "Untitled note";
-    }
-  } catch {
-    // fall through to null — the UI shows kind + id as a graceful fallback.
-  }
-  return null;
-}
 
 /**
  * Enrich one suggestion row. Heavy-hitter rows have no slot-fill target, so

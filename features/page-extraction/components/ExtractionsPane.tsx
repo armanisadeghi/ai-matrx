@@ -21,8 +21,7 @@
 
 "use client";
 
-import Link from "next/link";
-import { Maximize2 } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JobPicker } from "@/features/page-extraction/components/JobPicker";
@@ -84,14 +83,16 @@ export function ExtractionsPane({
         <div className="min-w-0 flex-1">
           <JobPicker fileId={fileId} />
         </div>
-        <Link
+        <a
           href={fullViewHref}
-          title="Open full extraction workspace"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Open full extraction workspace in a new tab"
           className="mr-2 inline-flex h-6 shrink-0 items-center gap-1 rounded border border-border px-1.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
-          <Maximize2 className="h-3 w-3" />
           <span className="hidden xl:inline">Full view</span>
-        </Link>
+          <ArrowUpRight className="h-3 w-3" />
+        </a>
       </div>
       <RunProgressBar jobId={jobId} />
 

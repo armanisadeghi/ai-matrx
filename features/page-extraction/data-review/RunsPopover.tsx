@@ -15,6 +15,7 @@ import {
   History,
   Loader2,
   RotateCcw,
+  Trash2,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -25,9 +26,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 
 import {
+  deleteRun,
   listPageRunsForRun,
   listRunsForJob,
 } from "@/features/page-extraction/api/runs";
@@ -110,6 +113,39 @@ export function RunsPopover({
       }
     },
     [load, onChanged],
+  );
+
+  const doDelete = useCallback(
+    async (run: PageExtractionRun, num: number) => {
+      const ok = await confirm({
+        title: `Delete run #${num}`,
+        description:
+          "Permanently delete this entire run — its chunk runs and all " +
+          run.result_count +
+          " result row" +
+          (run.result_count === 1 ? "" : "s") +
+          " it produced. The dataset's other runs stay. This cannot be undone.",
+        confirmLabel: "Delete run",
+        variant: "destructive",
+      });
+      if (!ok) return;
+      setBusy(run.id);
+      try {
+        await deleteRun(run.id);
+        // If we were viewing the deleted run, fall back to "All runs".
+        if (selectedRunId === run.id) onSelectRun(null);
+        toast.success("Run deleted");
+        await load();
+        onChanged();
+      } catch (e) {
+        toast.error("Could not delete run", {
+          description: e instanceof Error ? e.message : undefined,
+        });
+      } finally {
+        setBusy(null);
+      }
+    },
+    [load, onChanged, onSelectRun, selectedRunId],
   );
 
   const doRetry = useCallback(
@@ -220,22 +256,40 @@ export function RunsPopover({
                           <XCircle className="h-3.5 w-3.5 text-destructive" />
                         )}
                       </Button>
-                    ) : run.failed_chunks > 0 ? (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        title="View failed chunks"
-                        onClick={() => void expand(run.id)}
-                      >
-                        <ChevronDown
-                          className={cn(
-                            "h-3.5 w-3.5 transition-transform",
-                            expanded === run.id && "rotate-180",
+                    ) : (
+                      <>
+                        {run.failed_chunks > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            title="View failed chunks"
+                            onClick={() => void expand(run.id)}
+                          >
+                            <ChevronDown
+                              className={cn(
+                                "h-3.5 w-3.5 transition-transform",
+                                expanded === run.id && "rotate-180",
+                              )}
+                            />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          title="Delete this entire run (chunks + results)"
+                          disabled={busy === run.id}
+                          onClick={() => void doDelete(run, num)}
+                        >
+                          {busy === run.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
                           )}
-                        />
-                      </Button>
-                    ) : null}
+                        </Button>
+                      </>
+                    )}
                   </div>
 
                   {expanded === run.id && (

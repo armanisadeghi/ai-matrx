@@ -1,16 +1,20 @@
+// app/(core)/chat/page.tsx
+//
+// `/chat` is the public-facing marketing surface for the Chat module. The
+// real workspace lives at `/chat/new`. Guests get the full marketing
+// experience (hero, capabilities, conversion nudges); authenticated visitors
+// are bounced server-side straight into a fresh chat (same `getServerAuth()`
+// convention every other core landing page uses) so a logged-in user is
+// never shown the marketing pitch.
+
+import { redirect } from "next/navigation";
+import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import ChatLanding from "@/features/auth/components/module-landing/landings/ChatLanding";
 
-/**
- * `/chat` is the public-facing marketing surface for the Chat module. The
- * sidebar nav routes authenticated users straight to `/chat/new` (the
- * workspace), so authed visitors hit this page only via external links;
- * when they do, `AuthedWorkspaceCTA` (mounted by `ModuleLanding`) gives
- * them a one-tap route to the workspace.
- *
- * Guests get the full marketing experience: hero, capabilities, how it
- * works, sub-area cards, polite conversion nudges that fire after
- * meaningful interaction.
- */
-export default function ChatPage() {
+export default async function ChatPage() {
+  const { isAuthenticated } = await getServerAuth();
+  if (isAuthenticated) {
+    redirect("/chat/new");
+  }
   return <ChatLanding />;
 }

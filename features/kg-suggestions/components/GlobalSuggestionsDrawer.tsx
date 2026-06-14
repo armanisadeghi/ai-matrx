@@ -32,6 +32,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useKgSuggestions } from "@/features/kg-suggestions/hooks/useKgSuggestions";
 import { KgSuggestionRowItem } from "./KgSuggestionRowItem";
+import {
+  SourcePreviewProvider,
+  useSourcePreviewController,
+} from "./source-preview/SourcePreviewContext";
+import { SourcePreviewPanel } from "./source-preview/SourcePreviewPanel";
 import type {
   KgGlobalFilter,
   KgSuggestionRow,
@@ -66,6 +71,16 @@ export function GlobalSuggestionsDrawer({
   const filter: KgGlobalFilter = { global: true, status: "pending" };
   const { items, count, status, error, accept, reject, defer } =
     useKgSuggestions(filter, { autoFetch: isOpen });
+
+  // Source preview is a separate non-blocking floating panel. Opening it only
+  // updates this local target — the inbox surface never unmounts. While a
+  // preview is open we also stop outside-clicks / escape from dismissing the
+  // inbox, so reviewing the source can't close the drawer out from under you.
+  const { target, openPreview, closePreview, isPreviewing } =
+    useSourcePreviewController();
+  const keepOpenWhilePreviewing = (e: { preventDefault: () => void }) => {
+    if (isPreviewing) e.preventDefault();
+  };
 
   // React Compiler is on — no manual memoization. Group rows for render.
   const heavyHitters: KgSuggestionRow[] = [];
@@ -148,35 +163,39 @@ export function GlobalSuggestionsDrawer({
     </ScrollArea>
   );
 
-  if (isMobile) {
-    return (
-      <Drawer open={isOpen} onOpenChange={(o) => !o && onClose()}>
-        <DrawerContent className="h-dvh max-h-[90dvh]">
-          <DrawerHeader className="border-b border-border">
-            <DrawerTitle className="flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-primary" />
-              Suggestions {count > 0 ? `(${count})` : ""}
-            </DrawerTitle>
-            <Link
-              href="/suggestions"
-              onClick={onClose}
-              className="mt-1 inline-flex items-center gap-1 self-start text-xs text-primary hover:underline"
-            >
-              Open full manager
-              <ArrowRight className="h-3 w-3" />
-            </Link>
-          </DrawerHeader>
-          <div className="flex flex-1 min-h-0 flex-col">{body}</div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
-  return (
+  const surface = isMobile ? (
+    <Drawer open={isOpen} onOpenChange={(o) => !o && onClose()}>
+      <DrawerContent
+        className="h-dvh max-h-[90dvh]"
+        onInteractOutside={keepOpenWhilePreviewing}
+        onPointerDownOutside={keepOpenWhilePreviewing}
+        onEscapeKeyDown={keepOpenWhilePreviewing}
+      >
+        <DrawerHeader className="border-b border-border">
+          <DrawerTitle className="flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-primary" />
+            Suggestions {count > 0 ? `(${count})` : ""}
+          </DrawerTitle>
+          <Link
+            href="/suggestions"
+            onClick={onClose}
+            className="mt-1 inline-flex items-center gap-1 self-start text-xs text-primary hover:underline"
+          >
+            Open full manager
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        </DrawerHeader>
+        <div className="flex flex-1 min-h-0 flex-col">{body}</div>
+      </DrawerContent>
+    </Drawer>
+  ) : (
     <Sheet open={isOpen} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
         side="right"
         className="flex w-full flex-col gap-0 p-0 sm:max-w-xl"
+        onInteractOutside={keepOpenWhilePreviewing}
+        onPointerDownOutside={keepOpenWhilePreviewing}
+        onEscapeKeyDown={keepOpenWhilePreviewing}
       >
         <SheetHeader className="border-b border-border px-4 py-3 space-y-0.5">
           <div className="flex items-center justify-between gap-2 pr-8">
@@ -194,13 +213,25 @@ export function GlobalSuggestionsDrawer({
             </Link>
           </div>
           <p className="text-xs text-muted-foreground">
-            Proposed fills from your notes, tasks, and files. Open the source or
-            the scope before deciding — nothing changes until you accept.
+            Proposed fills from your notes, tasks, and files. Preview the source
+            or open the scope before deciding — nothing changes until you
+            accept.
           </p>
         </SheetHeader>
         {body}
       </SheetContent>
     </Sheet>
+  );
+
+  return (
+    <SourcePreviewProvider value={{ openPreview }}>
+      {surface}
+      <SourcePreviewPanel
+        target={target}
+        onClose={closePreview}
+        position="left"
+      />
+    </SourcePreviewProvider>
   );
 }
 

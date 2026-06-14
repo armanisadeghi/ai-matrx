@@ -16,12 +16,17 @@ interface AuthedWorkspaceCTAProps {
 }
 
 /**
- * Sticky banner shown at the top of a marketing landing page when an
- * authenticated visitor happens to land here (typed URL, external link,
- * social share). Internal sidebar nav goes directly to the workspace, so
- * authed users rarely see this — but when they do, they get a one-tap
- * route back to their work instead of being pitched a product they
- * already have.
+ * Sticky banner offering an authenticated visitor a one-tap route back to
+ * their workspace if they ever land on a marketing landing.
+ *
+ * As of the server-side redirect work, every canonical landing route either
+ * (a) redirects authed users straight to the workspace before the landing
+ * renders (the `/war-room`, `/agents`, `/files`, `/chat` "separate internal
+ * route" pages) or (b) only renders the landing for guests in the first
+ * place (every page that branches in-place via `getServerAuth()`). So in
+ * normal operation an authed user never sees this banner. It remains as a
+ * cheap fallback: any future landing wired up without a redirect still gives
+ * a signed-in visitor an escape hatch instead of a dead-end pitch.
  *
  * Renders `null` for guests. Hydration-safe via `selectIsAuthenticated`
  * being seeded from the `(core)/layout.tsx` preloaded Redux state, which
