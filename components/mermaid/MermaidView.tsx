@@ -30,6 +30,10 @@ interface MermaidViewProps {
   className?: string;
   hideViewportControls?: boolean;
   onSvgMounted?: (el: SVGSVGElement | null) => void;
+  /** Px cap on the diagram frame height (inline/chat). See MermaidViewport. */
+  viewportMaxHeight?: number;
+  /** Frame fills its parent's height (canvas workbench, fullscreen). */
+  fillHeight?: boolean;
 }
 
 export function MermaidView({
@@ -39,6 +43,8 @@ export function MermaidView({
   className,
   hideViewportControls,
   onSvgMounted,
+  viewportMaxHeight,
+  fillHeight,
 }: MermaidViewProps) {
   const prefs = useAppSelector(selectMermaidPreferences);
   const appMode = useAppSelector((state) => state.theme.mode);
@@ -57,6 +63,8 @@ export function MermaidView({
       className={className}
       hideViewportControls={hideViewportControls}
       onSvgMounted={onSvgMounted}
+      viewportMaxHeight={viewportMaxHeight}
+      fillHeight={fillHeight}
     />
   );
 }
@@ -79,12 +87,22 @@ export function StandaloneMermaidView({
   source,
   metadata,
   className,
-}: Pick<MermaidViewProps, "source" | "metadata" | "className">) {
+  viewportMaxHeight,
+  fillHeight,
+}: Pick<MermaidViewProps, "source" | "metadata" | "className" | "viewportMaxHeight" | "fillHeight">) {
   const mode = useDomDarkMode();
   const options = {
     theme: resolveMermaidTheme(metadata?.theme ?? DEFAULT_MERMAID_PREFERENCES.theme, mode),
     look: metadata?.look ?? DEFAULT_MERMAID_PREFERENCES.look,
     layout: metadata?.layout ?? DEFAULT_MERMAID_PREFERENCES.layout,
   };
-  return <MermaidRenderer source={source} options={options} className={className} />;
+  return (
+    <MermaidRenderer
+      source={source}
+      options={options}
+      className={className}
+      viewportMaxHeight={viewportMaxHeight}
+      fillHeight={fillHeight}
+    />
+  );
 }

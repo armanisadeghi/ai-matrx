@@ -135,7 +135,11 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
         if (artifactType === "mermaid") {
             return (
                 <Suspense fallback={<MatrxMiniLoader />}>
-                    <MermaidView source={content} isStreamActive={!isComplete && isStreamActive} />
+                    <MermaidView
+                        source={content}
+                        isStreamActive={!isComplete && isStreamActive}
+                        viewportMaxHeight={560}
+                    />
                 </Suspense>
             );
         }

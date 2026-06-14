@@ -58,13 +58,8 @@ export function MermaidFullscreen({ source, options, title, onClose }: MermaidFu
           <X className="h-4 w-4" />
         </button>
       </div>
-      <div
-        className="flex min-h-0 flex-1 items-center justify-center overflow-hidden p-4"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
-        }}
-      >
-        <MermaidRenderer source={source} options={options} className={cn("w-full")} />
+      <div className="min-h-0 flex-1 overflow-hidden p-4">
+        <MermaidRenderer source={source} options={options} fillHeight className={cn("h-full w-full")} />
       </div>
     </div>,
     document.body,

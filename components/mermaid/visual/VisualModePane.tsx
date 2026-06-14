@@ -130,8 +130,8 @@ export function VisualModePane({ source, options, doc, selection, dispatch }: Vi
   if (!flowDoc) {
     return (
       <div className="flex h-full flex-col">
-        <div className="flex-1 overflow-auto">
-          <MermaidRenderer source={source} options={options} />
+        <div className="min-h-0 flex-1">
+          <MermaidRenderer source={source} options={options} fillHeight />
         </div>
         <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
           Tap-to-edit is available for flowcharts. Use Outline or Code mode to edit this diagram.
@@ -199,10 +199,11 @@ export function VisualModePane({ source, options, doc, selection, dispatch }: Vi
 
   return (
     <div ref={containerRef} className="relative flex h-full flex-col">
-      <div className="flex-1 overflow-auto" onClick={handleClick}>
+      <div className="min-h-0 flex-1" onClick={handleClick}>
         <MermaidRenderer
           source={source}
           options={options}
+          fillHeight
           onSvgMounted={handleSvgMounted}
           hideViewportControls={Boolean(popoverAt)}
         />

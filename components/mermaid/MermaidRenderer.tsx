@@ -39,6 +39,10 @@ interface MermaidRendererProps {
   onSvgMounted?: (el: SVGSVGElement | null) => void;
   /** Called whenever a ladder pass finishes (diagnostics for editors). */
   onLadderResult?: (result: LadderResult) => void;
+  /** Px cap on the diagram frame height (inline/chat). See MermaidViewport. */
+  viewportMaxHeight?: number;
+  /** Frame fills its parent's height (canvas workbench, fullscreen). */
+  fillHeight?: boolean;
 }
 
 export function MermaidRenderer({
@@ -49,6 +53,8 @@ export function MermaidRenderer({
   hideViewportControls,
   onSvgMounted,
   onLadderResult,
+  viewportMaxHeight,
+  fillHeight,
 }: MermaidRendererProps) {
   const [lastGoodSvg, setLastGoodSvg] = useState<string | null>(null);
   const [failure, setFailure] = useState<LadderResult | null>(null);
@@ -124,7 +130,7 @@ export function MermaidRenderer({
 
   if (!showSvg) {
     return (
-      <div className={cn("space-y-2 p-3", className)} aria-busy="true">
+      <div className={cn("space-y-2 p-3", fillHeight && "h-full", className)} aria-busy="true">
         <Skeleton className="h-4 w-1/3" />
         <Skeleton className="h-32 w-full" />
       </div>
@@ -135,12 +141,15 @@ export function MermaidRenderer({
     <figure
       role="img"
       aria-label={title ?? `${label} diagram`}
-      className={cn("m-0", className)}
+      className={cn("m-0", fillHeight && "flex h-full flex-col", className)}
     >
       <MermaidViewport
         svg={showSvg}
+        className={fillHeight ? "min-h-0 flex-1" : undefined}
         hideControls={hideViewportControls}
         onSvgMounted={onSvgMounted}
+        maxFrameHeight={viewportMaxHeight}
+        fillHeight={fillHeight}
       />
       {showFailure && !isStreamActive && (
         // The final source failed but a partial render succeeded earlier —

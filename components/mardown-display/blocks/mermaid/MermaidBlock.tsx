@@ -123,6 +123,18 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
   const [fullscreen, setFullscreen] = useState(false);
   const [svgEl, setSvgEl] = useState<SVGSVGElement | null>(null);
 
+  // Cap the inline diagram height at ~60% of the viewport (clamped) so a tall
+  // diagram scrolls in place instead of pushing the rest of the message off
+  // screen — "view fullscreen" shows the whole thing. Responsive to resize.
+  const [frameMaxHeight, setFrameMaxHeight] = useState(520);
+  useEffect(() => {
+    const recompute = () =>
+      setFrameMaxHeight(Math.max(320, Math.min(720, Math.round(window.innerHeight * 0.6))));
+    recompute();
+    window.addEventListener("resize", recompute);
+    return () => window.removeEventListener("resize", recompute);
+  }, []);
+
   // Start downloading the engine chunk while tokens are still arriving.
   useEffect(() => {
     preloadMermaid();
@@ -351,6 +363,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
         options={renderOptions}
         isStreamActive={isStreamActive}
         onSvgMounted={setSvgEl}
+        viewportMaxHeight={frameMaxHeight}
       />
 
       {showSource && !isStreamActive && (

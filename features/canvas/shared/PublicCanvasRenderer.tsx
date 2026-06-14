@@ -155,6 +155,7 @@ function renderContent(content: CanvasContent | any): React.ReactNode {
                     <StandaloneMermaidView
                         source={typeof data === 'string' ? data : String(data?.data ?? '')}
                         metadata={content.metadata?.mermaid as Record<string, unknown> | undefined}
+                        fillHeight
                     />
                 </div>
             );
