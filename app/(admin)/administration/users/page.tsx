@@ -214,11 +214,15 @@ export default function UsersManagementPage() {
                               </div>
                             </div>
                             <CopyButtons
-                              human={userSummary(row)}
-                              agent={{
+                              human={() => userSummary(row)}
+                              agent={() => ({
+                                kind: "user",
                                 location: PAGE_LOCATION,
+                                description: "A single user row.",
                                 data: row,
-                              }}
+                                summary: userSummary(row),
+                                attributes: { id: row.id, email: row.email },
+                              })}
                               label={row.email ?? row.id}
                               size="icon"
                             />

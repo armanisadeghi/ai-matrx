@@ -4145,30 +4145,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -5140,6 +5116,23 @@ export interface paths {
         get: operations["export_document_research_topics__topic_id__document_export_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-processing/{cld_file_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Process File */
+        post: operations["process_file_content_processing__cld_file_id__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11337,6 +11330,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/app-logs/top-patterns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Top Patterns Route
+         * @description Rank the most repetitive log patterns — the "what's noisy / what should I
+         *     suppress?" view. Pair with the CAPS SUPPRESSION_RULES (also returned).
+         */
+        get: operations["top_patterns_route_admin_app_logs_top_patterns_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/app-logs/suppressions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Suppressions
+         * @description The active mute list (admin UI-managed) + the CAPS code rules.
+         */
+        get: operations["list_suppressions_admin_app_logs_suppressions_get"];
+        put?: never;
+        /**
+         * Add Suppression
+         * @description Mute a signature (from a Pattern row's signature, or a raw log message).
+         *     Idempotent. Hides matching rows in the views AND drops them at the sink.
+         */
+        post: operations["add_suppression_admin_app_logs_suppressions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/app-logs/suppressions/{muted_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Suppression
+         * @description Unmute — delete a mute-list row. Logging of that signature resumes.
+         */
+        delete: operations["remove_suppression_admin_app_logs_suppressions__muted_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/app-logs/files": {
         parameters: {
             query?: never;
@@ -13303,6 +13362,8 @@ export interface components {
             process_pid?: number | null;
             /** Host Role */
             host_role?: string | null;
+            /** Stage */
+            stage?: string | null;
             /**
              * Classified
              * @default true
@@ -16832,33 +16893,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -20684,6 +20718,21 @@ export interface components {
             /** Is Current */
             is_current: boolean;
         };
+        /** LogPattern */
+        LogPattern: {
+            /** Logger Name */
+            logger_name: string;
+            /** Feature */
+            feature: string;
+            /** Level */
+            level: string;
+            /** Pattern */
+            pattern: string;
+            /** Sample */
+            sample: string;
+            /** Count */
+            count: number;
+        };
         /** ManifestFact */
         ManifestFact: {
             /** Label */
@@ -21107,6 +21156,45 @@ export interface components {
             new_parent_id?: string | null;
             /** Expected Updated At */
             expected_updated_at?: string | null;
+        };
+        /** MuteListResponse */
+        MuteListResponse: {
+            /** Muted */
+            muted: components["schemas"]["MutedPattern"][];
+            /** Suppression Rules */
+            suppression_rules: components["schemas"]["SuppressionRuleInfo"][];
+        };
+        /**
+         * MuteRequest
+         * @description Mute a signature: pass an already-normalized ``signature`` (from a
+         *     Pattern row) OR a raw ``message`` (from a log row) to be normalized.
+         */
+        MuteRequest: {
+            /** Signature */
+            signature?: string | null;
+            /** Message */
+            message?: string | null;
+            /** Label */
+            label?: string | null;
+        };
+        /**
+         * MutedPattern
+         * @description An admin UI-muted signature (app_log_muted_pattern row).
+         */
+        MutedPattern: {
+            /** Id */
+            id: string;
+            /** Signature */
+            signature: string;
+            /** Label */
+            label?: string | null;
+            /** Created By */
+            created_by?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /**
          * NodeDef
@@ -22442,6 +22530,58 @@ export interface components {
             blocks: {
                 [key: string]: components["schemas"]["JsonValue"];
             }[];
+        };
+        /** ProcessContentBody */
+        ProcessContentBody: {
+            /**
+             * Content Type
+             * @default pdf
+             */
+            content_type: string;
+            /** File Name */
+            file_name?: string | null;
+            /** Storage Uri */
+            storage_uri?: string | null;
+            /**
+             * Embedding Model
+             * @default openai:text-embedding-3-small
+             */
+            embedding_model: string;
+            /**
+             * Clean Concurrency
+             * @default 8
+             */
+            clean_concurrency: number;
+            /**
+             * Force Ocr
+             * @default false
+             */
+            force_ocr: boolean;
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
+            /**
+             * Run Clean
+             * @default true
+             */
+            run_clean: boolean;
+            /**
+             * Run Ner
+             * @default true
+             */
+            run_ner: boolean;
+            /**
+             * Heartbeat Interval S
+             * @default 15
+             */
+            heartbeat_interval_s: number;
+            /**
+             * Debug
+             * @default false
+             */
+            debug: boolean;
         };
         /** ProcessResponse */
         ProcessResponse: {
@@ -25501,6 +25641,19 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** SuppressionRuleInfo */
+        SuppressionRuleInfo: {
+            /** Name */
+            name: string;
+            /** Logger Prefix */
+            logger_prefix?: string | null;
+            /** Message Contains */
+            message_contains?: string | null;
+            /** Level Max */
+            level_max?: string | null;
+            /** Action */
+            action: string;
+        };
         /**
          * SurfaceAmendments
          * @description Per-request delta against the surface's cached/declared manifest.
@@ -26170,6 +26323,19 @@ export interface components {
             parameters?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+        };
+        /** TopPatternsResponse */
+        TopPatternsResponse: {
+            /** Patterns */
+            patterns: components["schemas"]["LogPattern"][];
+            /** Scanned */
+            scanned: number;
+            /** Suppression Rules */
+            suppression_rules: components["schemas"]["SuppressionRuleInfo"][];
+            /** Muted */
+            muted: components["schemas"]["MutedPattern"][];
+            /** Filter Summary */
+            filter_summary: string;
         };
         /** TopSource */
         TopSource: {
@@ -35070,41 +35236,6 @@ export interface operations {
             };
         };
     };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -37037,6 +37168,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    process_file_content_processing__cld_file_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cld_file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProcessContentBody"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -48240,6 +48406,8 @@ export interface operations {
                 level?: string | null;
                 /** @description Level floor by name (e.g. WARNING). */
                 min_level?: string | null;
+                /** @description Comma-separated exact levels, e.g. 'ERROR,WARNING'. */
+                levels?: string | null;
                 /** @description Subsystem tag (e.g. rag, tools). */
                 feature?: string | null;
                 /** @description Exact API route match. */
@@ -48247,6 +48415,12 @@ export interface operations {
                 /** @description Logger name prefix match. */
                 logger?: string | null;
                 user_id?: string | null;
+                /** @description Exact request_id — the full correlation trail. */
+                request_id?: string | null;
+                /** @description Exact conversation_id. */
+                conversation_id?: string | null;
+                /** @description Environment: production|development|local|test. */
+                stage?: string | null;
                 /** @description None=both; false=Unclassified only. */
                 classified?: boolean | null;
                 /** @description Substring match on message (ILIKE). */
@@ -48339,6 +48513,127 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AppLogStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    top_patterns_route_admin_app_logs_top_patterns_get: {
+        parameters: {
+            query?: {
+                /** @description ISO-8601 lower bound. Default 6h ago. */
+                since?: string | null;
+                until?: string | null;
+                feature?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopPatternsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_suppressions_admin_app_logs_suppressions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MuteListResponse"];
+                };
+            };
+        };
+    };
+    add_suppression_admin_app_logs_suppressions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MuteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MutedPattern"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_suppression_admin_app_logs_suppressions__muted_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                muted_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
                 };
             };
             /** @description Validation Error */

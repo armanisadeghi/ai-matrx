@@ -21,6 +21,8 @@
 
 "use client";
 
+import Link from "next/link";
+import { Maximize2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JobPicker } from "@/features/page-extraction/components/JobPicker";
@@ -28,7 +30,9 @@ import { RunProgressBar } from "@/features/page-extraction/components/RunProgres
 import { ResultsTable } from "@/features/page-extraction/components/ResultsTable";
 import { ChunksTab } from "@/features/page-extraction/components/ChunksTab";
 import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
+import { EXTRACTIONS_ALL_VIEW } from "@/features/page-extraction/redux/pageExtractionSlice";
 import { usePageRunsRealtime } from "@/features/page-extraction/hooks/usePageRunsRealtime";
+import { usePersistedRunHydration } from "@/features/page-extraction/hooks/usePersistedRunHydration";
 
 export interface ExtractionsPaneProps {
   fileId: string | null;
@@ -59,9 +63,36 @@ export function ExtractionsPane({
   // per-chunk state (raw_response, parsed_payload) lands via Realtime.
   usePageRunsRealtime({ fileId, jobId });
 
+  // Reload fallback: after a full page reload the in-memory run state is
+  // gone, so rehydrate the viewed job's latest run from the persisted
+  // page_runs. This restores the Chunks tab's per-chunk Agent-output
+  // overlay — and the connection between each row and its source pages —
+  // instead of showing only the input preview.
+  usePersistedRunHydration({ fileId, jobId });
+
+  // The cramped pane is a quick-glance surface; the full review/management
+  // workspace lives at /knowledge/extractions. Deep-link to the selected
+  // dataset when a real template is viewed, else the cross-document catalog.
+  const fullViewHref =
+    jobId && jobId !== EXTRACTIONS_ALL_VIEW
+      ? `/knowledge/extractions/${jobId}`
+      : "/knowledge/extractions";
+
   return (
     <div className="flex flex-col h-full bg-card">
-      <JobPicker fileId={fileId} />
+      <div className="flex items-center gap-1">
+        <div className="min-w-0 flex-1">
+          <JobPicker fileId={fileId} />
+        </div>
+        <Link
+          href={fullViewHref}
+          title="Open full extraction workspace"
+          className="mr-2 inline-flex h-6 shrink-0 items-center gap-1 rounded border border-border px-1.5 text-[10px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <Maximize2 className="h-3 w-3" />
+          <span className="hidden xl:inline">Full view</span>
+        </Link>
+      </div>
       <RunProgressBar jobId={jobId} />
 
       <Tabs defaultValue="chunks" className="flex-1 min-h-0 flex flex-col">

@@ -25,6 +25,129 @@ import type {
 
 export const SYSTEM_PAGE_COLUMN_KEY = "__page__";
 
+// ───────────────────────────────────────────────────────────────────────────
+// The wrapping rule — THE single source of truth.
+//
+// LLM providers disagree about how to return a list: some emit a bare array
+// (`[ {...}, {...} ]`), others require it wrapped under one key
+// (`{ "items": [ ... ] }`, `{ "results": [ ... ] }`, …). Every surface in this
+// feature that has to make sense of that ambiguity goes through the helpers
+// below so the rule can never drift between two places:
+//
+//   • schema side  → `findItemProperties` (the template editor's
+//     "Import columns from agent" path) derives COLUMNS from the agent's
+//     JSON Schema, unwrapping the same single-array-of-objects shape.
+//   • data side    → `coerceToRowList` turns a parsed RESPONSE value into the
+//     list of result rows. It is the exact frontend twin of the backend's
+//     `_coerce_to_row_list` (aidream/api/routers/page_extraction.py); both
+//     implement one contract so the layers can never disagree about what a
+//     row is.
+// ───────────────────────────────────────────────────────────────────────────
+
+/** True for a non-null, non-array object. */
+export function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/**
+ * Turn a parsed LLM value into the canonical list of result rows.
+ *
+ * Accepts, in order:
+ *   - an array            → its plain-object elements
+ *   - an object wrapping exactly ONE array-of-objects property
+ *                         → that inner array (e.g. `{ items: [...] }`)
+ *   - any other object    → `[object]` (treated as a single row)
+ *   - null / primitives   → `[]`
+ *
+ * Behaviorally identical to the backend `_coerce_to_row_list`. Keep them in
+ * lock-step: a change here without the same change there reintroduces the
+ * "results never show up" class of bug.
+ */
+export function coerceToRowList(value: unknown): Record<string, unknown>[] {
+  if (value == null) return [];
+  if (Array.isArray(value)) {
+    return value.filter(isPlainObject);
+  }
+  if (isPlainObject(value)) {
+    const arrayProps = Object.values(value).filter(
+      (v) => Array.isArray(v) && v.every(isPlainObject),
+    ) as Record<string, unknown>[][];
+    if (arrayProps.length === 1) return arrayProps[0].slice();
+    return [value];
+  }
+  return [];
+}
+
+/**
+ * A STORED result row should always be a single flat object (the backend
+ * unwraps before persisting). This narrowly detects a row that slipped
+ * through still wrapped — exactly one own key whose value is an
+ * array-of-objects, e.g. `{ items: [...] }`. The single-key guard is what
+ * keeps a legitimate flat row that merely *contains* a nested array
+ * (`{ DATE: "…", diagnoses: [ {...} ] }`) from being mistaken for a wrapper.
+ */
+function isPureRowWrapper(payload: Record<string, Json>): boolean {
+  const keys = Object.keys(payload);
+  if (keys.length !== 1) return false;
+  const v = payload[keys[0]];
+  return Array.isArray(v) && v.every(isPlainObject);
+}
+
+/**
+ * Defensive normalization for the Results table. With today's backend every
+ * row is already flat, so this is a no-op — but if a wrapper ever reaches the
+ * display (a backend regression, a different extraction microservice), this
+ * unwraps it via the shared rule and reports how many rows it had to recover
+ * so the caller can scream. A wrapped row expands into one display row per
+ * inner item; an empty wrapper (`{ items: [] }`) contributes none.
+ */
+export function normalizeResultRows(results: PageExtractionResult[]): {
+  rows: PageExtractionResult[];
+  unwrappedCount: number;
+} {
+  let unwrappedCount = 0;
+  const rows: PageExtractionResult[] = [];
+  for (const r of results) {
+    const payload = (r.payload ?? {}) as Record<string, Json>;
+    if (!isPureRowWrapper(payload)) {
+      rows.push(r);
+      continue;
+    }
+    unwrappedCount++;
+    const inner = coerceToRowList(payload) as Record<string, Json>[];
+    inner.forEach((p, i) => {
+      rows.push({
+        ...r,
+        id: inner.length === 1 ? r.id : `${r.id}#${i}`,
+        payload: p,
+      });
+    });
+  }
+  return { rows, unwrappedCount };
+}
+
+/**
+ * Infer ordered column keys from result rows (union of payload keys, by first
+ * appearance). The single fallback used by both the single-template and
+ * All-extractions tables when there is no template column schema.
+ */
+export function inferColumnsFromRows(
+  results: PageExtractionResult[],
+): string[] {
+  const ordered: string[] = [];
+  const seen = new Set<string>();
+  for (const r of results) {
+    const payload = (r.payload ?? {}) as Record<string, unknown>;
+    for (const key of Object.keys(payload)) {
+      if (!seen.has(key)) {
+        seen.add(key);
+        ordered.push(key);
+      }
+    }
+  }
+  return ordered;
+}
+
 /** Human-friendly label from a snake/kebab/camel key. */
 export function humanizeKey(key: string): string {
   return key
@@ -96,7 +219,10 @@ function normalizeType(t: string | undefined): ColumnType {
 }
 
 /** Walk a possibly-wrapped JSON schema to the object that describes ONE
- *  result row, and return its `properties` map. */
+ *  result row, and return its `properties` map. This is the schema-side twin
+ *  of `coerceToRowList` (which does the same unwrapping on response DATA):
+ *  both understand the "array, or array wrapped under one key" shape so the
+ *  template editor's columns and the actual rows can never disagree. */
 function findItemProperties(schema: unknown): Record<string, unknown> | null {
   if (!schema || typeof schema !== "object") return null;
   // Unwrap the OpenAI json_schema envelope: { name, schema, strict }.

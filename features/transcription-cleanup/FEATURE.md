@@ -134,6 +134,10 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-06-14 — Custom pane now seeds empty slot agents from the surface
+  `custom_slot` role (`useSurfaceAgentRoles` position 0 → slot 1, etc.);
+  session-persisted agents still win; explicit slot picks are not overridden.
+
 - 2026-06-13 — UX consistency + smoother stream affordances:
   fresh sessions now open with **two** custom slots (slot 1 = raw source,
   slot 2 = clean source) via `initialSlots()` — the DB already backed

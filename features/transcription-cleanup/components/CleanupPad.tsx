@@ -85,7 +85,10 @@ import { AgentListDropdown } from "@/features/agents/components/agent-listings/A
 import { UnifiedAgentContextMenu } from "@/features/context-menu-v2/UnifiedAgentContextMenu";
 import { stripThinkingStreaming } from "@/features/notes/actions/quick-save/utils/stripThinking";
 import { createTranscriptsCleanupScope } from "@/features/surfaces/manifests/transcripts-cleanup.manifest";
-import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
+import {
+  useSurfaceAgentRoles,
+  type RoleView,
+} from "@/features/surfaces/hooks/useSurfaceConfig";
 import type {
   CleanupCustomSlot,
   SessionContextItem,
@@ -350,6 +353,24 @@ function initialSlots(): CleanupCustomSlot[] {
   ];
 }
 
+/** Fill empty slot agentIds from the surface `custom_slot` role (per position). */
+function slotsWithCustomRoleDefaults(
+  slots: CleanupCustomSlot[],
+  role: RoleView | null,
+  pickedSlotIds: ReadonlySet<string>,
+): CleanupCustomSlot[] {
+  if (!role) return slots;
+  let changed = false;
+  const next = slots.map((slot, idx) => {
+    if (pickedSlotIds.has(slot.id) || slot.agentId) return slot;
+    const roleAgentId = role.effective[idx]?.agentId ?? null;
+    if (!roleAgentId) return slot;
+    changed = true;
+    return { ...slot, agentId: roleAgentId };
+  });
+  return changed ? next : slots;
+}
+
 interface CleanupPadProps {
   defaultHLayout?: Record<string, number>;
   defaultVLayout?: Record<string, number>;
@@ -397,6 +418,10 @@ export default function CleanupPad({
   const cleanRole = surfaceRoles.roles.clean ?? null;
   const cleanRoleRef = useRef(cleanRole);
   cleanRoleRef.current = cleanRole;
+  const customSlotRole = surfaceRoles.roles.custom_slot ?? null;
+  const customSlotRoleRef = useRef(customSlotRole);
+  customSlotRoleRef.current = customSlotRole;
+  const pickedSlotIdsRef = useRef<Set<string>>(new Set());
   /** True once the user explicitly picks a Clean agent this mount — the role
    * default never overrides an explicit choice. */
   const [cleanAgentPicked, setCleanAgentPicked] = useState(false);
@@ -409,6 +434,18 @@ export default function CleanupPad({
     if (!roleAgentId || cleanAgentPicked) return;
     setCleanAgentId((current) => current || roleAgentId);
   }, [surfaceRoles.status, cleanRole?.effectiveAgentId, cleanAgentPicked]);
+
+  // Seed custom slot agentIds from the surface `custom_slot` role (per position).
+  useEffect(() => {
+    if (surfaceRoles.status !== "ready") return;
+    setSlots((current) =>
+      slotsWithCustomRoleDefaults(
+        current,
+        customSlotRoleRef.current,
+        pickedSlotIdsRef.current,
+      ),
+    );
+  }, [surfaceRoles.status, customSlotRole?.effective]);
 
   // Custom slots — one visible at a time, each with its own agent/source/autorun.
   const [slots, setSlots] = useState<CleanupCustomSlot[]>(initialSlots);
@@ -642,6 +679,7 @@ export default function CleanupPad({
         }
         return slot;
       });
+    pickedSlotIdsRef.current = new Set();
     setSlots(loadedSlots);
     setActiveSlotIdx(0);
     const edited: Record<string, string | null> = {};
@@ -711,6 +749,14 @@ export default function CleanupPad({
     if (!cleanAgentId || agentNames[cleanAgentId]) return;
     void resolveAgentName(cleanAgentId);
   }, [cleanAgentId, agentNames, resolveAgentName]);
+
+  useEffect(() => {
+    for (const slot of slots) {
+      if (slot.agentId && !agentNames[slot.agentId]) {
+        void resolveAgentName(slot.agentId);
+      }
+    }
+  }, [slots, agentNames, resolveAgentName]);
 
   // ── Slot mutations (persisted via custom_slots) ────────────────────────────
   const updateSlots = useCallback(
@@ -1110,6 +1156,7 @@ export default function CleanupPad({
     (agentId: string) => {
       const slot = slotsRef.current[activeSlotIdx];
       if (!slot) return;
+      pickedSlotIdsRef.current.add(slot.id);
       void resolveAgentName(agentId);
       patchSlot(slot.id, { agentId });
     },
@@ -1171,7 +1218,14 @@ export default function CleanupPad({
     try {
       clearLocalContent();
       contextItemsRef.current = [];
-      setSlots(initialSlots());
+      pickedSlotIdsRef.current = new Set();
+      setSlots(
+        slotsWithCustomRoleDefaults(
+          initialSlots(),
+          customSlotRoleRef.current,
+          pickedSlotIdsRef.current,
+        ),
+      );
       setActiveSlotIdx(0);
       await session.createNew();
       setDrawerOpen(false);

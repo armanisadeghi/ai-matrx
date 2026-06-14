@@ -24,7 +24,12 @@ import type { ApplicationScope } from "@/features/agents/types/scope.types";
 // ---------------------------------------------------------------------------
 
 /** Logical type of a surface value. Most are stringified for LLMs at runtime. */
-export type SurfaceValueType = "string" | "number" | "boolean" | "object" | "array";
+export type SurfaceValueType =
+  | "string"
+  | "number"
+  | "boolean"
+  | "object"
+  | "array";
 
 export interface SurfaceValue {
   /**
@@ -180,7 +185,9 @@ export interface SurfaceValueDrift {
   /** `manifest_only` = code has it, DB doesn't. `db_only` = DB has it, code doesn't. `diff` = both have it but fields differ. */
   kind: "manifest_only" | "db_only" | "diff";
   /** Field-level diff when `kind === "diff"`. */
-  diff?: Partial<Record<keyof SurfaceValue, { manifest: unknown; db: unknown }>>;
+  diff?: Partial<
+    Record<keyof SurfaceValue, { manifest: unknown; db: unknown }>
+  >;
 }
 
 /** Single drift entry for a SurfaceAgentRole not synced between code and DB. */
@@ -255,7 +262,8 @@ export function isValueMapping(input: unknown): input is ValueMapping {
 }
 
 export function isValueMappingMap(input: unknown): input is ValueMappingMap {
-  if (typeof input !== "object" || input === null || Array.isArray(input)) return false;
+  if (typeof input !== "object" || input === null || Array.isArray(input))
+    return false;
   for (const v of Object.values(input as Record<string, unknown>)) {
     if (!isValueMapping(v)) return false;
   }

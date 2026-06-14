@@ -28,10 +28,7 @@ export async function listJobsForFile(
   fileId: string,
   opts: { savedOnly?: boolean; includeArchived?: boolean } = {},
 ): Promise<PageExtractionJob[]> {
-  let query = db
-    .from(TABLE)
-    .select("*")
-    .eq("file_id", fileId);
+  let query = db.from(TABLE).select("*").eq("file_id", fileId);
   if (opts.savedOnly !== false) {
     // Default to saved Jobs only — ephemeral/ad-hoc runs aren't worth
     // cluttering the picker. Callers that need everything pass
@@ -69,6 +66,30 @@ export async function createJob(
     .single();
   if (error) throw error;
   return data as PageExtractionJob;
+}
+
+/**
+ * Duplicate a template under a new name, WITHOUT carrying over its run
+ * pointer or results — a fresh shell that shares the same config. Used by
+ * the "Run as new" branch of the re-run prompt so a second run lands in its
+ * own template ("Invoices (2)") instead of overwriting the first.
+ */
+export async function cloneJobWithName(
+  jobId: string,
+  newName: string,
+): Promise<PageExtractionJob> {
+  const src = await getJob(jobId);
+  if (!src) throw new Error("Template not found");
+  const clone = { ...(src as unknown as Record<string, unknown>) };
+  delete clone.id;
+  delete clone.created_at;
+  delete clone.updated_at;
+  delete clone.latest_run_id;
+  clone.name = newName;
+  clone.archived_at = null;
+  // A re-run-as-new should be a first-class, listable template.
+  clone.is_saved = true;
+  return createJob(clone as PageExtractionJobInsert);
 }
 
 export async function updateJob(

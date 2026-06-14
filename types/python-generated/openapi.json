@@ -10583,66 +10583,6 @@
         }
       }
     },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -13547,6 +13487,56 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-processing/{cld_file_id}": {
+      "post": {
+        "tags": [
+          "Content Processing"
+        ],
+        "summary": "Process File",
+        "operationId": "process_file_content_processing__cld_file_id__post",
+        "parameters": [
+          {
+            "name": "cld_file_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Cld File Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProcessContentBody"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -31178,6 +31168,24 @@
             "description": "Level floor by name (e.g. WARNING)."
           },
           {
+            "name": "levels",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated exact levels, e.g. 'ERROR,WARNING'.",
+              "title": "Levels"
+            },
+            "description": "Comma-separated exact levels, e.g. 'ERROR,WARNING'."
+          },
+          {
             "name": "feature",
             "in": "query",
             "required": false,
@@ -31246,6 +31254,60 @@
               ],
               "title": "User Id"
             }
+          },
+          {
+            "name": "request_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exact request_id — the full correlation trail.",
+              "title": "Request Id"
+            },
+            "description": "Exact request_id — the full correlation trail."
+          },
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Exact conversation_id.",
+              "title": "Conversation Id"
+            },
+            "description": "Exact conversation_id."
+          },
+          {
+            "name": "stage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Environment: production|development|local|test.",
+              "title": "Stage"
+            },
+            "description": "Environment: production|development|local|test."
           },
           {
             "name": "classified",
@@ -31539,6 +31601,215 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AppLogStatsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/app-logs/top-patterns": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin App Logs"
+        ],
+        "summary": "Top Patterns Route",
+        "description": "Rank the most repetitive log patterns — the \"what's noisy / what should I\nsuppress?\" view. Pair with the CAPS SUPPRESSION_RULES (also returned).",
+        "operationId": "top_patterns_route_admin_app_logs_top_patterns_get",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "ISO-8601 lower bound. Default 6h ago.",
+              "title": "Since"
+            },
+            "description": "ISO-8601 lower bound. Default 6h ago."
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Until"
+            }
+          },
+          {
+            "name": "feature",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Feature"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopPatternsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/app-logs/suppressions": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin App Logs"
+        ],
+        "summary": "List Suppressions",
+        "description": "The active mute list (admin UI-managed) + the CAPS code rules.",
+        "operationId": "list_suppressions_admin_app_logs_suppressions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MuteListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin App Logs"
+        ],
+        "summary": "Add Suppression",
+        "description": "Mute a signature (from a Pattern row's signature, or a raw log message).\nIdempotent. Hides matching rows in the views AND drops them at the sink.",
+        "operationId": "add_suppression_admin_app_logs_suppressions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MuteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MutedPattern"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/app-logs/suppressions/{muted_id}": {
+      "delete": {
+        "tags": [
+          "Admin",
+          "Admin App Logs"
+        ],
+        "summary": "Remove Suppression",
+        "description": "Unmute — delete a mute-list row. Logging of that signature resumes.",
+        "operationId": "remove_suppression_admin_app_logs_suppressions__muted_id__delete",
+        "parameters": [
+          {
+            "name": "muted_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Muted Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Remove Suppression Admin App Logs Suppressions  Muted Id  Delete"
                 }
               }
             }
@@ -37242,6 +37513,17 @@
               }
             ],
             "title": "Host Role"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
           },
           "classified": {
             "type": "boolean",
@@ -47337,61 +47619,6 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
-      },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -58280,6 +58507,45 @@
         ],
         "title": "LogFileSummary"
       },
+      "LogPattern": {
+        "properties": {
+          "logger_name": {
+            "type": "string",
+            "title": "Logger Name"
+          },
+          "feature": {
+            "type": "string",
+            "title": "Feature"
+          },
+          "level": {
+            "type": "string",
+            "title": "Level"
+          },
+          "pattern": {
+            "type": "string",
+            "title": "Pattern"
+          },
+          "sample": {
+            "type": "string",
+            "title": "Sample"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "logger_name",
+          "feature",
+          "level",
+          "pattern",
+          "sample",
+          "count"
+        ],
+        "title": "LogPattern"
+      },
       "ManifestFact": {
         "properties": {
           "label": {
@@ -59356,6 +59622,120 @@
         },
         "type": "object",
         "title": "MoveArgs"
+      },
+      "MuteListResponse": {
+        "properties": {
+          "muted": {
+            "items": {
+              "$ref": "#/components/schemas/MutedPattern"
+            },
+            "type": "array",
+            "title": "Muted"
+          },
+          "suppression_rules": {
+            "items": {
+              "$ref": "#/components/schemas/SuppressionRuleInfo"
+            },
+            "type": "array",
+            "title": "Suppression Rules"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "muted",
+          "suppression_rules"
+        ],
+        "title": "MuteListResponse"
+      },
+      "MuteRequest": {
+        "properties": {
+          "signature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Signature"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MuteRequest",
+        "description": "Mute a signature: pass an already-normalized ``signature`` (from a\nPattern row) OR a raw ``message`` (from a log row) to be normalized."
+      },
+      "MutedPattern": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "signature": {
+            "type": "string",
+            "title": "Signature"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "signature",
+          "created_at"
+        ],
+        "title": "MutedPattern",
+        "description": "An admin UI-muted signature (app_log_muted_pattern row)."
       },
       "NodeDef": {
         "properties": {
@@ -62938,6 +63318,80 @@
           "blocks"
         ],
         "title": "ProcessBlocksResponse"
+      },
+      "ProcessContentBody": {
+        "properties": {
+          "content_type": {
+            "type": "string",
+            "title": "Content Type",
+            "default": "pdf"
+          },
+          "file_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Name"
+          },
+          "storage_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Uri"
+          },
+          "embedding_model": {
+            "type": "string",
+            "title": "Embedding Model",
+            "default": "openai:text-embedding-3-small"
+          },
+          "clean_concurrency": {
+            "type": "integer",
+            "title": "Clean Concurrency",
+            "default": 8
+          },
+          "force_ocr": {
+            "type": "boolean",
+            "title": "Force Ocr",
+            "default": false
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          },
+          "run_clean": {
+            "type": "boolean",
+            "title": "Run Clean",
+            "default": true
+          },
+          "run_ner": {
+            "type": "boolean",
+            "title": "Run Ner",
+            "default": true
+          },
+          "heartbeat_interval_s": {
+            "type": "number",
+            "title": "Heartbeat Interval S",
+            "default": 15
+          },
+          "debug": {
+            "type": "boolean",
+            "title": "Debug",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProcessContentBody"
       },
       "ProcessResponse": {
         "properties": {
@@ -71090,6 +71544,58 @@
         "title": "SupabaseAuthWebhookUser",
         "description": "Subset of the Supabase ``UserRecord`` payload we actually consume."
       },
+      "SuppressionRuleInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "logger_prefix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logger Prefix"
+          },
+          "message_contains": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Contains"
+          },
+          "level_max": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level Max"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "action"
+        ],
+        "title": "SuppressionRuleInfo"
+      },
       "SurfaceAmendments": {
         "properties": {
           "add": {
@@ -73088,6 +73594,49 @@
         "type": "object",
         "title": "ToolUpdateRequest",
         "description": "Admin-editable tool_def settings. All optional; only provided fields change.\n\n``parameters`` is the tool's argument contract — the same flat shape the\ndrift engine diffs against code: a mapping of argument name → spec object,\ne.g. ``{\"action\": {\"type\": \"string\", \"required\": true, \"enum\": [\"get\",\n\"set\"]}}``. Changing it here is the DB-first path the doctrine prescribes\n(TOOL_SOURCE_OF_TRUTH.md, Rule 7): edit the DB, then bring code into line\nuntil the drift gate is quiet. Editing it bumps the row ``version``."
+      },
+      "TopPatternsResponse": {
+        "properties": {
+          "patterns": {
+            "items": {
+              "$ref": "#/components/schemas/LogPattern"
+            },
+            "type": "array",
+            "title": "Patterns"
+          },
+          "scanned": {
+            "type": "integer",
+            "title": "Scanned"
+          },
+          "suppression_rules": {
+            "items": {
+              "$ref": "#/components/schemas/SuppressionRuleInfo"
+            },
+            "type": "array",
+            "title": "Suppression Rules"
+          },
+          "muted": {
+            "items": {
+              "$ref": "#/components/schemas/MutedPattern"
+            },
+            "type": "array",
+            "title": "Muted"
+          },
+          "filter_summary": {
+            "type": "string",
+            "title": "Filter Summary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "patterns",
+          "scanned",
+          "suppression_rules",
+          "muted",
+          "filter_summary"
+        ],
+        "title": "TopPatternsResponse"
       },
       "TopSource": {
         "properties": {

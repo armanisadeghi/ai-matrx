@@ -17,13 +17,21 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { useChunkPreview } from "@/features/page-extraction/hooks/useChunkPreview";
+import {
+  useChunkPreview,
+  type ChunkConfigOverride,
+} from "@/features/page-extraction/hooks/useChunkPreview";
 import { ChunkCard } from "@/features/page-extraction/components/ChunkCard";
+import { getJob } from "@/features/page-extraction/api/jobs";
 import { selectActiveRunByJob } from "@/features/page-extraction/redux/selectors";
 import { selectViewedJobForFile } from "@/features/page-extraction/redux/selectors";
 import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
+import type {
+  PageExtractionJob,
+  SourceVariationKind,
+} from "@/features/page-extraction/types";
 
 export interface ChunksTabProps {
   fileId: string;
@@ -44,10 +52,59 @@ export function ChunksTab({
   const viewedJobId = useAppSelector((s) => selectViewedJobForFile(s, fileId));
   const inAllView = isAllJobsView(viewedJobId);
 
-  const { chunks, stats, loading, error } = useChunkPreview({
+  // When a saved job is being viewed, compute the chunk preview from that
+  // job's persisted config rather than the live inspector draft. The draft
+  // is empty after a page reload (and is only hydrated by the inspector form,
+  // which may not be mounted), so without this the Chunks tab would show
+  // "No chunks yet" for a job that has clearly run. Loading the job here makes
+  // the tab self-sufficient.
+  const [job, setJob] = useState<PageExtractionJob | null>(null);
+  const [jobLoading, setJobLoading] = useState(false);
+  useEffect(() => {
+    if (inAllView || !viewedJobId) {
+      setJob(null);
+      return;
+    }
+    let cancelled = false;
+    setJobLoading(true);
+    void getJob(viewedJobId)
+      .then((j) => {
+        if (!cancelled) setJob(j);
+      })
+      .finally(() => {
+        if (!cancelled) setJobLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [inAllView, viewedJobId]);
+
+  const configOverride = useMemo<ChunkConfigOverride | null>(() => {
+    if (!job) return null;
+    return {
+      scopePages: job.scope_pages ?? [],
+      chunkSize: job.chunk_size,
+      chunkOverlap: job.chunk_overlap,
+      sourceVariations: (job.source_variations ?? [
+        "clean_text",
+      ]) as SourceVariationKind[],
+    };
+  }, [job]);
+
+  const {
+    chunks,
+    stats,
+    loading: chunksLoading,
+    error,
+  } = useChunkPreview({
     fileId,
     processedDocumentId,
+    configOverride,
   });
+
+  // While the viewed job's config is still loading we don't yet know its
+  // chunking, so treat that as loading to avoid a flash of "No chunks yet".
+  const loading = chunksLoading || (!!viewedJobId && !inAllView && jobLoading);
 
   // Overlay per-chunk status for the run associated with whichever Job
   // is currently being viewed in this pane (`viewedJobByFile`, falling

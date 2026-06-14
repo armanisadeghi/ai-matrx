@@ -94,7 +94,8 @@ export function BindingColumn({ agent }: { agent: AgentDefinition }) {
   // seed for every NEW binding on a different surface. Editing this
   // doesn't retroactively change anything that's already saved.
   const defaultBinding = useMemo(
-    () => allBindings.find((b) => b.surfaceName === DEFAULT_SURFACE_NAME) ?? null,
+    () =>
+      allBindings.find((b) => b.surfaceName === DEFAULT_SURFACE_NAME) ?? null,
     [allBindings],
   );
 
@@ -133,9 +134,7 @@ export function BindingColumn({ agent }: { agent: AgentDefinition }) {
       defaultOrgId={currentOrgId}
       onSaved={(id) => selectBinding(id)}
       onDeleted={() => selectBinding(null)}
-      onCancel={() =>
-        existing ? selectBinding(null) : selectSurface(null)
-      }
+      onCancel={() => (existing ? selectBinding(null) : selectSurface(null))}
       onDispatch={dispatch}
     />
   );
@@ -182,7 +181,9 @@ function buildBindingTargets(agent: AgentDefinition): BindingTarget[] {
 interface BindingFormProps {
   agent: AgentDefinition;
   surfaceName: string;
-  existing: import("@/features/surfaces/services/agent-surface-bindings.service").AgentSurfaceBinding | null;
+  existing:
+    | import("@/features/surfaces/services/agent-surface-bindings.service").AgentSurfaceBinding
+    | null;
   /**
    * Mappings to seed the form with when creating a new binding. Sourced
    * from the user's Default-surface binding so they don't restart from
@@ -270,11 +271,13 @@ function BindingForm({
 
   // Hydrate this surface's declared values into Redux (cached per surface).
   useEffect(() => {
-    void dispatch(loadSurfaceValues({ surfaceName })).unwrap().catch((e) => {
-      toast.error(
-        e instanceof Error ? e.message : "Failed to load surface values",
-      );
-    });
+    void dispatch(loadSurfaceValues({ surfaceName }))
+      .unwrap()
+      .catch((e) => {
+        toast.error(
+          e instanceof Error ? e.message : "Failed to load surface values",
+        );
+      });
   }, [dispatch, surfaceName]);
 
   const selectSurfaceValues = useMemo(
@@ -385,8 +388,8 @@ function BindingForm({
         />
         {existing && (
           <p className="-mt-3 text-[11px] text-muted-foreground">
-            Scope is fixed once a binding exists. Delete and re-create to
-            change it.
+            Scope is fixed once a binding exists. Delete and re-create to change
+            it.
           </p>
         )}
 
@@ -422,7 +425,9 @@ function BindingFormLayout({
   children,
 }: {
   surfaceName: string;
-  existing: import("@/features/surfaces/services/agent-surface-bindings.service").AgentSurfaceBinding | null;
+  existing:
+    | import("@/features/surfaces/services/agent-surface-bindings.service").AgentSurfaceBinding
+    | null;
   busy: boolean;
   onSave: () => void;
   onDelete: (() => void) | null;

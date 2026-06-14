@@ -23,8 +23,11 @@
 "use client";
 
 import { useMemo, useEffect, useState } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { AlertTriangle, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectActiveRunByJob } from "@/features/page-extraction/redux/selectors";
 import {
   Table,
   TableBody,
@@ -45,6 +48,8 @@ import {
   buildMergedDuplicateView,
   cellValueFor,
   COLUMN_SOURCE_META,
+  inferColumnsFromRows,
+  normalizeResultRows,
   parseTemplateColumns,
 } from "@/features/page-extraction/utils/columns";
 
@@ -115,21 +120,61 @@ function SingleJobResultsTable({
     pageNumber,
   });
 
+  // Auto-refetch as the run produces output. Realtime INSERTs handle the
+  // happy path, but a fast run can finish before the channel finishes
+  // subscribing — so the table would sit empty until a manual reload. We
+  // also pull the authoritative rows when a run reaches a terminal state
+  // (completed/failed), since result rows are written server-side and the
+  // run-progress signal is the most reliable "data is ready now" trigger.
+  const runStatus = useAppSelector(
+    (s) => selectActiveRunByJob(s, jobId)?.status ?? null,
+  );
+  const completedChunks = useAppSelector(
+    (s) => selectActiveRunByJob(s, jobId)?.completedChunks ?? 0,
+  );
+  useEffect(() => {
+    if (completedChunks > 0 || runStatus === "completed") refetch();
+    // `refetch` is recreated each render; depending on it would loop. The
+    // run-progress signals above are the intended triggers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completedChunks, runStatus]);
+
+  // Defensive: the backend persists flat rows, but if a wrapper
+  // (`{ items: [...] }`) ever reaches storage it would otherwise render as
+  // blank/garbled cells. `normalizeResultRows` unwraps via the shared rule
+  // and tells us how many rows it had to recover so we can scream (below).
+  const { rows: normalizedResults, unwrappedCount } = useMemo(
+    () => normalizeResultRows(results),
+    [results],
+  );
+  useEffect(() => {
+    if (unwrappedCount > 0) {
+      console.error(
+        `[page-extraction] ResultsTable recovered ${unwrappedCount} wrapped ` +
+          `result payload(s) client-side. The backend should normalize these ` +
+          `before persisting — see coerceToRowList / _coerce_to_row_list.`,
+      );
+    }
+  }, [unwrappedCount]);
+
   // Rows a validation pass soft-flagged as duplicates carry
   // payload.is_duplicate === true + canonical_entry pointing at the row
   // they duplicate. Soft-flag only — rows are never deleted.
   const dupeCount = useMemo(
     () =>
-      results.filter(
+      normalizedResults.filter(
         (r) => (r.payload as Record<string, unknown> | null)?.is_duplicate,
       ).length,
-    [results],
+    [normalizedResults],
   );
   // Merge view (default): absorb each duplicate into its canonical row,
   // back-filling missing fields, and show a "+N merged" badge. Toggle off
   // to see every raw row including the duplicates.
-  const merged = useMemo(() => buildMergedDuplicateView(results), [results]);
-  const visibleResults = hideDuplicates ? merged.rows : results;
+  const merged = useMemo(
+    () => buildMergedDuplicateView(normalizedResults),
+    [normalizedResults],
+  );
+  const visibleResults = hideDuplicates ? merged.rows : normalizedResults;
   const mergedCountById = hideDuplicates
     ? merged.mergedCountById
     : EMPTY_MERGED_COUNTS;
@@ -189,20 +234,10 @@ function SingleJobResultsTable({
     [job?.output_schema],
   );
 
-  const inferredCols = useMemo(() => {
-    const ordered: string[] = [];
-    const seen = new Set<string>();
-    for (const r of results) {
-      const payload = (r.payload ?? {}) as Record<string, unknown>;
-      for (const key of Object.keys(payload)) {
-        if (!seen.has(key)) {
-          seen.add(key);
-          ordered.push(key);
-        }
-      }
-    }
-    return ordered;
-  }, [results]);
+  const inferredCols = useMemo(
+    () => inferColumnsFromRows(normalizedResults),
+    [normalizedResults],
+  );
 
   if (!jobId) {
     return (
@@ -263,6 +298,19 @@ function SingleJobResultsTable({
           <Button
             size="sm"
             variant="ghost"
+            className="h-6 px-1.5 text-[10px] text-muted-foreground"
+            disabled={loading}
+            onClick={() => refetch()}
+            title="Refresh results"
+          >
+            <RefreshCw
+              className={cn("w-3 h-3 mr-1", loading && "animate-spin")}
+            />
+            Refresh
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
             className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
             disabled={clearing}
             onClick={() => void handleClearData()}
@@ -277,6 +325,7 @@ function SingleJobResultsTable({
           </Button>
         </div>
       </div>
+      {unwrappedCount > 0 && <RecoveryBanner count={unwrappedCount} />}
       <div className="flex-1 min-h-0 overflow-auto">
         {templateCols ? (
           <SchemaResultsBody
@@ -496,8 +545,25 @@ function AllResultsTable({
   pageNumber?: number | null;
   onJumpToPage?: (page: number) => void;
 }) {
-  const { results, loading, error } = useExtractionResultsForFile(fileId);
+  const { results, loading, error, refetch } =
+    useExtractionResultsForFile(fileId);
   const { jobs } = useExtractionJobs(fileId);
+
+  // Same defensive normalization as the single-template view, via the shared
+  // rule — so the All view can never silently swallow a wrapped payload.
+  const { rows: normalizedResults, unwrappedCount } = useMemo(
+    () => normalizeResultRows(results),
+    [results],
+  );
+  useEffect(() => {
+    if (unwrappedCount > 0) {
+      console.error(
+        `[page-extraction] All-extractions table recovered ${unwrappedCount} ` +
+          `wrapped result payload(s) client-side. The backend should ` +
+          `normalize these before persisting — see coerceToRowList.`,
+      );
+    }
+  }, [unwrappedCount]);
 
   // Quick lookup: job id → name. Templates that were soft-deleted but
   // produced results show up as "(archived)" so the rows still render
@@ -511,28 +577,18 @@ function AllResultsTable({
   // Union of payload keys across every result row, ordered by first
   // appearance. Per-template schemas vary, so we collapse to "show every
   // column anyone has emitted" — empty cells are expected and fine.
-  const cols = useMemo(() => {
-    const ordered: string[] = [];
-    const seen = new Set<string>();
-    for (const r of results) {
-      const payload = (r.payload ?? {}) as Record<string, unknown>;
-      for (const key of Object.keys(payload)) {
-        if (!seen.has(key)) {
-          seen.add(key);
-          ordered.push(key);
-        }
-      }
-    }
-    return ordered;
-  }, [results]);
+  const cols = useMemo(
+    () => inferColumnsFromRows(normalizedResults),
+    [normalizedResults],
+  );
 
   const filtered = useMemo(() => {
-    if (!pageNumber) return results;
-    return results.filter(
+    if (!pageNumber) return normalizedResults;
+    return normalizedResults.filter(
       (r) =>
         Array.isArray(r.source_pages) && r.source_pages.includes(pageNumber),
     );
-  }, [results, pageNumber]);
+  }, [normalizedResults, pageNumber]);
 
   if (!fileId) {
     return (
@@ -576,10 +632,26 @@ function AllResultsTable({
           {jobs.length === 1 ? "" : "s"}
           {pageNumber != null ? " (filtered to page " + pageNumber + ")" : ""}
         </span>
-        <span className="text-[10px] text-muted-foreground/70">
-          All extractions
-        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-muted-foreground/70">
+            All extractions
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 px-1.5 text-[10px] text-muted-foreground"
+            disabled={loading}
+            onClick={() => refetch()}
+            title="Refresh results"
+          >
+            <RefreshCw
+              className={cn("w-3 h-3 mr-1", loading && "animate-spin")}
+            />
+            Refresh
+          </Button>
+        </div>
       </div>
+      {unwrappedCount > 0 && <RecoveryBanner count={unwrappedCount} />}
       <div className="flex-1 min-h-0 overflow-auto">
         <Table>
           <TableHeader>
@@ -627,6 +699,24 @@ function AllResultsTable({
           </TableBody>
         </Table>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Loud-recovery banner. A wrapped payload reaching the display means the
+ * backend (or a different extraction service) failed to normalize before
+ * persisting. We recover so the user still sees their data, but we surface it
+ * visibly (and log to the console) rather than hiding a real defect.
+ */
+function RecoveryBanner({ count }: { count: number }) {
+  return (
+    <div className="shrink-0 flex items-center gap-1.5 px-3 py-1 border-b border-amber-500/40 bg-amber-500/10 text-[10px] text-amber-700 dark:text-amber-300">
+      <AlertTriangle className="w-3 h-3 text-amber-500" />
+      <span>
+        Recovered {count} wrapped result payload{count === 1 ? "" : "s"}{" "}
+        client-side — the backend should normalize these before saving.
+      </span>
     </div>
   );
 }

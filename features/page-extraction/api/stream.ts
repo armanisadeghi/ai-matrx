@@ -6,11 +6,8 @@
  * stays consistent across streaming endpoints.
  */
 
-import {
-  buildHeaders,
-  postJson,
-  resolveBaseUrl,
-} from "@/lib/python-client";
+import { buildHeaders, postJson, resolveBaseUrl } from "@/lib/python-client";
+import { coerceToRowList } from "@/features/page-extraction/utils/columns";
 import type {
   ExtractionStreamEvent,
   RunExtractionRequest,
@@ -166,10 +163,19 @@ function parseLine(line: string): ExtractionStreamEvent | null {
           cost: Number(data.cost ?? 0),
           tokens: Number(data.tokens ?? 0),
           duration_ms: Number(data.duration_ms ?? 0),
-          raw_response: typeof data.raw_response === "string" ? data.raw_response : "",
-          parsed_payload: Array.isArray(data.parsed_payload)
-            ? (data.parsed_payload as Record<string, unknown>[] as never)
-            : null,
+          raw_response:
+            typeof data.raw_response === "string" ? data.raw_response : "",
+          // Route through the shared wrapping rule so a payload the backend
+          // emits as `{ items: [...] }` (or any single-array wrapper) is
+          // unwrapped to the row list instead of being dropped. `null` only
+          // when the backend sent nothing.
+          parsed_payload:
+            data.parsed_payload == null
+              ? null
+              : (coerceToRowList(data.parsed_payload) as Record<
+                  string,
+                  unknown
+                >[] as never),
         },
       };
     case "page_extraction.page_run_failed":

@@ -145,7 +145,7 @@ export function SurfaceVariableBinding({
         )}
       >
         {/* Name + required pill */}
-        <header className="px-4 pt-3 pb-2 flex items-center gap-2 min-w-0">
+        <header className="px-4 pt-3 pb-2 flex items-start gap-2 min-w-0">
           <div className="min-w-0 flex-1">
             {target.description ? (
               <Tooltip>
@@ -163,6 +163,9 @@ export function SurfaceVariableBinding({
                 {displayName}
               </h4>
             )}
+            <code className="mt-0.5 block font-mono text-[10px] text-muted-foreground truncate">
+              {target.name}
+            </code>
           </div>
           {target.required && (
             <span className="shrink-0 inline-flex items-center px-1.5 h-5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-600">

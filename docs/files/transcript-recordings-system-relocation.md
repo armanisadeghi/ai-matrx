@@ -1,7 +1,7 @@
 # Transcript recordings → system namespace (backend change, FE follow-up)
 
 **From:** aidream (backend) · **Date:** 2026-06-14
-**Status:** Backend shipped + data backfilled in prod (`Matrx Main`). FE follow-up below is mostly cleanup + one product decision to confirm.
+**Status:** ✅ **CLOSED (2026-06-14).** Backend shipped + data backfilled in prod (`Matrx Main`); FE follow-up A/B/C done; product decision confirmed (**fully hidden**). No further action required by either side. See the **FE response** at the bottom for the one intentional deviation + one FYI.
 
 ---
 

@@ -42,7 +42,13 @@ export type ScopeAssignmentEntityType =
   | "agent_surface_binding"
   | "conversation"
   | "project_resource"
-  | "file";
+  | "file"
+  // An extraction dataset (one `page_extraction_jobs` row). Tagged durably so
+  // a dataset of extracted rows participates in the context system like any
+  // other entity. `set_entity_scopes` does not whitelist entity_type and
+  // `ctx_scope_assignments.entity_type` has no CHECK, so no migration is
+  // needed — this union is the single place the type is declared.
+  | "page_extraction_job";
 
 // ─── Tree shape (returned by the boot RPC and stored in scopesSlice) ───
 

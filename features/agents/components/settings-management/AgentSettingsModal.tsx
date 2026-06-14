@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { SlidersHorizontal, AlertTriangle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -17,26 +17,6 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import {
-  selectAgentSettings,
-  selectAgentModelId,
-} from "@/features/agents/redux/agent-definition/selectors";
-import {
-  setAgentSettings,
-  setAgentField,
-} from "@/features/agents/redux/agent-definition/slice";
-import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import { AgentSettingsCore } from "./AgentSettingsCore";
 
 interface AgentSettingsModalProps {
@@ -46,26 +26,13 @@ interface AgentSettingsModalProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-interface SettingsSnapshot {
-  settings: FeLlmParams;
-  modelId: string | null;
-}
-
 export function AgentSettingsModal({
   agentId,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
 }: AgentSettingsModalProps) {
-  const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   const isControlled = controlledOpen !== undefined;
-
-  const currentSettings = useAppSelector((state) =>
-    selectAgentSettings(state, agentId),
-  );
-  const currentModelId = useAppSelector((state) =>
-    selectAgentModelId(state, agentId),
-  );
 
   const [internalOpen, setInternalOpen] = useState(false);
   const open = isControlled ? controlledOpen : internalOpen;
@@ -73,94 +40,39 @@ export function AgentSettingsModal({
     ? (controlledOnOpenChange ?? setInternalOpen)
     : setInternalOpen;
 
-  const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const discardedRef = useRef(false);
-  // Unapplied edits in a JSON editor (Raw Editable / Output Schema) that would
-  // be lost on close unless the user clicks Apply. Reported up by the core.
+  // Edits made in this panel are written live to the agent record (Redux) and
+  // tracked there as dirty — saved or discarded by the agent-level save/undo
+  // flow, exactly like editing the system prompt or any other field. This
+  // panel does NOT own its own revert, so "Close" closes without undoing.
+  //
+  // The one thing that IS panel-local and lost on close is an unapplied JSON
+  // editor buffer (Raw Editable / Output Schema text not yet Applied). The
+  // core reports that here so we can warn before closing.
   const [hasUnappliedEdits, setHasUnappliedEdits] = useState(false);
   const [showUnappliedConfirm, setShowUnappliedConfirm] = useState(false);
 
   useEffect(() => {
-    if (isControlled && controlledOpen && !snapshot) {
-      setSnapshot({
-        settings: currentSettings ?? {},
-        modelId: currentModelId ?? null,
-      });
-    }
     if (isControlled && !controlledOpen) {
-      setSnapshot(null);
       setHasUnappliedEdits(false);
       setShowUnappliedConfirm(false);
     }
-  }, [isControlled, controlledOpen, currentSettings, currentModelId, snapshot]);
+  }, [isControlled, controlledOpen]);
 
   const handleOpen = () => {
-    setSnapshot({
-      settings: currentSettings ?? {},
-      modelId: currentModelId ?? null,
-    });
     setHasUnappliedEdits(false);
     setShowUnappliedConfirm(false);
     setOpen(true);
   };
 
-  const hasChanges = () => {
-    if (!snapshot) return false;
-    const settingsChanged =
-      JSON.stringify(currentSettings ?? {}) !==
-      JSON.stringify(snapshot.settings);
-    const modelChanged = (currentModelId ?? null) !== snapshot.modelId;
-    return settingsChanged || modelChanged;
-  };
-
-  const revertToSnapshot = () => {
-    if (!snapshot) return;
-    dispatch(setAgentSettings({ id: agentId, settings: snapshot.settings }));
-    if (snapshot.modelId !== null) {
-      dispatch(
-        setAgentField({
-          id: agentId,
-          field: "modelId",
-          value: snapshot.modelId,
-        }),
-      );
-    }
-  };
-
-  const handleCancelClick = () => {
-    if (hasChanges()) {
-      setOpen(false);
-      setShowCancelConfirm(true);
-    } else {
-      setOpen(false);
-    }
-  };
-
-  const handleKeepEditing = () => {
-    setShowCancelConfirm(false);
-    setOpen(true);
-  };
-
-  const handleConfirmCancel = () => {
-    discardedRef.current = true;
-    revertToSnapshot();
-    setShowCancelConfirm(false);
-    setSnapshot(null);
-    setHasUnappliedEdits(false);
-    setShowUnappliedConfirm(false);
-  };
-
-  // Close the panel keeping applied changes (unapplied editor buffers are
-  // discarded — that's what the confirm warns about).
   const closeClean = () => {
-    setSnapshot(null);
     setHasUnappliedEdits(false);
     setShowUnappliedConfirm(false);
     setOpen(false);
   };
 
-  const handleDone = () => {
+  // Close request from the Close button, the header X, Escape, or an outside
+  // click. Intercept only when an unapplied editor buffer would be lost.
+  const handleRequestClose = () => {
     if (hasUnappliedEdits) {
       setShowUnappliedConfirm(true);
       return;
@@ -208,31 +120,21 @@ export function AgentSettingsModal({
       </div>
     </div>
   ) : (
-    <div className="flex items-center justify-between px-4 py-1.5 border-t border-border bg-gray-50 dark:bg-gray-900/50 flex-shrink-0 gap-2">
+    <div className="flex items-center justify-end px-4 py-1.5 border-t border-border bg-gray-50 dark:bg-gray-900/50 flex-shrink-0 gap-2">
+      {hasUnappliedEdits && (
+        <span className="flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400 mr-auto">
+          <AlertTriangle className="h-3 w-3" />
+          Unapplied editor edits
+        </span>
+      )}
       <Button
-        variant="outline"
         size="sm"
-        onClick={handleCancelClick}
+        variant={hasUnappliedEdits ? "destructive" : "default"}
+        onClick={handleRequestClose}
         className="h-7 text-xs"
       >
-        Cancel
+        Close
       </Button>
-      <div className="flex items-center gap-2">
-        {hasUnappliedEdits && (
-          <span className="flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400">
-            <AlertTriangle className="h-3 w-3" />
-            Unapplied edits
-          </span>
-        )}
-        <Button
-          size="sm"
-          variant={hasUnappliedEdits ? "destructive" : "default"}
-          onClick={handleDone}
-          className="h-7 text-xs"
-        >
-          Done
-        </Button>
-      </div>
     </div>
   );
 
@@ -243,7 +145,7 @@ export function AgentSettingsModal({
         <Drawer
           open={open}
           onOpenChange={(o) => {
-            if (!o) handleCancelClick();
+            if (!o) handleRequestClose();
             else handleOpen();
           }}
         >
@@ -255,42 +157,13 @@ export function AgentSettingsModal({
             </DrawerHeader>
             <div className="flex-1 min-h-0 flex flex-col overflow-hidden pb-2">
               <AgentSettingsCore
-              agentId={agentId}
-              onUnappliedEditsChange={setHasUnappliedEdits}
-            />
+                agentId={agentId}
+                onUnappliedEditsChange={setHasUnappliedEdits}
+              />
             </div>
             {footer}
           </DrawerContent>
         </Drawer>
-        <AlertDialog
-          open={showCancelConfirm}
-          onOpenChange={(o) => {
-            if (!o) {
-              if (discardedRef.current) {
-                discardedRef.current = false;
-                return;
-              }
-              handleKeepEditing();
-            }
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Discard changes?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Your settings changes will be reverted. This cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={handleKeepEditing}>
-                Keep editing
-              </AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmCancel}>
-                Discard changes
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </>
     );
   }
@@ -301,7 +174,7 @@ export function AgentSettingsModal({
       <Dialog
         open={open}
         onOpenChange={(o) => {
-          if (!o) handleCancelClick();
+          if (!o) handleRequestClose();
           else handleOpen();
         }}
       >
@@ -324,36 +197,6 @@ export function AgentSettingsModal({
           {footer}
         </DialogContent>
       </Dialog>
-      <AlertDialog
-        open={showCancelConfirm}
-        onOpenChange={(o) => {
-          if (!o) {
-            if (discardedRef.current) {
-              discardedRef.current = false;
-              return;
-            }
-            handleKeepEditing();
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Discard changes?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Your settings changes will be reverted to what they were when you
-              opened this panel. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleKeepEditing}>
-              Keep editing
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmCancel}>
-              Discard changes
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

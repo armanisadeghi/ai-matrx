@@ -54,7 +54,7 @@ import {
   selectSelectedJobForFile,
 } from "@/features/page-extraction/redux/selectors";
 import { useChunkPreview } from "@/features/page-extraction/hooks/useChunkPreview";
-import { useExtractionStream } from "@/features/page-extraction/hooks/useExtractionStream";
+import { useExtractionRunLauncher } from "@/features/page-extraction/hooks/useExtractionRunLauncher";
 import {
   formatPageRange,
   parsePageRangeInput,
@@ -145,15 +145,17 @@ export function ChunkingConfigForm({
 
   // Run handler — shared by the readonly view's Run button and any
   // future "save & run" flow.
-  const { running: streamRunning, start: startRun } = useExtractionStream();
+  const {
+    launch,
+    dialog: rerunDialog,
+    running: streamRunning,
+  } = useExtractionRunLauncher();
   const handleRunSelected = useCallback(async () => {
-    if (!selectedJobId) return;
-    try {
-      await startRun(fileId, { job_id: selectedJobId });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Run failed");
-    }
-  }, [selectedJobId, startRun, fileId, toast]);
+    if (!selectedJobId || !loadedJob) return;
+    // The launcher guards re-runs (replace / run-as-new) when this template
+    // has produced data before. First run streams immediately.
+    await launch(fileId, loadedJob);
+  }, [selectedJobId, loadedJob, launch, fileId]);
 
   // Mode transitions ------------------------------------------------
 
@@ -230,6 +232,7 @@ export function ChunkingConfigForm({
           onRun={handleRunSelected}
         />
       )}
+      {rerunDialog}
 
       {!selectedJobId && (
         <p className="text-[10px] text-muted-foreground/70 leading-snug px-1">
@@ -453,7 +456,9 @@ function TemplateEditor({
             <button
               key={k}
               type="button"
-              onClick={() => dispatch(patchDraft({ fileId, patch: { kind: k } }))}
+              onClick={() =>
+                dispatch(patchDraft({ fileId, patch: { kind: k } }))
+              }
               className={
                 "flex-1 h-7 rounded-md border text-[11px] capitalize transition-colors " +
                 (draft.kind === k
@@ -483,10 +488,10 @@ function TemplateEditor({
             }
           />
           <p className="mt-1 text-[10px] text-muted-foreground/70 leading-snug">
-            The validation agent receives every result row of that template
-            (as <code>validated_rows</code>) and writes its{" "}
-            <span className="font-medium">validation</span>-source columns
-            back onto those rows.
+            The validation agent receives every result row of that template (as{" "}
+            <code>validated_rows</code>) and writes its{" "}
+            <span className="font-medium">validation</span>-source columns back
+            onto those rows.
           </p>
         </Field>
       )}
@@ -500,9 +505,7 @@ function TemplateEditor({
             label="Pages"
             required
             hint={
-              pagesLoading
-                ? "Loading…"
-                : `${availablePages.length} available`
+              pagesLoading ? "Loading…" : `${availablePages.length} available`
             }
           >
             <Input
@@ -644,10 +647,7 @@ function TemplateEditor({
       {/* 4c. Output columns — the durable table definition. Import from
               the agent, then add review/validation columns or drop fields.
               Empty = inherit the agent's schema at run time. */}
-      <Field
-        label="Output table"
-        hint="Defines the Results columns."
-      >
+      <Field label="Output table" hint="Defines the Results columns.">
         <SchemaEditor
           outputSchema={draft.outputSchema}
           agentOutputSchema={agent?.outputSchema}

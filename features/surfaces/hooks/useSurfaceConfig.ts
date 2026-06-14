@@ -25,8 +25,10 @@ import {
 import {
   setRoleSelection,
   deleteRolePref,
+  addRosterItem,
   type ResolvedRole,
   type ResolvedSurfaceConfig,
+  type TierSelectionPref,
 } from "@/features/surfaces/services/surface-config.service";
 import { getNamespaceHandler } from "@/features/surfaces/config/namespace-registry";
 
@@ -42,9 +44,7 @@ export interface UseSurfaceConfigResult {
 
 export function useSurfaceConfig(surfaceName: string): UseSurfaceConfigResult {
   const dispatch = useAppDispatch();
-  const entry = useAppSelector((s) =>
-    selectSurfaceConfigEntry(s, surfaceName),
-  );
+  const entry = useAppSelector((s) => selectSurfaceConfigEntry(s, surfaceName));
 
   useEffect(() => {
     void dispatch(ensureSurfaceConfig({ surfaceName }));
@@ -56,7 +56,7 @@ export function useSurfaceConfig(surfaceName: string): UseSurfaceConfigResult {
   }, [dispatch, surfaceName]);
 
   const getNamespace = useCallback(
-    <T,>(namespace: string): T => {
+    <T>(namespace: string): T => {
       const merged = entry?.resolved?.namespaces[namespace];
       if (merged !== undefined) return merged as T;
       const handler = getNamespaceHandler(namespace);
@@ -82,11 +82,18 @@ export interface RoleView {
   /** Where the effective agent came from. */
   sourceTier: "manifest" | "global" | "org" | "user" | "scope" | null;
   effective: ResolvedRole["effective"];
+  /** User-tier default pref — survives even when org/platform wins effective. */
+  userSelection: TierSelectionPref | null;
+  orgSelections: TierSelectionPref[];
   roster: ResolvedRole["roster"];
   /** Set the caller's user-scope selection for this role (position 0). */
   setForMe(agentId: string): Promise<void>;
   /** Remove the caller's user-scope selection (falls back down the chain). */
   clearForMe(): Promise<void>;
+  /** Add this agent to the user-tier roster for this role. */
+  addToMyRoster(agentId: string): Promise<void>;
+  /** Remove a user-tier roster row for this agent. */
+  removeFromMyRoster(prefId: string): Promise<void>;
 }
 
 export interface UseSurfaceAgentRolesResult {
@@ -109,6 +116,8 @@ export function useSurfaceAgentRoles(
         effectiveAgentId: first?.agentId ?? null,
         sourceTier: first?.sourceTier ?? null,
         effective: resolved.effective,
+        userSelection: resolved.userSelection,
+        orgSelections: resolved.orgSelections,
         roster: resolved.roster,
         setForMe: async (agentId: string) => {
           if (!userId) throw new Error("Not signed in");
@@ -121,13 +130,24 @@ export function useSurfaceAgentRoles(
           refresh();
         },
         clearForMe: async () => {
-          const mine = resolved.effective.find(
-            (e) => e.sourceTier === "user" && e.prefId,
-          );
-          if (mine?.prefId) {
-            await deleteRolePref(mine.prefId);
+          if (resolved.userSelection?.prefId) {
+            await deleteRolePref(resolved.userSelection.prefId);
             refresh();
           }
+        },
+        addToMyRoster: async (agentId: string) => {
+          if (!userId) throw new Error("Not signed in");
+          await addRosterItem({
+            surfaceName,
+            roleName: resolved.role.name,
+            agentId,
+            scope: { userId },
+          });
+          refresh();
+        },
+        removeFromMyRoster: async (prefId: string) => {
+          await deleteRolePref(prefId);
+          refresh();
         },
       };
     },

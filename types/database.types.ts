@@ -2573,6 +2573,7 @@ export type Database = {
           process_pid: number | null
           request_id: string | null
           route: string | null
+          stage: string | null
           traceback: string | null
           ts: string
           user_id: string | null
@@ -2593,6 +2594,7 @@ export type Database = {
           process_pid?: number | null
           request_id?: string | null
           route?: string | null
+          stage?: string | null
           traceback?: string | null
           ts?: string
           user_id?: string | null
@@ -2613,9 +2615,34 @@ export type Database = {
           process_pid?: number | null
           request_id?: string | null
           route?: string | null
+          stage?: string | null
           traceback?: string | null
           ts?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      app_log_muted_pattern: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string | null
+          signature: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          signature: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          signature?: string
         }
         Relationships: []
       }
@@ -5562,6 +5589,7 @@ export type Database = {
           status: string
           suggested_key: string
           suppressed_until: string | null
+          sweep_run_id: string | null
           user_id: string
         }
         Insert: {
@@ -5580,6 +5608,7 @@ export type Database = {
           status?: string
           suggested_key: string
           suppressed_until?: string | null
+          sweep_run_id?: string | null
           user_id: string
         }
         Update: {
@@ -5598,6 +5627,7 @@ export type Database = {
           status?: string
           suggested_key?: string
           suppressed_until?: string | null
+          sweep_run_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -5897,6 +5927,7 @@ export type Database = {
           category: string | null
           created_at: string
           created_by: string | null
+          custom_component: Json | null
           depends_on: string[]
           description: string
           display_name: string
@@ -5925,6 +5956,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string | null
+          custom_component?: Json | null
           depends_on?: string[]
           description?: string
           display_name: string
@@ -5953,6 +5985,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string | null
+          custom_component?: Json | null
           depends_on?: string[]
           description?: string
           display_name?: string
@@ -10732,6 +10765,216 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      kg_sweep_queue: {
+        Row: {
+          change_type: string
+          claim_at: string
+          claimed_at: string | null
+          enqueued_at: string
+          entity_id: string
+          id: string
+          metadata: Json
+          organization_id: string
+          scope_type_id: string | null
+          status: string
+          sweep_run_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          change_type: string
+          claim_at?: string
+          claimed_at?: string | null
+          enqueued_at?: string
+          entity_id: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          scope_type_id?: string | null
+          status?: string
+          sweep_run_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          change_type?: string
+          claim_at?: string
+          claimed_at?: string | null
+          enqueued_at?: string
+          entity_id?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          scope_type_id?: string | null
+          status?: string
+          sweep_run_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kg_sweep_queue_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kg_sweep_run: {
+        Row: {
+          batches: number
+          change_count: number
+          completed_at: string | null
+          cost_usd: number
+          created_at: string
+          documents_considered: number
+          entities_after_dedup: number
+          entities_deferred: number
+          entities_enumerated: number
+          entities_excluded_resolved: number
+          entities_selected: number
+          error: Json | null
+          id: string
+          llm_calls: number
+          metadata: Json
+          organization_id: string
+          run_id: string
+          scope_type_id: string | null
+          started_at: string
+          status: string
+          suggestions_created: number
+          tokens_in: number
+          tokens_out: number
+          trigger_entity_id: string | null
+          trigger_type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          batches?: number
+          change_count?: number
+          completed_at?: string | null
+          cost_usd?: number
+          created_at?: string
+          documents_considered?: number
+          entities_after_dedup?: number
+          entities_deferred?: number
+          entities_enumerated?: number
+          entities_excluded_resolved?: number
+          entities_selected?: number
+          error?: Json | null
+          id?: string
+          llm_calls?: number
+          metadata?: Json
+          organization_id: string
+          run_id: string
+          scope_type_id?: string | null
+          started_at?: string
+          status?: string
+          suggestions_created?: number
+          tokens_in?: number
+          tokens_out?: number
+          trigger_entity_id?: string | null
+          trigger_type: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          batches?: number
+          change_count?: number
+          completed_at?: string | null
+          cost_usd?: number
+          created_at?: string
+          documents_considered?: number
+          entities_after_dedup?: number
+          entities_deferred?: number
+          entities_enumerated?: number
+          entities_excluded_resolved?: number
+          entities_selected?: number
+          error?: Json | null
+          id?: string
+          llm_calls?: number
+          metadata?: Json
+          organization_id?: string
+          run_id?: string
+          scope_type_id?: string | null
+          started_at?: string
+          status?: string
+          suggestions_created?: number
+          tokens_in?: number
+          tokens_out?: number
+          trigger_entity_id?: string | null
+          trigger_type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kg_sweep_run_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kg_sweep_state: {
+        Row: {
+          created_at: string
+          entity_watermark: string | null
+          id: string
+          last_sweep_at: string | null
+          last_sweep_run_id: string | null
+          metadata: Json
+          next_eligible_at: string | null
+          organization_id: string
+          scope_type_id: string | null
+          suggestions_accepted_total: number
+          suggestions_dismissed_total: number
+          suggestions_generated_total: number
+          sweeps_total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entity_watermark?: string | null
+          id?: string
+          last_sweep_at?: string | null
+          last_sweep_run_id?: string | null
+          metadata?: Json
+          next_eligible_at?: string | null
+          organization_id: string
+          scope_type_id?: string | null
+          suggestions_accepted_total?: number
+          suggestions_dismissed_total?: number
+          suggestions_generated_total?: number
+          sweeps_total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entity_watermark?: string | null
+          id?: string
+          last_sweep_at?: string | null
+          last_sweep_run_id?: string | null
+          metadata?: Json
+          next_eligible_at?: string | null
+          organization_id?: string
+          scope_type_id?: string | null
+          suggestions_accepted_total?: number
+          suggestions_dismissed_total?: number
+          suggestions_generated_total?: number
+          sweeps_total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kg_sweep_state_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       kg_value_matches: {
         Row: {
@@ -16293,6 +16536,7 @@ export type Database = {
           status: string
           suggested_value: string | null
           suppressed_until: string | null
+          sweep_run_id: string | null
           target_scope_id: string | null
           target_scope_item_id: string | null
           target_slot_name: string | null
@@ -16317,6 +16561,7 @@ export type Database = {
           status?: string
           suggested_value?: string | null
           suppressed_until?: string | null
+          sweep_run_id?: string | null
           target_scope_id?: string | null
           target_scope_item_id?: string | null
           target_slot_name?: string | null
@@ -16341,6 +16586,7 @@ export type Database = {
           status?: string
           suggested_value?: string | null
           suppressed_until?: string | null
+          sweep_run_id?: string | null
           target_scope_id?: string | null
           target_scope_item_id?: string | null
           target_slot_name?: string | null
@@ -16384,6 +16630,7 @@ export type Database = {
           status: string
           suggested_value: string
           suppressed_until: string | null
+          sweep_run_id: string | null
           target_context_item_id: string
           target_scope_id: string
           target_slot_key: string
@@ -16409,6 +16656,7 @@ export type Database = {
           status?: string
           suggested_value: string
           suppressed_until?: string | null
+          sweep_run_id?: string | null
           target_context_item_id: string
           target_scope_id: string
           target_slot_key: string
@@ -16434,6 +16682,7 @@ export type Database = {
           status?: string
           suggested_value?: string
           suppressed_until?: string | null
+          sweep_run_id?: string | null
           target_context_item_id?: string
           target_scope_id?: string
           target_slot_key?: string
@@ -16474,6 +16723,7 @@ export type Database = {
           suggested_name: string
           suggested_slot_values: Json
           suppressed_until: string | null
+          sweep_run_id: string | null
           user_id: string
         }
         Insert: {
@@ -16492,6 +16742,7 @@ export type Database = {
           suggested_name: string
           suggested_slot_values?: Json
           suppressed_until?: string | null
+          sweep_run_id?: string | null
           user_id: string
         }
         Update: {
@@ -16510,6 +16761,7 @@ export type Database = {
           suggested_name?: string
           suggested_slot_values?: Json
           suppressed_until?: string | null
+          sweep_run_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -19238,6 +19490,7 @@ export type Database = {
           detached_at: string | null
           ended_at: string | null
           id: string
+          safety_id: string | null
           segment_index: number
           session_id: string
           started_at: string
@@ -19253,6 +19506,7 @@ export type Database = {
           detached_at?: string | null
           ended_at?: string | null
           id?: string
+          safety_id?: string | null
           segment_index: number
           session_id: string
           started_at: string
@@ -19268,6 +19522,7 @@ export type Database = {
           detached_at?: string | null
           ended_at?: string | null
           id?: string
+          safety_id?: string | null
           segment_index?: number
           session_id?: string
           started_at?: string
@@ -25274,6 +25529,37 @@ export type Database = {
             columns: ["target_scope_id"]
             isOneToOne: false
             referencedRelation: "ctx_scopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_kg_sweep_effectiveness: {
+        Row: {
+          accepted: number | null
+          completed_at: string | null
+          cost_usd: number | null
+          deferred: number | null
+          entities_selected: number | null
+          expired: number | null
+          llm_calls: number | null
+          organization_id: string | null
+          pending: number | null
+          rejected: number | null
+          run_status: string | null
+          scope_type_id: string | null
+          started_at: string | null
+          suggestions_created: number | null
+          suggestions_tracked: number | null
+          sweep_run_id: string | null
+          sweep_run_row_id: string | null
+          trigger_type: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kg_sweep_run_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]

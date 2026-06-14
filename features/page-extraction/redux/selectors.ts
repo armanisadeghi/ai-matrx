@@ -11,7 +11,10 @@ import type {
   ActivePageRun,
   ChunkingConfigDraft,
 } from "@/features/page-extraction/redux/pageExtractionSlice";
-import { emptyDraft } from "@/features/page-extraction/redux/pageExtractionSlice";
+import {
+  emptyDraft,
+  EXTRACTIONS_ALL_VIEW,
+} from "@/features/page-extraction/redux/pageExtractionSlice";
 
 // Slice key is hardcoded to match the rootReducer mount point.
 const root = (s: RootState) =>
@@ -46,6 +49,11 @@ export const selectSelectedJobForFile = (
  * Use this for the main pane (JobPicker, RunProgressBar, ResultsTable,
  * ChunksTab activeRun overlay). Use `selectSelectedJobForFile` for the
  * right inspector (ChunkingConfigForm, SavedJobsList highlight).
+ *
+ * Default: when nothing has been explicitly viewed or selected (e.g. fresh
+ * load / after reload), resolve to the All-extractions view rather than an
+ * empty "pick a job" state — that's the most useful landing view and avoids
+ * the confusing "nothing selected" default.
  */
 export const selectViewedJobForFile = (
   state: RootState,
@@ -53,7 +61,11 @@ export const selectViewedJobForFile = (
 ): string | null => {
   if (!fileId) return null;
   const r = root(state);
-  return r?.viewedJobByFile[fileId] ?? r?.selectedJobByFile[fileId] ?? null;
+  return (
+    r?.viewedJobByFile[fileId] ??
+    r?.selectedJobByFile[fileId] ??
+    EXTRACTIONS_ALL_VIEW
+  );
 };
 
 /**

@@ -26,7 +26,7 @@ import {
   removeJobFromCache,
   useExtractionJobs,
 } from "@/features/page-extraction/hooks/useExtractionJobs";
-import { useExtractionStream } from "@/features/page-extraction/hooks/useExtractionStream";
+import { useExtractionRunLauncher } from "@/features/page-extraction/hooks/useExtractionRunLauncher";
 import { deleteJob } from "@/features/page-extraction/api/jobs";
 import {
   selectJobForFile,
@@ -46,7 +46,7 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
     selectSelectedJobForFile(s, fileId),
   );
   const viewedJobId = useAppSelector((s) => selectViewedJobForFile(s, fileId));
-  const { running, start } = useExtractionStream();
+  const { launch, dialog, running } = useExtractionRunLauncher();
   const [runningJobId, setRunningJobId] = useState<string | null>(null);
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
 
@@ -66,12 +66,12 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
   };
 
   const handleRunAgain = async (job: PageExtractionJob) => {
-    dispatch(selectJobForFile({ fileId, jobId: job.id }));
+    // The launcher decides whether to run immediately or prompt
+    // (replace / run-as-new) when the template has run before. It also
+    // owns selecting/viewing the right job, so we don't pre-select here.
     setRunningJobId(job.id);
     try {
-      await start(fileId, { job_id: job.id });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Run failed");
+      await launch(fileId, job);
     } finally {
       setRunningJobId(null);
     }
@@ -190,6 +190,7 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
           );
         })}
       </ul>
+      {dialog}
     </div>
   );
 }

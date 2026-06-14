@@ -70,7 +70,11 @@ function parseJson5(text: string): ParseResult {
   }
   try {
     const parsed = JSON5.parse(text);
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
       return {
         ok: false,
         error: "Top-level value must be a JSON object (use { ... }).",
@@ -163,16 +167,25 @@ export function SettingsJsonEditor({
       const formatted = JSON.stringify(result.parsed, null, 2);
       setText(formatted);
       lastInitialRef.current = formatted;
+      // Report clean directly. The dirty effect is keyed on `text`, and the
+      // buffer is frequently already canonical at apply time (the button's
+      // blur pretty-prints it first), so `setText(formatted)` is a no-op and
+      // the effect would never re-fire to clear the stale dirty=true. Without
+      // this, the host modal keeps warning "edits will be lost" after Apply.
+      onDirtyChange?.(false);
       onApply(result.parsed);
     }
-  }, [text, onApply]);
+  }, [text, onApply, onDirtyChange]);
 
   const handleReset = useCallback(() => {
     setText(lastInitialRef.current);
     const result = parseJson5(lastInitialRef.current);
     setParseResult(result);
+    // Same reasoning as handleApply: text may already equal the baseline, so
+    // report clean explicitly rather than relying on the text-keyed effect.
+    onDirtyChange?.(false);
     onReset?.();
-  }, [onReset]);
+  }, [onReset, onDirtyChange]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -213,7 +226,10 @@ export function SettingsJsonEditor({
         '{"temperature": 0.7, "max_output_tokens": 1024} — trailing commas and // comments OK'
       }
       className={`font-mono text-xs leading-5 ${fillHeight ? "h-full" : "resize-y"}`}
-      style={{ minHeight: fillHeight ? undefined : minHeight, fontSize: "14px" }}
+      style={{
+        minHeight: fillHeight ? undefined : minHeight,
+        fontSize: "14px",
+      }}
       spellCheck={false}
     />
   );

@@ -49,12 +49,27 @@ export interface UseChunkPreviewResult {
   error: string | null;
 }
 
+/**
+ * The minimal slice of chunking config needed to compute a preview. When the
+ * Chunks tab is viewing a *saved* job (not the live inspector draft), it
+ * passes the job's persisted config here so the preview survives a page
+ * reload — the in-memory draft is empty after reload and is only hydrated by
+ * the inspector form, which may not even be mounted.
+ */
+export type ChunkConfigOverride = Pick<
+  ChunkingConfigDraft,
+  "scopePages" | "chunkSize" | "chunkOverlap" | "sourceVariations"
+>;
+
 export function useChunkPreview(opts: {
   fileId: string | null;
   processedDocumentId: string | null;
+  /** When set, compute the preview from this config instead of the draft. */
+  configOverride?: ChunkConfigOverride | null;
 }): UseChunkPreviewResult {
-  const { fileId, processedDocumentId } = opts;
+  const { fileId, processedDocumentId, configOverride } = opts;
   const draft = useAppSelector((s) => selectDraftForFile(s, fileId));
+  const cfg = configOverride ?? draft;
 
   const [pages, setPages] = useState<PageRow[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -76,13 +91,22 @@ export function useChunkPreview(opts: {
       .select("page_number, raw_text, cleaned_text")
       .eq("processed_document_id", processedDocumentId)
       .order("page_number", { ascending: true })
-      .then(({ data, error: err }: { data: PageRow[] | null; error: { message: string } | null }) => {
-        if (cancelled) return;
-        if (err) setError(err.message);
-        else setPages(data ?? []);
-      })
+      .then(
+        ({
+          data,
+          error: err,
+        }: {
+          data: PageRow[] | null;
+          error: { message: string } | null;
+        }) => {
+          if (cancelled) return;
+          if (err) setError(err.message);
+          else setPages(data ?? []);
+        },
+      )
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
+        if (!cancelled)
+          setError(err instanceof Error ? err.message : String(err));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -98,13 +122,13 @@ export function useChunkPreview(opts: {
   );
 
   const bundles = useMemo<PageTextBundle[]>(() => {
-    if (draft.scopePages.length === 0) return [];
-    const scope = new Set(draft.scopePages);
+    if (cfg.scopePages.length === 0) return [];
+    const scope = new Set(cfg.scopePages);
     return pages
       .filter((p) => scope.has(p.page_number))
       .map<PageTextBundle>((p) => {
         const texts: Partial<Record<SourceVariationKind, string>> = {};
-        for (const v of draft.sourceVariations) {
+        for (const v of cfg.sourceVariations) {
           if (v === "clean_text") texts.clean_text = p.cleaned_text ?? "";
           else if (v === "raw_text") texts.raw_text = p.raw_text ?? "";
           // pdf_page is text-less; the textual preview shows "(PDF attachment)"
@@ -112,17 +136,17 @@ export function useChunkPreview(opts: {
         }
         return { pageNumber: p.page_number, texts };
       });
-  }, [pages, draft.scopePages, draft.sourceVariations]);
+  }, [pages, cfg.scopePages, cfg.sourceVariations]);
 
   const chunks = useMemo(() => {
-    if (draft.chunkSize == null || draft.chunkSize < 1) return [];
+    if (cfg.chunkSize == null || cfg.chunkSize < 1) return [];
     return previewChunks({
       pages: bundles,
-      chunkSize: draft.chunkSize,
-      chunkOverlap: draft.chunkOverlap,
-      variations: draft.sourceVariations,
+      chunkSize: cfg.chunkSize,
+      chunkOverlap: cfg.chunkOverlap,
+      variations: cfg.sourceVariations,
     });
-  }, [bundles, draft.chunkSize, draft.chunkOverlap, draft.sourceVariations]);
+  }, [bundles, cfg.chunkSize, cfg.chunkOverlap, cfg.sourceVariations]);
 
   const stats = useMemo(() => computeChunkStats(chunks), [chunks]);
 

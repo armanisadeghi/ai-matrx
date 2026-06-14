@@ -54,16 +54,27 @@ export interface ResolvedRoleEntry {
   prefId: string | null;
 }
 
+export interface TierSelectionPref {
+  agentId: string;
+  prefId: string;
+  organizationId?: string | null;
+}
+
 export interface ResolvedRole {
   role: SurfaceAgentRole;
   /** kind=single: 0..1 entries. kind=multi: ordered by position. */
   effective: ResolvedRoleEntry[];
+  /** User-tier selection at position 0 — present even when a higher tier wins. */
+  userSelection: TierSelectionPref | null;
+  /** Org-tier selections at position 0 — one row per member org that defined one. */
+  orgSelections: TierSelectionPref[];
   /** Picker additions (kind='roster_item') across all visible tiers. */
   roster: Array<{
     prefId: string;
     agentId: string;
     settings: Record<string, unknown>;
     sourceTier: PrefTier;
+    organizationId?: string | null;
   }>;
 }
 
@@ -258,9 +269,27 @@ export function resolveSurfaceConfig(
       }
     }
 
+    const userSelectionRow = selections.find(
+      (p) => p.position === 0 && tierOf(p) === "user",
+    );
+    const orgSelectionRows = selections.filter(
+      (p) => p.position === 0 && tierOf(p) === "org",
+    );
+
     roles[dbRole.name] = {
       role,
       effective,
+      userSelection: userSelectionRow
+        ? {
+            agentId: userSelectionRow.agentId,
+            prefId: userSelectionRow.id,
+          }
+        : null,
+      orgSelections: orgSelectionRows.map((p) => ({
+        agentId: p.agentId,
+        prefId: p.id,
+        organizationId: p.organizationId,
+      })),
       roster: rolePrefs
         .filter((p) => p.kind === "roster_item")
         .map((p) => ({
@@ -268,6 +297,7 @@ export function resolveSurfaceConfig(
           agentId: p.agentId,
           settings: p.settings,
           sourceTier: tierOf(p),
+          organizationId: p.organizationId,
         })),
     };
   }
@@ -348,7 +378,14 @@ export async function setRoleSelection(args: {
   settings?: Record<string, unknown>;
   scope: PrefScopeInput;
 }): Promise<void> {
-  const { surfaceName, roleName, agentId, position = 0, settings, scope } = args;
+  const {
+    surfaceName,
+    roleName,
+    agentId,
+    position = 0,
+    settings,
+    scope,
+  } = args;
   const client = sb();
   let q = client
     .from("ui_surface_agent_pref")
@@ -400,15 +437,17 @@ export async function addRosterItem(args: {
   settings?: Record<string, unknown>;
   scope: PrefScopeInput;
 }): Promise<void> {
-  const { error } = await sb().from("ui_surface_agent_pref").insert({
-    surface_name: args.surfaceName,
-    role_name: args.roleName,
-    agent_id: args.agentId,
-    kind: "roster_item",
-    position: 0,
-    settings: args.settings ?? {},
-    ...scopeColumns(args.scope),
-  });
+  const { error } = await sb()
+    .from("ui_surface_agent_pref")
+    .insert({
+      surface_name: args.surfaceName,
+      role_name: args.roleName,
+      agent_id: args.agentId,
+      kind: "roster_item",
+      position: 0,
+      settings: args.settings ?? {},
+      ...scopeColumns(args.scope),
+    });
   if (error) throw error;
 }
 
