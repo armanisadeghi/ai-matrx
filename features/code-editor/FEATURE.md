@@ -145,6 +145,7 @@ This section is **explicitly forward-looking**. Treat everything in it as planne
 
 - `2026-04-22` — claude: initial FEATURE.md; documents current state + flags upcoming file-system / git / agentic-coding upgrade.
 - `2026-04-28` — claude: clarified scope vs the new `features/code/` workspace at `/code`; added cross-reference table for chat-binding split (legacy `cx-conversation` + Shortcuts here vs new agents system + `AgentRunnerPage` there).
+- `2026-06-14` — JSON code blocks in streaming markdown use Darcula-inspired Prism token colors via `config/syntax-themes.ts` (`resolvePrismSyntaxStyle`); distinct hues for keys, strings, booleans, numbers, and null in light/dark.
 
 ---
 

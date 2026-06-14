@@ -168,6 +168,34 @@ export const CloudFolders = {
   SYSTEM_FILES: "system-files",
   /** SOCIAL_BASELINE variant storage: og.jpg / thumb.jpg / tiny.jpg / page1_url.jpg. */
   SYSTEM_VARIANTS: "system-files/variants",
+  /**
+   * Backend "generations" registry root — every AI generation (image,
+   * video, audio/TTS) the server materializes lands under
+   * `generations/<images|video|audio>/...`. Backend-owned; mirrors the
+   * server's `cld_is_system_path()` (which treats `system-files` AND
+   * `generations` as system). Never shown in the user tree.
+   */
+  GENERATIONS: "generations",
+
+  // ── System-managed user content (browsable, but NOT in Recents) ─────────
+  // These DO belong to the user and stay visible in the Files browser, but
+  // they're machine-named, high-volume, and background-produced — so they
+  // must never pollute the Recents stream (your "entire reality" on open).
+
+  /**
+   * Recorded audio captured by the transcription / voice features. The
+   * server writes one `recording_<iso>_<rand>.webm` per capture here —
+   * easily 80+ per active user. Browsable under Audio/Transcripts, but
+   * excluded from Recents (see `isExcludedFromRecents`).
+   */
+  TRANSCRIPT_RECORDINGS: "Transcripts/Recordings",
+
+  /**
+   * Per-tool generated image variants — `tool-images/<id>/v/<name>.jpg`,
+   * multiple sizes per source. Machine-produced output, excluded from
+   * Recents.
+   */
+  TOOL_IMAGES: "tool-images",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -241,6 +269,11 @@ export function isHiddenFolder(folderPath: string): boolean {
  *  - `system-files` / `system-files/...` — backfilled SOCIAL_BASELINE
  *    variant rows (og/thumb/tiny/page1_url) and their per-source-file
  *    folders. ~3–4 rows per uploaded image, ~10k+ for active accounts.
+ *  - `generations` / `generations/...` — the backend AI-generation
+ *    registry root (image/video/audio output). Mirrors the server's
+ *    `cld_is_system_path()`, which treats BOTH `system-files` and
+ *    `generations` as system; the tree RPC already drops these, this is
+ *    the FE-side parity guard at every other tree boundary.
  *  - `.matrx-tmp` / `.matrx-tmp/...` — ephemeral staging the user
  *    shouldn't see or manage.
  *
@@ -257,9 +290,38 @@ export function isSystemPath(path: string | null | undefined): boolean {
   return (
     path === CloudFolders.SYSTEM_FILES ||
     path.startsWith(`${CloudFolders.SYSTEM_FILES}/`) ||
+    path === CloudFolders.GENERATIONS ||
+    path.startsWith(`${CloudFolders.GENERATIONS}/`) ||
     path === CloudFolders.TMP ||
     path.startsWith(`${CloudFolders.TMP}/`)
   );
+}
+
+/**
+ * True when a path holds **system-managed user content** — files that
+ * legitimately belong to the user and stay browsable in the Files tree,
+ * but are machine-named, background-produced, and high-volume, so they
+ * must never appear in the Recents stream.
+ *
+ * Distinct from `isSystemPath` (fully-hidden backend infra) and
+ * `isGeneratedContentPath` (AI output under legacy user roots): these are
+ * the server's predefined capture/output folders that a user CAN open on
+ * purpose but should not see flooding their first screen.
+ *
+ *  - `Transcripts/Recordings/...` — recorded audio from the
+ *    transcription / voice features (one `.webm` per capture; the single
+ *    biggest Recents polluter).
+ *  - `tool-images/<id>/v/...` — per-tool generated image variants.
+ */
+export function isSystemManagedContentPath(
+  path: string | null | undefined,
+): boolean {
+  if (!path) return false;
+  const roots = [
+    CloudFolders.TRANSCRIPT_RECORDINGS, // "Transcripts/Recordings"
+    CloudFolders.TOOL_IMAGES, // "tool-images"
+  ];
+  return roots.some((root) => path === root || path.startsWith(`${root}/`));
 }
 
 /**
@@ -272,7 +334,9 @@ export function isSystemPath(path: string | null | undefined): boolean {
  * backend `generations/` registry root (tracked separately); until then this
  * predicate keeps that output out of Recents by path.
  */
-export function isGeneratedContentPath(path: string | null | undefined): boolean {
+export function isGeneratedContentPath(
+  path: string | null | undefined,
+): boolean {
   if (!path) return false;
   const roots = [
     CloudFolders.IMAGES_GENERATED, // "Images/Generated"
@@ -286,14 +350,24 @@ export function isGeneratedContentPath(path: string | null | undefined): boolean
 /**
  * True when a file/folder path must be excluded from the **Recents** stream.
  * Recents is for things the user actually worked on — never background output.
- * Covers backend infra (`isSystemPath`: `system-files/`, `.matrx-tmp/`) AND
- * system/AI-generated user-root content (`isGeneratedContentPath`). The backend
- * file-tree RPC already drops the `system-files/` + `generations/` registry
- * roots; this predicate handles the conventions that still live under user
- * roots on the frontend.
+ * Covers:
+ *  - backend infra (`isSystemPath`: `system-files/`, `generations/`,
+ *    `.matrx-tmp/`),
+ *  - system/AI-generated user-root content (`isGeneratedContentPath`:
+ *    `Images/Generated`, `Generated`, agent-block assets), and
+ *  - system-managed user content (`isSystemManagedContentPath`:
+ *    `Transcripts/Recordings` recorded audio, `tool-images` variants) —
+ *    the high-volume, machine-named files that flood Recents but stay
+ *    browsable in the tree.
  */
-export function isExcludedFromRecents(path: string | null | undefined): boolean {
-  return isSystemPath(path) || isGeneratedContentPath(path);
+export function isExcludedFromRecents(
+  path: string | null | undefined,
+): boolean {
+  return (
+    isSystemPath(path) ||
+    isGeneratedContentPath(path) ||
+    isSystemManagedContentPath(path)
+  );
 }
 
 /**

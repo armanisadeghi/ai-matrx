@@ -39,7 +39,9 @@ import {
   buildCustomComponent,
   extractEffectiveValues,
 } from "@/features/agents/utils/variable-customcomponent";
+import type { ContextItemBinding } from "@/features/agents/types/agent-definition.types";
 import { CustomComponentConfigurator } from "./CustomComponentConfigurator";
+import { ContextItemBindingEditor } from "./ContextItemBindingEditor";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
@@ -155,6 +157,11 @@ export function AgentVariableEditor({
     next: VariableCustomComponent | undefined,
   ) => updateVariable({ customComponent: next });
 
+  const handleBindingChange = (next: ContextItemBinding | undefined) =>
+    updateVariable({ binding: next });
+
+  const isBound = !!variable.binding?.itemKey;
+
   // ── Preview custom-component (for the default-value input at the bottom) ──
   const previewCc: VariableCustomComponent | undefined = buildCustomComponent({
     type: componentType,
@@ -232,12 +239,30 @@ export function AgentVariableEditor({
         />
       </div>
 
-      {/* ── Component configuration (shared with Context Items) ───────────── */}
-      <CustomComponentConfigurator
-        value={variable.customComponent}
-        onChange={handleCustomComponentChange}
+      {/* ── Context-item binding ─────────────────────────────────────────── */}
+      <ContextItemBindingEditor
+        binding={variable.binding}
+        onChange={handleBindingChange}
         readonly={readonly}
       />
+
+      {/* ── Component configuration ───────────────────────────────────────
+          A bound variable INHERITS its input from the context item, so the
+          local configurator is replaced by an inheritance note. */}
+      {isBound ? (
+        <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground">
+          Input type and options are <span className="font-medium">inherited from the
+          bound context item</span>. At run time this variable is auto-filled from the
+          active scope and hidden from the user; the default below applies only when no
+          scope value is available.
+        </div>
+      ) : (
+        <CustomComponentConfigurator
+          value={variable.customComponent}
+          onChange={handleCustomComponentChange}
+          readonly={readonly}
+        />
+      )}
 
       {/* ── Default Value ─────────────────────────────────────────────── */}
       <div className="space-y-1.5 p-3 bg-muted/30 rounded-lg border border-border">

@@ -153,13 +153,33 @@ export type AccessLevel =
   | "public"
   | "none";
 
+/**
+ * Binds a variable to a scope CONTEXT ITEM (`ctx_context_items`). When set, the variable
+ * is filled at run time from the active scope's current value for `itemKey`, and INHERITS
+ * the context item's input component (the variable does not define its own). Resolved
+ * server-side by `resolve_scope_bindings`; on the FE it drives the invisible-when-resolved
+ * Smart-Input behavior. Bind by stable identity, never by name coincidence.
+ */
+export interface ContextItemBinding {
+  /** ctx_context_items.id — the exact item (within the org). */
+  contextItemId: string;
+  /** The scope type the item lives on (ctx_scope_types.id) — picks which active scope supplies the value. */
+  scopeTypeId: string;
+  /** The item's machine key — what the server resolves against the active scope's items. */
+  itemKey: string;
+  /** What to do when no active scope supplies the value. Default "empty". */
+  onMissing?: "empty" | "skip" | "error";
+}
+
 export interface VariableDefinition {
   name: string;
   defaultValue: unknown;
   helpText?: string;
   required?: boolean;
-  /** Custom UI input component for collecting this variable's value. */
+  /** Custom UI input component for collecting this variable's value. Ignored when `binding` is set (the component is inherited from the bound context item). */
   customComponent?: VariableCustomComponent;
+  /** When set, this variable is filled from a scope context item and inherits its component. */
+  binding?: ContextItemBinding;
 }
 
 export interface ModelTier {

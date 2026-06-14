@@ -28,6 +28,8 @@ import {
   selectValuesByScope,
   type ScopeContextRow,
 } from "@/features/scope-system/redux/scopeValuesSlice";
+import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
+import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 
 interface EditScopeValueSheetProps {
@@ -53,6 +55,17 @@ function rowToString(row: ScopeContextRow): string {
   return "";
 }
 
+/** Seed value for a custom Smart-Input component: structured value_json verbatim, else string. */
+function rowToComponentValue(row: ScopeContextRow): unknown {
+  if (row.value_json != null) return row.value_json;
+  if (row.value_number != null) return String(row.value_number);
+  if (row.value_text != null) return row.value_text;
+  if (row.value_boolean != null) return row.value_boolean ? "true" : "false";
+  if (row.value_date != null) return row.value_date;
+  if (row.value_document_url != null) return row.value_document_url;
+  return "";
+}
+
 export function EditScopeValueSheet({
   open,
   onOpenChange,
@@ -66,9 +79,12 @@ export function EditScopeValueSheet({
   const [busy, setBusy] = useState(false);
   const [value, setValue] = useState("");
   const [booleanValue, setBooleanValue] = useState<string>("");
+  const [customValue, setCustomValue] = useState<unknown>("");
   const [changeSummary, setChangeSummary] = useState("");
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [editingItemDef, setEditingItemDef] = useState(false);
+
+  const hasCustom = !!row?.custom_component;
 
   useEffect(() => {
     if (!open || !row) return;
@@ -76,6 +92,7 @@ export function EditScopeValueSheet({
     setBooleanValue(
       row.value_boolean == null ? "" : row.value_boolean ? "true" : "false",
     );
+    setCustomValue(rowToComponentValue(row));
     setChangeSummary("");
     setJsonError(null);
   }, [open, row]);
@@ -90,6 +107,23 @@ export function EditScopeValueSheet({
       context_item_id: itemId,
       change_summary: changeSummary.trim() || undefined,
     };
+
+    // Custom component: route whatever the Smart-Input emits via the shared mapper.
+    if (hasCustom) {
+      Object.assign(payload, buildScopeValuePayload(customValue, row.value_type));
+      setBusy(true);
+      try {
+        await dispatch(setScopeContextValue(payload)).unwrap();
+        toast.success("Saved");
+        onOpenChange(false);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Failed to save");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
     const trimmed = value.trim();
 
     if (row.value_type === "number") {
@@ -193,7 +227,18 @@ export function EditScopeValueSheet({
               </div>
             )}
 
-            {row.value_type === "boolean" ? (
+            {hasCustom ? (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Value</Label>
+                <VariableInputComponent
+                  value={customValue}
+                  onChange={setCustomValue}
+                  variableName={row.display_name}
+                  customComponent={row.custom_component ?? undefined}
+                  hideLabel
+                />
+              </div>
+            ) : row.value_type === "boolean" ? (
               <div className="space-y-1.5">
                 <Label className="text-xs">Value</Label>
                 <Select

@@ -7,6 +7,10 @@
 
 import { fileHandler } from "@/features/files";
 import { RECORDING_LIMITS } from "../constants/recording";
+import {
+  normalizeAudioContentType,
+  audioExtensionForType,
+} from "@/features/audio/utils/audio-mime";
 
 interface UploadResult {
   /** cld_files UUID — replaces the legacy storage path. */
@@ -53,10 +57,13 @@ export function validateAudioFile(
   return { valid: true, size };
 }
 
-export function generateAudioFilename(prefix: string = "recording"): string {
+export function generateAudioFilename(
+  prefix: string = "recording",
+  ext: string = "webm",
+): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const randomId = Math.random().toString(36).substring(2, 8);
-  return `${prefix}_${timestamp}_${randomId}.webm`;
+  return `${prefix}_${timestamp}_${randomId}.${ext}`;
 }
 
 function formatFileSize(bytes: number): string {
@@ -79,8 +86,15 @@ export async function saveAudioToStorage(
   const validation = validateAudioFile(audioBlob);
   if (!validation.valid) throw new Error(validation.error);
 
-  const filename = generateAudioFilename("recording");
-  const file = new File([audioBlob], filename, { type: "audio/webm" });
+  // Present a clean `audio/*` type + matching extension so the file lands in
+  // cld_files classified as audio, not video. Recordings (webm/opus, often
+  // with an empty blob type) normalize to `audio/webm`; imported files keep
+  // their true audio type (mp3 → audio/mpeg, m4a/mp4 → audio/mp4, etc.).
+  const sourceName = audioBlob instanceof File ? audioBlob.name : undefined;
+  const contentType = normalizeAudioContentType(audioBlob.type, sourceName);
+  const ext = audioExtensionForType(contentType);
+  const filename = generateAudioFilename("recording", ext);
+  const file = new File([audioBlob], filename, { type: contentType });
 
   let lastError: Error | null = null;
   let attempt = 0;

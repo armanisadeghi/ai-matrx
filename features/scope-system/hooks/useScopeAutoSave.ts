@@ -5,6 +5,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
 import { toast } from "sonner";
 import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
+import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
 
 type Status = "idle" | "saving" | "saved" | "error";
 
@@ -60,46 +61,8 @@ export function useScopeAutoSave(
     const payload: Parameters<typeof setScopeContextValue>[0] = {
       scope_id: scopeId,
       context_item_id: contextItemId,
+      ...buildScopeValuePayload(raw, valueType),
     };
-
-    if (raw != null && typeof raw === "object") {
-      // Structured value from a custom Smart-Input component (MediaRef,
-      // PicklistRefEnvelope, multi-select array). Stored verbatim in value_json.
-      payload.value_json = raw;
-    } else {
-      const next = String(raw ?? "").trim();
-      if (valueType === "number") {
-        const n = Number(next);
-        if (next === "" || Number.isNaN(n)) {
-          payload.value_text = next || null;
-        } else {
-          payload.value_number = n;
-        }
-      } else if (valueType === "boolean") {
-        const lower = next.toLowerCase();
-        if (lower === "true" || lower === "yes" || lower === "1") {
-          payload.value_boolean = true;
-        } else if (lower === "false" || lower === "no" || lower === "0") {
-          payload.value_boolean = false;
-        } else if (next === "") {
-          payload.value_text = null;
-        } else {
-          payload.value_text = next;
-        }
-      } else if (valueType === "date") {
-        payload.value_date = next || null;
-      } else if (valueType === "document") {
-        payload.value_document_url = next || null;
-      } else if (valueType === "object" || valueType === "array") {
-        try {
-          payload.value_json = next ? JSON.parse(next) : null;
-        } catch {
-          payload.value_text = next || null;
-        }
-      } else {
-        payload.value_text = next || null;
-      }
-    }
 
     try {
       await dispatch(setScopeContextValue(payload)).unwrap();

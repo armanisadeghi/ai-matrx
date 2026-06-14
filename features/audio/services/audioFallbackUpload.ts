@@ -22,11 +22,15 @@ import { CloudFolders, fileHandler } from "@/features/files";
 import { extractErrorMessage } from "@/utils/errors";
 import { AUDIO_API_ROUTES, RETRY_CONFIG } from "../constants";
 import { TranscriptionResult, TranscriptionOptions } from "../types";
+import {
+  normalizeAudioContentType,
+  audioExtensionForType,
+} from "../utils/audio-mime";
 
-function generateFileName(): string {
+function generateFileName(ext: string): string {
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
   const rand = Math.random().toString(36).substring(2, 8);
-  return `${ts}_${rand}.webm`;
+  return `${ts}_${rand}.${ext}`;
 }
 
 async function sleep(ms: number): Promise<void> {
@@ -60,12 +64,17 @@ async function uploadWithRetry(
     folderPath = null;
   }
 
+  // Clean, parameter-free `audio/*` type so the cld_files record is stored —
+  // and later served to the URL-based transcription fetch — as audio, not
+  // video. The recorder blob's `;codecs=opus` / empty type would otherwise
+  // sniff to `video/webm`.
+  const contentType = normalizeAudioContentType(blob.type);
+  const ext = audioExtensionForType(contentType);
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const fileName = generateFileName();
-      const file = new File([blob], fileName, {
-        type: blob.type || "audio/webm",
-      });
+      const fileName = generateFileName(ext);
+      const file = new File([blob], fileName, { type: contentType });
 
       const normalized = await fileHandler.upload(
         { kind: "file", file },
@@ -74,7 +83,7 @@ async function uploadWithRetry(
           visibility: "private",
           metadata: {
             origin: "audio-fallback",
-            blob_type: blob.type || "audio/webm",
+            blob_type: contentType,
             ephemeral: true,
           },
         },

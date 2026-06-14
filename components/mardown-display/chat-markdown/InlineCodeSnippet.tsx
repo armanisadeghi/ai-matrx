@@ -1,9 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
+import { Prism as SyntaxHighlighterBase } from "react-syntax-highlighter";
 import { cn } from "@/styles/themes/utils";
 import { Copy, Check } from "lucide-react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  isJsonLanguage,
+  resolvePrismSyntaxStyle,
+} from "@/features/code-editor/config/syntax-themes";
 import { MatrxVariableInline } from "@/components/mardown-display/chat-markdown/matrx-variables/MatrxVariableInline";
+
+const SyntaxHighlighter = SyntaxHighlighterBase as React.ComponentType<
+  React.ComponentProps<typeof SyntaxHighlighterBase>
+>;
 
 interface InlineCodeSnippetProps {
   code: string;
@@ -73,6 +83,12 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
   renderVariables = false,
 }) => {
   const [copied, setCopied] = useState(false);
+  const themeMode = useAppSelector((s) => s.theme.mode);
+  const prismMode = themeMode === "dark" ? "dark" : "light";
+  VARIABLE_RE.lastIndex = 0;
+  const hasVariables = VARIABLE_RE.test(code);
+  const useJsonHighlight =
+    isJsonLanguage(language) && !renderVariables && !hasVariables;
 
   // DATA CONTRACT: render code verbatim. A code block's leading/trailing
   // whitespace is meaningful (blank lines, alignment, significant
@@ -120,13 +136,28 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
           )}
         </button>
       </div>
-      <pre className="px-3 py-2 text-sm font-mono leading-relaxed text-foreground whitespace-pre-wrap break-words">
-        <code>
-          {renderVariables && VARIABLE_RE.test(code)
-            ? splitWithVariables(code)
-            : code}
-        </code>
-      </pre>
+      {useJsonHighlight ? (
+        <SyntaxHighlighter
+          language="json"
+          style={resolvePrismSyntaxStyle(language, prismMode)}
+          PreTag="div"
+          customStyle={{
+            margin: 0,
+            padding: "0.5rem 0.75rem",
+            background: "transparent",
+            fontSize: "0.875rem",
+            lineHeight: "1.625",
+          }}
+        >
+          {code}
+        </SyntaxHighlighter>
+      ) : (
+        <pre className="px-3 py-2 text-sm font-mono leading-relaxed text-foreground whitespace-pre-wrap break-words">
+          <code>
+            {renderVariables && hasVariables ? splitWithVariables(code) : code}
+          </code>
+        </pre>
+      )}
     </div>
   );
 };

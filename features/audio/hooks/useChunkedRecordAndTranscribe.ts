@@ -30,6 +30,7 @@ import {
   logClientError,
 } from "../services/audioFallbackUpload";
 import { acquireMicStream, releaseMicStream } from "../micStream";
+import { toAudioFile } from "../utils/audio-mime";
 
 /**
  * Per-chunk timing + content payload. Fires once per chunk after a successful
@@ -425,12 +426,11 @@ export function useChunkedRecordAndTranscribe({
 
       try {
         const opts = transcriptionOptionsRef.current;
-        const ext = blobToSend.type.includes("webm") ? "webm" : "wav";
         const form = new FormData();
-        form.append(
-          "file",
-          new File([blobToSend], `chunk.${ext}`, { type: blobToSend.type }),
-        );
+        // Clean `audio/*` type + matching extension so the server classifies
+        // the chunk as audio, not video (recorder blobs carry `;codecs=opus`
+        // or an empty type, both of which sniff to `video/webm`).
+        form.append("file", toAudioFile(blobToSend, { prefix: "chunk" }));
         if (opts?.language) form.append("language", opts.language);
         const effectivePrompt = opts?.prompt || dictPromptRef.current;
         if (effectivePrompt) form.append("prompt", effectivePrompt);
@@ -658,13 +658,15 @@ export function useChunkedRecordAndTranscribe({
       // Resolve dictionary keyterm biasing for surfaces that opted in. Best-
       // effort + non-blocking: fire it off; chunks fall back to "" until it
       // lands (first chunk is ~3 s out, the RPC is faster). Never await here.
-      const dictSurfaceKey = transcriptionOptionsRef.current?.dictionarySurfaceKey;
+      const dictSurfaceKey =
+        transcriptionOptionsRef.current?.dictionarySurfaceKey;
       dictPromptRef.current = "";
       if (dictSurfaceKey && !transcriptionOptionsRef.current?.prompt) {
-        void import("@/features/dictionary/sttBridge").then(({ resolveDictionarySttPrompt }) =>
-          resolveDictionarySttPrompt(dictSurfaceKey).then((p) => {
-            dictPromptRef.current = p;
-          }),
+        void import("@/features/dictionary/sttBridge").then(
+          ({ resolveDictionarySttPrompt }) =>
+            resolveDictionarySttPrompt(dictSurfaceKey).then((p) => {
+              dictPromptRef.current = p;
+            }),
         );
       }
 
