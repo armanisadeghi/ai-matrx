@@ -63,6 +63,20 @@ describe("mermaid forgiving ladder", () => {
     expect(result.source).toContain("-->");
   });
 
+  it("normalizes en/em-dash arrows but leaves dashes in labels alone (Stage A)", async () => {
+    const dashOracle: MermaidValidator = async (s) =>
+      /[–—]>|<[–—]/.test(s) ? { ok: false, error: "unicode dash arrow" } : { ok: true };
+    // The normalizer only fixes the dash CHARACTER; arrow length (-> to -->) is
+    // the job of the downstream fix-arrow-typos fixer.
+    const messy = `flowchart LR\n  A[cost—benefit] —> B\n  B –-> C\n  D <—- A`;
+    const result = await parseWithLadder(messy, dashOracle, { streaming: false });
+    expect(result.valid).toBe(true);
+    expect(result.source).toContain("A[cost—benefit]"); // em-dash in label untouched
+    expect(result.source).toContain("-> B"); // —> → ->
+    expect(result.source).toContain("--> C"); // –-> → -->
+    expect(result.source).toContain("<-- A"); // <—- → <--
+  });
+
   it("stays quiet during streaming when partial text can't validate", async () => {
     const partial = `flowchart TD\n  A[Start] -->`;
     const alwaysInvalid: MermaidValidator = async () => ({ ok: false });

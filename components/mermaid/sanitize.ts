@@ -63,6 +63,18 @@ const NORMALIZERS: Normalizer[] = [
     detail: "Decoded HTML-escaped arrows (--&gt; → -->)",
     apply: (s) => s.replace(/--&gt;/g, "-->").replace(/-&gt;&gt;/g, "->>").replace(/&gt;/g, ">"),
   },
+  {
+    rule: "normalize-arrow-dashes",
+    detail: "Replaced en/em dashes inside arrows with ASCII hyphens (—> → -->)",
+    // Only touches a dash-run that ENDS in `>` or BEGINS after `<`, so the
+    // arrow's shape is preserved across every diagram type — an em-dash in a
+    // label (no adjacent `>`/`<`) is never touched. Fixes editor/keyboard
+    // autocorrect turning `-->` into `—>`.
+    apply: (s) =>
+      s
+        .replace(/[-–—=.]*[–—][-–—=.]*>/g, (run) => run.replace(/[–—]/g, "-"))
+        .replace(/<[-–—=.]*[–—][-–—=.]*/g, (run) => run.replace(/[–—]/g, "-")),
+  },
 ];
 
 // ─── Stage B — targeted fixers, gated per diagram type ──────────────────────
