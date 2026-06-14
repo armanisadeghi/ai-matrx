@@ -74,6 +74,8 @@ export type SourceFeature =
   | "agent-app"
   | "research"
   | "chat-route"
+  /** Pop-over Quick Chat from the Quick Access menu (`QuickChatSheet`). */
+  | "quick-chat"
   | "code-editor"
   | "notes"
   | "agent-advanced-editor-window"

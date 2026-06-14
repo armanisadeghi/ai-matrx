@@ -26,6 +26,7 @@ import {
   selectOpenInstances,
   type FullScreenEditorMode,
 } from "@/lib/redux/slices/overlaySlice";
+import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 
 // Module-level guard so the mount-confirmation log fires once per page
 // session regardless of strict-mode double-invokes or route remounts.
@@ -3471,12 +3472,18 @@ export default function OverlayController() {
           | undefined;
         if (!isOpen) return null;
         return (
-          <QuickChatSheet
+          <SidePanelSurface
+            title="Quick Chat"
+            description="Chat with the Matrx assistant from anywhere."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickChat" }))}
-            className={
-              typeof data?.className === "string" ? data.className : undefined
-            }
-          />
+            widthClassName="sm:max-w-[520px]"
+          >
+            <QuickChatSheet
+              className={
+                typeof data?.className === "string" ? data.className : undefined
+              }
+            />
+          </SidePanelSurface>
         );
       })()}
 
@@ -3516,14 +3523,20 @@ export default function OverlayController() {
           | undefined;
         if (!isOpen) return null;
         return (
-          <QuickChatSheet
+          <SidePanelSurface
+            title="Quick Chat"
+            description="Chat with the Matrx assistant from anywhere."
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "quickChatWindow" }))
             }
-            className={
-              typeof data?.className === "string" ? data.className : undefined
-            }
-          />
+            widthClassName="sm:max-w-[520px]"
+          >
+            <QuickChatSheet
+              className={
+                typeof data?.className === "string" ? data.className : undefined
+              }
+            />
+          </SidePanelSurface>
         );
       })()}
 
@@ -3536,17 +3549,23 @@ export default function OverlayController() {
           | undefined;
         if (!isOpen) return null;
         return (
-          <QuickDataSheet
+          <SidePanelSurface
+            title="Quick Data"
+            description="Spin up and edit data tables on the fly."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickData" }))}
-            className={
-              typeof data?.className === "string" ? data.className : undefined
-            }
-            initialTableId={
-              typeof data?.initialTableId === "string"
-                ? data.initialTableId
-                : null
-            }
-          />
+            widthClassName="sm:max-w-[680px]"
+          >
+            <QuickDataSheet
+              className={
+                typeof data?.className === "string" ? data.className : undefined
+              }
+              initialTableId={
+                typeof data?.initialTableId === "string"
+                  ? data.initialTableId
+                  : null
+              }
+            />
+          </SidePanelSurface>
         );
       })()}
 
@@ -3628,12 +3647,18 @@ export default function OverlayController() {
           | undefined;
         if (!isOpen) return null;
         return (
-          <QuickNotesSheet
+          <SidePanelSurface
+            title="Quick Note"
+            description="Capture a note from anywhere."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickNotes" }))}
-            className={
-              typeof data?.className === "string" ? data.className : undefined
-            }
-          />
+            widthClassName="sm:max-w-[560px]"
+          >
+            <QuickNotesSheet
+              className={
+                typeof data?.className === "string" ? data.className : undefined
+              }
+            />
+          </SidePanelSurface>
         );
       })()}
 
@@ -3645,9 +3670,18 @@ export default function OverlayController() {
         const isOpen = isOpenById.quickTasks;
         if (!isOpen) return null;
         return (
-          <QuickTasksSheet
+          <SidePanelSurface
+            title="Quick Task"
+            description="Capture and track tasks from anywhere."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickTasks" }))}
-          />
+            widthClassName="sm:max-w-[560px]"
+          >
+            <QuickTasksSheet
+              onClose={() =>
+                dispatch(closeOverlay({ overlayId: "quickTasks" }))
+              }
+            />
+          </SidePanelSurface>
         );
       })()}
 

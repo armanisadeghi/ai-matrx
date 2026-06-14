@@ -64,6 +64,8 @@ It is deliberately **decoupled** from the WindowPanel component primitive. A win
 features/overlays/
 ├── OverlayController.tsx       # The single mount point. ~2,300 lines, intentionally explicit. Hand-maintained.
 ├── catalogue.ts                # Render-free metadata for every overlay.
+├── surfaces/
+│   └── SidePanelSurface.tsx    # Flexible side-panel chrome (Sheet desktop / Drawer mobile) for bare content overlays. Wrap a gated block in it; pass title + onClose.
 └── openers/
     ├── <overlayId>.tsx         # One file per overlay. Each exports useOpenX() + <XController />.
     └── …                       # ~111 files.
@@ -292,6 +294,7 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- **2026-06-14** — Restored side-panel chrome for the four bare Quick Access overlays (`quickNotes`, `quickTasks`, `quickChat`, `quickData`, plus `quickChatWindow`). They were authored as chrome-free content (reused as Utilities Hub tabs), so after the legacy `OverlaySurface` was deleted they mounted as an invisible `h-full` div. New primitive `surfaces/SidePanelSurface.tsx` (right Sheet on desktop / bottom Drawer on mobile — the same posture as `kgSuggestionsDrawer`) now wraps each gated block. Same change: `QuickChatSheet` swapped from the old `AgentRunner` to the live `/chat` route's `AgentConversationColumn` (verified streaming) — this also upgrades the Utilities Hub "Chat" tab.
 - **2026-06-02** — Phase F (kg-suggestions): added the `kgSuggestionsDrawer` overlay — the global Knowledge-Graph suggestion inbox (Drawer on mobile / right Sheet on desktop). Registered via overlay-ids + catalogue + opener (`openers/kgSuggestionsDrawer.tsx`) + a gated block in `OverlayController.tsx`. Opened with `useOpenKgSuggestionsDrawer`; data-less singleton. See `features/kg-suggestions/FEATURE.md`.
 - **2026-05-19** — Added the `creatorHub` overlay — a global Creator Hub window (WindowPanel with a tab-list sidebar), the creator analogue of the admin Bug indicator. Opened from a Crown in the main sidebar; registered via overlay-ids + catalogue + windowRegistryMetadata + opener (`openers/creatorHub.tsx`).
 - **2026-05-18** — Cutover instrumentation: production-safe console signals on both controllers. `cb732f222`

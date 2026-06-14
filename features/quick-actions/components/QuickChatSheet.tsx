@@ -1,17 +1,9 @@
-// @ts-nocheck
-
 // features/quick-actions/components/QuickChatSheet.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { MessageSquarePlus, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  MessageSquarePlus,
-  X,
-  Loader2,
-  AlertCircle,
-  RefreshCw,
-} from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -20,34 +12,41 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
-import { AgentRunner } from "@/features/agents/components/smart/AgentRunner";
+import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { extractErrorMessage } from "@/utils/errors";
 
 interface QuickChatSheetProps {
-  onClose?: () => void;
   className?: string;
 }
 
 // TODO(prompt-to-agent-sweep): The "Matrx Custom Chat" agent shortcut id below
-// (e9e9639d-2970-4125-870e-09c1e9b7462f) was discovered by querying
-// `agx_shortcut` for the agent that previously sat behind
-// `prompt_builtins['matrix-custom-chat']`. Treating it as a hard-coded id keeps
-// us coupled to the migration's 1:1 mapping and bypasses the agent system's
-// shortcut discovery flow. When this surface gets its proper rebuild, drive
-// the chat from a configurable shortcut/agent reference (e.g. `useShortcut()`
-// or a feature-flagged "default chat" lookup) instead of a literal uuid, and
-// drop the `displayMode: "direct"` override once the embedding contract is
-// reflected in the shortcut row itself.
+// was discovered by querying `agx_shortcut` for the agent that previously sat
+// behind `prompt_builtins['matrix-custom-chat']`. Treating it as a hard-coded
+// id keeps us coupled to the migration's 1:1 mapping and bypasses the agent
+// system's shortcut discovery flow. When this surface gets its proper rebuild,
+// drive the chat from a configurable shortcut/agent reference (e.g.
+// `useShortcut()` or a feature-flagged "default chat" lookup) instead of a
+// literal uuid.
 const MATRX_CUSTOM_CHAT_SHORTCUT_ID = "e9e9639d-2970-4125-870e-09c1e9b7462f";
 
+const SURFACE_KEY = "quick-chat-sheet";
+const SOURCE_FEATURE = "quick-chat";
+
 /**
- * QuickChatSheet — AI chat surface that hosts an agent conversation inline.
+ * QuickChatSheet — pop-over AI chat surface.
  *
- * Triggers the "Matrx Custom Chat" agent shortcut on mount with
- * `displayMode: "direct"` so no overlay opens; the resulting conversation is
- * rendered in-place via `<AgentRunner />`.
+ * Hosts a live agent conversation inline using the SAME column the live
+ * `/chat` route renders (`AgentConversationColumn` over the execution-system
+ * streams) — transcript, smart input, pending-ask cards, and the task-panel
+ * chip all behave identically to the full route. The conversation is created
+ * by triggering the "Matrx Custom Chat" shortcut in `direct` display mode (no
+ * overlay opens); the resulting conversation id is bound to the column.
+ *
+ * Rendered as bare content. The surrounding chrome (side panel header + close,
+ * or the Utilities Hub tab) is supplied by the consumer — see
+ * `OverlayController` (`quickChat` → `SidePanelSurface`) and `UtilitiesOverlay`.
  */
-export function QuickChatSheet({ onClose, className }: QuickChatSheetProps) {
+export function QuickChatSheet({ className }: QuickChatSheetProps) {
   const trigger = useShortcutTrigger();
 
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -59,15 +58,14 @@ export function QuickChatSheet({ onClose, className }: QuickChatSheetProps) {
     setInitError(null);
     try {
       await trigger(MATRX_CUSTOM_CHAT_SHORTCUT_ID, {
-        sourceFeature: "quick-actions",
-        surfaceKey: "quick-chat-sheet",
+        sourceFeature: SOURCE_FEATURE,
+        surfaceKey: SURFACE_KEY,
         config: { displayMode: "direct" },
         onConversationCreated: (cid) => setConversationId(cid),
       });
     } catch (error) {
-      const errorMessage = extractErrorMessage(error);
       console.error("[QuickChatSheet] Failed to initialize chat:", error);
-      setInitError(errorMessage);
+      setInitError(extractErrorMessage(error));
     } finally {
       setIsInitializing(false);
     }
@@ -85,56 +83,41 @@ export function QuickChatSheet({ onClose, className }: QuickChatSheetProps) {
     await initializeChat();
   }, [initializeChat]);
 
-  const isReady = conversationId && !isInitializing;
+  const isReady = !!conversationId && !isInitializing;
 
   return (
-    <div className={cn("relative h-full", className)}>
-      <div className="absolute top-2 right-2 z-50 flex items-center gap-1">
+    <div className={cn("flex h-full flex-col overflow-hidden", className)}>
+      {/* Slim action row — the surrounding surface owns the title + close, so
+          this only carries the "New chat" affordance. */}
+      <div className="flex h-9 shrink-0 items-center justify-end border-b border-border px-2">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 w-7 p-0 bg-zinc-100/80 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                className="h-7 gap-1.5 px-2 text-xs"
                 onClick={handleNewChat}
                 disabled={isInitializing}
               >
                 <MessageSquarePlus className="h-3.5 w-3.5" />
+                New chat
               </Button>
             </TooltipTrigger>
-            <TooltipContent>New Chat</TooltipContent>
+            <TooltipContent>Start a fresh conversation</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-
-        {onClose && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 bg-zinc-100/80 dark:bg-zinc-800/80 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                  onClick={onClose}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Close</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
       </div>
 
-      <div className="h-full">
+      <div className="min-h-0 flex-1">
         {initError ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="flex flex-col items-center gap-3 text-destructive max-w-md p-4">
+          <div className="flex h-full items-center justify-center">
+            <div className="flex max-w-md flex-col items-center gap-3 p-4 text-destructive">
               <AlertCircle className="h-8 w-8" />
               <span className="text-sm font-medium">
                 Failed to initialize chat
               </span>
-              <span className="text-xs text-muted-foreground text-center break-all">
+              <span className="break-all text-center text-xs text-muted-foreground">
                 {initError}
               </span>
               <Button
@@ -149,14 +132,20 @@ export function QuickChatSheet({ onClose, className }: QuickChatSheetProps) {
             </div>
           </div>
         ) : isReady && conversationId ? (
-          <AgentRunner
+          <AgentConversationColumn
             key={conversationId}
             conversationId={conversationId}
-            className="h-full"
-            surfaceKey="quick-chat-sheet"
+            surfaceKey={SURFACE_KEY}
+            constrainWidth
+            edgeToEdgeScroll
+            smartInputProps={{
+              sendButtonVariant: "blue",
+              showSubmitOnEnterToggle: false,
+              compact: true,
+            }}
           />
         ) : (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex h-full items-center justify-center">
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="text-sm">Starting chat...</span>
