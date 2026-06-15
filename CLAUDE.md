@@ -239,6 +239,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Podcasts (studio + generation) | `features/podcasts/FEATURE.md` (+ `features/podcasts/docs/`) |
 | Transcription (transcripts + studio + scribe + cleanup) | `features/transcripts/FEATURE.md` (**core-storage contract** for every `/transcripts` route) + `features/transcript-studio/FEATURE.md` + `features/transcription-cleanup/FEATURE.md` |
 | **PDF domain** (viewer, ops, extraction, analysis, redaction — surfaces: extractor studio, Analysis Studio, demos) | `features/pdf/FEATURE.md` — canonical parts table; **never create a sibling `features/pdf-*`** |
+| War Room (session-based multitask command center — tile gallery of task+notes+audio, context-aware) | `features/war-room/FEATURE.md` (consumes tasks/notes/transcription/scopes; gallery engine in `lib/layout/galleryLayout.ts`) |
 
 ### Tier 2 — secondary features
 
