@@ -115,6 +115,20 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
+      name: "MasterAgentPanel + useMasterAgent (master agent — all rooms)",
+      filePath: "features/war-room/components/master/MasterAgentPanel.tsx",
+      description:
+        "The /war-room/all 'Master Agent' button opens this lazy (next/dynamic ssr:false) panel inside an inline, NON-MODAL, draggable WindowPanel (docked bottom-right) so the rooms list stays interactive. It REUSES the canonical AgentConversationColumn (composer + streaming) unchanged on surfaceKey 'war-room-master'. useMasterAgent owns ONE durable conversation per user — the id is persisted in localStorage ('war-room:master-conversation:<userId>'); on mount it reuses the in-memory instance, else recreates it via createManualInstance({ conversationId }) + loadConversation, else mints + persists a fresh one (reusing AUDIO_ASSISTANT_AGENT_ID for v1 — a dedicated master agent/prompt is future polish). It pushes READ-ONLY cross-room context (buildMasterAgentContext) with the same no-empty-push guard as useStudioAssistant, re-pushing when the room set changes. SEE-ALL only; messaging tools + watch/notify are a separate next build.",
+      tier: "candidate",
+    },
+    {
+      name: "buildMasterAgentContext (master roster service)",
+      filePath: "features/war-room/service/masterAgentContext.ts",
+      description:
+        "Async, READ-ONLY cross-room context builder for the master agent. Returns master_role (framing) + war_room_overview (a compact ROSTER — every room → its threads with { threadTitle, conversationId|null, status?, taskTitle?, noteSnippet?, hasAudio, fileCount }), NOT full transcripts. Fetches its own data (Redux only holds the active room): the war-room service listSessions/listTiles/list*ForTiles + targeted reads of ctx_tasks (titles), notes (snippets), and studio_sessions.assistant_conversation_id (each thread agent's conversation — queried DIRECTLY because studioService excludes source='war_room'). Owner-scoped via RLS; values carry no mutable/source ⇒ ctx_get only. The thread conversationId is the seam the messaging-tools build plugs into.",
+      tier: "candidate",
+    },
+    {
       name: "War Room agent tools (war-room-tools)",
       filePath: "features/agents/war-room-tools/tools/names.ts",
       description:

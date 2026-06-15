@@ -5,10 +5,12 @@
 // Browse + manage saved War Rooms. List view (the "savior" page) — never traps
 // the user in a single room. Create / open / delete from here.
 
-import { useEffect } from "react";
-import { LayoutGrid } from "lucide-react";
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { Radar, LayoutGrid } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
+import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   selectListStatus,
   selectSessionsList,
@@ -17,10 +19,27 @@ import { loadSessionsList } from "@/features/war-room/redux/thunks";
 import { SessionCard } from "./SessionCard";
 import { NewSessionButton } from "./NewSessionButton";
 
+// The master agent panel pulls the whole agent execution graph (via
+// AgentConversationColumn). Lazy-load it so that heavy chunk never ships in the
+// /war-room/all bundle — it only loads the first time the user opens the panel.
+const MasterAgentPanel = dynamic(
+  () => import("@/features/war-room/components/master/MasterAgentPanel"),
+  { ssr: false, loading: () => null },
+);
+
+// Master Agent window size. Docked bottom-right on open (computed from the
+// viewport in `initialRect` below).
+const MASTER_W = 460;
+const MASTER_H = 620;
+
 export function WarRoomAllView() {
   const dispatch = useAppDispatch();
   const sessions = useAppSelector(selectSessionsList);
   const status = useAppSelector(selectListStatus);
+
+  // Master Agent panel — local state owns open/closed. Non-modal so the rooms
+  // list stays visible and interactive while the user chats with the master.
+  const [masterOpen, setMasterOpen] = useState(false);
 
   useEffect(() => {
     if (status === "idle") dispatch(loadSessionsList());
@@ -47,7 +66,25 @@ export function WarRoomAllView() {
             </p>
           </div>
         </div>
-        <NewSessionButton />
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setMasterOpen((v) => !v)}
+            aria-pressed={masterOpen}
+            className={
+              "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors " +
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 " +
+              (masterOpen
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground")
+            }
+            title="Chat with an agent that sees all your rooms and threads"
+          >
+            <Radar className="size-3.5" />
+            <span className="hidden sm:inline">Master Agent</span>
+          </button>
+          <NewSessionButton />
+        </div>
       </header>
 
       {/* Body */}
@@ -70,6 +107,35 @@ export function WarRoomAllView() {
           )}
         </div>
       </div>
+
+      {/* Master Agent — inline, draggable, NON-MODAL WindowPanel. Mounted only
+          while open (closing unmounts the heavy agent column). Docked bottom-
+          right on first open; the user can drag/resize from there. Inline-
+          managed: `onClose` is the required close binding (no overlayId). */}
+      {masterOpen && (
+        <WindowPanel
+          id="war-room-master-agent"
+          title="Master Agent — all rooms"
+          titleNode={
+            <span className="flex items-center gap-1.5 min-w-0">
+              <Radar className="size-3.5 shrink-0 text-primary" />
+              <span className="truncate">Master Agent — all rooms</span>
+            </span>
+          }
+          onClose={() => setMasterOpen(false)}
+          width={MASTER_W}
+          height={MASTER_H}
+          minWidth={360}
+          minHeight={420}
+          initialRect={{
+            x: Math.max(16, window.innerWidth - MASTER_W - 24),
+            y: Math.max(16, window.innerHeight - MASTER_H - 24),
+          }}
+          bodyClassName="p-0"
+        >
+          <MasterAgentPanel />
+        </WindowPanel>
+      )}
     </div>
   );
 }
