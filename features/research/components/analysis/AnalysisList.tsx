@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ArrowUpRight,
   AlertCircle,
+  MinusCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -44,15 +45,21 @@ import { filterAndSortBySearch } from "@/utils/search-scoring";
 const hasText = (s: string | null | undefined): boolean =>
   !!s && s.trim().length > 0;
 
+/** Analysis that genuinely produced content (success + non-empty result). */
+const isDoneAnalysis = (a: ResearchAnalysis): boolean =>
+  a.status === "success" && hasText(a.result);
+
 function StatsBar({
   total,
-  successful,
+  withContent,
+  empty,
   failed,
   totalCost,
   totalTokens,
 }: {
   total: number;
-  successful: number;
+  withContent: number;
+  empty: number;
   failed: number;
   totalCost: number;
   totalTokens: number;
@@ -78,10 +85,15 @@ function StatsBar({
         </div>
         <div>
           <p className="text-[10px] text-muted-foreground leading-none">
-            Passed
+            With content
           </p>
           <p className="text-sm font-bold tabular-nums text-green-600 dark:text-green-400 mt-0.5 leading-none">
-            {successful}
+            {withContent}
+            {empty > 0 && (
+              <span className="text-amber-600/70 dark:text-amber-400/70 text-[10px] font-medium ml-1">
+                ({empty} empty)
+              </span>
+            )}
             {failed > 0 && (
               <span className="text-destructive/60 text-[10px] font-medium ml-1">
                 ({failed} failed)
@@ -131,6 +143,7 @@ interface ListItemProps {
 
 function ListItem({ analysis, source, isSelected, onSelect }: ListItemProps) {
   const isFailed = analysis.status === "failed";
+  const isEmpty = !isFailed && !isDoneAnalysis(analysis);
   const usage = tokenUsageFromJson(analysis.token_usage);
   const tokenCost = usage?.estimated_cost;
   const createdAt = new Date(analysis.created_at);
@@ -162,6 +175,8 @@ function ListItem({ analysis, source, isSelected, onSelect }: ListItemProps) {
       <div className="flex items-center gap-1.5">
         {isFailed ? (
           <XCircle className="h-3 w-3 text-destructive shrink-0" />
+        ) : isEmpty ? (
+          <MinusCircle className="h-3 w-3 text-amber-500 shrink-0" />
         ) : (
           <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
         )}
@@ -460,11 +475,21 @@ export default function AnalysisList() {
     return items;
   }, [analysisList, statusFilter, modelFilter, search, sourceMap]);
 
+  // Best Google rank first (when not searching); split "done" (has content)
+  // from "incomplete" (empty results + failures) into a separate section.
+  const rankOf = (a: ResearchAnalysis) =>
+    sourceMap.get(a.source_id)?.rank ?? Number.POSITIVE_INFINITY;
+  const doneItems = search
+    ? filtered.filter(isDoneAnalysis)
+    : filtered.filter(isDoneAnalysis).sort((a, b) => rankOf(a) - rankOf(b));
+  const incompleteItems = filtered.filter((a) => !isDoneAnalysis(a));
+
   const selectedAnalysis = filtered.find((a) => a.id === selectedId) ?? null;
 
   const stats = useMemo(() => {
-    const successful = analysisList.filter(
-      (a) => a.status === "success",
+    const withContent = analysisList.filter(isDoneAnalysis).length;
+    const empty = analysisList.filter(
+      (a) => a.status === "success" && !hasText(a.result),
     ).length;
     const failed = analysisList.filter((a) => a.status === "failed").length;
     let totalCost = 0;
@@ -478,7 +503,8 @@ export default function AnalysisList() {
     }
     return {
       total: analysisList.length,
-      successful,
+      withContent,
+      empty,
       failed,
       totalCost,
       totalTokens,
@@ -672,17 +698,40 @@ export default function AnalysisList() {
             )}
           </div>
         ) : (
-          <div className="space-y-px">
-            {filtered.map((analysis) => (
-              <ListItem
-                key={analysis.id}
-                analysis={analysis}
-                source={sourceMap.get(analysis.source_id)}
-                isSelected={selectedId === analysis.id}
-                onSelect={() => setSelectedId(analysis.id)}
-              />
-            ))}
-          </div>
+          <>
+            {doneItems.length > 0 && (
+              <div className="space-y-px">
+                {doneItems.map((analysis) => (
+                  <ListItem
+                    key={analysis.id}
+                    analysis={analysis}
+                    source={sourceMap.get(analysis.source_id)}
+                    isSelected={selectedId === analysis.id}
+                    onSelect={() => setSelectedId(analysis.id)}
+                  />
+                ))}
+              </div>
+            )}
+            {incompleteItems.length > 0 && (
+              <div className="mt-3 pt-2 border-t border-dashed border-amber-500/30">
+                <div className="flex items-center gap-1 px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-amber-600/70 dark:text-amber-400/70">
+                  <AlertCircle className="h-3 w-3" />
+                  No content / failed ({incompleteItems.length})
+                </div>
+                <div className="space-y-px opacity-90">
+                  {incompleteItems.map((analysis) => (
+                    <ListItem
+                      key={analysis.id}
+                      analysis={analysis}
+                      source={sourceMap.get(analysis.source_id)}
+                      isSelected={selectedId === analysis.id}
+                      onSelect={() => setSelectedId(analysis.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

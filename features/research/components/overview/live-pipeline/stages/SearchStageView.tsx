@@ -144,9 +144,11 @@ export function SearchStageView({
   const pipelineStart = state.startedAt ?? 0;
 
   const totalSources = items.reduce(
+    // Canonical "sources" metric: deduped stored count, falling back to the
+    // running search-result count before storage lands. Matches the metrics
+    // strip + per-item display so one screen never shows two different totals.
     (sum, item) =>
-      sum +
-      Math.max(item.metadata.stored_count ?? 0, item.metadata.sources_found ?? 0),
+      sum + (item.metadata.stored_count ?? item.metadata.sources_found ?? 0),
     0,
   );
 

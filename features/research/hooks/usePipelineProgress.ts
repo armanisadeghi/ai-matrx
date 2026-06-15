@@ -983,7 +983,11 @@ export function usePipelineProgress(opts?: {
 
     // Aggregate counts
     const totalSourcesDiscovered = Object.values(stages.search.items).reduce(
-      (sum, item) => sum + (item.metadata.sources_found ?? 0),
+      // Canonical "sources" metric — must match SearchStageView's total so the
+      // same number never diverges across the strip and the stage card. Prefer
+      // the deduped stored count; fall back to running results pre-storage.
+      (sum, item) =>
+        sum + (item.metadata.stored_count ?? item.metadata.sources_found ?? 0),
       0,
     );
     const totalCharsScraped = Object.values(stages.scrape.items).reduce(
