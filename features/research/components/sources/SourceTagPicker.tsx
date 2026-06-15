@@ -35,7 +35,10 @@ export function SourceTagPicker({
       if (on) {
         await removeSourceTag(sourceId, tagId);
       } else {
-        await assignTagsToSource(sourceId, { tag_ids: [tagId] });
+        await assignTagsToSource(sourceId, {
+          tag_ids: [tagId],
+          is_primary_source: false,
+        });
       }
       refresh();
     } catch (err) {
