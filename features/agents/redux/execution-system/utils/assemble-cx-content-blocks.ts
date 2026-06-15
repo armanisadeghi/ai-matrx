@@ -101,6 +101,9 @@ export function reconstructBlockMarkdown(block: {
     // (not an XML wrapper) so the reload parser re-detects it as mermaid.
     case "mermaid":
       return `\`\`\`mermaid\n${content}\n\`\`\``;
+    // SVG is likewise a fence-promoted type — reconstruct as a ```svg fence.
+    case "svg":
+      return `\`\`\`svg\n${content}\n\`\`\``;
     case "reasoning":
     case "thinking":
       return `<thinking>\n${content}\n</thinking>`;

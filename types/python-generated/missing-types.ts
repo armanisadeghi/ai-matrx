@@ -62,11 +62,24 @@ export interface AudioRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * A raw SVG illustration emitted by an agent in a ```svg fence — rendered
+ * sandboxed (no scripts) and responsively from its viewBox. Client-only for
+ * now; promote to Python's stream-events.ts when the server emits a typed svg
+ * block. See components/mardown-display/blocks/svg/SvgBlock.tsx.
+ */
+export interface SvgRenderBlock {
+  type: "svg";
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
 export type ClientOnlyRenderBlock =
   | TreeRenderBlock
   | AccentDividerRenderBlock
   | HeavyDividerRenderBlock
-  | AudioRenderBlock;
+  | AudioRenderBlock
+  | SvgRenderBlock;
 
 export type ClientOnlyBlockType = ClientOnlyRenderBlock["type"];
 

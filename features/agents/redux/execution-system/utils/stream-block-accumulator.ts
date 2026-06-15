@@ -379,7 +379,11 @@ export class StreamBlockAccumulator {
         // their established close-time/server-side promotion paths.
         const lang = fence.language.toLowerCase();
         const blockType =
-          lang === "mermaid" || lang === "mmd" ? "mermaid" : "code";
+          lang === "mermaid" || lang === "mmd"
+            ? "mermaid"
+            : lang === "svg"
+              ? "svg"
+              : "code";
         this.openBlock(blockType, dispatch);
         this.subState = {
           kind: "code_fence",

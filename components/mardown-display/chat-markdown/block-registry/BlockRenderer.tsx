@@ -1353,6 +1353,16 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       );
     }
 
+    case "svg":
+      // Client-only fence type (no server parser yet): always content.
+      return (
+        <BlockComponents.SvgBlock
+          key={index}
+          content={block.content}
+          isStreamActive={Boolean(block.isStreamingBlock)}
+        />
+      );
+
     case "math_problem":
       if (block.serverData) {
         return (
