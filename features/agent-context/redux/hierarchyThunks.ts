@@ -56,6 +56,7 @@ function mapScopeType(orgId: string, t: FullContextScopeType): ScopeType {
     sort_order: t.sort_order,
     max_assignments_per_entity: t.max_assignments_per_entity,
     default_variable_keys: t.default_variable_keys ?? [],
+    is_system: t.is_system ?? false,
     created_at: t.created_at,
     updated_at: t.updated_at,
   };

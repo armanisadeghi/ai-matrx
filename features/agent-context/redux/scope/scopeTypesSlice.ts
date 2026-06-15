@@ -111,6 +111,23 @@ export const deleteScopeType = createAsyncThunk(
   },
 );
 
+/**
+ * Set a scope type's is_system flag (platform-global). Super-admin only — enforced by the
+ * admin_set_scope_type_system RPC (the FE can't gate this; a non-super-admin gets a 403-ish
+ * error which the caller surfaces as a toast). list_scope_types already returns is_system.
+ */
+export const setScopeTypeSystem = createAsyncThunk(
+  "scopeTypes/setSystem",
+  async (params: { type_id: string; is_system: boolean }) => {
+    const { data, error } = await supabase.rpc("admin_set_scope_type_system", {
+      p_scope_type_id: params.type_id,
+      p_is_system: params.is_system,
+    });
+    if (error) throw error;
+    return data as ScopeType;
+  },
+);
+
 const scopeTypesSlice = createSlice({
   name: "scopeTypes",
   initialState,
@@ -152,6 +169,9 @@ const scopeTypesSlice = createSlice({
         scopeTypesAdapter.addOne(state, action.payload);
       })
       .addCase(updateScopeType.fulfilled, (state, action) => {
+        scopeTypesAdapter.upsertOne(state, action.payload);
+      })
+      .addCase(setScopeTypeSystem.fulfilled, (state, action) => {
         scopeTypesAdapter.upsertOne(state, action.payload);
       })
       .addCase(deleteScopeType.fulfilled, (state, action) => {

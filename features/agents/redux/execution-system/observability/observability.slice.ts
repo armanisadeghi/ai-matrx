@@ -50,7 +50,9 @@ export interface CxUserRequestRecord {
   finishReason: string | null;
   error: string | null;
   triggerMessagePosition: number | null;
+  /** No longer stored on `cx_user_request`; reserved for derived UI state. */
   resultStartPosition: number | null;
+  /** No longer stored on `cx_user_request`; reserved for derived UI state. */
   resultEndPosition: number | null;
   totalInputTokens: number;
   totalOutputTokens: number;

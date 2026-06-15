@@ -44,7 +44,6 @@ export type CxUserRequest = {
   // Resolved through the cx_request m2m (null when no requests exist yet).
   conversation_id: string | null;
   user_id: string;
-  trigger_message_position: number | null;
   total_input_tokens: number;
   total_output_tokens: number;
   total_cached_tokens: number;
@@ -58,8 +57,6 @@ export type CxUserRequest = {
   status: string;
   finish_reason: string | null;
   error: string | null;
-  result_start_position: number | null;
-  result_end_position: number | null;
   created_at: string;
   completed_at: string | null;
   deleted_at: string | null;

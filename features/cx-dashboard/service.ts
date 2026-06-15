@@ -413,7 +413,11 @@ export async function fetchConversationDetail(id: string) {
       .in("id", userRequestIds)
       .is("deleted_at", null)
       .order("created_at", { ascending: true });
-    userRequests = (urData || []) as CxUserRequest[];
+    userRequests = (urData ?? []).map((row) => ({
+      ...row,
+      conversation_id: id,
+      metadata: (row.metadata ?? {}) as Record<string, unknown>,
+    }));
   }
 
   const conv = convResult.data as any;

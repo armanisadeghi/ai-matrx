@@ -40,6 +40,7 @@ export interface FullContextScopeType {
   max_assignments_per_entity: number | null;
   description: string;
   default_variable_keys: string[];
+  is_system?: boolean;
   created_at: string;
   updated_at: string;
 }

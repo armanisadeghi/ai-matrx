@@ -13,7 +13,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import type { Json } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import type { MessageRecord } from "../messages/messages.slice";
 import type {
   CxUserRequestRecord,
@@ -134,42 +134,18 @@ export interface CxToolCallRow {
   deleted_at: string | null;
 }
 
-export interface CxUserRequestRow {
-  id: string;
-  /**
-   * No longer a column on `cx_user_request` — a user request maps to one
-   * conversation but spawns many `cx_request` rows, so the conversation is
-   * resolved through that m2m. Optional here for back-compat with any legacy
-   * payload that still includes it; the owning conversationId is passed
-   * explicitly to {@link userRequestRowToRecord}.
-   */
-  conversation_id?: string | null;
-  user_id: string;
-  agent_id: string | null;
-  agent_version_id: string | null;
-  status: string;
-  iterations: number;
-  finish_reason: string | null;
-  error: string | null;
-  trigger_message_position: number | null;
-  result_start_position: number | null;
-  result_end_position: number | null;
-  total_input_tokens: number;
-  total_output_tokens: number;
-  total_cached_tokens: number;
-  total_tokens: number;
-  total_tool_calls: number;
-  total_cost: number | null;
-  total_duration_ms: number | null;
-  api_duration_ms: number | null;
-  tool_duration_ms: number | null;
-  source_app: string;
-  source_feature: string;
-  metadata: Json;
-  created_at: string;
-  completed_at: string | null;
-  deleted_at: string | null;
-}
+/** Mirrors `public.cx_user_request.Row` plus optional legacy join fields. */
+export type CxUserRequestRow =
+  Database["public"]["Tables"]["cx_user_request"]["Row"] & {
+    /**
+     * No longer a column on `cx_user_request` — a user request maps to one
+     * conversation but spawns many `cx_request` rows, so the conversation is
+     * resolved through that m2m. Optional here for back-compat with any legacy
+     * payload that still includes it; the owning conversationId is passed
+     * explicitly to {@link userRequestRowToRecord}.
+     */
+    conversation_id?: string | null;
+  };
 
 export interface CxRequestRow {
   id: string;
@@ -428,9 +404,9 @@ export function userRequestRowToRecord(
     iterations: row.iterations,
     finishReason: row.finish_reason,
     error: row.error,
-    triggerMessagePosition: row.trigger_message_position,
-    resultStartPosition: row.result_start_position,
-    resultEndPosition: row.result_end_position,
+    triggerMessagePosition: null,
+    resultStartPosition: null,
+    resultEndPosition: null,
     totalInputTokens: row.total_input_tokens,
     totalOutputTokens: row.total_output_tokens,
     totalCachedTokens: row.total_cached_tokens,
