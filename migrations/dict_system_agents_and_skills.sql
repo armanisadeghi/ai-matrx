@@ -30,7 +30,7 @@ INSERT INTO public.skl_definitions
    is_active, is_system, is_public)
 VALUES
 (
-  'd1c70000-0000-4000-a000-000000000001',
+  'e515e3ac-0855-4ad4-8af3-51ce1b6a70fb',
   'dictionary-management',
   'Dictionary Management',
   'How to manage a user''s Custom Dictionary (terminology) with the dictionary tool.',
@@ -71,7 +71,7 @@ Keep entries tight and high-signal — a dictionary of 50 real terms beats 500 n
   true, true, true
 ),
 (
-  'd1c70000-0000-4000-a000-000000000002',
+  'b384717e-82fa-48a5-9534-cab929e23ff8',
   'pronunciation-authoring',
   'Pronunciation Authoring',
   'How to author accurate pronunciation respellings and IPA for dictionary entries.',
@@ -127,7 +127,7 @@ VALUES
   ARRAY['04920d8d-0a54-4010-8ac1-9675942b1aec']::uuid[],
   '{"tools": [], "excluded_tools": [], "auto_tools_disabled": false}'::jsonb,
   '[]'::jsonb,
-  '{"included": ["d1c70000-0000-4000-a000-000000000001", "d1c70000-0000-4000-a000-000000000002"], "listed": [], "forbidden": [], "disabled": false}'::jsonb,
+  '{"included": ["e515e3ac-0855-4ad4-8af3-51ce1b6a70fb", "b384717e-82fa-48a5-9534-cab929e23ff8"], "listed": [], "forbidden": [], "disabled": false}'::jsonb,
   jsonb_build_array(jsonb_build_object(
     'role','system',
     'content', jsonb_build_array(jsonb_build_object('type','text','text',
@@ -154,7 +154,7 @@ You can also adjust the inline policy (how much of a dictionary is injected inli
   ARRAY['04920d8d-0a54-4010-8ac1-9675942b1aec']::uuid[],
   '{"tools": [], "excluded_tools": [], "auto_tools_disabled": false}'::jsonb,
   '[]'::jsonb,
-  '{"included": ["d1c70000-0000-4000-a000-000000000001"], "listed": [], "forbidden": [], "disabled": false}'::jsonb,
+  '{"included": ["e515e3ac-0855-4ad4-8af3-51ce1b6a70fb"], "listed": [], "forbidden": [], "disabled": false}'::jsonb,
   jsonb_build_array(jsonb_build_object(
     'role','system',
     'content', jsonb_build_array(jsonb_build_object('type','text','text',
@@ -173,7 +173,7 @@ Use the `dictionary` tool. When the user names an org or scope, call list_owners
   ARRAY['04920d8d-0a54-4010-8ac1-9675942b1aec']::uuid[],
   '{"tools": [], "excluded_tools": [], "auto_tools_disabled": false}'::jsonb,
   '[]'::jsonb,
-  '{"included": ["d1c70000-0000-4000-a000-000000000002"], "listed": [], "forbidden": [], "disabled": false}'::jsonb,
+  '{"included": ["b384717e-82fa-48a5-9534-cab929e23ff8"], "listed": [], "forbidden": [], "disabled": false}'::jsonb,
   jsonb_build_array(jsonb_build_object(
     'role','system',
     'content', jsonb_build_array(jsonb_build_object('type','text','text',

@@ -33,7 +33,7 @@ INSERT INTO public.agx_shortcut (
   user_id, organization_id, project_id, task_id, surface_name
 )
 VALUES (
-  '5c1c7000-0000-4000-a000-000000000001',
+  'a6200e02-1c55-4804-98e4-f123145872d2',
   'ab1a868e-b866-4ade-9383-fd63b0928c7c',
   NULL,
   true,

@@ -1,31 +1,20 @@
 // features/dictionary/constants.ts
 //
-// Stable identifiers for the Custom Dictionary system. The skill UUIDs are
-// seeded by migrations/dict_system_agents_and_skills.sql. The agent is built via
-// the aidream Agent Factory (internal_agents/dictionary_assistant.md), NOT a
-// hand-rolled SQL seed — its UUID is assigned at build time.
+// Stable identifiers + labels for the Custom Dictionary feature.
 
 import type { DictLevel } from "@/features/dictionary/types";
 
-/** Builtin Dictionary Assistant agent — factory-built (agx_agent id). */
+/**
+ * Builtin Dictionary Assistant agent (agx_agent id) — built via the aidream
+ * Agent Factory (internal_agents/dictionary_assistant.md), real UUID assigned
+ * at build time. The "Ask assistant" buttons launch this agent as a
+ * floating-chat widget. The discoverable global shortcut + the two skills it
+ * uses live in the DB (seeded by migrations/dict_*.sql) and are referenced
+ * there by their own ids — not from frontend code.
+ */
 export const DICTIONARY_AGENT_IDS = {
   assistant: "ab1a868e-b866-4ade-9383-fd63b0928c7c",
 } as const;
-
-/**
- * Global shortcut that launches the Dictionary Assistant as a floating-chat
- * widget (NOT the /chat route). Seeded by migrations/dict_assistant_shortcut.sql.
- */
-export const DICTIONARY_ASSISTANT_SHORTCUT_ID = "5c1c7000-0000-4000-a000-000000000001";
-
-/** Internal skills (skl_definitions ids). */
-export const DICTIONARY_SKILL_IDS = {
-  management: "d1c70000-0000-4000-a000-000000000001",
-  pronunciation: "d1c70000-0000-4000-a000-000000000002",
-} as const;
-
-/** The `dictionary` tool_def id (registered by aidream migration 0102). */
-export const DICTIONARY_TOOL_ID = "04920d8d-0a54-4010-8ac1-9675942b1aec";
 
 /** Human labels for the four owner levels. */
 export const DICT_LEVEL_LABELS: Record<DictLevel, string> = {
@@ -34,6 +23,3 @@ export const DICT_LEVEL_LABELS: Record<DictLevel, string> = {
   scope_type: "Scope type",
   scope: "Scope",
 };
-
-/** The surface-user-state feature key the dictionary selection persists under. */
-export const DICTIONARY_FEATURE_KEY = "dictionary";
