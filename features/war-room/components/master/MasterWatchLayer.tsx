@@ -25,7 +25,7 @@
  * directly they open its tile).
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Eye, Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -66,7 +66,13 @@ function WatchWindow({
   const store = useAppStore();
   const title = useAppSelector(selectConversationTitle(conversationId));
   const messageCount = useAppSelector(selectMessageCount(conversationId));
-  const [hydrating, setHydrating] = useState(false);
+  // Subscribed presence flag — the spinner shows until the instance exists.
+  // Derived from Redux (no local setState in the effect — that triggers the
+  // cascading-render lint rule and isn't needed: loadConversation populates the
+  // instance, which flips this).
+  const hasInstance = useAppSelector(
+    (s) => !!s.conversations.byConversationId[conversationId],
+  );
 
   // Guard-hydrate cold conversations exactly once. A convo the messaging tool
   // just created is already in Redux with messages (or actively streaming) —
@@ -77,13 +83,12 @@ function WatchWindow({
     if (triedRef.current) return;
     triedRef.current = true;
     const state = store.getState();
-    const hasInstance =
+    const instancePresent =
       !!state.conversations.byConversationId[conversationId];
     const hasMessages =
       (state.messages.byConversationId[conversationId]?.orderedIds?.length ??
         0) > 0;
-    if (hasInstance || hasMessages) return;
-    setHydrating(true);
+    if (instancePresent || hasMessages) return;
     void dispatch(loadConversation({ conversationId }))
       .unwrap()
       .catch((err) => {
@@ -93,8 +98,7 @@ function WatchWindow({
           `[war-room/master] watch hydrate skipped for ${conversationId}:`,
           err,
         );
-      })
-      .finally(() => setHydrating(false));
+      });
   }, [conversationId, dispatch, store]);
 
   // Stagger windows so a burst of opens doesn't perfectly overlap them.
@@ -124,7 +128,7 @@ function WatchWindow({
       bodyClassName="p-0"
     >
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
-        {hydrating && messageCount === 0 ? (
+        {!hasInstance && messageCount === 0 ? (
           <div className="flex h-full items-center justify-center">
             <Loader2 className="size-5 animate-spin text-muted-foreground" />
           </div>
