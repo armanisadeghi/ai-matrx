@@ -58,7 +58,6 @@ import {
   type UntypedDataPayload,
 } from "@/types/python-generated/stream-events";
 import {
-  addPendingToolCall,
   appendChunk,
   appendReasoningChunk,
   appendDataPayload,
@@ -167,15 +166,9 @@ import { assembleMessageParts } from "../utils/assemble-cx-content-blocks";
 import { materializeMessageArtifacts } from "@/features/canvas/materialization/materializeMessageArtifacts";
 import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
 import { callbackManager } from "@/utils/callbackManager";
-import {
-  isWidgetActionName,
-  type WidgetActionName,
-  type WidgetHandle,
-} from "@/features/agents/types/widget-handle.types";
+import { type WidgetHandle } from "@/features/agents/types/widget-handle.types";
 import { selectWidgetHandleIdFor } from "../instance-ui-state/instance-ui-state.selectors";
-import { dispatchWidgetAction } from "./dispatch-widget-action.thunk";
-import { isUiFirstToolName } from "@/features/agents/ui-first-tools/tools/names";
-import { dispatchUiFirstTool } from "@/features/agents/ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk";
+import { surfaceDelegatedToolCall } from "./surface-delegated-tool-call.thunk";
 
 // =============================================================================
 // Types
@@ -838,103 +831,19 @@ export async function processStream({
         const toolData = event.data;
 
         if (toolData.event === "tool_delegated") {
+          // ONE canonical path for delegated tool calls — shared verbatim with
+          // cold-resume (surface-cold-pending-calls.thunk.ts) so the two
+          // surfaces can never drift. See surface-delegated-tool-call.thunk.ts.
           dispatch(
-            addPendingToolCall({
-              requestId,
-              toolCall: {
-                callId: toolData.call_id,
-                toolName: toolData.tool_name,
-                arguments: (toolData.data as Record<string, unknown>) ?? {},
-              },
-            }),
-          );
-          dispatch(
-            upsertToolLifecycle({
+            surfaceDelegatedToolCall({
+              conversationId,
               requestId,
               callId: toolData.call_id,
               toolName: toolData.tool_name,
-              status: "started",
-              arguments: (toolData.data as Record<string, unknown>) ?? {},
-              isDelegated: true,
+              data: (toolData.data as Record<string, unknown>) ?? {},
               event: toolData,
             }),
           );
-
-          if (isWidgetActionName(toolData.tool_name)) {
-            // Widget actions resolve fast and fire-and-forget from the stream's
-            // POV — the microtask batcher posts results back so the server can
-            // resume without us having to flip the instance to "paused".
-            dispatch(
-              dispatchWidgetAction({
-                conversationId,
-                requestId,
-                callId: toolData.call_id,
-                toolName: toolData.tool_name as WidgetActionName,
-                args:
-                  ((toolData.data as Record<string, unknown>)
-                    ?.arguments as Record<string, unknown>) ?? {},
-              }),
-            );
-          } else if (isUiFirstToolName(toolData.tool_name)) {
-            // UI-first tools (user / update_plan / tasks / user_todos /
-            // request_user_takeover / memory / storage). The dispatcher
-            // validates args via Zod, runs the handler (which may await user
-            // input for ask-user-tier tools), and POSTs the result. We don't
-            // pause the instance — the server simply waits for tool_results
-            // before emitting more chunks.
-            dispatch(
-              dispatchUiFirstTool({
-                conversationId,
-                requestId,
-                callId: toolData.call_id,
-                toolName: toolData.tool_name,
-                args:
-                  ((toolData.data as Record<string, unknown>)
-                    ?.arguments as Record<string, unknown>) ?? {},
-              }),
-            );
-          } else {
-            // Unknown delegated tool — neither a widget nor a ui-first tool.
-            // The aidream backend has hard-suspended the loop awaiting a
-            // result; if we just sit on `paused` we're silently stuck. POST
-            // an error result through the funnel so the server can either
-            // recover or surface the failure rather than leaving the agent
-            // wedged forever. Set status to `paused` first so the UI shows
-            // a truthful "waiting on a tool answer" state during the
-            // microtask window before the error POST is dispatched.
-            dispatch(setInstanceStatus({ conversationId, status: "paused" }));
-            dispatch(
-              upsertToolLifecycle({
-                requestId,
-                callId: toolData.call_id,
-                toolName: toolData.tool_name,
-                status: "error",
-                isDelegated: true,
-                errorType: "unsupported_client_tool",
-                errorMessage: `Client has no handler for tool '${toolData.tool_name}'.`,
-              }),
-            );
-            // Dynamic import — submitToolResult lives in features/agents/api/
-            // which imports stream-events types that route back here.
-            void import("@/features/agents/api/submit-tool-results").then(
-              ({ submitToolResult }) => {
-                dispatch(
-                  submitToolResult({
-                    conversationId,
-                    call_id: toolData.call_id,
-                    tool_name: toolData.tool_name,
-                    is_error: true,
-                    output: {
-                      ok: false,
-                      reason: "unsupported_client_tool",
-                      message: `Client has no handler for tool '${toolData.tool_name}'.`,
-                    },
-                    error_message: `Client has no handler for tool '${toolData.tool_name}'.`,
-                  }),
-                );
-              },
-            );
-          }
         } else {
           const lifecycleStatus = toolData.event.replace(
             "tool_",

@@ -10,6 +10,7 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { surfaceColdPendingCalls } from "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
@@ -222,6 +223,15 @@ export function ChatRoomClient({
             signal: ctrl.signal,
           }),
         ).unwrap();
+        if (ctrl.signal.aborted) return;
+        // Cold-resume: if the server left this conversation paused waiting on a
+        // client-delegated tool the user never answered (closed the tab
+        // mid-prompt), re-surface the prompt(s) now so they can answer and
+        // resume the agent. Routed through the SAME path as a live
+        // tool_delegated event. Fire-and-forget — must not block the load.
+        // (Only the genuinely-cold branch reaches here; the in-memory-live
+        // branch above returns early, where prompts arrive over the stream.)
+        void dispatch(surfaceColdPendingCalls(conversationIdProp));
       } catch (err) {
         if (loadedKeyRef.current === conversationIdProp) {
           loadedKeyRef.current = null;

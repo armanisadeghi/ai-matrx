@@ -16,9 +16,6 @@ import {
   createSessionThunk,
   fetchRawSegmentsThunk,
 } from "@/features/transcript-studio/redux/thunks";
-import { rawSegmentsAppended } from "@/features/transcript-studio/redux/slice";
-import { insertRawSegment } from "@/features/transcript-studio/service/studioService";
-import { selectRawSegments } from "@/features/transcript-studio/redux/selectors";
 import { WAR_ROOM_AUDIO_SOURCE } from "../constants";
 import { selectTileEffectiveContext } from "./selectors";
 import * as service from "../service";
@@ -414,29 +411,6 @@ export const ensureTileAudioSession =
       return active;
     }
     return dispatch(addAudioSessionToTile(tileId));
-  };
-
-/** Persist a finished transcript as a raw segment on the studio session. */
-export const saveTileTranscript =
-  (sessionId: string, text: string) =>
-  async (dispatch: AppDispatch, getState: () => RootState) => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    try {
-      const existing = selectRawSegments(sessionId)(getState());
-      const seg = await insertRawSegment({
-        sessionId,
-        recordingSegmentId: null,
-        chunkIndex: existing.length,
-        tStart: 0,
-        tEnd: 0,
-        text: trimmed,
-        source: "manual",
-      });
-      dispatch(rawSegmentsAppended({ sessionId, segments: [seg] }));
-    } catch {
-      toast.error("Couldn't save the transcript");
-    }
   };
 
 export const deleteTile =

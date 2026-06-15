@@ -66,9 +66,9 @@ behavior); otherwise items ride as ad-hoc context entries.
 
 ## Files
 
-- `hooks/useCleanupSession.ts` — session lifecycle + ALL persistence (list/create/load/delete, debounced saves, run audit). The only file that talks to `studioService`.
+- `hooks/useCleanupSession.ts` — session lifecycle + ALL persistence (list/create/load/delete, debounced saves, run audit). The only file that talks to `studioService`. Accepts `{ sessionId?, urlSync? }` for embedding (pin a host-owned session; skip URL read/write entirely).
 - `hooks/useAiPostProcess.ts` — any-agent launch + streaming state (one instance per output container).
-- `components/CleanupPad.tsx` — page shell: 3 resizable panels (sidebar │ transcript/clean │ custom), `<PageHeader>` portal title, mobile stacked + drawer. Layout cookies `panels:cleanup-h3` / `panels:cleanup-v` (server-read for first-paint sizes).
+- `components/CleanupPad.tsx` — page shell: 3 resizable panels (sidebar │ transcript/clean │ custom), `<PageHeader>` portal title, mobile stacked + drawer. Layout cookies `panels:cleanup-h3` / `panels:cleanup-v` (server-read for first-paint sizes). **Embeddable** via OPTIONAL props (`sessionId`, `urlSync`, `variant="embedded"`, `sections`, `showNewSession`) — all defaulting to today's page behavior; embedded renders a chrome-free flex stack (no shell header, no panel cookies). Consumed embedded by the War Room Audio tab.
 - `components/CleanupSessionList.tsx` — recents rail (title + time-ago, hover delete with confirm).
 - `components/CleanupContextPanel.tsx` — structured context items, notes-backed (explicit save only; `NotePickerPopover` lists **all** notes with folder grouping + search; full note fetched on select).
 
@@ -89,6 +89,16 @@ Voice-pad + agent-execution Redux, `MicrophoneIconButton`, `ContentActionBar`,
   loads never clobber in-flight first writes.
 - Persist clean/custom output exactly once per completed conversation
   (`persisted*CidRef`).
+- **Embedded mode is isolated.** With `urlSync={false}` the pad reads/writes
+  no URL (and `useCleanupSession` skips `useSearchParams()` → no Suspense
+  boundary), writes no panel-layout cookies, and — by hiding the sidebar
+  (`sections.sidebar:false`) — renders no `ActiveContextButton`, so it can
+  never mutate global `appContextSlice`. The voice-pad slice key is namespaced
+  per pinned session (`embedded:${sessionId}`) so two pads never collide.
+- **Cleanup auto-runs without the sidebar.** The Clean agent resolves from the
+  surface `clean` role default (`useSurfaceAgentRoles` → `cleanAgentId`), not
+  the sidebar dropdown — so auto-clean on stop works even when the sidebar is
+  hidden. `urlSync` MUST be stable for the hook's lifetime (it gates a hook).
 
 ## Surfaces + context menu
 
@@ -134,6 +144,16 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-06-14 — `CleanupPad` made embeddable so the War Room Audio tab reuses the
+  REAL pipeline instead of a fake recorder. New OPTIONAL props (`sessionId`,
+  `urlSync`, `variant="embedded"`, `sections`, `showNewSession`) + a
+  `useCleanupSession({ sessionId, urlSync })` overload, all defaulting to the
+  existing page behavior (the `/transcripts/cleanup` page is unchanged). Embedded
+  variant: chrome-free flex stack (record band → Transcript → Clean), no shell
+  header, no panel cookies, voice-pad key namespaced per session. Load path is
+  already source-agnostic (`EMBEDDED_SOURCES` includes `war_room`); auto-clean
+  resolves its agent from the surface role default, so it runs with the sidebar
+  hidden.
 - 2026-06-14 — Custom pane now seeds empty slot agents from the surface
   `custom_slot` role (`useSurfaceAgentRoles` position 0 → slot 1, etc.);
   session-persisted agents still win; explicit slot picks are not overridden.

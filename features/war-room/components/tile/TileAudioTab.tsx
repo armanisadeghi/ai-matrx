@@ -2,19 +2,21 @@
 
 // features/war-room/components/tile/TileAudioTab.tsx
 //
-// Minimal Audio view: record, "Save Only" (raw transcript, no cleanup), and
-// "New Session" (a tile can own several). Reuses the transcript-studio system —
-// each session is a real studio_sessions row (source='war_room') and the raw
-// transcript renders from the transcriptStudio slice. Dictionary, clean output,
-// and custom processing are intentionally hidden here; expand opens the full
-// studio for the same session.
+// Audio view: the REAL transcription-cleanup pipeline, embedded. Record →
+// chunked/crash-safe transcribe → auto-clean → the clean version appears
+// immediately, all on the tile's own studio_sessions row (source='war_room',
+// invisible to the Studio list) linked via ctx_war_room_tile_audio_sessions.
+//
+// The TILE owns session lifecycle (the compact "N/M" switcher + "New Session").
+// CleanupPad is bound to the active session via `sessionId` and rendered
+// chrome-free (variant="embedded", urlSync=false). Sidebar, dictionary, and
+// custom panes are hidden here — Expand opens the full transcript studio for
+// the same session. Hiding the sidebar also removes its ActiveContextButton,
+// so the embedded pad can never mutate the global active context (War Room
+// carries its own context).
 
-import { useEffect, useRef, useState } from "react";
-import { Save, Plus, ChevronDown, Radio } from "lucide-react";
-import {
-  MicrophoneIconButton,
-  type MicrophoneIconButtonHandle,
-} from "@/features/audio/components/MicrophoneIconButton";
+import { useEffect, useState } from "react";
+import { Plus, ChevronDown, Radio, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -22,8 +24,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectSessionRawText } from "@/features/transcript-studio/redux/selectors";
-import { fetchRawSegmentsThunk } from "@/features/transcript-studio/redux/thunks";
+import CleanupPad from "@/features/transcription-cleanup/components/CleanupPad";
 import {
   selectActiveAudioSessionId,
   selectAudioSessionIdsForTile,
@@ -31,68 +32,40 @@ import {
 import {
   addAudioSessionToTile,
   ensureTileAudioSession,
-  saveTileTranscript,
   setTileActiveAudioSession,
 } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 
 export function TileAudioTab({ tileId }: { tileId: string }) {
   const dispatch = useAppDispatch();
-  const micRef = useRef<MicrophoneIconButtonHandle>(null);
   const sessionId = useAppSelector(selectActiveAudioSessionId(tileId));
   const sessionIds = useAppSelector(selectAudioSessionIdsForTile(tileId));
-  const rawText = useAppSelector(selectSessionRawText(sessionId));
   const activeIndex = sessionId ? sessionIds.indexOf(sessionId) : -1;
 
-  // Live recording state is driven by the mic button's own callbacks (the
-  // standalone MicrophoneIconButton doesn't populate the recordings slice).
-  const [isRecording, setIsRecording] = useState(false);
-  const [liveText, setLiveText] = useState("");
-
-  // Load the active session's committed transcript when it changes.
+  // Ensure the tile has a backing audio session so the embedded pad always has
+  // one to bind to (idempotent + coalesced inside the thunk). A fresh tile gets
+  // its first session here; recording into it persists via the pad's own writer.
   useEffect(() => {
-    if (sessionId) dispatch(fetchRawSegmentsThunk({ sessionId }));
-  }, [sessionId, dispatch]);
-
-  async function handleComplete(text: string) {
-    setLiveText("");
-    const sid = sessionId ?? (await dispatch(ensureTileAudioSession(tileId)));
-    if (sid) dispatch(saveTileTranscript(sid, text));
-  }
+    if (!sessionId) void dispatch(ensureTileAudioSession(tileId));
+  }, [sessionId, tileId, dispatch]);
 
   return (
-    <div className="h-full flex flex-col min-h-0">
-      {/* Controls */}
-      <div className="shrink-0 flex items-center gap-1.5 px-2 py-1.5 border-b border-border/60">
-        <MicrophoneIconButton
-          ref={micRef}
-          onTranscriptionComplete={handleComplete}
-          onTranscriptOnlyComplete={handleComplete}
-          onLiveTranscript={setLiveText}
-          onRecordingStateChange={({ isRecording: rec }) => setIsRecording(rec)}
-          size="sm"
-          label="Record"
-        />
-        <button
-          type="button"
-          onClick={() => micRef.current?.stopForTranscriptOnly()}
-          disabled={!isRecording}
-          className="inline-flex items-center gap-1 rounded-md px-2 h-7 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none"
-          title="Stop and save the raw transcript (no cleanup)"
-        >
-          <Save className="size-3.5" />
-          Save Only
-        </button>
+    <div className="flex h-full min-h-0 flex-col">
+      {/* Session chrome — the tile owns lifecycle; the pad binds to the active one. */}
+      <div className="flex shrink-0 items-center gap-1.5 border-b border-border/60 px-2 py-1.5">
+        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+          <Radio className="size-3.5 text-primary" />
+          Audio
+        </span>
 
         {sessionIds.length > 1 ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="ml-auto inline-flex items-center gap-1 rounded-md px-2 h-7 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-                title="Switch transcript session"
+                className="ml-auto inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                title="Switch recording session"
               >
-                <Radio className="size-3.5" />
                 {activeIndex >= 0 ? activeIndex + 1 : "—"}/{sessionIds.length}
                 <ChevronDown className="size-3 opacity-60" />
               </button>
@@ -101,7 +74,9 @@ export function TileAudioTab({ tileId }: { tileId: string }) {
               {sessionIds.map((sid, i) => (
                 <DropdownMenuItem
                   key={sid}
-                  onClick={() => dispatch(setTileActiveAudioSession(tileId, sid))}
+                  onClick={() =>
+                    dispatch(setTileActiveAudioSession(tileId, sid))
+                  }
                   className={cn(sid === sessionId && "text-primary")}
                 >
                   <Radio className="size-3.5" />
@@ -114,34 +89,38 @@ export function TileAudioTab({ tileId }: { tileId: string }) {
 
         <button
           type="button"
-          onClick={() => dispatch(addAudioSessionToTile(tileId))}
+          onClick={() => void dispatch(addAudioSessionToTile(tileId))}
           className={cn(
-            "inline-flex items-center gap-1 rounded-md px-2 h-7 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
+            "inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
             sessionIds.length > 1 ? "" : "ml-auto",
           )}
-          title="Start a new transcript session in this tile"
+          title="Start a new recording session in this tile"
         >
           <Plus className="size-3.5" />
           New Session
         </button>
       </div>
 
-      {/* Transcript */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-2.5 text-sm">
-        {isRecording ? (
-          <p className="text-foreground whitespace-pre-wrap break-words">
-            {liveText || "Listening…"}
-            <span className="ml-0.5 inline-block h-3.5 w-px align-middle bg-primary animate-pulse" />
-          </p>
-        ) : rawText ? (
-          <p className="text-foreground whitespace-pre-wrap break-words">
-            {rawText}
-          </p>
+      {/* The real pipeline, bound to the tile's active session. */}
+      <div className="min-h-0 flex-1">
+        {sessionId ? (
+          <CleanupPad
+            key={sessionId}
+            sessionId={sessionId}
+            urlSync={false}
+            variant="embedded"
+            showNewSession={false}
+            sections={{
+              sidebar: false,
+              dictionary: false,
+              clean: true,
+              custom: false,
+            }}
+          />
         ) : (
-          <p className="text-muted-foreground text-xs text-center py-6 px-2">
-            Record to capture audio into this tile. &ldquo;Save Only&rdquo; keeps
-            the raw transcript; expand for the full cleanup studio.
-          </p>
+          <div className="flex h-full items-center justify-center">
+            <Loader2 className="size-4 animate-spin text-muted-foreground" />
+          </div>
         )}
       </div>
     </div>

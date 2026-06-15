@@ -121,7 +121,6 @@ import {
 } from "../hooks/useCleanupSession";
 
 const OVERLAY_ID = "transcriptionCleanupPage" as const;
-const INSTANCE_ID = "main" as const;
 
 const H_COOKIE = "panels:cleanup-h3";
 const V_COOKIE = "panels:cleanup-v";
@@ -371,18 +370,64 @@ function slotsWithCustomRoleDefaults(
   return changed ? next : slots;
 }
 
+/** Which sub-sections of the pad render. All default true (page behavior). */
+export interface CleanupPadSections {
+  sidebar?: boolean;
+  dictionary?: boolean;
+  clean?: boolean;
+  custom?: boolean;
+}
+
 interface CleanupPadProps {
   defaultHLayout?: Record<string, number>;
   defaultVLayout?: Record<string, number>;
+  /**
+   * Pin the pad to a host-owned session id (e.g. a War Room tile's
+   * `source='war_room'` studio session). When set, the pad does not own session
+   * lifecycle — the host does.
+   */
+  sessionId?: string;
+  /** Sync the active session to the page URL (`?session=`). Default true. */
+  urlSync?: boolean;
+  /**
+   * "page" (default) = full standalone surface with the shell header and the
+   * 3-pane resizable layout. "embedded" = chrome-free flex stack sized to its
+   * container (record band → Transcript → Clean), for small host tiles.
+   */
+  variant?: "page" | "embedded";
+  /** Toggle the pad's sub-sections. All default true. */
+  sections?: CleanupPadSections;
+  /**
+   * Show the record-band "New session" button. Default true. The embedded host
+   * (which owns session lifecycle) hides it.
+   */
+  showNewSession?: boolean;
 }
 
 export default function CleanupPad({
   defaultHLayout,
   defaultVLayout,
+  sessionId,
+  urlSync = true,
+  variant = "page",
+  sections,
+  showNewSession = true,
 }: CleanupPadProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
-  const session = useCleanupSession();
+  const session = useCleanupSession({ sessionId, urlSync });
+  const isEmbedded = variant === "embedded";
+  const showSidebar = sections?.sidebar ?? true;
+  const showDictionary = sections?.dictionary ?? true;
+  const showClean = sections?.clean ?? true;
+  const showCustom = sections?.custom ?? true;
+
+  /**
+   * VoicePad slice key — isolates each pad's transcript draft/entries. Embedded
+   * pads keyed by their pinned session id so two tiles never collide on the
+   * "main" key; the standalone page keeps "main".
+   */
+  const INSTANCE_ID = sessionId ? `embedded:${sessionId}` : "main";
 
   const entries = useAppSelector((s) =>
     selectVoicePadEntries(s, OVERLAY_ID, INSTANCE_ID),
@@ -1438,7 +1483,7 @@ export default function CleanupPad({
 
   const recordArea = (
     <div className="flex flex-wrap items-center justify-center gap-2">
-      {newSessionButton}
+      {showNewSession && newSessionButton}
       {recordPill}
       {softStopButton}
     </div>
@@ -1564,8 +1609,12 @@ export default function CleanupPad({
           onChange={handleContextChange}
         />
 
-        <SidebarSectionLabel icon={BookA} label="Dictionary" />
-        <DictionaryContextCard surfaceKey="matrx-user/transcripts-cleanup" />
+        {showDictionary && (
+          <>
+            <SidebarSectionLabel icon={BookA} label="Dictionary" />
+            <DictionaryContextCard surfaceKey="matrx-user/transcripts-cleanup" />
+          </>
+        )}
       </div>
 
       <div className="shrink-0 border-t border-border p-3">
@@ -1983,6 +2032,47 @@ export default function CleanupPad({
       onConfirm={handleInsertDialogConfirm}
     />
   );
+
+  // ── Embedded: chrome-free flex stack sized to the host container ───────────
+  // No shell header, no global panel cookies, no nested ResizablePanelGroups —
+  // a simple stack (record band → Transcript → Clean → Custom) that fills the
+  // host tile. Sections are gated by `sections.*`; the host owns session
+  // lifecycle so the record-band "New session" is hidden (showNewSession).
+  if (isEmbedded) {
+    return (
+      <>
+        {transcriptInsertDialog}
+        <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
+          {showSidebar && (
+            <div className="max-h-[40%] min-h-0 shrink-0 overflow-y-auto border-b border-border">
+              {sidebarBody}
+            </div>
+          )}
+          {recordBand}
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div
+              className={cn(
+                "flex min-h-0 flex-col",
+                showClean ? "flex-[1.1]" : "flex-1",
+              )}
+            >
+              {transcriptPane}
+            </div>
+            {showClean && (
+              <div className="flex min-h-0 flex-1 flex-col border-t border-border">
+                {cleanPane}
+              </div>
+            )}
+            {showCustom && (
+              <div className="flex min-h-0 flex-1 flex-col border-t border-border">
+                {customPane}
+              </div>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
 
   // ── Mobile: single scroll column + drawer ──────────────────────────────────
   if (isMobile) {

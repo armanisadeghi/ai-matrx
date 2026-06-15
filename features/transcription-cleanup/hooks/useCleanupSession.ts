@@ -140,12 +140,30 @@ async function fetchAgentNames(ids: string[]): Promise<Record<string, string>> {
   );
 }
 
-export function useCleanupSession() {
+export interface UseCleanupSessionOptions {
+  /** Pin the active session to a host-owned id (embedded master). */
+  sessionId?: string;
+  /**
+   * Sync the active session to the page URL (`?session=`). Default true.
+   * When false, the hook neither reads nor writes the URL and never calls
+   * `useSearchParams()`. MUST be stable — it gates a hook call.
+   */
+  urlSync?: boolean;
+}
+
+export function useCleanupSession(opts?: UseCleanupSessionOptions) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const api = useBackendApi();
-  const searchParams = useSearchParams();
-  const urlSessionId = searchParams.get("session");
+  // `urlSync` is required to be stable for the hook's lifetime (see JSDoc), so
+  // gating the `useSearchParams()` call on it is rules-of-hooks-safe: the call
+  // order never changes across renders. We skip it entirely when embedded so an
+  // embedded pad forces no Suspense boundary and never reacts to the host
+  // page's URL.
+  const urlSync = opts?.urlSync ?? true;
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const searchParams = urlSync ? useSearchParams() : null;
+  const urlSessionId = urlSync ? (searchParams?.get("session") ?? null) : null;
 
   const fetchStatus = useAppSelector(selectFetchStatus);
   const allSessions = useAppSelector(selectAllSessions);
@@ -165,7 +183,7 @@ export function useCleanupSession() {
   );
 
   const [activeSessionId, setActiveSessionId] = useState<string | null>(
-    urlSessionId,
+    opts?.sessionId ?? urlSessionId,
   );
   const [loadState, setLoadState] = useState<
     "idle" | "loading" | "ready" | "error"
@@ -222,19 +240,29 @@ export function useCleanupSession() {
     );
   }, [dispatch, scope]);
 
-  // ── URL-driven selection (no RSC roundtrip) ───────────────────────────────
-  const setUrlSession = useCallback((id: string | null) => {
-    const url = new URL(window.location.href);
-    if (id) url.searchParams.set("session", id);
-    else url.searchParams.delete("session");
-    window.history.replaceState(null, "", url.toString());
-    setActiveSessionId(id);
-  }, []);
+  // ── Selection (URL-driven on the page; internal-only when embedded) ───────
+  const setUrlSession = useCallback(
+    (id: string | null) => {
+      if (urlSync) {
+        const url = new URL(window.location.href);
+        if (id) url.searchParams.set("session", id);
+        else url.searchParams.delete("session");
+        window.history.replaceState(null, "", url.toString());
+      }
+      setActiveSessionId(id);
+    },
+    [urlSync],
+  );
 
-  // Keep state in sync when the URL changes externally (back/forward).
+  // Standalone page: keep state in sync when the URL changes externally
+  // (back/forward). Embedded: follow a changing host-pinned `sessionId`.
   useEffect(() => {
-    setActiveSessionId(urlSessionId);
-  }, [urlSessionId]);
+    if (urlSync) setActiveSessionId(urlSessionId);
+  }, [urlSync, urlSessionId]);
+
+  useEffect(() => {
+    if (opts?.sessionId) setActiveSessionId(opts.sessionId);
+  }, [opts?.sessionId]);
 
   // Each session gets one auto-label attempt; abort in-flight work on switch.
   useEffect(() => {
