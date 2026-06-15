@@ -6,7 +6,6 @@
 // Wave 2 renders minimal placeholder bodies so layout, tabs, and pin/hide are
 // testable; Wave 3 wires real task/notes/audio content into each tab.
 
-import { ListChecks, Mic } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { selectTileById } from "@/features/war-room/redux/selectors";
@@ -21,6 +20,7 @@ import { TileFrame } from "../shared/TileFrame";
 import { TileTabBar } from "./TileTabBar";
 import { TileNotesTab } from "./TileNotesTab";
 import { TileTaskTab } from "./TileTaskTab";
+import { TileAudioTab } from "./TileAudioTab";
 import { TileContextOverride } from "./TileContextOverride";
 
 export function WarRoomTile({
@@ -86,13 +86,7 @@ function TileTabContent({
     case "notes":
       return <TileNotesTab tileId={tileId} sessionId={sessionId} />;
     case "audio":
-      return (
-        <TabPlaceholder
-          Icon={Mic}
-          label="Audio"
-          hint="Record and transcribe into this tile"
-        />
-      );
+      return <TileAudioTab tileId={tileId} />;
     case "combined":
       return (
         <div className="h-full overflow-y-auto flex flex-col divide-y divide-border/60">
@@ -103,11 +97,7 @@ function TileTabContent({
             <TileNotesTab tileId={tileId} sessionId={sessionId} />
           </CombinedSection>
           <CombinedSection label="Audio">
-            <TabPlaceholder
-              Icon={Mic}
-              label="Audio"
-              hint="Record and transcribe into this tile"
-            />
+            <TileAudioTab tileId={tileId} />
           </CombinedSection>
         </div>
       );
@@ -131,22 +121,3 @@ function CombinedSection({
   );
 }
 
-function TabPlaceholder({
-  Icon,
-  label,
-  hint,
-}: {
-  Icon: typeof ListChecks;
-  label: string;
-  hint: string;
-}) {
-  return (
-    <div className="h-full min-h-32 grid place-items-center text-center px-3">
-      <div className="text-muted-foreground">
-        <Icon className="size-6 mx-auto mb-1.5 opacity-50" />
-        <p className="text-xs font-medium text-foreground/80">{label}</p>
-        <p className="text-[11px] mt-0.5 opacity-70">{hint}</p>
-      </div>
-    </div>
-  );
-}

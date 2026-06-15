@@ -219,6 +219,55 @@ export async function listTileAudioSessions(
   return data ?? [];
 }
 
+/** Link a studio session to a tile and make it the active one for that tile. */
+export async function createTileAudioLink(
+  tileId: string,
+  studioSessionId: string,
+): Promise<WarRoomTileAudioSession> {
+  const userId = requireUserId();
+  // Demote any currently-active link for this tile.
+  await supabase
+    .from(TILE_AUDIO)
+    .update({ is_active: false })
+    .eq("tile_id", tileId);
+
+  const existing = await listTileAudioSessions(tileId);
+  const { data, error } = await supabase
+    .from(TILE_AUDIO)
+    .insert({
+      tile_id: tileId,
+      studio_session_id: studioSessionId,
+      user_id: userId,
+      position: existing.length,
+      is_active: true,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    console.error("[war-room] createTileAudioLink failed:", error);
+    throw error;
+  }
+  return data;
+}
+
+/** Mark one of a tile's linked audio sessions as the active one. */
+export async function setActiveTileAudioLink(
+  tileId: string,
+  studioSessionId: string,
+): Promise<void> {
+  await supabase.from(TILE_AUDIO).update({ is_active: false }).eq("tile_id", tileId);
+  const { error } = await supabase
+    .from(TILE_AUDIO)
+    .update({ is_active: true })
+    .eq("tile_id", tileId)
+    .eq("studio_session_id", studioSessionId);
+  if (error) {
+    console.error("[war-room] setActiveTileAudioLink failed:", error);
+    throw error;
+  }
+}
+
 /** All audio links for a session's tiles, in one round-trip (hydration). */
 export async function listSessionAudioLinks(
   sessionId: string,

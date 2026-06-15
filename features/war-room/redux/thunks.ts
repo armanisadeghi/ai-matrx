@@ -11,6 +11,16 @@ import { createTaskThunk } from "@/features/tasks/redux/thunks";
 import { upsertTaskWithLevel } from "@/features/agent-context/redux/tasksSlice";
 import type { TaskRecord } from "@/features/agent-context/redux/tasksSlice";
 import * as taskService from "@/features/tasks/services/taskService";
+import { requireUserId } from "@/utils/auth/getUserId";
+import {
+  createSessionThunk,
+  fetchRawSegmentsThunk,
+} from "@/features/transcript-studio/redux/thunks";
+import { rawSegmentsAppended } from "@/features/transcript-studio/redux/slice";
+import { insertRawSegment } from "@/features/transcript-studio/service/studioService";
+import { selectRawSegments } from "@/features/transcript-studio/redux/selectors";
+import { WAR_ROOM_AUDIO_SOURCE } from "../constants";
+import { selectTileEffectiveContext } from "./selectors";
 import * as service from "../service";
 import type {
   CreateSessionInput,
@@ -20,6 +30,7 @@ import type {
   WarRoomTile,
 } from "../types";
 import {
+  audioSessionLinkedToTile,
   audioSessionsLoadedForTile,
   clearSessionTiles,
   sessionRemoved,
@@ -310,6 +321,74 @@ export const hydrateTileTasks =
     const tasks = await Promise.all(taskIds.map((id) => taskService.getTaskById(id)));
     for (const t of tasks) {
       if (t) dispatch(upsertTaskWithLevel({ record: toTaskRecord(t), level: "full-data" }));
+    }
+  };
+
+// ── Audio (transcript sessions per tile) ───────────────────────────────
+// Reuses the transcript-studio system: each tile audio session is a real
+// studio_sessions row (source='war_room', invisible to the Studio list) linked
+// via ctx_war_room_tile_audio_sessions. Raw transcript persists to
+// studio_raw_segments and renders from the transcriptStudio slice.
+
+/** Create a new audio (transcript) session for a tile and make it active. */
+export const addAudioSessionToTile =
+  (tileId: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<string | null> => {
+    try {
+      const userId = requireUserId();
+      const ctx = selectTileEffectiveContext(tileId)(getState());
+      const session = await dispatch(
+        createSessionThunk({
+          userId,
+          source: WAR_ROOM_AUDIO_SOURCE,
+          title: "Recording",
+          organizationId: ctx.organizationId,
+        }),
+      ).unwrap();
+      if (!session) return null;
+      await service.createTileAudioLink(tileId, session.id);
+      dispatch(
+        audioSessionLinkedToTile({ tileId, studioSessionId: session.id }),
+      );
+      return session.id;
+    } catch {
+      toast.error("Couldn't start an audio session");
+      return null;
+    }
+  };
+
+/** Return the tile's active audio session, creating one if needed. */
+export const ensureTileAudioSession =
+  (tileId: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<string | null> => {
+    const active = getState().warRoom.activeAudioSessionByTile[tileId];
+    if (active) {
+      dispatch(fetchRawSegmentsThunk({ sessionId: active }));
+      return active;
+    }
+    return dispatch(addAudioSessionToTile(tileId));
+  };
+
+/** Persist a finished transcript as a raw segment on the studio session. */
+export const saveTileTranscript =
+  (sessionId: string, text: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    try {
+      const existing = selectRawSegments(sessionId)(getState());
+      const seg = await insertRawSegment({
+        sessionId,
+        recordingSegmentId: null,
+        chunkIndex: existing.length,
+        tStart: 0,
+        tEnd: 0,
+        text: trimmed,
+        source: "manual",
+      });
+      dispatch(rawSegmentsAppended({ sessionId, segments: [seg] }));
+    } catch {
+      toast.error("Couldn't save the transcript");
     }
   };
 
