@@ -2,7 +2,7 @@
 //
 // Per-feature admin map for the War Room. Renders via the platform primitive
 // <FeatureAdminPage> (super-admin gated, utilitarian). War Room sprawls across
-// the room shell, the gallery engine, the four tile tabs, the context pickers,
+// the room shell, the gallery engine, the five tile tabs, the context pickers,
 // and three substrate features — this is its connective index. When you add a
 // War Room route / component / slice / overlay, update this file.
 
@@ -13,7 +13,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
   name: "War Room",
   slug: "war-room",
   description:
-    "Session-based multitasking command center. A user opens saved War Rooms, each a cockpit of threads: a Stage mode (a live watchlist rail + one driven thread) and a Grid mode (the self-arranging bento gallery, all at once), toggled in the header. Every thread bundles a Task + Notes + Audio transcript behind four tabs, is context-aware (org/scope inherited from the session, overridable per tile), and can be pinned, parked (hidden), or projected. Header controls: Stage⇄Grid, the instrument projector (set every thread to one view), a Comfortable/Compact density dial, and a live active/parked/pinned meter. A thin consumer of tasks, notes, transcription, and scopes.",
+    "Session-based multitasking command center. A user opens saved War Rooms, each a cockpit of threads: a Stage mode (a live watchlist rail + one driven thread) and a Grid mode (the self-arranging bento gallery, all at once), toggled in the header. Every thread bundles a Task + Notes + Audio transcript + Files/Documents behind five tabs, is context-aware (org/scope inherited from the session, overridable per tile), and can be pinned, parked (hidden), or projected. Header controls: Stage⇄Grid, the instrument projector (set every thread to one view), a Comfortable/Compact density dial, and a live active/parked/pinned meter. A thin consumer of tasks, notes, transcription, files/documents, and scopes.",
   docs: [{ label: "War Room FEATURE.md", href: "/features/war-room/FEATURE.md" }],
   routeScanPath: "app/(core)/war-room",
 
@@ -101,10 +101,10 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       tier: "candidate",
     },
     {
-      name: "Tile tabs (Task / Notes / Audio)",
+      name: "Tile tabs (Task / Notes / Audio / Files)",
       filePath: "features/war-room/components/tile/TileTaskTab.tsx",
       description:
-        "TileTaskTab (name/subtasks/attachments/comments), TileNotesTab (ProTextarea + autosave), TileAudioTab (record/save-only/new-session over transcript-studio).",
+        "TileTaskTab (name/subtasks/attachments/comments), TileNotesTab (NoteEditorCore + autosave), TileAudioTab (embedded CleanupPad over transcript-studio), TileAttachmentsTab (Files: upload/pick via @/features/files + InlineMediaRef; Documents: createDocument/listAccessibleDocuments → /documents/[id]) — all backed by ctx_war_room_tile_* link tables.",
       tier: "internal",
     },
     {
@@ -135,7 +135,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "warRoom",
       filePath: "features/war-room/redux/slice.ts",
       description:
-        "Sessions + tiles registries, audio links, per-tile UI (active tab, pin, hide, save state), and ephemeral UI. Linkage only — substrate data lives in tasks/notes/transcriptStudio.",
+        "Sessions + tiles registries, audio links, note links, attachment links (files + documents), and per-tile UI (active tab, pin, hide). Linkage only — substrate data lives in tasks/notes/transcriptStudio/files/data-tables.",
     },
   ],
 
@@ -157,6 +157,11 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       adminUrl: "/transcripts/admin",
       description:
         "The Audio tab creates studio_sessions (source='war_room') linked via ctx_war_room_tile_audio_sessions; expand opens the full transcription studio for the same session.",
+    },
+    {
+      name: "Files / Documents",
+      description:
+        "The Files tab links cld_files (upload via folderForWarRoomTile or pick existing) and udt_documents (createDocument / listAccessibleDocuments → /documents/[id]) via the polymorphic ctx_war_room_tile_attachments table. Reuses @/features/files (requestUpload/openFilePicker/InlineMediaRef) + data-tables document-service — no upload/pick/doc-edit reimplemented.",
     },
     {
       name: "Scopes",

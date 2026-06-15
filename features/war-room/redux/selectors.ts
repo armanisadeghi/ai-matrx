@@ -11,6 +11,7 @@ import type {
   TileContext,
   WarRoomSession,
   WarRoomTile,
+  WarRoomTileAttachment,
 } from "../types";
 
 /** Coerce a jsonb context_scope_ids value to a string[]. */
@@ -201,5 +202,15 @@ export const selectActiveNoteId =
   (tileId: string | null) =>
   (state: RootState): string | null =>
     tileId ? (state.warRoom.activeNoteByTile[tileId] ?? null) : null;
+
+// ── File / document attachments ──────────────────────────────────────────
+export const selectAttachmentsForTile =
+  (tileId: string | null) =>
+  (state: RootState): WarRoomTileAttachment[] =>
+    tileId
+      ? (state.warRoom.attachmentsByTile[tileId] ?? EMPTY_ATTACHMENTS)
+      : EMPTY_ATTACHMENTS;
+
+const EMPTY_ATTACHMENTS: WarRoomTileAttachment[] = [];
 
 export { asScopeIds };

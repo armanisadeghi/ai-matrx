@@ -269,6 +269,7 @@ export {
   folderForConversation,
   folderForOrg,
   folderForTask,
+  folderForWarRoomTile,
   isHiddenFolder,
   isConventionalFolder,
   resolveDefaultVisibility,

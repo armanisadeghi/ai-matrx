@@ -6933,6 +6933,50 @@ export type Database = {
           },
         ]
       }
+      ctx_war_room_tile_attachments: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          label: string | null
+          metadata: Json | null
+          position: number
+          tile_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          label?: string | null
+          metadata?: Json | null
+          position?: number
+          tile_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          label?: string | null
+          metadata?: Json | null
+          position?: number
+          tile_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctx_war_room_tile_attachments_tile_id_fkey"
+            columns: ["tile_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_war_room_tiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ctx_war_room_tile_audio_sessions: {
         Row: {
           created_at: string
@@ -26751,6 +26795,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      admin_set_scope_type_system: {
+        Args: { p_is_system: boolean; p_scope_type_id: string }
+        Returns: Json
       }
       admin_update: {
         Args: {

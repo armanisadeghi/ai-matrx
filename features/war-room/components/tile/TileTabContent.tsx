@@ -13,6 +13,7 @@
 import { TileTaskTab } from "./TileTaskTab";
 import { TileNotesTab } from "./TileNotesTab";
 import { TileAudioTab } from "./TileAudioTab";
+import { TileAttachmentsTab } from "./TileAttachmentsTab";
 import { tileKindOf } from "@/features/war-room/components/room/tileKind";
 import { cn } from "@/lib/utils";
 import type { TileTab } from "@/features/war-room/types";
@@ -33,6 +34,8 @@ export function TileTabContent({
       return <TileNotesTab tileId={tileId} sessionId={sessionId} />;
     case "audio":
       return <TileAudioTab tileId={tileId} />;
+    case "files":
+      return <TileAttachmentsTab tileId={tileId} />;
     case "combined":
       return (
         <div className="h-full overflow-y-auto scrollbar-thin">
@@ -42,8 +45,11 @@ export function TileTabContent({
           <CombinedSection kind="notes">
             <TileNotesTab tileId={tileId} sessionId={sessionId} compact />
           </CombinedSection>
-          <CombinedSection kind="audio" last>
+          <CombinedSection kind="audio">
             <TileAudioTab tileId={tileId} />
+          </CombinedSection>
+          <CombinedSection kind="files" last>
+            <TileAttachmentsTab tileId={tileId} compact />
           </CombinedSection>
         </div>
       );

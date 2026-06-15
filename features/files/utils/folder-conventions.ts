@@ -82,6 +82,9 @@ export const CloudFolders = {
   /** Files attached to tasks, keyed by task id at runtime. */
   TASK_ATTACHMENTS: "Task Attachments",
 
+  /** Files attached to War Room tiles, keyed by tile id at runtime. */
+  WAR_ROOM: "War Room",
+
   /** Files dropped into a chat composer (pre-send or history). */
   CHAT_ATTACHMENTS: "Chat Attachments",
 
@@ -222,6 +225,14 @@ export const CloudFolders = {
  */
 export function folderForTask(taskId: string): string {
   return `${CloudFolders.TASK_ATTACHMENTS}/${taskId}`;
+}
+
+/**
+ * Files attached to a specific War Room tile.
+ *   folderForWarRoomTile("abc-123") → "War Room/abc-123"
+ */
+export function folderForWarRoomTile(tileId: string): string {
+  return `${CloudFolders.WAR_ROOM}/${tileId}`;
 }
 
 /**
@@ -472,6 +483,7 @@ const DEFAULT_VISIBILITY_RULES: ReadonlyArray<{
   { prefix: CloudFolders.IMAGES_GENERATED, visibility: "private" },
   { prefix: CloudFolders.CHAT_ATTACHMENTS, visibility: "private" },
   { prefix: CloudFolders.TASK_ATTACHMENTS, visibility: "private" },
+  { prefix: CloudFolders.WAR_ROOM, visibility: "private" },
   { prefix: CloudFolders.SLACK_IMPORTS, visibility: "private" },
   { prefix: CloudFolders.SCRAPED_CONTENT, visibility: "private" },
   { prefix: "Private Assets", visibility: "private" },

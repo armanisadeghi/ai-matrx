@@ -4,7 +4,12 @@
 // Small, individual updates — no large-object replacements (repo doctrine).
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { TileTab, WarRoomSession, WarRoomTile } from "../types";
+import type {
+  TileTab,
+  WarRoomSession,
+  WarRoomTile,
+  WarRoomTileAttachment,
+} from "../types";
 import {
   initialWarRoomState,
   type LoadStatus,
@@ -100,6 +105,7 @@ const warRoomSlice = createSlice({
       delete state.activeAudioSessionByTile[id];
       delete state.noteIdsByTile[id];
       delete state.activeNoteByTile[id];
+      delete state.attachmentsByTile[id];
     },
     setTileActiveTab(
       state,
@@ -204,6 +210,42 @@ const warRoomSlice = createSlice({
       state.activeNoteByTile[action.payload.tileId] = action.payload.noteId;
     },
 
+    // ── File / document attachments ───────────────────────────────────
+    attachmentsLoadedForTile(
+      state,
+      action: PayloadAction<{
+        tileId: string;
+        attachments: WarRoomTileAttachment[];
+      }>,
+    ) {
+      state.attachmentsByTile[action.payload.tileId] =
+        action.payload.attachments;
+    },
+    attachmentUpserted(
+      state,
+      action: PayloadAction<{
+        tileId: string;
+        attachment: WarRoomTileAttachment;
+      }>,
+    ) {
+      const { tileId, attachment } = action.payload;
+      const list = state.attachmentsByTile[tileId] ?? [];
+      const idx = list.findIndex((a) => a.id === attachment.id);
+      if (idx >= 0) list[idx] = attachment;
+      else list.push(attachment);
+      state.attachmentsByTile[tileId] = list;
+    },
+    attachmentRemoved(
+      state,
+      action: PayloadAction<{ tileId: string; id: string }>,
+    ) {
+      const { tileId, id } = action.payload;
+      const list = state.attachmentsByTile[tileId];
+      if (list) {
+        state.attachmentsByTile[tileId] = list.filter((a) => a.id !== id);
+      }
+    },
+
     /** Drop all loaded tiles for a session (e.g. when leaving the room). */
     clearSessionTiles(state, action: PayloadAction<string>) {
       const sessionId = action.payload;
@@ -214,6 +256,7 @@ const warRoomSlice = createSlice({
         delete state.activeAudioSessionByTile[id];
         delete state.noteIdsByTile[id];
         delete state.activeNoteByTile[id];
+        delete state.attachmentsByTile[id];
       }
       delete state.tileIdsBySession[sessionId];
       delete state.tilesStatusBySession[sessionId];
@@ -243,6 +286,9 @@ export const {
   noteSessionsLoadedForTile,
   noteLinkedToTile,
   setActiveNote,
+  attachmentsLoadedForTile,
+  attachmentUpserted,
+  attachmentRemoved,
   clearSessionTiles,
 } = warRoomSlice.actions;
 

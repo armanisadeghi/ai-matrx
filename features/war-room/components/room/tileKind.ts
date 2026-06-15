@@ -6,11 +6,12 @@
 // the spine of the tile accent-rail. Colors are all semantic tokens, never raw
 // hex, so dark mode and theme changes flow through automatically.
 //
-// Mapping: task → primary, notes → info, audio → warning, all → success. Used
-// by the tile accent rail, the segmented tab switcher's active pip, the
-// combined-view section rails, and the room-header instrument projector.
+// Mapping: task → primary, notes → info, audio → warning, files → muted/
+// secondary, all → success. Used by the tile accent rail, the segmented tab
+// switcher's active pip, the combined-view section rails, and the room-header
+// instrument projector.
 
-import { ListChecks, NotebookPen, Mic, Layers } from "lucide-react";
+import { ListChecks, NotebookPen, Mic, Paperclip, Layers } from "lucide-react";
 import type { TileTab } from "@/features/war-room/types";
 
 export interface TileKind {
@@ -50,6 +51,16 @@ export const TILE_KINDS: Record<TileTab, TileKind> = {
     bg: "bg-warning/10",
     rail: "bg-warning",
   },
+  files: {
+    id: "files",
+    label: "Files",
+    Icon: Paperclip,
+    // Muted/secondary accent — files are the calmest thread kind, and this
+    // keeps the spine distinct from success (combined) and the other accents.
+    text: "text-muted-foreground",
+    bg: "bg-muted",
+    rail: "bg-muted-foreground",
+  },
   combined: {
     id: "combined",
     label: "All",
@@ -60,7 +71,13 @@ export const TILE_KINDS: Record<TileTab, TileKind> = {
   },
 };
 
-export const TILE_KIND_ORDER: TileTab[] = ["task", "notes", "audio", "combined"];
+export const TILE_KIND_ORDER: TileTab[] = [
+  "task",
+  "notes",
+  "audio",
+  "files",
+  "combined",
+];
 
 export function tileKindOf(tab: TileTab | string | null | undefined): TileKind {
   return TILE_KINDS[(tab as TileTab) ?? "task"] ?? TILE_KINDS.task;

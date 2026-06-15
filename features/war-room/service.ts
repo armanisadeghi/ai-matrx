@@ -9,9 +9,11 @@ import { DEFAULT_SESSION_TITLE } from "./constants";
 import type {
   CreateSessionInput,
   CreateTileInput,
+  TileAttachmentEntityType,
   WarRoomSession,
   WarRoomSessionUpdate,
   WarRoomTile,
+  WarRoomTileAttachment,
   WarRoomTileAudioSession,
   WarRoomTileNote,
   WarRoomTileUpdate,
@@ -21,6 +23,7 @@ const SESSIONS = "ctx_war_room_sessions";
 const TILES = "ctx_war_room_tiles";
 const TILE_AUDIO = "ctx_war_room_tile_audio_sessions";
 const TILE_NOTES = "ctx_war_room_tile_notes";
+const TILE_ATTACHMENTS = "ctx_war_room_tile_attachments";
 
 // ── Sessions ──────────────────────────────────────────────────────────
 
@@ -375,6 +378,86 @@ export async function listNoteLinksForTiles(
 
   if (error) {
     console.error("[war-room] listNoteLinksForTiles failed:", error);
+    throw error;
+  }
+  return data ?? [];
+}
+
+// ── Tile ↔ attachment links (polymorphic: user_file | document) ─────────
+// One link table, two entity kinds. The linked entity lives in cld_files /
+// udt_documents; only the link is stored here. UNIQUE(tile_id, entity_type,
+// entity_id) means re-attaching the same file/doc is a no-op (handled in the
+// thunk by tolerating the conflict).
+
+export async function listTileAttachments(
+  tileId: string,
+): Promise<WarRoomTileAttachment[]> {
+  const { data, error } = await supabase
+    .from(TILE_ATTACHMENTS)
+    .select("*")
+    .eq("tile_id", tileId)
+    .order("position", { ascending: true });
+
+  if (error) {
+    console.error("[war-room] listTileAttachments failed:", error);
+    throw error;
+  }
+  return data ?? [];
+}
+
+/** Link a cld_files row or a udt_documents row to a tile (append at the end). */
+export async function attachToTile(
+  tileId: string,
+  entityType: TileAttachmentEntityType,
+  entityId: string,
+  label?: string | null,
+): Promise<WarRoomTileAttachment> {
+  const userId = requireUserId();
+  const existing = await listTileAttachments(tileId);
+  const { data, error } = await supabase
+    .from(TILE_ATTACHMENTS)
+    .insert({
+      tile_id: tileId,
+      user_id: userId,
+      entity_type: entityType,
+      entity_id: entityId,
+      label: label ?? null,
+      position: existing.length,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    console.error("[war-room] attachToTile failed:", error);
+    throw error;
+  }
+  return data;
+}
+
+export async function detachFromTile(attachmentId: string): Promise<void> {
+  const { error } = await supabase
+    .from(TILE_ATTACHMENTS)
+    .delete()
+    .eq("id", attachmentId);
+  if (error) {
+    console.error("[war-room] detachFromTile failed:", error);
+    throw error;
+  }
+}
+
+/** Attachments for the given tile ids (the caller already has the tiles). */
+export async function listAttachmentsForTiles(
+  tileIds: string[],
+): Promise<WarRoomTileAttachment[]> {
+  if (tileIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from(TILE_ATTACHMENTS)
+    .select("*")
+    .in("tile_id", tileIds)
+    .order("position", { ascending: true });
+
+  if (error) {
+    console.error("[war-room] listAttachmentsForTiles failed:", error);
     throw error;
   }
   return data ?? [];

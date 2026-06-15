@@ -27,6 +27,9 @@ import type {
   WarRoomTile,
 } from "../types";
 import {
+  attachmentRemoved,
+  attachmentsLoadedForTile,
+  attachmentUpserted,
   audioSessionLinkedToTile,
   audioSessionsLoadedForTile,
   clearSessionTiles,
@@ -183,6 +186,23 @@ export const loadWarRoomSession =
             activeId: activeId ?? ids[0] ?? null,
           }),
         );
+      }
+
+      // Attachment links (files + documents) keyed off the same tiles. Group
+      // per tile and seed each tile's list — including empty lists so a tile
+      // that lost its only attachment doesn't keep showing a stale one.
+      const attachments = await service.listAttachmentsForTiles(
+        tiles.map((t) => t.id),
+      );
+      const attachmentsByTile = new Map<string, typeof attachments>();
+      for (const tile of tiles) attachmentsByTile.set(tile.id, []);
+      for (const a of attachments) {
+        const list = attachmentsByTile.get(a.tile_id) ?? [];
+        list.push(a);
+        attachmentsByTile.set(a.tile_id, list);
+      }
+      for (const [tileId, list] of attachmentsByTile) {
+        dispatch(attachmentsLoadedForTile({ tileId, attachments: list }));
       }
 
       void service.touchSessionOpened(id);
@@ -587,5 +607,73 @@ export const persistTilePositions =
       await service.persistTilePositions(updates);
     } catch {
       toast.error("Couldn't save tile order");
+    }
+  };
+
+// ── Attachments (files + documents per tile) ───────────────────────────
+// Polymorphic links to cld_files (entity_type='user_file') and udt_documents
+// (entity_type='document'). The linked entity stays in its own feature; the
+// attachment row is just the link. Display details are hydrated client-side in
+// the Files tab (useFile for files, document-service for documents).
+
+/** Load a tile's attachment rows into the slice (Files tab mount). */
+export const loadTileAttachments =
+  (tileId: string) => async (dispatch: AppDispatch) => {
+    try {
+      const attachments = await service.listTileAttachments(tileId);
+      dispatch(attachmentsLoadedForTile({ tileId, attachments }));
+    } catch {
+      /* non-fatal — the section just shows empty */
+    }
+  };
+
+/** Link an existing/just-uploaded cloud file (cld_files.id) to a tile. */
+export const attachFileToTile =
+  (tileId: string, fileId: string, label?: string | null) =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
+    try {
+      const attachment = await service.attachToTile(
+        tileId,
+        "user_file",
+        fileId,
+        label,
+      );
+      dispatch(attachmentUpserted({ tileId, attachment }));
+      return true;
+    } catch {
+      toast.error("Couldn't attach the file");
+      return false;
+    }
+  };
+
+/** Link a document (udt_documents.id) to a tile. */
+export const attachDocumentToTile =
+  (tileId: string, documentId: string, label?: string | null) =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
+    try {
+      const attachment = await service.attachToTile(
+        tileId,
+        "document",
+        documentId,
+        label,
+      );
+      dispatch(attachmentUpserted({ tileId, attachment }));
+      return true;
+    } catch {
+      toast.error("Couldn't attach the document");
+      return false;
+    }
+  };
+
+/** Remove a tile's attachment link (the file/document itself is untouched). */
+export const detachTileAttachment =
+  (tileId: string, attachmentId: string) => async (dispatch: AppDispatch) => {
+    // Optimistic — the link is cheap to re-create.
+    dispatch(attachmentRemoved({ tileId, id: attachmentId }));
+    try {
+      await service.detachFromTile(attachmentId);
+    } catch {
+      toast.error("Couldn't remove the attachment");
+      dispatch(loadTileAttachments(tileId));
     }
   };

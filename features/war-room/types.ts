@@ -31,8 +31,19 @@ export type WarRoomTileNote =
 export type WarRoomTileNoteInsert =
   Database["public"]["Tables"]["ctx_war_room_tile_notes"]["Insert"];
 
+// Polymorphic attachment link (entity_type ∈ {'user_file','document'}). One row
+// per file/doc linked to a tile; the linked entity lives in cld_files /
+// udt_documents and is hydrated client-side for display.
+export type WarRoomTileAttachment =
+  Database["public"]["Tables"]["ctx_war_room_tile_attachments"]["Row"];
+export type WarRoomTileAttachmentInsert =
+  Database["public"]["Tables"]["ctx_war_room_tile_attachments"]["Insert"];
+
+/** The two entity kinds an attachment row can point at. */
+export type TileAttachmentEntityType = "user_file" | "document";
+
 // ── Tile tabs ─────────────────────────────────────────────────────────
-export type TileTab = "task" | "notes" | "audio" | "combined";
+export type TileTab = "task" | "notes" | "audio" | "files" | "combined";
 
 // ── Resolved context bundle (override ?? session default) ──────────────
 // A controlled selection the record carries — NEVER written to appContextSlice

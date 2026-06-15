@@ -3,7 +3,12 @@
 // Slice state shape for the warRoom reducer. War Room stores ONLY linkage +
 // tile UI state; task/note/transcript data live in their own slices.
 
-import type { TileTab, WarRoomSession, WarRoomTile } from "../types";
+import type {
+  TileTab,
+  WarRoomSession,
+  WarRoomTile,
+  WarRoomTileAttachment,
+} from "../types";
 
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
 
@@ -28,6 +33,9 @@ export interface WarRoomState {
   // Note links (tile → note ids)
   noteIdsByTile: Record<string, string[]>;
   activeNoteByTile: Record<string, string | null>;
+
+  // File / document attachment links (tile → attachment rows)
+  attachmentsByTile: Record<string, WarRoomTileAttachment[]>;
 }
 
 export const initialWarRoomState: WarRoomState = {
@@ -43,6 +51,7 @@ export const initialWarRoomState: WarRoomState = {
   activeAudioSessionByTile: {},
   noteIdsByTile: {},
   activeNoteByTile: {},
+  attachmentsByTile: {},
 };
 
 export type { TileTab };
