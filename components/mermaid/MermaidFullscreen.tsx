@@ -12,6 +12,7 @@ import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
+import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { cn } from "@/lib/utils";
 
 import { MermaidRenderer } from "./MermaidRenderer";
@@ -49,14 +50,16 @@ export function MermaidFullscreen({ source, options, title, onClose }: MermaidFu
     >
       <div className="flex items-center justify-between border-b border-border px-4 py-2 pt-safe">
         <span className="truncate text-sm font-medium text-foreground">{title ?? "Diagram"}</span>
-        <button
-          type="button"
-          aria-label="Exit fullscreen"
-          onClick={onClose}
-          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <SimpleTooltip text="Exit fullscreen (Esc)">
+          <button
+            type="button"
+            aria-label="Exit fullscreen"
+            onClick={onClose}
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </SimpleTooltip>
       </div>
       <div className="min-h-0 flex-1 overflow-hidden p-4">
         <MermaidRenderer source={source} options={options} fillHeight className={cn("h-full w-full")} />

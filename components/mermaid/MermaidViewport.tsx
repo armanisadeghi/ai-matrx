@@ -26,6 +26,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize, Minus, Plus, Scan } from "lucide-react";
 
+import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { cn } from "@/lib/utils";
 
 /** Don't auto-shrink below half natural size — readability floor. */
@@ -297,44 +298,50 @@ export function MermaidViewport({
 
       {!hideControls && (
         <div className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-0.5 rounded-md border border-border bg-card/90 p-0.5 opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover/viewport:pointer-events-auto group-hover/viewport:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
-          <button
-            type="button"
-            aria-label="Zoom out"
-            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            onClick={() => zoomBy(1 / ZOOM_STEP)}
-          >
-            <Minus className="h-3.5 w-3.5" />
-          </button>
+          <SimpleTooltip text="Zoom out">
+            <button
+              type="button"
+              aria-label="Zoom out"
+              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              onClick={() => zoomBy(1 / ZOOM_STEP)}
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+          </SimpleTooltip>
           <span className="min-w-[2.75rem] text-center text-[11px] tabular-nums text-muted-foreground">
             {Math.round(scale * 100)}%
           </span>
-          <button
-            type="button"
-            aria-label="Zoom in"
-            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            onClick={() => zoomBy(ZOOM_STEP)}
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
+          <SimpleTooltip text="Zoom in">
+            <button
+              type="button"
+              aria-label="Zoom in"
+              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              onClick={() => zoomBy(ZOOM_STEP)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </SimpleTooltip>
           <span className="mx-0.5 h-4 w-px bg-border" />
-          <button
-            type="button"
-            aria-label="Fit to view"
-            title="Fit to view (double-click)"
-            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            onClick={fit}
-          >
-            <Scan className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            aria-label="Actual size"
-            title="Actual size (100%)"
-            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            onClick={oneToOne}
-          >
-            <Maximize className="h-3.5 w-3.5" />
-          </button>
+          <SimpleTooltip text="Fit to view (double-click)">
+            <button
+              type="button"
+              aria-label="Fit to view"
+              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              onClick={fit}
+            >
+              <Scan className="h-3.5 w-3.5" />
+            </button>
+          </SimpleTooltip>
+          <SimpleTooltip text="Actual size (100%)">
+            <button
+              type="button"
+              aria-label="Actual size"
+              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              onClick={oneToOne}
+            >
+              <Maximize className="h-3.5 w-3.5" />
+            </button>
+          </SimpleTooltip>
         </div>
       )}
     </div>

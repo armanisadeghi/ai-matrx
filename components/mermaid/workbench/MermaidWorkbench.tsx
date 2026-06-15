@@ -41,6 +41,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectMermaidPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import {
@@ -321,51 +322,59 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
           <div className="ml-auto flex items-center gap-0.5">
             <SaveIndicator state={saveState} onRetry={flush} />
 
-            <button
-              type="button"
-              aria-label="Edit with AI"
-              onClick={() => setAiOpen((v) => !v)}
-              className={cn(
-                "flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors",
-                aiOpen
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
-              <MessageSquare className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">AI</span>
-            </button>
+            <SimpleTooltip text={aiOpen ? "Close AI panel" : "Edit with AI"}>
+              <button
+                type="button"
+                aria-label="Edit with AI"
+                onClick={() => setAiOpen((v) => !v)}
+                className={cn(
+                  "flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors",
+                  aiOpen
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">AI</span>
+              </button>
+            </SimpleTooltip>
 
-            <button
-              type="button"
-              aria-label="Undo"
-              disabled={state.undoStack.length === 0}
-              onClick={() => dispatch({ type: "UNDO" })}
-              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
-            >
-              <Undo2 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              aria-label="Redo"
-              disabled={state.redoStack.length === 0}
-              onClick={() => dispatch({ type: "REDO" })}
-              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
-            >
-              <Redo2 className="h-3.5 w-3.5" />
-            </button>
+            <SimpleTooltip text="Undo (⌘Z)">
+              <button
+                type="button"
+                aria-label="Undo"
+                disabled={state.undoStack.length === 0}
+                onClick={() => dispatch({ type: "UNDO" })}
+                className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+              </button>
+            </SimpleTooltip>
+            <SimpleTooltip text="Redo (⇧⌘Z)">
+              <button
+                type="button"
+                aria-label="Redo"
+                disabled={state.redoStack.length === 0}
+                onClick={() => dispatch({ type: "REDO" })}
+                className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+              >
+                <Redo2 className="h-3.5 w-3.5" />
+              </button>
+            </SimpleTooltip>
 
             {/* Render options */}
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Diagram style"
-                  className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                >
-                  <Palette className="h-3.5 w-3.5" />
-                </button>
-              </DropdownMenuTrigger>
+              <SimpleTooltip text="Diagram style">
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Diagram style"
+                    className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Palette className="h-3.5 w-3.5" />
+                  </button>
+                </DropdownMenuTrigger>
+              </SimpleTooltip>
               <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuLabel className="text-xs">Theme</DropdownMenuLabel>
                 {THEME_CHOICES.map((theme) => (
@@ -395,15 +404,17 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
 
             {/* Export */}
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Export"
-                  className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                </button>
-              </DropdownMenuTrigger>
+              <SimpleTooltip text="Export">
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Export"
+                    className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </button>
+                </DropdownMenuTrigger>
+              </SimpleTooltip>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem
                   onClick={async () => {
@@ -460,15 +471,17 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
             {/* Version history */}
             {canvasItemId && (
               <DropdownMenu onOpenChange={(open) => open && void loadHistory()}>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Version history"
-                    className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                  >
-                    <History className="h-3.5 w-3.5" />
-                  </button>
-                </DropdownMenuTrigger>
+                <SimpleTooltip text="Version history">
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Version history"
+                      className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <History className="h-3.5 w-3.5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                </SimpleTooltip>
                 <DropdownMenuContent align="end" className="max-h-72 w-56 overflow-y-auto">
                   <DropdownMenuLabel className="text-xs">Versions</DropdownMenuLabel>
                   {history === null ? (

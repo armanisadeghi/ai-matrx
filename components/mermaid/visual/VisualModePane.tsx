@@ -16,6 +16,7 @@ import { ArrowLeftRight, Check, Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
@@ -216,14 +217,16 @@ export function VisualModePane({ source, options, doc, selection, dispatch }: Vi
       )}
 
       {/* Floating add button for unconnected steps */}
-      <button
-        type="button"
-        aria-label="Add step"
-        onClick={() => apply({ type: "addNode", label: "New step" })}
-        className="absolute bottom-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform hover:scale-105"
-      >
-        <Plus className="h-5 w-5" />
-      </button>
+      <SimpleTooltip text="Add step">
+        <button
+          type="button"
+          aria-label="Add step"
+          onClick={() => apply({ type: "addNode", label: "New step" })}
+          className="absolute bottom-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform hover:scale-105"
+        >
+          <Plus className="h-5 w-5" />
+        </button>
+      </SimpleTooltip>
 
       {/* Action card: floating near the click on desktop, bottom sheet on mobile */}
       {actionCard &&
@@ -287,14 +290,16 @@ function NodeActions(props: {
           className="h-8 text-base sm:text-sm"
           aria-label="Step name"
         />
-        <button
-          type="button"
-          aria-label="Close"
-          onClick={props.onClose}
-          className="rounded p-1.5 text-muted-foreground hover:bg-muted"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+        <SimpleTooltip text="Close">
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={props.onClose}
+            className="rounded p-1.5 text-muted-foreground hover:bg-muted"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </SimpleTooltip>
       </div>
 
       <Button size="sm" variant="outline" className="w-full justify-start gap-1.5" onClick={props.onAddConnected}>
@@ -304,40 +309,40 @@ function NodeActions(props: {
 
       <div className="flex items-center gap-1">
         {SHAPE_CHOICES.map((choice) => (
-          <button
-            key={choice.shape}
-            type="button"
-            title={choice.label}
-            aria-label={choice.label}
-            onClick={() => props.onShape(choice.shape)}
-            className={cn(
-              "flex h-8 w-8 items-center justify-center rounded border text-sm",
-              props.shape === choice.shape
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border text-muted-foreground hover:bg-muted",
-            )}
-          >
-            {choice.glyph}
-          </button>
+          <SimpleTooltip key={choice.shape} text={choice.label}>
+            <button
+              type="button"
+              aria-label={choice.label}
+              onClick={() => props.onShape(choice.shape)}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded border text-sm",
+                props.shape === choice.shape
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {choice.glyph}
+            </button>
+          </SimpleTooltip>
         ))}
       </div>
 
       <div className="flex items-center gap-1.5">
         {Object.entries(FLOW_PALETTE).map(([key, palette]) => (
-          <button
-            key={key}
-            type="button"
-            title={palette.label}
-            aria-label={`Color ${palette.label}`}
-            onClick={() => props.onPalette(props.paletteKey === key ? null : key)}
-            className={cn(
-              "h-6 w-6 rounded-full border-2",
-              props.paletteKey === key ? "border-foreground" : "border-transparent",
-            )}
-            style={{ backgroundColor: palette.swatch }}
-          >
-            {props.paletteKey === key && <Check className="mx-auto h-3 w-3 text-white" />}
-          </button>
+          <SimpleTooltip key={key} text={palette.label}>
+            <button
+              type="button"
+              aria-label={`Color ${palette.label}`}
+              onClick={() => props.onPalette(props.paletteKey === key ? null : key)}
+              className={cn(
+                "h-6 w-6 rounded-full border-2",
+                props.paletteKey === key ? "border-foreground" : "border-transparent",
+              )}
+              style={{ backgroundColor: palette.swatch }}
+            >
+              {props.paletteKey === key && <Check className="mx-auto h-3 w-3 text-white" />}
+            </button>
+          </SimpleTooltip>
         ))}
       </div>
 
@@ -386,14 +391,16 @@ function EdgeActions(props: {
           className="h-8 text-base sm:text-sm"
           aria-label="Connection label"
         />
-        <button
-          type="button"
-          aria-label="Close"
-          onClick={props.onClose}
-          className="rounded p-1.5 text-muted-foreground hover:bg-muted"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+        <SimpleTooltip text="Close">
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={props.onClose}
+            className="rounded p-1.5 text-muted-foreground hover:bg-muted"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </SimpleTooltip>
       </div>
 
       <div className="flex items-center gap-1">

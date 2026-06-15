@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { cn } from "@/lib/utils";
 
 import { StandaloneMermaidView } from "../MermaidView";
@@ -61,14 +62,16 @@ export function AgentEditRail({ source, buildScope, onApply, onClose }: AgentEdi
           <MessageSquare className="h-3.5 w-3.5 text-primary" />
           Edit with AI
         </span>
-        <button
-          type="button"
-          aria-label="Close AI panel"
-          onClick={onClose}
-          className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+        <SimpleTooltip text="Close AI panel">
+          <button
+            type="button"
+            aria-label="Close AI panel"
+            onClick={onClose}
+            className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </SimpleTooltip>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">

@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { cn } from "@/lib/utils";
 
 import type { MermaidEditorAction } from "../workbench/useMermaidEditor";
@@ -181,19 +182,20 @@ function IconAction({
   hidden?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      className={cn(
-        "rounded p-1.5 opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100",
-        destructive ? "text-destructive hover:bg-destructive/10" : "text-muted-foreground hover:bg-muted",
-        hidden && "invisible",
-      )}
-    >
-      {children}
-    </button>
+    <SimpleTooltip text={label}>
+      <button
+        type="button"
+        aria-label={label}
+        onClick={onClick}
+        className={cn(
+          "rounded p-1.5 opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100",
+          destructive ? "text-destructive hover:bg-destructive/10" : "text-muted-foreground hover:bg-muted",
+          hidden && "invisible",
+        )}
+      >
+        {children}
+      </button>
+    </SimpleTooltip>
   );
 }
 
@@ -370,17 +372,19 @@ function MindmapNodeRow({
     <div>
       <RowShell className={cn(depth > 0 && "ml-[calc(var(--mm-depth)*1.25rem)]")}>
         <span style={{ width: depth * 20 }} className="shrink-0" />
-        <button
-          type="button"
-          aria-label={collapsed ? "Expand" : "Collapse"}
-          onClick={() => setCollapsed((v) => !v)}
-          className={cn(
-            "rounded p-0.5 text-muted-foreground hover:bg-muted",
-            node.children.length === 0 && "invisible",
-          )}
-        >
-          <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", !collapsed && "rotate-90")} />
-        </button>
+        <SimpleTooltip text={collapsed ? "Expand" : "Collapse"}>
+          <button
+            type="button"
+            aria-label={collapsed ? "Expand" : "Collapse"}
+            onClick={() => setCollapsed((v) => !v)}
+            className={cn(
+              "rounded p-0.5 text-muted-foreground hover:bg-muted",
+              node.children.length === 0 && "invisible",
+            )}
+          >
+            <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", !collapsed && "rotate-90")} />
+          </button>
+        </SimpleTooltip>
         <InlineTextEdit
           value={node.label}
           ariaLabel={`Rename ${node.label}`}
@@ -433,14 +437,16 @@ function SequenceOutline({ doc, apply }: { doc: SequenceDoc; apply: Apply }) {
               className="!flex-none !px-0.5 !py-0 text-xs"
               onCommit={(label) => apply({ type: "renameParticipant", id: p.id, label })}
             />
-            <button
-              type="button"
-              aria-label={`Delete ${p.alias ?? p.id}`}
-              onClick={() => apply({ type: "deleteParticipant", id: p.id })}
-              className="rounded-full p-0.5 text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover/chip:opacity-100"
-            >
-              <Trash2 className="h-3 w-3" />
-            </button>
+            <SimpleTooltip text={`Delete ${p.alias ?? p.id}`}>
+              <button
+                type="button"
+                aria-label={`Delete ${p.alias ?? p.id}`}
+                onClick={() => apply({ type: "deleteParticipant", id: p.id })}
+                className="rounded-full p-0.5 text-muted-foreground opacity-0 hover:bg-destructive/10 hover:text-destructive group-hover/chip:opacity-100"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </SimpleTooltip>
           </span>
         ))}
       </div>

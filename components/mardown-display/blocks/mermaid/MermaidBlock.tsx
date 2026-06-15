@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { selectCanvasIsAvailable } from "@/features/canvas/redux/canvasSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -219,15 +220,17 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
         {!isStreamActive && (
           <div className="flex shrink-0 items-center gap-0.5">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Diagram style"
-                  className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-                >
-                  <Palette className="h-3.5 w-3.5" />
-                </button>
-              </DropdownMenuTrigger>
+              <SimpleTooltip text="Diagram style">
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Diagram style"
+                    className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                  >
+                    <Palette className="h-3.5 w-3.5" />
+                  </button>
+                </DropdownMenuTrigger>
+              </SimpleTooltip>
               <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuLabel className="text-xs">Theme</DropdownMenuLabel>
                 {THEME_CHOICES.map((theme) => (
@@ -265,15 +268,17 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
             </DropdownMenu>
 
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Export diagram"
-                  className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                </button>
-              </DropdownMenuTrigger>
+              <SimpleTooltip text="Export diagram">
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Export diagram"
+                    className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </button>
+                </DropdownMenuTrigger>
+              </SimpleTooltip>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem
                   onClick={() => {
@@ -312,47 +317,54 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <button
-              type="button"
-              aria-label="Copy diagram source"
-              className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-              onClick={handleCopy}
-            >
-              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-            </button>
-
-            <button
-              type="button"
-              aria-label={showSource ? "Hide source" : "Show source"}
-              className={cn(
-                "rounded p-1.5 transition-colors hover:bg-primary/10 hover:text-primary",
-                showSource ? "text-primary" : "text-muted-foreground",
-              )}
-              onClick={() => setShowSource((v) => !v)}
-            >
-              <Code2 className="h-3.5 w-3.5" />
-            </button>
-
-            <button
-              type="button"
-              aria-label="View fullscreen"
-              title="View fullscreen"
-              className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
-              onClick={() => setFullscreen(true)}
-            >
-              <Expand className="h-3.5 w-3.5" />
-            </button>
-
-            {isCanvasAvailable && (
+            <SimpleTooltip text={copied ? "Copied" : "Copy diagram source"}>
               <button
                 type="button"
-                onClick={handleOpenCanvas}
-                className="flex items-center gap-1 rounded px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/10"
-                title="Open in canvas to edit"
+                aria-label="Copy diagram source"
+                className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                onClick={handleCopy}
               >
-                <Maximize2 className="h-3.5 w-3.5" />
-                <span>Edit</span>
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               </button>
+            </SimpleTooltip>
+
+            <SimpleTooltip text={showSource ? "Hide source" : "Show source"}>
+              <button
+                type="button"
+                aria-label={showSource ? "Hide source" : "Show source"}
+                className={cn(
+                  "rounded p-1.5 transition-colors hover:bg-primary/10 hover:text-primary",
+                  showSource ? "text-primary" : "text-muted-foreground",
+                )}
+                onClick={() => setShowSource((v) => !v)}
+              >
+                <Code2 className="h-3.5 w-3.5" />
+              </button>
+            </SimpleTooltip>
+
+            <SimpleTooltip text="View fullscreen">
+              <button
+                type="button"
+                aria-label="View fullscreen"
+                className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                onClick={() => setFullscreen(true)}
+              >
+                <Expand className="h-3.5 w-3.5" />
+              </button>
+            </SimpleTooltip>
+
+            {isCanvasAvailable && (
+              <SimpleTooltip text="Open in canvas to edit">
+                <button
+                  type="button"
+                  aria-label="Open in canvas to edit"
+                  onClick={handleOpenCanvas}
+                  className="flex items-center gap-1 rounded px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/10"
+                >
+                  <Maximize2 className="h-3.5 w-3.5" />
+                  <span>Edit</span>
+                </button>
+              </SimpleTooltip>
             )}
           </div>
         )}
