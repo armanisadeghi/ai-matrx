@@ -1,0 +1,218 @@
+"use client";
+
+/**
+ * SubtaskRail
+ *
+ * The enhanced subtask management surface for a War Room tile's task. It is
+ * the fast-entry + navigation layer the bare `TaskEditor` list lacks:
+ *
+ *   • Rapid entry — the "Add subtask" input is always present and, after
+ *     Enter creates a subtask, the cursor stays in a fresh empty line so the
+ *     user can chain type → Enter → type → Enter with no extra clicks. When
+ *     the rail mounts via the "+" affordance the input auto-focuses.
+ *   • Click a subtask → opens it in the in-tile detail pane (via `onOpenPane`).
+ *   • Each subtask carries a "⋯" menu → "Open in window" (`onOpenWindow`),
+ *     which the parent turns into a floating, draggable `SubtaskWindow`.
+ *   • Checkbox toggles completion; trash deletes — both via existing thunks.
+ *
+ * All persistence reuses the canonical task thunks unchanged
+ * (`createSubtaskThunk` / `toggleTaskCompleteThunk` / `deleteTaskThunk`).
+ */
+
+import { useEffect, useRef, useState } from "react";
+import {
+  CheckSquare,
+  Loader2,
+  MoreHorizontal,
+  PanelRightOpen,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectSubtasksByParent } from "@/features/agent-context/redux/tasksSlice";
+import {
+  createSubtaskThunk,
+  deleteTaskThunk,
+  toggleTaskCompleteThunk,
+} from "@/features/tasks/redux/thunks";
+import { cn } from "@/lib/utils";
+
+export function SubtaskRail({
+  taskId,
+  projectId,
+  onOpenPane,
+  onOpenWindow,
+  /** Auto-focus the add input on mount (set when revealed by a "+" click). */
+  autoFocus,
+}: {
+  taskId: string;
+  projectId: string | null;
+  onOpenPane: (subtaskId: string) => void;
+  onOpenWindow: (subtaskId: string) => void;
+  autoFocus?: boolean;
+}) {
+  const dispatch = useAppDispatch();
+  const subtasks = useAppSelector((s) => selectSubtasksByParent(s, taskId));
+  const [draft, setDraft] = useState("");
+  const [adding, setAdding] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus the entry line when first revealed so the user types at once.
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus();
+  }, [autoFocus]);
+
+  const completed = subtasks.filter((s) => s.status === "completed").length;
+
+  const addSubtask = async (): Promise<boolean> => {
+    const title = draft.trim();
+    if (!title || adding) return false;
+    setAdding(true);
+    try {
+      const newId = await dispatch(
+        createSubtaskThunk({ parentTaskId: taskId, title }),
+      ).unwrap();
+      if (newId) {
+        setDraft("");
+        return true;
+      }
+      return false;
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-card/30">
+      {/* Header */}
+      <div className="flex h-8 shrink-0 items-center gap-1.5 border-b border-border/60 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <CheckSquare className="size-3.5 text-primary" />
+        <span>Subtasks</span>
+        {subtasks.length > 0 && (
+          <span className="tabular-nums text-muted-foreground/60">
+            {completed}/{subtasks.length}
+          </span>
+        )}
+      </div>
+
+      {/* Rapid entry — always visible, stays focused for chained adds. */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-border/40 bg-muted/20 px-2.5 py-1.5">
+        <Plus className="size-3.5 shrink-0 text-muted-foreground" />
+        <input
+          ref={inputRef}
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={async (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              const ok = await addSubtask();
+              // Keep the cursor on a fresh empty line for the next subtask.
+              if (ok) inputRef.current?.focus();
+            }
+          }}
+          onBlur={() => {
+            // Save-on-blur when there's content (no explicit Add click needed).
+            if (draft.trim()) void addSubtask();
+          }}
+          placeholder="Add subtask, press Enter…"
+          className="h-6 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
+          // 16px prevents the iOS focus-zoom on responsive web.
+          style={{ fontSize: "16px" }}
+          disabled={adding}
+          aria-label="Add subtask"
+        />
+        {adding && (
+          <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
+        )}
+      </div>
+
+      {/* List */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {subtasks.length === 0 ? (
+          <p className="px-2.5 py-3 text-xs italic text-muted-foreground">
+            No subtasks yet. Type above to add your first.
+          </p>
+        ) : (
+          <ul>
+            {subtasks.map((st) => {
+              const isDone = st.status === "completed";
+              return (
+                <li
+                  key={st.id}
+                  className="group flex items-center gap-2 border-b border-border/30 px-2.5 py-1.5 transition-colors hover:bg-accent/40"
+                >
+                  <Checkbox
+                    checked={isDone}
+                    onCheckedChange={() =>
+                      dispatch(toggleTaskCompleteThunk({ taskId: st.id }))
+                    }
+                    aria-label={isDone ? "Mark incomplete" : "Mark complete"}
+                  />
+                  {/* Click the title to open the detail pane. */}
+                  <button
+                    type="button"
+                    onClick={() => onOpenPane(st.id)}
+                    className={cn(
+                      "min-w-0 flex-1 truncate text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm",
+                      isDone
+                        ? "text-muted-foreground line-through"
+                        : "text-foreground hover:text-primary",
+                    )}
+                    title={st.title}
+                  >
+                    {st.title}
+                  </button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 data-[state=open]:opacity-100"
+                        title="Subtask options"
+                        aria-label="Subtask options"
+                      >
+                        <MoreHorizontal className="size-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem onClick={() => onOpenPane(st.id)}>
+                        <CheckSquare className="size-3.5" />
+                        Open detail
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onOpenWindow(st.id)}>
+                        <PanelRightOpen className="size-3.5" />
+                        Open in window
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          dispatch(
+                            deleteTaskThunk({
+                              taskId: st.id,
+                              projectId: projectId ?? "__unassigned__",
+                            }),
+                          )
+                        }
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="size-3.5" />
+                        Delete subtask
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
