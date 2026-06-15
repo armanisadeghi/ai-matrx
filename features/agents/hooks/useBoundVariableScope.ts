@@ -53,6 +53,11 @@ export interface BoundVarInfo {
   valueType: string | undefined;
   /** The active scope of the binding's type (write-back target when nothing resolved yet). */
   activeScopeIdOfType: string | null;
+  /** The binding's scope type (for the "Select {ScopeType}" affordance). */
+  scopeTypeId: string;
+  /** True when the binding's scope type exists in the user's org — i.e. they COULD pick a
+   * scope of it. When false (e.g. a public-agent user without this type), show no prompt. */
+  scopeTypeAccessible: boolean;
   /** Bound but no value AND no active scope of its type — the "pick a scope" case. */
   missing: boolean;
 }
@@ -130,6 +135,8 @@ export function useBoundVariableScope(conversationId: string): BoundVarInfo[] {
         customComponent: item?.custom_component ?? undefined,
         valueType: item?.value_type,
         activeScopeIdOfType,
+        scopeTypeId: binding.scopeTypeId,
+        scopeTypeAccessible: !!labelMap[binding.scopeTypeId],
         missing: !resolvedValue && !scopeActive,
       };
     });

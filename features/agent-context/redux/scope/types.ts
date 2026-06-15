@@ -11,6 +11,12 @@ export interface ScopeType {
   sort_order: number;
   max_assignments_per_entity: number | null;
   default_variable_keys: string[];
+  /**
+   * When true, this scope type's context items are SYSTEM context — they always resolve
+   * for every user with no scope selection (platform-wide Class 2/3 context). Read-only
+   * here; set via a super-admin control (platform-global flag, protected-resources pattern).
+   */
+  is_system?: boolean;
   created_at: string;
   updated_at: string;
 }

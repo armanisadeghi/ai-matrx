@@ -14,18 +14,35 @@
  * data + inherited components, so every layout renders it (even when it shows nothing).
  */
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link2, ChevronDown, Save } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { setScopeSelections } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectActiveOrganizationId,
+  selectActiveScopeSelections,
+} from "@/features/scopes/redux/selectors/active-context";
+import {
+  fetchScopes,
+  selectScopesByType,
+  selectScopesLoadedForType,
+} from "@/features/agent-context/redux/scope/scopesSlice";
 import {
   useBoundVariableScope,
   type BoundVarInfo,
@@ -49,13 +66,96 @@ export function BoundVariableChips({ conversationId }: BoundVariableChipsProps) 
   // even when nothing renders.
   const infos = useBoundVariableScope(conversationId);
   const resolved = infos.filter((i) => !!i.resolved);
-  if (resolved.length === 0) return null;
+
+  // "Select {ScopeType}" prompts: distinct bound scope types the user HAS but hasn't
+  // selected. If the user doesn't have the type (e.g. a public-agent user), no prompt —
+  // the variable is just a normal input. Prompting only those who can act on it.
+  const promptTypes = useMemo(() => {
+    const seen = new Map<string, { scopeTypeId: string; label: string }>();
+    for (const i of infos) {
+      if (
+        i.scopeTypeAccessible &&
+        !i.scopeActive &&
+        !i.resolved &&
+        i.scopeTypeId &&
+        !seen.has(i.scopeTypeId)
+      ) {
+        seen.set(i.scopeTypeId, {
+          scopeTypeId: i.scopeTypeId,
+          label: i.scopeTypeLabel,
+        });
+      }
+    }
+    return [...seen.values()];
+  }, [infos]);
+
+  if (resolved.length === 0 && promptTypes.length === 0) return null;
   return (
     <div className="flex flex-wrap items-center gap-1.5 px-2.5 py-1.5">
+      {promptTypes.map((p) => (
+        <BoundScopePrompt
+          key={p.scopeTypeId}
+          scopeTypeId={p.scopeTypeId}
+          label={p.label}
+        />
+      ))}
       {resolved.map((info) => (
         <BoundChip key={info.name} conversationId={conversationId} info={info} />
       ))}
     </div>
+  );
+}
+
+/**
+ * "Select {ScopeType}" — shown above the variables when an agent uses items from a scope
+ * type the user HAS but hasn't picked a scope of. Choosing one sets it active, which
+ * resolves every binding of that type (the values then appear as pills / pre-fills).
+ */
+function BoundScopePrompt({
+  scopeTypeId,
+  label,
+}: {
+  scopeTypeId: string;
+  label: string;
+}) {
+  const dispatch = useAppDispatch();
+  const orgId = useAppSelector(selectActiveOrganizationId);
+  const selections = useAppSelector(selectActiveScopeSelections);
+  const scopes = useAppSelector((s) => selectScopesByType(s, scopeTypeId));
+  const loaded = useAppSelector((s) =>
+    orgId ? selectScopesLoadedForType(s, orgId, scopeTypeId) : false,
+  );
+
+  useEffect(() => {
+    if (orgId && !loaded) {
+      dispatch(fetchScopes({ org_id: orgId, type_id: scopeTypeId }));
+    }
+  }, [orgId, loaded, scopeTypeId, dispatch]);
+
+  return (
+    <Select
+      value=""
+      onValueChange={(scopeId) =>
+        dispatch(setScopeSelections({ ...selections, [scopeTypeId]: scopeId }))
+      }
+    >
+      <SelectTrigger className="h-auto w-auto gap-1.5 rounded-full border-primary/40 bg-primary/10 px-2.5 py-0.5 text-xs text-primary hover:bg-primary/15">
+        <SelectValue placeholder={`Select ${label}`} />
+      </SelectTrigger>
+      <SelectContent>
+        {scopes.length === 0 ? (
+          <div className="px-2 py-1.5 text-xs text-muted-foreground">
+            No {label} yet
+          </div>
+        ) : (
+          scopes.map((sc) => (
+            <SelectItem key={sc.id} value={sc.id}>
+              {sc.name}
+            </SelectItem>
+          ))
+        )}
+      </SelectContent>
+    </Select>
   );
 }
 

@@ -515,9 +515,39 @@ conflate.
   - `src/lib/api/routes/tool-results.ts` — funnel + `conversationResumePath`.
   - `src/lib/messaging/schemas.ts` `STREAM_CONTINUE` — the channel.
 
+## Cold-resume (reopening a paused conversation)
+
+The protocol above resumes a conversation whose stream just ended in THIS
+session. **Cold-resume** handles the other case: the user closed the tab/browser
+while a tool was delegated and reopens the conversation later (a new session —
+seconds, hours, or weeks later). The server kept the conversation cleanly
+`paused` with the call persisted in `cx_tool_call` (`status='delegated'`, not
+expired for 30 days), but nothing in this session is waiting on it.
+
+Flow (frontend):
+1. On a genuinely-cold conversation load (`ChatRoomClient`, after
+   `loadConversation` — NOT the in-memory-live branch), dispatch
+   `surfaceColdPendingCalls(conversationId)`.
+2. It fetches `GET /ai/conversations/{id}/pending_calls` (the canonical
+   discovery contract — matrx-extend uses the same endpoint) and, for each call
+   not already on screen, calls `surfaceDelegatedToolCall` — the **same** shared
+   thunk the live `tool_delegated` stream event uses (`process-stream.ts`). The
+   ui-first card re-renders exactly as if delivered live.
+3. The user answers → `submitToolResult` → `continuation_needed` →
+   `resumeInstance`. Identical to a same-session resume from here on.
+
+Key files: `surface-delegated-tool-call.thunk.ts` (the one shared surface path,
+used by both the live stream and cold-resume — zero drift),
+`surface-cold-pending-calls.thunk.ts`, `api/fetch-pending-calls.ts`. Extension
+mirror: `src/lib/chat/cold-resume.ts` + `CHANNELS.COLD_RESUME_CALL` →
+`dispatch.ts` (re-runs through the same `handleCall`; action/privileged tiers
+still confirm). Design: `aidream/docs/tool_delegation/DELEGATION_LOOP_BUGS.md`
+Problem 15.
+
 ## Change log
 
 | Date | Change |
 |---|---|
 | 2026-05-25 | Initial — captures the suspend → submit → resume protocol; supersedes `DURABLE_TOOL_CALLS_CLIENT_INTEGRATION.md` and clarifies the boundary against `PYTHON_RESUME_SPEC.md` and the extension's cursor-replay scaffold. Both clients ship the wiring; ESLint chokepoint protects the frontend funnel. |
+| 2026-06-15 | Cold-resume shipped in both clients — reopening a `paused` conversation re-surfaces its outstanding delegated prompt(s) via `GET …/pending_calls` → the shared `surfaceDelegatedToolCall` path. The frontend live `tool_delegated` handler was extracted into that one shared thunk (zero drift). See the "Cold-resume" section above and `DELEGATION_LOOP_BUGS.md` Problem 15. |
 | 2026-06-09 | Concurrent-resume incident fixes (aidream `65fa0d4`, matrx-extend `c04ccf8`, frontend this change): structured 409 codes on `/resume` (`resume_conflict` retryable / `not_resumable` terminal), client single-flight per `user_request_id` (§2.6, `resume-claims.ts`), `context`/`writable_variables`/`allow_context_create` on `ResumeRequest` (re-sent by both clients), `duration_ms` on `ClientToolResult`. |
