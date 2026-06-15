@@ -125,6 +125,14 @@ export interface NoteEditorCoreProps {
    * (quick-save popover, inline file previews) on the minimal scrollbar.
    */
   largeScrollbar?: boolean;
+  /**
+   * Embedded surfaces (War Room tiles, inline previews) where the editor lives
+   * in a small, height-bounded box rather than a full page. Drops the
+   * `pb-[85dvh]` scroll-to-middle padding (which is only desirable full-page and
+   * otherwise balloons the content far past its container, bleeding over
+   * neighbors). Default false preserves the full-page behavior.
+   */
+  embedded?: boolean;
 }
 
 /**
@@ -155,7 +163,12 @@ export function NoteEditorCore({
   noteId,
   actionsSurfaceId,
   largeScrollbar = false,
+  embedded = false,
 }: NoteEditorCoreProps) {
+  // Full-page surfaces pad the bottom by 85dvh so the last line can scroll to
+  // the middle; embedded/tile surfaces must NOT (it balloons content past the
+  // box and bleeds over neighbors).
+  const bottomPad = embedded ? "pb-6" : "pb-[85dvh]";
   // Long-form surfaces (full Notes route) opt into the larger, persistent,
   // higher-contrast scrollbar; everything else keeps the default ultra-thin.
   const previewScrollbarClass = largeScrollbar
@@ -251,7 +264,8 @@ export function NoteEditorCore({
             className={cn(
               "absolute inset-0 w-full h-full resize-none border-0",
               "focus-visible:ring-0 focus-visible:ring-offset-0",
-              "text-sm leading-relaxed bg-transparent p-3 pb-[85dvh]",
+              "text-sm leading-relaxed bg-transparent p-3",
+              bottomPad,
               // Notes get long — opt into the larger, persistent,
               // higher-contrast scrollbar so it's easy to find and grab.
               largeScrollbar && "scrollbar-contrast-lg",
@@ -278,12 +292,12 @@ export function NoteEditorCore({
           editorOverlay={findOverlay}
           previewContainerRef={previewContainerRef}
           textareaClassName={cn(
-            "pb-[85dvh]",
+            bottomPad,
             largeScrollbar && "scrollbar-contrast-lg",
             textareaClassName,
           )}
           previewClassName={cn(
-            "pb-[85dvh]",
+            bottomPad,
             largeScrollbar && "scrollbar-contrast-lg",
             previewClassName,
           )}
@@ -308,7 +322,8 @@ export function NoteEditorCore({
             }
           }}
           className={cn(
-            "h-full overflow-y-auto max-w-3xl mx-auto py-2 px-4 pb-[85dvh]",
+            "h-full overflow-y-auto max-w-3xl mx-auto py-2 px-4",
+            bottomPad,
             previewScrollbarClass,
             previewClassName,
           )}

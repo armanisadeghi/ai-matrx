@@ -93,6 +93,7 @@ function TileNoteEditor({
         editorMode="plain"
         placeholder="Jot down anything for this thread…"
         showVoiceButton={false}
+        embedded
         className="h-full"
       />
     );
@@ -127,6 +128,7 @@ function TileNoteEditor({
           onChangeFlush={onChange}
           editorMode={mode}
           showVoiceButton
+          embedded
           placeholder="Jot down anything for this thread…"
           className="h-full"
         />

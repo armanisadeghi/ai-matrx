@@ -72,7 +72,11 @@ function CombinedSection({
           {k.label}
         </span>
       </div>
-      <div className="min-h-40">{children}</div>
+      {/* Definite height + clip: the embedded editors are h-full/absolute, so a
+          bounded box lets them resolve their height and prevents any content
+          (or absolute layers) from bleeding into the section below. Each body
+          scrolls internally for more. */}
+      <div className="h-64 overflow-hidden">{children}</div>
     </section>
   );
 }
