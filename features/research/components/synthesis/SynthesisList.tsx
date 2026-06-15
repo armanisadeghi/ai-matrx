@@ -34,6 +34,18 @@ const hasText = (s: string | null | undefined): boolean =>
 const isTerminalStatus = (status: string): boolean =>
   status === "success" || status === "complete" || status === "failed";
 
+/** Render structured JSON output as a fenced code block — bounded + crash-safe. */
+const structuredToMarkdown = (data: unknown): string => {
+  try {
+    const s = JSON.stringify(data, null, 2);
+    const clipped =
+      s.length > 20000 ? `${s.slice(0, 20000)}\n… (truncated)` : s;
+    return `\`\`\`json\n${clipped}\n\`\`\``;
+  } catch {
+    return "_Structured output could not be displayed._";
+  }
+};
+
 function SynthesisCard({
   synthesis,
   label,
@@ -121,7 +133,7 @@ function SynthesisCard({
             // rather than showing nothing for a paid-for call.
             <div className="prose prose-sm dark:prose-invert max-w-none prose-pre:text-[11px]">
               <MarkdownStream
-                content={`\`\`\`json\n${JSON.stringify(synthesis.result_structured, null, 2)}\n\`\`\``}
+                content={structuredToMarkdown(synthesis.result_structured)}
               />
             </div>
           ) : isTerminalStatus(synthesis.status) ? (

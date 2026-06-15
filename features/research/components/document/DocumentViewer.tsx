@@ -111,7 +111,12 @@ export default function DocumentViewer() {
       return;
     }
     autoGenAttempted.current = true;
-    void handleRegenerate();
+    // Defer out of the effect body so generation's initial setState doesn't run
+    // synchronously during commit (react-hooks/set-state-in-effect).
+    const t = setTimeout(() => {
+      void handleRegenerate();
+    }, 0);
+    return () => clearTimeout(t);
   }, [docLoading, stream.isStreaming, document, reportReady, handleRegenerate]);
 
   const handleExport = useCallback(

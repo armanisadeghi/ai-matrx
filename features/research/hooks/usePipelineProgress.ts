@@ -295,12 +295,17 @@ function finalizeStages(state: PipelineState, ts: number): PipelineState {
 
     if (isNonTerminalStage && startedOrHasItems) {
       const { failed, succeeded } = stage.totals;
+      const hasItems = stage.itemOrder.length > 0;
       const nextStatus: StageState["status"] =
         failed > 0 && succeeded === 0
           ? "failed"
           : failed > 0
             ? "partial"
-            : "complete";
+            : hasItems && succeeded === 0
+              ? // Started items but none finished — honest "partial", not a
+                // green "complete" that overstates what actually happened.
+                "partial"
+              : "complete";
       stages[kind] = {
         ...stage,
         items,
