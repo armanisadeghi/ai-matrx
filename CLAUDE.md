@@ -243,6 +243,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Transcription (transcripts + studio + scribe + cleanup) | `features/transcripts/FEATURE.md` (**core-storage contract** for every `/transcripts` route) + `features/transcript-studio/FEATURE.md` + `features/transcription-cleanup/FEATURE.md` |
 | **PDF domain** (viewer, ops, extraction, analysis, redaction — surfaces: extractor studio, Analysis Studio, demos) | `features/pdf/FEATURE.md` — canonical parts table; **never create a sibling `features/pdf-*`** |
 | War Room (session-based multitask command center — tile gallery of task+notes+audio, context-aware) | `features/war-room/FEATURE.md` (consumes tasks/notes/transcription/scopes; gallery engine in `lib/layout/galleryLayout.ts`) |
+| Research (web pipeline: search→scrape→analyze→synthesize→document; live "orchestra" + stat-square rail) | `features/research/FEATURE.md` |
 
 ### Tier 2 — secondary features
 
@@ -252,7 +253,7 @@ Design rules (the primitive enforces them): no section descriptions / hero text;
 | Tasks + Projects | `features/tasks/FEATURE.md` |
 | Organizations + Invitations | `features/organizations/FEATURE.md` |
 | AI Models registry | `features/ai-models/FEATURE.md` |
-| Data ingestion (scraper, PDF, research, transcripts) | `features/scraper/FEATURE.md` |
+| Data ingestion (scraper, PDF, transcripts) | `features/scraper/FEATURE.md` |
 | Agent feedback API / MCP server | `app/api/mcp/FEATURE.md` |
 | Audio pipeline (TTS, audio, podcasts) | `features/audio/FEATURE.md` |
 | Image Manager hub | `features/image-manager/FEATURE.md` |

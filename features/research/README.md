@@ -4,30 +4,32 @@ AI-powered research pipeline with human-in-the-loop curation. Searches the web, 
 
 This route serves as the **reference implementation** for Next.js best practices across the project.
 
+> Engineering source of truth (entry points, flows, **invariants**): [`FEATURE.md`](./FEATURE.md). Read it before changing pipeline/stream/render behavior.
+
 ## Data Model
 
 Projects (from existing project system) have a 1:many relationship with Research Topics (`rs_topic`). Each topic owns keywords, sources, content, analyses, syntheses, tags, documents, and media.
 
 ## Routes
 
-All routes live under `app/(public)/p/research/`.
+All routes live under `app/(core)/research/`.
 
 | Route | Description |
 |-------|-------------|
-| `/p/research` | Public landing page (Server Component — zero JS) |
-| `/p/research/topics` | Authenticated topic list with project selector |
-| `/p/research/topics/new` | Topic creation wizard (project > name > template > keywords > settings) |
-| `/p/research/topics/[topicId]` | Topic overview dashboard with pipeline stats + JSON-LD |
-| `/p/research/topics/[topicId]/sources` | Source list with URL-driven filters, bulk actions |
-| `/p/research/topics/[topicId]/sources/[sourceId]` | Source detail with content viewer/editor, analysis |
-| `/p/research/topics/[topicId]/keywords` | Keyword management (add/remove) |
-| `/p/research/topics/[topicId]/analysis` | All analyses for the topic with stats, filters, and full markdown display |
-| `/p/research/topics/[topicId]/document` | Markdown document viewer with TOC, version history, diff |
-| `/p/research/topics/[topicId]/tags` | Tag CRUD with URL-driven search |
-| `/p/research/topics/[topicId]/tags/[tagId]` | Per-tag consolidation view |
-| `/p/research/topics/[topicId]/media` | Media gallery with relevance toggles |
-| `/p/research/topics/[topicId]/costs` | LLM cost breakdown dashboard |
-| `/p/research/topics/[topicId]/settings` | Topic settings |
+| `/research` | Public landing page (Server Component — zero JS) |
+| `/research/topics` | Authenticated topic list with project selector |
+| `/research/topics/new` | Topic creation wizard (project > name > template > keywords > settings) |
+| `/research/topics/[topicId]` | Topic overview dashboard with pipeline stats + JSON-LD |
+| `/research/topics/[topicId]/sources` | Source list with URL-driven filters, bulk actions |
+| `/research/topics/[topicId]/sources/[sourceId]` | Source detail with content viewer/editor, analysis |
+| `/research/topics/[topicId]/keywords` | Keyword management (add/remove) |
+| `/research/topics/[topicId]/analysis` | All analyses for the topic with stats, filters, and full markdown display |
+| `/research/topics/[topicId]/document` | Markdown document viewer with TOC, version history, diff |
+| `/research/topics/[topicId]/tags` | Tag CRUD with URL-driven search |
+| `/research/topics/[topicId]/tags/[tagId]` | Per-tag consolidation view |
+| `/research/topics/[topicId]/media` | Media gallery with relevance toggles |
+| `/research/topics/[topicId]/costs` | LLM cost breakdown dashboard |
+| `/research/topics/[topicId]/settings` | Topic settings |
 
 ## Architecture — Next.js Best Practices
 
