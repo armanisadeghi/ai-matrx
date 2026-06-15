@@ -17,7 +17,12 @@ import type { MermaidConfig } from "mermaid";
 
 import { renderOptionsKey, type MermaidRenderOptions } from "./types";
 
-type MermaidModule = typeof import("mermaid")["default"];
+console.log(
+  "%c[MERMAID IMPORT TEST] components/mermaid/runtime.ts",
+  "color: #fff; background: #7c3aed; font-weight: bold; padding: 2px 6px; border-radius: 3px;",
+);
+
+type MermaidModule = (typeof import("mermaid"))["default"];
 
 let mermaidPromise: Promise<MermaidModule> | null = null;
 let elkRegistered = false;
@@ -43,7 +48,10 @@ async function getMermaid(): Promise<MermaidModule> {
         import("mermaid"),
         import("@mermaid-js/layout-elk").catch((err) => {
           // ELK is an enhancement — dagre still works without it. Loud, not fatal.
-          console.warn("[MermaidRuntime] ELK layout plugin failed to load; dagre only", err);
+          console.warn(
+            "[MermaidRuntime] ELK layout plugin failed to load; dagre only",
+            err,
+          );
           return null;
         }),
       ]);
@@ -52,7 +60,10 @@ async function getMermaid(): Promise<MermaidModule> {
           mermaid.registerLayoutLoaders(elk.default);
           elkRegistered = true;
         } catch (err) {
-          console.warn("[MermaidRuntime] registerLayoutLoaders(elk) failed; dagre only", err);
+          console.warn(
+            "[MermaidRuntime] registerLayoutLoaders(elk) failed; dagre only",
+            err,
+          );
         }
       }
       mermaid.initialize(baseConfig());
@@ -84,14 +95,21 @@ export async function validateMermaid(
     const result = await mermaid.parse(source, { suppressErrors: true });
     return result === false ? { ok: false } : { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 
-function applyOptions(mermaid: MermaidModule, opts: MermaidRenderOptions): void {
+function applyOptions(
+  mermaid: MermaidModule,
+  opts: MermaidRenderOptions,
+): void {
   const key = renderOptionsKey(opts);
   if (key === lastConfigKey) return;
-  const layout = opts.layout === "elk" && !elkRegistered ? "dagre" : opts.layout;
+  const layout =
+    opts.layout === "elk" && !elkRegistered ? "dagre" : opts.layout;
   mermaid.initialize({
     ...baseConfig(),
     theme: opts.theme,

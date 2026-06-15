@@ -13,6 +13,11 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
+
+console.log(
+  "%c[MERMAID IMPORT TEST] components/mermaid/MermaidFullscreen.tsx",
+  "color: #fff; background: #7c3aed; font-weight: bold; padding: 2px 6px; border-radius: 3px;",
+);
 import { cn } from "@/lib/utils";
 
 import { MermaidRenderer } from "./MermaidRenderer";
@@ -25,7 +30,12 @@ interface MermaidFullscreenProps {
   onClose: () => void;
 }
 
-export function MermaidFullscreen({ source, options, title, onClose }: MermaidFullscreenProps) {
+export function MermaidFullscreen({
+  source,
+  options,
+  title,
+  onClose,
+}: MermaidFullscreenProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -49,7 +59,9 @@ export function MermaidFullscreen({ source, options, title, onClose }: MermaidFu
       aria-label={title ?? "Diagram (fullscreen)"}
     >
       <div className="flex items-center justify-between border-b border-border px-4 py-2 pt-safe">
-        <span className="truncate text-sm font-medium text-foreground">{title ?? "Diagram"}</span>
+        <span className="truncate text-sm font-medium text-foreground">
+          {title ?? "Diagram"}
+        </span>
         <SimpleTooltip text="Exit fullscreen (Esc)">
           <button
             type="button"
@@ -62,7 +74,12 @@ export function MermaidFullscreen({ source, options, title, onClose }: MermaidFu
         </SimpleTooltip>
       </div>
       <div className="min-h-0 flex-1 overflow-hidden p-4">
-        <MermaidRenderer source={source} options={options} fillHeight className={cn("h-full w-full")} />
+        <MermaidRenderer
+          source={source}
+          options={options}
+          fillHeight
+          className={cn("h-full w-full")}
+        />
       </div>
     </div>,
     document.body,

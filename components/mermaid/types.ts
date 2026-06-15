@@ -6,6 +6,11 @@
  * in the initial bundle without dragging the ~2MB engine along.
  */
 
+console.log(
+  "%c[MERMAID IMPORT TEST] components/mermaid/types.ts",
+  "color: #fff; background: #7c3aed; font-weight: bold; padding: 2px 6px; border-radius: 3px;",
+);
+
 export type MermaidTheme = "default" | "dark" | "forest" | "neutral" | "base";
 export type MermaidThemePreference = "auto" | MermaidTheme;
 export type MermaidLook = "classic" | "handDrawn";

@@ -13,6 +13,11 @@
  */
 
 import React, { Suspense, lazy, useEffect, useState } from "react";
+
+console.log(
+  "%c[MERMAID IMPORT TEST] components/mardown-display/blocks/mermaid/MermaidBlock.tsx",
+  "color: #fff; background: #7c3aed; font-weight: bold; padding: 2px 6px; border-radius: 3px;",
+);
 import {
   Check,
   Copy,
@@ -43,7 +48,10 @@ import { setModulePreferences } from "@/lib/redux/preferences/userPreferencesSli
 import { cn } from "@/lib/utils";
 
 import { getCatalogEntry } from "@/components/mermaid/catalog";
-import { detectDiagramType, extractMermaidTitle } from "@/components/mermaid/diagram-type";
+import {
+  detectDiagramType,
+  extractMermaidTitle,
+} from "@/components/mermaid/diagram-type";
 import {
   copyMermaidSource,
   downloadMermaidPng,
@@ -64,9 +72,18 @@ import {
 } from "@/components/mermaid/types";
 import type { MermaidBlockData } from "@/types/python-generated/stream-events";
 
-const CodeBlock = lazy(() => import("@/features/code-editor/components/code-block/CodeBlock"));
+const CodeBlock = lazy(
+  () => import("@/features/code-editor/components/code-block/CodeBlock"),
+);
 
-const THEME_CHOICES: MermaidThemePreference[] = ["auto", "default", "dark", "forest", "neutral", "base"];
+const THEME_CHOICES: MermaidThemePreference[] = [
+  "auto",
+  "default",
+  "dark",
+  "forest",
+  "neutral",
+  "base",
+];
 const LOOK_CHOICES: MermaidLook[] = ["classic", "handDrawn"];
 const LAYOUT_CHOICES: MermaidLayout[] = ["dagre", "elk"];
 
@@ -104,10 +121,14 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
   const userPrefs = useAppSelector(selectMermaidPreferences);
 
   const source = serverData?.source ?? content ?? "";
-  const artifactMeta = (metadata?.mermaid ?? metadata ?? {}) as MermaidArtifactMetadata;
+  const artifactMeta = (metadata?.mermaid ??
+    metadata ??
+    {}) as MermaidArtifactMetadata;
 
   // user defaults → per-artifact metadata → local session tweaks
-  const [localOptions, setLocalOptions] = useState<Partial<MermaidOptionPreferences>>({});
+  const [localOptions, setLocalOptions] = useState<
+    Partial<MermaidOptionPreferences>
+  >({});
   const effective: MermaidOptionPreferences = {
     theme: localOptions.theme ?? artifactMeta.theme ?? userPrefs.theme,
     look: localOptions.look ?? artifactMeta.look ?? userPrefs.look,
@@ -130,7 +151,9 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
   const [frameMaxHeight, setFrameMaxHeight] = useState(520);
   useEffect(() => {
     const recompute = () =>
-      setFrameMaxHeight(Math.max(320, Math.min(720, Math.round(window.innerHeight * 0.6))));
+      setFrameMaxHeight(
+        Math.max(320, Math.min(720, Math.round(window.innerHeight * 0.6))),
+      );
     recompute();
     window.addEventListener("resize", recompute);
     return () => window.removeEventListener("resize", recompute);
@@ -143,7 +166,11 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
 
   const diagramType = detectDiagramType(source);
   const catalog = getCatalogEntry(diagramType);
-  const title = serverData?.title ?? extractMermaidTitle(source) ?? artifactMeta.title ?? null;
+  const title =
+    serverData?.title ??
+    extractMermaidTitle(source) ??
+    artifactMeta.title ??
+    null;
   const Icon = catalog.icon;
 
   const currentSvg = () => svgEl?.outerHTML ?? null;
@@ -176,7 +203,8 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
       metadata: {
         title: title ?? catalog.label,
         sourceMessageId: messageId,
-        sourceTaskId: taskId || (messageId ? `mermaid:${messageId}` : undefined),
+        sourceTaskId:
+          taskId || (messageId ? `mermaid:${messageId}` : undefined),
         canvasItemId: artifactId,
         mermaid: {
           diagramType,
@@ -195,7 +223,12 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
   ) => setLocalOptions((prev) => ({ ...prev, [key]: value }));
 
   return (
-    <div className={cn("my-3 overflow-hidden rounded-lg border border-border bg-card", className)}>
+    <div
+      className={cn(
+        "my-3 overflow-hidden rounded-lg border border-border bg-card",
+        className,
+      )}
+    >
       <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/50 px-3 py-1.5">
         <div className="flex min-w-0 items-center gap-2">
           <Icon className="h-3.5 w-3.5 shrink-0 text-primary" />
@@ -213,7 +246,9 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
             </span>
           ) : null}
           {isStreamActive && (
-            <span className="shrink-0 animate-pulse text-xs text-muted-foreground">drawing…</span>
+            <span className="shrink-0 animate-pulse text-xs text-muted-foreground">
+              drawing…
+            </span>
           )}
         </div>
 
@@ -234,31 +269,55 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
               <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuLabel className="text-xs">Theme</DropdownMenuLabel>
                 {THEME_CHOICES.map((theme) => (
-                  <DropdownMenuItem key={theme} onClick={() => setOption("theme", theme)}>
+                  <DropdownMenuItem
+                    key={theme}
+                    onClick={() => setOption("theme", theme)}
+                  >
                     <span className="flex-1 capitalize">{theme}</span>
-                    {effective.theme === theme && <Check className="h-3.5 w-3.5" />}
+                    {effective.theme === theme && (
+                      <Check className="h-3.5 w-3.5" />
+                    )}
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs">Style</DropdownMenuLabel>
                 {LOOK_CHOICES.map((look) => (
-                  <DropdownMenuItem key={look} onClick={() => setOption("look", look)}>
-                    <span className="flex-1">{look === "handDrawn" ? "Hand-drawn" : "Classic"}</span>
-                    {effective.look === look && <Check className="h-3.5 w-3.5" />}
+                  <DropdownMenuItem
+                    key={look}
+                    onClick={() => setOption("look", look)}
+                  >
+                    <span className="flex-1">
+                      {look === "handDrawn" ? "Hand-drawn" : "Classic"}
+                    </span>
+                    {effective.look === look && (
+                      <Check className="h-3.5 w-3.5" />
+                    )}
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs">Layout</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs">
+                  Layout
+                </DropdownMenuLabel>
                 {LAYOUT_CHOICES.map((layout) => (
-                  <DropdownMenuItem key={layout} onClick={() => setOption("layout", layout)}>
+                  <DropdownMenuItem
+                    key={layout}
+                    onClick={() => setOption("layout", layout)}
+                  >
                     <span className="flex-1 uppercase">{layout}</span>
-                    {effective.layout === layout && <Check className="h-3.5 w-3.5" />}
+                    {effective.layout === layout && (
+                      <Check className="h-3.5 w-3.5" />
+                    )}
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => {
-                    dispatch(setModulePreferences({ module: "mermaid", preferences: effective }));
+                    dispatch(
+                      setModulePreferences({
+                        module: "mermaid",
+                        preferences: effective,
+                      }),
+                    );
                     toast.success("Saved as your default diagram style");
                   }}
                 >
@@ -306,7 +365,9 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
                 >
                   Download PNG
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => downloadMermaidSource(source, title)}>
+                <DropdownMenuItem
+                  onClick={() => downloadMermaidSource(source, title)}
+                >
                   Download source (.mmd)
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -324,7 +385,11 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
                 className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
                 onClick={handleCopy}
               >
-                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
               </button>
             </SimpleTooltip>
 

@@ -13,6 +13,11 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
+
+console.log(
+  "%c[MERMAID IMPORT TEST] components/mermaid/MermaidRenderer.tsx",
+  "color: #fff; background: #7c3aed; font-weight: bold; padding: 2px 6px; border-radius: 3px;",
+);
 import { Copy, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
@@ -125,12 +130,21 @@ export function MermaidRenderer({
   const showFailure = hasSource ? failure : null;
 
   if (showFailure && !isStreamActive && !showSvg) {
-    return <MermaidErrorCard failure={showFailure} originalSource={source} className={className} />;
+    return (
+      <MermaidErrorCard
+        failure={showFailure}
+        originalSource={source}
+        className={className}
+      />
+    );
   }
 
   if (!showSvg) {
     return (
-      <div className={cn("space-y-2 p-3", fillHeight && "h-full", className)} aria-busy="true">
+      <div
+        className={cn("space-y-2 p-3", fillHeight && "h-full", className)}
+        aria-busy="true"
+      >
         <Skeleton className="h-4 w-1/3" />
         <Skeleton className="h-32 w-full" />
       </div>
@@ -188,9 +202,13 @@ function MermaidErrorCard({
       <div className="flex items-start gap-2">
         <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
         <div className="min-w-0 flex-1 space-y-1.5">
-          <p className="font-medium text-foreground">This diagram could not be drawn</p>
+          <p className="font-medium text-foreground">
+            This diagram could not be drawn
+          </p>
           {failure.error && (
-            <p className="break-words text-xs text-muted-foreground">{failure.error}</p>
+            <p className="break-words text-xs text-muted-foreground">
+              {failure.error}
+            </p>
           )}
           {failure.fixes.length > 0 && (
             <p className="text-xs text-muted-foreground">
