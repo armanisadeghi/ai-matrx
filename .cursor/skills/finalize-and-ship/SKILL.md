@@ -9,15 +9,26 @@ Before handing work back, prove it's healthy, then deliver it. Migrations and ty
 
 ## The commit/push contract (read first)
 
-Invoking this skill **is** the authorization to commit. What you do at the end depends on the user's words:
+Invoking this skill **is** the authorization to commit. Two independent decisions — **scope** (what to stage) and **delivery** (commit vs push vs hold). Read both from the user's words.
+
+**Scope — what to stage:**
+
+| User said | Stage |
+|---|---|
+| "commit **your** work" / "commit what **you** did" / "your changes" | **Only the files you created or modified this session.** Leave everything else in the working tree untouched. |
+| "commit **everything**" / "commit **all**" / a general "commit & push" / **nothing specific** | The **entire** working tree. |
+
+When scope = your-own and the tree also holds files you didn't touch, never sweep them in — stage your paths explicitly (never blind `git add -A`).
+
+**Delivery — what to do with it:**
 
 | User said | Do |
 |---|---|
-| "commit & push" / "ship it" / "push to main" / **nothing about pushing** / just "do this" | All checks → fix → **commit everything → push to `main`** |
-| "get it ready, but don't push" / "don't push" | All checks → fix → **commit everything → STOP** (no push) |
+| "commit & push" / "ship it" / "push to main" / **nothing about pushing** / just "do this" | All checks → fix → **commit → push to `main`** |
+| "get it ready, but don't push" / "don't push" | All checks → fix → **commit → STOP** (no push) |
 | "don't commit" / "just stage" / "leave it for review" | All checks → fix → **stop before committing** |
 
-Default = commit **and** push. Only hold back the push (or the commit) when the user explicitly says so.
+Defaults: scope = **everything**, delivery = **commit and push**. Narrow scope or hold delivery only when the user says so. If the tree contains a large batch of changes you didn't make and scope is ambiguous, **stop and ask** rather than guessing.
 
 ## Checklist
 
