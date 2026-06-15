@@ -20,7 +20,7 @@
  * yourself (insert/update _schema_migrations with source='matrx-frontend', the
  * filename, and the SHA-256 of the file), or from the aidream repo run:
  *     python db/apply_migrations.py --source matrx-frontend
- * (which applies and records in one step). See the migration-and-type-sync skill.
+ * (which applies and records in one step). See the finalize-and-ship skill.
  *
  *   pnpm check:migrations            # loud, non-blocking (exit 0) — for hooks
  *   pnpm check:migrations --strict   # exit 1 when anything is unapplied — for CI
@@ -220,7 +220,7 @@ async function main(): Promise<number> {
   // Two valid fixes for BOTH states below: apply via the Supabase MCP
   // (apply_migration) + write the ledger row yourself, or run aidream's batch
   // applier which does both. White, not dim — it's an instruction the user
-  // acts on, not a footnote. See the migration-and-type-sync skill.
+  // acts on, not a footnote. See the finalize-and-ship skill.
   const fix =
     `${C.white}Fix — apply via Supabase MCP (apply_migration) + record in _schema_migrations, ` +
     `or from aidream:${C.reset} ${C.white}python db/apply_migrations.py --source ${SOURCE}${C.reset}`;

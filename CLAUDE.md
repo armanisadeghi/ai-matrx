@@ -74,7 +74,7 @@ The app code has **no DDL path** (Supabase JS / PostgREST only). Agents apply DD
 - After applying: `pnpm db-types` → `types/database.types.ts` (or `pnpm sync-types` for DB + Python API types + type-check).
 - A migration that must never apply gets `-- migrate: skip: <reason>` in its first 25 lines.
 
-**Invoke the `migration-and-type-sync` skill** for the full verify → apply → record → sync-types → fix-types loop.
+**Invoke the `finalize-and-ship` skill** at the end of any task — it runs migrations + type sync + the other pre-push checks before committing.
 
 ---
 
