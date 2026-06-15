@@ -269,13 +269,11 @@ export async function setActiveTileAudioLink(
 }
 
 /** All audio links for a session's tiles, in one round-trip (hydration). */
-export async function listSessionAudioLinks(
-  sessionId: string,
+/** Audio links for the given tile ids (the caller already has the tiles). */
+export async function listAudioLinksForTiles(
+  tileIds: string[],
 ): Promise<WarRoomTileAudioSession[]> {
-  const tiles = await listTiles(sessionId);
-  const tileIds = tiles.map((t) => t.id);
   if (tileIds.length === 0) return [];
-
   const { data, error } = await supabase
     .from(TILE_AUDIO)
     .select("*")
@@ -283,7 +281,7 @@ export async function listSessionAudioLinks(
     .order("position", { ascending: true });
 
   if (error) {
-    console.error("[war-room] listSessionAudioLinks failed:", error);
+    console.error("[war-room] listAudioLinksForTiles failed:", error);
     throw error;
   }
   return data ?? [];

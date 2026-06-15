@@ -136,6 +136,11 @@ export async function createNote(input: CreateNoteInput = {}): Promise<Note> {
       tags: input.tags || [],
       metadata: input.metadata || {},
       position: input.position || 0,
+      // Associations were silently dropped before — a note created with a
+      // task_id / org / project now actually persists those links.
+      task_id: input.task_id ?? null,
+      organization_id: input.organization_id ?? null,
+      project_id: input.project_id ?? null,
     })
     .select()
     .single();

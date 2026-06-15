@@ -9,7 +9,7 @@
 // and custom processing are intentionally hidden here; expand opens the full
 // studio for the same session.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Save, Plus } from "lucide-react";
 import {
   MicrophoneIconButton,
@@ -24,19 +24,17 @@ import {
   ensureTileAudioSession,
   saveTileTranscript,
 } from "@/features/war-room/redux/thunks";
-import { cn } from "@/lib/utils";
 
 export function TileAudioTab({ tileId }: { tileId: string }) {
   const dispatch = useAppDispatch();
   const micRef = useRef<MicrophoneIconButtonHandle>(null);
   const sessionId = useAppSelector(selectActiveAudioSessionId(tileId));
   const rawText = useAppSelector(selectSessionRawText(sessionId));
-  const recording = useAppSelector((s) => s.recordings);
 
-  const isThisRecording =
-    recording.context?.kind === "studio" &&
-    recording.context.sessionId === sessionId &&
-    recording.isRecording;
+  // Live recording state is driven by the mic button's own callbacks (the
+  // standalone MicrophoneIconButton doesn't populate the recordings slice).
+  const [isRecording, setIsRecording] = useState(false);
+  const [liveText, setLiveText] = useState("");
 
   // Load the active session's committed transcript when it changes.
   useEffect(() => {
@@ -44,6 +42,7 @@ export function TileAudioTab({ tileId }: { tileId: string }) {
   }, [sessionId, dispatch]);
 
   async function handleComplete(text: string) {
+    setLiveText("");
     const sid = sessionId ?? (await dispatch(ensureTileAudioSession(tileId)));
     if (sid) dispatch(saveTileTranscript(sid, text));
   }
@@ -56,13 +55,15 @@ export function TileAudioTab({ tileId }: { tileId: string }) {
           ref={micRef}
           onTranscriptionComplete={handleComplete}
           onTranscriptOnlyComplete={handleComplete}
+          onLiveTranscript={setLiveText}
+          onRecordingStateChange={({ isRecording: rec }) => setIsRecording(rec)}
           size="sm"
           label="Record"
         />
         <button
           type="button"
           onClick={() => micRef.current?.stopForTranscriptOnly()}
-          disabled={!isThisRecording}
+          disabled={!isRecording}
           className="inline-flex items-center gap-1 rounded-md px-2 h-7 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none"
           title="Stop and save the raw transcript (no cleanup)"
         >
@@ -82,21 +83,17 @@ export function TileAudioTab({ tileId }: { tileId: string }) {
 
       {/* Transcript */}
       <div className="flex-1 min-h-0 overflow-y-auto p-2.5 text-sm">
-        {isThisRecording ? (
+        {isRecording ? (
           <p className="text-foreground whitespace-pre-wrap break-words">
-            {recording.liveTranscript || "Listening…"}
-            <span className="text-primary animate-pulse"> ▍</span>
+            {liveText || "Listening…"}
+            <span className="ml-0.5 inline-block h-3.5 w-px align-middle bg-primary animate-pulse" />
           </p>
         ) : rawText ? (
           <p className="text-foreground whitespace-pre-wrap break-words">
             {rawText}
           </p>
         ) : (
-          <p
-            className={cn(
-              "text-muted-foreground text-xs text-center py-6 px-2",
-            )}
-          >
+          <p className="text-muted-foreground text-xs text-center py-6 px-2">
             Record to capture audio into this tile. &ldquo;Save Only&rdquo; keeps
             the raw transcript; expand for the full cleanup studio.
           </p>

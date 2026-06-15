@@ -32,7 +32,8 @@ export function WarRoomAllView() {
   return (
     <div className="h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       {/* Header */}
-      <header className="shrink-0 border-b border-border px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+      {/* pr-14 clears the shell's fixed top-right avatar. */}
+      <header className="shrink-0 border-b border-border px-4 sm:px-6 lg:px-8 pr-14 lg:pr-16 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2.5 min-w-0">
           <span className="grid place-items-center size-8 rounded-lg bg-primary/10 text-primary shrink-0">
             <LayoutGrid className="size-4.5" />

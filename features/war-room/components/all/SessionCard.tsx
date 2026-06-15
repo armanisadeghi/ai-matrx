@@ -10,23 +10,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { deleteSession } from "@/features/war-room/redux/thunks";
 import type { WarRoomSession } from "@/features/war-room/types";
 import { cn } from "@/lib/utils";
-
-function relativeTime(iso: string | null): string {
-  if (!iso) return "Never opened";
-  const then = new Date(iso).getTime();
-  const diff = Date.now() - then;
-  const min = Math.round(diff / 60000);
-  if (min < 1) return "Just now";
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.round(hr / 24);
-  if (day < 7) return `${day}d ago`;
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-}
+import { formatRelativeTime } from "@/utils/datetime";
 
 export function SessionCard({ session }: { session: WarRoomSession }) {
   const dispatch = useAppDispatch();
@@ -53,26 +37,33 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
   }
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={deleting ? -1 : 0}
       onClick={open}
-      disabled={deleting}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          open();
+        }
+      }}
+      aria-disabled={deleting}
       className={cn(
-        "group relative text-left rounded-xl border border-border bg-card p-4",
+        "group relative cursor-pointer text-left rounded-xl border border-border bg-card p-4",
         "transition-all hover:border-primary/40 hover:shadow-[var(--elevation-2)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-        "disabled:opacity-50 disabled:pointer-events-none flex flex-col gap-3 min-h-36",
+        deleting && "opacity-50 pointer-events-none",
+        "flex flex-col gap-3 min-h-36",
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <span className="grid place-items-center size-9 rounded-lg bg-primary/10 text-primary shrink-0">
           <LayoutGrid className="size-4.5" />
         </span>
-        <span
-          role="button"
-          tabIndex={-1}
+        <button
+          type="button"
           onClick={handleDelete}
-          className="grid place-items-center size-7 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
+          className="grid place-items-center size-7 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
           aria-label="Delete War Room"
         >
           {deleting ? (
@@ -80,7 +71,7 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
           ) : (
             <Trash2 className="size-4" />
           )}
-        </span>
+        </button>
       </div>
 
       <div className="min-w-0 flex-1">
@@ -96,11 +87,15 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
 
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
         <Clock className="size-3" />
-        <span>{relativeTime(session.last_opened_at)}</span>
+        <span>
+          {formatRelativeTime(session.last_opened_at, {
+            fallback: "Never opened",
+          })}
+        </span>
         {pending ? (
           <Loader2 className="size-3 animate-spin ml-auto text-primary" />
         ) : null}
       </div>
-    </button>
+    </div>
   );
 }

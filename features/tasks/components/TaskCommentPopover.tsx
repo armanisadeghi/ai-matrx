@@ -18,21 +18,13 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "sonner";
 import * as taskService from "@/features/tasks/services/taskService";
 import { cn } from "@/lib/utils";
+import { formatRelativeTime } from "@/utils/datetime";
 
 interface TaskComment {
   id: string;
   content: string;
   created_at: string;
   user_id?: string | null;
-}
-
-function relTime(iso: string): string {
-  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-  if (min < 1) return "now";
-  if (min < 60) return `${min}m`;
-  const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr}h`;
-  return `${Math.round(hr / 24)}d`;
 }
 
 export function TaskCommentPopover({
@@ -115,7 +107,7 @@ export function TaskCommentPopover({
                   {c.content}
                 </p>
                 <span className="text-[10px] text-muted-foreground">
-                  {relTime(c.created_at)}
+                  {formatRelativeTime(c.created_at)}
                 </span>
               </div>
             ))

@@ -108,10 +108,9 @@ export const loadWarRoomSession =
     dispatch(setTilesStatus({ sessionId: id, status: "loading" }));
     try {
       const existing = getState().warRoom.sessionsById[id];
-      const [session, tiles, audioLinks] = await Promise.all([
+      const [session, tiles] = await Promise.all([
         existing ? Promise.resolve(existing) : service.getSession(id),
         service.listTiles(id),
-        service.listSessionAudioLinks(id),
       ]);
 
       if (!session) {
@@ -124,6 +123,11 @@ export const loadWarRoomSession =
       dispatch(tilesLoadedForSession({ sessionId: id, tiles }));
       // Hydrate linked tasks into the agent-context slice (fire-and-forget).
       void dispatch(hydrateTileTasks(tiles));
+
+      // Audio links keyed off the tiles we just fetched (no extra listTiles).
+      const audioLinks = await service.listAudioLinksForTiles(
+        tiles.map((t) => t.id),
+      );
 
       // Group audio links per tile.
       const byTile = new Map<
@@ -228,6 +232,11 @@ export const createTile =
     }
   };
 
+// Coalesce concurrent lazy-create calls per (op, tileId) so a rapid
+// double-mount / double-click can't mint two notes / tasks / audio sessions
+// for the same tile. Keyed strings like "note:<tileId>".
+const inFlightTileOps = new Set<string>();
+
 /**
  * Ensure the tile's Notes tab has a backing note. Creates one via the notes
  * programmatic API (no notes-page tab side effects), registers it in the notes
@@ -236,9 +245,12 @@ export const createTile =
 export const createTileNote =
   (tileId: string, sessionId: string) =>
   async (dispatch: AppDispatch, getState: () => RootState) => {
+    const key = `note:${tileId}`;
+    const tile = getState().warRoom.tilesById[tileId];
+    if (!tile || tile.note_id) return tile?.note_id ?? null;
+    if (inFlightTileOps.has(key)) return null;
+    inFlightTileOps.add(key);
     try {
-      const tile = getState().warRoom.tilesById[tileId];
-      if (!tile || tile.note_id) return tile?.note_id ?? null;
       const note = await createNote({
         content: "",
         label: "War Room note",
@@ -251,6 +263,8 @@ export const createTileNote =
     } catch {
       toast.error("Couldn't create the note");
       return null;
+    } finally {
+      inFlightTileOps.delete(key);
     }
   };
 
@@ -280,19 +294,34 @@ function toTaskRecord(t: NonNullable<Awaited<ReturnType<typeof taskService.getTa
 export const createTileTask =
   (tileId: string) =>
   async (dispatch: AppDispatch, getState: () => RootState) => {
+    const key = `task:${tileId}`;
+    const tile = getState().warRoom.tilesById[tileId];
+    if (!tile || tile.task_id) return tile?.task_id ?? null;
+    if (inFlightTileOps.has(key)) return null;
+    inFlightTileOps.add(key);
     try {
-      const tile = getState().warRoom.tilesById[tileId];
-      if (!tile || tile.task_id) return tile?.task_id ?? null;
-      const taskId = await dispatch(createTaskThunk({ title: "New task" })).unwrap();
+      // Stamp the task with the TILE's context, not the global active context
+      // — honors the War Room invariant (carries its own context).
+      const ctx = selectTileEffectiveContext(tileId)(getState());
+      const taskId = await dispatch(
+        createTaskThunk({
+          title: "New task",
+          organizationId: ctx.organizationId,
+          scopeIds: ctx.scopeIds,
+        }),
+      ).unwrap();
       if (!taskId) return null;
       await service.updateTile(tileId, { task_id: taskId });
       dispatch(setTileLink({ id: tileId, taskId }));
       // Keep the tile's notepad associated with the task (best effort).
-      if (tile.note_id) void updateNoteApi(tile.note_id, { task_id: taskId });
+      if (tile.note_id)
+        updateNoteApi(tile.note_id, { task_id: taskId }).catch(() => {});
       return taskId;
     } catch {
       toast.error("Couldn't create the task");
       return null;
+    } finally {
+      inFlightTileOps.delete(key);
     }
   };
 
@@ -334,6 +363,9 @@ export const hydrateTileTasks =
 export const addAudioSessionToTile =
   (tileId: string) =>
   async (dispatch: AppDispatch, getState: () => RootState): Promise<string | null> => {
+    const key = `audio:${tileId}`;
+    if (inFlightTileOps.has(key)) return null;
+    inFlightTileOps.add(key);
     try {
       const userId = requireUserId();
       const ctx = selectTileEffectiveContext(tileId)(getState());
@@ -354,6 +386,8 @@ export const addAudioSessionToTile =
     } catch {
       toast.error("Couldn't start an audio session");
       return null;
+    } finally {
+      inFlightTileOps.delete(key);
     }
   };
 

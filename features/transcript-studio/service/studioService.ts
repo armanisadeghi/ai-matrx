@@ -95,11 +95,18 @@ export interface SessionListFilter {
   source?: SessionSource | "all";
 }
 
+// Sources for sessions "embedded" in another surface — they must NOT appear in
+// the Studio / Scribe default lists (which show standalone sessions only).
+// Add new embedded sources here (e.g. war_room tiles own their own sessions).
+const EMBEDDED_SOURCES = ["cleanup", "war_room"];
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applySourceFilter(query: any, filter?: SessionListFilter) {
   const source = filter?.source ?? "studio";
   if (source === "all") return query;
-  if (source === "studio") return query.neq("source", "cleanup");
+  // Default "studio" list = standalone sessions: exclude every embedded source.
+  if (source === "studio")
+    return query.not("source", "in", `(${EMBEDDED_SOURCES.join(",")})`);
   return query.eq("source", source);
 }
 
