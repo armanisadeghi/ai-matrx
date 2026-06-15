@@ -66,12 +66,15 @@ Always use the latest stable release of every package — no deprecated APIs.
 
 > A `.sql` file in `migrations/` changes **nothing** until applied to Supabase — writing one and reporting "done" is the single most damaging mistake here. A migration is done only when **applied AND verified live AND `pnpm db-types` regenerated.**
 
-This repo has **no Postgres connection** (Supabase JS / PostgREST only — no DDL). Cross-repo system:
+The app code has **no DDL path** (Supabase JS / PostgREST only). Agents apply DDL through the **Supabase MCP** (`apply_migration` / `execute_sql`), always available and gated to `project_id: "txzxabzwovsujtloxrus"`. Cross-repo system:
 - **Shared ledger** `public._schema_migrations` (key `(source, filename)`) records every applied migration across aidream / matrx-frontend / matrx-extend (one shared DB).
-- **Verify (loud):** `pnpm check:migrations` diffs `migrations/*.sql` vs the ledger (`source='matrx-frontend'`) and screams in a red box about anything unapplied — runs on every commit (non-blocking); `:strict` exits non-zero for CI.
-- **Apply:** from **aidream** (the only box with write creds) run `python db/apply_migrations.py --source matrx-frontend` (applies in a transaction, regenerates models, records in ledger). One-off: MCP `apply_migration`, then re-run aidream's applier (or `db/detect_applied.py`) to record it, else `check:migrations` keeps flagging it.
-- After applying: `pnpm db-types` → `types/database.types.ts`.
+- **Verify (loud):** `pnpm check:migrations` diffs `migrations/*.sql` vs the ledger (`source='matrx-frontend'`) and screams in a red box about anything unapplied or **drifted** (file changed since it was recorded); runs on every commit (non-blocking); `:strict` exits non-zero for CI.
+- **Apply:** run the migration via the Supabase MCP `apply_migration`. Migrations MUST be **idempotent** (`IF NOT EXISTS`, `CREATE OR REPLACE`) so re-applying a drifted file is safe. **Then record it** — `check:migrations` stays red until the ledger row matches: insert/update `_schema_migrations` (`source='matrx-frontend'`, `filename`, `checksum` = SHA-256 of the file bytes). aidream's `python db/apply_migrations.py --source matrx-frontend` is the batch applier for that repo and records the ledger itself; from here, the MCP one-off + ledger write is the path.
+- **Verify live:** a file means nothing until applied — confirm the column/function/trigger actually exists with an `execute_sql` query before reporting done.
+- After applying: `pnpm db-types` → `types/database.types.ts` (or `pnpm sync-types` for DB + Python API types + type-check).
 - A migration that must never apply gets `-- migrate: skip: <reason>` in its first 25 lines.
+
+**Invoke the `migration-and-type-sync` skill** for the full verify → apply → record → sync-types → fix-types loop.
 
 ---
 

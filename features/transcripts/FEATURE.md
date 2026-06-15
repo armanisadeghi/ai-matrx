@@ -114,6 +114,7 @@ The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`ap
 
 ## Change log
 
+- `2026-06-15` — Processor UX: `?focus=` deep-link selects the target recording; header + per-segment copy icons always visible; sidebar inline rename; inline transcript text editor.
 - `2026-06-10` — claude: Created as the canonical core-storage contract for all `/transcripts` routes (two record stores + `cld_files` audio, bridge-only conversion). Corrected README's stale Supabase-Storage-bucket claims; fixed stale `types.ts` comments.
 
 ---

@@ -84,7 +84,9 @@ export const SPECIAL_CODE_LANGUAGES = [
  */
 export const CODE_LANGUAGE_ALIASES: Record<string, string> = { mmd: "mermaid" };
 
-export function normalizeCodeLanguage(language: string | undefined): string | undefined {
+export function normalizeCodeLanguage(
+  language: string | undefined,
+): string | undefined {
   if (!language) return language;
   const lower = language.toLowerCase();
   return CODE_LANGUAGE_ALIASES[lower] ?? lower;
@@ -908,17 +910,23 @@ function validateRecipeStreaming(
 function detectCodeBlock(line: string): {
   isCodeBlock: boolean;
   language?: string;
+  ticks?: number;
 } {
   const trimmed = line.trim();
 
-  if (!trimmed.startsWith("```")) {
+  // Count the opening run of backticks. CommonMark requires >= 3, and the
+  // length of this run is load-bearing: the block only closes on a later bare
+  // fence with at least this many backticks (so a longer ```` fence can wrap
+  // inner ``` blocks). Mirrors extractFenceInfo() in the Redux stream parser.
+  let ticks = 0;
+  while (ticks < trimmed.length && trimmed[ticks] === "`") ticks++;
+  if (ticks < 3) {
     return { isCodeBlock: false };
   }
 
-  const languageMatch = trimmed.match(/^```(\w*)/);
-  const language = languageMatch?.[1] || undefined;
+  const language = trimmed.slice(ticks).trim().split(/\s/)[0] || undefined;
 
-  return { isCodeBlock: true, language };
+  return { isCodeBlock: true, language, ticks };
 }
 
 /**
@@ -952,8 +960,16 @@ function isBacktickInsideJsonString(
   return { isInsideString: inString, inString, escaped };
 }
 
+/** Length of the run of backticks starting at `pos` in `str`. */
+function backtickRunLength(str: string, pos: number): number {
+  let n = 0;
+  while (pos + n < str.length && str[pos + n] === "`") n++;
+  return n;
+}
+
 function extractCodeBlock(
   language: string | undefined,
+  openTicks: number,
   startIndex: number,
   lines: string[],
 ): ExtractionResult {
@@ -965,18 +981,27 @@ function extractCodeBlock(
   let jsonInString = false;
   let jsonEscaped = false;
 
-  // Track nested fences for languages that can contain code fences (markdown, md, etc.)
-  const NESTABLE_LANGUAGES = ["markdown", "md", "mdx"];
-  const isNestable = language
-    ? NESTABLE_LANGUAGES.includes(language.toLowerCase())
-    : false;
-  let nestedFenceDepth = 0;
+  // Advance the JSON string-context machine across a slice of the line.
+  const advanceJsonState = (line: string, from: number) => {
+    for (let idx = from; idx < line.length; idx++) {
+      const ch = line[idx];
+      if (jsonEscaped) {
+        jsonEscaped = false;
+        continue;
+      }
+      if (ch === "\\" && jsonInString) {
+        jsonEscaped = true;
+        continue;
+      }
+      if (ch === '"') jsonInString = !jsonInString;
+    }
+  };
 
   while (i < lines.length) {
     const line = lines[i];
     const trimmedLine = line.trim();
 
-    // Check if closing backticks are at the start of the line (normal case)
+    // Closing fence at the start of the line (the normal, CommonMark case).
     if (trimmedLine.startsWith("```")) {
       if (isJson) {
         const { isInsideString, inString, escaped } =
@@ -991,42 +1016,30 @@ function extractCodeBlock(
           i++;
           jsonInString = inString;
           jsonEscaped = escaped;
-          const backtickIdx = line.indexOf("```");
-          for (let idx = backtickIdx; idx < line.length; idx++) {
-            const ch = line[idx];
-            if (jsonEscaped) {
-              jsonEscaped = false;
-              continue;
-            }
-            if (ch === "\\" && jsonInString) {
-              jsonEscaped = true;
-              continue;
-            }
-            if (ch === '"') jsonInString = !jsonInString;
-          }
+          advanceJsonState(line, line.indexOf("```"));
           continue;
         }
       }
 
-      if (isNestable) {
-        const hasLangSpecifier = /^```\w+/.test(trimmedLine);
-        if (hasLangSpecifier) {
-          nestedFenceDepth++;
-          content.push(line);
-          i++;
-          continue;
-        } else if (nestedFenceDepth > 0) {
-          nestedFenceDepth--;
-          content.push(line);
-          i++;
-          continue;
-        }
+      // CommonMark fence rule (identical to the Redux StreamBlockAccumulator):
+      // the block closes only on a *bare* run of backticks at least as long as
+      // the opening fence. An info string (e.g. ```js) or a shorter run is
+      // literal content — that's how a code block nests inside a longer ````
+      // fence, and it's the only unambiguous way to express nesting.
+      const closeTicks = backtickRunLength(trimmedLine, 0);
+      const isBareFence = trimmedLine.slice(closeTicks).trim() === "";
+      if (isBareFence && closeTicks >= openTicks) {
+        break;
       }
 
-      break;
+      content.push(line);
+      i++;
+      if (isJson) advanceJsonState(line, 0);
+      continue;
     }
 
-    // Check if closing backticks appear anywhere in the line (inline case: }```)
+    // Inline closing fence (e.g. `}``` `). Only a bare run of >= openTicks
+    // backticks with nothing meaningful after it closes the block.
     const backtickIndex = line.indexOf("```");
     if (backtickIndex !== -1) {
       if (isJson) {
@@ -1042,62 +1055,30 @@ function extractCodeBlock(
           i++;
           jsonInString = inString;
           jsonEscaped = escaped;
-          for (let idx = backtickIndex; idx < line.length; idx++) {
-            const ch = line[idx];
-            if (jsonEscaped) {
-              jsonEscaped = false;
-              continue;
-            }
-            if (ch === "\\" && jsonInString) {
-              jsonEscaped = true;
-              continue;
-            }
-            if (ch === '"') jsonInString = !jsonInString;
-          }
+          advanceJsonState(line, backtickIndex);
           continue;
         }
       }
 
-      if (isNestable) {
-        const afterBacktick = line.substring(backtickIndex + 3).trim();
-        const isNestedOpener = /^\w+/.test(afterBacktick);
-        if (isNestedOpener) {
-          nestedFenceDepth++;
-          content.push(line);
-          i++;
-          continue;
-        } else if (nestedFenceDepth > 0) {
-          nestedFenceDepth--;
-          content.push(line);
-          i++;
-          continue;
+      const closeTicks = backtickRunLength(line, backtickIndex);
+      const afterFence = line.slice(backtickIndex + closeTicks).trim();
+      if (closeTicks >= openTicks && afterFence === "") {
+        const contentBeforeBackticks = line.substring(0, backtickIndex);
+        if (contentBeforeBackticks.trim()) {
+          content.push(contentBeforeBackticks);
         }
+        break;
       }
 
-      const contentBeforeBackticks = line.substring(0, backtickIndex);
-      if (contentBeforeBackticks.trim()) {
-        content.push(contentBeforeBackticks);
-      }
-      break;
+      content.push(line);
+      i++;
+      if (isJson) advanceJsonState(line, 0);
+      continue;
     }
 
     content.push(line);
     i++;
-
-    if (isJson) {
-      for (let idx = 0; idx < line.length; idx++) {
-        const ch = line[idx];
-        if (jsonEscaped) {
-          jsonEscaped = false;
-          continue;
-        }
-        if (ch === "\\" && jsonInString) {
-          jsonEscaped = true;
-          continue;
-        }
-        if (ch === '"') jsonInString = !jsonInString;
-      }
-    }
+    if (isJson) advanceJsonState(line, 0);
   }
 
   return {
@@ -1461,11 +1442,19 @@ export const splitContentIntoBlocksV2 = (
         currentText = "";
       }
 
-      const extraction = extractCodeBlock(codeCheck.language, i + 1, lines);
+      const extraction = extractCodeBlock(
+        codeCheck.language,
+        codeCheck.ticks ?? 3,
+        i + 1,
+        lines,
+      );
 
       const normalizedLanguage = normalizeCodeLanguage(codeCheck.language);
 
-      if (normalizedLanguage && SPECIAL_CODE_LANGUAGES.includes(normalizedLanguage)) {
+      if (
+        normalizedLanguage &&
+        SPECIAL_CODE_LANGUAGES.includes(normalizedLanguage)
+      ) {
         blocks.push({
           type: normalizedLanguage as SplitterBlockType,
           content: extraction.content,

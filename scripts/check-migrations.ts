@@ -14,11 +14,13 @@
  * local `migrations/*.sql`. Anything on disk that the ledger has never seen, or whose
  * checksum drifted, is screamed in a big red box.
  *
- * It is READ-ONLY: it never writes the ledger. Recording is the applier's job (the
- * one box with DB write creds), so we can never mark a migration "applied" that did
- * not truly run. To apply + record a pending migration, from the aidream repo run:
+ * It is READ-ONLY: it never writes the ledger, so we can never mark a migration
+ * "applied" that did not truly run. To apply + record a pending/drifted migration,
+ * either apply it via the Supabase MCP (apply_migration) and write the ledger row
+ * yourself (insert/update _schema_migrations with source='matrx-frontend', the
+ * filename, and the SHA-256 of the file), or from the aidream repo run:
  *     python db/apply_migrations.py --source matrx-frontend
- * (or apply a one-off via the Supabase MCP, then re-run that to record it).
+ * (which applies and records in one step). See the migration-and-type-sync skill.
  *
  *   pnpm check:migrations            # loud, non-blocking (exit 0) — for hooks
  *   pnpm check:migrations --strict   # exit 1 when anything is unapplied — for CI
@@ -215,10 +217,13 @@ async function main(): Promise<number> {
   // they only surface alongside a real finding below.)
   if (pending.length === 0 && drifted.length === 0) return 0;
 
-  // The aidream applier is the fix for BOTH states below — it applies an
-  // unapplied file and re-records a drifted one's checksum. White, not dim,
-  // because it's an instruction the user acts on, not a footnote.
-  const fix = `${C.white}Fix — apply or re-record from the aidream repo:${C.reset} ${C.white}python db/apply_migrations.py --source ${SOURCE}${C.reset}`;
+  // Two valid fixes for BOTH states below: apply via the Supabase MCP
+  // (apply_migration) + write the ledger row yourself, or run aidream's batch
+  // applier which does both. White, not dim — it's an instruction the user
+  // acts on, not a footnote. See the migration-and-type-sync skill.
+  const fix =
+    `${C.white}Fix — apply via Supabase MCP (apply_migration) + record in _schema_migrations, ` +
+    `or from aidream:${C.reset} ${C.white}python db/apply_migrations.py --source ${SOURCE}${C.reset}`;
 
   // Leading blank line separates our output from the command the user just typed.
   console.log();

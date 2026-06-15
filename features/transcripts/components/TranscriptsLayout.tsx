@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { TranscriptsSidebar } from "./TranscriptsSidebar";
 import { TranscriptViewer } from "./TranscriptViewer";
 import { CreateTranscriptModal } from "./CreateTranscriptModal";
@@ -17,10 +18,27 @@ interface TranscriptsLayoutProps {
 }
 
 export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
-  const { isLoading, activeTranscript, initialize } = useTranscriptsContext();
+  const searchParams = useSearchParams();
+  const focusId = searchParams.get("focus");
+  const {
+    isLoading,
+    activeTranscript,
+    transcripts,
+    setActiveTranscript,
+    initialize,
+  } = useTranscriptsContext();
+
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  // Deep-link from hub cards: /transcripts/processor?focus=<id>
+  useEffect(() => {
+    if (!focusId || transcripts.length === 0) return;
+    if (activeTranscript?.id === focusId) return;
+    const target = transcripts.find((t) => t.id === focusId);
+    if (target) setActiveTranscript(target);
+  }, [focusId, transcripts, activeTranscript?.id, setActiveTranscript]);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);

@@ -9,9 +9,12 @@
 // Auth gate is the parent layout group's default (no special guarding
 // here — guests get the marketing landing at `/transcripts`).
 
+import { Suspense } from "react";
 import { TranscriptsLayout } from "@/features/transcripts/components/TranscriptsLayout";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { redirect } from "next/navigation";
+import { Loader2 } from "lucide-react";
+
 export default async function TranscriptsProcessorPage() {
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) {
@@ -19,5 +22,15 @@ export default async function TranscriptsProcessorPage() {
     // already gates them with the marketing landing).
     redirect("/transcripts");
   }
-  return <TranscriptsLayout />;
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-page items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <TranscriptsLayout />
+    </Suspense>
+  );
 }
