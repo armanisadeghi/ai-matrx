@@ -2752,9 +2752,11 @@ export default function OverlayController() {
             messageId={
               typeof data?.messageId === "string" ? data.messageId : undefined
             }
-            onSave={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
             tabs={
               (Array.isArray(data?.tabs) ||
               (typeof data?.tabs === "object" && data?.tabs !== null)
@@ -2850,8 +2852,10 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* TODO: review prop wiring for htmlPreview */}
-      {/* htmlPreview — multi-instance */}
+      {/* htmlPreview — multi-instance.
+          No `onSave` prop: a function can't travel through Redux. The bridge
+          self-handles the markdown save via `editMessage` from its
+          conversationId + messageId (see HtmlPreviewBridge.handleMarkdownSave). */}
       {instancesById.htmlPreview.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
         return (
@@ -2880,9 +2884,6 @@ export default function OverlayController() {
                 ? data.description
                 : undefined
             }
-            onSave={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
             showSaveButton={
               typeof data?.showSaveButton === "boolean"
                 ? data.showSaveButton

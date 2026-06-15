@@ -26,13 +26,21 @@ fork at message, edit & resubmit (with fork-or-overwrite), delete with
 fork option, and retry on failure. Three of those flows need server work
 to be **atomic, idempotent, and safe under concurrent writes**.
 
+> **Status update (2026-06-14):** the two message-level RPCs below are now
+> **BUILT and applied** — `migrations/cx_message_soft_delete_and_truncate.sql`
+> (`cx_message_soft_delete` + `cx_truncate_conversation_after`, both with the
+> tool-call/artifact/media cascade). Delete-message and the Overwrite branch
+> call them directly now; the old "RPC missing" feature-detect fallback is
+> deleted. Sections 1–2 below are retained as the design record. The
+> `/resume` endpoint + schema additions (sections 3+) remain unbuilt.
+
 Until this spec is implemented, the client uses fallback paths that work
 but are racy and slow:
 
 | Client flow | Current fallback | What this spec replaces it with |
 |---|---|---|
-| Edit & resubmit / **Overwrite** | Per-message `cx_message_soft_delete` loop after `cx_message_edit` | Single transactional `cx_truncate_conversation_after` RPC |
-| Delete a single message | Per-message `cx_message_soft_delete` loop | Single transactional `cx_message_soft_delete` RPC (already partial — needs cascade tightened) |
+| Edit & resubmit / **Overwrite** | ~~Per-message loop~~ → **`cx_truncate_conversation_after` (built 2026-06-14)** | Single transactional `cx_truncate_conversation_after` RPC ✅ |
+| Delete a single message | ~~Per-message loop~~ → **`cx_message_soft_delete` (built 2026-06-14, cascades)** | Single transactional `cx_message_soft_delete` RPC ✅ |
 | Retry on failure (atomic) | Same fallback as overwrite | Same atomic truncate RPC |
 | Retry on failure (resume from last good step) | Not implemented — currently falls back to atomic restart | New `/ai/conversations/{id}/resume` endpoint |
 
@@ -291,11 +299,10 @@ explicitly marks them safe.
 
 Recommend rolling out in this order to keep the client stable:
 
-1. **`cx_message_soft_delete` cascade tightening.** Already exists,
-   just needs the cascade to include tool calls + artifacts.
-   *(Lowest risk — frontend already calls this.)*
-2. **`cx_truncate_conversation_after`.** Frontend feature-detects and
-   uses it the moment it appears.
+1. ~~**`cx_message_soft_delete` cascade tightening.**~~ **DONE 2026-06-14** —
+   created with the tool-call + artifact + media cascade.
+2. ~~**`cx_truncate_conversation_after`.**~~ **DONE 2026-06-14** — created;
+   frontend calls it directly (feature-detect fallback removed).
 3. **Schema additions** (`is_resumable`, `last_completed_block_index`,
    `failure_reason`).
 4. **`POST /resume` endpoint, `mode: "atomic"` first.** Frontend

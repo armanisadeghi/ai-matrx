@@ -33,8 +33,8 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
-import type { Json } from "@/types/database.types";
 import { editMessage } from "./edit-message.thunk";
+import { mergeEditedText } from "./content-blocks.util";
 import { markCacheBypass } from "./cache-bypass.slice";
 import { invalidateConversationCache } from "./invalidate-conversation-cache.thunk";
 import { setUserInputText } from "../instance-user-input/instance-user-input.slice";
@@ -97,9 +97,7 @@ export const overwriteAndResend = createAsyncThunk<
         editMessage({
           conversationId,
           messageId,
-          newContent: [
-            { type: "text", text: newContent },
-          ] as unknown as Json,
+          newContent: mergeEditedText(userMessage.content, newContent),
         }),
       ).unwrap();
     } catch (err) {
@@ -112,69 +110,29 @@ export const overwriteAndResend = createAsyncThunk<
     }
 
     // ── 2. Truncate everything after the edited message ───────────────────
-    // Prefer the atomic server RPC. If the function isn't deployed yet
-    // (Python team task) the call returns a `function does not exist` error;
-    // fall back to per-message soft-delete in that case.
-    let truncatedIds: string[] = [];
-    // RPC name is cast because the Python-side function is documented in
-    // PYTHON_RESUME_SPEC.md but not yet deployed — the auto-generated
-    // database types don't include it. Runtime fallback handles the
-    // "function does not exist" response.
+    // Atomic single-RPC: soft-deletes every cx_message at position > anchor
+    // plus its tool calls / artifacts / media, in one transaction.
     const { error: truncErr } = await supabase.rpc(
-      "cx_truncate_conversation_after" as never,
+      "cx_truncate_conversation_after",
       {
         p_conversation_id: conversationId,
         p_after_position: anchorPosition,
-      } as never,
+      },
     );
 
     if (truncErr) {
-      const code = (truncErr as { code?: string }).code ?? "";
-      const isFunctionMissing =
-        code === "PGRST202" ||
-        /function .*does not exist/i.test(truncErr.message ?? "");
-
-      if (!isFunctionMissing) {
-        // eslint-disable-next-line no-console
-        console.error(
-          "[overwriteAndResend] cx_truncate_conversation_after failed:",
-          truncErr,
-        );
-        return rejectWithValue({
-          message:
-            truncErr.message ??
-            "Failed to truncate conversation after the edited message",
-        });
-      }
-
-      // Fallback path — soft-delete each downstream message individually.
-      // Documented in PYTHON_RESUME_SPEC.md as a server work item to be
-      // replaced by the atomic RPC.
       // eslint-disable-next-line no-console
-      console.warn(
-        "[overwriteAndResend] cx_truncate_conversation_after RPC missing — falling back to per-message soft-delete",
+      console.error(
+        "[overwriteAndResend] cx_truncate_conversation_after failed:",
+        truncErr,
       );
-      for (const id of downstreamIds) {
-        const { error } = await supabase.rpc(
-          "cx_message_soft_delete" as never,
-          { p_message_id: id } as never,
-        );
-        if (error) {
-          // eslint-disable-next-line no-console
-          console.error(
-            "[overwriteAndResend] fallback delete failed",
-            { id },
-            error,
-          );
-          return rejectWithValue({
-            message: `Failed to soft-delete message ${id}`,
-          });
-        }
-        truncatedIds.push(id);
-      }
-    } else {
-      truncatedIds = downstreamIds;
+      return rejectWithValue({
+        message:
+          truncErr.message ??
+          "Failed to truncate conversation after the edited message",
+      });
     }
+    const truncatedIds: string[] = downstreamIds;
 
     // ── 3. Cache invalidation ─────────────────────────────────────────────
     dispatch(markCacheBypass({ conversationId, conversation: true }));

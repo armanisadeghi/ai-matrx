@@ -16,23 +16,23 @@
 import React from "react";
 import {
   ArrowLeft,
-  Zap,
-  ExternalLink,
   Loader2,
-  Search,
   RefreshCw,
-  PartyPopper,
-  ClipboardList,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 import {
-  OverflowToolbar,
-  type ToolbarAction,
-} from "@/components/official/toolbar/OverflowToolbar";
-import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
+  ChevronLeftTapButton,
+  ZapTapButton,
+  PartyPopperTapButton,
+  ClipboardListTapButton,
+  SearchTapButton,
+  ExternalLinkTapButton,
+  LoadingTapButton,
+} from "@/components/icons/tap-buttons";
+import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+import { cn } from "@/lib/utils";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { ContextStatusButton } from "@/features/scopes/components/context-assignment/ContextStatusButton";
 import { setRowScopes } from "@/features/scopes/components/context-assignment/data";
@@ -102,65 +102,17 @@ export function PdfStudioToolbar({
     !!doc.source?.startsWith("http://") ||
     !!doc.source?.startsWith("https://");
 
-  // Most-important-first: the overflow menu collapses from the END, so the
-  // primary "Pipeline" action survives the longest, obvious icon-only actions
-  // (Find / Source) collapse first.
-  const toolbarActions: ToolbarAction[] = [
-    {
-      id: "pipeline",
-      label: "Pipeline",
-      icon: Zap,
-      tone: "primary",
-      onSelect: onRunPipeline,
-      disabled: pipelineRunning || aiCleanRunning,
-      running: pipelineRunning,
-      runningLabel: "Running…",
-    },
-    {
-      id: "ai-clean",
-      label: "AI Clean",
-      icon: PartyPopper,
-      onSelect: onRunAiClean,
-      disabled: aiCleanRunning || pipelineRunning,
-      running: aiCleanRunning,
-      runningLabel: "Cleaning…",
-    },
-    {
-      id: "copy-pages",
-      label: "Copy Pages",
-      icon: ClipboardList,
-      onSelect: onOpenCopyPages,
-    },
-    {
-      id: "find",
-      label: "Find",
-      icon: Search,
-      hideLabel: true,
-      onSelect: onOpenFind,
-    },
-    {
-      id: "source",
-      label: "Open source",
-      icon: ExternalLink,
-      hideLabel: true,
-      onSelect: onOpenSource,
-      hidden: !hasSource,
-    },
-  ];
+  const actionsBusy = pipelineRunning || aiCleanRunning;
 
   return (
     <div className="shrink-0 border-b border-border bg-card/40">
-      {/* Row 1 — title + provenance breadcrumb + chips */}
-      <div className="flex items-center gap-3 px-4 pt-2.5 pb-1.5 min-w-0">
-        <Link
-          href="/tools/pdf-extractor"
-          className="h-7 w-7 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-          title="Back to studio"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Link>
-
-        <div className="min-w-0 flex-[2]">
+      {/* Row 1 — title + actions */}
+      <div className="flex items-center px-4 pt-2.5 pb-1.5 min-w-0">
+        <div className="flex items-center gap-0 min-w-0 flex-1">
+          <ChevronLeftTapButton
+            href="/tools/pdf-extractor"
+            ariaLabel="Back to studio"
+          />
           <PdfStudioDocTitle
             doc={doc}
             onRename={onRename}
@@ -168,21 +120,53 @@ export function PdfStudioToolbar({
           />
         </div>
 
-        {/* Actions — consistent compact buttons that collapse the ones that
-            don't fit into a single overflow (…) menu. Chips moved to row 2 so
-            this row keeps room for the primary actions before collapsing. */}
-        <OverflowToolbar
-          className="flex-[3]"
-          leading={
-            <PdfSurfaceSwitcher
-              current="extractor-studio"
-              fileId={doc.sourceKind === "cld_file" ? doc.sourceId : null}
-              processedDocumentId={doc.id}
-              size="icon"
+        <TapTargetButtonGroup>
+          {pipelineRunning ? (
+            <LoadingTapButton
+              variant="group"
+              disabled
+              ariaLabel="Pipeline running"
             />
-          }
-          actions={toolbarActions}
-        />
+          ) : (
+            <ZapTapButton
+              variant="group"
+              onClick={onRunPipeline}
+              disabled={actionsBusy}
+              ariaLabel="Pipeline"
+            />
+          )}
+          {aiCleanRunning ? (
+            <LoadingTapButton
+              variant="group"
+              disabled
+              ariaLabel="AI Clean running"
+            />
+          ) : (
+            <PartyPopperTapButton
+              variant="group"
+              onClick={onRunAiClean}
+              disabled={actionsBusy}
+              ariaLabel="AI Clean"
+            />
+          )}
+          <ClipboardListTapButton
+            variant="group"
+            onClick={onOpenCopyPages}
+            ariaLabel="Copy Pages"
+          />
+          <SearchTapButton
+            variant="group"
+            onClick={onOpenFind}
+            ariaLabel="Find"
+          />
+          {hasSource && (
+            <ExternalLinkTapButton
+              variant="group"
+              onClick={onOpenSource}
+              ariaLabel="Open source"
+            />
+          )}
+        </TapTargetButtonGroup>
       </div>
 
       {/* Row 2 — page nav + chips + density */}

@@ -17,6 +17,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, ExternalLink, Layers, Loader2 } from "lucide-react";
 import {
+  LayersTapButton,
+  LoadingTapButton,
+} from "@/components/icons/tap-buttons";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -44,6 +48,8 @@ export interface PdfSurfaceSwitcherProps {
   processedDocumentId?: string | null;
   /** "icon" = icon-only trigger for dense toolbars; "sm" adds the label. */
   size?: "icon" | "sm";
+  /** "group" = LayersTapButton inside a TapTargetButtonGroup pill. */
+  triggerVariant?: "default" | "group";
   className?: string;
 }
 
@@ -55,6 +61,7 @@ export function PdfSurfaceSwitcher({
   fileId,
   processedDocumentId,
   size = "sm",
+  triggerVariant = "default",
   className,
 }: PdfSurfaceSwitcherProps) {
   const router = useRouter();
@@ -66,27 +73,42 @@ export function PdfSurfaceSwitcher({
     href: surface.buildHref(ids),
   })).filter((e) => e.href !== null || e.surface.id === current);
 
+  const trigger =
+    triggerVariant === "group" ? (
+      isPending ? (
+        <LoadingTapButton
+          variant="group"
+          disabled
+          ariaLabel="Opening surface"
+        />
+      ) : (
+        <LayersTapButton variant="group" ariaLabel="This PDF, everywhere" />
+      )
+    ) : (
+      <Button
+        variant="outline"
+        size={size === "icon" ? "icon" : "sm"}
+        disabled={isPending}
+        aria-label="Open this PDF in another surface"
+        className={cn(
+          "shrink-0",
+          size === "icon" ? "h-7 w-7" : "h-7 gap-1.5 px-2",
+          className,
+        )}
+      >
+        {isPending ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Layers className="h-3.5 w-3.5" />
+        )}
+        {size === "sm" && <span className="text-xs">Open in</span>}
+      </Button>
+    );
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size={size === "icon" ? "icon" : "sm"}
-          disabled={isPending}
-          aria-label="Open this PDF in another surface"
-          className={cn(
-            "shrink-0",
-            size === "icon" ? "h-7 w-7" : "h-7 gap-1.5 px-2",
-            className,
-          )}
-        >
-          {isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Layers className="h-3.5 w-3.5" />
-          )}
-          {size === "sm" && <span className="text-xs">Open in</span>}
-        </Button>
+      <DropdownMenuTrigger asChild disabled={isPending}>
+        {trigger}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel className="text-[11px] text-muted-foreground">

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useCallback, useRef } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { useHtmlPreviewState } from "@/features/html-pages/hooks/useHtmlPreviewState";
 import HtmlPreviewFullScreenEditor from "@/features/html-pages/components/HtmlPreviewFullScreenEditor";
@@ -40,6 +40,7 @@ export function HtmlPreviewBridge({
   isAgentSystem,
 }: HtmlPreviewBridgeProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const user = useAppSelector(selectUser);
   const organizationId = useAppSelector(selectOrganizationId);
   const projectId = useAppSelector(selectProjectId);
@@ -152,6 +153,50 @@ export function HtmlPreviewBridge({
     onClose();
   }, [dispatch, onClose]);
 
+  // Save the edited markdown back to the source message. The overlay
+  // controller can't pass a function through Redux (it hard-coded
+  // `onSave={undefined}`, which silently broke this Save button), so the
+  // bridge self-handles via `editMessage` when it has a conversation +
+  // message target — preserving the message's non-text blocks. A direct-mount
+  // caller that passes its own `onSave` still wins.
+  const handleMarkdownSave = useCallback(
+    async (markdownContent: string) => {
+      if (onSave) {
+        onSave(markdownContent);
+        return;
+      }
+      if (!conversationId || !messageId) return;
+      try {
+        const { editMessage } = await import(
+          "@/features/agents/redux/execution-system/message-crud/edit-message.thunk"
+        );
+        const { mergeEditedText } = await import(
+          "@/features/agents/redux/execution-system/message-crud/content-blocks.util"
+        );
+        const existing =
+          store.getState().messages.byConversationId[conversationId]?.byId?.[
+            messageId
+          ]?.content;
+        await dispatch(
+          editMessage({
+            conversationId,
+            messageId,
+            newContent: mergeEditedText(existing, markdownContent),
+          }),
+        ).unwrap();
+        const { toast } = await import("sonner");
+        toast.success("Saved");
+      } catch (err) {
+        console.error("[HtmlPreviewBridge] markdown save failed", err);
+        const { toast } = await import("sonner");
+        toast.error(
+          err instanceof Error ? err.message : "Failed to save changes",
+        );
+      }
+    },
+    [onSave, conversationId, messageId, dispatch, store],
+  );
+
   return (
     <HtmlPreviewFullScreenEditor
       isOpen={true}
@@ -161,7 +206,7 @@ export function HtmlPreviewBridge({
       title={title}
       description={description}
       messageId={messageId}
-      onSave={onSave}
+      onSave={handleMarkdownSave}
       showSaveButton={showSaveButton}
     />
   );

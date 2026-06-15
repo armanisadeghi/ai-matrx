@@ -13480,6 +13480,7 @@ export type Database = {
           raw_text: string
           rotation: number | null
           section_kind: string | null
+          section_subtype: string | null
           section_title: string | null
           used_ocr: boolean
           width: number | null
@@ -13505,6 +13506,7 @@ export type Database = {
           raw_text?: string
           rotation?: number | null
           section_kind?: string | null
+          section_subtype?: string | null
           section_title?: string | null
           used_ocr?: boolean
           width?: number | null
@@ -13530,6 +13532,7 @@ export type Database = {
           raw_text?: string
           rotation?: number | null
           section_kind?: string | null
+          section_subtype?: string | null
           section_title?: string | null
           used_ocr?: boolean
           width?: number | null
@@ -28438,9 +28441,17 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cx_message_soft_delete: {
+        Args: { p_message_id: string }
+        Returns: string
+      }
       cx_soft_delete_conversation: {
         Args: { p_conversation_id: string }
         Returns: boolean
+      }
+      cx_truncate_conversation_after: {
+        Args: { p_after_position: number; p_conversation_id: string }
+        Returns: Json
       }
       decrypt_mcp_token: { Args: { p_encrypted: string }; Returns: string }
       delete_arg: { Args: { p_arg_id: string }; Returns: undefined }

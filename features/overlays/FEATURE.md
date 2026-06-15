@@ -158,7 +158,17 @@ handle.close();
 
 Internally, the opener creates a callback group via `callbackManager`, passes the `callbackGroupId` string through Redux, and the component subscribes. **Functions never travel through Redux.** Callback contracts live in [`features/window-panels/windows/<feature>/callbacks.ts`](../window-panels/windows/) (will move to `features/overlays/callbacks/` in a future cleanup pass).
 
-Current callback-aware openers: `imageUploaderWindow`, `smartCodeEditorWindow`, `multiFileSmartCodeEditorWindow`, `curatedIconPickerWindow`, `contentEditorWindow`, `contentEditorListWindow`, `contentEditorWorkspaceWindow`.
+Current callback-aware openers: `imageUploaderWindow`, `smartCodeEditorWindow`, `multiFileSmartCodeEditorWindow`, `curatedIconPickerWindow`, `contentEditorWindow`, `contentEditorListWindow`, `contentEditorWorkspaceWindow`, `fullScreenEditor` (callbacks in [`callbacks/fullScreenEditor.ts`](./callbacks/fullScreenEditor.ts)).
+
+### The severed-callback bug class (`onSave={undefined} /* pass via callbackGroupId */`)
+
+When the explicit controller was seeded by codegen, every component prop that was a **function** got stubbed to `undefined` with a `/* fn — pass via callbackGroupId */ /* TODO: review */` marker — correct (a function can't travel through Redux) but **incomplete**: no callback group was wired to replace it. A stub left this way means **that callback silently never fires** — the button looks alive and does nothing. This is exactly what broke chat's Edit / Edit & resubmit (`fullScreenEditor.onSave`) and HTML-preview Save (`htmlPreview.onSave`).
+
+Two correct ways to finish a stub:
+1. **Callback group** — make the opener callback-aware (`callbacks/<overlayId>.ts` + `callbackManager`), pass `callbackGroupId` through data, subscribe in the component. Use when the caller needs the result (`fullScreenEditor`).
+2. **Self-handle** — if the component already has the ids it needs, do the work inside it and delete the prop from the controller. Use when there's nothing to hand back (`htmlPreview` self-saves via `editMessage`).
+
+**Never leave a `undefined /* pass via callbackGroupId */` stub for a callback a user can trigger.** `grep "pass via callbackGroupId" OverlayController.tsx` lists every remaining one — each is a latent silent-no-op until finished. As of 2026-06-14, 11 remain (`EmailDialogWindow.onSubmit`, `ResourcePickerWindow.{onResourceSelected,onSettingsClick,onDebugClick}`, `QuickSaveCodeDialog.{onOpenChange,onSaved}`, `QuickNoteSaveOverlay.onSaved`×2, and `onOpen`/`onIndexChange` notifiers on `FullscreenBrokerState`/`FullscreenMarkdownEditor`/`FullscreenSocketAccordion`/`ImageViewerWindow`); see [KNOWN_DEFECTS.md](../../KNOWN_DEFECTS.md).
 
 ---
 
@@ -294,6 +304,7 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- **2026-06-14** — **Made `fullScreenEditor` callback-aware + killed the `onSave={undefined}` severed-callback bug class.** The controller stubbed `fullScreenEditor.onSave` (and `htmlPreview.onSave`) to `undefined` during the codegen seed and never finished the wiring, so every editor Save silently no-op'd — this is what broke chat's "Edit" and "Edit & resubmit". Added `callbacks/fullScreenEditor.ts` (callbackManager group + `emitFullScreenEditorSave`), upgraded `openers/fullScreenEditor.tsx` to register the group and pass only `callbackGroupId`, and made the bridge prefer the callback then self-handle via `editMessage` when given `conversationId`+`messageId`. `htmlPreview` now self-handles its markdown save (no callback needed). Documented the whole stub class above + the 11 still-severed callbacks (KNOWN_DEFECTS). The bridge now screams (toast + console.error) if it's ever opened with no save target — loud recovery, never silent.
 - **2026-06-14** — Restored side-panel chrome for the four bare Quick Access overlays (`quickNotes`, `quickTasks`, `quickChat`, `quickData`, plus `quickChatWindow`). They were authored as chrome-free content (reused as Utilities Hub tabs), so after the legacy `OverlaySurface` was deleted they mounted as an invisible `h-full` div. New primitive `surfaces/SidePanelSurface.tsx` (right Sheet on desktop / bottom Drawer on mobile — the same posture as `kgSuggestionsDrawer`) now wraps each gated block. Same change: `QuickChatSheet` swapped from the old `AgentRunner` to the live `/chat` route's `AgentConversationColumn` (verified streaming) — this also upgrades the Utilities Hub "Chat" tab.
 - **2026-06-02** — Phase F (kg-suggestions): added the `kgSuggestionsDrawer` overlay — the global Knowledge-Graph suggestion inbox (Drawer on mobile / right Sheet on desktop). Registered via overlay-ids + catalogue + opener (`openers/kgSuggestionsDrawer.tsx`) + a gated block in `OverlayController.tsx`. Opened with `useOpenKgSuggestionsDrawer`; data-less singleton. See `features/kg-suggestions/FEATURE.md`.
 - **2026-05-19** — Added the `creatorHub` overlay — a global Creator Hub window (WindowPanel with a tab-list sidebar), the creator analogue of the admin Bug indicator. Opened from a Crown in the main sidebar; registered via overlay-ids + catalogue + windowRegistryMetadata + opener (`openers/creatorHub.tsx`).

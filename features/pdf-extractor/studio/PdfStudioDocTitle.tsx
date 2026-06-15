@@ -7,11 +7,11 @@
  * pattern from the `/files` route:
  *   - the filename, click-to-edit in place (renames the doc, and the
  *     backing cloud file, in one gesture);
- *   - a "…" menu that surfaces EVERYTHING — for cloud-file-backed docs
- *     that's the full files-route action set (share, visibility,
- *     versions, duplicate, delete, RAG actions, PDF surfaces) reused
- *     verbatim; for other docs (external URL / legacy) a lighter menu
- *     (open / copy link / delete-from-studio).
+ *   - a tap-target group with the PDF-everywhere switcher + "…" menu —
+ *     for cloud-file-backed docs that's the full files-route action set
+ *     (share, visibility, versions, duplicate, delete, RAG actions, PDF
+ *     surfaces) reused verbatim; for other docs (external URL / legacy) a
+ *     lighter menu (open / copy link / delete-from-studio).
  *   - right-click anywhere on the name opens the same file action set.
  *
  * Cloud-file menus read the row from the files store, so we hydrate it
@@ -20,23 +20,17 @@
  */
 
 import React from "react";
-import { MoreHorizontal } from "lucide-react";
 import { EditableLabel } from "@/components/official/item/EditableLabel";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { MoreHorizontalTapButton } from "@/components/icons/tap-buttons";
+import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
 import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
+import { PdfSurfaceSwitcher } from "@/features/pdf/components/PdfSurfaceSwitcher";
 import { buildPdfDocMenu } from "./pdfDocMenu";
 import type { StudioDocSummary } from "./hooks/usePdfStudioDocs";
 import type { PdfDocument } from "../hooks/usePdfExtractor";
-
-const MORE_BTN =
-  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground";
 
 export interface PdfStudioDocTitleProps {
   doc: PdfDocument;
@@ -66,34 +60,36 @@ export function PdfStudioDocTitle({
     />
   );
 
+  const surfaceSwitcher = (
+    <PdfSurfaceSwitcher
+      current="extractor-studio"
+      fileId={doc.sourceKind === "cld_file" ? doc.sourceId : null}
+      processedDocumentId={doc.id}
+      triggerVariant="group"
+    />
+  );
+
   if (isCloudFile && doc.sourceId) {
     return (
-      <div className="flex min-w-0 flex-1 items-center gap-1">
+      <div className="inline-flex min-w-0 max-w-full items-center gap-0">
         <FileRightClickMenu
           fileId={doc.sourceId}
           onDeleted={() => onDeleteDoc(doc.id)}
         >
-          <div className="min-w-0 flex-1">{label}</div>
+          <div className="min-w-0">{label}</div>
         </FileRightClickMenu>
-        <Tooltip>
+        <TapTargetButtonGroup>
+          {surfaceSwitcher}
           <FileContextMenu
             fileId={doc.sourceId}
             onDeleted={() => onDeleteDoc(doc.id)}
           >
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label="Document actions"
-                className={MORE_BTN}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
-            </TooltipTrigger>
+            <MoreHorizontalTapButton
+              variant="group"
+              ariaLabel="Document actions"
+            />
           </FileContextMenu>
-          <TooltipContent side="bottom" sideOffset={6}>
-            Actions — share, versions, delete…
-          </TooltipContent>
-        </Tooltip>
+        </TapTargetButtonGroup>
       </div>
     );
   }
@@ -103,24 +99,17 @@ export function PdfStudioDocTitle({
   const menu = buildPdfDocMenu({ doc: summary, onDelete: onDeleteDoc });
 
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-1">
-      <div className="min-w-0 flex-1">{label}</div>
-      <Tooltip>
+    <div className="inline-flex min-w-0 max-w-full items-center gap-0">
+      <div className="min-w-0">{label}</div>
+      <TapTargetButtonGroup>
+        {surfaceSwitcher}
         <ItemMenu config={menu} align="start">
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label="Document actions"
-              className={MORE_BTN}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
-          </TooltipTrigger>
+          <MoreHorizontalTapButton
+            variant="group"
+            ariaLabel="Document actions"
+          />
         </ItemMenu>
-        <TooltipContent side="bottom" sideOffset={6}>
-          Actions
-        </TooltipContent>
-      </Tooltip>
+      </TapTargetButtonGroup>
     </div>
   );
 }

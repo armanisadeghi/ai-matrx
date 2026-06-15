@@ -23,7 +23,7 @@ import {
   Layers,
   MousePointerClick,
   Repeat,
-  Plus
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { ChunkingConfigForm } from "@/features/page-extraction/components/ChunkingConfigForm";
@@ -50,8 +50,8 @@ const SECTIONS: {
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { key: "widgets", label: "Widgets", icon: Zap },
-  { key: "chunked", label: "Chunked Runs", icon: Repeat },
-  { key: "stores", label: "Data Stores", icon: Database },
+  { key: "chunked", label: "Chunker", icon: Repeat },
+  { key: "stores", label: "Stores", icon: Database },
   { key: "manipulate", label: "Manipulate", icon: Wrench },
   { key: "lineage", label: "Lineage", icon: GitBranch },
 ];

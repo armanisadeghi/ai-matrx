@@ -96,13 +96,11 @@ export const deleteMessage = createAsyncThunk<
     }
 
     // ── 2. Fire the RPC ───────────────────────────────────────────────────
-    // RPC name is cast because the Python-side function (or its tightened
-    // cascade behavior) is documented in PYTHON_RESUME_SPEC.md but the
-    // auto-generated database types may not list it yet.
-    const { data, error } = await supabase.rpc(
-      "cx_message_soft_delete" as never,
-      { p_message_id: messageId } as never,
-    );
+    // cx_message_soft_delete soft-deletes the row + cascades deleted_at to its
+    // tool calls / artifacts / media. Returns the message id on success.
+    const { data, error } = await supabase.rpc("cx_message_soft_delete", {
+      p_message_id: messageId,
+    });
 
     if (error) {
       // Roll back: re-insert the message and clear optimistic deletedAt

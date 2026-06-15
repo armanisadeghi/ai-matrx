@@ -36,7 +36,6 @@ import {
   Settings,
   GitBranch,
   GitFork,
-  Send,
   FileType,
   Activity,
   BarChart3,
@@ -62,7 +61,6 @@ import { openOverlay, closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
-import { extractErrorMessage } from "@/utils/errors";
 
 const PENDING_ACTION_KEY = "matrx_pending_post_auth_action";
 
@@ -156,34 +154,6 @@ function getErrorMessage(error: unknown, fallback: string): string {
     if (msg) return msg;
   }
   return fallback;
-}
-
-/**
- * Serialize any thrown value into a log-friendly object. Supabase errors
- * and thunk `rejectWithValue` payloads are often class instances with
- * non-enumerable fields that default to `{}` on `JSON.stringify`, which
- * hides the actual failure.
- */
-function serializeError(error: unknown): Record<string, unknown> {
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-    };
-  }
-  if (error && typeof error === "object") {
-    const e = error as Record<string, unknown>;
-    return {
-      code: e.code ?? null,
-      message: e.message ?? null,
-      details: e.details ?? null,
-      hint: e.hint ?? null,
-      status: e.status ?? null,
-      name: e.name ?? null,
-    };
-  }
-  return { raw: extractErrorMessage(error) };
 }
 
 function requireAuth(
@@ -319,11 +289,13 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
       iconColor: "text-indigo-500 dark:text-indigo-400",
       label: "HTML preview",
       action: () => {
-        const instanceId = `html-preview-${messageId ?? "default"}`;
+        // No `onSave` in data — a function can't survive Redux. The
+        // HtmlPreviewBridge self-handles the markdown save via `editMessage`
+        // from the conversationId + messageId we pass here.
         dispatch(
           openOverlay({
             overlayId: "htmlPreview",
-            instanceId,
+            instanceId: `html-preview-${messageId ?? "default"}`,
             data: {
               content,
               messageId: messageId ?? undefined,
@@ -331,27 +303,6 @@ function exportItems(ctx: MessageActionContext): MenuItem[] {
               title: "HTML Preview & Publishing",
               description:
                 "Edit markdown, preview HTML, and publish your content",
-              onSave: async (newContent: string) => {
-                if (conversationId && messageId) {
-                  try {
-                    const { editMessage } =
-                      await import("@/features/agents/redux/execution-system/message-crud/edit-message.thunk");
-                    await dispatch(
-                      editMessage({
-                        conversationId,
-                        messageId,
-                        newContent: wrapTextAsContent(newContent),
-                      }),
-                    ).unwrap();
-                  } catch (err) {
-                    // eslint-disable-next-line no-console
-                    console.error("[html-preview] save failed", err);
-                  }
-                }
-                dispatch(
-                  closeOverlay({ overlayId: "htmlPreview", instanceId }),
-                );
-              },
               showSaveButton: Boolean(conversationId && messageId),
               isAgentSystem: true,
             },
@@ -730,10 +681,14 @@ function appItems(ctx: MessageActionContext): MenuItem[] {
 /**
  * Edit the message in-place. Works for both user and assistant messages:
  *   - Opens the full-screen editor prefilled with the current flat text.
- *   - On save, wraps the new text as `[{ type: "text", text }]` and writes
- *     it back through `editMessage` (cx_message_edit RPC).
- *   - Marks the conversation's cache-bypass flag so the next AI turn sees
- *     the updated content.
+ *   - On save, the bridge self-handles via `editMessage` (cx_message_edit RPC),
+ *     preserving the message's non-text blocks. We pass conversationId +
+ *     messageId and NO callback — that IS the self-handle contract. (Passing an
+ *     `onSave` function through `openOverlay` data is the bug that silently
+ *     broke every editor save; the controller can't serialise a function. See
+ *     features/overlays/callbacks/fullScreenEditor.ts.)
+ *   - `editMessage` marks the conversation's cache-bypass flag so the next AI
+ *     turn sees the updated content.
  */
 function editContentItem(ctx: MessageActionContext): MenuItem {
   const { content, conversationId, messageId, metadata, dispatch, onClose } =
@@ -744,48 +699,15 @@ function editContentItem(ctx: MessageActionContext): MenuItem {
     iconColor: "text-emerald-500 dark:text-emerald-400",
     label: "Edit content",
     action: () => {
-      const instanceId = `edit-content-${messageId}`;
       dispatch(
         openOverlay({
           overlayId: "fullScreenEditor",
-          instanceId,
+          instanceId: `edit-content-${messageId}`,
           data: {
             content,
             mode: "free",
-            conversationId: undefined,
+            conversationId,
             messageId: messageId ?? undefined,
-            onSave: async (newContent: string) => {
-              if (!conversationId || !messageId) {
-                toast.error("Can't save — missing conversation/message id");
-                dispatch(
-                  closeOverlay({ overlayId: "fullScreenEditor", instanceId }),
-                );
-                return;
-              }
-              try {
-                const { editMessage } =
-                  await import("@/features/agents/redux/execution-system/message-crud/edit-message.thunk");
-                await dispatch(
-                  editMessage({
-                    conversationId,
-                    messageId,
-                    newContent: wrapTextAsContent(newContent),
-                  }),
-                ).unwrap();
-                toast.success("Changes saved");
-              } catch (err) {
-                const serialized = serializeError(err);
-                // eslint-disable-next-line no-console
-                console.error(
-                  "[edit-content] save failed",
-                  JSON.stringify(serialized, null, 2),
-                );
-                toast.error(getErrorMessage(err, "Failed to save changes"));
-              }
-              dispatch(
-                closeOverlay({ overlayId: "fullScreenEditor", instanceId }),
-              );
-            },
             tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
             initialTab: "matrx_split",
             analysisData: metadata as Record<string, unknown> | undefined,
@@ -836,105 +758,16 @@ function editHistoryItem(ctx: MessageActionContext): MenuItem {
 /**
  * USER MESSAGES ONLY — edit the user's prompt AND resubmit from that point.
  *
- * As of the surface-aware refactor, the canonical entry point for this
- * flow is the inline Send-icon button on UserActionBar (always visible on
- * hover for every user message). The host owns the editor + fork-vs-
- * overwrite dialog state, so the menu item is no longer registered. The
- * factory is kept here for legacy callers and to document the flow.
+ * The canonical (and ONLY) entry point for this flow is the inline Send-icon
+ * button on `UserActionBar`, which owns the editor + the fork-vs-overwrite
+ * dialog and routes `onSave` through the callback registry. The old menu-item
+ * factory was DELETED here: it was never registered, and it carried the exact
+ * broken pattern this whole fix removed — an `onSave` function stuffed into
+ * `openOverlay` data, which the controller silently drops. Keeping a dead copy
+ * of the landmine invites a future dev to re-register it. See
+ * `features/agents/components/messages-display/user/UserActionBar.tsx`
+ * (`handleEditAndResubmit`).
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function editAndResubmitItem(ctx: MessageActionContext): MenuItem {
-  const { content, conversationId, messageId, metadata, dispatch, onClose } =
-    ctx;
-  return {
-    key: "edit-resubmit",
-    icon: Send,
-    iconColor: "text-cyan-500 dark:text-cyan-400",
-    label: "Edit & resubmit",
-    action: () => {
-      if (!conversationId || !messageId) {
-        onClose();
-        return;
-      }
-      const instanceId = `edit-resubmit-${messageId}`;
-      dispatch(
-        openOverlay({
-          overlayId: "fullScreenEditor",
-          instanceId,
-          data: {
-            content,
-            mode: "free",
-            conversationId: undefined,
-            messageId: messageId ?? undefined,
-            onSave: async (newContent: string) => {
-              try {
-                const { forkConversation } =
-                  await import("@/features/agents/redux/execution-system/message-crud/fork-conversation.thunk");
-                const { editMessage } =
-                  await import("@/features/agents/redux/execution-system/message-crud/edit-message.thunk");
-                // Read position from state right before firing. Fork at
-                // (position - 1) so the user's new message becomes the next
-                // turn on the branch, replacing whatever originally came after.
-                const positionThunk = (
-                  _: unknown,
-                  getState: () => RootState,
-                ) => {
-                  const entry =
-                    getState().messages.byConversationId[conversationId];
-                  const msg = entry?.byId?.[messageId];
-                  const position = msg?.position ?? 0;
-                  const forkPosition = Math.max(0, position - 1);
-                  return dispatch(
-                    forkConversation({
-                      conversationId,
-                      atPosition: forkPosition,
-                    }),
-                  ).unwrap();
-                };
-                await dispatch(positionThunk as never);
-
-                // Persist the edit onto the user's message on the fork head.
-                // After this, the user is viewing the forked conversation with
-                // their edited question in place; they can hit Send from the
-                // input bar to launch the new turn.
-                await dispatch(
-                  editMessage({
-                    conversationId,
-                    messageId,
-                    newContent: wrapTextAsContent(newContent),
-                  }),
-                ).unwrap();
-                toast.success("Forked — edit saved on the new branch");
-              } catch (err) {
-                const serialized = serializeError(err);
-                // eslint-disable-next-line no-console
-                console.error(
-                  "[edit-resubmit] failed",
-                  JSON.stringify(serialized, null, 2),
-                );
-                toast.error(getErrorMessage(err, "Failed to edit & resubmit"));
-              } finally {
-                dispatch(
-                  closeOverlay({ overlayId: "fullScreenEditor", instanceId }),
-                );
-              }
-            },
-            tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
-            initialTab: "matrx_split",
-            analysisData: metadata as Record<string, unknown> | undefined,
-            title: undefined,
-            showSaveButton: true,
-            showCopyButton: true,
-          },
-        }),
-      );
-      onClose();
-    },
-    category: "Edit",
-    showToast: false,
-    hidden: !conversationId || !messageId,
-  };
-}
 
 /**
  * Fork the conversation at this message. Works for both roles:

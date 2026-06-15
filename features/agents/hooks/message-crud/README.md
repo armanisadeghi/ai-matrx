@@ -86,19 +86,46 @@ Key rules:
   `selectMessageContent(cid, mid)` selector, only that one message's
   subscribers re-run — not every renderer in the transcript.
 
+## The editor save channel — NEVER pass `onSave` through overlay data
+
+The full-screen editor (`fullScreenEditor` overlay) is rendered by the overlay
+controller, which **cannot pass a function through Redux**. For most of 2026
+the controller hard-coded `onSave={undefined}`, so every editor Save silently
+no-op'd — that is what broke chat's "Edit" and "Edit & resubmit" (fixed
+2026-06-14). The save now reaches the right place one of two ways:
+
+1. **Self-handle** (plain edits) — open the editor with `conversationId` +
+   `messageId` and **no** `onSave`. The bridge calls `editMessage` itself.
+   This is the path for `UserActionBar` "Edit" and the menu "Edit content".
+2. **Callback group** (when the caller needs the result) — use the typed opener
+   `useOpenFullScreenMarkdownEditorBridge({ onSave })`. The opener registers a
+   `callbackManager` group and passes only the `callbackGroupId` string; the
+   bridge emits the saved text to your `onSave`. "Edit & resubmit" uses this to
+   open the fork-vs-overwrite dialog. See
+   `features/overlays/callbacks/fullScreenEditor.ts`.
+
+**Attachments survive edits.** Every text edit goes through
+`mergeEditedText(existingContent, newText)`
+(`message-crud/content-blocks.util.ts`) — it replaces the text block but keeps
+the message's image/audio/doc/context blocks. Do NOT re-wrap edited text as a
+bare `[{type:'text',text}]` array; that silently drops attachments.
+
 ## Menu wiring
 
-The canonical message-action menu (`features/cx-conversation/actions/messageActionRegistry.ts`)
+The canonical message-action menu (`features/agents/components/messages-display/message-options/messageActionRegistry.ts`)
 exposes these CRUD items under the "Edit" category:
 
-- **Edit content** — opens full-screen editor; `onSave` wraps text as a
-  `CxContentBlock[]` with one text block and calls `editMessage`.
+- **Edit content** — opens the full-screen editor with `conversationId` +
+  `messageId` and no callback; the bridge self-handles via `editMessage`
+  (`cx_message_edit` RPC), preserving non-text blocks.
 - **Fork at this message** — dispatches a thunk-in-action that reads the
   message's `position` from state, then calls `forkConversation`.
-- **Edit & resubmit** — opens full-screen editor; `onSave` forks at
-  `position - 1` and applies the edit to the current message on the fork's
-  head. (The follow-up turn launch is surface-specific; use
-  `useMessageActions.editAndResubmit` if you need the full flow.)
+- **Edit & resubmit** — lives ONLY on the inline `UserActionBar` Send button
+  (`handleEditAndResubmit`): opens the editor with an `onSave` callback that
+  stashes the new text and opens the fork-vs-overwrite dialog. Fork →
+  `forkConversation` + `editMessage` on the fork head; Overwrite →
+  `overwriteAndResend`. The old menu-item factory was deleted — it carried the
+  broken `onSave`-in-Redux pattern.
 
 ## Cache-bust guarantee
 

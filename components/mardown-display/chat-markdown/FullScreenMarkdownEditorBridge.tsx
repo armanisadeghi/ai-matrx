@@ -31,12 +31,14 @@
 
 import { useCallback } from "react";
 import dynamic from "next/dynamic";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import {
   closeOverlay,
   type FullScreenEditorMode,
 } from "@/lib/redux/slices/overlaySlice";
 import { updateOverlayData } from "@/lib/redux/slices/overlayDataSlice";
+import { emitFullScreenEditorSave } from "@/features/overlays/callbacks/fullScreenEditor";
+import { mergeEditedText } from "@/features/agents/redux/execution-system/message-crud/content-blocks.util";
 
 const FullScreenMarkdownEditor = dynamic(
   () =>
@@ -55,7 +57,19 @@ interface FullScreenMarkdownEditorBridgeProps {
   mode?: FullScreenEditorMode;
   conversationId?: string;
   messageId?: string;
-  /** Legacy callback path for callers not yet migrated to `mode`. */
+  /**
+   * Callback-group id (from `callbackManager`) the caller registered to be
+   * told about the save. When present it ALWAYS wins over the self-handle
+   * path — the caller owns the outcome (persist, or open the fork-vs-overwrite
+   * dialog for "Edit & resubmit"). Functions never travel through Redux; this
+   * string is the channel back. See features/overlays/callbacks/fullScreenEditor.ts.
+   */
+  callbackGroupId?: string | null;
+  /**
+   * In-process callback path. Only reachable when the bridge is rendered
+   * directly (not via the overlay controller, which can't serialise a fn).
+   * Retained for any direct mount; the overlay path uses `callbackGroupId`.
+   */
   onSave?: (newContent: string) => void;
   tabs?: TabId[];
   initialTab?: TabId;
@@ -74,6 +88,7 @@ export function FullScreenMarkdownEditorBridge({
   mode,
   conversationId,
   messageId,
+  callbackGroupId,
   onSave,
   tabs,
   initialTab,
@@ -84,6 +99,7 @@ export function FullScreenMarkdownEditorBridge({
   showCopyButton,
 }: FullScreenMarkdownEditorBridgeProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
 
   const handleChange = useCallback(
     (newContent: string) => {
@@ -109,23 +125,45 @@ export function FullScreenMarkdownEditorBridge({
       );
 
       try {
-        if (mode === "assistant-message" && conversationId && messageId) {
+        // 1. Callback group wins. The caller asked to be told about the save
+        //    so it can own the outcome (persist itself, or open the
+        //    fork-vs-overwrite dialog for "Edit & resubmit").
+        if (callbackGroupId) {
+          emitFullScreenEditorSave(callbackGroupId, newContent);
+        } else if (conversationId && messageId) {
+          // 2. Self-handle: persist directly via editMessage. Works for any
+          //    message (user or assistant) — `mode` is no longer the gate.
+          //    Preserve the message's non-text blocks (attachments/chips);
+          //    the editor only edits text.
           const { editMessage } =
             await import("@/features/agents/redux/execution-system/message-crud/edit-message.thunk");
-          const nextContent = [
-            { type: "text", text: newContent },
-          ] as unknown as import("@/types/database.types").Json;
+          const existing =
+            store.getState().messages.byConversationId[conversationId]?.byId?.[
+              messageId
+            ]?.content;
           await dispatch(
             editMessage({
               conversationId,
               messageId,
-              newContent: nextContent,
+              newContent: mergeEditedText(existing, newContent),
             }),
           ).unwrap();
           const { toast } = await import("sonner");
           toast.success("Message saved");
         } else if (typeof onSave === "function") {
+          // 3. In-process callback (direct mount only).
           onSave(newContent);
+        } else {
+          // 4. Loud recovery: the editor was opened with no way to save.
+          //    A recovery firing here means a callsite wired the editor
+          //    without a save target — surface it, never swallow.
+          const { toast } = await import("sonner");
+          console.error(
+            "[FullScreenMarkdownEditorBridge] save with no target — " +
+              "no callbackGroupId, no conversationId/messageId, no onSave. " +
+              `instanceId=${instanceId} mode=${String(mode)}`,
+          );
+          toast.error("Couldn't save — this editor has no save target");
         }
       } catch (err) {
         const { toast } = await import("sonner");
@@ -144,7 +182,16 @@ export function FullScreenMarkdownEditorBridge({
 
       dispatch(closeOverlay({ overlayId: "fullScreenEditor", instanceId }));
     },
-    [dispatch, instanceId, mode, conversationId, messageId, onSave],
+    [
+      dispatch,
+      store,
+      instanceId,
+      mode,
+      conversationId,
+      messageId,
+      callbackGroupId,
+      onSave,
+    ],
   );
 
   return (

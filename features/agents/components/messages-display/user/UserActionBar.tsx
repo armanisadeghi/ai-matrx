@@ -29,7 +29,7 @@ import {
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { SpeakerButton } from "@/features/tts/components/SpeakerButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { openOverlay, closeOverlay } from "@/lib/redux/slices/overlaySlice";
+import { useOpenFullScreenMarkdownEditorBridge } from "@/features/overlays/openers/fullScreenEditor";
 import type { Json } from "@/types/database.types";
 import { selectMessagePosition } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectShowUserMessageOptions } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
@@ -109,6 +109,7 @@ export function UserActionBar({
   surfaceKey,
 }: UserActionBarProps) {
   const dispatch = useAppDispatch();
+  const openEditor = useOpenFullScreenMarkdownEditorBridge();
 
   const [isCopied, setIsCopied] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
@@ -145,87 +146,46 @@ export function UserActionBar({
   };
 
   const handleEdit = () => {
-    // Plain edit — overwrite the stored content, no fork, no resubmit.
-    const instanceId = `user-edit-${messageId}`;
-    dispatch(
-      openOverlay({
-        overlayId: "fullScreenEditor",
-        instanceId,
-        data: {
-          content,
-          mode: "free",
-          conversationId: undefined,
-          messageId,
-          onSave: async (newContent: string) => {
-            try {
-              const { editMessage } =
-                await import("@/features/agents/redux/execution-system/message-crud/edit-message.thunk");
-              const nextContent = [
-                { type: "text", text: newContent },
-              ] as unknown as Json;
-              await dispatch(
-                editMessage({
-                  conversationId,
-                  messageId,
-                  newContent: nextContent,
-                }),
-              ).unwrap();
-              toast.success("Message saved");
-            } catch (err) {
-              const { logPayload, message } = serializeSaveError(err);
-              // eslint-disable-next-line no-console
-              console.error(
-                "[UserActionBar] edit save failed",
-                JSON.stringify(logPayload, null, 2),
-              );
-              toast.error(message);
-            }
-            dispatch(
-              closeOverlay({ overlayId: "fullScreenEditor", instanceId }),
-            );
-          },
-          tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
-          initialTab: "matrx_split",
-          analysisData: metadata ?? undefined,
-          title: undefined,
-          showSaveButton: true,
-          showCopyButton: true,
-        },
-      }),
-    );
+    // Plain edit — overwrite the stored content in place, no fork, no resubmit.
+    // No `onSave`: the bridge self-handles via `editMessage` (preserving any
+    // attachment blocks) because we pass conversationId + messageId.
+    openEditor({
+      instanceId: `user-edit-${messageId}`,
+      content,
+      mode: "free",
+      conversationId,
+      messageId,
+      tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
+      initialTab: "matrx_split",
+      analysisData: metadata ?? undefined,
+      showSaveButton: true,
+      showCopyButton: true,
+    });
   };
 
   const handleEditAndResubmit = () => {
     // Open the editor. On save, stash the new content + open the
     // fork-vs-overwrite choice dialog. The dialog runs the chosen flow
     // and auto-fires the next agent turn so the user can watch the new
-    // response come in.
-    const instanceId = `user-edit-resubmit-${messageId}`;
-    dispatch(
-      openOverlay({
-        overlayId: "fullScreenEditor",
-        instanceId,
-        data: {
-          content,
-          mode: "free",
-          conversationId: undefined,
-          messageId,
-          onSave: (newContent: string) => {
-            setPendingResubmitContent(newContent);
-            setResubmitDialogOpen(true);
-            dispatch(
-              closeOverlay({ overlayId: "fullScreenEditor", instanceId }),
-            );
-          },
-          tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
-          initialTab: "matrx_split",
-          analysisData: metadata ?? undefined,
-          title: undefined,
-          showSaveButton: true,
-          showCopyButton: true,
-        },
-      }),
-    );
+    // response come in. The `onSave` callback travels via the callback
+    // registry (callbackGroupId), never through Redux. The bridge closes
+    // the editor itself after emitting.
+    openEditor({
+      instanceId: `user-edit-resubmit-${messageId}`,
+      content,
+      mode: "free",
+      conversationId,
+      messageId,
+      onSave: (newContent: string) => {
+        setPendingResubmitContent(newContent);
+        setResubmitDialogOpen(true);
+      },
+      tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
+      initialTab: "matrx_split",
+      analysisData: metadata ?? undefined,
+      showSaveButton: true,
+      showCopyButton: true,
+    });
   };
 
   const handleResubmitChooseFork = useCallback(async () => {
@@ -273,11 +233,21 @@ export function UserActionBar({
         return;
       }
 
+      const { mergeEditedText } =
+        await import("@/features/agents/redux/execution-system/message-crud/content-blocks.util");
+      const forkedExisting = dispatch(((
+        _: unknown,
+        getState: () => import("@/lib/redux/store").RootState,
+      ) =>
+        getState().messages.byConversationId[newConversationId]?.byId?.[
+          findEditedMessageId
+        ]?.content) as never) as unknown as Json | undefined;
+
       await dispatch(
         editMessage({
           conversationId: newConversationId,
           messageId: findEditedMessageId,
-          newContent: [{ type: "text", text: newContent }] as unknown as Json,
+          newContent: mergeEditedText(forkedExisting, newContent),
         }),
       ).unwrap();
 

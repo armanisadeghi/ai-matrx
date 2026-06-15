@@ -2,8 +2,8 @@
 
 import React, { useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { toTitleCase } from "@/utils/dataUtils";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
 
 interface PdfStudioPagesNavProps {
@@ -61,24 +61,21 @@ export function PdfStudioPagesNav({
                         : "hover:bg-accent/50 text-foreground/90",
                     )}
                   >
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col gap-0.5">
                       <span className="font-medium tabular-nums">
-                        Page {p.pageNumber}
+                        Page {p.pageNumber}: {toTitleCase(p.sectionKind)}
                       </span>
-                      {p.sectionKind && (
-                        <Badge
-                          variant="outline"
-                          className="text-[9px] px-1 py-0 font-normal"
-                        >
-                          {p.sectionKind}
-                        </Badge>
+                      {/* {p.sectionKind && (
+                        <span className="text-xs text-foreground">
+                          Type: {toTitleCase(p.sectionKind)}
+                        </span>
+                      )} */}
+                      {p.sectionTitle && (
+                        <div className="text-xs text-primary break-words leading-tight">
+                          {p.sectionTitle}
+                        </div>
                       )}
                     </div>
-                    {p.sectionTitle && (
-                      <div className="text-[10px] text-muted-foreground break-words mt-0.5 leading-tight">
-                        {p.sectionTitle}
-                      </div>
-                    )}
                   </button>
                 </li>
               );

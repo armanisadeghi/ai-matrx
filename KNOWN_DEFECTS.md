@@ -17,6 +17,19 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D7 — 11 overlay callbacks still severed (`onSave={undefined} /* pass via callbackGroupId */`)
+**Severity: medium — each is a button/flow that looks alive but silently does nothing; no data loss, no crash.**
+
+**What.** When `OverlayController.tsx` was seeded by codegen, every component prop that was a *function* got stubbed to `undefined` with a `/* fn — pass via callbackGroupId */ /* TODO: review */` marker. Correct (a function can't travel through Redux) but **never finished** — no callback group was wired to replace it, so the callback never fires. This is the exact class that broke chat's Edit / Edit & resubmit and HTML-preview Save (both **fixed** 2026-06-14 — see Resolved). As of 2026-06-14, `grep "pass via callbackGroupId" features/overlays/OverlayController.tsx` still finds **11** in other overlays:
+- `EmailDialogWindow.onSubmit` — *potentially high* (an email send handoff may be severed).
+- `ResourcePickerWindow.{onResourceSelected,onSettingsClick,onDebugClick}` — *potentially high* (`onResourceSelected` = picker can't return its choice).
+- `QuickSaveCodeDialog.{onOpenChange,onSaved}`, `QuickNoteSaveOverlay.onSaved`×2 — save-complete notifiers (the save itself may self-handle; needs per-case check).
+- `FullscreenBrokerState.onOpen`, `FullscreenMarkdownEditor.onOpen`, `FullscreenSocketAccordion.onOpen`, `ImageViewerWindow.onIndexChange` — lifecycle/notify callbacks, likely low impact.
+
+**Why it happened.** The codegen seed stubbed functions and left a TODO; the overhaul shipped before every stub was finished, and a severed callback is invisible at runtime (the UI renders fine).
+
+**Fence.** Documented as a bug *class* in [`features/overlays/FEATURE.md`](features/overlays/FEATURE.md) ("The severed-callback bug class") with the two correct completions (callback group vs self-handle) and the exact grep to enumerate them. Each needs an audit: is the callback actually consumed by a caller? If yes → finish it (callback group or self-handle); if no → delete the dead prop.
+
 ### D6 — Window geometry restore keyed by `overlayId`, but windows register by `id`/slug
 **Severity: low — saved window size/position silently doesn't restore for affected windows; no data loss.**
 
@@ -219,4 +232,7 @@ the web feature.
 
 ## RESOLVED
 
-_(none yet — move D-entries here as their fences fully land.)_
+### R1 — Chat "Edit" / "Edit & resubmit" silently did nothing (severed editor `onSave`) + two missing RPCs (2026-06-14)
+**What.** Editing a user message or "Edit & resubmit" opened the editor but Save did nothing; "Edit content" (overflow) and "HTML preview → Save" were broken the same way. Root cause: `OverlayController` hard-coded `fullScreenEditor.onSave={undefined}` (and `htmlPreview.onSave`) — a function can't travel through Redux, but the replacement callback channel was never wired (the D7 class). Compounding it, two RPCs the resubmit/delete paths called had **never been created** in the DB (`cx_message_soft_delete`, `cx_truncate_conversation_after`), so even once `onSave` fired, Overwrite + Delete would fail server-side.
+
+**Fence.** (1) `fullScreenEditor` is now callback-aware (`features/overlays/callbacks/fullScreenEditor.ts` + `callbackManager`); the bridge prefers the callback, else self-handles via `editMessage` for any `conversationId`+`messageId`, else **screams** (toast + console.error — loud recovery, never silent). (2) `htmlPreview` self-handles its save. (3) Both RPCs built + applied (`migrations/cx_message_soft_delete_and_truncate.sql`) with the tool-call/artifact/media cascade; dead feature-detect fallbacks removed. (4) Attachments survive edits via `mergeEditedText`. (5) The dead `editAndResubmitItem` menu factory (which carried the same landmine) was deleted. Bug *class* documented in [`features/overlays/FEATURE.md`](features/overlays/FEATURE.md); the 11 sibling severed callbacks tracked as **D7**.
