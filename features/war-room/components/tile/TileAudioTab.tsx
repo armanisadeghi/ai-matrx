@@ -15,7 +15,8 @@
 // so the embedded pad can never mutate the global active context (War Room
 // carries its own context).
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import dynamic from "next/dynamic";
 import { Plus, ChevronDown, Radio, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,7 +25,21 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import CleanupPad from "@/features/transcription-cleanup/components/CleanupPad";
+// Code-split: CleanupPad pulls the whole transcription-cleanup graph
+// (transcript-studio + agents + audio + dictionary). Loading it lazily keeps it
+// out of the War Room bundle so the room hydrates fast; it loads on demand the
+// first time an Audio tab is opened.
+const CleanupPad = dynamic(
+  () => import("@/features/transcription-cleanup/components/CleanupPad"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      </div>
+    ),
+  },
+);
 import {
   selectActiveAudioSessionId,
   selectAudioSessionIdsForTile,
