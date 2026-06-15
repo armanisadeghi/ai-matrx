@@ -24,6 +24,35 @@ const EMPTY_EDITOR_RESOURCES: ManagedResource[] = [];
 const EMPTY_PAYLOADS: MessagePart[] = [];
 
 /**
+ * Reduce attached note/task resources to the lean reference shape the backend
+ * expects: a list of bare id strings. The picker stores the *whole* resource
+ * object on `source`, but an attach-by-reference only needs the id — the
+ * backend re-fetches the live record each turn (honouring edits, ownership,
+ * keep_fresh). Shipping the full object wasted ~6 KB/note on the wire and, when
+ * the backend fed it straight into a `WHERE id = $1` query, took down the whole
+ * request.
+ *
+ * The backend now normalizes any shape (string id, `{id}` object, or a
+ * `{mode:"snapshot", content}` value block), so this is purely the lean,
+ * correct default. When attach-by-value (snapshot) ships in the UI it will send
+ * the full object with `mode:"snapshot"` explicitly instead of going through
+ * this reducer.
+ */
+function toResourceIdList(content: unknown): string[] {
+  const entries = Array.isArray(content) ? content : [content];
+  const ids: string[] = [];
+  for (const entry of entries) {
+    if (typeof entry === "string" && entry) {
+      ids.push(entry);
+    } else if (entry && typeof entry === "object") {
+      const id = (entry as Record<string, unknown>).id;
+      if (typeof id === "string" && id) ids.push(id);
+    }
+  }
+  return ids;
+}
+
+/**
  * All resources for an instance, sorted by sortOrder.
  */
 export const selectInstanceResources = (conversationId: string) =>
@@ -176,10 +205,10 @@ export const selectResourcePayloads = (conversationId: string) =>
               payload.urls = Array.isArray(content) ? content : [content];
               break;
             case "input_notes":
-              payload.note_ids = Array.isArray(content) ? content : [content];
+              payload.note_ids = toResourceIdList(content);
               break;
             case "input_task":
-              payload.task_ids = Array.isArray(content) ? content : [content];
+              payload.task_ids = toResourceIdList(content);
               break;
             case "input_table":
               payload.bookmarks = content;
@@ -222,7 +251,6 @@ export const selectEditorResources = (conversationId: string) =>
  * there are none — `assembleRequest` can append unconditionally.
  */
 export const selectEditorResourceXml = (conversationId: string) =>
-  createSelector(
-    selectEditorResources(conversationId),
-    (resources) => serializeEditorResourcesAsXml(resources),
+  createSelector(selectEditorResources(conversationId), (resources) =>
+    serializeEditorResourcesAsXml(resources),
   );

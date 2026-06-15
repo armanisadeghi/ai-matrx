@@ -158,6 +158,7 @@ type Action =
   | { type: "data"; payload: ResearchDataEvent; timestamp: number }
   | { type: "info"; payload: InfoMessage }
   | { type: "phase"; payload: ResearchStreamStep; timestamp: number }
+  | { type: "finalize"; timestamp: number }
   | { type: "reset"; iterationMode: IterationMode | null };
 
 const PHASE_TO_STAGE: Record<string, StageKind> = {
@@ -243,6 +244,82 @@ function bumpCompletion(
         recentCompletions: [...pruneRecent(stage.recentCompletions, ts), ts],
       },
     },
+  };
+}
+
+/**
+ * Terminal sweep. A full `/run` does NOT emit per-stage "all complete" events
+ * (`search_complete` / `analyze_all_complete` only fire from the standalone
+ * endpoints, and there is no scrape/synthesis "all complete" at all — see
+ * RESEARCH_STREAMING_GUIDE.md), so without this sweep any stage left in
+ * `active` keeps its spinner running forever after the run ends.
+ *
+ * On a terminal signal (`pipeline_complete` or the stream `end`), force every
+ * non-terminal stage and item into an honest terminal status:
+ *   - a stage that started → `complete` (no failures), `partial` (some), or
+ *     `failed` (all failed);
+ *   - a still-`active`/`pending` item that never got its own completion event →
+ *     `skipped` (we moved on without a result — never a fake `success`).
+ * Stages that never started (no items, never active) stay `pending`.
+ */
+function finalizeStages(state: PipelineState, ts: number): PipelineState {
+  const stages: Record<StageKind, StageState> = { ...state.stages };
+  let changed = false;
+
+  for (const kind of Object.keys(stages) as StageKind[]) {
+    const stage = stages[kind];
+
+    // Sweep any item still mid-flight to a neutral terminal status.
+    let items = stage.items;
+    let itemsChanged = false;
+    for (const id of stage.itemOrder) {
+      const it = items[id];
+      if (it.status === "active" || it.status === "pending") {
+        if (!itemsChanged) {
+          items = { ...items };
+          itemsChanged = true;
+        }
+        items[id] = {
+          ...it,
+          status: "skipped",
+          updatedAt: ts,
+          completedAt: it.completedAt ?? ts,
+        };
+      }
+    }
+
+    const isNonTerminalStage =
+      stage.status === "active" || stage.status === "pending";
+    const startedOrHasItems =
+      stage.status === "active" || stage.itemOrder.length > 0;
+
+    if (isNonTerminalStage && startedOrHasItems) {
+      const { failed, succeeded } = stage.totals;
+      const nextStatus: StageState["status"] =
+        failed > 0 && succeeded === 0
+          ? "failed"
+          : failed > 0
+            ? "partial"
+            : "complete";
+      stages[kind] = {
+        ...stage,
+        items,
+        status: nextStatus,
+        completedAt: stage.completedAt ?? ts,
+      };
+      changed = true;
+    } else if (itemsChanged) {
+      stages[kind] = { ...stage, items };
+      changed = true;
+    }
+  }
+
+  if (!changed && state.activeStage === null) return state;
+  return {
+    ...state,
+    stages,
+    activeStage: null,
+    completedAt: state.completedAt ?? ts,
   };
 }
 
@@ -635,7 +712,9 @@ function reduceData(
     }
 
     case "pipeline_complete": {
-      return { ...state, completedAt: ts };
+      // Sweep every still-active stage/item to terminal so no spinner is left
+      // running, then stamp the run as complete.
+      return finalizeStages(state, ts);
     }
 
     case "suggest_complete": {
@@ -740,6 +819,8 @@ function reducer(state: PipelineState, action: Action): PipelineState {
       if (!stage) return state;
       return activateStage(state, stage, action.timestamp);
     }
+    case "finalize":
+      return finalizeStages(state, action.timestamp);
     case "reset":
       return emptyState(action.iterationMode);
     default:
@@ -824,6 +905,12 @@ export interface UsePipelineProgressResult {
   dispatch: (event: ResearchDataEvent) => void;
   dispatchInfo: (info: ResearchInfoEvent) => void;
   dispatchPhase: (step: ResearchStreamStep) => void;
+  /**
+   * Force every non-terminal stage/item to a terminal status. Call from the
+   * stream `onEnd` so a run that ends without a `pipeline_complete` event still
+   * stops all spinners.
+   */
+  finalize: () => void;
   reset: (opts?: { iterationMode?: IterationMode | null }) => void;
 }
 
@@ -868,6 +955,10 @@ export function usePipelineProgress(opts?: {
 
   const dispatchPhase = useCallback((step: ResearchStreamStep) => {
     rawDispatch({ type: "phase", payload: step, timestamp: Date.now() });
+  }, []);
+
+  const finalize = useCallback(() => {
+    rawDispatch({ type: "finalize", timestamp: Date.now() });
   }, []);
 
   const reset = useCallback(
@@ -987,5 +1078,13 @@ export function usePipelineProgress(opts?: {
     };
   }, [state, topic]);
 
-  return { state, derived, dispatch, dispatchInfo, dispatchPhase, reset };
+  return {
+    state,
+    derived,
+    dispatch,
+    dispatchInfo,
+    dispatchPhase,
+    finalize,
+    reset,
+  };
 }

@@ -143,6 +143,27 @@ export async function listTiles(sessionId: string): Promise<WarRoomTile[]> {
   return data ?? [];
 }
 
+/**
+ * Read a single tile by id (owner-scoped via RLS). Returns null when the tile
+ * is missing or soft-deleted. Unlike `listTiles` (session-scoped) this resolves
+ * a tile WITHOUT knowing its room — the seam the master tools need to act on a
+ * thread in a room that isn't the active one.
+ */
+export async function getTile(id: string): Promise<WarRoomTile | null> {
+  const { data, error } = await supabase
+    .from(TILES)
+    .select("*")
+    .eq("id", id)
+    .eq("is_deleted", false)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[war-room] getTile failed:", error);
+    throw error;
+  }
+  return data ?? null;
+}
+
 export async function createTile(input: CreateTileInput): Promise<WarRoomTile> {
   const userId = requireUserId();
   const { data, error } = await supabase

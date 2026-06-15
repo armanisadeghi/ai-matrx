@@ -12,8 +12,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { useTopicContext, useStreamDebug } from "../../context/ResearchContext";
 import {
   useResearchSynthesis,
@@ -27,6 +25,14 @@ import type { ResearchSynthesis, ResearchDataEvent } from "../../types";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import MarkdownStream from "@/components/markdown";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+
+/** A string with real (non-whitespace) content. */
+const hasText = (s: string | null | undefined): boolean =>
+  !!s && s.trim().length > 0;
+
+/** A status that means the work is done (so an empty body is final, not pending). */
+const isTerminalStatus = (status: string): boolean =>
+  status === "success" || status === "complete" || status === "failed";
 
 function SynthesisCard({
   synthesis,
@@ -90,14 +96,14 @@ function SynthesisCard({
               <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               {synthesis.error}
             </div>
-          ) : synthesis.result ? (
+          ) : hasText(synthesis.result) ? (
             <div className="space-y-2">
               <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-xs prose-headings:text-sm">
-                <MarkdownStream content={synthesis.result} />
+                <MarkdownStream content={synthesis.result!} />
               </div>
               <div className="flex justify-end">
                 <ContentActionBar
-                  content={synthesis.result}
+                  content={synthesis.result!}
                   title={label}
                   instanceKey={`synthesis-${synthesis.id}`}
                   metadata={{
@@ -109,6 +115,23 @@ function SynthesisCard({
                   }}
                 />
               </div>
+            </div>
+          ) : synthesis.result_structured ? (
+            // Completed with structured-only output — surface it honestly
+            // rather than showing nothing for a paid-for call.
+            <div className="prose prose-sm dark:prose-invert max-w-none prose-pre:text-[11px]">
+              <MarkdownStream
+                content={`\`\`\`json\n${JSON.stringify(synthesis.result_structured, null, 2)}\n\`\`\``}
+              />
+            </div>
+          ) : isTerminalStatus(synthesis.status) ? (
+            // Terminal but empty — be explicit instead of an endless spinner.
+            <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-2 text-xs text-amber-700 dark:text-amber-400">
+              <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>
+                This synthesis completed but produced no text output. Re-run the
+                synthesis to regenerate it.
+              </span>
             </div>
           ) : (
             <div className="flex items-center gap-2 py-3 text-xs text-muted-foreground">
@@ -313,9 +336,7 @@ export default function SynthesisList() {
             </div>
             {streamingText && (
               <div className="px-3 py-3 prose prose-sm dark:prose-invert max-w-none prose-p:text-xs">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {streamingText}
-                </ReactMarkdown>
+                <MarkdownStream content={streamingText} isStreamActive />
                 <span className="inline-block w-0.5 h-3.5 bg-primary animate-pulse ml-0.5 align-middle" />
               </div>
             )}

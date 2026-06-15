@@ -209,6 +209,10 @@ export function ActivityFeed({ rawEvents, state, className }: Props) {
     <div
       className={cn(
         "rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm overflow-hidden flex flex-col",
+        // Fill the available vertical space instead of a fixed ~288px box.
+        // When sticky (desktop) the card spans the viewport and the feed body
+        // scrolls inside it; on mobile it falls back to a sane bounded height.
+        "lg:h-[calc(100dvh-8rem)]",
         className,
       )}
     >
@@ -247,7 +251,7 @@ export function ActivityFeed({ rawEvents, state, className }: Props) {
       </div>
       <div
         ref={scrollRef}
-        className="flex-1 max-h-72 overflow-y-auto px-2 py-1.5 font-mono text-[10.5px] space-y-0.5"
+        className="flex-1 min-h-0 max-h-[55vh] lg:max-h-none overflow-y-auto px-2 py-1.5 font-mono text-[10.5px] space-y-0.5"
       >
         {visible.length === 0 && (
           <div className="text-muted-foreground italic text-[11px] py-4 text-center">

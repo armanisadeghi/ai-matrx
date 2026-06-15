@@ -13,8 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import MarkdownStream from "@/components/markdown";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { type ResearchAnalysis, tokenUsageFromJson } from "../../types";
 
@@ -84,9 +83,7 @@ export function AnalysisCard({
         </div>
         <div className="px-4 py-3">
           <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {streamingText}
-            </ReactMarkdown>
+            <MarkdownStream content={streamingText} isStreamActive />
           </div>
           {/* Blinking cursor */}
           <span className="inline-block w-0.5 h-3.5 bg-primary animate-pulse ml-0.5 align-middle" />

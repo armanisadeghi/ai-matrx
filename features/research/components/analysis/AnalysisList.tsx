@@ -14,14 +14,14 @@ import {
   Hammer,
   ChevronLeft,
   ArrowUpRight,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import MarkdownStream from "@/components/markdown";
 import { useTopicContext } from "../../context/ResearchContext";
 import {
   useAnalysesForTopic,
@@ -39,6 +39,10 @@ import {
   tokenUsageFromJson,
 } from "../../types";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+
+/** A string with real (non-whitespace) content. */
+const hasText = (s: string | null | undefined): boolean =>
+  !!s && s.trim().length > 0;
 
 function StatsBar({
   total,
@@ -338,14 +342,25 @@ function DetailPanel({
               )}
             </div>
           </div>
-        ) : (
+        ) : hasText(analysis.result) ? (
           <article className="px-5 py-5 sm:px-8 sm:py-6 max-w-3xl">
             <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-[13.5px] prose-p:leading-[1.75] prose-headings:text-sm prose-headings:font-semibold prose-headings:tracking-tight prose-h2:text-base prose-h2:mt-6 prose-h2:mb-2 prose-h3:mt-4 prose-h3:mb-1.5 prose-ul:text-[13.5px] prose-ol:text-[13.5px] prose-li:text-[13.5px] prose-li:leading-[1.75] prose-blockquote:text-[13px] prose-blockquote:border-primary/30 prose-strong:font-semibold prose-code:text-[12px] prose-code:bg-muted/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {analysis.result ?? ""}
-              </ReactMarkdown>
+              <MarkdownStream content={analysis.result!} />
             </div>
           </article>
+        ) : (
+          // Terminal success but no text — be honest rather than blank.
+          <div className="px-6 py-10 flex flex-col items-center justify-center gap-2 text-center">
+            <AlertCircle className="h-6 w-6 text-amber-500/60" />
+            <p className="text-sm font-medium text-foreground/70">
+              No analysis content
+            </p>
+            <p className="text-xs text-muted-foreground max-w-sm leading-relaxed">
+              This source was processed but produced no summary — usually the
+              page had too little usable text. Re-scrape it or retry the
+              analysis.
+            </p>
+          </div>
         )}
       </div>
 

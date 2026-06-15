@@ -61,6 +61,7 @@ import pageExtractionReducer from "@/features/page-extraction/redux/pageExtracti
 import { pdfStudioReducer } from "@/features/pdf-extractor/state/pdfStudioSlice";
 import transcriptStudioReducer from "@/features/transcript-studio/redux/slice";
 import warRoomReducer from "@/features/war-room/redux/slice";
+import warRoomWatchReducer from "@/features/war-room/redux/watchSlice";
 import recordingsReducer from "@/lib/redux/slices/recordingsSlice";
 import kgSuggestionsReducer from "@/lib/redux/slices/kgSuggestionsSlice";
 import { codeFilesReducer } from "@/features/code-files/redux/slice";
@@ -242,6 +243,8 @@ export const slimReducerMap = {
   transcriptStudio: transcriptStudioReducer,
   // War Room — session-based multitasking command center (features/war-room)
   warRoom: warRoomReducer,
+  // War Room master-agent live-watch layer (ephemeral UI; features/war-room)
+  warRoomWatch: warRoomWatchReducer,
   recordings: recordingsReducer,
   codeFiles: codeFilesReducer,
 

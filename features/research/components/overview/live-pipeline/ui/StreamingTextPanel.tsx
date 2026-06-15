@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { MousePointerClick } from "lucide-react";
 import { cn } from "@/lib/utils";
+import MarkdownStream from "@/components/MarkdownStream";
 
 interface Props {
   text: string;
@@ -54,15 +55,21 @@ export function StreamingTextPanel({
       </div>
       <div
         ref={scrollRef}
-        className="max-h-72 overflow-y-auto p-3 text-[12.5px] leading-relaxed font-serif text-foreground/90 whitespace-pre-wrap"
+        className="max-h-[32rem] overflow-y-auto p-3"
       >
-        {text}
-        {isStreaming && (
-          <span
-            className="inline-block w-1.5 h-3.5 bg-primary/70 align-middle ml-0.5 animate-pulse"
-            aria-hidden="true"
+        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-[13px] prose-p:leading-relaxed prose-headings:text-sm prose-headings:font-semibold prose-h1:text-base prose-h2:text-[15px]">
+          <MarkdownStream
+            content={text}
+            isStreamActive={isStreaming}
+            hideCopyButton
           />
-        )}
+          {isStreaming && (
+            <span
+              className="inline-block w-1.5 h-3.5 bg-primary/70 align-middle ml-0.5 animate-pulse"
+              aria-hidden="true"
+            />
+          )}
+        </div>
       </div>
       {modelId && (
         <div className="px-3 py-1.5 border-t border-border/40 bg-muted/20 text-[10px] text-muted-foreground tabular-nums">

@@ -48,6 +48,8 @@ import { detectActiveSurface } from "@/features/surfaces/utils/route-to-surface"
 import { selectCreatorSettings } from "@/lib/redux/preferences/creatorDebugSlice";
 import { isWarRoomToolName } from "@/features/agents/war-room-tools/tools/names";
 import { getWarRoomInlineToolDef } from "@/features/agents/war-room-tools/tools/tool-defs";
+import { isWarRoomMasterToolName } from "@/features/agents/war-room-master-tools/tools/names";
+import { getWarRoomMasterInlineToolDef } from "@/features/agents/war-room-master-tools/tools/tool-defs";
 
 interface BuildOptions {
   mode?: "additive" | "replace";
@@ -113,14 +115,18 @@ export async function buildToolInjection(
     state.instanceClientTools.byConversationId[conversationId] ?? []
   ).filter((name) => !isWidgetActionName(name));
 
-  // War Room write tools are NOT in the server's tool registry, so they can't
-  // ride the `registered` path (the server would reject the unknown name).
-  // They're emitted as INLINE specs (name + description + JSON schema) below,
-  // which is the supported way to offer a client-delegated tool the server
-  // doesn't know about. Split them out here so the rest stay `registered`.
+  // War Room write tools (per-tile) AND War Room MASTER tools (cross-room) are
+  // NOT in the server's tool registry, so they can't ride the `registered` path
+  // (the server would reject the unknown name). They're emitted as INLINE specs
+  // (name + description + JSON schema) below, which is the supported way to
+  // offer a client-delegated tool the server doesn't know about. Split them out
+  // here so the rest stay `registered`.
   const warRoomClientTools = nonWidgetClientTools.filter(isWarRoomToolName);
+  const warRoomMasterClientTools = nonWidgetClientTools.filter(
+    isWarRoomMasterToolName,
+  );
   const registeredClientTools = nonWidgetClientTools.filter(
-    (name) => !isWarRoomToolName(name),
+    (name) => !isWarRoomToolName(name) && !isWarRoomMasterToolName(name),
   );
 
   const widgetHandleId = selectWidgetHandleIdFor(state, conversationId);
@@ -142,6 +148,12 @@ export async function buildToolInjection(
     .map((name) => getWarRoomInlineToolDef(name))
     .filter((def): def is NonNullable<typeof def> => def != null);
 
+  // War-room MASTER tools as inline specs — same mechanism, armed only on the
+  // master conversation (useMasterAgent.setClientTools).
+  const warRoomMasterInlineSpecs: ToolSpec[] = warRoomMasterClientTools
+    .map((name) => getWarRoomMasterInlineToolDef(name))
+    .filter((def): def is NonNullable<typeof def> => def != null);
+
   // Per-conversation tools the user added from the Smart Input tools menu
   // (registry UUIDs → server-executed registry specs). Explicit picks, so they
   // ride regardless of the disable-injection brake (which only gates the
@@ -154,6 +166,7 @@ export async function buildToolInjection(
     ...(options.seedTools ?? []),
     ...clientToolSpecs,
     ...warRoomInlineSpecs,
+    ...warRoomMasterInlineSpecs,
     ...addedToolSpecs,
   ];
 

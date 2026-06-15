@@ -27,6 +27,19 @@ const MasterAgentPanel = dynamic(
   { ssr: false, loading: () => null },
 );
 
+// The live-watch layer renders thread-agent conversations the master is
+// messaging (one WindowPanel per open id). It pulls the agent column graph too,
+// so it's lazy-loaded the same way. It self-hides when nothing is being watched
+// — but it must always be MOUNTED so a tool/toast `openWatch` can pop a window
+// even when the Master panel is closed.
+const MasterWatchLayer = dynamic(
+  () =>
+    import("@/features/war-room/components/master/MasterWatchLayer").then(
+      (m) => m.MasterWatchLayer,
+    ),
+  { ssr: false, loading: () => null },
+);
+
 // Master Agent window size. Docked bottom-right on open (computed from the
 // viewport in `initialRect` below).
 const MASTER_W = 460;
@@ -136,6 +149,11 @@ export function WarRoomAllView() {
           <MasterAgentPanel />
         </WindowPanel>
       )}
+
+      {/* Live-watch layer — always mounted so a master tool / toast can open a
+          watch window for a thread agent even when the Master panel is closed.
+          Renders nothing until a conversation is being watched. */}
+      <MasterWatchLayer />
     </div>
   );
 }

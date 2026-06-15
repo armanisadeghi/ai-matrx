@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   RefreshCw,
   Download,
@@ -31,15 +31,21 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 
 export default function DocumentViewer() {
-  const { topicId, refresh } = useTopicContext();
+  const { topicId, progress, refresh } = useTopicContext();
   const api = useResearchApi();
   const isMobile = useIsMobile();
   const debug = useStreamDebug();
-  const { data: docData, refresh: refetchDoc } = useResearchDocument(topicId);
+  const {
+    data: docData,
+    isLoading: docLoading,
+    refresh: refetchDoc,
+  } = useResearchDocument(topicId);
   const stream = useResearchStream();
 
   // Live streaming document text — accumulated chunk by chunk
   const [streamingDocText, setStreamingDocText] = useState("");
+  // Guards the one-shot auto-generation so it never loops or double-charges.
+  const autoGenAttempted = useRef(false);
 
   const [showHistory, setShowHistory] = useState(false);
   const [diffDocs, setDiffDocs] = useState<
@@ -48,10 +54,10 @@ export default function DocumentViewer() {
 
   const document = docData as ResearchDocument | null;
 
-  // During streaming, show accumulated text; after, show DB document
-  const displayContent = stream.isStreaming
-    ? streamingDocText
-    : (document?.content ?? "");
+  // Prefer the persisted document; fall back to the just-streamed text so the
+  // viewer never flashes the empty "No document yet" state during the refetch
+  // gap between `document_complete` and the DB row becoming visible.
+  const displayContent = document?.content || streamingDocText;
 
   const headings = useMemo(() => {
     if (!displayContent) return [];
@@ -71,21 +77,41 @@ export default function DocumentViewer() {
       onChunk: (text) => setStreamingDocText((prev) => prev + text),
       onData: (payload: import("../../types").ResearchDataEvent) => {
         if (payload.type === "document_complete") {
-          // Document assembled — clear streaming text, refetch the saved doc from DB
-          setStreamingDocText("");
+          // Document assembled — refetch the saved row. We do NOT clear the
+          // streamed text here: `displayContent` prefers `document.content`
+          // once it lands, and keeping the streamed text avoids an empty flash
+          // during the async refetch gap.
           refetchDoc();
           refresh();
         }
       },
       onEnd: () => {
-        // Safety fallback: if document_complete wasn't caught, still refetch
-        setStreamingDocText("");
+        // Safety fallback: if document_complete wasn't caught, still refetch.
         refetchDoc();
         refresh();
       },
     });
     debug.pushEvents(stream.rawEvents, "document");
   }, [api, topicId, stream, refetchDoc, refresh, debug]);
+
+  // Auto-generate the document the first time the topic is report-ready (a
+  // project synthesis exists) but no document has been assembled yet — so the
+  // user never has to manually click "Generate" after running the pipeline.
+  // Fires at most once per mount, after the initial fetch resolves to no doc.
+  const reportReady = (progress?.project_syntheses ?? 0) > 0;
+  useEffect(() => {
+    if (
+      autoGenAttempted.current ||
+      docLoading ||
+      stream.isStreaming ||
+      document ||
+      !reportReady
+    ) {
+      return;
+    }
+    autoGenAttempted.current = true;
+    void handleRegenerate();
+  }, [docLoading, stream.isStreaming, document, reportReady, handleRegenerate]);
 
   const handleExport = useCallback(
     async (format: string) => {
@@ -125,14 +151,15 @@ export default function DocumentViewer() {
     [document, topicId],
   );
 
-  // Show streaming in-progress state when generating (no document yet)
-  if (!document && stream.isStreaming) {
+  // Show the streaming in-progress state while generating, OR while we hold
+  // just-streamed text waiting for the saved row to land (no empty flash).
+  if (!document && (stream.isStreaming || streamingDocText)) {
     return (
       <div className="flex-1 min-w-0 overflow-y-auto p-3 sm:p-4">
         <div className="flex items-center gap-2 rounded-full matrx-glass-thin-border px-3 py-1.5 mb-4">
           <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
           <span className="text-xs font-medium text-primary">
-            Generating document…
+            {stream.isStreaming ? "Generating document…" : "Finalizing…"}
           </span>
           {stream.messages.length > 0 && (
             <span className="text-[10px] text-muted-foreground truncate">
@@ -146,6 +173,19 @@ export default function DocumentViewer() {
             <span className="inline-block w-0.5 h-4 bg-primary animate-pulse ml-0.5 align-middle" />
           </article>
         )}
+      </div>
+    );
+  }
+
+  // Initial fetch in flight, or report-ready and about to auto-generate:
+  // show a calm loading state instead of flashing the empty/manual view.
+  if (!document && (docLoading || reportReady)) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[320px] gap-3 p-6 text-center">
+        <Loader2 className="h-6 w-6 text-primary/50 animate-spin" />
+        <p className="text-xs font-medium text-foreground/70">
+          {reportReady ? "Assembling your research document…" : "Loading…"}
+        </p>
       </div>
     );
   }

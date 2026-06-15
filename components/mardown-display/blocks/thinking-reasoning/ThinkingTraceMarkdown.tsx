@@ -66,10 +66,14 @@ const bodyComponents = {
     <em className="italic">{children}</em>
   ),
   ul: ({ children }: { children?: React.ReactNode }) => (
-    <ul className="mb-1.5 list-disc pl-4 last:mb-0">{children}</ul>
+    <ul className="mb-1.5 list-disc [&_ul]:list-[circle] [&_ul_ul]:list-dash pl-4 last:mb-0">
+      {children}
+    </ul>
   ),
   ol: ({ children }: { children?: React.ReactNode }) => (
-    <ol className="mb-1.5 list-decimal pl-4 last:mb-0">{children}</ol>
+    <ol className="mb-1.5 list-decimal [&_ol]:list-[lower-roman] [&_ol_ol]:list-[lower-alpha] pl-4 last:mb-0">
+      {children}
+    </ol>
   ),
   li: ({ children }: { children?: React.ReactNode }) => (
     <li className="mb-0.5">{children}</li>

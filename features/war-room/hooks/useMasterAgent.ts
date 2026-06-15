@@ -39,6 +39,8 @@ import { getUserId } from "@/utils/auth/getUserId";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
+import { WAR_ROOM_MASTER_TOOL_NAMES } from "@/features/agents/war-room-master-tools/tools/names";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { AUDIO_ASSISTANT_AGENT_ID } from "@/features/transcript-studio/constants";
 import { selectSessionsList } from "@/features/war-room/redux/selectors";
@@ -208,6 +210,26 @@ export function useMasterAgent(): UseMasterAgentReturn {
     void refreshContext();
     // roomSignature is the intended re-push trigger; refreshContext is stable.
   }, [conversationId, roomSignature, refreshContext]);
+
+  // ── Arm the MASTER messaging/management tools on this conversation ────────
+  // These inline tools (war_room_read_thread / _message_thread / _create_room /
+  // _rename_room) are NOT in the server registry; arming them here is what makes
+  // build-tool-injection emit them as inline specs on the master's requests, and
+  // routes their delegated calls to dispatchWarRoomMasterTool. Armed ONLY on the
+  // master conversation — never on a tile's agent. Cleared on unmount so a
+  // remount re-arms a clean set (and the names never linger on a stale id).
+  useEffect(() => {
+    if (!conversationId) return;
+    dispatch(
+      setClientTools({
+        conversationId,
+        tools: [...WAR_ROOM_MASTER_TOOL_NAMES],
+      }),
+    );
+    return () => {
+      dispatch(setClientTools({ conversationId, tools: [] }));
+    };
+  }, [conversationId, dispatch]);
 
   return {
     conversationId,

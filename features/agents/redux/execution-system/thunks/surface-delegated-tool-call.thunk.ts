@@ -43,6 +43,8 @@ import { isUiFirstToolName } from "@/features/agents/ui-first-tools/tools/names"
 import { dispatchUiFirstTool } from "@/features/agents/ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk";
 import { isWarRoomToolName } from "@/features/agents/war-room-tools/tools/names";
 import { dispatchWarRoomTool } from "@/features/agents/war-room-tools/dispatcher/dispatch-war-room-tool.thunk";
+import { isWarRoomMasterToolName } from "@/features/agents/war-room-master-tools/tools/names";
+import { dispatchWarRoomMasterTool } from "@/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk";
 
 export interface SurfaceDelegatedToolCallArgs {
   conversationId: string;
@@ -131,6 +133,26 @@ export const surfaceDelegatedToolCall = (
       // approval — same suspend/resume contract as the ui-first tools.
       dispatch(
         dispatchWarRoomTool({
+          conversationId,
+          requestId,
+          callId,
+          toolName,
+          args: (data?.arguments as Record<string, unknown>) ?? {},
+        }),
+      );
+      return;
+    }
+
+    if (isWarRoomMasterToolName(toolName)) {
+      // War Room MASTER tools (war_room_read_thread / _message_thread /
+      // _create_room / _rename_room). Armed ONLY on the /war-room/all master
+      // conversation (useMasterAgent registers them per-conversation). The
+      // dispatcher validates args, resolves the target thread/room, and runs the
+      // action IMMEDIATELY (notify-and-watch — no approval pause); messaging a
+      // thread also opens a live-watch window + toast. It POSTs the result
+      // through the same funnel so the suspended master loop resumes once.
+      dispatch(
+        dispatchWarRoomMasterTool({
           conversationId,
           requestId,
           callId,

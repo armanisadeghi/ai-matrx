@@ -93,8 +93,11 @@ function statusFor(args: {
   upstreamReady: boolean;
   /** Topic autonomy — gates "queued" vs "gated" semantics. */
   autonomy: ResearchTopic["autonomy_level"];
-  /** True if any stage in the pipeline is currently active. */
-  anyStageActive: boolean;
+  /**
+   * True ONLY while a run is genuinely live (stream open or a stage active).
+   * Gates the animated "queued"/waiting state so nothing pulses at rest.
+   */
+  isLive: boolean;
 }): OrchestraStatus {
   const {
     have,
@@ -103,11 +106,12 @@ function statusFor(args: {
     liveStage,
     upstreamReady,
     autonomy,
-    anyStageActive,
+    isLive,
   } = args;
 
-  // Live state wins.
-  if (liveStage) {
+  // Live state wins — but only when a run is actually live. A stale stage left
+  // in "active" must never animate at rest (that's the never-ending-spinner bug).
+  if (liveStage && isLive) {
     if (liveStage.status === "active") return "active";
     if (liveStage.status === "failed") return "failed";
     if (liveStage.status === "partial") return "partial";
@@ -126,9 +130,12 @@ function statusFor(args: {
   if (!upstreamReady) return "empty";
 
   // Upstream is ready, this node has nothing yet.
-  if (anyStageActive) return "queued";
+  // Animate "queued" ONLY during a live run; at rest the node stays static
+  // ("gated" for manual autonomy, otherwise plain "empty") so it never pulses
+  // forever after a finished run.
+  if (isLive) return "queued";
   if (autonomy === "manual") return "gated";
-  return "queued";
+  return "empty";
 }
 
 function edgeStateFor(
@@ -202,7 +209,13 @@ export function PipelineOrchestra() {
         onData: handleStreamData,
         onInfo: handleStreamInfo,
         onStatusUpdate: handleStreamPhase,
-        onEnd: () => refresh(),
+        onEnd: () => {
+          // Safety net: if the stream ended without `pipeline_complete`
+          // (single-stage ops, or a dropped terminal event), force every
+          // still-active stage/item terminal so no spinner is left running.
+          pipeline.finalize();
+          refresh();
+        },
       });
       debug.pushEvents(stream.rawEvents, label);
     },
@@ -320,6 +333,10 @@ export function PipelineOrchestra() {
   };
 
   const anyStageActive = pipeline.state.activeStage != null;
+  // "Live" = a run is genuinely in flight. Gates every animated node/edge state
+  // so the graph is completely static once a run is over (no perpetual pulsing
+  // or false "flow" between nodes on a finished/reloaded topic).
+  const isLive = stream.isStreaming || anyStageActive;
   const autonomy = topic.autonomy_level;
 
   const keywordsStatus = statusFor({
@@ -327,7 +344,7 @@ export function PipelineOrchestra() {
     target: topic.max_keywords,
     upstreamReady: true,
     autonomy,
-    anyStageActive,
+    isLive,
   });
 
   const sourcesStatus = statusFor({
@@ -335,7 +352,7 @@ export function PipelineOrchestra() {
     liveStage: pipeline.state.stages.search,
     upstreamReady: p.total_keywords > 0,
     autonomy,
-    anyStageActive,
+    isLive,
   });
 
   const contentStatus = statusFor({
@@ -343,7 +360,7 @@ export function PipelineOrchestra() {
     liveStage: pipeline.state.stages.scrape,
     upstreamReady: p.total_sources > 0,
     autonomy,
-    anyStageActive,
+    isLive,
   });
 
   const analysisStatus = statusFor({
@@ -353,7 +370,7 @@ export function PipelineOrchestra() {
     liveStage: pipeline.state.stages.analyze,
     upstreamReady: p.total_content > 0,
     autonomy,
-    anyStageActive,
+    isLive,
   });
 
   const synthesisStatus = statusFor({
@@ -363,7 +380,7 @@ export function PipelineOrchestra() {
     liveStage: pipeline.state.stages.synthesize,
     upstreamReady: p.total_analyses > 0,
     autonomy,
-    anyStageActive,
+    isLive,
   });
 
   const reportStatus = statusFor({
@@ -372,21 +389,25 @@ export function PipelineOrchestra() {
     liveStage: pipeline.state.stages.report,
     upstreamReady: p.keyword_syntheses > 0,
     autonomy,
-    anyStageActive,
+    isLive,
   });
 
   const documentStatus = statusFor({
     have: p.total_documents,
     upstreamReady: p.project_syntheses > 0,
     autonomy,
-    anyStageActive,
+    isLive,
   });
 
+  // Tags are a MANUAL organization branch — they are NOT generated during an
+  // automatic pipeline run (the backend `/run` emits no tag events). Force
+  // `isLive: false` so the node never shows a "queued"/"active" animation that
+  // would imply tags are being produced by the run when nothing happens.
   const tagsStatus = statusFor({
     have: p.total_tags,
     upstreamReady: p.total_sources > 0,
     autonomy,
-    anyStageActive,
+    isLive: false,
   });
 
   const base = `/research/topics/${topicId}`;
@@ -580,12 +601,12 @@ export function PipelineOrchestra() {
               icon={Tags}
               label="Tags"
               count={p.total_tags}
-              hint="dimensions"
+              hint="manual · group & consolidate"
               status={tagsStatus}
               href={`${base}/tags`}
               ribbon={
                 <span className="text-[9px] font-medium text-muted-foreground/70">
-                  search · analysis
+                  manual
                 </span>
               }
             />
@@ -783,14 +804,12 @@ export function PipelineOrchestra() {
               {/* col 1 = Keywords (no fork) */}
               <div />
               <div />
-              {/* col 3 = Sources → curve down to Tags (col 5 area) */}
+              {/* col 3 = Sources → curve down to Tags (col 5 area).
+                  Always dashed: tags are a manual branch, never fed by a live
+                  run, so this stays a structural hint and never animates flow. */}
               <div className="flex justify-end pr-2">
                 <OrchestraCurvedEdge
-                  state={
-                    sourcesStatus === "active" || sourcesStatus === "complete"
-                      ? edgeStateFor(sourcesStatus, tagsStatus)
-                      : "dashed"
-                  }
+                  state="dashed"
                   width={80}
                   height={40}
                   direction="down-right"
@@ -799,14 +818,10 @@ export function PipelineOrchestra() {
               <div />
               <div /> {/* placeholder under Content */}
               <div />
-              {/* col 7 = Analysis → curve down to Tags */}
+              {/* col 7 = Analysis → curve down to Tags. Always dashed (see above). */}
               <div className="flex justify-start pl-2">
                 <OrchestraCurvedEdge
-                  state={
-                    analysisStatus === "active" || analysisStatus === "complete"
-                      ? edgeStateFor(analysisStatus, tagsStatus)
-                      : "dashed"
-                  }
+                  state="dashed"
                   width={80}
                   height={40}
                   direction="down-right"
@@ -838,28 +853,24 @@ export function PipelineOrchestra() {
                   icon={Tags}
                   label="Tags"
                   count={p.total_tags}
-                  hint="from search + analysis"
                   status={tagsStatus}
                   href={`${base}/tags`}
+                  hint="manual · group & consolidate"
                   ribbon={
                     <span className="inline-flex items-center gap-1 text-[9px] font-medium text-muted-foreground/70">
                       <span className="px-1 py-px rounded bg-muted/50">
-                        SEARCH
-                      </span>
-                      <span className="text-muted-foreground/40">+</span>
-                      <span className="px-1 py-px rounded bg-muted/50">
-                        ANALYSIS
+                        MANUAL
                       </span>
                     </span>
                   }
                   tooltip={
                     <div className="space-y-1 max-w-xs">
-                      <div className="font-medium text-xs">Tags</div>
+                      <div className="font-medium text-xs">Tags (manual)</div>
                       <div className="text-[11px] text-muted-foreground leading-snug">
-                        Tags are generated twice — first from condensed search
-                        results to seed dimensions, then again after content
-                        analysis for deeper signals. You merge the two
-                        side-by-side.
+                        A manual organization tool — not part of an automatic
+                        run. On the Tags page, create a tag, assign sources to
+                        it, then consolidate to synthesize across that
+                        dimension.
                       </div>
                     </div>
                   }
