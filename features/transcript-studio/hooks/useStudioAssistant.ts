@@ -106,7 +106,15 @@ export function useStudioAssistant(
       sessionId,
       workingDocIdRef.current,
     );
-    dispatch(setContextEntries({ conversationId, entries }));
+    // NEVER clobber good context with an empty set. A transient build (doc not
+    // yet loaded, etc.) returning [] would otherwise wipe the conversation's
+    // context dict, so the very next turn ships with no `context` key and the
+    // server returns "No context objects are available" (the intermittent BUG).
+    // Skipping the empty push is safe: working_document is always present once
+    // the doc id is known, so legitimately-empty never happens post-ensure.
+    if (entries.length > 0) {
+      dispatch(setContextEntries({ conversationId, entries }));
+    }
   }, [
     sessionId,
     conversationId,
@@ -124,7 +132,9 @@ export function useStudioAssistant(
       sessionId,
       workingDocIdRef.current,
     );
-    dispatch(setContextEntries({ conversationId, entries }));
+    if (entries.length > 0) {
+      dispatch(setContextEntries({ conversationId, entries }));
+    }
   }, [sessionId, conversationId, dispatch, store]);
 
   const send = useCallback(

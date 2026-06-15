@@ -29,7 +29,21 @@ export function useWorkingDocumentDraft(
 
   // Pull in assistant/realtime edits only when the user isn't actively typing.
   useEffect(() => {
-    if (!editingRef.current) setDraft(remoteContent);
+    if (editingRef.current) return;
+    setDraft((prev) => {
+      // BUG-B GUARD: never let a transient EMPTY remote wipe a non-empty draft.
+      // A bad agent cycle (missing context) or an empty realtime echo would
+      // otherwise blank the working document and then persist the blank. This
+      // is a recovery layer — if it ever fires, a real upstream bug produced an
+      // empty remote, so we scream (loud recovery) and keep the user's content.
+      if (remoteContent === "" && prev !== "") {
+        console.warn(
+          "[war-room/working-doc] blocked an empty remote from wiping a non-empty working document (BUG-B guard fired)",
+        );
+        return prev;
+      }
+      return remoteContent;
+    });
   }, [remoteContent]);
 
   const save = useCallback(
