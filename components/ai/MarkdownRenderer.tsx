@@ -27,14 +27,14 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     ul: ({ node, ...props }) => (
       <ul
         style={{ fontSize: `${fontSize}px` }}
-        className="list-disc [&_ul]:list-[circle] [&_ul_ul]:list-dash pl-5 mb-2"
+        className="matrx-md-ul pl-5 mb-2"
         {...props}
       />
     ),
     ol: ({ node, ...props }) => (
       <ol
         style={{ fontSize: `${fontSize}px` }}
-        className="list-decimal [&_ol]:list-[lower-roman] [&_ol_ol]:list-[lower-alpha] pl-5 mb-2"
+        className="matrx-md-ol pl-5 mb-2"
         {...props}
       />
     ),

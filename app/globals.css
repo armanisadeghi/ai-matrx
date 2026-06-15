@@ -628,11 +628,41 @@
   }
 }
 
-/* Third-level (and deeper) bullet marker for rendered markdown lists: a dash.
-   CSS has no `dash` list-style keyword, so we use a string marker. Defined as a
-   real utility so depth variants (e.g. [&_ul_ul]:list-dash) generate reliably. */
-@utility list-dash {
+/* Rendered-markdown list markers by nesting depth. Applied via the stable
+   `matrx-md-ul` / `matrx-md-ol` classes on every markdown <ul>/<ol> (see
+   BasicMarkdownContent, ConfigurableMarkdownContent, MarkdownRenderer). Plain
+   (unlayered) CSS so it reliably wins over Tailwind's Preflight reset and never
+   depends on arbitrary-variant generation. Every list carries the class, so the
+   descendant selectors out-specify a deeper list's own base rule:
+     ul  → L1 disc · L2 hollow circle · L3+ dash
+     ol  → L1 decimal · L2 lower-roman · L3+ lower-alpha */
+.matrx-md-ul {
+  list-style-type: disc;
+}
+.matrx-md-ul ul {
+  list-style-type: circle;
+}
+.matrx-md-ul ul ul {
   list-style-type: "-  ";
+}
+/* TEMP PROOF — delete once confirmed: marker colors per nesting depth. */
+.matrx-md-ul > li::marker {
+  color: #ef4444;
+}
+.matrx-md-ul ul > li::marker {
+  color: #22c55e;
+}
+.matrx-md-ul ul ul > li::marker {
+  color: #3b82f6;
+}
+.matrx-md-ol {
+  list-style-type: decimal;
+}
+.matrx-md-ol ol {
+  list-style-type: lower-roman;
+}
+.matrx-md-ol ol ol {
+  list-style-type: lower-alpha;
 }
 
 .animate-slide-in-from-right {

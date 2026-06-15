@@ -656,7 +656,7 @@ export const ConfigurableMarkdownContent: React.FC<
               <ul
                 className={cn(
                   // L1 disc, L2 hollow circle, L3+ dash (depth cascade).
-                  "list-disc [&_ul]:list-[circle] [&_ul_ul]:list-dash",
+                  "matrx-md-ul",
                   spacing.listMb,
                   typography.leading,
                   getFontSize(listDirection),
@@ -682,7 +682,7 @@ export const ConfigurableMarkdownContent: React.FC<
               <ol
                 className={cn(
                   // L1 decimal, L2 lower-roman, L3+ lower-alpha (depth cascade).
-                  "list-decimal [&_ol]:list-[lower-roman] [&_ol_ol]:list-[lower-alpha]",
+                  "matrx-md-ol",
                   spacing.listMb,
                   typography.leading,
                   getFontSize(listDirection),

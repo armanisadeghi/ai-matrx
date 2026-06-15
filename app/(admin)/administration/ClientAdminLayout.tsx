@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { ModuleHeader } from "@/components/layout/new-layout/PageSpecificHeader";
+import { AdminModuleHeader } from "./_nav/AdminModuleHeader";
 import { filteredPages, MODULE_HOME, MODULE_NAME } from "./config";
 
 /**
@@ -24,18 +24,14 @@ function isFullscreenRoute(pathname: string): boolean {
   return false;
 }
 
-export function ClientAdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function ClientAdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? "";
   const fullscreen = isFullscreenRoute(pathname);
 
   return (
     <div className="flex flex-col h-page">
       {!fullscreen && (
-        <ModuleHeader
+        <AdminModuleHeader
           pages={filteredPages}
           currentPath={pathname}
           moduleHome={MODULE_HOME}

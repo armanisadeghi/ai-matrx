@@ -13,13 +13,13 @@ const markdownComponents = {
   ),
   ul: ({ ...props }) => (
     <ul
-      className="list-disc [&_ul]:list-[circle] [&_ul_ul]:list-dash pl-5 ml-3 mb-3 leading-relaxed text-md"
+      className="matrx-md-ul pl-5 ml-3 mb-3 leading-relaxed text-md"
       {...props}
     />
   ),
   ol: ({ ...props }) => (
     <ol
-      className="list-decimal [&_ol]:list-[lower-roman] [&_ol_ol]:list-[lower-alpha] pl-5 ml-3 mb-3 leading-relaxed text-md"
+      className="matrx-md-ol pl-5 ml-3 mb-3 leading-relaxed text-md"
       {...props}
     />
   ),

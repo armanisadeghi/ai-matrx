@@ -119,13 +119,21 @@ function AdminPageContent() {
       .filter(Boolean) as AdminCategory[];
   }, [normalizedQuery, searchQuery]);
 
-  const searchResultCount = React.useMemo(() => {
-    if (!normalizedQuery) return 0;
-    return filteredCategories.reduce(
-      (total, category) => total + category.features.length,
-      0,
-    );
+  const searchResults = React.useMemo(() => {
+    if (!normalizedQuery) return [];
+    return filteredCategories
+      .flatMap((category) =>
+        category.features.map((feature) => ({
+          ...feature,
+          categoryName: category.name,
+        })),
+      )
+      .sort((a, b) =>
+        a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
+      );
   }, [filteredCategories, normalizedQuery]);
+
+  const searchResultCount = searchResults.length;
 
   if (selectedCategory) {
     const category = sortedAdminCategories.find(
@@ -193,65 +201,40 @@ function AdminPageContent() {
 
           {normalizedQuery ? (
             <>
-              {filteredCategories.length > 0 ? (
-                <div className="space-y-6">
-                  <p className="text-sm text-muted-foreground">
+              {searchResults.length > 0 ? (
+                <div>
+                  <p className="mb-2 text-xs text-muted-foreground">
                     {searchResultCount} result
-                    {searchResultCount === 1 ? "" : "s"} in{" "}
-                    {filteredCategories.length} categor
-                    {filteredCategories.length === 1 ? "y" : "ies"}
+                    {searchResultCount === 1 ? "" : "s"}
                   </p>
 
-                  {filteredCategories.map((category) => (
-                    <section key={category.name}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div
-                          className={`p-1.5 rounded-md text-white ${getCategoryBgClass(category.iconColor)}`}
-                        >
-                          {category.icon}
-                        </div>
-                        <h2 className="text-sm font-semibold text-foreground">
-                          {category.name}
-                        </h2>
-                        <span className="text-xs text-muted-foreground">
-                          ({category.features.length})
+                  <div className="divide-y divide-border/60 rounded-md border border-border bg-card">
+                    {searchResults.map((feature) => (
+                      <Link
+                        key={feature.link}
+                        href={feature.link}
+                        className="flex items-baseline gap-3 px-3 py-1.5 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                      >
+                        <span className="min-w-0 shrink-0 text-sm font-medium text-foreground">
+                          {feature.title}
+                          {feature.isNew && (
+                            <span className="ml-1.5 text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                              New
+                            </span>
+                          )}
                         </span>
-                      </div>
-
-                      <div className="rounded-lg border border-border bg-card divide-y divide-border overflow-hidden">
-                        {category.features.map((feature) => (
-                          <Link
-                            key={`${category.name}-${feature.title}`}
-                            href={feature.link}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                          >
-                            <div className="shrink-0 w-4 h-4 text-muted-foreground [&>svg]:w-4 [&>svg]:h-4 [&>svg]:max-w-none">
-                              {feature.icon}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-foreground truncate">
-                                  {feature.title}
-                                </span>
-                                {feature.isNew && (
-                                  <span className="shrink-0 text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-full text-amber-600 dark:text-amber-400">
-                                    New
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {feature.description}
-                              </p>
-                            </div>
-                            <IconChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
-                          </Link>
-                        ))}
-                      </div>
-                    </section>
-                  ))}
+                        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                          {feature.description}
+                        </span>
+                        <span className="shrink-0 text-xs text-muted-foreground/70">
+                          {feature.categoryName}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <div className="text-center py-12 text-muted-foreground">
+                <div className="py-12 text-center text-sm text-muted-foreground">
                   No results found for &ldquo;{searchQuery}&rdquo;
                 </div>
               )}

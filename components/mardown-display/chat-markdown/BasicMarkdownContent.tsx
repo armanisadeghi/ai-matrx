@@ -578,7 +578,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
             // ancestor descendant-selectors ([&_ul], [&_ul_ul]) have higher
             // specificity than a deeper list's own `list-disc`, so each level
             // resolves to the right marker regardless of how deep it is.
-            className={`list-disc [&_ul]:list-[circle] [&_ul_ul]:list-dash mb-3 leading-relaxed ${getDirectionFontSize(listDirection)} pl-6 ${getDirectionClasses(listDirection)}`}
+            className={`matrx-md-ul mb-3 leading-relaxed ${getDirectionFontSize(listDirection)} pl-6 ${getDirectionClasses(listDirection)}`}
             dir={listDirection}
             {...props}
           >
@@ -601,7 +601,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
             // Numbering by nesting depth: L1 decimal (1.2.3.), L2 lower-roman
             // (i.ii.iii.), L3+ lower-alpha (a.b.c.). Same specificity-cascade
             // approach as <ul> above.
-            className={`list-decimal [&_ol]:list-[lower-roman] [&_ol_ol]:list-[lower-alpha] mb-3 leading-relaxed ${getDirectionFontSize(listDirection)} pl-6 ${getDirectionClasses(listDirection)}`}
+            className={`matrx-md-ol mb-3 leading-relaxed ${getDirectionFontSize(listDirection)} pl-6 ${getDirectionClasses(listDirection)}`}
             dir={listDirection}
             {...props}
           >

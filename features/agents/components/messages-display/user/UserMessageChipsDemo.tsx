@@ -42,6 +42,7 @@ import {
 } from "./userMessageChipsDemoData";
 import { UserMessageAttachmentStyleComparison } from "./UserMessageAttachmentStyleComparison";
 import { UserMessageHybridTileSamples } from "./UserMessageHybridTileSamples";
+import { ResourceEditableToggleSamples } from "./ResourceEditableToggleSamples";
 import {
   initInstanceResources,
   addResource,
@@ -190,6 +191,8 @@ export function UserMessageChipsDemo() {
             group). Style explorations below are kept for future tuning.
           </p>
         </header>
+
+        <ResourceEditableToggleSamples />
 
         <UserMessageAttachmentStyleComparison
           specs={DEMO_COMPARISON_ATTACHMENTS}
