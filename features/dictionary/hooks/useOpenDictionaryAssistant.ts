@@ -1,24 +1,23 @@
 // features/dictionary/hooks/useOpenDictionaryAssistant.ts
 //
 // Launch the Dictionary Assistant as a floating-chat WIDGET (not the /chat
-// route). Uses the global shortcut (DICTIONARY_ASSISTANT_SHORTCUT_ID) via the
-// canonical useAgentLauncher().launchShortcut path — dispatching it opens the
-// agentFloatingChat overlay automatically. The owner the user launched from is
-// passed as scope so the agent knows what they're working on (it still confirms
-// via its list_owners tool).
+// route). Uses launchAgent(agentId, …) directly — NOT launchShortcut, because
+// the shortcut record must already be loaded into Redux for launchShortcut to
+// resolve it (getShortcutRecordFromState only reads state, never fetches), and
+// the global dictionary shortcut isn't loaded on the management pages.
+// launchAgent has no such dependency: it opens the agentFloatingChat overlay
+// with the agent (which carries its model + dictionary tool + skills). The
+// global shortcut row still exists for discovery in the shortcuts menus.
 
 "use client";
 
 import { useCallback, useState } from "react";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
-import {
-  DICTIONARY_ASSISTANT_SHORTCUT_ID,
-  DICT_LEVEL_LABELS,
-} from "@/features/dictionary/constants";
+import { DICTIONARY_AGENT_IDS, DICT_LEVEL_LABELS } from "@/features/dictionary/constants";
 import type { DictLevel } from "@/features/dictionary/types";
 
 export function useOpenDictionaryAssistant() {
-  const { launchShortcut } = useAgentLauncher();
+  const { launchAgent } = useAgentLauncher();
   const [isPending, setIsPending] = useState(false);
 
   const open = useCallback(
@@ -31,29 +30,33 @@ export function useOpenDictionaryAssistant() {
 
       setIsPending(true);
       try {
-        await launchShortcut(
-          DICTIONARY_ASSISTANT_SHORTCUT_ID,
-          {
+        await launchAgent(DICTIONARY_AGENT_IDS.assistant, {
+          surfaceKey: "dictionary:assistant",
+          sourceFeature: "dictionary",
+          apiEndpointMode: "agent",
+          config: {
+            displayMode: "floating-chat",
+            autoRun: false,
+            allowChat: true,
+          },
+          runtime: {
             // Orientation for the agent — it still resolves the concrete owner
             // via its list_owners tool before writing.
-            context: {
-              dictionary_owner_level: opts.level,
-              dictionary_owner_id: opts.ownerId ?? null,
-              dictionary_owner_name: opts.ownerName ?? null,
-              working_on: where,
+            applicationScope: {
+              context: {
+                dictionary_owner_level: opts.level,
+                dictionary_owner_id: opts.ownerId ?? null,
+                dictionary_owner_name: opts.ownerName ?? null,
+                working_on: where,
+              },
             },
           },
-          {
-            surfaceKey: `dictionary:assistant`,
-            sourceFeature: "dictionary",
-            config: { displayMode: "floating-chat" },
-          },
-        );
+        });
       } finally {
         setIsPending(false);
       }
     },
-    [launchShortcut],
+    [launchAgent],
   );
 
   return { open, isPending };
