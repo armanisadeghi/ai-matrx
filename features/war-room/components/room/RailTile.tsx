@@ -47,6 +47,7 @@ export function RailTile({
       }}
       className={cn(
         "group/rail relative flex items-start gap-2.5 rounded-xl border pl-3 pr-2.5 py-2 text-left transition-all duration-150 cursor-pointer overflow-hidden",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         isStaged
           ? "border-primary/60 bg-primary/[0.06] shadow-[var(--elevation-1)]"
           : "border-border bg-card hover:border-primary/30 hover:bg-accent/40",

@@ -23,7 +23,6 @@ import {
 import {
   deleteTile,
   renameTile,
-  setTileActiveTabPersisted,
   toggleTileHide,
   toggleTilePin,
 } from "@/features/war-room/redux/thunks";
@@ -37,9 +36,6 @@ export interface TileActions {
   rename: (next: string) => void;
   togglePin: () => void;
   hide: () => void;
-  /** Restore a parked (hidden) tile back to the room. */
-  unhide: () => void;
-  setTab: (tab: TileTab) => void;
   expand: () => void;
   remove: () => Promise<void>;
 }
@@ -102,8 +98,6 @@ export function useTileActions(
     rename: (next) => dispatch(renameTile(tileId, next)),
     togglePin: () => dispatch(toggleTilePin(tileId, !tile.is_pinned)),
     hide: () => dispatch(toggleTileHide(tileId, true)),
-    unhide: () => dispatch(toggleTileHide(tileId, false)),
-    setTab: (tab) => dispatch(setTileActiveTabPersisted(tileId, tab)),
     expand,
     remove,
   };

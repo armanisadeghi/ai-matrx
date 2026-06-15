@@ -27,6 +27,11 @@ import {
   useState,
 } from "react";
 import type { TileTab } from "@/features/war-room/types";
+import {
+  GALLERY_GAP_PX,
+  GALLERY_MIN_TILE,
+  GALLERY_TARGET_ASPECT,
+} from "@/features/war-room/constants";
 
 export type RoomMode = "stage" | "grid";
 export type Density = "comfortable" | "compact";
@@ -106,16 +111,17 @@ export function resolveStagedId(
 }
 
 // ── Layout floors per density (consumed by the gallery engine in Grid mode) ──
-// Comfortable matches the live default; compact lowers the floor so more
-// threads pack into the viewport before the grid switches to scrolling.
+// Comfortable IS the live default, single-sourced from the gallery tuning
+// constants; compact lowers the floor so more threads pack into the viewport
+// before the grid switches to scrolling.
 export const DENSITY_LAYOUT: Record<
   Density,
   { gap: number; minTile: { width: number; height: number }; targetAspect: number }
 > = {
   comfortable: {
-    gap: 12,
-    minTile: { width: 300, height: 220 },
-    targetAspect: 4 / 3,
+    gap: GALLERY_GAP_PX,
+    minTile: GALLERY_MIN_TILE,
+    targetAspect: GALLERY_TARGET_ASPECT,
   },
   compact: {
     gap: 8,

@@ -35,10 +35,12 @@ export function SessionContextButton({ sessionId }: { sessionId: string }) {
           type="button"
           className={cn(
             "inline-flex items-center gap-1.5 rounded-lg border px-2.5 h-7 text-xs font-medium transition-colors",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
             hasContext
               ? "border-primary/40 bg-primary/5 text-foreground"
               : "border-border text-muted-foreground hover:text-foreground hover:bg-accent",
           )}
+          aria-label="War Room context"
           title="War Room context — inherited by every tile"
         >
           <Building2 className="size-3.5" />

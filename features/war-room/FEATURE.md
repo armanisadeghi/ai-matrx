@@ -8,7 +8,7 @@
 > pinned, parked, or projected. **Read this before touching any
 > `features/war-room/**` code.**
 
-**Status:** Active (Waves 1–6 shipped). **Owner route group:** `(core)`.
+**Status:** Active — the cockpit is shipped (Stage⇄Grid, instrument projector, density dial, live meter, kind accent-rails, metric chips, parked-thread rail; Waves 1–8 + the UI bake-off consolidation). **Owner route group:** `(core)`.
 
 ---
 
@@ -97,3 +97,6 @@ Dev-login → `/war-room/all`. Create a room; add threads. **Stage mode:** rail 
 
 - 2026-06-14 — Waves 1–5: schema + slice + landing + `/all`; gallery engine + tile system + pin/hide; Task/Notes/Audio/Combined tabs (all functional); session + per-tile context-awareness; expand overlays; this doc + `/war-room/admin` map.
 - 2026-06-14 — Wave 6 (ui bake-off consolidation): the canonical room UI became a cockpit — **Stage⇄Grid** modes, a live watchlist rail (`StageView`/`RailTile`/`StageTile`), the **instrument projector**, a **Comfortable/Compact density dial**, live metric chips + accent rails on tiles, and a parked-thread chip treatment. New ephemeral `roomViewContext`; new `useTilePulse`/`useTileMetrics`/`useTileActions` hooks and shared tile primitives (`TileTabContent`/`TileMetricChips`/`TileOptionsMenu`/`PulseGlyph`/`tileKind`). Removed `TileFrame` (its chrome is now inlined in the richer tiles) and the four `_bakeoff/` variants + `/war-room/bakeoff/*` routes. Parity preserved: editable titles, options menu, icon tab switcher, all four tab bodies, note modes, context controls, pin/park/restore, expand overlays, real loading/empty/not-found.
+- 2026-06-14 — Wave 7 (whole-feature subagent verification): a verification pass over the entire feature (routes, slice, thunks, selectors, tile system) confirming the cockpit's flows end-to-end.
+- 2026-06-14 — Wave 8 (UX refinements): editable session + thread titles; the "All" (combined) view became one single-layer scroll column (no nested/double editors); a 3-mode notes switcher — **Text / Matrx-Split / Preview**; tab icons moved inline into the tile header (the segmented `TileTabBar`), reclaiming vertical space.
+- 2026-06-14 — UI bake-off consolidation (cockpit cleanup): consolidated the cockpit on the bake-off winner — Stage⇄Grid, the instrument projector, the density dial, the live active/parked/pinned meter, kind accent-rails, metric chips, and the parked-thread rail. Audit cleanup: removed the dead Redux UI/save-state cluster (`tileSaveState`, `ui`, `SaveStatus`, their reducers + selectors, `selectActiveSession*`, `selectWarRoomSlice`); trimmed unused `TileActions.unhide`/`setTab`; single-sourced the gallery tuning constants into `DENSITY_LAYOUT.comfortable`; honest tab semantics (`aria-pressed` over a disconnected `role="tablist"`) + keyboard focus rings + `aria-label`s on icon-only context triggers.

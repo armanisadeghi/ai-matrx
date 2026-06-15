@@ -22,7 +22,6 @@ const EMPTY_IDS: string[] = [];
 const EMPTY_SESSIONS: WarRoomSession[] = [];
 
 // ── Roots ─────────────────────────────────────────────────────────────
-const selectSlice = (state: RootState) => state.warRoom;
 export const selectSessionsById = (state: RootState) => state.warRoom.sessionsById;
 const selectSessionIds = (state: RootState) => state.warRoom.sessionIds;
 const selectTilesById = (state: RootState) => state.warRoom.tilesById;
@@ -56,20 +55,6 @@ export function selectSessionById(id: string | null) {
   }
   return sel;
 }
-
-export const selectActiveSession = createSelector(
-  [selectSessionsById, selectActiveSessionId],
-  (byId, activeId) => (activeId ? (byId[activeId] ?? null) : null),
-);
-
-export const selectActiveSessionContext = createSelector(
-  [selectActiveSession],
-  (session): TileContext => ({
-    organizationId: session?.organization_id ?? null,
-    scopeIds: asScopeIds(session?.context_scope_ids),
-    isOverridden: false,
-  }),
-);
 
 // ── Tiles ─────────────────────────────────────────────────────────────
 const tileByIdCache = new Map<string, (state: RootState) => WarRoomTile | null>();
@@ -206,18 +191,4 @@ export const selectActiveAudioSessionId =
   (state: RootState): string | null =>
     tileId ? (state.warRoom.activeAudioSessionByTile[tileId] ?? null) : null;
 
-// ── Save state / UI ───────────────────────────────────────────────────
-export const selectTileSaveState =
-  (tileId: string | null) =>
-  (state: RootState) =>
-    tileId ? (state.warRoom.tileSaveState[tileId] ?? "idle") : "idle";
-
-export const selectFocusedTileId = (state: RootState) =>
-  state.warRoom.ui.focusedTileId;
-export const selectNewTileDraft = (state: RootState) =>
-  state.warRoom.ui.newTileDraft;
-export const selectContextOverrideOpenTileId = (state: RootState) =>
-  state.warRoom.ui.contextOverrideOpenTileId;
-
 export { asScopeIds };
-export { selectSlice as selectWarRoomSlice };

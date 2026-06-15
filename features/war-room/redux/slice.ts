@@ -8,8 +8,6 @@ import type { TileTab, WarRoomSession, WarRoomTile } from "../types";
 import {
   initialWarRoomState,
   type LoadStatus,
-  type SaveStatus,
-  type WarRoomState,
 } from "./warRoom.types";
 
 function removeId(ids: string[], id: string): string[] {
@@ -100,7 +98,6 @@ const warRoomSlice = createSlice({
       }
       delete state.audioSessionIdsByTile[id];
       delete state.activeAudioSessionByTile[id];
-      delete state.tileSaveState[id];
     },
     setTileActiveTab(
       state,
@@ -143,12 +140,6 @@ const warRoomSlice = createSlice({
       if (action.payload.taskId !== undefined) t.task_id = action.payload.taskId;
       if (action.payload.noteId !== undefined) t.note_id = action.payload.noteId;
     },
-    setTileSaveState(
-      state,
-      action: PayloadAction<{ id: string; status: SaveStatus }>,
-    ) {
-      state.tileSaveState[action.payload.id] = action.payload.status;
-    },
 
     // ── Audio links ───────────────────────────────────────────────────
     audioSessionsLoadedForTile(
@@ -181,20 +172,6 @@ const warRoomSlice = createSlice({
         action.payload.studioSessionId;
     },
 
-    // ── Ephemeral UI ──────────────────────────────────────────────────
-    setFocusedTile(state, action: PayloadAction<string | null>) {
-      state.ui.focusedTileId = action.payload;
-    },
-    setNewTileDraft(
-      state,
-      action: PayloadAction<WarRoomState["ui"]["newTileDraft"]>,
-    ) {
-      state.ui.newTileDraft = action.payload;
-    },
-    setContextOverrideOpen(state, action: PayloadAction<string | null>) {
-      state.ui.contextOverrideOpenTileId = action.payload;
-    },
-
     /** Drop all loaded tiles for a session (e.g. when leaving the room). */
     clearSessionTiles(state, action: PayloadAction<string>) {
       const sessionId = action.payload;
@@ -203,7 +180,6 @@ const warRoomSlice = createSlice({
         delete state.tilesById[id];
         delete state.audioSessionIdsByTile[id];
         delete state.activeAudioSessionByTile[id];
-        delete state.tileSaveState[id];
       }
       delete state.tileIdsBySession[sessionId];
       delete state.tilesStatusBySession[sessionId];
@@ -227,13 +203,9 @@ export const {
   setTileHidden,
   setTilePosition,
   setTileLink,
-  setTileSaveState,
   audioSessionsLoadedForTile,
   audioSessionLinkedToTile,
   setActiveAudioSession,
-  setFocusedTile,
-  setNewTileDraft,
-  setContextOverrideOpen,
   clearSessionTiles,
 } = warRoomSlice.actions;
 

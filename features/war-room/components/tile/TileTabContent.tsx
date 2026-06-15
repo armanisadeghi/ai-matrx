@@ -28,7 +28,7 @@ export function TileTabContent({
 }) {
   switch (tab) {
     case "task":
-      return <TileTaskTab tileId={tileId} sessionId={sessionId} />;
+      return <TileTaskTab tileId={tileId} />;
     case "notes":
       return <TileNotesTab tileId={tileId} sessionId={sessionId} />;
     case "audio":
@@ -37,7 +37,7 @@ export function TileTabContent({
       return (
         <div className="h-full overflow-y-auto scrollbar-thin">
           <CombinedSection kind="task">
-            <TileTaskTab tileId={tileId} sessionId={sessionId} />
+            <TileTaskTab tileId={tileId} />
           </CombinedSection>
           <CombinedSection kind="notes">
             <TileNotesTab tileId={tileId} sessionId={sessionId} compact />

@@ -101,7 +101,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
         <button
           type="button"
           onClick={() => router.back()}
-          className="grid place-items-center size-8 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors shrink-0"
+          className="grid place-items-center size-8 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           aria-label="Back"
         >
           <ArrowLeft className="size-4.5" />
@@ -137,7 +137,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
                 <button
                   type="button"
                   aria-label="War Room options"
-                  className="grid place-items-center size-7 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                  className="grid place-items-center size-7 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   <MoreHorizontal className="size-4" />
                 </button>
@@ -241,6 +241,7 @@ function ModeSwitch() {
             title={`${label} view`}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-md h-7 px-2 text-xs font-medium transition-all",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
               active
                 ? "bg-card text-primary shadow-[var(--elevation-1)]"
                 : "text-muted-foreground hover:text-foreground",
@@ -277,6 +278,7 @@ function InstrumentProjector() {
             title={isOn ? `Stop projecting ${k.label}` : `Project all → ${k.label}`}
             className={cn(
               "grid place-items-center size-6 rounded transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
               isOn
                 ? cn(k.bg, k.text)
                 : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -291,7 +293,7 @@ function InstrumentProjector() {
           type="button"
           onClick={() => setProjectedTab(null)}
           title="Return each thread to its own view"
-          className="grid place-items-center size-6 rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          className="grid place-items-center size-6 rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <X className="size-3.5" />
         </button>
@@ -324,6 +326,7 @@ function DensityDial() {
             title={label}
             className={cn(
               "inline-flex h-6 items-center gap-1 rounded-md px-2 text-[11px] font-medium transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
               active
                 ? "bg-accent text-foreground"
                 : "text-muted-foreground hover:text-foreground",

@@ -25,10 +25,7 @@ export function TileTabBar({
   size?: "sm" | "md";
 }) {
   return (
-    <div
-      className="inline-flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5 shrink-0"
-      role="tablist"
-    >
+    <div className="inline-flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5 shrink-0">
       {TILE_KIND_ORDER.map((id) => {
         const k = tileKindOf(id);
         const isActive = id === active;
@@ -36,8 +33,7 @@ export function TileTabBar({
           <button
             key={id}
             type="button"
-            role="tab"
-            aria-selected={isActive}
+            aria-pressed={isActive}
             title={k.label}
             onClick={(e) => {
               e.stopPropagation();
@@ -45,6 +41,7 @@ export function TileTabBar({
             }}
             className={cn(
               "inline-flex items-center justify-center gap-1 rounded-md font-medium transition-all duration-150",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
               size === "md" ? "h-7 px-2" : "h-6 px-1.5",
               isActive
                 ? cn("bg-card shadow-[var(--elevation-1)]", k.text)

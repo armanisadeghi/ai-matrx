@@ -45,7 +45,6 @@ import {
   setTileLink,
   setTilePinned,
   setTilesStatus,
-  setTileSaveState,
   tileRemoved,
   tilesLoadedForSession,
   tileUpserted,
@@ -502,5 +501,3 @@ export const persistTilePositions =
       toast.error("Couldn't save tile order");
     }
   };
-
-export { setTileSaveState };

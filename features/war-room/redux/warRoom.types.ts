@@ -6,16 +6,6 @@
 import type { TileTab, WarRoomSession, WarRoomTile } from "../types";
 
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
-export type SaveStatus = "idle" | "saving" | "saved" | "error";
-
-/** Per-mount ephemeral UI that never round-trips to Supabase. */
-export interface WarRoomUiState {
-  focusedTileId: string | null;
-  /** Draft text captured in the always-present "new" tile before it's promoted. */
-  newTileDraft: { taskName?: string; noteText?: string } | null;
-  /** Which tile currently has its context-override popover open. */
-  contextOverrideOpenTileId: string | null;
-}
 
 export interface WarRoomState {
   // Session registry
@@ -34,11 +24,6 @@ export interface WarRoomState {
   // Audio links (tile → studio_session ids)
   audioSessionIdsByTile: Record<string, string[]>;
   activeAudioSessionByTile: Record<string, string | null>;
-
-  // Per-tile save state (optimistic write feedback)
-  tileSaveState: Record<string, SaveStatus>;
-
-  ui: WarRoomUiState;
 }
 
 export const initialWarRoomState: WarRoomState = {
@@ -52,12 +37,6 @@ export const initialWarRoomState: WarRoomState = {
   tilesStatusBySession: {},
   audioSessionIdsByTile: {},
   activeAudioSessionByTile: {},
-  tileSaveState: {},
-  ui: {
-    focusedTileId: null,
-    newTileDraft: null,
-    contextOverrideOpenTileId: null,
-  },
 };
 
 export type { TileTab };

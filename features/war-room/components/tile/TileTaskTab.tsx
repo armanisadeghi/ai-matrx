@@ -27,7 +27,7 @@ import { selectTileById } from "@/features/war-room/redux/selectors";
 import { createTileTask, loadTileSubtasks } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 
-export function TileTaskTab({ tileId }: { tileId: string; sessionId?: string }) {
+export function TileTaskTab({ tileId }: { tileId: string }) {
   const dispatch = useAppDispatch();
   const tile = useAppSelector((s) => selectTileById(tileId)(s));
   const taskId = tile?.task_id ?? null;

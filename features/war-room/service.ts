@@ -268,7 +268,6 @@ export async function setActiveTileAudioLink(
   }
 }
 
-/** All audio links for a session's tiles, in one round-trip (hydration). */
 /** Audio links for the given tile ids (the caller already has the tiles). */
 export async function listAudioLinksForTiles(
   tileIds: string[],

@@ -33,6 +33,7 @@ export function TileContextOverride({ tileId }: { tileId: string }) {
         <button
           type="button"
           onClick={(e) => e.stopPropagation()}
+          aria-label="Tile context"
           title={
             ctx.isOverridden
               ? "Tile context (overridden)"
