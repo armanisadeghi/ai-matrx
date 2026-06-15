@@ -64,11 +64,20 @@ export function buildWorkingDocumentValue(documentId: string, content: string) {
 /**
  * Build the full set of context entries for the assistant from current Redux
  * state. Returns an empty array when there's nothing to attach yet.
+ *
+ * `extraEntries` are appended verbatim AFTER the studio entries (recordings,
+ * cleaned text, working_document). It defaults to `[]`, so the Scribe studio —
+ * which has no extra context — is completely unchanged. The War Room tile panel
+ * uses it to merge in the tile's own read-only context objects (its task,
+ * notes, files) without polluting the shared studio builder. Caller is
+ * responsible for de-duplicating keys; studio keys never collide with the War
+ * Room `tile_*` keys.
  */
 export function buildAssistantContextEntries(
   state: RootState,
   sessionId: string,
   workingDocumentId: string | null,
+  extraEntries: AssistantContextEntry[] = [],
 ): AssistantContextEntry[] {
   const entries: AssistantContextEntry[] = [];
 
@@ -137,6 +146,12 @@ export function buildAssistantContextEntries(
       type: "text",
       label: "Working Document",
     });
+  }
+
+  // Caller-supplied extras (e.g. War Room tile context). Appended last; empty
+  // by default so the Scribe studio is unaffected.
+  if (extraEntries.length > 0) {
+    entries.push(...extraEntries);
   }
 
   return entries;

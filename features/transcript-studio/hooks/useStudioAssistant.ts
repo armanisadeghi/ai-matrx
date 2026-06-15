@@ -19,6 +19,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import type { RootState } from "@/lib/redux/store";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
@@ -34,7 +35,23 @@ import {
   ensureAssistantConversationThunk,
   ensureWorkingDocumentThunk,
 } from "../redux/thunks";
-import { buildAssistantContextEntries } from "../service/assistantContextBuilder";
+import {
+  buildAssistantContextEntries,
+  type AssistantContextEntry,
+} from "../service/assistantContextBuilder";
+
+/**
+ * Optional extras for non-Scribe consumers (e.g. the War Room tile Agent+
+ * panel). `buildExtraEntries` is called against fresh `store.getState()` every
+ * time the context is rebuilt, so the extras always reflect current Redux — and
+ * it is appended to the studio entries, never replacing them. Scribe omits this
+ * entirely, so its context is unchanged.
+ */
+export interface UseStudioAssistantOptions {
+  /** Stable (memoized) builder for extra context entries. Keep it referentially
+   *  stable — it's a dependency of the context-refresh effect. */
+  buildExtraEntries?: (state: RootState) => AssistantContextEntry[];
+}
 
 interface UseStudioAssistantReturn {
   conversationId: string | null;
@@ -48,9 +65,11 @@ interface UseStudioAssistantReturn {
 
 export function useStudioAssistant(
   sessionId: string | null,
+  options?: UseStudioAssistantOptions,
 ): UseStudioAssistantReturn {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+  const buildExtraEntries = options?.buildExtraEntries;
 
   const conversationId = useAppSelector(
     selectAssistantConversationId(sessionId),
@@ -101,10 +120,12 @@ export function useStudioAssistant(
 
   useEffect(() => {
     if (!sessionId || !conversationId) return;
+    const state = store.getState();
     const entries = buildAssistantContextEntries(
-      store.getState(),
+      state,
       sessionId,
       workingDocIdRef.current,
+      buildExtraEntries?.(state) ?? [],
     );
     // NEVER clobber good context with an empty set. A transient build (doc not
     // yet loaded, etc.) returning [] would otherwise wipe the conversation's
@@ -121,21 +142,24 @@ export function useStudioAssistant(
     workingDocContent,
     recordingCount,
     cleanedText,
+    buildExtraEntries,
     dispatch,
     store,
   ]);
 
   const refreshContext = useCallback(() => {
     if (!sessionId || !conversationId) return;
+    const state = store.getState();
     const entries = buildAssistantContextEntries(
-      store.getState(),
+      state,
       sessionId,
       workingDocIdRef.current,
+      buildExtraEntries?.(state) ?? [],
     );
     if (entries.length > 0) {
       dispatch(setContextEntries({ conversationId, entries }));
     }
-  }, [sessionId, conversationId, dispatch, store]);
+  }, [sessionId, conversationId, buildExtraEntries, dispatch, store]);
 
   const send = useCallback(
     async (text?: string) => {

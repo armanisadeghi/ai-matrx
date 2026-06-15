@@ -53,5 +53,9 @@ export function TileAgentTab({ tileId }: { tileId: string }) {
     );
   }
 
-  return <TileAgentPanel key={sessionId} sessionId={sessionId} />;
+  // Pass the tileId through so the panel can expose the tile's task / notes /
+  // files to the assistant as read-only context (TileAgentPanel builds those).
+  return (
+    <TileAgentPanel key={sessionId} sessionId={sessionId} tileId={tileId} />
+  );
 }
