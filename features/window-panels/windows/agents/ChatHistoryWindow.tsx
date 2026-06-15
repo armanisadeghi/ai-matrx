@@ -379,7 +379,7 @@ interface SidebarProps {
   agentList: { id: string; name: string }[];
 }
 
-function ChatHistorySidebar({
+function ChatHistoryListSidebar({
   conversations,
   status,
   error,
@@ -616,12 +616,15 @@ export default function ChatHistoryWindow({
   );
 }
 
-function ChatHistoryWindowInner({
-  onClose,
-  initialSelectedConversationId,
-  initialGroupBy,
-}: {
-  onClose: () => void;
+// ── Shared data layer ────────────────────────────────────────────────────────
+
+/**
+ * All state + selectors + effects + handlers for the chat-history browser.
+ * Shared by the floating window (`ChatHistoryWindow`) and the embedded,
+ * frameless workspace (`ChatHistoryWorkspace`, rendered in the Utilities Hub
+ * "AI Results" tab) so the two surfaces stay identical without duplication.
+ */
+function useChatHistoryBrowser(opts: {
   initialSelectedConversationId: string | null;
   initialGroupBy: GroupBy;
 }) {
@@ -632,13 +635,12 @@ function ChatHistoryWindowInner({
   const status = useAppSelector(selectGlobalListStatus);
   const error = useAppSelector(selectGlobalListError);
   const isFresh = useAppSelector(selectGlobalListIsFresh());
-
   const allAgents = useAppSelector(selectAllAgentsArray);
 
   const [selectedId, setSelectedId] = useState<string | null>(
-    initialSelectedConversationId,
+    opts.initialSelectedConversationId,
   );
-  const [groupBy, setGroupBy] = useState<GroupBy>(initialGroupBy);
+  const [groupBy, setGroupBy] = useState<GroupBy>(opts.initialGroupBy);
   const [search, setSearch] = useState("");
   const [agentFilter, setAgentFilter] = useState<Set<string>>(new Set());
 
@@ -651,7 +653,6 @@ function ChatHistoryWindowInner({
     if (!isFresh && status !== "loading") {
       dispatch(fetchGlobalConversations());
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const agentNameById = useMemo(() => {
@@ -704,14 +705,6 @@ function ChatHistoryWindowInner({
     [dispatch, store],
   );
 
-  const collectData = useCallback(
-    (): Record<string, unknown> => ({
-      selectedConversationId: selectedId,
-      groupBy,
-    }),
-    [selectedId, groupBy],
-  );
-
   // Subtitle shows the active conversation's agent name when one is picked.
   const selectedAgentName = useAppSelector((state: RootState) => {
     if (!selectedId) return null;
@@ -721,7 +714,127 @@ function ChatHistoryWindowInner({
     return agent?.name ?? null;
   });
 
-  const titleSuffix = selectedAgentName ? ` — ${selectedAgentName}` : "";
+  return {
+    conversations,
+    status,
+    error,
+    selectedId,
+    groupBy,
+    setGroupBy,
+    search,
+    setSearch,
+    agentFilter,
+    setAgentFilter,
+    agentNameById,
+    agentsWithConversations,
+    handleSelect,
+    selectedAgentName,
+  };
+}
+
+type ChatHistoryBrowser = ReturnType<typeof useChatHistoryBrowser>;
+
+/** The list sidebar, wired to the shared browser state. */
+function ChatHistoryListSidebarBound({ b }: { b: ChatHistoryBrowser }) {
+  return (
+    <ChatHistoryListSidebar
+      conversations={b.conversations}
+      status={b.status}
+      error={b.error}
+      selectedId={b.selectedId}
+      onSelect={b.handleSelect}
+      groupBy={b.groupBy}
+      onGroupByChange={b.setGroupBy}
+      search={b.search}
+      onSearchChange={b.setSearch}
+      agentFilter={b.agentFilter}
+      onAgentFilterChange={b.setAgentFilter}
+      agentNameById={b.agentNameById}
+      agentList={b.agentsWithConversations}
+    />
+  );
+}
+
+/** Read-only main pane: the selected conversation, or the empty prompt. */
+function ChatHistoryMain({ selectedId }: { selectedId: string | null }) {
+  return (
+    <div className="h-full min-h-0 overflow-hidden">
+      {selectedId ? (
+        <div className="h-full w-full overflow-y-auto">
+          <div className="mx-auto max-w-3xl w-full p-3">
+            <AgentConversationDisplay conversationId={selectedId} />
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center h-full text-center px-6 text-muted-foreground">
+          <Flame className="w-10 h-10 mb-3 opacity-20" />
+          <p className="text-sm font-medium">Select a conversation</p>
+          <p className="text-xs opacity-60 mt-1">
+            Pick any past run from the list to view it here. Switch between
+            grouping by <strong>date</strong> or <strong>agent</strong> in the
+            sidebar.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Embedded workspace (no window frame) ─────────────────────────────────────
+
+/**
+ * Frameless chat-history browser: list sidebar + read-only conversation view,
+ * filling its container. Rendered directly inside the Utilities Hub "AI
+ * Results" tab; the same data layer powers the floating `ChatHistoryWindow`.
+ */
+export function ChatHistoryWorkspace({
+  initialSelectedConversationId = null,
+  initialGroupBy = "date",
+}: {
+  initialSelectedConversationId?: string | null;
+  initialGroupBy?: GroupBy;
+}) {
+  const b = useChatHistoryBrowser({
+    initialSelectedConversationId,
+    initialGroupBy,
+  });
+  return (
+    <div className="flex h-full min-h-0 w-full overflow-hidden">
+      <div className="w-72 shrink-0 overflow-hidden border-r border-border">
+        <ChatHistoryListSidebarBound b={b} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <ChatHistoryMain selectedId={b.selectedId} />
+      </div>
+    </div>
+  );
+}
+
+// ── Floating window ──────────────────────────────────────────────────────────
+
+function ChatHistoryWindowInner({
+  onClose,
+  initialSelectedConversationId,
+  initialGroupBy,
+}: {
+  onClose: () => void;
+  initialSelectedConversationId: string | null;
+  initialGroupBy: GroupBy;
+}) {
+  const b = useChatHistoryBrowser({
+    initialSelectedConversationId,
+    initialGroupBy,
+  });
+
+  const collectData = useCallback(
+    (): Record<string, unknown> => ({
+      selectedConversationId: b.selectedId,
+      groupBy: b.groupBy,
+    }),
+    [b.selectedId, b.groupBy],
+  );
+
+  const titleSuffix = b.selectedAgentName ? ` — ${b.selectedAgentName}` : "";
 
   return (
     <WindowPanel
@@ -737,43 +850,9 @@ function ChatHistoryWindowInner({
       sidebarDefaultSize={280}
       sidebarMinSize={220}
       defaultSidebarOpen
-      sidebar={
-        <ChatHistorySidebar
-          conversations={conversations}
-          status={status}
-          error={error}
-          selectedId={selectedId}
-          onSelect={handleSelect}
-          groupBy={groupBy}
-          onGroupByChange={setGroupBy}
-          search={search}
-          onSearchChange={setSearch}
-          agentFilter={agentFilter}
-          onAgentFilterChange={setAgentFilter}
-          agentNameById={agentNameById}
-          agentList={agentsWithConversations}
-        />
-      }
+      sidebar={<ChatHistoryListSidebarBound b={b} />}
     >
-      <div className="h-full min-h-0 overflow-hidden">
-        {selectedId ? (
-          <div className="h-full w-full overflow-y-auto">
-            <div className="mx-auto max-w-3xl w-full p-3">
-              <AgentConversationDisplay conversationId={selectedId} />
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6 text-muted-foreground">
-            <Flame className="w-10 h-10 mb-3 opacity-20" />
-            <p className="text-sm font-medium">Select a conversation</p>
-            <p className="text-xs opacity-60 mt-1">
-              Pick any past run from the list to view it here. Switch between
-              grouping by <strong>date</strong> or <strong>agent</strong> in the
-              sidebar.
-            </p>
-          </div>
-        )}
-      </div>
+      <ChatHistoryMain selectedId={b.selectedId} />
     </WindowPanel>
   );
 }

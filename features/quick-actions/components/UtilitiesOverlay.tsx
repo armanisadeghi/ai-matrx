@@ -7,12 +7,21 @@ import FullScreenOverlay, {
 } from "@/components/official/FullScreenOverlay";
 import { NotesLayout } from "@/features/notes/components/NotesLayout";
 import TaskApp from "@/features/tasks/components/TaskApp";
+import dynamic from "next/dynamic";
 import { QuickChatSheet } from "./QuickChatSheet";
 import { QuickDataSheet } from "./QuickDataSheet";
-// Legacy QuickFilesSheet removed in Phase 11. The Files tab below now
-// links to the /files route instead of rendering an inline sheet.
-import Link from "next/link";
-import { ActivePromptResults } from "@/features/prompts/components/results-display/ActivePromptResults";
+import { WindowPanelShell } from "@/features/files";
+// ChatHistoryWorkspace is the frameless body shared with the floating
+// ChatHistoryWindow. It lives under window-panels/windows, so it's pulled in
+// via dynamic() — the sanctioned path that keeps the heavy chat bundle lazy
+// (a static import is blocked by the no-restricted-imports window-path rule).
+const ChatHistoryWorkspace = dynamic(
+  () =>
+    import("@/features/window-panels/windows/agents/ChatHistoryWindow").then(
+      (m) => ({ default: m.ChatHistoryWorkspace }),
+    ),
+  { ssr: false },
+);
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -109,21 +118,8 @@ export function UtilitiesOverlay({
         </div>
       ) as any,
       content: (
-        <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-          <FolderOpen
-            className="h-10 w-10 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <p className="text-sm font-medium">Your files</p>
-          <p className="max-w-xs text-xs text-muted-foreground">
-            Browse, upload, and share files from the dedicated Cloud Files page.
-          </p>
-          <Link
-            href="/files/all"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
-          >
-            Open Files
-          </Link>
+        <div className="h-full">
+          <WindowPanelShell />
         </div>
       ),
     },
@@ -137,7 +133,7 @@ export function UtilitiesOverlay({
       ) as any,
       content: (
         <div className="h-full">
-          <ActivePromptResults />
+          <ChatHistoryWorkspace />
         </div>
       ),
     },
