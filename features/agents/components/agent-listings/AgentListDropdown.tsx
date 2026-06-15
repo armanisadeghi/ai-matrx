@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, MousePointerClick } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { AgentDefinitionRecord } from "@/features/agents/types/agent-definition.types";
@@ -240,6 +240,12 @@ export function AgentListDropdown({
   }
 
   // ── Desktop ──
+  // The popover reserves its full two-column width for the entire time it is
+  // open, so the hover-preview / filter panels toggle WITHOUT resizing or
+  // repositioning the popover. A resizing popover in a narrow rail triggers
+  // Radix collision-shifting that yanks the list out from under the cursor —
+  // the panel "appears, then runs away." A fixed footprint keeps the preview
+  // a stationary, reachable target.
   return (
     <Popover open={open} onOpenChange={handleOpen} modal={false}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
@@ -247,80 +253,76 @@ export function AgentListDropdown({
         side={contentSide}
         align="start"
         sideOffset={4}
+        collisionPadding={12}
+        sticky="always"
         container={dialogContainer ?? undefined}
-        className={cn(
-          "p-0 overflow-hidden",
-          hasRightPanel ? "w-[680px]" : "w-[340px]",
-        )}
-        style={{
-          height: hasRightPanel ? PANEL_HEIGHT : undefined,
-          maxHeight: LIST_MAX_HEIGHT,
-        }}
+        className="p-0 overflow-hidden w-[680px]"
+        style={{ height: PANEL_HEIGHT, maxHeight: LIST_MAX_HEIGHT }}
       >
         <div className="flex h-full">
-          <div
-            className={cn(
-              "flex flex-col min-w-0",
-              hasRightPanel
-                ? "w-[340px] shrink-0 border-r border-border"
-                : "flex-1",
-            )}
-          >
+          <div className="flex flex-col min-w-0 w-[340px] shrink-0 border-r border-border">
             {listPanel}
           </div>
-          {hasRightPanel && (
-            <div
-              className="w-[340px] shrink-0 overflow-hidden flex flex-col"
-              style={{ height: PANEL_HEIGHT }}
-              onMouseEnter={
-                rightPanel === "detail"
-                  ? handleDetailPanelMouseEnter
-                  : undefined
-              }
-              onMouseLeave={
-                rightPanel === "detail"
-                  ? handleDetailPanelMouseLeave
-                  : undefined
-              }
-            >
-              {rightPanel === "detail" && hoveredAgent && (
+          <div
+            className="w-[340px] shrink-0 overflow-hidden flex flex-col"
+            style={{ height: PANEL_HEIGHT }}
+            onMouseEnter={
+              rightPanel === "detail" ? handleDetailPanelMouseEnter : undefined
+            }
+            onMouseLeave={
+              rightPanel === "detail" ? handleDetailPanelMouseLeave : undefined
+            }
+          >
+            {rightPanel === "detail" && hoveredAgent && (
+              <div
+                key={hoveredAgent.id}
+                className="h-full animate-in fade-in-0 duration-500 ease-out"
+              >
                 <AgentDetailCard
                   agent={hoveredAgent}
                   onSelect={() => handleSelectAgent(hoveredAgent)}
                 />
-              )}
-              {rightPanel === "sort" && (
-                <AgentSortPanel
-                  consumer={consumer}
-                  onClose={() => setRightPanel(null)}
-                />
-              )}
-              {rightPanel === "categories" && (
-                <AgentCategoriesPanel
-                  consumer={consumer}
-                  allCategories={allCategories}
-                  search={catSearch}
-                  setSearch={setCatSearch}
-                  onClose={() => {
-                    setRightPanel(null);
-                    setCatSearch("");
-                  }}
-                />
-              )}
-              {rightPanel === "tags" && (
-                <AgentTagsPanel
-                  consumer={consumer}
-                  allTags={allTags}
-                  search={tagSearch}
-                  setSearch={setTagSearch}
-                  onClose={() => {
-                    setRightPanel(null);
-                    setTagSearch("");
-                  }}
-                />
-              )}
-            </div>
-          )}
+              </div>
+            )}
+            {rightPanel === "sort" && (
+              <AgentSortPanel
+                consumer={consumer}
+                onClose={() => setRightPanel(null)}
+              />
+            )}
+            {rightPanel === "categories" && (
+              <AgentCategoriesPanel
+                consumer={consumer}
+                allCategories={allCategories}
+                search={catSearch}
+                setSearch={setCatSearch}
+                onClose={() => {
+                  setRightPanel(null);
+                  setCatSearch("");
+                }}
+              />
+            )}
+            {rightPanel === "tags" && (
+              <AgentTagsPanel
+                consumer={consumer}
+                allTags={allTags}
+                search={tagSearch}
+                setSearch={setTagSearch}
+                onClose={() => {
+                  setRightPanel(null);
+                  setTagSearch("");
+                }}
+              />
+            )}
+            {!hasRightPanel && (
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+                <MousePointerClick className="h-6 w-6 text-muted-foreground/40" />
+                <p className="text-xs text-muted-foreground/70 leading-relaxed">
+                  Hover an agent to preview its details, or click to select.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </PopoverContent>
     </Popover>

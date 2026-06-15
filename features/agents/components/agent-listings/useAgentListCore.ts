@@ -28,6 +28,15 @@ export interface AgentListCoreOptions {
   navigateTo?: string;
 }
 
+/**
+ * How long the hover-preview detail panel stays open after the cursor leaves
+ * an agent row (or the panel itself) before it closes. Generous on purpose:
+ * the panel renders to the side of the list, so the user needs ample time to
+ * travel the cursor across the gap to reach it without it vanishing. Paired
+ * with a reserved, non-resizing popover width so the target never moves.
+ */
+export const HOVER_GRACE_MS = 900;
+
 export function useAgentListCore({
   consumerId,
   onSelect,
@@ -107,7 +116,7 @@ export function useAgentListCore({
         hoverLeaveTimerRef.current = setTimeout(() => {
           setHoveredAgent(null);
           onClear();
-        }, 150);
+        }, HOVER_GRACE_MS);
       }
     },
     [hoveredAgent],
@@ -124,7 +133,7 @@ export function useAgentListCore({
     hoverLeaveTimerRef.current = setTimeout(() => {
       setHoveredAgent(null);
       onClear();
-    }, 150);
+    }, HOVER_GRACE_MS);
   }, []);
 
   return {
