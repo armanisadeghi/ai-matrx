@@ -8,16 +8,26 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, LayoutGrid } from "lucide-react";
+import { ArrowLeft, Loader2, LayoutGrid, MoreHorizontal, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import {
   selectSessionById,
   selectTilesStatusForSession,
 } from "@/features/war-room/redux/selectors";
 import {
+  deleteSession,
   leaveWarRoomSession,
   loadWarRoomSession,
+  renameSession,
 } from "@/features/war-room/redux/thunks";
+import { EditableTitle } from "../shared/EditableTitle";
 import { WarRoomGallery } from "./WarRoomGallery";
 import { SessionContextButton } from "./SessionContextButton";
 
@@ -52,12 +62,53 @@ export function WarRoomShell({ sessionId }: { sessionId: string }) {
         <span className="grid place-items-center size-7 rounded-md bg-primary/10 text-primary shrink-0">
           <LayoutGrid className="size-4" />
         </span>
-        <h1 className="text-sm font-semibold text-foreground truncate">
-          {session?.title ?? "War Room"}
-        </h1>
         {session ? (
-          <div className="ml-auto shrink-0">
+          <EditableTitle
+            value={session.title}
+            onSave={(next) => dispatch(renameSession(sessionId, next))}
+            placeholder="Untitled War Room"
+            className="text-sm font-semibold max-w-[40%]"
+            inputClassName="text-sm font-semibold"
+          />
+        ) : (
+          <h1 className="text-sm font-semibold text-foreground truncate">
+            War Room
+          </h1>
+        )}
+        {session ? (
+          <div className="ml-auto shrink-0 flex items-center gap-1.5">
             <SessionContextButton sessionId={sessionId} />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="War Room options"
+                  className="grid place-items-center size-7 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                >
+                  <MoreHorizontal className="size-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: "Delete this War Room?",
+                      description: `"${session.title}" and its tile layout will be removed. The tasks, notes, and transcripts inside stay safe.`,
+                      variant: "destructive",
+                      confirmLabel: "Delete",
+                    });
+                    if (ok) {
+                      await dispatch(deleteSession(sessionId));
+                      router.push("/war-room/all");
+                    }
+                  }}
+                >
+                  <Trash2 className="size-3.5" />
+                  Delete War Room
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         ) : null}
       </header>

@@ -1,6 +1,9 @@
 "use client";
 
 // features/war-room/components/tile/TileTabBar.tsx
+//
+// Compact, icon-only tab switcher. Lives inline in the tile header (no separate
+// row, no labels) — the icons are self-explanatory and reclaim vertical space.
 
 import { ListChecks, NotebookPen, Mic, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,14 +19,12 @@ const TABS: { id: TileTab; label: string; Icon: typeof ListChecks }[] = [
 export function TileTabBar({
   active,
   onChange,
-  compact,
 }: {
   active: TileTab;
   onChange: (tab: TileTab) => void;
-  compact?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-0.5 px-1.5 py-1 border-b border-border/70 bg-muted/30 overflow-hidden">
+    <div className="flex items-center gap-0.5 shrink-0">
       {TABS.map(({ id, label, Icon }) => {
         const isActive = id === active;
         return (
@@ -34,18 +35,16 @@ export function TileTabBar({
               e.stopPropagation();
               onChange(id);
             }}
-            className={cn(
-              "flex shrink-0 items-center gap-1 rounded-md px-2 h-6 text-[11px] font-medium whitespace-nowrap transition-colors",
-              isActive
-                ? "bg-card text-foreground shadow-[var(--elevation-1)]"
-                : "text-muted-foreground hover:text-foreground hover:bg-accent/60",
-            )}
             aria-pressed={isActive}
             title={label}
+            className={cn(
+              "grid place-items-center size-6 rounded-md transition-colors",
+              isActive
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
           >
-            <Icon className="size-3.5 shrink-0" />
-            {/* Label hides on narrow tiles (container query) → icon-only. */}
-            {!compact && <span className="@max-[18rem]:hidden">{label}</span>}
+            <Icon className="size-3.5" />
           </button>
         );
       })}

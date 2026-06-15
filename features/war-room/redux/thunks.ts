@@ -446,6 +446,17 @@ export const setTileActiveTabPersisted =
     }
   };
 
+export const renameTile =
+  (id: string, title: string) => async (dispatch: AppDispatch) => {
+    const trimmed = title.trim();
+    try {
+      const updated = await service.updateTile(id, { title: trimmed || null });
+      dispatch(tileUpserted(updated));
+    } catch {
+      toast.error("Couldn't rename the tile");
+    }
+  };
+
 export const toggleTilePin =
   (id: string, pinned: boolean) => async (dispatch: AppDispatch) => {
     dispatch(setTilePinned({ id, pinned }));

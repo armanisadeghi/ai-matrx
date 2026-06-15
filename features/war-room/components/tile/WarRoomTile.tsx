@@ -17,6 +17,7 @@ import {
 } from "@/features/war-room/redux/selectors";
 import {
   deleteTile,
+  renameTile,
   setTileActiveTabPersisted,
   toggleTileHide,
   toggleTilePin,
@@ -87,6 +88,7 @@ export function WarRoomTile({
   return (
     <TileFrame
       title={title}
+      onRename={(next) => dispatch(renameTile(tileId, next))}
       featured={featured}
       isPinned={tile.is_pinned}
       onTogglePin={() => dispatch(toggleTilePin(tileId, !tile.is_pinned))}
@@ -94,7 +96,7 @@ export function WarRoomTile({
       onExpand={canExpand ? handleExpand : undefined}
       onDelete={handleDelete}
       contextSlot={<TileContextOverride tileId={tileId} />}
-      tabBar={
+      tabsSlot={
         <TileTabBar
           active={activeTab}
           onChange={(tab) => dispatch(setTileActiveTabPersisted(tileId, tab))}
@@ -129,7 +131,7 @@ function TileTabContent({
             <TileTaskTab tileId={tileId} sessionId={sessionId} />
           </CombinedSection>
           <CombinedSection label="Notes">
-            <TileNotesTab tileId={tileId} sessionId={sessionId} />
+            <TileNotesTab tileId={tileId} sessionId={sessionId} compact />
           </CombinedSection>
           <CombinedSection label="Audio">
             <TileAudioTab tileId={tileId} />

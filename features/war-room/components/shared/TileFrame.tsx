@@ -2,34 +2,51 @@
 
 // features/war-room/components/shared/TileFrame.tsx
 //
-// Presentational tile chrome shared by WarRoomTile + NewTile: border, header
-// row (title + pin/hide/expand controls), optional tab bar, and body. Dumb and
-// prop-driven so any pinnable/hideable card surface can reuse it.
+// Tile chrome: a single compact header (editable title + inline tab icons +
+// context slot + a "…" options menu) over the body. Pin/hide/expand/delete live
+// in the options menu; a pin dot marks pinned tiles. Dumb + prop-driven.
 
-import { Pin, PinOff, EyeOff, Maximize2, X } from "lucide-react";
+import {
+  Pin,
+  PinOff,
+  EyeOff,
+  Maximize2,
+  Trash2,
+  MoreHorizontal,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { EditableTitle } from "./EditableTitle";
 
 export interface TileFrameProps {
-  title?: React.ReactNode;
-  icon?: React.ReactNode;
+  title: string;
+  onRename?: (next: string) => void;
+  /** Inline tab switcher (icon-only) rendered in the header. */
+  tabsSlot?: React.ReactNode;
+  /** Always-visible control slot (the context picker). */
+  contextSlot?: React.ReactNode;
   isPinned?: boolean;
   onTogglePin?: () => void;
   onHide?: () => void;
   onExpand?: () => void;
   onDelete?: () => void;
   featured?: boolean;
-  /** Highlight when this tile is the focused one. */
   active?: boolean;
-  /** Always-visible control slot (e.g. the context picker) before the hover controls. */
-  contextSlot?: React.ReactNode;
-  tabBar?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }
 
 export function TileFrame({
   title,
-  icon,
+  onRename,
+  tabsSlot,
+  contextSlot,
   isPinned,
   onTogglePin,
   onHide,
@@ -37,11 +54,11 @@ export function TileFrame({
   onDelete,
   featured,
   active,
-  contextSlot,
-  tabBar,
   children,
   className,
 }: TileFrameProps) {
+  const hasMenu = onTogglePin || onHide || onExpand || onDelete;
+
   return (
     <div
       className={cn(
@@ -53,88 +70,82 @@ export function TileFrame({
         className,
       )}
     >
-      {/* Header */}
-      <div className="shrink-0 flex items-center gap-1.5 px-2.5 h-9 border-b border-border/70">
+      {/* Header — single row: pin dot · title · tabs · context · ⋯ */}
+      <div className="shrink-0 flex items-center gap-1.5 px-2 h-9 border-b border-border/70">
         {isPinned ? (
-          <Pin className="size-3.5 text-primary shrink-0 fill-primary/20" />
-        ) : icon ? (
-          <span className="shrink-0 text-muted-foreground">{icon}</span>
+          <Pin className="size-3.5 shrink-0 text-primary fill-primary/20" />
         ) : null}
-        <span className="text-xs font-medium text-foreground truncate flex-1 min-w-0">
-          {title}
-        </span>
 
-        {/* Always-visible control slot (context picker) */}
+        {onRename ? (
+          <EditableTitle
+            value={title}
+            onSave={onRename}
+            className="flex-1 text-xs font-medium"
+            inputClassName="flex-1 text-xs font-medium"
+          />
+        ) : (
+          <span className="flex-1 min-w-0 truncate text-xs font-medium text-foreground">
+            {title}
+          </span>
+        )}
+
+        {tabsSlot}
         {contextSlot ? <div className="shrink-0">{contextSlot}</div> : null}
 
-        {/* Controls — appear on hover; pin persists visible when active */}
-        <div className="flex items-center gap-0.5 opacity-0 group-hover/tile:opacity-100 focus-within:opacity-100 transition-opacity">
-          {onTogglePin ? (
-            <TileIconButton
-              onClick={onTogglePin}
-              label={isPinned ? "Unpin" : "Pin"}
-            >
-              {isPinned ? (
-                <PinOff className="size-3.5" />
-              ) : (
-                <Pin className="size-3.5" />
-              )}
-            </TileIconButton>
-          ) : null}
-          {onExpand ? (
-            <TileIconButton onClick={onExpand} label="Expand">
-              <Maximize2 className="size-3.5" />
-            </TileIconButton>
-          ) : null}
-          {onHide ? (
-            <TileIconButton onClick={onHide} label="Hide">
-              <EyeOff className="size-3.5" />
-            </TileIconButton>
-          ) : null}
-          {onDelete ? (
-            <TileIconButton onClick={onDelete} label="Remove" destructive>
-              <X className="size-3.5" />
-            </TileIconButton>
-          ) : null}
-        </div>
+        {hasMenu ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Tile options"
+                className="grid place-items-center size-6 shrink-0 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              >
+                <MoreHorizontal className="size-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              {onTogglePin ? (
+                <DropdownMenuItem onClick={onTogglePin}>
+                  {isPinned ? (
+                    <PinOff className="size-3.5" />
+                  ) : (
+                    <Pin className="size-3.5" />
+                  )}
+                  {isPinned ? "Unpin" : "Pin"}
+                </DropdownMenuItem>
+              ) : null}
+              {onExpand ? (
+                <DropdownMenuItem onClick={onExpand}>
+                  <Maximize2 className="size-3.5" />
+                  Expand
+                </DropdownMenuItem>
+              ) : null}
+              {onHide ? (
+                <DropdownMenuItem onClick={onHide}>
+                  <EyeOff className="size-3.5" />
+                  Hide
+                </DropdownMenuItem>
+              ) : null}
+              {onDelete ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={onDelete}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="size-3.5" />
+                    Remove
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
       </div>
-
-      {tabBar ? <div className="shrink-0">{tabBar}</div> : null}
 
       {/* Body */}
       <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
     </div>
-  );
-}
-
-function TileIconButton({
-  onClick,
-  label,
-  destructive,
-  children,
-}: {
-  onClick: () => void;
-  label: string;
-  destructive?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      aria-label={label}
-      title={label}
-      className={cn(
-        "grid place-items-center size-6 rounded-md text-muted-foreground transition-colors",
-        destructive
-          ? "hover:bg-destructive/10 hover:text-destructive"
-          : "hover:bg-accent hover:text-foreground",
-      )}
-    >
-      {children}
-    </button>
   );
 }
