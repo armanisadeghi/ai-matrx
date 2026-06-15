@@ -24,6 +24,10 @@ export interface WarRoomState {
   // Audio links (tile → studio_session ids)
   audioSessionIdsByTile: Record<string, string[]>;
   activeAudioSessionByTile: Record<string, string | null>;
+
+  // Note links (tile → note ids)
+  noteIdsByTile: Record<string, string[]>;
+  activeNoteByTile: Record<string, string | null>;
 }
 
 export const initialWarRoomState: WarRoomState = {
@@ -37,6 +41,8 @@ export const initialWarRoomState: WarRoomState = {
   tilesStatusBySession: {},
   audioSessionIdsByTile: {},
   activeAudioSessionByTile: {},
+  noteIdsByTile: {},
+  activeNoteByTile: {},
 };
 
 export type { TileTab };

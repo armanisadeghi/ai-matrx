@@ -98,6 +98,8 @@ const warRoomSlice = createSlice({
       }
       delete state.audioSessionIdsByTile[id];
       delete state.activeAudioSessionByTile[id];
+      delete state.noteIdsByTile[id];
+      delete state.activeNoteByTile[id];
     },
     setTileActiveTab(
       state,
@@ -172,6 +174,36 @@ const warRoomSlice = createSlice({
         action.payload.studioSessionId;
     },
 
+    // ── Note links ────────────────────────────────────────────────────
+    noteSessionsLoadedForTile(
+      state,
+      action: PayloadAction<{
+        tileId: string;
+        noteIds: string[];
+        activeId: string | null;
+      }>,
+    ) {
+      const { tileId, noteIds, activeId } = action.payload;
+      state.noteIdsByTile[tileId] = noteIds;
+      state.activeNoteByTile[tileId] = activeId;
+    },
+    noteLinkedToTile(
+      state,
+      action: PayloadAction<{ tileId: string; noteId: string }>,
+    ) {
+      const { tileId, noteId } = action.payload;
+      const ids = state.noteIdsByTile[tileId] ?? [];
+      if (!ids.includes(noteId)) ids.push(noteId);
+      state.noteIdsByTile[tileId] = ids;
+      state.activeNoteByTile[tileId] = noteId;
+    },
+    setActiveNote(
+      state,
+      action: PayloadAction<{ tileId: string; noteId: string | null }>,
+    ) {
+      state.activeNoteByTile[action.payload.tileId] = action.payload.noteId;
+    },
+
     /** Drop all loaded tiles for a session (e.g. when leaving the room). */
     clearSessionTiles(state, action: PayloadAction<string>) {
       const sessionId = action.payload;
@@ -180,6 +212,8 @@ const warRoomSlice = createSlice({
         delete state.tilesById[id];
         delete state.audioSessionIdsByTile[id];
         delete state.activeAudioSessionByTile[id];
+        delete state.noteIdsByTile[id];
+        delete state.activeNoteByTile[id];
       }
       delete state.tileIdsBySession[sessionId];
       delete state.tilesStatusBySession[sessionId];
@@ -206,6 +240,9 @@ export const {
   audioSessionsLoadedForTile,
   audioSessionLinkedToTile,
   setActiveAudioSession,
+  noteSessionsLoadedForTile,
+  noteLinkedToTile,
+  setActiveNote,
   clearSessionTiles,
 } = warRoomSlice.actions;
 

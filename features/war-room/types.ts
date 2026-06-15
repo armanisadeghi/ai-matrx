@@ -26,6 +26,11 @@ export type WarRoomTileAudioSession =
 export type WarRoomTileAudioSessionInsert =
   Database["public"]["Tables"]["ctx_war_room_tile_audio_sessions"]["Insert"];
 
+export type WarRoomTileNote =
+  Database["public"]["Tables"]["ctx_war_room_tile_notes"]["Row"];
+export type WarRoomTileNoteInsert =
+  Database["public"]["Tables"]["ctx_war_room_tile_notes"]["Insert"];
+
 // ── Tile tabs ─────────────────────────────────────────────────────────
 export type TileTab = "task" | "notes" | "audio" | "combined";
 

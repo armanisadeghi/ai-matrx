@@ -6326,6 +6326,7 @@ export type Database = {
           description: string
           icon: string
           id: string
+          is_system: boolean
           label_plural: string
           label_singular: string
           max_assignments_per_entity: number | null
@@ -6342,6 +6343,7 @@ export type Database = {
           description?: string
           icon?: string
           id?: string
+          is_system?: boolean
           label_plural: string
           label_singular: string
           max_assignments_per_entity?: number | null
@@ -6358,6 +6360,7 @@ export type Database = {
           description?: string
           icon?: string
           id?: string
+          is_system?: boolean
           label_plural?: string
           label_singular?: string
           max_assignments_per_entity?: number | null
@@ -6968,6 +6971,51 @@ export type Database = {
           },
           {
             foreignKeyName: "ctx_war_room_tile_audio_sessions_tile_id_fkey"
+            columns: ["tile_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_war_room_tiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ctx_war_room_tile_notes: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          note_id: string
+          position: number
+          tile_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          note_id: string
+          position?: number
+          tile_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          note_id?: string
+          position?: number
+          tile_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ctx_war_room_tile_notes_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctx_war_room_tile_notes_tile_id_fkey"
             columns: ["tile_id"]
             isOneToOne: false
             referencedRelation: "ctx_war_room_tiles"
@@ -8661,7 +8709,6 @@ export type Database = {
           agent_version_id: string | null
           api_duration_ms: number | null
           completed_at: string | null
-          conversation_id: string
           created_at: string
           deleted_at: string | null
           error: string | null
@@ -8670,8 +8717,6 @@ export type Database = {
           iterations: number
           last_activity_at: string | null
           metadata: Json
-          result_end_position: number | null
-          result_start_position: number | null
           source_app: string
           source_feature: string
           status: string
@@ -8683,7 +8728,6 @@ export type Database = {
           total_output_tokens: number
           total_tokens: number
           total_tool_calls: number
-          trigger_message_position: number | null
           user_id: string
         }
         Insert: {
@@ -8691,7 +8735,6 @@ export type Database = {
           agent_version_id?: string | null
           api_duration_ms?: number | null
           completed_at?: string | null
-          conversation_id: string
           created_at?: string
           deleted_at?: string | null
           error?: string | null
@@ -8700,8 +8743,6 @@ export type Database = {
           iterations?: number
           last_activity_at?: string | null
           metadata?: Json
-          result_end_position?: number | null
-          result_start_position?: number | null
           source_app?: string
           source_feature?: string
           status?: string
@@ -8713,7 +8754,6 @@ export type Database = {
           total_output_tokens?: number
           total_tokens?: number
           total_tool_calls?: number
-          trigger_message_position?: number | null
           user_id: string
         }
         Update: {
@@ -8721,7 +8761,6 @@ export type Database = {
           agent_version_id?: string | null
           api_duration_ms?: number | null
           completed_at?: string | null
-          conversation_id?: string
           created_at?: string
           deleted_at?: string | null
           error?: string | null
@@ -8730,8 +8769,6 @@ export type Database = {
           iterations?: number
           last_activity_at?: string | null
           metadata?: Json
-          result_end_position?: number | null
-          result_start_position?: number | null
           source_app?: string
           source_feature?: string
           status?: string
@@ -8743,7 +8780,6 @@ export type Database = {
           total_output_tokens?: number
           total_tokens?: number
           total_tool_calls?: number
-          trigger_message_position?: number | null
           user_id?: string
         }
         Relationships: [
@@ -8759,20 +8795,6 @@ export type Database = {
             columns: ["agent_version_id"]
             isOneToOne: false
             referencedRelation: "agx_version"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cx_user_request_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "cx_conversation"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cx_user_request_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "cx_conversation_summary"
             referencedColumns: ["id"]
           },
         ]

@@ -191,4 +191,15 @@ export const selectActiveAudioSessionId =
   (state: RootState): string | null =>
     tileId ? (state.warRoom.activeAudioSessionByTile[tileId] ?? null) : null;
 
+// ── Note links ──────────────────────────────────────────────────────────
+export const selectNoteIdsForTile =
+  (tileId: string | null) =>
+  (state: RootState): string[] =>
+    tileId ? (state.warRoom.noteIdsByTile[tileId] ?? EMPTY_IDS) : EMPTY_IDS;
+
+export const selectActiveNoteId =
+  (tileId: string | null) =>
+  (state: RootState): string | null =>
+    tileId ? (state.warRoom.activeNoteByTile[tileId] ?? null) : null;
+
 export { asScopeIds };

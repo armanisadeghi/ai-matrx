@@ -13,12 +13,14 @@ import type {
   WarRoomSessionUpdate,
   WarRoomTile,
   WarRoomTileAudioSession,
+  WarRoomTileNote,
   WarRoomTileUpdate,
 } from "./types";
 
 const SESSIONS = "ctx_war_room_sessions";
 const TILES = "ctx_war_room_tiles";
 const TILE_AUDIO = "ctx_war_room_tile_audio_sessions";
+const TILE_NOTES = "ctx_war_room_tile_notes";
 
 // ── Sessions ──────────────────────────────────────────────────────────
 
@@ -281,6 +283,98 @@ export async function listAudioLinksForTiles(
 
   if (error) {
     console.error("[war-room] listAudioLinksForTiles failed:", error);
+    throw error;
+  }
+  return data ?? [];
+}
+
+// ── Tile ↔ note links ─────────────────────────────────────────────────
+// Mirror of the audio links. The active note also lives on ctx_war_room_tiles
+// .note_id (the is_active analog for the tile's primary note pointer) so the
+// note↔task sync and tile metrics that read note_id keep working.
+
+export async function listTileNotes(
+  tileId: string,
+): Promise<WarRoomTileNote[]> {
+  const { data, error } = await supabase
+    .from(TILE_NOTES)
+    .select("*")
+    .eq("tile_id", tileId)
+    .order("position", { ascending: true });
+
+  if (error) {
+    console.error("[war-room] listTileNotes failed:", error);
+    throw error;
+  }
+  return data ?? [];
+}
+
+/** Link a note to a tile and make it the active one for that tile. */
+export async function createTileNoteLink(
+  tileId: string,
+  noteId: string,
+): Promise<WarRoomTileNote> {
+  const userId = requireUserId();
+  // Demote any currently-active link for this tile.
+  await supabase
+    .from(TILE_NOTES)
+    .update({ is_active: false })
+    .eq("tile_id", tileId);
+
+  const existing = await listTileNotes(tileId);
+  const { data, error } = await supabase
+    .from(TILE_NOTES)
+    .insert({
+      tile_id: tileId,
+      note_id: noteId,
+      user_id: userId,
+      position: existing.length,
+      is_active: true,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    console.error("[war-room] createTileNoteLink failed:", error);
+    throw error;
+  }
+  // Keep the tile's note_id pointer on the active note.
+  await supabase.from(TILES).update({ note_id: noteId }).eq("id", tileId);
+  return data;
+}
+
+/** Mark one of a tile's linked notes as the active one. */
+export async function setActiveTileNoteLink(
+  tileId: string,
+  noteId: string,
+): Promise<void> {
+  await supabase.from(TILE_NOTES).update({ is_active: false }).eq("tile_id", tileId);
+  const { error } = await supabase
+    .from(TILE_NOTES)
+    .update({ is_active: true })
+    .eq("tile_id", tileId)
+    .eq("note_id", noteId);
+  if (error) {
+    console.error("[war-room] setActiveTileNoteLink failed:", error);
+    throw error;
+  }
+  // Keep the tile's note_id pointer on the active note.
+  await supabase.from(TILES).update({ note_id: noteId }).eq("id", tileId);
+}
+
+/** Note links for the given tile ids (the caller already has the tiles). */
+export async function listNoteLinksForTiles(
+  tileIds: string[],
+): Promise<WarRoomTileNote[]> {
+  if (tileIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from(TILE_NOTES)
+    .select("*")
+    .in("tile_id", tileIds)
+    .order("position", { ascending: true });
+
+  if (error) {
+    console.error("[war-room] listNoteLinksForTiles failed:", error);
     throw error;
   }
   return data ?? [];

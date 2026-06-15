@@ -30,7 +30,10 @@ import {
   audioSessionLinkedToTile,
   audioSessionsLoadedForTile,
   clearSessionTiles,
+  noteLinkedToTile,
+  noteSessionsLoadedForTile,
   setActiveAudioSession,
+  setActiveNote,
   sessionRemoved,
   sessionsLoaded,
   sessionUpserted,
@@ -147,6 +150,41 @@ export const loadWarRoomSession =
         );
       }
 
+      // Note links keyed off the same tiles (mirror of the audio batch).
+      const noteLinks = await service.listNoteLinksForTiles(
+        tiles.map((t) => t.id),
+      );
+
+      const notesByTile = new Map<
+        string,
+        { ids: string[]; activeId: string | null }
+      >();
+      for (const link of noteLinks) {
+        const entry = notesByTile.get(link.tile_id) ?? { ids: [], activeId: null };
+        entry.ids.push(link.note_id);
+        if (link.is_active) entry.activeId = link.note_id;
+        notesByTile.set(link.tile_id, entry);
+      }
+      // A tile may carry a note_id (the backfilled/active pointer) without a
+      // link row yet — resolve it so it still appears as the active note.
+      for (const tile of tiles) {
+        if (tile.note_id && !notesByTile.has(tile.id)) {
+          notesByTile.set(tile.id, {
+            ids: [tile.note_id],
+            activeId: tile.note_id,
+          });
+        }
+      }
+      for (const [tileId, { ids, activeId }] of notesByTile) {
+        dispatch(
+          noteSessionsLoadedForTile({
+            tileId,
+            noteIds: ids,
+            activeId: activeId ?? ids[0] ?? null,
+          }),
+        );
+      }
+
       void service.touchSessionOpened(id);
       return session;
     } catch (err) {
@@ -254,8 +292,9 @@ export const createTileNote =
         task_id: tile.task_id ?? undefined,
       });
       dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
-      await service.updateTile(tileId, { note_id: note.id });
+      await service.createTileNoteLink(tileId, note.id);
       dispatch(setTileLink({ id: tileId, noteId: note.id }));
+      dispatch(noteLinkedToTile({ tileId, noteId: note.id }));
       return note.id;
     } catch {
       toast.error("Couldn't create the note");
@@ -310,9 +349,18 @@ export const createTileTask =
       if (!taskId) return null;
       await service.updateTile(tileId, { task_id: taskId });
       dispatch(setTileLink({ id: tileId, taskId }));
-      // Keep the tile's notepad associated with the task (best effort).
-      if (tile.note_id)
-        updateNoteApi(tile.note_id, { task_id: taskId }).catch(() => {});
+      // Keep ALL of the tile's linked notes associated with the task (best
+      // effort). Fall back to the tile's note_id pointer if no links loaded.
+      const linkedNoteIds = getState().warRoom.noteIdsByTile[tileId];
+      const noteIds =
+        linkedNoteIds && linkedNoteIds.length > 0
+          ? linkedNoteIds
+          : tile.note_id
+            ? [tile.note_id]
+            : [];
+      for (const noteId of noteIds) {
+        updateNoteApi(noteId, { task_id: taskId }).catch(() => {});
+      }
       return taskId;
     } catch {
       toast.error("Couldn't create the task");
@@ -411,6 +459,72 @@ export const ensureTileAudioSession =
       return active;
     }
     return dispatch(addAudioSessionToTile(tileId));
+  };
+
+// ── Notes (multiple notes per tile) ────────────────────────────────────
+// Mirror of the audio sessions: each tile note is a real `notes` row linked
+// via ctx_war_room_tile_notes. The active note also lives on tile.note_id
+// (the is_active analog) so note↔task sync + tile metrics keep working.
+
+/** Create a fresh note for a tile, link it, and make it the active one. */
+export const addNoteToTile =
+  (tileId: string, _sessionId: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<string | null> => {
+    const key = `note:${tileId}`;
+    if (inFlightTileOps.has(key)) return null;
+    inFlightTileOps.add(key);
+    try {
+      const tile = getState().warRoom.tilesById[tileId];
+      const note = await createNote({
+        content: "",
+        label: "War Room note",
+        task_id: tile?.task_id ?? undefined,
+      });
+      dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
+      await service.createTileNoteLink(tileId, note.id);
+      dispatch(setTileLink({ id: tileId, noteId: note.id }));
+      dispatch(noteLinkedToTile({ tileId, noteId: note.id }));
+      return note.id;
+    } catch {
+      toast.error("Couldn't create the note");
+      return null;
+    } finally {
+      inFlightTileOps.delete(key);
+    }
+  };
+
+/** Switch which of a tile's notes is active (optimistic; persists pointer). */
+export const setTileActiveNote =
+  (tileId: string, noteId: string) =>
+  async (dispatch: AppDispatch) => {
+    dispatch(setActiveNote({ tileId, noteId }));
+    dispatch(setTileLink({ id: tileId, noteId }));
+    try {
+      await service.setActiveTileNoteLink(tileId, noteId);
+    } catch {
+      toast.error("Couldn't switch the note");
+    }
+  };
+
+/** Return the tile's active note, creating one if needed. */
+export const ensureTileNote =
+  (tileId: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<string | null> => {
+    const active = getState().warRoom.activeNoteByTile[tileId];
+    if (active) return active;
+    // A tile may already carry a backfilled note_id without a loaded link.
+    const tile = getState().warRoom.tilesById[tileId];
+    if (tile?.note_id) {
+      dispatch(
+        noteSessionsLoadedForTile({
+          tileId,
+          noteIds: [tile.note_id],
+          activeId: tile.note_id,
+        }),
+      );
+      return tile.note_id;
+    }
+    return dispatch(addNoteToTile(tileId, tile?.session_id ?? ""));
   };
 
 export const deleteTile =
