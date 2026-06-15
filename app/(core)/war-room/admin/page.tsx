@@ -13,7 +13,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
   name: "War Room",
   slug: "war-room",
   description:
-    "Session-based multitasking command center. A user opens saved War Rooms, each a self-arranging gallery of tiles; every tile bundles a Task + Notes + Audio transcript behind four tabs, is context-aware (org/scope inherited from the session, overridable per tile), and can be pinned or hidden. A thin consumer of tasks, notes, transcription, and scopes.",
+    "Session-based multitasking command center. A user opens saved War Rooms, each a cockpit of threads: a Stage mode (a live watchlist rail + one driven thread) and a Grid mode (the self-arranging bento gallery, all at once), toggled in the header. Every thread bundles a Task + Notes + Audio transcript behind four tabs, is context-aware (org/scope inherited from the session, overridable per tile), and can be pinned, parked (hidden), or projected. Header controls: Stage⇄Grid, the instrument projector (set every thread to one view), a Comfortable/Compact density dial, and a live active/parked/pinned meter. A thin consumer of tasks, notes, transcription, and scopes.",
   docs: [{ label: "War Room FEATURE.md", href: "/features/war-room/FEATURE.md" }],
   routeScanPath: "app/(core)/war-room",
 
@@ -35,9 +35,9 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/war-room/[id]",
-      label: "The room",
+      label: "The room (cockpit)",
       description:
-        "Header (title + session context) + the dynamic tile gallery. Hydrates the session, tiles, audio links, and linked tasks.",
+        "Mission-control header (title + live meter + Stage⇄Grid + instrument projector + density dial + session context) over Stage view (rail + driven thread) or Grid view (bento gallery). Hydrates the session, tiles, audio links, and linked tasks.",
       filePath: "features/war-room/components/room/WarRoomShell.tsx",
       status: "Live",
     },
@@ -59,18 +59,46 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       tier: "candidate",
     },
     {
-      name: "WarRoomGallery",
-      filePath: "features/war-room/components/room/WarRoomGallery.tsx",
+      name: "WarRoomShell + roomViewContext",
+      filePath: "features/war-room/components/room/WarRoomShell.tsx",
       description:
-        "Orders tiles (pinned-first), appends the always-present new tile, and positions everything via the layout engine.",
+        "The cockpit frame + header (Stage⇄Grid, projector, density dial, live meter). roomViewContext.tsx holds the ephemeral view state (mode / projectedTab / density / staged thread) — never Redux, never persisted.",
+      tier: "candidate",
+    },
+    {
+      name: "StageView + StageTile + RailTile",
+      filePath: "features/war-room/components/room/StageView.tsx",
+      description:
+        "Stage mode: a live watchlist rail (RailTile rows with PulseGlyph + status word) beside the hero focus pane (StageTile, full working state). Click a rail row to snap it onto the Stage. Parked threads fold into a collapsible rail section.",
       tier: "internal",
     },
     {
-      name: "WarRoomTile + TileFrame",
+      name: "WarRoomGallery (Grid mode)",
+      filePath: "features/war-room/components/room/WarRoomGallery.tsx",
+      description:
+        "Grid mode: orders tiles (pinned-first), appends the always-present new tile, positions via the layout engine with the density floors, docks parked threads in the bottom tray.",
+      tier: "internal",
+    },
+    {
+      name: "WarRoomTile",
       filePath: "features/war-room/components/tile/WarRoomTile.tsx",
       description:
-        "The tabbed tile shell (Task/Notes/Audio/All) + the prop-driven pinnable/hideable chrome (TileFrame). Expand opens each tab's full UI.",
+        "The operable Grid tile: kind accent rail + live metric chips + segmented tab switcher + projector support; double-click promotes to the Stage. Shares the canonical tab bodies via TileTabContent.",
       tier: "internal",
+    },
+    {
+      name: "Tile presentation primitives",
+      filePath: "features/war-room/components/tile/TileTabBar.tsx",
+      description:
+        "TileTabBar (segmented, kind-colored switcher), TileTabContent (4 bodies + combined view), TileMetricChips (live readings), PulseGlyph (is-alive glyph), TileOptionsMenu (pin/stage/expand/hide/remove), tileKind (semantic accent map).",
+      tier: "internal",
+    },
+    {
+      name: "Tile hooks (pulse / metrics / actions)",
+      filePath: "features/war-room/hooks/useTilePulse.ts",
+      description:
+        "useTilePulse (live status word + headline + preview), useTileMetrics (chip readings), useTileActions (rename/pin/hide/expand/delete resolver). Compose the real tasks/notes/transcript/warRoom slices read-only — written once, consumed by Stage + Grid + parked chips.",
+      tier: "candidate",
     },
     {
       name: "Tile tabs (Task / Notes / Audio)",
@@ -94,10 +122,10 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
-      name: "HiddenTilesTray + NewTile",
+      name: "HiddenTilesTray + ParkedThreadChip + NewTile",
       filePath: "features/war-room/components/room/HiddenTilesTray.tsx",
       description:
-        "Meet-style tray to restore hidden tiles; the always-present empty tile that promotes to a real one on first capture.",
+        "Grid-mode parked-threads dock. ParkedThreadChip carries a live status trio and restores-and-stages on click (hidden ≠ gone). NewTile is the always-present add affordance (card + rail shapes) that auto-stages the fresh thread.",
       tier: "internal",
     },
   ],

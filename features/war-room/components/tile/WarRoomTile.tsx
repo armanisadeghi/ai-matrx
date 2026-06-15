@@ -2,159 +2,145 @@
 
 // features/war-room/components/tile/WarRoomTile.tsx
 //
-// The tabbed tile shell: Task / Notes / Audio / All, with pin/hide controls.
-// Wave 2 renders minimal placeholder bodies so layout, tabs, and pin/hide are
-// testable; Wave 3 wires real task/notes/audio content into each tab.
+// The operable Grid-mode tile: a fully-working thread card (header + live tab
+// body) for the bird's-eye gallery. It is the consolidated tile design —
+//   • a kind-colored accent rail down the left edge (glance-read the thread type)
+//   • live metric chips in the header (subtasks / note fill / transcript / scope)
+//   • a segmented tab switcher; secondary chrome (context, ⋯) stays quiet until
+//     hover so a wall of 12 reads calm
+//   • the room-wide instrument PROJECTOR can force which tab renders without
+//     mutating the tile's saved active_tab
+//   • a double-click (or the header "focus" button) promotes it to the Stage
+// All behavior runs through the shared useTileActions + the canonical tab
+// bodies (TileTaskTab / TileNotesTab / TileAudioTab) — nothing reimplemented.
 
-import { useRouter } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
-import { useOpenTranscriptStudioWindow } from "@/features/overlays/openers/transcriptStudioWindow";
-import {
-  selectActiveAudioSessionId,
-  selectTileById,
-} from "@/features/war-room/redux/selectors";
-import {
-  deleteTile,
-  renameTile,
-  setTileActiveTabPersisted,
-  toggleTileHide,
-  toggleTilePin,
-} from "@/features/war-room/redux/thunks";
-import type { TileTab } from "@/features/war-room/types";
-import { TileFrame } from "../shared/TileFrame";
-import { TileTabBar } from "./TileTabBar";
-import { TileNotesTab } from "./TileNotesTab";
-import { TileTaskTab } from "./TileTaskTab";
-import { TileAudioTab } from "./TileAudioTab";
+import { Pin, Focus } from "lucide-react";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setTileActiveTabPersisted } from "@/features/war-room/redux/thunks";
+import { cn } from "@/lib/utils";
+import { EditableTitle } from "../shared/EditableTitle";
 import { TileContextOverride } from "./TileContextOverride";
+import { TileTabBar } from "./TileTabBar";
+import { TileTabContent } from "./TileTabContent";
+import { TileMetricChips } from "./TileMetricChips";
+import { TileOptionsMenu } from "./TileOptionsMenu";
+import { useTileActions } from "@/features/war-room/hooks/useTileActions";
+import { useTileMetrics } from "@/features/war-room/hooks/useTileMetrics";
+import { useRoomView } from "../room/roomViewContext";
+import { tileKindOf } from "../room/tileKind";
 
 export function WarRoomTile({
   tileId,
   sessionId,
   featured,
+  onStage,
 }: {
   tileId: string;
   sessionId: string;
   featured?: boolean;
+  /** Promote this tile to the Stage (Grid mode only). */
+  onStage?: () => void;
 }) {
   const dispatch = useAppDispatch();
-  const tile = useAppSelector(selectTileById(tileId));
-  const audioSessionId = useAppSelector(selectActiveAudioSessionId(tileId));
-  const router = useRouter();
-  const openNotes = useOpenNotesWindow();
-  const openStudio = useOpenTranscriptStudioWindow();
-  if (!tile) return null;
+  const actions = useTileActions(tileId, sessionId);
+  const metrics = useTileMetrics(tileId);
+  const { projectedTab } = useRoomView();
+  if (!actions) return null;
 
-  const activeTab = (tile.active_tab as TileTab) ?? "task";
-  const title = tile.title?.trim() || "Untitled tile";
-
-  // Expand the active tab into its full UI.
-  function handleExpand() {
-    if (!tile) return;
-    switch (activeTab) {
-      case "notes":
-        if (tile.note_id) openNotes({ singleNoteId: tile.note_id });
-        break;
-      case "audio":
-        if (audioSessionId) openStudio({ activeSessionId: audioSessionId });
-        break;
-      case "task":
-      case "combined":
-        if (tile.task_id) router.push(`/tasks/${tile.task_id}`);
-        else if (tile.note_id) openNotes({ singleNoteId: tile.note_id });
-        break;
-    }
-  }
-
-  const canExpand =
-    (activeTab === "notes" && !!tile.note_id) ||
-    (activeTab === "audio" && !!audioSessionId) ||
-    ((activeTab === "task" || activeTab === "combined") &&
-      (!!tile.task_id || !!tile.note_id));
-
-  async function handleDelete() {
-    const ok = await confirm({
-      title: "Remove this tile?",
-      description:
-        "The tile is removed from this War Room. Any linked task or note stays safe in its own feature.",
-      variant: "destructive",
-      confirmLabel: "Remove",
-    });
-    if (ok) dispatch(deleteTile(tileId, sessionId));
-  }
+  // The board projector overrides what's SHOWN, never what's SAVED.
+  const shownTab = projectedTab ?? actions.activeTab;
+  const projected = projectedTab !== null && projectedTab !== actions.activeTab;
+  const kind = tileKindOf(shownTab);
 
   return (
-    <TileFrame
-      title={title}
-      onRename={(next) => dispatch(renameTile(tileId, next))}
-      featured={featured}
-      isPinned={tile.is_pinned}
-      onTogglePin={() => dispatch(toggleTilePin(tileId, !tile.is_pinned))}
-      onHide={() => dispatch(toggleTileHide(tileId, true))}
-      onExpand={canExpand ? handleExpand : undefined}
-      onDelete={handleDelete}
-      contextSlot={<TileContextOverride tileId={tileId} />}
-      tabsSlot={
+    <div
+      onDoubleClick={onStage}
+      className={cn(
+        "group/tile @container relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-card transition-all duration-200",
+        actions.isPinned
+          ? "border-primary/40 shadow-[var(--elevation-2)] ring-1 ring-primary/15"
+          : featured
+            ? "border-border shadow-[var(--elevation-1)] hover:border-primary/30"
+            : "border-border hover:border-primary/30 hover:shadow-[var(--elevation-1)]",
+      )}
+    >
+      {/* Accent rail — glance-read the thread type without reading the title. */}
+      <span
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-xl opacity-80 transition-opacity group-hover/tile:opacity-100",
+          kind.rail,
+        )}
+      />
+
+      {/* Header — pin/icon · title · metric chips · tabs · context · focus · ⋯ */}
+      <div className="shrink-0 flex items-center gap-1.5 pl-2.5 pr-1.5 h-9 border-b border-border/70">
+        {actions.isPinned ? (
+          <Pin className="size-3 shrink-0 text-primary fill-primary/20" />
+        ) : (
+          <kind.Icon className={cn("size-3.5 shrink-0", kind.text)} />
+        )}
+
+        <EditableTitle
+          value={actions.title}
+          onSave={actions.rename}
+          placeholder="Untitled thread"
+          className="min-w-0 text-xs font-medium"
+          inputClassName="min-w-0 text-xs font-medium"
+        />
+
+        {/* Live readings — hide on the tightest cells (handled by the chips). */}
+        <div className="ml-0.5 @max-[12rem]:hidden">
+          <TileMetricChips m={metrics} />
+        </div>
+
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          <div className="@max-[15rem]:hidden">
+            <TileTabBar
+              active={shownTab}
+              onChange={(tab) => dispatch(setTileActiveTabPersisted(tileId, tab))}
+            />
+          </div>
+
+          {/* Secondary controls — quiet until hover so density reads calm. */}
+          <div className="flex items-center opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover/tile:opacity-100">
+            <TileContextOverride tileId={tileId} />
+            {onStage ? (
+              <button
+                type="button"
+                onClick={onStage}
+                title="Bring to stage"
+                className="grid place-items-center size-6 shrink-0 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              >
+                <Focus className="size-3.5" />
+              </button>
+            ) : null}
+          </div>
+
+          <TileOptionsMenu actions={actions} onStage={onStage} />
+        </div>
+      </div>
+
+      {/* Compact tab row for very narrow cells where the header switcher hides. */}
+      <div className="hidden @max-[15rem]:flex shrink-0 items-center justify-center px-2 py-1 border-b border-border/60">
         <TileTabBar
-          active={activeTab}
+          active={shownTab}
           onChange={(tab) => dispatch(setTileActiveTabPersisted(tileId, tab))}
         />
-      }
-    >
-      <TileTabContent tab={activeTab} tileId={tileId} sessionId={sessionId} />
-    </TileFrame>
-  );
-}
-
-function TileTabContent({
-  tab,
-  tileId,
-  sessionId,
-}: {
-  tab: TileTab;
-  tileId: string;
-  sessionId: string;
-}) {
-  switch (tab) {
-    case "task":
-      return <TileTaskTab tileId={tileId} sessionId={sessionId} />;
-    case "notes":
-      return <TileNotesTab tileId={tileId} sessionId={sessionId} />;
-    case "audio":
-      return <TileAudioTab tileId={tileId} />;
-    case "combined":
-      return (
-        <div className="h-full overflow-y-auto flex flex-col divide-y divide-border/60">
-          <CombinedSection label="Task">
-            <TileTaskTab tileId={tileId} sessionId={sessionId} />
-          </CombinedSection>
-          <CombinedSection label="Notes">
-            <TileNotesTab tileId={tileId} sessionId={sessionId} compact />
-          </CombinedSection>
-          <CombinedSection label="Audio">
-            <TileAudioTab tileId={tileId} />
-          </CombinedSection>
-        </div>
-      );
-  }
-}
-
-function CombinedSection({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="shrink-0">
-      <div className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground bg-muted/30">
-        {label}
       </div>
-      <div className="min-h-44">{children}</div>
-    </section>
+
+      {/* A faint banner only while the projector is overriding this tile's tab. */}
+      {projected ? (
+        <div className="shrink-0 flex items-center gap-1 px-2.5 py-0.5 bg-muted/40 text-[10px] font-medium text-muted-foreground">
+          <kind.Icon className={cn("size-2.5", kind.text)} />
+          Projected · {kind.label}
+        </div>
+      ) : null}
+
+      {/* Body */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <TileTabContent tab={shownTab} tileId={tileId} sessionId={sessionId} />
+      </div>
+    </div>
   );
 }
-

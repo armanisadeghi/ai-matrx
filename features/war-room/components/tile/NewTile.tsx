@@ -2,9 +2,11 @@
 
 // features/war-room/components/tile/NewTile.tsx
 //
-// The always-present empty tile. Wave 2: click to add a blank tile so the
-// gallery is easy to grow and test. Wave 3 turns this into an inline capture
-// surface (type a note / name a task and it promotes to a real tile).
+// The always-present "start a thread" affordance. Reuses the real createTile
+// thunk; on success it calls onCreated(tileId) so the caller can auto-stage the
+// fresh thread (resume-where-you-left-off, but for brand-new work). Two shapes:
+//   · "card" (default) — a dashed cell for the Grid gallery.
+//   · "rail"           — a slim dashed row that matches the Stage rail rhythm.
 
 import { useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
@@ -15,9 +17,13 @@ import { cn } from "@/lib/utils";
 export function NewTile({
   sessionId,
   nextPosition,
+  variant = "card",
+  onCreated,
 }: {
   sessionId: string;
   nextPosition: number;
+  variant?: "card" | "rail";
+  onCreated?: (tileId: string) => void;
 }) {
   const dispatch = useAppDispatch();
   const [creating, setCreating] = useState(false);
@@ -25,8 +31,34 @@ export function NewTile({
   async function handleCreate() {
     if (creating) return;
     setCreating(true);
-    await dispatch(createTile({ sessionId, position: nextPosition }));
+    const tile = await dispatch(createTile({ sessionId, position: nextPosition }));
     setCreating(false);
+    if (tile?.id) onCreated?.(tile.id);
+  }
+
+  if (variant === "rail") {
+    return (
+      <button
+        type="button"
+        onClick={handleCreate}
+        disabled={creating}
+        className={cn(
+          "group/new flex items-center gap-2.5 rounded-xl border border-dashed border-border/70 bg-transparent px-3 py-2 text-left transition-all",
+          "hover:border-primary/50 hover:bg-primary/[0.03] disabled:opacity-60 disabled:pointer-events-none",
+        )}
+      >
+        <span className="grid place-items-center size-5 shrink-0 rounded-full bg-muted/60 text-muted-foreground transition-colors group-hover/new:bg-primary/10 group-hover/new:text-primary">
+          {creating ? (
+            <Loader2 className="size-3 animate-spin" />
+          ) : (
+            <Plus className="size-3.5" />
+          )}
+        </span>
+        <span className="text-[13px] font-medium text-muted-foreground group-hover/new:text-primary">
+          New thread
+        </span>
+      </button>
+    );
   }
 
   return (
@@ -48,7 +80,7 @@ export function NewTile({
           <Plus className="size-5" />
         )}
       </span>
-      <span className="text-xs font-medium">New tile</span>
+      <span className="text-xs font-medium">New thread</span>
     </button>
   );
 }

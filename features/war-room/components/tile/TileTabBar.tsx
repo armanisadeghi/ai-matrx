@@ -2,49 +2,59 @@
 
 // features/war-room/components/tile/TileTabBar.tsx
 //
-// Compact, icon-only tab switcher. Lives inline in the tile header (no separate
-// row, no labels) — the icons are self-explanatory and reclaim vertical space.
+// The tile view switcher: a compact segmented control (one connected pill) with
+// a single "lit" segment, kind-colored to match the tile accent rail. Icon-only
+// by default — it lives inline in the tile header (no separate row, no labels),
+// so the icons are self-explanatory and reclaim vertical space. The Stage tile
+// opts into labels via `withLabels` + `size="md"`. Self-explanatory, one active
+// at a time — the busy user never hunts for which view they're in.
 
-import { ListChecks, NotebookPen, Mic, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TileTab } from "@/features/war-room/types";
-
-const TABS: { id: TileTab; label: string; Icon: typeof ListChecks }[] = [
-  { id: "task", label: "Task", Icon: ListChecks },
-  { id: "notes", label: "Notes", Icon: NotebookPen },
-  { id: "audio", label: "Audio", Icon: Mic },
-  { id: "combined", label: "All", Icon: LayoutGrid },
-];
+import { TILE_KIND_ORDER, tileKindOf } from "@/features/war-room/components/room/tileKind";
 
 export function TileTabBar({
   active,
   onChange,
+  withLabels = false,
+  size = "sm",
 }: {
   active: TileTab;
   onChange: (tab: TileTab) => void;
+  withLabels?: boolean;
+  size?: "sm" | "md";
 }) {
   return (
-    <div className="flex items-center gap-0.5 shrink-0">
-      {TABS.map(({ id, label, Icon }) => {
+    <div
+      className="inline-flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5 shrink-0"
+      role="tablist"
+    >
+      {TILE_KIND_ORDER.map((id) => {
+        const k = tileKindOf(id);
         const isActive = id === active;
         return (
           <button
             key={id}
             type="button"
+            role="tab"
+            aria-selected={isActive}
+            title={k.label}
             onClick={(e) => {
               e.stopPropagation();
               onChange(id);
             }}
-            aria-pressed={isActive}
-            title={label}
             className={cn(
-              "grid place-items-center size-6 rounded-md transition-colors",
+              "inline-flex items-center justify-center gap-1 rounded-md font-medium transition-all duration-150",
+              size === "md" ? "h-7 px-2" : "h-6 px-1.5",
               isActive
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                ? cn("bg-card shadow-[var(--elevation-1)]", k.text)
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
-            <Icon className="size-3.5" />
+            <k.Icon className={size === "md" ? "size-4" : "size-3.5"} />
+            {withLabels ? (
+              <span className="text-[11px] @max-[26rem]:hidden">{k.label}</span>
+            ) : null}
           </button>
         );
       })}

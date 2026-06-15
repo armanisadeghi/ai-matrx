@@ -2,13 +2,16 @@
 
 // features/war-room/components/room/HiddenTilesTray.tsx
 //
-// Google-Meet-style tray for hidden tiles: a slim strip of chips you can click
-// to bring a tile back into the gallery.
+// Grid-mode parked-threads dock: a slim bottom strip of chips for hidden tiles.
+// Each chip wears the ui-sharp parked-thread treatment — a live status trio
+// (task / notes / audio) so a parked thread still reads as alive — and clicking
+// it restores AND stages the thread (lands you straight back in it). Hidden ≠
+// gone.
 
-import { Eye, EyeOff } from "lucide-react";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { toggleTileHide } from "@/features/war-room/redux/thunks";
+import { EyeOff } from "lucide-react";
 import type { WarRoomTile } from "@/features/war-room/types";
+import { ParkedThreadChip } from "./ParkedThreadChip";
+import { useRoomView } from "./roomViewContext";
 
 export function HiddenTilesTray({
   tiles,
@@ -16,29 +19,24 @@ export function HiddenTilesTray({
   sessionId: string;
   tiles: WarRoomTile[];
 }) {
-  const dispatch = useAppDispatch();
+  const { stageTile } = useRoomView();
   if (tiles.length === 0) return null;
 
   return (
-    <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-t border-border bg-muted/30 overflow-x-auto">
+    <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-t border-border bg-muted/25 overflow-x-auto scrollbar-hide">
       <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground shrink-0">
         <EyeOff className="size-3.5" />
-        Hidden ({tiles.length})
+        Parked ({tiles.length})
       </span>
       <div className="flex items-center gap-1.5">
         {tiles.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => dispatch(toggleTileHide(t.id, false))}
-            className="group flex items-center gap-1 rounded-md border border-border bg-card px-2 h-6 text-[11px] text-foreground hover:border-primary/40 hover:text-primary transition-colors shrink-0"
-            title="Show tile"
-          >
-            <span className="max-w-32 truncate">
-              {t.title?.trim() || "Untitled tile"}
-            </span>
-            <Eye className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
+          <div key={t.id} className="w-44 shrink-0">
+            <ParkedThreadChip
+              tileId={t.id}
+              title={t.title?.trim() || "Untitled thread"}
+              onRestore={(id) => stageTile(id)}
+            />
+          </div>
         ))}
       </div>
     </div>
