@@ -36,6 +36,7 @@ import {
   closeOverlay,
   openOverlay,
 } from "@/lib/redux/slices/overlaySlice";
+import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch } from "@/lib/redux/store";
 import { extractErrorMessage } from "@/utils/errors";
@@ -183,6 +184,26 @@ function viewItem(ctx: ContentActionContext): MenuItem {
     action: () => {
       const instanceId =
         instanceKey ?? `content-editor-${Date.now().toString(36)}`;
+      // Route the caller's onSave through the callback registry (a function
+      // can't survive Redux — the controller drops it). Read-only callers
+      // pass no onSave → no group, no Save button.
+      const callbackGroupId = onSave
+        ? createFullScreenEditorCallbackGroup({
+            onSave: async (newContent: string) => {
+              try {
+                await onSave(newContent);
+              } catch (err) {
+                // eslint-disable-next-line no-console
+                console.error("[ContentActionBar] onSave failed", err);
+                toast.error(getErrorMessage(err, "Save failed"));
+                return;
+              }
+              dispatch(
+                closeOverlay({ overlayId: "fullScreenEditor", instanceId }),
+              );
+            },
+          }).callbackGroupId
+        : null;
       dispatch(
         openOverlay({
           overlayId: "fullScreenEditor",
@@ -190,26 +211,7 @@ function viewItem(ctx: ContentActionContext): MenuItem {
           data: {
             content,
             mode: "free",
-            conversationId: undefined,
-            messageId: undefined,
-            onSave: onSave
-              ? async (newContent: string) => {
-                  try {
-                    await onSave(newContent);
-                  } catch (err) {
-                    // eslint-disable-next-line no-console
-                    console.error("[ContentActionBar] onSave failed", err);
-                    toast.error(getErrorMessage(err, "Save failed"));
-                    return;
-                  }
-                  dispatch(
-                    closeOverlay({
-                      overlayId: "fullScreenEditor",
-                      instanceId,
-                    }),
-                  );
-                }
-              : undefined,
+            callbackGroupId,
             tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
             initialTab: "matrx_split",
             analysisData: metadata as Record<string, unknown> | undefined,

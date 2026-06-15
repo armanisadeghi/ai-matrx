@@ -40,6 +40,7 @@ import {
   closeOverlay,
   openOverlay,
 } from "@/lib/redux/slices/overlaySlice";
+import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -154,6 +155,29 @@ export function ContentActionBar({
 
   const handleOpenEditor = useCallback(() => {
     const editorInstanceId = `content-editor-${resolvedInstanceKey}`;
+    // onSave travels via the callback registry, never through Redux data.
+    const callbackGroupId = onSave
+      ? createFullScreenEditorCallbackGroup({
+          onSave: async (newContent: string) => {
+            try {
+              await onSave(newContent);
+            } catch (err) {
+              // eslint-disable-next-line no-console
+              console.error("[ContentActionBar] onSave failed", err);
+              toast.error(
+                err instanceof Error ? err.message : "Failed to save changes",
+              );
+              return;
+            }
+            dispatch(
+              closeOverlay({
+                overlayId: "fullScreenEditor",
+                instanceId: editorInstanceId,
+              }),
+            );
+          },
+        }).callbackGroupId
+      : null;
     dispatch(
       openOverlay({
         overlayId: "fullScreenEditor",
@@ -161,30 +185,7 @@ export function ContentActionBar({
         data: {
           content,
           mode: "free",
-          conversationId: undefined,
-          messageId: undefined,
-          onSave: onSave
-            ? async (newContent: string) => {
-                try {
-                  await onSave(newContent);
-                } catch (err) {
-                  // eslint-disable-next-line no-console
-                  console.error("[ContentActionBar] onSave failed", err);
-                  toast.error(
-                    err instanceof Error
-                      ? err.message
-                      : "Failed to save changes",
-                  );
-                  return;
-                }
-                dispatch(
-                  closeOverlay({
-                    overlayId: "fullScreenEditor",
-                    instanceId: editorInstanceId,
-                  }),
-                );
-              }
-            : undefined,
+          callbackGroupId,
           tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
           initialTab: "matrx_split",
           analysisData:
