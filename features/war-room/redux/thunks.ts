@@ -33,6 +33,7 @@ import {
   audioSessionLinkedToTile,
   audioSessionsLoadedForTile,
   clearSessionTiles,
+  setActiveAudioSession,
   sessionRemoved,
   sessionsLoaded,
   sessionUpserted,
@@ -388,6 +389,19 @@ export const addAudioSessionToTile =
       return null;
     } finally {
       inFlightTileOps.delete(key);
+    }
+  };
+
+/** Switch which of a tile's audio sessions is active (persists + loads it). */
+export const setTileActiveAudioSession =
+  (tileId: string, studioSessionId: string) =>
+  async (dispatch: AppDispatch) => {
+    dispatch(setActiveAudioSession({ tileId, studioSessionId }));
+    dispatch(fetchRawSegmentsThunk({ sessionId: studioSessionId }));
+    try {
+      await service.setActiveTileAudioLink(tileId, studioSessionId);
+    } catch {
+      toast.error("Couldn't switch the audio session");
     }
   };
 
