@@ -16,6 +16,7 @@ import {
   selectSessionsList,
 } from "@/features/war-room/redux/selectors";
 import { loadSessionsList } from "@/features/war-room/redux/thunks";
+import { closeAllWatches } from "@/features/war-room/redux/watchSlice";
 import { SessionCard } from "./SessionCard";
 import { NewSessionButton } from "./NewSessionButton";
 
@@ -57,6 +58,15 @@ export function WarRoomAllView() {
   useEffect(() => {
     if (status === "idle") dispatch(loadSessionsList());
   }, [status, dispatch]);
+
+  // Live-watch windows are ephemeral "this is happening right now" UI tied to
+  // this view. Leaving /all unmounts MasterWatchLayer (windows vanish); clear
+  // the slice too so returning doesn't re-pop every prior watch window.
+  useEffect(() => {
+    return () => {
+      dispatch(closeAllWatches());
+    };
+  }, [dispatch]);
 
   const isLoading = status === "loading" || status === "idle";
   const isEmpty = status === "ready" && sessions.length === 0;

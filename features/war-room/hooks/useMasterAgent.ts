@@ -35,7 +35,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { getUserId } from "@/utils/auth/getUserId";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
@@ -90,6 +90,12 @@ const inFlight = new Map<string, Promise<string | null>>();
 export function useMasterAgent(): UseMasterAgentReturn {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+  // Subscribe to the user id (not the synchronous `getUserId()` snapshot) so the
+  // resolve effect RE-RUNS if auth hydrates AFTER first mount. The panel is lazy
+  // + mounts deep in the authed shell, so this is rarely null at mount — but the
+  // dependency makes a late hydrate self-heal instead of leaving the master
+  // conversation permanently unresolved.
+  const userId = useAppSelector(selectUserId);
   const [conversationId, setConversationId] = useState<string | null>(null);
 
   // Re-push trigger: the room set on `/all`. The builder fetches its own
@@ -103,7 +109,6 @@ export function useMasterAgent(): UseMasterAgentReturn {
 
   // ── 1. Resolve the durable conversation once per user ────────────────────
   useEffect(() => {
-    const userId = getUserId();
     if (!userId) return;
     let cancelled = false;
 
@@ -180,7 +185,7 @@ export function useMasterAgent(): UseMasterAgentReturn {
     return () => {
       cancelled = true;
     };
-  }, [dispatch, store]);
+  }, [userId, dispatch, store]);
 
   // ── 2/3. Build + push the cross-room read-only context ───────────────────
   const refreshContext = useCallback(async () => {
