@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/transcripts", {
   title: "Transcripts",
   description:
     "All your transcripts — browse, record, upload, and open in the workspace you want.",
-  letter: "T",
+  letter: "M",
   additionalMetadata: {
     keywords: [
       "transcription",

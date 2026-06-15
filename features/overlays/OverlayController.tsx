@@ -3252,7 +3252,12 @@ export default function OverlayController() {
             language={
               typeof data?.language === "string" ? data.language : undefined
             }
-            defaultView={data?.defaultView === "inline" ? "inline" : "split"}
+            defaultView={
+              data?.defaultView === "inline" ||
+              data?.defaultView === "highlight"
+                ? data.defaultView
+                : "split"
+            }
           />
         );
       })}

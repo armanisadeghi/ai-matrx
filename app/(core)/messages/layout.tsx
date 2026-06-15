@@ -3,14 +3,15 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 import MessagesLayoutClient from "./MessagesLayoutClient";
 
 export const metadata = createRouteMetadata("/messages", {
-    title: "Messages",
-    description: "Direct messages and conversations",
+  title: "Messages",
+  description: "Direct messages and conversations",
+  letter: "V",
 });
 
 export default function MessagesLayout({
-    children,
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    return <MessagesLayoutClient>{children}</MessagesLayoutClient>;
+  return <MessagesLayoutClient>{children}</MessagesLayoutClient>;
 }

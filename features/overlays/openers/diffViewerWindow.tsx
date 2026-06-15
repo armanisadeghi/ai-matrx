@@ -13,7 +13,7 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
-import type { DiffEngine } from "@/components/diff/DiffViewer";
+import type { DiffEngine, DiffView } from "@/components/diff/DiffViewer";
 
 const OVERLAY_ID = "diffViewerWindow" as const;
 
@@ -25,7 +25,7 @@ export interface OpenDiffViewerWindowOptions {
   title?: string | null;
   engine?: DiffEngine;
   language?: string;
-  defaultView?: "split" | "inline";
+  defaultView?: DiffView;
   /** Stable instance id. Omit for a fresh window each call. */
   instanceId?: string;
 }

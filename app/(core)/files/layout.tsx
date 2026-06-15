@@ -23,6 +23,7 @@ export const metadata = createRouteMetadata("/files", {
   title: "Files",
   description:
     "Upload, browse, preview, and share files in a fast, real-time synced file system.",
+  letter: "F",
   additionalMetadata: {
     keywords: [
       "files",

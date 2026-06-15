@@ -7,6 +7,7 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 export const metadata = createRouteMetadata("/workbooks", {
   title: "Workbooks",
   description: "Lossless spreadsheet workbooks",
+  letter: "B",
 });
 
 /**

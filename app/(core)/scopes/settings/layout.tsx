@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/scopes", {
   titlePrefix: "Settings",
   title: "Scopes",
   description: "Configure global scope system settings.",
-  letter: "Ss",
+  letter: "S",
 });
 
 export default function ScopeSettingsLayout({

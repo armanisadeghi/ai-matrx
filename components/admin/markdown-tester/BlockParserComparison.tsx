@@ -25,10 +25,7 @@ import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig"
 import { useMarkdownSamples } from "./useMarkdownSamples";
 import { runV2Parser } from "./utils/run-v2-parser";
 import type { SplitterBlock } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import {
-  runReduxParser,
-  type ReduxParseMode,
-} from "./utils/run-redux-parser";
+import { runReduxParser, type ReduxParseMode } from "./utils/run-redux-parser";
 import { runServerParser } from "./utils/run-server-parser";
 import {
   diffBlocks,
@@ -58,6 +55,91 @@ interface RunResult {
   reduxMs: number;
 }
 
+function xmlAttr(value: string | number): string {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Wrap text in CDATA, neutralizing any embedded `]]>` so the block stays valid. */
+function cdata(text: string): string {
+  return `<![CDATA[${text.replace(/]]>/g, "]]]]><![CDATA[>")}]]>`;
+}
+
+interface DriftReportContext {
+  route: string;
+  tool: string;
+  source: string;
+  reduxMode: ReduxParseMode;
+  serverUrl: string;
+}
+
+/**
+ * Builds a single self-describing XML block: route + what was clicked + the
+ * raw input + per-row drift, with the actual block content for every drifting
+ * row. Designed to be pasted straight into an agent prompt with zero extra
+ * context — drop it in and go.
+ */
+function buildDriftReportXml(
+  result: RunResult,
+  ctx: DriftReportContext,
+): string {
+  const r = result.report;
+  const out: string[] = [];
+  out.push(`<block-parser-drift-report>`);
+  out.push(`  <context>`);
+  out.push(`    <route>${xmlAttr(ctx.route)}</route>`);
+  out.push(`    <tool>${xmlAttr(ctx.tool)}</tool>`);
+  out.push(`    <source>${xmlAttr(ctx.source)}</source>`);
+  out.push(`    <redux-mode>${xmlAttr(ctx.reduxMode)}</redux-mode>`);
+  out.push(`    <server-url>${xmlAttr(ctx.serverUrl)}</server-url>`);
+  out.push(`    <input-chars>${result.raw.length}</input-chars>`);
+  out.push(
+    `    <timing v2-ms="${result.v2Ms.toFixed(1)}" redux-ms="${result.reduxMs.toFixed(1)}" server-ms="${result.serverMs.toFixed(1)}" />`,
+  );
+  out.push(
+    `    <baseline>V2 (every redux/server diff is measured against the V2 block at the same index)</baseline>`,
+  );
+  out.push(`  </context>`);
+  out.push(`  <summary>`);
+  out.push(`    <drift-rows>${r.driftCount} of ${r.rows.length}</drift-rows>`);
+  out.push(
+    `    <byte-equality v2-vs-redux="${(r.v2VsRedux * 100).toFixed(1)}%" v2-vs-server="${(r.v2VsServer * 100).toFixed(1)}%" redux-vs-server="${(r.reduxVsServer * 100).toFixed(1)}%" />`,
+  );
+  out.push(`  </summary>`);
+  out.push(`  <rows>`);
+  for (const row of r.rows) {
+    const drift =
+      row.v2.status !== "match" ||
+      row.redux.status !== "match" ||
+      row.server.status !== "match";
+    out.push(`    <row index="${row.index}" drift="${drift}">`);
+    const cellLine = (name: string, cell: DiffCell) =>
+      `      <${name} type="${xmlAttr(cell.block?.type ?? "—")}" status="${cell.status}" bytes="${cell.block?.content.length ?? 0}"${cell.firstDiffAt >= 0 ? ` first-diff-byte="${cell.firstDiffAt}"` : ""} />`;
+    out.push(cellLine("v2", row.v2));
+    out.push(cellLine("redux", row.redux));
+    out.push(cellLine("server", row.server));
+    if (drift) {
+      out.push(`      <contents>`);
+      out.push(`        <v2>${cdata(row.v2.block?.content ?? "")}</v2>`);
+      out.push(
+        `        <redux>${cdata(row.redux.block?.content ?? "")}</redux>`,
+      );
+      out.push(
+        `        <server>${cdata(row.server.block?.content ?? "")}</server>`,
+      );
+      out.push(`      </contents>`);
+    }
+    out.push(`    </row>`);
+  }
+  out.push(`  </rows>`);
+  out.push(`  <raw-input>${cdata(result.raw)}</raw-input>`);
+  out.push(`</block-parser-drift-report>`);
+  return out.join("\n");
+}
+
 function statusBadge(cell: DiffCell): {
   variant: "outline" | "default" | "destructive";
   label: string;
@@ -78,9 +160,7 @@ function ParserCell({ cell }: { cell: DiffCell }) {
   const block = cell.block;
   if (!block) {
     return (
-      <div className="text-[11px] text-muted-foreground italic">
-        — missing
-      </div>
+      <div className="text-[11px] text-muted-foreground italic">— missing</div>
     );
   }
   const badge = statusBadge(cell);
@@ -230,48 +310,18 @@ export function BlockParserComparison({
 
   const handleCopyReport = async () => {
     if (!result) return;
-    const lines: string[] = [];
-    lines.push(`# Block Parser Drift Report`);
-    lines.push(`Source: ${selectedSampleName}`);
-    lines.push(`Mode: redux=${reduxMode}`);
-    lines.push(``);
-    lines.push(
-      `Drift rows: ${result.report.driftCount} / ${result.report.rows.length}`,
-    );
-    lines.push(
-      `V2 vs Redux byte equality: ${(result.report.v2VsRedux * 100).toFixed(1)}%`,
-    );
-    lines.push(
-      `V2 vs Server byte equality: ${(result.report.v2VsServer * 100).toFixed(1)}%`,
-    );
-    lines.push(
-      `Redux vs Server byte equality: ${(result.report.reduxVsServer * 100).toFixed(1)}%`,
-    );
-    lines.push(``);
-    for (const row of result.report.rows) {
-      if (
-        row.v2.status === "match" &&
-        row.redux.status === "match" &&
-        row.server.status === "match"
-      ) {
-        continue;
-      }
-      lines.push(`## Row #${row.index}`);
-      lines.push(`- v2: ${row.v2.block?.type ?? "—"} ${row.v2.status}`);
-      lines.push(
-        `- redux: ${row.redux.block?.type ?? "—"} ${row.redux.status}${
-          row.redux.firstDiffAt >= 0 ? ` @byte ${row.redux.firstDiffAt}` : ""
-        }`,
-      );
-      lines.push(
-        `- server: ${row.server.block?.type ?? "—"} ${row.server.status}${
-          row.server.firstDiffAt >= 0 ? ` @byte ${row.server.firstDiffAt}` : ""
-        }`,
-      );
-      lines.push(`  ${row.summary}`);
-    }
     try {
-      await navigator.clipboard.writeText(lines.join("\n"));
+      const xml = buildDriftReportXml(result, {
+        route:
+          typeof window !== "undefined"
+            ? window.location.pathname
+            : "/administration/markdown-tester",
+        tool: "Block Parser Comparison (V2 local · Redux accumulator · Python server)",
+        source: selectedSampleName,
+        reduxMode,
+        serverUrl: apiConfig.baseUrl,
+      });
+      await navigator.clipboard.writeText(xml);
       toast.success("Report copied to clipboard");
     } catch {
       toast.error("Failed to copy report");
@@ -358,8 +408,8 @@ export function BlockParserComparison({
         <div className="flex-1 flex flex-col items-center justify-center text-xs text-muted-foreground gap-2 py-12">
           <p>Pick a source, then click Run comparison.</p>
           <p>
-            All three parsers run on the same content. Any byte-level
-            difference is surfaced as drift.
+            All three parsers run on the same content. Any byte-level difference
+            is surfaced as drift.
           </p>
         </div>
       )}
@@ -369,7 +419,9 @@ export function BlockParserComparison({
           {/* Summary banner */}
           <div className="flex-shrink-0 flex items-center gap-1.5 flex-wrap text-xs">
             <Badge
-              variant={result.report.driftCount === 0 ? "default" : "destructive"}
+              variant={
+                result.report.driftCount === 0 ? "default" : "destructive"
+              }
               className="h-5"
             >
               {result.report.driftCount === 0
@@ -389,8 +441,8 @@ export function BlockParserComparison({
               Redux vs Server: {(result.report.reduxVsServer * 100).toFixed(1)}%
             </Badge>
             <span className="ml-auto text-[10px] text-muted-foreground font-mono">
-              V2 {result.v2Ms.toFixed(1)}ms · Redux {result.reduxMs.toFixed(1)}ms
-              · Server {result.serverMs.toFixed(1)}ms
+              V2 {result.v2Ms.toFixed(1)}ms · Redux {result.reduxMs.toFixed(1)}
+              ms · Server {result.serverMs.toFixed(1)}ms
             </span>
           </div>
 

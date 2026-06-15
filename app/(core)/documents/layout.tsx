@@ -7,6 +7,7 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 export const metadata = createRouteMetadata("/documents", {
   title: "Documents",
   description: "Cloud documents with realtime collaboration",
+  letter: "U",
 });
 
 /**

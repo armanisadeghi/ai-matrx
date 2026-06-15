@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/scopes", {
   titlePrefix: "Graph",
   title: "Scopes",
   description: "Visualize scope relationships as a graph.",
-  letter: "Gr",
+  letter: "S",
 });
 
 export default function ScopeGraphLayout({

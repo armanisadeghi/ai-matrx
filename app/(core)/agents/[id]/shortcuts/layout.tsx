@@ -12,7 +12,7 @@ export async function generateMetadata({
     titlePrefix: "Shortcuts",
     title: agent.name,
     description: `Shortcuts for ${agent.name}.`,
-    letter: "AS",
+    letter: "G",
   });
 }
 

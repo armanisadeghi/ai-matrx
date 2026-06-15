@@ -1,6 +1,15 @@
-// Minimal layout.tsx component for next.js
+import { ReactNode } from "react";
+import { createRouteMetadata } from "@/utils/route-metadata";
 
-import { ReactNode } from 'react';
+export const metadata = createRouteMetadata(
+  "/free/games/matrx-jump/jump-with-settings",
+  {
+    titlePrefix: "Settings",
+    title: "Matrx Jump",
+    description: "Play Matrx Jump with configurable game settings.",
+    letter: "Js",
+  },
+);
 
 export default function Layout({ children }: { children: ReactNode }) {
   return <div>{children}</div>;

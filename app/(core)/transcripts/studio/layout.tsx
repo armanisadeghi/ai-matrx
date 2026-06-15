@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/transcripts", {
   title: "Transcripts",
   description:
     "Live multi-column transcription workspace — raw, cleaned, concepts, and a pluggable module column.",
-  letter: "Ts",
+  letter: "M",
 });
 
 export default function TranscriptStudioLayout({

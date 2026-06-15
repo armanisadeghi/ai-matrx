@@ -17,6 +17,8 @@ interface PinnedAgentsSectionProps {
 }
 
 const CONSUMER_ID = "chat-sidebar-pinned";
+/** Collapsed pin list length before "Show all" appears. */
+const PINNED_COLLAPSED_LIMIT = 5;
 
 /**
  * Renders the user's pinned agents at the top of the chat sidebar.
@@ -70,6 +72,11 @@ export function PinnedAgentsSection({
   const pinned = useAppSelector(selectFiltered);
 
   const [open, setOpen] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+
+  const hasMorePins = pinned.length > PINNED_COLLAPSED_LIMIT;
+  const visiblePins =
+    showAll || !hasMorePins ? pinned : pinned.slice(0, PINNED_COLLAPSED_LIMIT);
 
   if (pinned.length === 0) return null;
 
@@ -85,7 +92,7 @@ export function PinnedAgentsSection({
         {/* Label keeps the shared 12px left edge; the collapse chevron sits on
             the RIGHT so the text aligns with every other section + row. */}
         <span className="flex items-baseline gap-1.5">
-          <span>Pinned</span>
+          <span>Pinned Agents</span>
           <span className="text-[10px] text-muted-foreground/70 normal-case tracking-normal">
             {pinned.length}
           </span>
@@ -98,7 +105,7 @@ export function PinnedAgentsSection({
       </button>
       {open && (
         <ul className="pb-1.5">
-          {pinned.map((agent) => {
+          {visiblePins.map((agent) => {
             const isActive = activeAgentId === agent.id;
             return (
               <li
@@ -131,6 +138,18 @@ export function PinnedAgentsSection({
               </li>
             );
           })}
+          {hasMorePins && (
+            <li className="mx-1">
+              <button
+                type="button"
+                onClick={() => setShowAll((v) => !v)}
+                className="flex h-7 w-full items-center rounded-lg px-2 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+                aria-expanded={showAll}
+              >
+                {showAll ? "Show less" : "Show all"}
+              </button>
+            </li>
+          )}
         </ul>
       )}
     </div>

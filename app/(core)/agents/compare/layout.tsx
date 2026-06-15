@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/agents", {
   titlePrefix: "Compare",
   title: "Agents",
   description: "Compare agents side by side.",
-  letter: "Cp",
+  letter: "G",
 });
 
 export default function CompareAgentsLayout({

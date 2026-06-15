@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/agent-context", {
   titlePrefix: "Templates",
   title: "Agent Context",
   description: "Context item templates.",
-  letter: "Te",
+  letter: "X",
 });
 
 export default function ContextTemplatesLayout({

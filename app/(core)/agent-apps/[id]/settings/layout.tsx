@@ -12,7 +12,7 @@ export async function generateMetadata({
     titlePrefix: "Settings",
     title: app.name,
     description: `Settings for ${app.name}.`,
-    letter: "Se",
+    letter: "A",
   });
 }
 

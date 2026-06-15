@@ -96,7 +96,17 @@ export function AssistantTurnGroup({
     !!lastMember && !lastMember.isStreamActive && !!anchorMessageId;
 
   return (
-    <div ref={captureRef} data-turn-group-anchor={anchorMessageId ?? undefined}>
+    <div
+      ref={captureRef}
+      data-turn-group-anchor={anchorMessageId ?? undefined}
+      // Hover anchor for the trailing AssistantActionBar. Because the bar
+      // is a SIBLING of the sub-messages (not nested inside any one
+      // `AgentAssistantMessage`), it can't rely on a member's own
+      // `group/assistant-msg`. The group wrapper must carry the anchor so
+      // hovering anywhere over the turn reveals the hover-only bar on
+      // older turns.
+      className="group/assistant-msg"
+    >
       {/* Sub-messages render flush — no spacer / divider / chrome between
           iterations. Tool cards and thinking blocks already provide all
           the visual rhythm a multi-step turn needs. */}

@@ -56,6 +56,12 @@ import {
 } from "@/features/war-room/redux/selectors";
 import { loadTileSubtasks } from "@/features/war-room/redux/thunks";
 import { buildTileAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
+import { setClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
+import { WAR_ROOM_TOOL_NAMES } from "@/features/agents/war-room-tools/tools/names";
+import {
+  registerWarRoomToolBinding,
+  clearWarRoomToolBinding,
+} from "@/features/agents/war-room-tools/binding-registry";
 
 export default function TileAgentPanel({
   sessionId,
@@ -120,6 +126,33 @@ export default function TileAgentPanel({
   // merge in the tile's read-only context via buildExtraEntries (Scribe omits
   // this, so its context is untouched).
   const { conversationId } = useStudioAssistant(sessionId, { buildExtraEntries });
+
+  // ── Arm the War Room WRITE tools on THIS conversation only ───────────────
+  // The war-room agent is the same studio-assistant agent used by Scribe; the
+  // ONLY thing that lets it EDIT the tile (vs just see it) is arming the
+  // war_room_* client tools here + binding the tile so the handlers know which
+  // tile to mutate. Scribe never mounts this panel, so its conversation stays
+  // read-only. buildToolInjection reads instanceClientTools on every turn and
+  // declares these as delegated tools; the server then offers them to the agent
+  // and emits `tool_delegated` when one is called (routed to the war-room
+  // dispatcher, which gates the write behind the user's approval).
+  useEffect(() => {
+    if (!conversationId) return;
+    registerWarRoomToolBinding(conversationId, tileId);
+    dispatch(
+      setClientTools({
+        conversationId,
+        tools: [...WAR_ROOM_TOOL_NAMES],
+      }),
+    );
+    return () => {
+      clearWarRoomToolBinding(conversationId, tileId);
+      // Disarm on unmount so a later non-war-room use of the same conversation
+      // (should never happen — it's durable per session — but be exact) doesn't
+      // keep these tools offered.
+      dispatch(setClientTools({ conversationId, tools: [] }));
+    };
+  }, [conversationId, tileId, dispatch]);
 
   // Re-pull the working document the moment this session's agent turn finishes,
   // covering the non-active-tile realtime gap described above.

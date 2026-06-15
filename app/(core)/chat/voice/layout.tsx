@@ -13,7 +13,7 @@ export const metadata = createRouteMetadata("/chat", {
   title: "Chat",
   description:
     "Speak with AI Matrx — a realtime voice agent that listens, understands, and shows you what AI can do for your business.",
-  letter: "VC",
+  letter: "C",
 });
 
 export default function VoiceChatLayout({

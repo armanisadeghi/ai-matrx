@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/agent-context", {
   titlePrefix: "Hierarchy",
   title: "Agent Context",
   description: "Manage agent context hierarchy trees.",
-  letter: "Hy",
+  letter: "X",
 });
 
 export default function HierarchyLayout({

@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/agents", {
   titlePrefix: "Settings",
   title: "Battle",
   description: "Battle-test agent settings configurations.",
-  letter: "Bs",
+  letter: "G",
 });
 
 export default function BattleSettingsLayout({

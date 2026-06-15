@@ -628,6 +628,13 @@
   }
 }
 
+/* Third-level (and deeper) bullet marker for rendered markdown lists: a dash.
+   CSS has no `dash` list-style keyword, so we use a string marker. Defined as a
+   real utility so depth variants (e.g. [&_ul_ul]:list-dash) generate reliably. */
+@utility list-dash {
+  list-style-type: "-  ";
+}
+
 .animate-slide-in-from-right {
   animation: slide-in-from-right 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }

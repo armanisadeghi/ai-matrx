@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/agents/new", {
   titlePrefix: "Generate",
   title: "New Agent",
   description: "Generate a new agent with AI.",
-  letter: "Ng",
+  letter: "G",
 });
 
 export default function NewAgentGenerateLayout({

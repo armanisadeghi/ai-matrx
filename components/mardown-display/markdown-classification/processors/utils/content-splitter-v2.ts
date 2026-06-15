@@ -1230,14 +1230,20 @@ function analyzeTableCompletion(
   };
 }
 
-function detectImageMarkdown(line: string): {
+export function detectImageMarkdown(line: string): {
   isImage: boolean;
   src?: string;
   alt?: string;
 } {
   const trimmed = line.trim();
 
-  const standardMatch = trimmed.match(/^!\[(.*?)\]\((https?:\/\/[^\s)]+)\)/);
+  // Allow an optional markdown title after the URL: ![alt](url "title") or
+  // ![alt](url 'title'). Reference-style images (![alt][id]) are intentionally
+  // NOT matched — their URL lives in a separate [id]: definition, so they must
+  // stay in the text block where react-markdown can resolve the reference.
+  const standardMatch = trimmed.match(
+    /^!\[(.*?)\]\((https?:\/\/[^\s)]+)(?:\s+(?:"[^"]*"|'[^']*'))?\)/,
+  );
   const customMatch = trimmed.match(/\[Image URL: (https?:\/\/[^\s\]]+)\]/);
 
   if (standardMatch) {
@@ -1251,7 +1257,7 @@ function detectImageMarkdown(line: string): {
   return { isImage: false };
 }
 
-function detectVideoMarkdown(line: string): {
+export function detectVideoMarkdown(line: string): {
   isVideo: boolean;
   src?: string;
   alt?: string;

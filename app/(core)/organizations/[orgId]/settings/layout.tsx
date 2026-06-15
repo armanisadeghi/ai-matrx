@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/organizations", {
   titlePrefix: "Settings",
   title: "Organization",
   description: "Organization settings and configuration.",
-  letter: "OS",
+  letter: "O",
 });
 
 export default function OrganizationSettingsLayout({

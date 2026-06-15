@@ -12,7 +12,7 @@ export async function generateMetadata({
     titlePrefix: "Versions",
     title: app.name,
     description: `Version history for ${app.name}.`,
-    letter: "Ve",
+    letter: "A",
   });
 }
 

@@ -26,6 +26,8 @@ import {
   detectJsonBlockType,
   parseXmlAttributes,
   extractAudioLink,
+  detectImageMarkdown,
+  detectVideoMarkdown,
 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
 
 // ============================================================================
@@ -107,6 +109,20 @@ const ATTR_XML_TAGS = new Set([
 // ============================================================================
 // Helpers
 // ============================================================================
+
+/**
+ * True when `text` parses as a JSON object/array. Mirrors the V2 splitter's
+ * `JSON.parse` guard for bare `{…}` blocks so both parsers agree that prose
+ * like an indented `{ some code }` is text, not a JSON code block.
+ */
+function isParseableJsonObject(text: string): boolean {
+  try {
+    const parsed = JSON.parse(text);
+    return parsed !== null && typeof parsed === "object";
+  } catch {
+    return false;
+  }
+}
 
 function extractFenceInfo(
   trimmed: string,
@@ -237,6 +253,15 @@ export class StreamBlockAccumulator {
   private currentBlockIndex = 0;
   private currentBlockType = "text";
   private currentBlockContent = "";
+  /**
+   * Number of lines appended to the current block. Used to preserve LEADING
+   * blank lines: the first appended line is written verbatim (even if it's an
+   * empty string), and every subsequent line is joined with "\n". Without this
+   * counter, appending "" to an empty `currentBlockContent` was a no-op, which
+   * silently swallowed a block's first blank line and produced a 1-byte drift
+   * vs the V2 splitter / Python server (which keep that blank line).
+   */
+  private currentBlockLineCount = 0;
   private pendingLineFragment = "";
   /**
    * True once the block at the current index has been dispatched to Redux —
@@ -353,7 +378,8 @@ export class StreamBlockAccumulator {
         // SPECIAL_CODE_LANGUAGES promotion; other special languages keep
         // their established close-time/server-side promotion paths.
         const lang = fence.language.toLowerCase();
-        const blockType = lang === "mermaid" || lang === "mmd" ? "mermaid" : "code";
+        const blockType =
+          lang === "mermaid" || lang === "mmd" ? "mermaid" : "code";
         this.openBlock(blockType, dispatch);
         this.subState = {
           kind: "code_fence",
@@ -424,20 +450,29 @@ export class StreamBlockAccumulator {
     }
 
     // ── Image ─────────────────────────────────────────────────────────
-    if (hasCandidate(flags, Candidate.IMAGE)) {
+    // The prefilter only checks the line starts with `![` (or `[Image URL:`).
+    // Validate with the SAME detector the V2 splitter uses so the two agree:
+    // incomplete or reference-style images (![alt][id]) fall through to text.
+    if (
+      hasCandidate(flags, Candidate.IMAGE) &&
+      detectImageMarkdown(rawLine).isImage
+    ) {
       this.closeCurrentBlock(dispatch);
       this.openBlock("image", dispatch);
-      this.appendToCurrentBlock(rawLine);
+      this.appendToCurrentBlock(trimmed);
       this.closeCurrentBlock(dispatch);
       this.openBlock("text", dispatch);
       return;
     }
 
     // ── Video ─────────────────────────────────────────────────────────
-    if (hasCandidate(flags, Candidate.VIDEO)) {
+    if (
+      hasCandidate(flags, Candidate.VIDEO) &&
+      detectVideoMarkdown(rawLine).isVideo
+    ) {
       this.closeCurrentBlock(dispatch);
       this.openBlock("video", dispatch);
-      this.appendToCurrentBlock(rawLine);
+      this.appendToCurrentBlock(trimmed);
       this.closeCurrentBlock(dispatch);
       this.openBlock("text", dispatch);
       return;
@@ -489,6 +524,19 @@ export class StreamBlockAccumulator {
     if (hasCandidate(flags, Candidate.BARE_JSON) && trimmed.startsWith("{")) {
       const openCount = (trimmed.match(/\{/g) || []).length;
       const closeCount = (trimmed.match(/\}/g) || []).length;
+      // A balanced single-line {…} is only a JSON block if it actually parses
+      // as JSON (V2 does the same). Otherwise it's ordinary prose — e.g. an
+      // indented "{ some code }" — and must stay in the text flow rather than
+      // becoming its own code block. Multi-line {…} stays speculative (we can't
+      // look ahead while streaming).
+      if (
+        openCount === closeCount &&
+        openCount > 0 &&
+        !isParseableJsonObject(trimmed)
+      ) {
+        this.appendToCurrentBlock(rawLine);
+        return;
+      }
       this.closeCurrentBlock(dispatch);
       this.openBlock("code", dispatch); // may be upgraded to a typed JSON block
       this.subState = {
@@ -575,7 +623,12 @@ export class StreamBlockAccumulator {
 
       case "table": {
         const flags = classifyLine(rawLine, trimmed);
-        if (hasCandidate(flags, Candidate.TABLE) || trimmed === "") {
+        // Only table rows extend the table. A blank line (or anything else)
+        // ENDS it — matching V2's extractTable, which stops at the first
+        // non-table-row. Eating the blank line here was adding a trailing
+        // newline to the table and stealing the leading newline from the
+        // following text block (V2/Redux table drift).
+        if (hasCandidate(flags, Candidate.TABLE)) {
           this.appendToCurrentBlock(rawLine);
         } else {
           this.closeCurrentBlock(dispatch);
@@ -642,11 +695,15 @@ export class StreamBlockAccumulator {
   // ── Block lifecycle helpers ─────────────────────────────────────────
 
   private appendToCurrentBlock(line: string): void {
-    if (this.currentBlockContent) {
-      this.currentBlockContent += "\n" + line;
-    } else {
+    // Join on "\n" from the second line onward. Keyed off the line COUNT (not
+    // whether content is currently empty) so a leading blank line is preserved
+    // verbatim — matching V2's `currentText += line + "\n"` accumulation.
+    if (this.currentBlockLineCount === 0) {
       this.currentBlockContent = line;
+    } else {
+      this.currentBlockContent += "\n" + line;
     }
+    this.currentBlockLineCount++;
   }
 
   private closeCurrentBlock(dispatch: DispatchFn): void {
@@ -669,6 +726,7 @@ export class StreamBlockAccumulator {
     }
     this.emitCurrentBlock(dispatch, "complete");
     this.currentBlockContent = "";
+    this.currentBlockLineCount = 0;
   }
 
   /**
@@ -694,6 +752,7 @@ export class StreamBlockAccumulator {
     this.currentBlockIndex++;
     this.currentBlockType = type;
     this.currentBlockContent = "";
+    this.currentBlockLineCount = 0;
     this.currentBlockEmitted = false;
     this.pendingMediaData = null;
   }
@@ -716,6 +775,14 @@ export class StreamBlockAccumulator {
           ? content + "\n" + this.pendingLineFragment
           : this.pendingLineFragment;
       }
+    }
+
+    // Strip trailing whitespace/newlines from plain text blocks to match the
+    // V2 splitter (`currentText.trimEnd()`). Code and all other typed blocks
+    // are left verbatim — V2 keeps code content untrimmed, which is what keeps
+    // it byte-equal to the Python server.
+    if (this.currentBlockType === "text") {
+      content = content.trimEnd();
     }
 
     if (!content && status === "streaming") return;

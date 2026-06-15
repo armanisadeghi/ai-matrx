@@ -9,7 +9,7 @@ export const metadata = createRouteMetadata("/images", {
   title: "Images",
   description:
     "Browse, generate, edit, annotate, and convert images — every tool in one place.",
-  letter: "Im",
+  letter: "I",
   additionalMetadata: {
     keywords: [
       "image manager",

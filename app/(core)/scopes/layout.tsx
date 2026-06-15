@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/scopes", {
   title: "Scopes",
   description:
     "Define the dimensions your team works in — clients, products, teams, repos, and more.",
-  letter: "Sc",
+  letter: "S",
 });
 
 export default function ScopesLayout({

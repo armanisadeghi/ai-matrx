@@ -14,7 +14,11 @@
 
 import React from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { DiffViewer, type DiffEngine } from "@/components/diff/DiffViewer";
+import {
+  DiffViewer,
+  type DiffEngine,
+  type DiffView,
+} from "@/components/diff/DiffViewer";
 
 export interface DiffViewerWindowProps {
   windowInstanceId: string;
@@ -27,7 +31,7 @@ export interface DiffViewerWindowProps {
   title?: string | null;
   engine?: DiffEngine;
   language?: string;
-  defaultView?: "split" | "inline";
+  defaultView?: DiffView;
 }
 
 export default function DiffViewerWindow({

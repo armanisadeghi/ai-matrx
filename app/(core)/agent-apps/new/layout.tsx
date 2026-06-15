@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/agent-apps", {
   titlePrefix: "New",
   title: "Agent Apps",
   description: "Create a new AI-powered agent application",
-  letter: "Ag",
+  letter: "A",
 });
 
 export default function Layout({ children }: { children: ReactNode }) {

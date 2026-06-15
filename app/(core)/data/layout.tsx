@@ -9,6 +9,7 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 export const metadata = createRouteMetadata("/data", {
   title: "Tables",
   description: "Manage your data tables",
+  letter: "L",
 });
 
 /**

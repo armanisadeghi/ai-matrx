@@ -40,14 +40,14 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     ul: ({ node, ...props }) => (
       <ul
         style={{ fontSize: `${fontSize}px` }}
-        className="list-disc pl-5 mb-3 leading-relaxed"
+        className="list-disc [&_ul]:list-[circle] [&_ul_ul]:list-dash pl-5 mb-3 leading-relaxed"
         {...props}
       />
     ),
     ol: ({ node, ...props }) => (
       <ol
         style={{ fontSize: `${fontSize}px` }}
-        className="list-decimal pl-5 mb-3 leading-relaxed"
+        className="list-decimal [&_ol]:list-[lower-roman] [&_ol_ol]:list-[lower-alpha] pl-5 mb-3 leading-relaxed"
         {...props}
       />
     ),

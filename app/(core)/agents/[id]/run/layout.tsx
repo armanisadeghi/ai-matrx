@@ -26,7 +26,7 @@ export async function generateMetadata({
     id,
     "Run",
     (name) => `Run the ${name} AI agent.`,
-    "AR",
+    "G",
   );
 }
 

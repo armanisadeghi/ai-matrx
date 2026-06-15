@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/code", {
   title: "Code",
   description:
     "VSCode-style workspace for editing sandbox files, running commands, and collaborating with agents.",
-  letter: "CD",
+  letter: "K",
   additionalMetadata: {
     keywords: [
       "code editor",

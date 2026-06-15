@@ -12,7 +12,7 @@ export async function generateMetadata({
     titlePrefix: "Surfaces",
     title: agent.name,
     description: `UI surfaces for ${agent.name}.`,
-    letter: "Af",
+    letter: "G",
   });
 }
 

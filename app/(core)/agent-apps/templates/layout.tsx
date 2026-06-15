@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/agent-apps", {
   titlePrefix: "Templates",
   title: "Agent Apps",
   description: "Browse agent app templates.",
-  letter: "Tp",
+  letter: "A",
 });
 
 export default function AgentAppTemplatesLayout({

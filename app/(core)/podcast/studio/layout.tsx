@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/podcast", {
   titlePrefix: "Studio",
   title: "Podcasts",
   description: "Create and manage AI-produced podcast episodes.",
-  letter: "Ps",
+  letter: "J",
 });
 
 export default function PodcastStudioLayout({

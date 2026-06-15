@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/transcripts", {
   titlePrefix: "New",
   title: "Transcripts",
   description: "Pick how you want to create a new transcript.",
-  letter: "Tn",
+  letter: "M",
 });
 
 export default function NewTranscriptLayout({

@@ -7,7 +7,7 @@ export const metadata = createRouteMetadata("/research", {
   title: "Research",
   description:
     "AI-powered research pipeline — gather web content, analyze sources, and synthesize reports.",
-  letter: "Rs",
+  letter: "R",
   additionalMetadata: {
     alternates: { canonical: "/research" },
     robots: { index: true, follow: true },

@@ -12,7 +12,7 @@ export async function generateMetadata({
     titlePrefix: "Widgets",
     title: agent.name,
     description: `Embeddable widgets for ${agent.name}.`,
-    letter: "AW",
+    letter: "G",
   });
 }
 

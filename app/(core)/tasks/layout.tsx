@@ -4,6 +4,7 @@ export const metadata = createRouteMetadata("/tasks", {
   title: "Tasks",
   description:
     "Manage your tasks and projects efficiently with our powerful task management system",
+  letter: "T",
   additionalMetadata: {
     keywords: [
       "tasks",

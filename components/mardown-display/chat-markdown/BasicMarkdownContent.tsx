@@ -573,7 +573,12 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
 
         return (
           <ul
-            className={`list-disc mb-3 leading-relaxed ${getDirectionFontSize(listDirection)} pl-6 ${getDirectionClasses(listDirection)}`}
+            // Bullet markers by nesting depth: L1 filled disc, L2 hollow
+            // circle, L3+ dash. The full cascade is applied to every <ul>; the
+            // ancestor descendant-selectors ([&_ul], [&_ul_ul]) have higher
+            // specificity than a deeper list's own `list-disc`, so each level
+            // resolves to the right marker regardless of how deep it is.
+            className={`list-disc [&_ul]:list-[circle] [&_ul_ul]:list-dash mb-3 leading-relaxed ${getDirectionFontSize(listDirection)} pl-6 ${getDirectionClasses(listDirection)}`}
             dir={listDirection}
             {...props}
           >
@@ -593,7 +598,10 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
 
         return (
           <ol
-            className={`list-decimal mb-3 leading-relaxed ${getDirectionFontSize(listDirection)} pl-6 ${getDirectionClasses(listDirection)}`}
+            // Numbering by nesting depth: L1 decimal (1.2.3.), L2 lower-roman
+            // (i.ii.iii.), L3+ lower-alpha (a.b.c.). Same specificity-cascade
+            // approach as <ul> above.
+            className={`list-decimal [&_ol]:list-[lower-roman] [&_ol_ol]:list-[lower-alpha] mb-3 leading-relaxed ${getDirectionFontSize(listDirection)} pl-6 ${getDirectionClasses(listDirection)}`}
             dir={listDirection}
             {...props}
           >

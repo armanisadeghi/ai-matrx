@@ -3,7 +3,7 @@ import { createRouteMetadata } from "@/utils/route-metadata";
 export const metadata = createRouteMetadata("/podcast", {
   title: "Podcasts",
   description: "Browse podcast shows and open the AI podcast studio.",
-  letter: "Pc",
+  letter: "J",
 });
 
 export default function PodcastLayout({

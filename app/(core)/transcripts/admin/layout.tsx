@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/transcripts", {
   title: "Transcripts",
   description:
     "Feature admin map for the transcripts ecosystem — routes, panels, components, and demos.",
-  letter: "Ta",
+  letter: "M",
 });
 
 export default function TranscriptsAdminLayout({

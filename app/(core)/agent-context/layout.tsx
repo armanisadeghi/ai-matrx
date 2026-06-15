@@ -6,7 +6,7 @@ import { getServerAuth } from "@/utils/supabase/getServerAuth";
 export const metadata = createRouteMetadata("/agent-context", {
   title: "Agent Context",
   description: "Browse and manage agent context items and hierarchy.",
-  letter: "Cx",
+  letter: "X",
 });
 
 /**

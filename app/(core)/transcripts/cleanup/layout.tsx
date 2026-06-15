@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/transcripts", {
   title: "Transcripts",
   description:
     "High-volume transcription cleanup — raw capture, AI cleanup runs, and custom output.",
-  letter: "Tc",
+  letter: "M",
 });
 
 export default function TranscriptsCleanupLayout({

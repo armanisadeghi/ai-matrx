@@ -21,7 +21,7 @@ export async function generateMetadata({
   return createDynamicRouteMetadata("/agent-apps", {
     title: name,
     description,
-    letter: "Ag",
+    letter: "A",
   });
 }
 

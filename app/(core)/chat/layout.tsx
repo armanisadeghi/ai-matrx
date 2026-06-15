@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/chat", {
   title: "Chat",
   description:
     "Chat with your agents, system agents, and community agents — a unified conversational surface.",
-  letter: "CH",
+  letter: "C",
   additionalMetadata: {
     keywords: [
       "AI chat",

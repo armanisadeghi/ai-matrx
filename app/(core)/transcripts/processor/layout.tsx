@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/transcripts", {
   titlePrefix: "Processor",
   title: "Transcripts",
   description: "Record, transcribe, view, and edit individual transcripts.",
-  letter: "Tp",
+  letter: "M",
 });
 
 export default function TranscriptsProcessorLayout({

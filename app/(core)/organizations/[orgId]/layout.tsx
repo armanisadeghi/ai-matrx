@@ -25,13 +25,13 @@ export async function generateMetadata({
       description:
         (data?.description as string | null)?.slice(0, 120) ??
         `Workspace for ${name}.`,
-      letter: "Or",
+      letter: "O",
     });
   } catch {
     return createDynamicRouteMetadata("/organizations", {
       title: name,
       description: "Organization workspace.",
-      letter: "Or",
+      letter: "O",
     });
   }
 }

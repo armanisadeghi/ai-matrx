@@ -41,6 +41,8 @@ import {
 import { dispatchWidgetAction } from "./dispatch-widget-action.thunk";
 import { isUiFirstToolName } from "@/features/agents/ui-first-tools/tools/names";
 import { dispatchUiFirstTool } from "@/features/agents/ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk";
+import { isWarRoomToolName } from "@/features/agents/war-room-tools/tools/names";
+import { dispatchWarRoomTool } from "@/features/agents/war-room-tools/dispatcher/dispatch-war-room-tool.thunk";
 
 export interface SurfaceDelegatedToolCallArgs {
   conversationId: string;
@@ -109,6 +111,26 @@ export const surfaceDelegatedToolCall = (
       // result; it flips the instance to `paused` while waiting.
       dispatch(
         dispatchUiFirstTool({
+          conversationId,
+          requestId,
+          callId,
+          toolName,
+          args: (data?.arguments as Record<string, unknown>) ?? {},
+        }),
+      );
+      return;
+    }
+
+    if (isWarRoomToolName(toolName)) {
+      // War Room write tools (war_room_update_task / _add_subtask /
+      // _toggle_subtask / _update_note / _update_tile). Armed ONLY on a war-room
+      // tile's Agent conversation (TileAgentPanel registers them per-conversation
+      // + binds the tile). The dispatcher resolves the bound tile, requires the
+      // user to approve the write (HITL), runs the real feature writer, then
+      // POSTs the result; it flips the instance to `paused` while awaiting
+      // approval — same suspend/resume contract as the ui-first tools.
+      dispatch(
+        dispatchWarRoomTool({
           conversationId,
           requestId,
           callId,

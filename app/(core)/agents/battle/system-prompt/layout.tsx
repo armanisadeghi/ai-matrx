@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/agents", {
   titlePrefix: "System Prompt",
   title: "Battle",
   description: "Battle-test system prompt variants.",
-  letter: "Bp",
+  letter: "G",
 });
 
 export default function BattleSystemPromptLayout({
