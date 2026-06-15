@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { AlertTriangle, AlertCircle, X, Loader2 } from "lucide-react";
+import Link from "next/link";
+import {
+  AlertTriangle,
+  AlertCircle,
+  X,
+  Loader2,
+  CheckCircle2,
+  ArrowRight,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ResearchTopic } from "../../../types";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
@@ -12,7 +20,7 @@ import type {
 import { useCostSummary } from "../../../hooks/useCostSummary";
 import { MetricsStrip } from "./MetricsStrip";
 import { QuotaStrip } from "./QuotaStrip";
-import { CompletedStageStrip } from "./CompletedStageStrip";
+import { StageStatSquare } from "./StageStatSquare";
 import { ActivityFeed } from "./ActivityFeed";
 import { SearchStageView } from "./stages/SearchStageView";
 import { ScrapeStageView } from "./stages/ScrapeStageView";
@@ -89,20 +97,16 @@ export function LivePipelineActivity({
     [state],
   );
 
-  /**
-   * For each visible stage, decide whether to render it as a full card or
-   * a collapsed strip. Completed stages always collapse — a stage that
-   * finished cleanly doesn't need to keep its detail card open while later
-   * work is in flight (or after the run is done). Failed/partial stages
-   * stay full so the user can see what went wrong.
-   */
-  const stageRender = useMemo(() => {
-    return visibleStages.map((kind) => {
-      const s = state.stages[kind];
-      const collapsed = s.status === "complete";
-      return { kind, collapsed };
-    });
-  }, [visibleStages, state]);
+  // Finished stages collapse into the stat-square rail; the stage(s) currently
+  // in flight render large below it. Search/scrape/analyze overlap in a real
+  // run, so there can be more than one active at once. Pending stays hidden.
+  const completedStages = visibleStages.filter((k) =>
+    ["complete", "partial", "failed"].includes(state.stages[k].status),
+  );
+  const activeStages = visibleStages.filter(
+    (k) => state.stages[k].status === "active",
+  );
+  const base = `/research/topics/${topicId}`;
 
   const { data: costSummary, refetch: refetchCosts } = useCostSummary(topicId);
 
@@ -206,21 +210,31 @@ export function LivePipelineActivity({
           </div>
         )}
 
+        {/* Finished stages → compact stat-square rail (keywords → sources →
+            scraped → analyses → syntheses), docking left→right as they finish. */}
+        {completedStages.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {completedStages.map((kind) => (
+              <StageStatSquare
+                key={kind}
+                stage={state.stages[kind]}
+                base={base}
+              />
+            ))}
+          </div>
+        )}
+
         <div className={cn("grid gap-3", "lg:grid-cols-[minmax(0,1fr)_320px]")}>
           <div className="space-y-2 min-w-0">
-            {stageRender.length === 0 && isStreaming && (
-              <div className="rounded-lg border border-dashed border-border/60 bg-card/30 px-4 py-6 text-center text-xs text-muted-foreground">
-                Connecting to backend… first events arriving shortly.
-              </div>
-            )}
+            {activeStages.length === 0 &&
+              completedStages.length === 0 &&
+              isStreaming && (
+                <div className="rounded-lg border border-dashed border-border/60 bg-card/30 px-4 py-6 text-center text-xs text-muted-foreground">
+                  Connecting to backend… first events arriving shortly.
+                </div>
+              )}
 
-            {stageRender.map(({ kind, collapsed }) => {
-              const stage = state.stages[kind];
-
-              if (collapsed) {
-                return <CompletedStageStrip key={kind} stage={stage} />;
-              }
-
+            {activeStages.map((kind) => {
               if (kind === "search") {
                 return (
                   <SearchStageView
@@ -282,15 +296,27 @@ export function LivePipelineActivity({
               return null;
             })}
 
-            {/* When the whole pipeline is done and only collapsed pills
-                remain, surface a small celebratory summary line. */}
-            {isPipelineDone &&
-              stageRender.every((s) => s.collapsed) &&
-              stageRender.length > 0 && (
-                <div className="text-[11px] text-muted-foreground italic px-1">
-                  All stages complete. Click any pill above to expand details.
+            {/* Run finished — a clear completion card; the squares above
+                carry the per-stage results. */}
+            {isPipelineDone && activeStages.length === 0 && (
+              <div className="flex items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/[0.06] p-4">
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-green-500" />
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold">Run complete</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    Every stage finished — the squares above show what each
+                    produced.
+                  </div>
                 </div>
-              )}
+                <Link
+                  href={`${base}/document`}
+                  className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  Document
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+            )}
           </div>
 
           <ActivityFeed

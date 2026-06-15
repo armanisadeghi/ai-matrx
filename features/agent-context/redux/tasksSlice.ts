@@ -9,6 +9,7 @@ import {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { getTopLevelProjectTasks } from "@/features/tasks/services/taskService";
 import type { NavTask } from "./hierarchySlice";
 import type { DataLevel, DataLevelMeta } from "./organizationsSlice";
 import { isStale } from "./organizationsSlice";
@@ -122,6 +123,37 @@ export const fetchProjectTasks = createAsyncThunk(
       organization_id: params.organizationId,
     }));
     return { tasks, organizationId: params.organizationId };
+  },
+);
+
+/**
+ * Load a project's TOP-LEVEL tasks (parent_task_id IS NULL) into the slice at
+ * "thin-list" level. Generic primitive consumed by any project-scoped task
+ * list (e.g. a War Room project tile). The list only needs title/status; the
+ * full task (description, subtasks, comments) is fetched on demand by the
+ * editor when a task is opened.
+ *
+ * `organizationId` is denormalized onto each record for org-keyed selectors; it
+ * is best-effort (callers that don't know it can omit it).
+ */
+export const loadProjectTopLevelTasks = createAsyncThunk(
+  "tasks/loadProjectTopLevel",
+  async (params: { projectId: string; organizationId?: string | null }) => {
+    const rows = await getTopLevelProjectTasks(params.projectId);
+    const tasks: TaskRecord[] = rows.map((t) => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      priority: t.priority,
+      due_date: t.due_date,
+      assignee_id: t.assignee_id,
+      project_id: t.project_id,
+      parent_task_id: t.parent_task_id,
+      organization_id: t.organization_id ?? params.organizationId ?? "",
+      created_at: t.created_at,
+      user_id: t.user_id,
+    }));
+    return tasks;
   },
 );
 
@@ -295,6 +327,17 @@ const tasksSlice = createSlice({
           }
         }
       })
+      .addCase(loadProjectTopLevelTasks.fulfilled, (state, action) => {
+        const now = Date.now();
+        tasksAdapter.upsertMany(state, action.payload);
+        for (const t of action.payload) {
+          const existing = state.meta[t.id];
+          // Don't downgrade a fresh full-data row to thin-list.
+          if (!existing || existing.level === "thin-list" || isStale(existing)) {
+            state.meta[t.id] = { level: "thin-list", fetchedAt: now };
+          }
+        }
+      })
       .addCase(createTaskThunk.fulfilled, (state, action) => {
         tasksAdapter.addOne(state, action.payload);
         state.meta[action.payload.id] = {
@@ -363,6 +406,24 @@ export const selectTaskIsFullData = createSelector(
 export const selectTasksByProject = createSelector(
   [selectAllTasks, (_state: StateWithTasks, projectId: string) => projectId],
   (tasks, projectId) => tasks.filter((t) => t.project_id === projectId),
+);
+
+/**
+ * A project's TOP-LEVEL tasks (parent_task_id === null), oldest-first — the
+ * list shape a project board / project-flavored surface renders. Pairs with
+ * `loadProjectTopLevelTasks`. Subtasks are intentionally excluded; they belong
+ * to a parent task's own editor.
+ */
+export const selectTopLevelTasksByProjectId = createSelector(
+  [selectTasksByProject],
+  (tasks) =>
+    tasks
+      .filter((t) => t.parent_task_id === null)
+      .sort((a, b) => {
+        const ac = a.created_at ?? "";
+        const bc = b.created_at ?? "";
+        return ac.localeCompare(bc);
+      }),
 );
 
 export const selectSubtasksByParent = createSelector(

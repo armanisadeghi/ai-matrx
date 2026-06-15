@@ -176,6 +176,8 @@ export async function createTile(input: CreateTileInput): Promise<WarRoomTile> {
       active_tab: input.activeTab ?? "task",
       position: input.position ?? 0,
       title: input.title ?? null,
+      flavor: input.flavor ?? "thread",
+      project_id: input.projectId ?? null,
     })
     .select("*")
     .single();
@@ -185,6 +187,34 @@ export async function createTile(input: CreateTileInput): Promise<WarRoomTile> {
     throw error;
   }
   return data;
+}
+
+/**
+ * Stamp `projectId` onto EVERY non-deleted tile in a session that doesn't
+ * already carry a project. Used by the "switch to per-thread projects"
+ * conversion: the room's project is materialized onto its existing tiles right
+ * before the room's own project_id is cleared, so the association is preserved
+ * and the room/tile invariant never breaks mid-flight. Leaves `flavor` untouched
+ * — a generic thread that inherited the room's project stays a generic thread,
+ * it just now carries the project_id explicitly. Returns the updated rows.
+ */
+export async function applyProjectToAllTiles(
+  sessionId: string,
+  projectId: string,
+): Promise<WarRoomTile[]> {
+  const { data, error } = await supabase
+    .from(TILES)
+    .update({ project_id: projectId })
+    .eq("session_id", sessionId)
+    .eq("is_deleted", false)
+    .is("project_id", null)
+    .select("*");
+
+  if (error) {
+    console.error("[war-room] applyProjectToAllTiles failed:", error);
+    throw error;
+  }
+  return data ?? [];
 }
 
 export async function updateTile(

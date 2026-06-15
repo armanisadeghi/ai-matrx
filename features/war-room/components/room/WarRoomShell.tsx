@@ -58,6 +58,7 @@ import {
 } from "@/features/war-room/redux/thunks";
 import { EditableTitle } from "../shared/EditableTitle";
 import { SessionContextButton } from "./SessionContextButton";
+import { RoomProjectButton } from "./RoomProjectButton";
 import { StageView } from "./StageView";
 import { WarRoomGallery } from "./WarRoomGallery";
 import {
@@ -131,6 +132,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
             <ModeSwitch />
             {ready ? <InstrumentProjector /> : null}
             {ready ? <DensityDial /> : null}
+            <RoomProjectButton sessionId={sessionId} />
             <SessionContextButton sessionId={sessionId} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

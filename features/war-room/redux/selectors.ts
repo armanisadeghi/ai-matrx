@@ -181,6 +181,69 @@ export function selectTileEffectiveContext(tileId: string | null) {
   return sel;
 }
 
+// ── Flavor + project association ───────────────────────────────────────
+// All return stable primitives (string | null), so no memoization needed.
+
+/** A tile's flavor: 'thread' (default) | 'task' | 'project'. */
+export const selectTileFlavor =
+  (tileId: string | null) =>
+  (state: RootState): "thread" | "task" | "project" => {
+    const t = tileId ? state.warRoom.tilesById[tileId] : null;
+    const f = t?.flavor;
+    return f === "task" || f === "project" ? f : "thread";
+  };
+
+/** A tile's own project_id (NULL when it inherits / has none). */
+export const selectTileProjectId =
+  (tileId: string | null) =>
+  (state: RootState): string | null =>
+    (tileId ? state.warRoom.tilesById[tileId]?.project_id : null) ?? null;
+
+/** The room's project_id (NULL = the room is not associated with a project). */
+export const selectSessionProjectId =
+  (sessionId: string | null) =>
+  (state: RootState): string | null =>
+    (sessionId ? state.warRoom.sessionsById[sessionId]?.project_id : null) ??
+    null;
+
+/**
+ * The project a tile effectively belongs to: its own project_id, else the
+ * room's. This is the project a task created in the tile auto-associates to.
+ * (The invariant guarantees these never CONFLICT — a tile's own id, when set,
+ * is the room's id unless the room has none.)
+ */
+export const selectEffectiveTileProjectId =
+  (tileId: string | null) =>
+  (state: RootState): string | null => {
+    if (!tileId) return null;
+    const tile = state.warRoom.tilesById[tileId];
+    if (!tile) return null;
+    return (
+      tile.project_id ??
+      state.warRoom.sessionsById[tile.session_id]?.project_id ??
+      null
+    );
+  };
+
+/**
+ * How a room relates to projects:
+ *   • 'room'       — the room itself is one project (session.project_id set)
+ *   • 'per-thread' — no room project, but ≥1 tile carries its own project
+ *   • 'none'       — no project anywhere
+ * Drives the room header label + the conflict prompt copy.
+ */
+export const selectSessionProjectMode =
+  (sessionId: string | null) =>
+  (state: RootState): "room" | "per-thread" | "none" => {
+    if (!sessionId) return "none";
+    if (state.warRoom.sessionsById[sessionId]?.project_id) return "room";
+    const ids = state.warRoom.tileIdsBySession[sessionId] ?? EMPTY_IDS;
+    for (const id of ids) {
+      if (state.warRoom.tilesById[id]?.project_id) return "per-thread";
+    }
+    return "none";
+  };
+
 // ── Audio links ───────────────────────────────────────────────────────
 export const selectAudioSessionIdsForTile =
   (tileId: string | null) =>

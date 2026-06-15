@@ -140,6 +140,37 @@ export async function getProjectTasks(
   }
 }
 
+/**
+ * Get the TOP-LEVEL tasks for a project (parent_task_id IS NULL only) — the
+ * list a project board / project-flavored surface shows. Subtasks are excluded
+ * here; they are loaded on demand by the editor that opens a given task.
+ *
+ * `ctx_tasks` hard-deletes (no soft-delete column), so no `is_deleted` filter
+ * is needed. Ordered oldest-first for a stable, append-at-bottom list.
+ */
+export async function getTopLevelProjectTasks(
+  projectId: string,
+): Promise<DatabaseTask[]> {
+  try {
+    const { data, error } = await supabase
+      .from("ctx_tasks")
+      .select("*")
+      .eq("project_id", projectId)
+      .is("parent_task_id", null)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching top-level project tasks:", error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error("Exception fetching top-level project tasks:", error);
+    return [];
+  }
+}
+
 // ─── Attachments ─────────────────────────────────────────────────────────────
 
 export interface TaskAttachment {

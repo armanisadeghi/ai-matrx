@@ -17,14 +17,19 @@ import {
   fetchRawSegmentsThunk,
 } from "@/features/transcript-studio/redux/thunks";
 import { WAR_ROOM_AUDIO_SOURCE } from "../constants";
-import { selectTileEffectiveContext } from "./selectors";
+import {
+  selectEffectiveTileProjectId,
+  selectTileEffectiveContext,
+} from "./selectors";
 import * as service from "../service";
 import type {
   CreateSessionInput,
   CreateTileInput,
+  TileFlavor,
   TileTab,
   WarRoomSession,
   WarRoomTile,
+  WarRoomTileUpdate,
 } from "../types";
 import {
   attachmentRemoved,
@@ -287,6 +292,222 @@ export const createTile =
     }
   };
 
+// ── Project flavor + association (the room/tile invariant) ──────────────
+// INVARIANT: a room (session.project_id) and its tiles never hold CONFLICTING
+// projects. If the room has a project, every tile is NULL (inherits) or equal
+// to it. Per-tile projects (different projects on different tiles) are allowed
+// ONLY when the room has no project.
+// See migrations/ctx_war_room_tiles_flavor_project.sql.
+
+export type ProjectConflictResolution = "per-thread" | "keep-room";
+
+export interface TileProjectConflict {
+  /** True when assigning `requestedProjectId` to a tile in this room would
+   *  conflict with the room's existing project (room is P, request is a
+   *  different Q). */
+  hasConflict: boolean;
+  /** The room's current project_id (the P in the conflict), or null. */
+  roomProjectId: string | null;
+}
+
+/**
+ * Synchronously decide whether assigning a project to a tile in this room would
+ * break the invariant. The UI dispatches this BEFORE creating/associating so it
+ * knows whether to prompt the user to choose a resolution.
+ */
+export const checkTileProjectConflict =
+  (sessionId: string, requestedProjectId: string | null) =>
+  (_dispatch: AppDispatch, getState: () => RootState): TileProjectConflict => {
+    const roomProjectId =
+      getState().warRoom.sessionsById[sessionId]?.project_id ?? null;
+    return {
+      hasConflict:
+        requestedProjectId != null &&
+        roomProjectId != null &&
+        roomProjectId !== requestedProjectId,
+      roomProjectId,
+    };
+  };
+
+/** Set a tile's flavor (thread | task | project) without touching its project. */
+export const setTileFlavorThunk =
+  (tileId: string, flavor: TileFlavor) => async (dispatch: AppDispatch) => {
+    try {
+      const updated = await service.updateTile(tileId, { flavor });
+      dispatch(tileUpserted(updated));
+    } catch {
+      toast.error("Couldn't change the tile type");
+    }
+  };
+
+/**
+ * Switch a room from "whole-room project" to "per-thread": stamp the room's
+ * project onto every existing tile that lacks one, THEN clear the room's
+ * project. Order matters — stamp before clear so the association is never lost
+ * and the invariant holds throughout. No-op if the room has no project.
+ */
+export const convertRoomToPerThreadThunk =
+  (sessionId: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<boolean> => {
+    const roomProjectId =
+      getState().warRoom.sessionsById[sessionId]?.project_id ?? null;
+    if (!roomProjectId) return true; // already per-thread / no project
+    try {
+      const stamped = await service.applyProjectToAllTiles(
+        sessionId,
+        roomProjectId,
+      );
+      const updatedSession = await service.updateSession(sessionId, {
+        project_id: null,
+      });
+      for (const t of stamped) dispatch(tileUpserted(t));
+      dispatch(sessionUpserted(updatedSession));
+      return true;
+    } catch {
+      toast.error("Couldn't switch to per-thread projects");
+      return false;
+    }
+  };
+
+/**
+ * Associate (or re-point / clear) a tile's project. The caller must resolve any
+ * conflict FIRST (checkTileProjectConflict + a prompt) and pass `resolution`:
+ *   • 'per-thread' — convert the room to per-thread, then give this tile its
+ *      requested project.
+ *   • 'keep-room'  — ignore the request; the tile JOINS the room's project.
+ * With no conflict, `resolution` is unused. projectId=null clears the tile's
+ * project (a project-flavor tile reverts to 'thread'; a task tile stays 'task').
+ */
+export const setTileProjectThunk =
+  (
+    tileId: string,
+    projectId: string | null,
+    resolution?: ProjectConflictResolution,
+  ) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<boolean> => {
+    const tile = getState().warRoom.tilesById[tileId];
+    if (!tile) return false;
+    const { hasConflict, roomProjectId } = checkTileProjectConflict(
+      tile.session_id,
+      projectId,
+    )(dispatch, getState);
+
+    let finalProjectId = projectId;
+    if (hasConflict) {
+      if (resolution === "keep-room") {
+        finalProjectId = roomProjectId; // join the room's project instead
+      } else if (resolution === "per-thread") {
+        const ok = await dispatch(convertRoomToPerThreadThunk(tile.session_id));
+        if (!ok) return false; // room project now null → requested id is safe
+      } else {
+        // Caller passed an unresolved real conflict — refuse rather than corrupt.
+        console.warn(
+          "[war-room] setTileProjectThunk refused: unresolved project conflict",
+        );
+        return false;
+      }
+    }
+
+    try {
+      const patch: WarRoomTileUpdate = { project_id: finalProjectId };
+      // A tile gains 'project' flavor when given a project; clearing reverts a
+      // project tile to a generic thread (a task-flavored tile stays 'task').
+      if (finalProjectId) patch.flavor = "project";
+      else if (tile.flavor === "project") patch.flavor = "thread";
+      const updated = await service.updateTile(tileId, patch);
+      dispatch(tileUpserted(updated));
+      return true;
+    } catch {
+      toast.error("Couldn't update the tile's project");
+      return false;
+    }
+  };
+
+/**
+ * Associate the ROOM with a project (whole-room mode), or clear it (null). The
+ * UI should only call this when no tile carries a DIFFERENT project (otherwise
+ * use the conflict prompt). Clearing leaves any per-tile projects intact.
+ */
+export const setRoomProjectThunk =
+  (sessionId: string, projectId: string | null) =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
+    try {
+      const updated = await service.updateSession(sessionId, {
+        project_id: projectId,
+      });
+      dispatch(sessionUpserted(updated));
+      return true;
+    } catch {
+      toast.error("Couldn't associate the room with the project");
+      return false;
+    }
+  };
+
+/**
+ * Make the WHOLE room one project (the mirror of convertRoomToPerThread): clear
+ * any per-tile project that DIFFERS from `projectId` (those tiles fall back to
+ * inheriting the room's), then set the room's project. Used when the user picks
+ * "one project for the whole room" while some threads carry their own.
+ */
+export const absorbRoomIntoProjectThunk =
+  (sessionId: string, projectId: string) =>
+  async (dispatch: AppDispatch, getState: () => RootState): Promise<boolean> => {
+    try {
+      const tileIds = getState().warRoom.tileIdsBySession[sessionId] ?? [];
+      for (const id of tileIds) {
+        const t = getState().warRoom.tilesById[id];
+        if (t?.project_id && t.project_id !== projectId) {
+          const updated = await service.updateTile(id, { project_id: null });
+          dispatch(tileUpserted(updated));
+        }
+      }
+      const updatedSession = await service.updateSession(sessionId, {
+        project_id: projectId,
+      });
+      dispatch(sessionUpserted(updatedSession));
+      return true;
+    } catch {
+      toast.error("Couldn't set the room project");
+      return false;
+    }
+  };
+
+/**
+ * Create a NEW room associated with an existing project and seed one
+ * project-flavor tile pointing at it (the project's command tile). The room's
+ * project_id makes the whole room "about" the project; the seeded tile's Task
+ * tab lists/creates the project's tasks. Returns the created session.
+ */
+export const createRoomFromProject =
+  (
+    projectId: string,
+    projectName?: string | null,
+    organizationId?: string | null,
+  ) =>
+  async (dispatch: AppDispatch): Promise<WarRoomSession | null> => {
+    try {
+      const session = await service.createSession({
+        title: projectName?.trim() || "Project room",
+        projectId,
+        organizationId: organizationId ?? null,
+      });
+      dispatch(sessionUpserted(session));
+      const tile = await service.createTile({
+        sessionId: session.id,
+        flavor: "project",
+        projectId,
+        activeTab: "task",
+        title: projectName?.trim() || null,
+        position: 0,
+      });
+      dispatch(tileUpserted(tile));
+      return session;
+    } catch {
+      toast.error("Couldn't open a room for the project");
+      return null;
+    }
+  };
+
 // Coalesce concurrent lazy-create calls per (op, tileId) so a rapid
 // double-mount / double-click can't mint two notes / tasks / audio sessions
 // for the same tile. Keyed strings like "note:<tileId>".
@@ -357,13 +578,17 @@ export const createTileTask =
     inFlightTileOps.add(key);
     try {
       // Stamp the task with the TILE's context, not the global active context
-      // — honors the War Room invariant (carries its own context).
+      // — honors the War Room invariant (carries its own context). Also stamp
+      // the tile's EFFECTIVE project so a task created under a project room /
+      // project tile auto-associates app-wide (ctx_tasks.project_id).
       const ctx = selectTileEffectiveContext(tileId)(getState());
+      const projectId = selectEffectiveTileProjectId(tileId)(getState());
       const taskId = await dispatch(
         createTaskThunk({
           title: "New task",
           organizationId: ctx.organizationId,
           scopeIds: ctx.scopeIds,
+          projectId,
         }),
       ).unwrap();
       if (!taskId) return null;

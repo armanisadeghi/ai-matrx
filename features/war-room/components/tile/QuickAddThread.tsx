@@ -18,11 +18,18 @@
 //         · Cmd/Ctrl+Enter   → explicit Save (Create, stay).
 //   Save button · Enter/click → Create with name+description.
 //
+// FLAVOR (Epic Phase 5): a thread is created as one of three flavors —
+//   • thread  (default) — the generic multi-tab tile.
+//   • task    — task-anchored (opens on the Task tab).
+//   • project — bound to an existing project (its Task tab lists the project's
+//               tasks). Choosing a project that conflicts with the room's
+//               project raises the ProjectConflictDialog (the invariant: a room
+//               and its threads never hold conflicting projects).
+//
 // "Create" stays put (ready for the next quick-add); "Create and Open" jumps
 // into the fresh thread via the room view's stageTile(). Threads = tiles, so
-// creation reuses the createTile thunk as-is; an entered description is
-// persisted onto the tile's note by reusing addNoteToTile + the notes update
-// API (no new thunks, no slice writes).
+// creation reuses the createTile thunk; an entered description is persisted onto
+// the tile's note by reusing addNoteToTile + the notes update API.
 
 import { useRef, useState } from "react";
 import {
@@ -31,18 +38,45 @@ import {
   ArrowRight,
   Check,
   CornerDownLeft,
+  SquareStack,
+  ListChecks,
+  FolderKanban,
 } from "lucide-react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { toast } from "sonner";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   addNoteToTile,
   createTile,
+  checkTileProjectConflict,
+  convertRoomToPerThreadThunk,
+  type ProjectConflictResolution,
 } from "@/features/war-room/redux/thunks";
 import { update as updateNote } from "@/features/notes/service/notesApi";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { EntityTargetPicker } from "@/features/scopes/components/entity-context/EntityTargetPicker";
+import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import type { TileFlavor } from "@/features/war-room/types";
 import { cn } from "@/lib/utils";
+import { ProjectConflictDialog } from "../shared/ProjectConflictDialog";
 
 /** How the collapsed trigger reads — matches the two NewTile shells. */
 export type QuickAddVariant = "card" | "rail";
+
+const FLAVOR_OPTIONS: {
+  value: TileFlavor;
+  label: string;
+  icon: typeof SquareStack;
+  hint: string;
+}[] = [
+  { value: "thread", label: "Thread", icon: SquareStack, hint: "A general thread" },
+  { value: "task", label: "Task", icon: ListChecks, hint: "Anchored to a task" },
+  {
+    value: "project",
+    label: "Project",
+    icon: FolderKanban,
+    hint: "Bound to a project",
+  },
+];
 
 export function QuickAddThread({
   sessionId,
@@ -57,6 +91,9 @@ export function QuickAddThread({
   onOpen?: (tileId: string) => void;
 }) {
   const dispatch = useAppDispatch();
+  // Hydrate the project tree so the project picker has options the moment the
+  // user switches to the project flavor.
+  useScopeTree();
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
@@ -64,45 +101,112 @@ export function QuickAddThread({
   const [showDescription, setShowDescription] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // Flavor + project selection.
+  const [flavor, setFlavor] = useState<TileFlavor>("thread");
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectName, setProjectName] = useState<string | null>(null);
+
+  // Conflict prompt: open + the room's project at the time of the clash + the
+  // create mode to resume once the user resolves.
+  const [conflictOpen, setConflictOpen] = useState(false);
+  const [conflictRoomProjectId, setConflictRoomProjectId] = useState<
+    string | null
+  >(null);
+  const pendingModeRef = useRef<"stay" | "open">("stay");
+
+  // Other threads in the room (for the conflict dialog copy).
+  const otherThreadCount = useAppSelector(
+    (s) => (s.warRoom.tileIdsBySession[sessionId] ?? []).length,
+  );
+
   const nameRef = useRef<HTMLInputElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
   const saveRef = useRef<HTMLButtonElement>(null);
 
   function open() {
     setEditing(true);
-    // Focus on the next frame so the input is mounted first.
     requestAnimationFrame(() => nameRef.current?.focus());
   }
 
-  function collapse() {
-    setEditing(false);
+  function resetFields() {
     setName("");
     setDescription("");
     setShowDescription(false);
   }
 
+  function collapse() {
+    setEditing(false);
+    resetFields();
+    setFlavor("thread");
+    setProjectId(null);
+    setProjectName(null);
+  }
+
   /**
-   * Create the thread. `mode === "open"` jumps into it; `mode === "stay"`
-   * resets the composer and refocuses the name field for the next quick-add.
+   * Validate + (for project flavor) conflict-check, then create. A project
+   * thread that clashes with the room's project defers to the dialog; otherwise
+   * it falls straight through to doCreate.
    */
   async function create(mode: "stay" | "open") {
+    if (busy) return;
+    if (flavor === "project" && !projectId) {
+      toast.error("Choose a project for this thread first");
+      return;
+    }
+    if (flavor === "project" && projectId) {
+      const { hasConflict, roomProjectId } = dispatch(
+        checkTileProjectConflict(sessionId, projectId),
+      );
+      if (hasConflict) {
+        setConflictRoomProjectId(roomProjectId);
+        pendingModeRef.current = mode;
+        setConflictOpen(true);
+        return;
+      }
+    }
+    await doCreate(mode);
+  }
+
+  /**
+   * Persist the thread. `resolution` is set only when resuming from the conflict
+   * dialog: 'per-thread' converts the room first; 'keep-room' joins the room's
+   * project instead of the requested one.
+   */
+  async function doCreate(
+    mode: "stay" | "open",
+    resolution?: ProjectConflictResolution,
+  ) {
     if (busy) return;
     const trimmedName = name.trim();
     const trimmedDescription = description.trim();
     setBusy(true);
     try {
+      let effectiveProjectId = flavor === "project" ? projectId : null;
+      if (resolution === "keep-room") {
+        effectiveProjectId = conflictRoomProjectId; // join the room's project
+      } else if (resolution === "per-thread") {
+        const ok = await dispatch(convertRoomToPerThreadThunk(sessionId));
+        if (!ok) return; // conversion failed (toast shown) — abort cleanly
+        // room now has no project → the requested id is safe
+      }
+
       const tile = await dispatch(
         createTile({
           sessionId,
           position: nextPosition,
-          title: trimmedName || undefined,
+          title:
+            trimmedName ||
+            (flavor === "project" ? projectName ?? undefined : undefined),
+          flavor,
+          projectId: effectiveProjectId,
+          // task/project tiles open on the Task tab; threads keep the default.
+          activeTab: flavor === "thread" ? undefined : "task",
         }),
       );
       if (!tile?.id) return; // thunk already surfaced the failure (toast)
 
-      // Optional description → persist onto the tile's note. Reuses the
-      // existing note flow (addNoteToTile creates + links + activates a note);
-      // we then write the description as its content via the notes update API.
+      // Optional description → persist onto the tile's note (reuses the note
+      // flow: create + link + activate, then write the description as content).
       if (trimmedDescription) {
         const noteId = await dispatch(addNoteToTile(tile.id, sessionId));
         if (noteId) {
@@ -116,15 +220,20 @@ export function QuickAddThread({
         onOpen?.(tile.id);
         collapse();
       } else {
-        // Stay put: clear the fields and re-arm for the next quick-add.
-        setName("");
-        setDescription("");
-        setShowDescription(false);
+        // Stay put: clear the name/description but keep the flavor + project
+        // selection sticky for rapid same-type adds; re-arm the name field.
+        resetFields();
         requestAnimationFrame(() => nameRef.current?.focus());
       }
     } finally {
       setBusy(false);
+      setConflictOpen(false);
+      setConflictRoomProjectId(null);
     }
+  }
+
+  function onResolveConflict(resolution: ProjectConflictResolution) {
+    void doCreate(pendingModeRef.current, resolution);
   }
 
   function revealDescription() {
@@ -135,12 +244,10 @@ export function QuickAddThread({
   function onNameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
-      // Shift/Cmd/Ctrl+Enter = Create and Open; plain Enter = Create (stay).
       void create(e.shiftKey || e.metaKey || e.ctrlKey ? "open" : "stay");
       return;
     }
     if (e.key === "Tab" && !e.shiftKey) {
-      // Tab from the name field reveals + focuses the description textarea.
       e.preventDefault();
       revealDescription();
       return;
@@ -153,8 +260,6 @@ export function QuickAddThread({
 
   function onDescKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Tab" && !e.shiftKey) {
-      // Tab from the description moves focus to the Save button (Tab-then-Enter
-      // lands the thread). Plain Enter stays a newline (multi-line descriptions).
       e.preventDefault();
       saveRef.current?.focus();
       return;
@@ -214,6 +319,39 @@ export function QuickAddThread({
         variant === "card" && "h-full min-h-0 justify-center",
       )}
     >
+      {/* Flavor selector — segmented, compact. Default 'thread' preserves the
+          fast path (Enter creates a thread). */}
+      <div
+        role="group"
+        aria-label="Thread type"
+        className="flex items-center gap-1 rounded-lg bg-muted/50 p-0.5"
+      >
+        {FLAVOR_OPTIONS.map((opt) => {
+          const Icon = opt.icon;
+          const active = flavor === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setFlavor(opt.value)}
+              disabled={busy}
+              aria-pressed={active}
+              title={opt.hint}
+              className={cn(
+                "inline-flex flex-1 items-center justify-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                active
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="size-3.5" />
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="flex items-center gap-2">
         <span className="grid place-items-center size-5 shrink-0 rounded-full bg-primary/10 text-primary">
           {busy ? (
@@ -229,7 +367,11 @@ export function QuickAddThread({
           onChange={(e) => setName(e.target.value)}
           onKeyDown={onNameKeyDown}
           disabled={busy}
-          placeholder="Name this thread…"
+          placeholder={
+            flavor === "project"
+              ? "Name (optional — defaults to project)…"
+              : "Name this thread…"
+          }
           aria-label="New thread name"
           className={cn(
             "min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground/70",
@@ -237,6 +379,20 @@ export function QuickAddThread({
           )}
         />
       </div>
+
+      {/* Project picker — only for the project flavor. */}
+      {flavor === "project" ? (
+        <EntityTargetPicker
+          kind="project"
+          value={projectId}
+          onSelect={(id, displayName) => {
+            setProjectId(id);
+            setProjectName(displayName);
+          }}
+          label="Project"
+          emptyText="Choose a project…"
+        />
+      ) : null}
 
       {showDescription ? (
         <ProTextarea
@@ -314,6 +470,18 @@ export function QuickAddThread({
           </button>
         </div>
       </div>
+
+      <ProjectConflictDialog
+        open={conflictOpen}
+        onOpenChange={(o) => {
+          setConflictOpen(o);
+          if (!o) setConflictRoomProjectId(null);
+        }}
+        requestedProjectName={projectName}
+        otherThreadCount={otherThreadCount}
+        busy={busy}
+        onResolve={onResolveConflict}
+      />
     </div>
   );
 }

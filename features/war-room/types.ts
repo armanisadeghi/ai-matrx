@@ -51,6 +51,22 @@ export type TileTab =
   | "agent"
   | "combined";
 
+// ── Tile flavor ───────────────────────────────────────────────────────
+// What a tile primarily REPRESENTS (its render/intent discriminator):
+//   • thread  — the generic multi-tab tile (today's default; zero change)
+//   • task    — task-anchored (uses the existing task_id)
+//   • project — project-anchored (uses project_id; its Task tab lists/creates
+//               the project's tasks, which auto-associate via ctx_tasks.project_id)
+// DB column is `text` + CHECK (extend like active_tab). These are INTERNAL
+// tokens — user-facing labels live in constants and are rename-safe.
+export type TileFlavor = "thread" | "task" | "project";
+
+export const TILE_FLAVORS: readonly TileFlavor[] = [
+  "thread",
+  "task",
+  "project",
+] as const;
+
 // ── Resolved context bundle (override ?? session default) ──────────────
 // A controlled selection the record carries — NEVER written to appContextSlice
 // or ctx_scope_assignments. See features/scopes/FEATURE.md.
@@ -79,4 +95,9 @@ export interface CreateTileInput {
   activeTab?: TileTab;
   position?: number;
   title?: string | null;
+  /** What the tile represents. Defaults to 'thread' (the generic tile). */
+  flavor?: TileFlavor;
+  /** FK to ctx_projects for a project-flavor tile. The caller must have already
+   *  resolved any room/tile project conflict (see thunks `checkTileProjectConflict`). */
+  projectId?: string | null;
 }

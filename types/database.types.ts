@@ -7073,12 +7073,14 @@ export type Database = {
           context_organization_id: string | null
           context_scope_ids: Json | null
           created_at: string
+          flavor: string
           id: string
           is_deleted: boolean
           is_hidden: boolean
           is_pinned: boolean
           note_id: string | null
           position: number
+          project_id: string | null
           session_id: string
           task_id: string | null
           title: string | null
@@ -7090,12 +7092,14 @@ export type Database = {
           context_organization_id?: string | null
           context_scope_ids?: Json | null
           created_at?: string
+          flavor?: string
           id?: string
           is_deleted?: boolean
           is_hidden?: boolean
           is_pinned?: boolean
           note_id?: string | null
           position?: number
+          project_id?: string | null
           session_id: string
           task_id?: string | null
           title?: string | null
@@ -7107,12 +7111,14 @@ export type Database = {
           context_organization_id?: string | null
           context_scope_ids?: Json | null
           created_at?: string
+          flavor?: string
           id?: string
           is_deleted?: boolean
           is_hidden?: boolean
           is_pinned?: boolean
           note_id?: string | null
           position?: number
+          project_id?: string | null
           session_id?: string
           task_id?: string | null
           title?: string | null
@@ -7132,6 +7138,13 @@ export type Database = {
             columns: ["note_id"]
             isOneToOne: false
             referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ctx_war_room_tiles_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ctx_projects"
             referencedColumns: ["id"]
           },
           {

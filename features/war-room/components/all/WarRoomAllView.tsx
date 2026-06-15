@@ -19,6 +19,7 @@ import { loadSessionsList } from "@/features/war-room/redux/thunks";
 import { closeAllWatches } from "@/features/war-room/redux/watchSlice";
 import { SessionCard } from "./SessionCard";
 import { NewSessionButton } from "./NewSessionButton";
+import { NewRoomFromProjectButton } from "./NewRoomFromProjectButton";
 
 // The master agent panel pulls the whole agent execution graph (via
 // AgentConversationColumn). Lazy-load it so that heavy chunk never ships in the
@@ -106,6 +107,7 @@ export function WarRoomAllView() {
             <Radar className="size-3.5" />
             <span className="hidden sm:inline">Master Agent</span>
           </button>
+          <NewRoomFromProjectButton />
           <NewSessionButton />
         </div>
       </header>

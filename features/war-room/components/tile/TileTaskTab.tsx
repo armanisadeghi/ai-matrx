@@ -28,15 +28,31 @@ import { ListChecks, ListTree, Loader2, Plus, X } from "lucide-react";
 import TaskEditor from "@/features/tasks/components/TaskEditor";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
-import { selectTileById } from "@/features/war-room/redux/selectors";
+import {
+  selectTileById,
+  selectTileFlavor,
+} from "@/features/war-room/redux/selectors";
 import { createTileTask } from "@/features/war-room/redux/thunks";
 import { updateTaskFieldThunk } from "@/features/tasks/redux/thunks";
 import { cn } from "@/lib/utils";
 import { SubtaskRail } from "./SubtaskRail";
 import { SubtaskDetailPane } from "./SubtaskDetailPane";
 import { SubtaskWindow } from "./SubtaskWindow";
+import { TileProjectTaskList } from "./TileProjectTaskList";
 
 export function TileTaskTab({ tileId }: { tileId: string }) {
+  const flavor = useAppSelector((s) => selectTileFlavor(tileId)(s));
+
+  // A project tile's Task tab is the PROJECT's task list (browse + create +
+  // open), not the single-anchor task editor that thread/task tiles use.
+  if (flavor === "project") {
+    return <TileProjectTaskList tileId={tileId} />;
+  }
+
+  return <TileTaskTabAnchored tileId={tileId} />;
+}
+
+function TileTaskTabAnchored({ tileId }: { tileId: string }) {
   const tile = useAppSelector((s) => selectTileById(tileId)(s));
   const taskId = tile?.task_id ?? null;
   const task = useAppSelector((s) =>
