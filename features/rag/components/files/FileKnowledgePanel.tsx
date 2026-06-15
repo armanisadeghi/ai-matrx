@@ -12,7 +12,6 @@
  */
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Brain,
   Database,
@@ -39,7 +38,6 @@ export function FileKnowledgePanel({
   className,
   compact = false,
 }: FileKnowledgePanelProps) {
-  const router = useRouter();
   const { state, refresh } = useFileDocument(fileId);
   const [running, setRunning] = useState(false);
 
@@ -140,7 +138,7 @@ export function FileKnowledgePanel({
             size="sm"
             variant="outline"
             className="h-7 text-[11px]"
-            onClick={() => router.push("/knowledge-graph")}
+            onClick={() => window.open("/knowledge-graph", "_blank", "noopener,noreferrer")}
           >
             <ExternalLink className="h-3 w-3 mr-1.5" />
             Knowledge graph

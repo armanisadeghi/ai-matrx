@@ -170,6 +170,8 @@ export default function CompactTaskItem({
         >
           <Link
             href={`/tasks/${task.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
             title="Open task in full page (cmd+click from anywhere)"
             className="inline-flex items-center justify-center h-6 w-6 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >

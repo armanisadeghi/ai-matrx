@@ -210,7 +210,7 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
               Refresh
             </Button>
             <Button asChild size="sm" className="h-7 text-xs">
-              <Link href={`/files/f/${fileId}/studio`}>
+              <Link href={`/files/f/${fileId}/studio`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3 w-3 mr-1" /> Open in Studio
               </Link>
             </Button>

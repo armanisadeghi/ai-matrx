@@ -391,6 +391,8 @@ export default function TaskDetailsPanel({
             {/* Open full page */}
             <Link
               href={`/tasks/${task.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
               title="Open task in full page"
               className="inline-flex items-center justify-center h-7 w-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
@@ -603,6 +605,8 @@ export default function TaskDetailsPanel({
             </button>
             <Link
               href={`/tasks/${task.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-xs text-primary hover:underline flex items-center gap-1 flex-shrink-0"
             >
               <ExternalLink size={11} />

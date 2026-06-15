@@ -501,6 +501,29 @@ export async function assignTagsToSource(
   return data ?? [];
 }
 
+/** Current tag assignments for a source (so a picker can show what's on). */
+export async function getSourceTags(sourceId: string): Promise<SourceTag[]> {
+  const { data, error } = await supabase
+    .from("rs_source_tag")
+    .select("*")
+    .eq("source_id", sourceId);
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** Remove one tag assignment from a source (the un-toggle side of assignment). */
+export async function removeSourceTag(
+  sourceId: string,
+  tagId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("rs_source_tag")
+    .delete()
+    .eq("source_id", sourceId)
+    .eq("tag_id", tagId);
+  if (error) throw error;
+}
+
 // ============================================================================
 // Documents
 // ============================================================================

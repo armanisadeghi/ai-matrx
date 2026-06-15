@@ -171,6 +171,8 @@ export function ScopeDetailView({ scopeId }: ScopeDetailViewProps) {
           <h2 className="text-sm font-semibold">Context values</h2>
           <Link
             href={`/organizations/${org.slug ?? org.id}/scopes/${type.id}/${scope.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
           >
             <ExternalLink className="h-3 w-3" />

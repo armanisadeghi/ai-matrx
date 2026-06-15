@@ -182,7 +182,7 @@ export function OrgManage({
               </p>
             </div>
             <Button asChild variant="outline" size="sm" className="shrink-0">
-              <Link href={`/organizations/${slug}`}>
+              <Link href={`/organizations/${slug}`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                 Workspace
               </Link>

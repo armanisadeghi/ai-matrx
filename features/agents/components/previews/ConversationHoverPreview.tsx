@@ -189,7 +189,7 @@ export function ConversationPreviewContent({
               Open
             </Button>
           ) : (
-            <Link href={openHref}>
+            <Link href={openHref} target="_blank" rel="noopener noreferrer">
               <Button size="sm" className="h-7 px-2.5 text-xs gap-1">
                 <ExternalLink />
                 Open

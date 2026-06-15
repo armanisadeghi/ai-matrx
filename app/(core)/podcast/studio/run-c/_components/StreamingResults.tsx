@@ -108,6 +108,8 @@ export function StreamingResults({ state }: { state: PodcastRunState }) {
       {state.status === "done" && state.episodeSlug && (
         <a
           href={`/podcast/${state.episodeSlug}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-md transition-opacity hover:opacity-90"
         >
           Open the published episode

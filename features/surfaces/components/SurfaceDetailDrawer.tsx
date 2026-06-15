@@ -370,6 +370,8 @@ export function SurfaceDetailDrawer({ surface, onClose, onChanged }: Props) {
                   >
                     <a
                       href={`/administration/mcp-tools/${t.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-start gap-2 hover:text-primary group"
                     >
                       <code className="font-mono text-xs flex-1 min-w-0 truncate">{t.name}</code>

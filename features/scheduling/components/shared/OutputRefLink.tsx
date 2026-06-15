@@ -28,6 +28,8 @@ export function OutputRefLink({ outputRef }: Props) {
   return (
     <Link
       href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
     >
       Open {labelFor(outputRef)}

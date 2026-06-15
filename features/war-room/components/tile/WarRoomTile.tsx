@@ -20,6 +20,7 @@ import { setTileActiveTabPersisted } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 import { EditableTitle } from "../shared/EditableTitle";
 import { TileContextOverride } from "./TileContextOverride";
+import { TileFlavorBadge } from "./TileFlavorBadge";
 import { TileTabBar } from "./TileTabBar";
 import { TileTabContent } from "./TileTabContent";
 import { TileMetricChips } from "./TileMetricChips";
@@ -88,6 +89,9 @@ export function WarRoomTile({
           className="min-w-0 text-xs font-medium"
           inputClassName="min-w-0 text-xs font-medium"
         />
+
+        {/* Flavor marker (project / task) — quiet, hidden on the tightest cells. */}
+        <TileFlavorBadge tileId={tileId} className="@max-[16rem]:hidden" />
 
         {/* Live readings — hide on the tightest cells (handled by the chips). */}
         <div className="ml-0.5 @max-[12rem]:hidden">

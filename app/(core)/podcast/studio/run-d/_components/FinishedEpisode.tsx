@@ -69,7 +69,7 @@ export function FinishedEpisode({ state }: { state: PodcastRunState }) {
             <div className="mt-auto flex flex-wrap gap-2 pt-4">
               {href && (
                 <Button asChild size="sm" className="gap-1.5">
-                  <Link href={href}>
+                  <Link href={href} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4" />
                     Open episode
                   </Link>

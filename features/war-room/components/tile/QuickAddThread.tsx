@@ -53,11 +53,10 @@ import {
 } from "@/features/war-room/redux/thunks";
 import { update as updateNote } from "@/features/notes/service/notesApi";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { EntityTargetPicker } from "@/features/scopes/components/entity-context/EntityTargetPicker";
-import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import type { TileFlavor } from "@/features/war-room/types";
 import { cn } from "@/lib/utils";
 import { ProjectConflictDialog } from "../shared/ProjectConflictDialog";
+import { WarRoomProjectPicker } from "../shared/WarRoomProjectPicker";
 
 /** How the collapsed trigger reads — matches the two NewTile shells. */
 export type QuickAddVariant = "card" | "rail";
@@ -91,9 +90,6 @@ export function QuickAddThread({
   onOpen?: (tileId: string) => void;
 }) {
   const dispatch = useAppDispatch();
-  // Hydrate the project tree so the project picker has options the moment the
-  // user switches to the project flavor.
-  useScopeTree();
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
@@ -380,17 +376,14 @@ export function QuickAddThread({
         />
       </div>
 
-      {/* Project picker — only for the project flavor. */}
+      {/* Project picker — only for the project flavor. Flat across orgs. */}
       {flavor === "project" ? (
-        <EntityTargetPicker
-          kind="project"
+        <WarRoomProjectPicker
           value={projectId}
           onSelect={(id, displayName) => {
             setProjectId(id);
             setProjectName(displayName);
           }}
-          label="Project"
-          emptyText="Choose a project…"
         />
       ) : null}
 

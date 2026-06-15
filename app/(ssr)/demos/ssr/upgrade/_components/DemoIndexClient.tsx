@@ -98,6 +98,8 @@ export function DemoIndexClient() {
             ))}
             <Link
               href="/demos/ssr/upgrade/landing"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-full bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:bg-foreground/90"
             >
               <ExternalLink className="h-3 w-3" />

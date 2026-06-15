@@ -387,7 +387,7 @@ function TaskEditorInner({
               className="h-7 w-7 p-0"
               title="Open in full page"
             >
-              <Link href={`/tasks/${taskId}`}>
+              <Link href={`/tasks/${taskId}`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-3.5 h-3.5" />
               </Link>
             </Button>

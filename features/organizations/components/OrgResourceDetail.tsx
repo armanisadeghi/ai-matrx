@@ -199,7 +199,7 @@ export function OrgResourceDetail() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => router.push(`/organizations/${org.slug}/${entry.orgRoute}`)}
+                onClick={() => window.open(`/organizations/${org.slug}/${entry.orgRoute}`, "_blank", "noopener,noreferrer")}
                 className="shrink-0"
               >
                 Full view

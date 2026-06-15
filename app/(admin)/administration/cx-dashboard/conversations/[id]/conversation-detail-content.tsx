@@ -113,6 +113,8 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
       {conv.parent_conversation_id && (
         <Link
           href={`/administration/cx-dashboard/conversations/${conv.parent_conversation_id}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground p-2 rounded border border-border/50 bg-muted/20 transition-colors"
         >
           <GitBranch className="w-3.5 h-3.5" />

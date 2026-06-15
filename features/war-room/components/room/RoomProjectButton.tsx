@@ -28,13 +28,11 @@ import {
   setRoomProjectThunk,
   absorbRoomIntoProjectThunk,
 } from "@/features/war-room/redux/thunks";
-import { EntityTargetPicker } from "@/features/scopes/components/entity-context/EntityTargetPicker";
-import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useUserProjects } from "@/features/projects/hooks";
 import { cn } from "@/lib/utils";
+import { WarRoomProjectPicker } from "../shared/WarRoomProjectPicker";
 
 export function RoomProjectButton({ sessionId }: { sessionId: string }) {
-  useScopeTree();
   const { projects } = useUserProjects();
 
   const roomProjectId = useAppSelector(selectSessionProjectId(sessionId));
@@ -139,12 +137,10 @@ function RoomProjectPicker({
             : "Tie this whole room to a project — every thread belongs to it."}
         </p>
       </div>
-      <EntityTargetPicker
-        kind="project"
+      <WarRoomProjectPicker
         value={roomProjectId}
         onSelect={(id) => void choose(id)}
-        label="Project"
-        emptyText="No project"
+        allowClear={false}
       />
       {roomProjectId ? (
         <button

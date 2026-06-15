@@ -131,7 +131,7 @@ export function ProjectManage() {
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
           <Button asChild variant="outline" size="sm">
-            <Link href={`/projects/${project.id}`}>
+            <Link href={`/projects/${project.id}`} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
               Open workspace
             </Link>

@@ -706,6 +706,8 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
                   {href ? (
                     <Link
                       href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="ml-auto inline-flex items-center gap-1 text-xs text-primary hover:underline"
                     >
                       Open source

@@ -89,6 +89,8 @@ export function ScopesSettingsPanel() {
               <Link
                 key={o.id}
                 href={`/organizations/${o.slug ?? o.id}/settings/scopes`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-accent/40 text-xs"
               >
                 <span className="flex items-center gap-2 min-w-0">

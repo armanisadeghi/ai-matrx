@@ -10,6 +10,7 @@ import type {
   ResearchAnalysis,
   ResearchSynthesis,
   ResearchTag,
+  SourceTag,
   ResearchDocument,
   ResearchMedia,
   ResearchTemplate,
@@ -212,6 +213,14 @@ export function useResearchTags(topicId: string) {
     () => service.getTags(topicId),
     [topicId],
     !!topicId,
+  );
+}
+
+export function useSourceTags(sourceId: string | undefined) {
+  return useServiceQuery<SourceTag[]>(
+    () => service.getSourceTags(sourceId!),
+    [sourceId],
+    !!sourceId,
   );
 }
 

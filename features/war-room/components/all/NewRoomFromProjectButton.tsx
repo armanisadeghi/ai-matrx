@@ -20,15 +20,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { EntityTargetPicker } from "@/features/scopes/components/entity-context/EntityTargetPicker";
-import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { createRoomFromProject } from "@/features/war-room/redux/thunks";
+import { WarRoomProjectPicker } from "../shared/WarRoomProjectPicker";
 
 export function NewRoomFromProjectButton() {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  // Hydrate the org/project/task tree so the picker has projects to list.
-  useScopeTree();
 
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -77,12 +74,7 @@ export function NewRoomFromProjectButton() {
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-lg border border-border bg-card p-2">
-            <EntityTargetPicker
-              kind="project"
-              value={null}
-              onSelect={handleSelect}
-              label="Choose a project"
-            />
+            <WarRoomProjectPicker value={null} onSelect={handleSelect} />
           </div>
           {busy && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">

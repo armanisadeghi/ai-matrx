@@ -172,6 +172,8 @@ export function ExecutorSurfaceDetailPanel({
             {executor.mcp_server_id && (
               <Link
                 href={`/administration/mcp-servers/${executor.mcp_server_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 hover:underline font-mono"
               >
                 <ExternalLink className="h-3 w-3" />

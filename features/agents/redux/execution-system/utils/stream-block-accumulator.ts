@@ -344,6 +344,52 @@ export class StreamBlockAccumulator {
     // );
   }
 
+  /**
+   * Close the current text block at an interleaved-content boundary — a tool
+   * call that lands BETWEEN two text runs. The NEXT text run then opens a
+   * FRESH render block instead of appending onto the block that held the text
+   * BEFORE the tool.
+   *
+   * Why this exists: the accumulator lives for the whole stream and is never
+   * otherwise told about tool calls. Without this break, "text → tool → text"
+   * collapses both runs into a single `client_block_N`. The timeline still
+   * records a `text_end` for the second run, but its
+   * `[blockStartIndex, blockEndIndex)` range comes out EMPTY (no new blockId
+   * was pushed), so `selectUnifiedSlots` emits `[merged_text, tool]` — the
+   * tool card renders AFTER all the text, destroying chronological order.
+   * (The persisted/DB path is unaffected because it rebuilds each run's text
+   * from `text_end.rawText`, which is why a reload renders correctly.)
+   *
+   * Call this once per tool event, BEFORE the tool's `appendTimeline` dispatch
+   * and AFTER the pre-tool text has been flushed into the accumulator
+   * (process-stream's `dispatchBatch()` does that flush). It is a no-op when
+   * there is nothing open to break (back-to-back tool events, a tool with no
+   * preceding text, a tool right after a media block), so it is always safe.
+   */
+  breakTextBlock(dispatch: DispatchFn): void {
+    if (
+      !this.currentBlockContent &&
+      !this.pendingLineFragment &&
+      !this.currentBlockEmitted
+    ) {
+      return;
+    }
+    if (this.pendingLineFragment) {
+      this.processLine(this.pendingLineFragment, dispatch);
+      this.pendingLineFragment = "";
+    }
+    // A tool call landing mid bare-JSON means the model closed that content
+    // here. Run the same final type detection finalize() does so a partially
+    // streamed bare-JSON block still commits with its resolved type.
+    if (this.subState.kind === "bare_json") {
+      const jsonType = detectJsonBlockType(this.currentBlockContent);
+      if (jsonType) this.currentBlockType = jsonType;
+    }
+    this.closeCurrentBlock(dispatch);
+    this.subState = { kind: "none" };
+    this.openBlock("text", dispatch);
+  }
+
   // ── Internal ────────────────────────────────────────────────────────────
 
   private get currentBlockId(): string {

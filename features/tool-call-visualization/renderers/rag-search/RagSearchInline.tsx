@@ -54,10 +54,7 @@ import { cn } from "@/lib/utils";
 import type { ToolRendererProps } from "../../types";
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { getArg, isTerminal, resultAsObject } from "../_shared";
-import {
-  citationHrefFor,
-  type RagSearchHit,
-} from "@/features/rag/api/search";
+import { citationHrefFor, type RagSearchHit } from "@/features/rag/api/search";
 
 // ---------------------------------------------------------------------------
 // Hit normalization
@@ -150,16 +147,14 @@ interface ParsedRagSearch {
 
 function parse(entry: ToolLifecycleEntry): ParsedRagSearch {
   const queryArg = getArg<string>(entry, "query") ?? "";
-  const result = resultAsObject(entry) as
-    | {
-        query?: string;
-        hits?: RawHit[];
-        total_candidates?: number;
-        embedding_model?: string;
-        reranker_model?: string | null;
-        latency_ms?: number;
-      }
-    | null;
+  const result = resultAsObject(entry) as {
+    query?: string;
+    hits?: RawHit[];
+    total_candidates?: number;
+    embedding_model?: string;
+    reranker_model?: string | null;
+    latency_ms?: number;
+  } | null;
   const isError = entry.status === "error";
   const done = isTerminal(entry);
   if (isError) {
@@ -335,6 +330,8 @@ function HitRow({ hit }: { hit: NormalizedHit }) {
             <Link
               href={href}
               prefetch={false}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-0.5 text-[11px] text-primary hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
@@ -364,11 +361,7 @@ function ScoreLine({
     <div className="flex items-center justify-between gap-2">
       <span className="text-muted-foreground">{label}</span>
       <span className="tabular-nums font-mono">
-        {value == null
-          ? "—"
-          : fmt === "rank"
-            ? `#${value}`
-            : value.toFixed(3)}
+        {value == null ? "—" : fmt === "rank" ? `#${value}` : value.toFixed(3)}
       </span>
     </div>
   );
@@ -442,9 +435,7 @@ export const RagSearchInline: React.FC<ToolRendererProps> = ({ entry }) => {
             <span className="tabular-nums">{data.latency_ms}</span> ms
           </Chip>
         )}
-        {data.reranker_model && (
-          <Chip>reranked · {data.reranker_model}</Chip>
-        )}
+        {data.reranker_model && <Chip>reranked · {data.reranker_model}</Chip>}
         {data.query && (
           <span className="ml-auto truncate max-w-[60%] italic">
             “{data.query}”

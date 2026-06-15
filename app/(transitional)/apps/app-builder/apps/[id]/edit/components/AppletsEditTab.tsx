@@ -127,7 +127,11 @@ export default function AppletsEditTab({ appId }: AppletsEditTabProps) {
           <Button
             variant="outline"
             onClick={() =>
-              router.push(`/apps/app-builder/apps/${appId}/preview`)
+              window.open(
+                `/apps/app-builder/apps/${appId}/preview`,
+                "_blank",
+                "noopener,noreferrer",
+              )
             }
             className="justify-between"
           >

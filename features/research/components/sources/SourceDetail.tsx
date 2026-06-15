@@ -42,6 +42,7 @@ import { OriginBadge } from "../shared/OriginBadge";
 import { ContentViewer } from "./ContentViewer";
 import { PasteContentModal } from "./PasteContentModal";
 import { AnalysisCard } from "../analysis/AnalysisCard";
+import { SourceTagPicker } from "./SourceTagPicker";
 import type {
   ResearchSource,
   ResearchContent,
@@ -425,6 +426,15 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                     <Badge variant="destructive">Stale</Badge>
                   </MetaRow>
                 )}
+              </div>
+
+              {/* Tags — assign this source to dimensions for consolidation */}
+              <div className="space-y-2 rounded-lg border border-border p-3">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <Tag className="h-3 w-3" />
+                  Tags
+                </div>
+                <SourceTagPicker topicId={topicId} sourceId={sourceId} />
               </div>
 
               {/* Content version details */}

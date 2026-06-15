@@ -830,6 +830,18 @@ export async function processStream({
         toolEvents++;
         const toolData = event.data;
 
+        // Close the accumulator's current text block at this tool boundary so
+        // any text the model emits AFTER this tool opens a NEW render block
+        // instead of merging into the text BEFORE it. Without this, a
+        // "text → tool → text" turn collapses both runs into one block and the
+        // tool card renders after all the text (chronological-order bug — the
+        // streaming path only, since the DB path rebuilds text per-run). The
+        // generic non-chunk `dispatchBatch()` above already flushed the
+        // pre-tool text into the accumulator; this is a no-op when there is no
+        // open text to break (e.g. back-to-back tool events). See
+        // StreamBlockAccumulator.breakTextBlock.
+        blockAccumulator.breakTextBlock(dispatch);
+
         if (toolData.event === "tool_delegated") {
           // ONE canonical path for delegated tool calls — shared verbatim with
           // cold-resume (surface-cold-pending-calls.thunk.ts) so the two

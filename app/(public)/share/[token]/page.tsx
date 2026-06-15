@@ -164,6 +164,8 @@ export default async function PublicSharePage({ params }: PageProps) {
             <Link
               href={`/files/share/${encodeURIComponent(token)}`}
               prefetch={false}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent"
               title="Open in the AI Matrx app — page-by-page viewer with cleaned text and AI-powered search."
             >

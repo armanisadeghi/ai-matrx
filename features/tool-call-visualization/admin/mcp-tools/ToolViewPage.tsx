@@ -134,6 +134,8 @@ function OverviewTab({ tool }: { tool: ToolRow }) {
             >
               <a
                 href={`/administration/mcp-servers/${tool.managed_by_server_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:underline font-mono"
               >
                 {tool.managed_by_server_id}

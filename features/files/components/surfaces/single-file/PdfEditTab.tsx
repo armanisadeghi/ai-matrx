@@ -214,7 +214,7 @@ export function PdfEditTab({ fileId, className }: PdfEditTabProps) {
             className="h-7 gap-1.5 text-xs"
             title="Open the full Analysis Studio (3-pane workshop with content + tools panels)"
           >
-            <Link href={`/files/f/${encodeURIComponent(fileId)}/studio`}>
+            <Link href={`/files/f/${encodeURIComponent(fileId)}/studio`} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-3 w-3" />
               Open in Studio
             </Link>

@@ -538,6 +538,8 @@ export function PromptAppEditor({ app: initialApp }: PromptAppEditorProps) {
             {app.prompt_id && (
               <Link
                 href={`/ai/prompts/edit/${app.prompt_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 hover:border-primary/30 transition-all group"
               >
                 <Zap className="w-4 h-4 text-primary shrink-0" />

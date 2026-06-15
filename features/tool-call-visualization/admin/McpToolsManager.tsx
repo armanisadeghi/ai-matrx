@@ -368,8 +368,10 @@ export function McpToolsManager() {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                navigateTo(
+                window.open(
                   `/administration/mcp-servers/${t.managed_by_server_id}`,
+                  "_blank",
+                  "noopener,noreferrer",
                 );
               }}
               className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 hover:underline"
