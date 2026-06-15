@@ -10,12 +10,11 @@
 // studio for the same session.
 
 import { useEffect, useRef } from "react";
-import { Save, Plus, Maximize2 } from "lucide-react";
+import { Save, Plus } from "lucide-react";
 import {
   MicrophoneIconButton,
   type MicrophoneIconButtonHandle,
 } from "@/features/audio/components/MicrophoneIconButton";
-import { useOpenTranscriptStudioWindow } from "@/features/overlays/openers/transcriptStudioWindow";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectSessionRawText } from "@/features/transcript-studio/redux/selectors";
 import { fetchRawSegmentsThunk } from "@/features/transcript-studio/redux/thunks";
@@ -33,7 +32,6 @@ export function TileAudioTab({ tileId }: { tileId: string }) {
   const sessionId = useAppSelector(selectActiveAudioSessionId(tileId));
   const rawText = useAppSelector(selectSessionRawText(sessionId));
   const recording = useAppSelector((s) => s.recordings);
-  const openStudio = useOpenTranscriptStudioWindow();
 
   const isThisRecording =
     recording.context?.kind === "studio" &&
@@ -74,20 +72,11 @@ export function TileAudioTab({ tileId }: { tileId: string }) {
         <button
           type="button"
           onClick={() => dispatch(addAudioSessionToTile(tileId))}
-          className="inline-flex items-center gap-1 rounded-md px-2 h-7 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          className="ml-auto inline-flex items-center gap-1 rounded-md px-2 h-7 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
           title="Start a new transcript session in this tile"
         >
           <Plus className="size-3.5" />
           New Session
-        </button>
-        <button
-          type="button"
-          onClick={() => sessionId && openStudio({ activeSessionId: sessionId })}
-          disabled={!sessionId}
-          className="ml-auto grid place-items-center size-7 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-40 disabled:pointer-events-none"
-          title="Expand to the full transcription studio"
-        >
-          <Maximize2 className="size-3.5" />
         </button>
       </div>
 
