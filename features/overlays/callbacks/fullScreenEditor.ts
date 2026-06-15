@@ -72,8 +72,12 @@ export function createFullScreenEditorCallbackGroup(
 
 /**
  * Emit a save from the editor side. No-op when there is no group (the caller
- * opted into the bridge's self-handle path instead). `removeAfterTrigger` is
- * false so the same editor instance can save more than once before close.
+ * opted into the bridge's self-handle path instead).
+ *
+ * `removeAfterTrigger: true` — the editor bridge closes itself immediately
+ * after a save, so a group fires at most once. Tearing it down on emit means
+ * the happy path leaves nothing behind; the opener's unmount-dispose only has
+ * to clean up the cancel-without-save case (bounded, freed on owner unmount).
  */
 export function emitFullScreenEditorSave(
   callbackGroupId: string | undefined | null,
@@ -83,6 +87,6 @@ export function emitFullScreenEditorSave(
   callbackManager.triggerGroup<FullScreenEditorEvent>(
     callbackGroupId,
     { type: "save", content },
-    { removeAfterTrigger: false },
+    { removeAfterTrigger: true },
   );
 }

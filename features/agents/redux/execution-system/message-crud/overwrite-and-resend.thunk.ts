@@ -45,7 +45,10 @@ interface OverwriteAndResendArgs {
   conversationId: string;
   /** The user message being overwritten — must be role: 'user'. */
   messageId: string;
-  /** New plain-text content. The thunk wraps it as `[{type:'text',text}]`. */
+  /**
+   * New plain-text content. Merged into the message via `mergeEditedText`
+   * (replaces the text block, preserves any attachment/non-text blocks).
+   */
   newContent: string;
 }
 

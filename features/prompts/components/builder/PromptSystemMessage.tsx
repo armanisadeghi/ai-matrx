@@ -4,6 +4,7 @@ import { Edit, MoreHorizontal, Copy, Check } from "lucide-react";
 import MarkdownStream from "@/components/MarkdownStream";
 import { escapeEmbeddedCodeFences } from "@/features/prompts/utils/escape-code-fences";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { useOpenFullScreenMarkdownEditorBridge } from "@/features/overlays/openers/fullScreenEditor";
 import MessageOptionsMenu from "@/features/chat/components/response/assistant-message/MessageOptionsMenu";
 import { PromptErrorMessage } from "../PromptErrorMessage";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ export function PromptSystemMessage({
   compact = false,
 }: PromptSystemMessageProps) {
   const dispatch = useAppDispatch();
+  const openEditor = useOpenFullScreenMarkdownEditorBridge();
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const moreOptionsButtonRef = useRef<HTMLButtonElement>(null);
@@ -45,26 +47,20 @@ export function PromptSystemMessage({
   };
 
   const handleEditClick = () => {
-    dispatch(
-      openOverlay({
-        overlayId: "fullScreenEditor",
-        data: {
-          content,
-          mode: "free",
-          conversationId: undefined,
-          messageId: undefined,
-          onSave: onContentChange
-            ? (newContent: string) => onContentChange(messageIndex, newContent)
-            : undefined,
-          tabs: ["write", "markdown", "wysiwyg", "preview"],
-          initialTab: "write",
-          analysisData: undefined,
-          title: undefined,
-          showSaveButton: !!onContentChange,
-          showCopyButton: true,
-        },
-      }),
-    );
+    // In-memory prompt edit (no DB message) → the save goes back through
+    // onContentChange. Route it via the callback registry (the opener hook),
+    // never an onSave function in Redux data — the controller drops that.
+    openEditor({
+      content,
+      mode: "free",
+      onSave: onContentChange
+        ? (newContent: string) => onContentChange(messageIndex, newContent)
+        : undefined,
+      tabs: ["write", "markdown", "wysiwyg", "preview"],
+      initialTab: "write",
+      showSaveButton: !!onContentChange,
+      showCopyButton: true,
+    });
   };
 
   const handleCopy = async () => {

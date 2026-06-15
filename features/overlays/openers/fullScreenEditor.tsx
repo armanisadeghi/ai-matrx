@@ -147,7 +147,6 @@ export function FullScreenMarkdownEditorBridgeController(
     return () => handle.close();
     // Callback handler identity does not justify a reopen (matches the
     // image-uploader controller). Re-open only on the structural inputs.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     open,
     props.instanceId,

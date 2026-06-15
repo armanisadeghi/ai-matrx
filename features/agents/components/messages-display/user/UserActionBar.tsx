@@ -203,7 +203,14 @@ export function UserActionBar({
       const { setUserInputText } =
         await import("@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice");
 
-      const forkPosition = Math.max(0, (messagePosition ?? 0) - 1);
+      // Fork at the edited message's OWN position so the fork INCLUDES it
+      // (everything up to and including this user message; the assistant reply
+      // after it — position+1 — is naturally excluded). Forking at position-1
+      // would exclude the message, and the lookup below would never find it —
+      // the silent "Edit & resubmit → Fork does nothing" bug for any message
+      // past the first turn. This mirrors the working Overwrite path (edit in
+      // place, then re-run), just on a branch.
+      const forkPosition = messagePosition ?? 0;
       const forkResult = await dispatch(
         forkConversation({
           conversationId,

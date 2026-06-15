@@ -6,7 +6,8 @@
 
 import { Maximize2 } from "lucide-react";
 import { toast } from "sonner";
-import { openOverlay, closeOverlay } from "@/lib/redux/slices/overlaySlice";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { registerAction } from "../registry";
 import { getErrorMessage, serializeError } from "../utils";
 
@@ -20,51 +21,47 @@ registerAction({
   renderSlot: "overflow",
   order: 10,
   run: (ctx) => {
-    const instanceId = ctx.instanceKey("fullscreen-editor");
     const canSave = Boolean(ctx.sourceAdapter.edit);
+
+    // Source-agnostic save → route through the callback registry, never an
+    // onSave function in Redux data (the controller drops it). Only register a
+    // group when the source can actually save; otherwise the editor is
+    // read-only and needs no save channel.
+    const callbackGroupId = canSave
+      ? createFullScreenEditorCallbackGroup({
+          onSave: async (newContent: string) => {
+            try {
+              await ctx.sourceAdapter.edit?.({
+                newContent,
+                source: ctx.source,
+                dispatch: ctx.dispatch,
+              });
+              toast.success("Saved");
+            } catch (err) {
+              console.error(
+                "[open-fullscreen-editor] save failed",
+                JSON.stringify(serializeError(err), null, 2),
+              );
+              toast.error(getErrorMessage(err, "Failed to save"));
+            }
+          },
+        }).callbackGroupId
+      : null;
 
     ctx.dispatch(
       openOverlay({
         overlayId: "fullScreenEditor",
-        instanceId,
+        instanceId: ctx.instanceKey("fullscreen-editor"),
         data: {
           content: ctx.content,
           mode: "free",
+          callbackGroupId,
           messageId:
             ctx.source.type === "chat-message"
               ? ctx.source.messageId
               : undefined,
-          conversationId:
-            ctx.source.type === "chat-message"
-              ? ctx.source.conversationId
-              : undefined,
           noteId:
             ctx.source.type === "note" ? ctx.source.noteId : undefined,
-          onSave: canSave
-            ? async (newContent: string) => {
-                try {
-                  await ctx.sourceAdapter.edit?.({
-                    newContent,
-                    source: ctx.source,
-                    dispatch: ctx.dispatch,
-                  });
-                  toast.success("Saved");
-                } catch (err) {
-                   
-                  console.error(
-                    "[open-fullscreen-editor] save failed",
-                    JSON.stringify(serializeError(err), null, 2),
-                  );
-                  toast.error(getErrorMessage(err, "Failed to save"));
-                }
-                ctx.dispatch(
-                  closeOverlay({
-                    overlayId: "fullScreenEditor",
-                    instanceId,
-                  }),
-                );
-              }
-            : undefined,
           tabs: [
             "write",
             "matrx_split",

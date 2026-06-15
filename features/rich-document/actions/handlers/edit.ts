@@ -18,7 +18,8 @@
 
 import { Edit, History, GitBranch, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { openOverlay, closeOverlay } from "@/lib/redux/slices/overlaySlice";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { registerAction } from "../registry";
 import { getErrorMessage, serializeError } from "../utils";
 
@@ -33,53 +34,45 @@ registerAction({
   order: 0,
   visible: (ctx) => Boolean(ctx.sourceAdapter.edit),
   run: (ctx) => {
-    const instanceId = ctx.instanceKey("edit-content");
+    // Save is source-agnostic via `ctx.sourceAdapter.edit` (chat → editMessage,
+    // note → NotesAPI.update, …), so the bridge's editMessage self-handle is
+    // NOT the right path. Route onSave through the callback registry — a
+    // function can never travel through Redux (the controller drops it, which
+    // silently broke note/prompt saves). The group auto-disposes on save.
+    const { callbackGroupId } = createFullScreenEditorCallbackGroup({
+      onSave: async (newContent: string) => {
+        try {
+          await ctx.sourceAdapter.edit?.({
+            newContent,
+            source: ctx.source,
+            dispatch: ctx.dispatch,
+          });
+          toast.success("Changes saved");
+        } catch (err) {
+          console.error(
+            "[edit] save failed",
+            JSON.stringify(serializeError(err), null, 2),
+          );
+          toast.error(getErrorMessage(err, "Failed to save changes"));
+        }
+      },
+    });
     ctx.dispatch(
       openOverlay({
         overlayId: "fullScreenEditor",
-        instanceId,
+        instanceId: ctx.instanceKey("edit-content"),
         data: {
           content: ctx.content,
           mode: "free",
-          // Chat-message convention: passing IDs in data so the overlay
-          // can show metadata if it wants. The actual edit dispatch goes
-          // through the source adapter — not through any onSave closure
-          // in data (which would violate the "no functions in Redux"
-          // doctrine).
+          callbackGroupId,
+          // IDs passed for metadata display only; the save goes through the
+          // source adapter via the callback above, not the self-handle.
           messageId:
             ctx.source.type === "chat-message"
               ? ctx.source.messageId
               : undefined,
-          conversationId:
-            ctx.source.type === "chat-message"
-              ? ctx.source.conversationId
-              : undefined,
           noteId:
             ctx.source.type === "note" ? ctx.source.noteId : undefined,
-          // The overlay controller dispatches the save by looking up the
-          // source adapter and calling its `edit` — wired into the
-          // controller during Phase 2. Until that wiring lands, we pass
-          // an onSave callback as a transitional measure.
-          onSave: async (newContent: string) => {
-            try {
-              await ctx.sourceAdapter.edit?.({
-                newContent,
-                source: ctx.source,
-                dispatch: ctx.dispatch,
-              });
-              toast.success("Changes saved");
-            } catch (err) {
-               
-              console.error(
-                "[edit] save failed",
-                JSON.stringify(serializeError(err), null, 2),
-              );
-              toast.error(getErrorMessage(err, "Failed to save changes"));
-            }
-            ctx.dispatch(
-              closeOverlay({ overlayId: "fullScreenEditor", instanceId }),
-            );
-          },
           tabs: ["write", "matrx_split", "markdown", "wysiwyg", "preview"],
           initialTab: "matrx_split",
           analysisData: ctx.metadata as

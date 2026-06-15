@@ -57,7 +57,8 @@ import {
   setPendingSource,
 } from "@/features/tasks/redux/taskUiSlice";
 import { toast } from "sonner";
-import { openOverlay, closeOverlay } from "@/lib/redux/slices/overlaySlice";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Json } from "@/types/database.types";
@@ -1222,49 +1223,48 @@ function serverApiTestItems(ctx: MessageActionContext): MenuItem[] {
       iconColor: "text-blue-500 dark:text-blue-400",
       label: "Replace this with a summary… (server)",
       action: () => {
-        const instanceId = `srv-replace-${messageId}`;
+        // Custom save (server `replaceMessages`, NOT editMessage) → can't use
+        // the bridge self-handle. Route onSave through the callback registry;
+        // a function can't travel through Redux. The group auto-disposes on
+        // save (removeAfterTrigger); a cancel-without-save leaks one tiny group
+        // (acceptable for an admin test item).
+        const { callbackGroupId } = createFullScreenEditorCallbackGroup({
+          onSave: async (newContent: string) => {
+            const trimmed = newContent.trim();
+            if (!trimmed) {
+              toast.error("Summary text required");
+              return;
+            }
+            try {
+              const { replaceMessages } =
+                await import("@/features/agents/redux/execution-system/message-crud/server/replace-messages.thunk");
+              await dispatch(
+                replaceMessages({
+                  conversationId,
+                  selector: {
+                    message_ids: [messageId],
+                    inclusive: true,
+                  },
+                  summaryContent: [{ type: "text", text: trimmed }],
+                }),
+              ).unwrap();
+              toast.success("Replaced with summary (server)");
+            } catch (err) {
+              toast.error(
+                getErrorMessage(err, "Replace-with-summary failed"),
+              );
+            }
+          },
+        });
         dispatch(
           openOverlay({
             overlayId: "fullScreenEditor",
-            instanceId,
+            instanceId: `srv-replace-${messageId}`,
             data: {
               content: "",
               mode: "free",
-              conversationId: undefined,
               messageId: messageId ?? undefined,
-              onSave: async (newContent: string) => {
-                const trimmed = newContent.trim();
-                if (!trimmed) {
-                  toast.error("Summary text required");
-                  return;
-                }
-                try {
-                  const { replaceMessages } =
-                    await import("@/features/agents/redux/execution-system/message-crud/server/replace-messages.thunk");
-                  await dispatch(
-                    replaceMessages({
-                      conversationId,
-                      selector: {
-                        message_ids: [messageId],
-                        inclusive: true,
-                      },
-                      summaryContent: [{ type: "text", text: trimmed }],
-                    }),
-                  ).unwrap();
-                  toast.success("Replaced with summary (server)");
-                } catch (err) {
-                  toast.error(
-                    getErrorMessage(err, "Replace-with-summary failed"),
-                  );
-                } finally {
-                  dispatch(
-                    closeOverlay({
-                      overlayId: "fullScreenEditor",
-                      instanceId,
-                    }),
-                  );
-                }
-              },
+              callbackGroupId,
               tabs: ["write", "matrx_split", "markdown", "preview"],
               initialTab: "write",
               title: "Summary content",

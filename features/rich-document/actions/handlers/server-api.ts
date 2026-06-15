@@ -16,7 +16,8 @@ import {
   Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { openOverlay, closeOverlay } from "@/lib/redux/slices/overlaySlice";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { registerAction } from "../registry";
 import { getErrorMessage } from "../utils";
 
@@ -301,51 +302,47 @@ registerAction({
   run: (ctx) => {
     if (ctx.source.type !== "chat-message") return;
     const { conversationId, messageId } = ctx.source;
-    const instanceId = ctx.instanceKey("srv-replace");
+    // Custom server save (replaceMessages) → route onSave via the callback
+    // registry; a function can't survive Redux. The bridge closes itself and
+    // the group auto-disposes on save.
+    const { callbackGroupId } = createFullScreenEditorCallbackGroup({
+      onSave: async (newContent: string) => {
+        const trimmed = newContent.trim();
+        if (!trimmed) {
+          toast.error("Summary text required");
+          return;
+        }
+        try {
+          const { replaceMessages } = await import(
+            "@/features/agents/redux/execution-system/message-crud/server/replace-messages.thunk"
+          );
+          await ctx
+            .dispatch(
+              replaceMessages({
+                conversationId,
+                selector: {
+                  message_ids: [messageId],
+                  inclusive: true,
+                },
+                summaryContent: [{ type: "text", text: trimmed }],
+              }),
+            )
+            .unwrap();
+          toast.success("Replaced with summary (server)");
+        } catch (err) {
+          toast.error(getErrorMessage(err, "Replace-with-summary failed"));
+        }
+      },
+    });
     ctx.dispatch(
       openOverlay({
         overlayId: "fullScreenEditor",
-        instanceId,
+        instanceId: ctx.instanceKey("srv-replace"),
         data: {
           content: "",
           mode: "free",
           messageId,
-          onSave: async (newContent: string) => {
-            const trimmed = newContent.trim();
-            if (!trimmed) {
-              toast.error("Summary text required");
-              return;
-            }
-            try {
-              const { replaceMessages } = await import(
-                "@/features/agents/redux/execution-system/message-crud/server/replace-messages.thunk"
-              );
-              await ctx
-                .dispatch(
-                  replaceMessages({
-                    conversationId,
-                    selector: {
-                      message_ids: [messageId],
-                      inclusive: true,
-                    },
-                    summaryContent: [{ type: "text", text: trimmed }],
-                  }),
-                )
-                .unwrap();
-              toast.success("Replaced with summary (server)");
-            } catch (err) {
-              toast.error(
-                getErrorMessage(err, "Replace-with-summary failed"),
-              );
-            } finally {
-              ctx.dispatch(
-                closeOverlay({
-                  overlayId: "fullScreenEditor",
-                  instanceId,
-                }),
-              );
-            }
-          },
+          callbackGroupId,
           tabs: ["write", "matrx_split", "markdown", "preview"],
           initialTab: "write",
           title: "Summary content",
