@@ -12,7 +12,7 @@ import { DiffViewer, type DiffEngine } from "@/components/diff/DiffViewer";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { Button } from "@/components/ui/button";
 
-type View = "split" | "inline";
+type View = "split" | "inline" | "highlight";
 
 interface Scenario {
   id: string;
@@ -148,6 +148,7 @@ export default function DiffDemoPage() {
             onChange={(e) => setView(e.target.value as View)}
             className="border border-border rounded bg-background px-1 py-0.5"
           >
+            <option value="highlight">highlight</option>
             <option value="split">split</option>
             <option value="inline">inline</option>
           </select>
@@ -258,7 +259,11 @@ export default function DiffDemoPage() {
           <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
             <li>Line-level LCS diff (add / remove / modified-pair).</li>
             <li>Word & character intra-line highlighting (light engine).</li>
-            <li>Inline (unified) and split (side-by-side) for both engines.</li>
+            <li>
+              Highlight (single-pane: the new doc with changes tinted),
+              inline (unified), and split (side-by-side). Highlight is
+              light-engine only.
+            </li>
             <li>Monaco for code / large inputs via engine=&quot;auto&quot;.</li>
             <li>Renders anywhere: inline here, or “Open in window”.</li>
             <li>Whitespace-only detection; optional ignore-trailing-ws.</li>

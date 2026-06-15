@@ -5,6 +5,7 @@ import {
   Check,
   ChevronRight,
   Copy,
+  GitCompare,
   Loader2,
   Maximize2,
   Volume2,
@@ -16,7 +17,9 @@ import { cn } from "@/lib/utils";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { useWorkingDocumentDraft } from "../../hooks/useWorkingDocumentDraft";
+import { useWorkingDocChanges } from "../../hooks/useWorkingDocChanges";
 import { FocusedDocumentEditor } from "./FocusedDocumentEditor";
+import { WorkingDocDiff } from "./WorkingDocDiff";
 
 interface WorkingDocumentHeaderProps {
   sessionId: string;
@@ -53,6 +56,13 @@ export function WorkingDocumentHeader({
     workingDoc?.id,
     docContent,
   );
+
+  // "What the agent last changed" — diffs the content the user last saw against
+  // the live (agent-edited) content. The user's own edits flow through `draft`,
+  // so they are never flagged as agent changes. The affordance below appears
+  // only when there is a genuine unseen agent change.
+  const changes = useWorkingDocChanges(docContent, draft);
+  const [diffOpen, setDiffOpen] = useState(false);
 
   const copyText = draft.trim() || docContent.trim();
 
@@ -95,6 +105,19 @@ export function WorkingDocumentHeader({
             </span>
           )}
         </button>
+        {changes.hasUnseenChange && (
+          <button
+            type="button"
+            onClick={() => setDiffOpen(true)}
+            aria-label="View the agent's latest changes"
+            title="View the agent's latest changes"
+            className="relative flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-primary active:bg-accent"
+          >
+            <GitCompare className="h-4 w-4" />
+            <span className="hidden sm:inline">View changes</span>
+            <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary" />
+          </button>
+        )}
         <button
           type="button"
           onClick={handleReadAloud}
@@ -197,6 +220,19 @@ export function WorkingDocumentHeader({
           sessionId={sessionId}
           doc={workingDoc}
           onClose={() => setFocusOpen(false)}
+        />
+      )}
+
+      {diffOpen && (
+        <WorkingDocDiff
+          before={changes.before}
+          after={changes.after}
+          title={workingDoc?.title}
+          onClose={() => setDiffOpen(false)}
+          onAccept={() => {
+            changes.markSeen();
+            setDiffOpen(false);
+          }}
         />
       )}
     </div>

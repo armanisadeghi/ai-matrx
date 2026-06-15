@@ -9,12 +9,17 @@
 // modal, sheet, or any region of a page — it fills its container.
 
 import { useMemo, useState } from "react";
-import { Columns2, Rows3, WrapText, Hash } from "lucide-react";
+import { Columns2, Rows3, WrapText, Hash, Highlighter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { computeTextDiff, summarizeTextDiff } from "./engine/computeTextDiff";
 import type { DiffCell, TextDiffOptions, WordSegment } from "./engine/types";
 
-export type TextDiffView = "inline" | "split";
+// "highlight" is the reader's view: a SINGLE-PANE rendering of the *new*
+// document (the after) with only the added/changed regions tinted inline — no
+// removed lines, no +/- gutter, no monospace. "inline" is the developer's
+// unified diff (both sides stacked); "split" is side-by-side. The same one
+// computation feeds all three.
+export type TextDiffView = "inline" | "split" | "highlight";
 
 export interface TextDiffProps {
   original: string;
@@ -74,6 +79,43 @@ const ROW_TINT = {
   unchanged: "",
 } as const;
 
+/**
+ * Render one new-side line for the single-pane "highlight" view: the document
+ * as it now reads, with only the new/changed text tinted. A modified line
+ * carries word-level `segments` (we keep `added` + `unchanged`, drop the old
+ * `removed` words); a pure-added line has no segments, so the whole line is
+ * tinted. Unchanged lines render plain. Blank lines collapse to a non-breaking
+ * space so they keep their height.
+ */
+function renderHighlightLine(
+  content: string,
+  type: "added" | "unchanged",
+  segments: WordSegment[] | undefined,
+): React.ReactNode {
+  if (type === "unchanged") {
+    return content === "" ? " " : content;
+  }
+  if (!segments || segments.length === 0) {
+    return (
+      <span className="rounded-[2px] bg-green-200/60 dark:bg-green-500/30">
+        {content === "" ? " " : content}
+      </span>
+    );
+  }
+  return segments.map((seg, i) => {
+    if (seg.type === "removed") return null;
+    if (seg.type === "unchanged") return <span key={i}>{seg.value}</span>;
+    return (
+      <span
+        key={i}
+        className="rounded-[2px] bg-green-200/70 dark:bg-green-500/35"
+      >
+        {seg.value}
+      </span>
+    );
+  });
+}
+
 function LineNumber({ n, show }: { n: number | null; show: boolean }) {
   if (!show) return null;
   return (
@@ -126,6 +168,20 @@ export function TextDiff({
           <div className="flex items-center rounded-md border border-border overflow-hidden">
             <button
               type="button"
+              onClick={() => setView("highlight")}
+              className={cn(
+                "inline-flex items-center gap-1 px-2 py-1 transition-colors",
+                view === "highlight"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent",
+              )}
+              title="Read the document with changes highlighted inline"
+            >
+              <Highlighter className="w-3.5 h-3.5" />
+              Highlight
+            </button>
+            <button
+              type="button"
               onClick={() => setView("split")}
               className={cn(
                 "inline-flex items-center gap-1 px-2 py-1 transition-colors",
@@ -154,33 +210,39 @@ export function TextDiff({
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setLineNumbers((v) => !v)}
-            className={cn(
-              "inline-flex items-center justify-center w-7 h-7 rounded-md border border-border transition-colors",
-              lineNumbers
-                ? "bg-accent text-foreground"
-                : "text-muted-foreground hover:bg-accent",
-            )}
-            title="Toggle line numbers"
-          >
-            <Hash className="w-3.5 h-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setInternalWrap((v) => !v)}
-            disabled={wrapProp !== undefined}
-            className={cn(
-              "inline-flex items-center justify-center w-7 h-7 rounded-md border border-border transition-colors disabled:opacity-50",
-              wrap
-                ? "bg-accent text-foreground"
-                : "text-muted-foreground hover:bg-accent",
-            )}
-            title="Toggle word wrap"
-          >
-            <WrapText className="w-3.5 h-3.5" />
-          </button>
+          {/* Line numbers + wrap are line-grid concepts; the highlight view is
+              flowing prose, so they don't apply there. */}
+          {view !== "highlight" && (
+            <>
+              <button
+                type="button"
+                onClick={() => setLineNumbers((v) => !v)}
+                className={cn(
+                  "inline-flex items-center justify-center w-7 h-7 rounded-md border border-border transition-colors",
+                  lineNumbers
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent",
+                )}
+                title="Toggle line numbers"
+              >
+                <Hash className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setInternalWrap((v) => !v)}
+                disabled={wrapProp !== undefined}
+                className={cn(
+                  "inline-flex items-center justify-center w-7 h-7 rounded-md border border-border transition-colors disabled:opacity-50",
+                  wrap
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent",
+                )}
+                title="Toggle word wrap"
+              >
+                <WrapText className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
 
           <div className="flex-1" />
 
@@ -194,8 +256,35 @@ export function TextDiff({
         </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-auto font-mono text-xs leading-relaxed">
-        {view === "split" ? (
+      <div
+        className={cn(
+          "flex-1 min-h-0 overflow-auto",
+          view === "highlight"
+            ? "text-sm leading-relaxed"
+            : "font-mono text-xs leading-relaxed",
+        )}
+      >
+        {view === "highlight" ? (
+          <div className="px-4 py-3">
+            {result.inline
+              .filter((line) => line.type !== "removed")
+              .map((line, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "whitespace-pre-wrap break-words",
+                    line.type === "added" && !line.segments && "rounded-sm",
+                  )}
+                >
+                  {renderHighlightLine(
+                    line.content,
+                    line.type as "added" | "unchanged",
+                    line.segments,
+                  )}
+                </div>
+              ))}
+          </div>
+        ) : view === "split" ? (
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-10">
               <tr className="bg-muted/60 text-[0.7rem] text-muted-foreground">

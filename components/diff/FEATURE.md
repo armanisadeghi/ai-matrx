@@ -28,9 +28,14 @@ import { DiffViewer } from "@/components/diff/DiffViewer";
   language="typescript" // drives auto selection; omit for text/md
   originalLabel="Before"
   modifiedLabel="After"
-  defaultView="split"  // "split" | "inline"
+  defaultView="split"  // "split" | "inline" | "highlight"
 />
 ```
+
+**Views:** `split` (side-by-side), `inline` (unified, both sides stacked),
+`highlight` (single-pane: the *new* doc rendered as flowing prose with only the
+added/changed regions tinted — the reader's view, not a code diff). `highlight`
+is **light-engine only**; the Monaco path falls back to `inline` for it.
 
 `DiffViewer` is **wrapper-free on purpose**. It fills its container, holds no
 overlay/router/Redux state, and renders identically as:
@@ -80,6 +85,11 @@ components/diff/
   prompt results, tool overlays, …).
 - **History compare:** `EditHistoryDialog` now has a per-version
   *Compare with current* button that opens the diff window (Restore kept).
+- **Working-doc "what the agent last changed":**
+  `features/transcript-studio/components/scribe/WorkingDocDiff.tsx` renders this
+  core at `defaultView="highlight"` (single-pane) with the toolbar toggle to the
+  two-pane views. Shared by Scribe + War Room via `WorkingDocumentHeader`; the
+  before-snapshot comes from `useWorkingDocChanges` (last content the user saw).
 
 ---
 
@@ -158,3 +168,6 @@ placeholder · `B22` `.diff`/`.patch` file preview · `B23` agent-comparison run
 - 2026-06-11 — Replaced the consolidation backlog with the verified repo-wide
   inventory: Category A (27 existing diff sites) + Category B (30 new-adoption
   surfaces).
+- 2026-06-15 — Added the light-engine `highlight` view (single-pane: new doc
+  with changes tinted inline) to `TextDiff` + `DiffViewer`; Monaco falls back to
+  inline. First consumer: working-doc `WorkingDocDiff` (Scribe + War Room).

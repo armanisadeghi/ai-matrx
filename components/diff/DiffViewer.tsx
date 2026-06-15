@@ -18,6 +18,14 @@ import type { TextDiffOptions } from "./text/engine/types";
 
 export type DiffEngine = "auto" | "light" | "monaco";
 
+/**
+ * Views the core understands. "split" / "inline" work in both engines;
+ * "highlight" (single-pane: the new doc with changes tinted inline) is a
+ * light-engine reader view. When the heavy (Monaco) engine is selected we
+ * fall back to "inline" for it, since Monaco has no single-pane highlight.
+ */
+export type DiffView = "split" | "inline" | "highlight";
+
 export interface DiffViewerProps {
   original: string;
   modified: string;
@@ -27,8 +35,8 @@ export interface DiffViewerProps {
   language?: string;
   originalLabel?: string;
   modifiedLabel?: string;
-  view?: "split" | "inline";
-  defaultView?: "split" | "inline";
+  view?: DiffView;
+  defaultView?: DiffView;
   showToolbar?: boolean;
   showLineNumbers?: boolean;
   wrap?: boolean;
@@ -84,6 +92,8 @@ export function DiffViewer({
   const resolved = resolveEngine(engine, language, original, modified);
 
   if (resolved === "monaco") {
+    // Monaco has no single-pane highlight view; fall back to inline for it.
+    const monacoView = (view ?? defaultView) === "split" ? "split" : "inline";
     return (
       <CodeDiff
         original={original}
@@ -91,7 +101,7 @@ export function DiffViewer({
         language={language}
         originalLabel={originalLabel}
         modifiedLabel={modifiedLabel}
-        view={view ?? defaultView}
+        view={monacoView}
         readOnly={readOnly}
         wordWrap={wrap}
         showLabels={showToolbar}
