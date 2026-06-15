@@ -490,21 +490,10 @@ const NewsWindow = dynamic(
   () => import("@/features/window-panels/windows/NewsWindow"),
   { ssr: false },
 );
-// Canonical Notes window (overlay id `notesBetaWindow` kept for session
-// compatibility — see NotesBetaWindow.tsx header).
-const NotesBetaWindow = dynamic(
-  () =>
-    import("@/features/window-panels/windows/notes/NotesBetaWindow").then(
-      (m) => ({ default: m.NotesWindow }),
-    ),
-  { ssr: false },
-);
-// Legacy Notes window — kept until /ssr/demos/window-demo and
-// /administration/persistence-test are retired.
 const NotesWindow = dynamic(
   () =>
     import("@/features/window-panels/windows/notes/NotesWindow").then((m) => ({
-      default: m.LegacyNotesWindow,
+      default: m.NotesWindow,
     })),
   { ssr: false },
 );
@@ -578,13 +567,6 @@ const UtilitiesOverlay = dynamic(
   () =>
     import("@/features/quick-actions/components/UtilitiesOverlay").then(
       (m) => ({ default: m.UtilitiesOverlay }),
-    ),
-  { ssr: false },
-);
-const ResourcePickerWindow = dynamic(
-  () =>
-    import("@/features/window-panels/windows/ResourcePickerWindow").then(
-      (m) => ({ default: m.ResourcePickerWindow }),
     ),
   { ssr: false },
 );
@@ -877,7 +859,6 @@ export default function OverlayController() {
       selectIsOverlayOpen(s, "messagesWindow"),
     ),
     newsWindow: useAppSelector((s) => selectIsOverlayOpen(s, "newsWindow")),
-    notesWindow: useAppSelector((s) => selectIsOverlayOpen(s, "notesWindow")),
     observationalMemoryWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "observationalMemoryWindow"),
     ),
@@ -917,9 +898,6 @@ export default function OverlayController() {
     ),
     quickUtilities: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickUtilities"),
-    ),
-    resourcePickerWindow: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "resourcePickerWindow"),
     ),
     scraperWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "scraperWindow"),
@@ -1110,9 +1088,6 @@ export default function OverlayController() {
     newsWindow: useAppSelector((s) =>
       selectOverlayData(s, "newsWindow"),
     ) as Record<string, unknown> | null,
-    notesWindow: useAppSelector((s) =>
-      selectOverlayData(s, "notesWindow"),
-    ) as Record<string, unknown> | null,
     observationalMemoryWindow: useAppSelector((s) =>
       selectOverlayData(s, "observationalMemoryWindow"),
     ) as Record<string, unknown> | null,
@@ -1154,9 +1129,6 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     quickUtilities: useAppSelector((s) =>
       selectOverlayData(s, "quickUtilities"),
-    ) as Record<string, unknown> | null,
-    resourcePickerWindow: useAppSelector((s) =>
-      selectOverlayData(s, "resourcePickerWindow"),
     ) as Record<string, unknown> | null,
     scraperWindow: useAppSelector((s) =>
       selectOverlayData(s, "scraperWindow"),
@@ -1271,9 +1243,7 @@ export default function OverlayController() {
     multiFileSmartCodeEditorWindow: useAppSelector((s) =>
       selectOpenInstances(s, "multiFileSmartCodeEditorWindow"),
     ),
-    notesBetaWindow: useAppSelector((s) =>
-      selectOpenInstances(s, "notesBetaWindow"),
-    ),
+    notesWindow: useAppSelector((s) => selectOpenInstances(s, "notesWindow")),
     saveToCode: useAppSelector((s) => selectOpenInstances(s, "saveToCode")),
     saveToNotes: useAppSelector((s) => selectOpenInstances(s, "saveToNotes")),
     saveToNotesFullscreen: useAppSelector((s) =>
@@ -2119,9 +2089,6 @@ export default function OverlayController() {
                 ? data.triggerLabel
                 : undefined
             }
-            onOpen={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
           />
         );
       })()}
@@ -2633,9 +2600,6 @@ export default function OverlayController() {
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "emailDialogWindow" }))
             }
-            onSubmit={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
             title={typeof data?.title === "string" ? data.title : undefined}
             description={
               typeof data?.description === "string"
@@ -2878,6 +2842,11 @@ export default function OverlayController() {
                 ? data.conversationId
                 : undefined
             }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : undefined
+            }
             title={typeof data?.title === "string" ? data.title : undefined}
             description={
               typeof data?.description === "string"
@@ -2990,14 +2959,6 @@ export default function OverlayController() {
                 ? (data.alts as string[])
                 : undefined
             }
-            activeIndex={
-              typeof data?.activeIndex === "number"
-                ? data.activeIndex
-                : undefined
-            }
-            onIndexChange={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
             title={typeof data?.title === "string" ? data.title : undefined}
           />
         );
@@ -3103,9 +3064,6 @@ export default function OverlayController() {
                 ? data.showConfigSelector
                 : undefined
             }
-            onOpen={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
           />
         );
       })()}
@@ -3315,16 +3273,16 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* notesBetaWindow — multi-instance */}
-      {instancesById.notesBetaWindow.map((inst) => {
+      {/* notesWindow — multi-instance */}
+      {instancesById.notesWindow.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
         return (
-          <NotesBetaWindow
+          <NotesWindow
             key={inst.instanceId}
             onClose={() =>
               dispatch(
                 closeOverlay({
-                  overlayId: "notesBetaWindow",
+                  overlayId: "notesWindow",
                   instanceId: inst.instanceId,
                 }),
               )
@@ -3338,36 +3296,6 @@ export default function OverlayController() {
           />
         );
       })}
-
-      {/* notesWindow */}
-      {(() => {
-        const isOpen = isOpenById.notesWindow;
-        const data = dataById.notesWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
-        if (!isOpen) return null;
-        return (
-          <NotesWindow
-            title={typeof data?.title === "string" ? data.title : undefined}
-            onClose={() => dispatch(closeOverlay({ overlayId: "notesWindow" }))}
-            initialTabs={
-              Array.isArray(data?.initialTabs) &&
-              data.initialTabs.every((v) => typeof v === "string")
-                ? (data.initialTabs as string[])
-                : undefined
-            }
-            initialActiveTab={
-              typeof data?.initialActiveTab === "string"
-                ? data.initialActiveTab
-                : null
-            }
-            singleNoteId={
-              typeof data?.singleNoteId === "string" ? data.singleNoteId : null
-            }
-          />
-        );
-      })()}
 
       {/* observationalMemoryWindow */}
       {(() => {
@@ -3477,7 +3405,8 @@ export default function OverlayController() {
             title="Quick Chat"
             description="Chat with the Matrx assistant from anywhere."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickChat" }))}
-            widthClassName="sm:max-w-[520px]"
+            storageKey="quick-chat"
+            defaultWidth={520}
           >
             <QuickChatSheet
               className={
@@ -3530,7 +3459,8 @@ export default function OverlayController() {
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "quickChatWindow" }))
             }
-            widthClassName="sm:max-w-[520px]"
+            storageKey="quick-chat"
+            defaultWidth={520}
           >
             <QuickChatSheet
               className={
@@ -3554,7 +3484,9 @@ export default function OverlayController() {
             title="Quick Data"
             description="Spin up and edit data tables on the fly."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickData" }))}
-            widthClassName="sm:max-w-[680px]"
+            storageKey="quick-data"
+            defaultWidth={680}
+            maxWidth={1100}
           >
             <QuickDataSheet
               className={
@@ -3652,7 +3584,8 @@ export default function OverlayController() {
             title="Quick Note"
             description="Capture a note from anywhere."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickNotes" }))}
-            widthClassName="sm:max-w-[560px]"
+            storageKey="quick-note"
+            defaultWidth={560}
           >
             <QuickNotesSheet
               className={
@@ -3675,7 +3608,8 @@ export default function OverlayController() {
             title="Quick Task"
             description="Capture and track tasks from anywhere."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickTasks" }))}
-            widthClassName="sm:max-w-[560px]"
+            storageKey="quick-task"
+            defaultWidth={560}
           >
             <QuickTasksSheet
               onClose={() =>
@@ -3742,45 +3676,6 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* TODO: review prop wiring for resourcePickerWindow */}
-      {/* resourcePickerWindow */}
-      {(() => {
-        const isOpen = isOpenById.resourcePickerWindow;
-        const data = dataById.resourcePickerWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
-        if (!isOpen) return null;
-        return (
-          <ResourcePickerWindow
-            isOpen
-            onClose={() =>
-              dispatch(closeOverlay({ overlayId: "resourcePickerWindow" }))
-            }
-            onResourceSelected={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
-            attachmentCapabilities={
-              data?.attachmentCapabilities as never
-            } /* TODO: review — anonymous inline shape */
-            onSettingsClick={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
-            onDebugClick={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
-            showDebugActive={
-              typeof data?.showDebugActive === "boolean"
-                ? data.showDebugActive
-                : undefined
-            }
-            width={typeof data?.width === "number" ? data.width : undefined}
-            height={typeof data?.height === "number" ? data.height : undefined}
-            position={data?.position as WindowPosition | undefined}
-          />
-        );
-      })()}
-
       {/* TODO: review prop wiring for saveToCode */}
       {/* saveToCode — multi-instance */}
       {instancesById.saveToCode.map((inst) => {
@@ -3797,10 +3692,6 @@ export default function OverlayController() {
                 }),
               )
             }
-            open={typeof data?.open === "boolean" ? data.open : undefined}
-            onOpenChange={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
             initialContent={
               typeof data?.initialContent === "string"
                 ? data.initialContent
@@ -3821,9 +3712,6 @@ export default function OverlayController() {
                 ? data.defaultFolderId
                 : null
             }
-            onSaved={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
           />
         );
       })}
@@ -3858,9 +3746,6 @@ export default function OverlayController() {
             initialEditorMode={
               data?.initialEditorMode as EditorMode | undefined
             }
-            onSaved={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
           />
         );
       })}
@@ -3895,9 +3780,6 @@ export default function OverlayController() {
             initialEditorMode={
               data?.initialEditorMode as EditorMode | undefined
             }
-            onSaved={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
           />
         );
       })}
@@ -4143,9 +4025,6 @@ export default function OverlayController() {
                 : undefined
             }
             taskId={typeof data?.taskId === "string" ? data.taskId : undefined}
-            onOpen={
-              undefined /* fn — pass via callbackGroupId */
-            } /* TODO: review */
             showTrigger={
               typeof data?.showTrigger === "boolean"
                 ? data.showTrigger
