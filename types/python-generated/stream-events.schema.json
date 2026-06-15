@@ -3308,6 +3308,11 @@
             "title": "Url",
             "type": "string"
           },
+          "ref": {
+            "default": "",
+            "title": "Ref",
+            "type": "string"
+          },
           "reason": {
             "default": "",
             "title": "Reason",

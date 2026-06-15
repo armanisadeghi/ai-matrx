@@ -227,9 +227,7 @@ export function AnalysisCard({
       {expanded && (
         <div className="border-t border-border px-4 py-3 space-y-3">
           <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {analysis.result ?? ""}
-            </ReactMarkdown>
+            <MarkdownStream content={analysis.result ?? ""} />
           </div>
 
           {tokenUsage && (

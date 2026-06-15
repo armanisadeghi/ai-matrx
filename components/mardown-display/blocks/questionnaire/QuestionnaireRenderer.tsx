@@ -22,17 +22,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Bug } from "lucide-react";
 import { THEMES } from "../../themes";
-import { useAppDispatch } from "@/lib/redux/hooks";
 import { useQuestionnaireContext } from "./QuestionnaireContext";
-// activeChatActions.setContextEntry used to push questionnaire state into
-// legacy activeChat.messageContext. cx-chat is deprecated; rewire into
-// instanceContext (keyed by conversationId) when chat is rebuilt.
-const activeChatActions = {
-  setContextEntry: (payload: { key: string; value: unknown }) => ({
-    type: "activeChat/legacy-setContextEntry-noop" as const,
-    payload,
-  }),
-};
+import { useMessageBlockPersistence } from "@/features/agents/hooks/message-crud/useMessageBlockPersistence";
 // Helper function to check if an option is an "Other" option
 const isOtherOption = (option) => {
   if (!option || typeof option !== "object") return false;
@@ -786,15 +777,16 @@ const QuestionnaireRenderer = ({
   data,
   theme = "default",
   questionnaireId = null,
+  conversationId,
+  messageId,
+  blockIndex,
 }) => {
-  const dispatch = useAppDispatch();
-
   // Generate a unique ID for this questionnaire if not provided
   const uniqueId =
     questionnaireId ||
     `questionnaire-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  const { getFormState, updateFormData, initializeQuestions } =
+  const { getFormState, setFormState, updateFormData, initializeQuestions } =
     useQuestionnaireContext();
   const [questionData, setQuestionData] = useState({});
   const [debugMode, setDebugMode] = useState(false);
@@ -802,31 +794,44 @@ const QuestionnaireRenderer = ({
 
   const formState = getFormState(uniqueId);
 
-  const lastDispatchRef = useRef<string>("");
+  // Persist the user's answers into the owning cx_message so the agent SEES
+  // them on the next turn — the same channel quiz/flashcards use
+  // (useMessageBlockPersistence → _matrxState). No-ops gracefully outside chat
+  // (conversationId/messageId undefined), so demos/standalone still render.
+  const { blockState, patchBlock } = useMessageBlockPersistence({
+    conversationId,
+    messageId,
+    blockType: "questionnaire",
+    indexHint: blockIndex,
+  });
 
+  const lastPersistedRef = useRef<string>("");
+
+  // Rehydrate saved answers ONCE, when the persisted block first loads, so a
+  // reopened/forked conversation shows what the user already filled in.
+  const rehydratedRef = useRef(false);
   useEffect(() => {
-    if (!formState || Object.keys(formState).length === 0) {
-      return;
+    if (rehydratedRef.current) return;
+    const saved = (blockState?._matrxState as { formState?: Record<string, unknown> } | undefined)
+      ?.formState;
+    if (saved && Object.keys(saved).length > 0) {
+      rehydratedRef.current = true;
+      lastPersistedRef.current = JSON.stringify(saved); // don't echo it straight back
+      setFormState(uniqueId, { ...saved });
     }
+  }, [blockState, setFormState, uniqueId]);
 
+  // Persist answers (debounced) into the message content on every change.
+  useEffect(() => {
+    if (!formState || Object.keys(formState).length === 0) return;
     const stateString = JSON.stringify(formState);
-
-    if (stateString === lastDispatchRef.current) {
-      return;
-    }
-
+    if (stateString === lastPersistedRef.current) return;
     const timeoutId = setTimeout(() => {
-      dispatch(
-        activeChatActions.setContextEntry({
-          key: `questionnaire_${uniqueId}`,
-          value: formState,
-        }),
-      );
-      lastDispatchRef.current = stateString;
-    }, 500);
-
+      lastPersistedRef.current = stateString;
+      void patchBlock({ _matrxState: { formState } });
+    }, 600);
     return () => clearTimeout(timeoutId);
-  }, [formState, dispatch, uniqueId]);
+  }, [formState, patchBlock]);
 
   useEffect(() => {
     if (data?.sections) {

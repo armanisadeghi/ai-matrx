@@ -708,6 +708,7 @@ export interface SearchResultsData {
 
 export interface StructuredInputFailure {
   url?: string;
+  ref?: string;
   reason?: string;
 }
 
@@ -2326,17 +2327,22 @@ export interface PreFetchedUrl {
 export interface WebpageInputPart {
   metadata?: Record<string, unknown>;
   type?: "input_webpage";
-  urls?: string | PreFetchedUrl[];
+  urls?: (string | PreFetchedUrl)[];
   convert_to_text?: boolean;
   optional_context?: boolean;
   keep_fresh?: boolean;
   editable?: boolean;
 }
 
+export interface ResourceRefInput {
+  id?: string | null;
+  mode?: "reference" | "snapshot";
+}
+
 export interface NotesInputPart {
   metadata?: Record<string, unknown>;
   type?: "input_notes";
-  note_ids?: string[];
+  note_ids?: (string | ResourceRefInput)[];
   template?: string;
   convert_to_text?: boolean;
   optional_context?: boolean;
@@ -2347,7 +2353,7 @@ export interface NotesInputPart {
 export interface TaskInputPart {
   metadata?: Record<string, unknown>;
   type?: "input_task";
-  task_ids?: string[];
+  task_ids?: (string | ResourceRefInput)[];
   template?: string;
   convert_to_text?: boolean;
   optional_context?: boolean;

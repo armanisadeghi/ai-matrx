@@ -25,6 +25,7 @@ import { useResearchDocument } from "../../hooks/useResearchState";
 import { useResearchStream } from "../../hooks/useResearchStream";
 import { VersionHistory } from "./VersionHistory";
 import { VersionDiff } from "./VersionDiff";
+import { DocumentSkeleton } from "../shared/Skeletons";
 import type { ResearchDocument } from "../../types";
 import { tokenUsageFromJson } from "../../types";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -177,17 +178,22 @@ export default function DocumentViewer() {
     );
   }
 
-  // Initial fetch in flight, or report-ready and about to auto-generate:
-  // show a calm loading state instead of flashing the empty/manual view.
-  if (!document && (docLoading || reportReady)) {
+  // Report-ready and about to auto-generate: show a calm "assembling" state
+  // instead of flashing the manual "Generate" button.
+  if (!document && !docLoading && reportReady) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[320px] gap-3 p-6 text-center">
         <Loader2 className="h-6 w-6 text-primary/50 animate-spin" />
         <p className="text-xs font-medium text-foreground/70">
-          {reportReady ? "Assembling your research document…" : "Loading…"}
+          Assembling your research document…
         </p>
       </div>
     );
+  }
+
+  // Initial fetch still in flight — use the shared skeleton, never bare text.
+  if (!document && docLoading) {
+    return <DocumentSkeleton />;
   }
 
   if (!document) {

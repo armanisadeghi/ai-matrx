@@ -720,6 +720,9 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
             key={index}
             data={block.serverData as any}
             questionnaireId={`questionnaire-${messageId}-${index}`}
+            conversationId={conversationId}
+            messageId={messageId}
+            blockIndex={index}
           />
         );
       }
@@ -743,6 +746,9 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
             <BlockComponents.QuestionnaireRenderer
               data={parsedContent}
               questionnaireId={`questionnaire-${messageId}-${index}`}
+              conversationId={conversationId}
+              messageId={messageId}
+              blockIndex={index}
             />
           ),
         };

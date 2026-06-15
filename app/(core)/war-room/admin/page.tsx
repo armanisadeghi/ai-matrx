@@ -118,14 +118,14 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "MasterAgentPanel + useMasterAgent (master agent — all rooms)",
       filePath: "features/war-room/components/master/MasterAgentPanel.tsx",
       description:
-        "The /war-room/all 'Master Agent' button opens this lazy (next/dynamic ssr:false) panel inside an inline, NON-MODAL, draggable WindowPanel (docked bottom-right) so the rooms list stays interactive. It REUSES the canonical AgentConversationColumn (composer + streaming) unchanged on surfaceKey 'war-room-master'. useMasterAgent owns ONE durable conversation per user — the id is persisted in localStorage ('war-room:master-conversation:<userId>'); on mount it reuses the in-memory instance, else recreates it via createManualInstance({ conversationId }) + loadConversation, else mints + persists a fresh one (reusing AUDIO_ASSISTANT_AGENT_ID for v1 — a dedicated master agent/prompt is future polish). It pushes READ-ONLY cross-room context (buildMasterAgentContext) with the same no-empty-push guard as useStudioAssistant, re-pushing when the room set changes. SEE-ALL only; messaging tools + watch/notify are a separate next build.",
+        "The /war-room/all 'Master Agent' button opens this lazy (next/dynamic ssr:false) panel inside an inline, NON-MODAL, draggable WindowPanel (docked bottom-right) so the rooms list stays interactive. It REUSES the canonical AgentConversationColumn (composer + streaming) unchanged on surfaceKey 'war-room-master'. useMasterAgent owns ONE durable conversation per user — the id is persisted in localStorage ('war-room:master-conversation:<userId>'); on mount it reuses the in-memory instance, else recreates it via createManualInstance({ conversationId }) + loadConversation, else mints + persists a fresh one (reusing AUDIO_ASSISTANT_AGENT_ID for v1 — a dedicated master agent/prompt is future polish). It pushes READ-ONLY cross-room context (buildMasterAgentContext) with the same no-empty-push guard as useStudioAssistant, re-pushing when the room set changes. useMasterAgent also ARMS the master tools on this conversation (setClientTools(WAR_ROOM_MASTER_TOOL_NAMES), cleared on unmount) so the master can read/message threads + create/rename rooms — see the war-room-master-tools entry.",
       tier: "candidate",
     },
     {
       name: "buildMasterAgentContext (master roster service)",
       filePath: "features/war-room/service/masterAgentContext.ts",
       description:
-        "Async, READ-ONLY cross-room context builder for the master agent. Returns master_role (framing) + war_room_overview (a compact ROSTER — every room → its threads with { threadTitle, conversationId|null, status?, taskTitle?, noteSnippet?, hasAudio, fileCount }), NOT full transcripts. Fetches its own data (Redux only holds the active room): the war-room service listSessions/listTiles/list*ForTiles + targeted reads of ctx_tasks (titles), notes (snippets), and studio_sessions.assistant_conversation_id (each thread agent's conversation — queried DIRECTLY because studioService excludes source='war_room'). Owner-scoped via RLS; values carry no mutable/source ⇒ ctx_get only. The thread conversationId is the seam the messaging-tools build plugs into.",
+        "Async, READ-ONLY cross-room context builder for the master agent. Returns master_role (framing) + war_room_overview (a compact ROSTER — every room → its threads with { threadTitle, conversationId|null, status?, taskTitle?, noteSnippet?, hasAudio, fileCount }), NOT full transcripts. Fetches its own data (Redux only holds the active room): the war-room service listSessions/listTiles/list*ForTiles + targeted reads of ctx_tasks (titles), notes (snippets), and studio_sessions.assistant_conversation_id (each thread agent's conversation — queried DIRECTLY because studioService excludes source='war_room'). Owner-scoped via RLS; values carry no mutable/source ⇒ ctx_get only. The thread conversationId is the seam the master tools resolve (the same chain war-room-master-tools/service/threadResolver.ts rebuilds at dispatch time).",
       tier: "candidate",
     },
     {
@@ -133,6 +133,20 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/agents/war-room-tools/tools/names.ts",
       description:
         "Client-delegated tool family that lets the tile's Agent+ assistant EDIT the tile's entities (it already SEES them via context). Mirrors features/agents/ui-first-tools: 5 write tools (war_room_update_task / war_room_add_subtask / war_room_toggle_subtask / war_room_update_note / war_room_update_tile), each a Zod schema + a handler calling the REAL writers (tasks thunks, notesApi, war-room renameTile). Offered as INLINE tool specs (no server registry change). Armed + tile-bound per conversation by TileAgentPanel; routed via an isWarRoomToolName branch in surface-delegated-tool-call.thunk. Every write is HITL-gated by a confirm AskCard (reuses the ui-first pendingAsks surface).",
+      tier: "internal",
+    },
+    {
+      name: "War Room MASTER agent tools (war-room-master-tools)",
+      filePath: "features/agents/war-room-master-tools/tools/names.ts",
+      description:
+        "Cross-room tool family for the /war-room/all master agent (cloned from war-room-tools): war_room_read_thread, war_room_message_thread (mode 'fresh' = new conversation seeded with the thread's buildTileAgentContextEntries; 'fork' = forkConversationServer the thread's chain), war_room_create_room, war_room_rename_room. NOTIFY-AND-WATCH, NOT HITL (deliberately the opposite of war-room-tools): each runs immediately; messaging opens a live-watch window + toast. service/threadResolver.ts resolves a thread_id (= tile id) → the thread agent's conversationId (active audio session → studio_sessions.assistant_conversation_id; backed by the war-room service getTile reader). Offered as INLINE specs (build-tool-injection isWarRoomMasterToolName branch); routed via an isWarRoomMasterToolName branch in surface-delegated-tool-call.thunk → dispatchWarRoomMasterTool (runs immediately, validates args, resolves target, refuses unknown). Armed on the master conversation by useMasterAgent. NO DB / NO server change.",
+      tier: "internal",
+    },
+    {
+      name: "MasterWatchLayer (live-watch windows)",
+      filePath: "features/war-room/components/master/MasterWatchLayer.tsx",
+      description:
+        "Renders one inline, non-modal, draggable WindowPanel per conversation the master is messaging (driven by the warRoomWatch slice's openConversationIds), body = AgentConversationColumn (hideInput) so the user watches the thread agent stream in real time and can step in. Mounted (lazy, ssr:false) in WarRoomAllView, always present so a tool/toast openWatch can pop a window even when the Master panel is closed; guard-hydrates cold conversations via loadConversation (skips a convo already in Redux/streaming so it never clobbers a live stream). Closing a window dispatches closeWatch. Mirrors SubtaskWindow's inline-WindowPanel pattern.",
       tier: "internal",
     },
     {
@@ -164,6 +178,12 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/war-room/redux/slice.ts",
       description:
         "Sessions + tiles registries, audio links, note links, attachment links (files + documents), and per-tile UI (active tab, pin, hide). Linkage only — substrate data lives in tasks/notes/transcriptStudio/files/data-tables.",
+    },
+    {
+      name: "warRoomWatch",
+      filePath: "features/war-room/redux/watchSlice.ts",
+      description:
+        "Ephemeral UI for the master agent's live-watch layer: openConversationIds + openWatch/closeWatch/closeAllWatches. Driven by the war-room-master-tools messaging tool + the toast 'Watch' action; consumed by MasterWatchLayer. Nothing persisted.",
     },
   ],
 
