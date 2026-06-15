@@ -24,6 +24,7 @@ import { RailTile } from "./RailTile";
 import { StageTile } from "./StageTile";
 import { ParkedThreadChip } from "./ParkedThreadChip";
 import { NewTile } from "../tile/NewTile";
+import { QuickAddThread } from "../tile/QuickAddThread";
 import { useRoomView, resolveStagedId } from "./roomViewContext";
 
 export function StageView({ sessionId }: { sessionId: string }) {
@@ -59,11 +60,14 @@ export function StageView({ sessionId }: { sessionId: string }) {
             />
           ))}
 
-          <NewTile
+          {/* Quick-add: spin up a new thread without leaving the staged one.
+              Create (default) keeps you here on the staged thread and re-arms
+              for the next add; Create & open stages the fresh thread. */}
+          <QuickAddThread
             sessionId={sessionId}
             nextPosition={allIds.length}
             variant="rail"
-            onCreated={(tileId) => stageTile(tileId)}
+            onOpen={(tileId) => stageTile(tileId)}
           />
 
           {hidden.length > 0 ? (
