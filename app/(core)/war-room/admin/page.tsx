@@ -2,8 +2,8 @@
 //
 // Per-feature admin map for the War Room. Renders via the platform primitive
 // <FeatureAdminPage> (super-admin gated, utilitarian). War Room sprawls across
-// the room shell, the gallery engine, the five tile tabs, the context pickers,
-// and three substrate features — this is its connective index. When you add a
+// the room shell, the gallery engine, the six tile tabs, the context pickers,
+// and several substrate features — this is its connective index. When you add a
 // War Room route / component / slice / overlay, update this file.
 
 import FeatureAdminPage from "@/features/admin/components/FeatureAdminPage";
@@ -13,7 +13,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
   name: "War Room",
   slug: "war-room",
   description:
-    "Session-based multitasking command center. A user opens saved War Rooms, each a cockpit of threads: a Stage mode (a live watchlist rail + one driven thread) and a Grid mode (the self-arranging bento gallery, all at once), toggled in the header. Every thread bundles a Task + Notes + Audio transcript + Files/Documents behind five tabs, is context-aware (org/scope inherited from the session, overridable per tile), and can be pinned, parked (hidden), or projected. Header controls: Stage⇄Grid, the instrument projector (set every thread to one view), a Comfortable/Compact density dial, and a live active/parked/pinned meter. A thin consumer of tasks, notes, transcription, files/documents, and scopes.",
+    "Session-based multitasking command center. A user opens saved War Rooms, each a cockpit of threads: a Stage mode (a live watchlist rail + one driven thread) and a Grid mode (the self-arranging bento gallery, all at once), toggled in the header. Every thread bundles a Task + Notes + Audio transcript + Files/Documents + an Agent (the real Scribe Agent+ panel) behind six tabs, is context-aware (org/scope inherited from the session, overridable per tile), and can be pinned, parked (hidden), or projected. Header controls: Stage⇄Grid, the instrument projector (set every thread to one view), a Comfortable/Compact density dial, and a live active/parked/pinned meter. A thin consumer of tasks, notes, transcription, files/documents, scribe/agents, and scopes.",
   docs: [{ label: "War Room FEATURE.md", href: "/features/war-room/FEATURE.md" }],
   routeScanPath: "app/(core)/war-room",
 
@@ -90,7 +90,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "Tile presentation primitives",
       filePath: "features/war-room/components/tile/TileTabBar.tsx",
       description:
-        "TileTabBar (segmented, kind-colored switcher), TileTabContent (4 bodies + combined view), TileMetricChips (live readings), PulseGlyph (is-alive glyph), TileOptionsMenu (pin/stage/expand/hide/remove), tileKind (semantic accent map).",
+        "TileTabBar (segmented, kind-colored switcher), TileTabContent (5 bodies + combined view), TileMetricChips (live readings), PulseGlyph (is-alive glyph), TileOptionsMenu (pin/stage/expand/hide/remove), tileKind (semantic accent map).",
       tier: "internal",
     },
     {
@@ -101,10 +101,17 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       tier: "candidate",
     },
     {
-      name: "Tile tabs (Task / Notes / Audio / Files)",
+      name: "Tile tabs (Task / Notes / Audio / Files / Agent)",
       filePath: "features/war-room/components/tile/TileTaskTab.tsx",
       description:
         "TileTaskTab (name/subtasks/attachments/comments), TileNotesTab (NoteEditorCore + autosave), TileAudioTab (embedded CleanupPad over transcript-studio), TileAttachmentsTab (Files: upload/pick via @/features/files + InlineMediaRef; Documents: createDocument/listAccessibleDocuments → /documents/[id]) — all backed by ctx_war_room_tile_* link tables.",
+      tier: "internal",
+    },
+    {
+      name: "TileAgentTab + TileAgentPanel (Agent)",
+      filePath: "features/war-room/components/tile/TileAgentTab.tsx",
+      description:
+        "The Agent tab: REUSES the real Scribe Agent+ panel unchanged — AssistantAgentBar (pick/switch agent) + WorkingDocumentHeader (user+agent co-edited working document) + ExperimentalAgentScreen (conversation + auto-voice/record/text-input + RecordActionSheet). TileAgentTab resolves the tile's studio session (selectActiveAudioSessionId → ensureTileAudioSession, same as Audio); TileAgentPanel is the lazy (next/dynamic ssr:false) composed body, plus a post-turn document re-fetch covering the single-active-session realtime gap. Bound to the SAME studio_sessions row the Audio tab records into, so the tile's recordings are the agent's transcript context.",
       tier: "internal",
     },
     {
@@ -157,6 +164,12 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       adminUrl: "/transcripts/admin",
       description:
         "The Audio tab creates studio_sessions (source='war_room') linked via ctx_war_room_tile_audio_sessions; expand opens the full transcription studio for the same session.",
+    },
+    {
+      name: "Scribe Agent+ / Agents",
+      adminUrl: "/agents/admin",
+      description:
+        "The Agent tab REUSES the real Scribe Agent+ components (features/transcript-studio/components/scribe/*) + hooks (useStudioAssistant / useAutoVoiceResponse / useWorkingDocumentDraft), keyed by the tile's studio_sessions id — nothing reimplemented. The assistant conversation, working-document ctx_patch loop, and the agents execution + TTS graph all come from the existing Scribe/agents stack.",
     },
     {
       name: "Files / Documents",

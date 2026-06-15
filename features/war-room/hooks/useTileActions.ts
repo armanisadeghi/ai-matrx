@@ -8,8 +8,9 @@
 // the behavior is written once and identical everywhere — no forked logic.
 //
 // Expand routing (parity with the canonical tile): notes → note window,
-// audio → transcript studio window, task/combined → /tasks/[id] (or the note
-// window when only a note exists).
+// audio / agent → transcript studio window (the agent shares the tile's studio
+// session), task/combined → /tasks/[id] (or the note window when only a note
+// exists).
 
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -58,7 +59,7 @@ export function useTileActions(
 
   const canExpand =
     (activeTab === "notes" && !!tile.note_id) ||
-    (activeTab === "audio" && !!audioSessionId) ||
+    ((activeTab === "audio" || activeTab === "agent") && !!audioSessionId) ||
     ((activeTab === "task" || activeTab === "combined") &&
       (!!tile.task_id || !!tile.note_id));
 
@@ -69,6 +70,10 @@ export function useTileActions(
         if (tile.note_id) openNoteInWindow({ noteId: tile.note_id });
         break;
       case "audio":
+      case "agent":
+        // The Agent tab shares the tile's studio session, so expanding opens the
+        // full Scribe studio for that same session (richer view of recordings,
+        // transcripts, and the working document the agent co-edits).
         if (audioSessionId) openStudio({ activeSessionId: audioSessionId });
         break;
       case "task":

@@ -14,6 +14,7 @@ import { TileTaskTab } from "./TileTaskTab";
 import { TileNotesTab } from "./TileNotesTab";
 import { TileAudioTab } from "./TileAudioTab";
 import { TileAttachmentsTab } from "./TileAttachmentsTab";
+import { TileAgentTab } from "./TileAgentTab";
 import { tileKindOf } from "@/features/war-room/components/room/tileKind";
 import { cn } from "@/lib/utils";
 import type { TileTab } from "@/features/war-room/types";
@@ -36,6 +37,11 @@ export function TileTabContent({
       return <TileAudioTab tileId={tileId} />;
     case "files":
       return <TileAttachmentsTab tileId={tileId} />;
+    case "agent":
+      // Deliberately NOT part of the combined "All" view — the agent panel
+      // (conversation + voice + co-edited working document) is too rich for a
+      // stacked section. It lives only as its own dedicated tab.
+      return <TileAgentTab tileId={tileId} />;
     case "combined":
       return (
         <div className="h-full overflow-y-auto scrollbar-thin">

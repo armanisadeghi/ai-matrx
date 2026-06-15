@@ -6,12 +6,19 @@
 // the spine of the tile accent-rail. Colors are all semantic tokens, never raw
 // hex, so dark mode and theme changes flow through automatically.
 //
-// Mapping: task → primary, notes → info, audio → warning, files → muted/
-// secondary, all → success. Used by the tile accent rail, the segmented tab
-// switcher's active pip, the combined-view section rails, and the room-header
+// Mapping: task → primary, notes → info, audio → warning, files → muted,
+// agent → secondary, all → success. Used by the tile accent rail, the segmented
+// tab switcher's active pip, the combined-view section rails, and the room-header
 // instrument projector.
 
-import { ListChecks, NotebookPen, Mic, Paperclip, Layers } from "lucide-react";
+import {
+  ListChecks,
+  NotebookPen,
+  Mic,
+  Paperclip,
+  Sparkles,
+  Layers,
+} from "lucide-react";
 import type { TileTab } from "@/features/war-room/types";
 
 export interface TileKind {
@@ -61,6 +68,16 @@ export const TILE_KINDS: Record<TileTab, TileKind> = {
     bg: "bg-muted",
     rail: "bg-muted-foreground",
   },
+  agent: {
+    id: "agent",
+    label: "Agent",
+    Icon: Sparkles,
+    // Secondary accent — used by no other thread kind here, and it matches the
+    // Scribe Agent+ send affordance, so the agent thread reads as its own thing.
+    text: "text-secondary",
+    bg: "bg-secondary/10",
+    rail: "bg-secondary",
+  },
   combined: {
     id: "combined",
     label: "All",
@@ -76,6 +93,7 @@ export const TILE_KIND_ORDER: TileTab[] = [
   "notes",
   "audio",
   "files",
+  "agent",
   "combined",
 ];
 

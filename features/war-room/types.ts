@@ -43,7 +43,13 @@ export type WarRoomTileAttachmentInsert =
 export type TileAttachmentEntityType = "user_file" | "document";
 
 // ── Tile tabs ─────────────────────────────────────────────────────────
-export type TileTab = "task" | "notes" | "audio" | "files" | "combined";
+export type TileTab =
+  | "task"
+  | "notes"
+  | "audio"
+  | "files"
+  | "agent"
+  | "combined";
 
 // ── Resolved context bundle (override ?? session default) ──────────────
 // A controlled selection the record carries — NEVER written to appContextSlice
