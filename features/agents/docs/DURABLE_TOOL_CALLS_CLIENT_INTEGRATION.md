@@ -24,8 +24,8 @@
 
 A client-delegated tool call (anything you ship in `client_tools` — widget tools, approval dialogs, form fills, uploads) now has a **durable database-backed ledger**:
 
-- The `cx_tool_call` row is flipped to `status='delegated'` and stamped with `expires_at = now() + 7d` **before** the `tool_delegated` stream event is emitted. The assistant `cx_message` row is flushed at the same boundary with the real tool_calls content — so the conversation is fully reconstructable on reload.
-- If the SSE connection dies, the server no longer flips the row to `abandoned`. The row stays in `delegated` until either the client POSTs a result or the 7-day expiry sweep fires.
+- The `cx_tool_call` row is flipped to `status='delegated'` and stamped with `expires_at = now() + DELEGATED_CALL_ABANDON_AFTER_SECONDS` (default **30 days**; per-tool override via `tools.max_client_wait_seconds`) **before** the `tool_delegated` stream event is emitted. The assistant `cx_message` row is flushed at the same boundary with the real tool_calls content — so the conversation is fully reconstructable on reload. The `expires_at` is a far-future *abandonment* backstop, NOT a user answer deadline.
+- If the SSE connection dies, the server no longer flips the row to `abandoned`. The row stays in `delegated` until the client POSTs a result or the abandonment sweep (30 days) fires — and even then a late genuine answer SUPERSEDES the swept (`timeout_sweep`) row and resumes the loop, so it is never a dead end.
 - `POST /ai/conversation/{id}/tool_results` is now **idempotent** and **DB-backed**. It works even when the original in-memory `asyncio.Future` is gone (server restart, browser closed, whatever).
 
 This means the existing `submit-tool-results.ts` no longer needs to treat 404 as a normal outcome — 404 only happens for genuinely unknown call_ids now. Retry safety is automatic: a duplicate POST for an already-resolved call returns 200 with `already_resolved: ["<call_id>"]`.

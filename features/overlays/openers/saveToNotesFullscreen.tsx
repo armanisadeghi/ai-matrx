@@ -27,8 +27,6 @@ export interface OpenQuickNoteSaveOverlayOptions {
   title?: string;
   /** TODO: tighten to `EditorMode` once that type is imported. */
   initialEditorMode?: unknown;
-  /** TODO callback — wire via callback registry in stage 3. */
-  onSaved?: (...args: unknown[]) => void;
 }
 
 export interface QuickNoteSaveOverlayHandle {
@@ -50,7 +48,6 @@ export function useOpenQuickNoteSaveOverlay() {
             defaultFolder: opts.defaultFolder,
             title: opts.title,
             initialEditorMode: opts.initialEditorMode,
-            onSaved: opts.onSaved,
           },
         }),
       );
@@ -73,6 +70,6 @@ export function QuickNoteSaveOverlayController(props: OpenQuickNoteSaveOverlayOp
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.initialContent, props.defaultFolder, props.title, props.initialEditorMode, props.onSaved]);
+  }, [open, props.initialContent, props.defaultFolder, props.title, props.initialEditorMode]);
   return null;
 }

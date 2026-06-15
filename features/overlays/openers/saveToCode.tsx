@@ -22,15 +22,10 @@ const OVERLAY_ID = "saveToCode" as const;
 export interface OpenQuickSaveCodeDialogOptions {
   /** Optional stable instance id. Omit to spawn a fresh instance. */
   instanceId?: string;
-  open?: boolean;
-  /** TODO callback — wire via callback registry in stage 3. */
-  onOpenChange?: (...args: unknown[]) => void;
   initialContent: string;
   initialLanguage?: string;
   suggestedName?: string;
   defaultFolderId?: string | null;
-  /** TODO callback — wire via callback registry in stage 3. */
-  onSaved?: (...args: unknown[]) => void;
 }
 
 export interface QuickSaveCodeDialogHandle {
@@ -48,13 +43,10 @@ export function useOpenQuickSaveCodeDialog() {
           overlayId: OVERLAY_ID,
           instanceId,
           data: {
-            open: opts.open,
-            onOpenChange: opts.onOpenChange,
             initialContent: opts.initialContent,
             initialLanguage: opts.initialLanguage,
             suggestedName: opts.suggestedName,
             defaultFolderId: opts.defaultFolderId,
-            onSaved: opts.onSaved,
           },
         }),
       );
@@ -77,6 +69,6 @@ export function QuickSaveCodeDialogController(props: OpenQuickSaveCodeDialogOpti
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.open, props.onOpenChange, props.initialContent, props.initialLanguage, props.suggestedName, props.defaultFolderId, props.onSaved]);
+  }, [open, props.initialContent, props.initialLanguage, props.suggestedName, props.defaultFolderId]);
   return null;
 }

@@ -19,7 +19,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   ChevronDown,
@@ -50,7 +50,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/utils/cn";
-import { getEntry, moduleKey } from "@/features/organizations/resource-catalogue";
+import {
+  getEntry,
+  moduleKey,
+} from "@/features/organizations/resource-catalogue";
 import { getOrgModuleSetting } from "@/features/organizations/orgModuleSettings";
 
 type CommonProps = {
@@ -133,7 +136,15 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
     autoFetch: !isControlled,
   });
 
-  const selected = isControlled ? props.value! : uncontrolledHook.scopeIds;
+  // Optimistic overlay: while a write is in flight the UI reflects the user's
+  // latest intent immediately (`optimistic`), not the persisted Redux value —
+  // otherwise the control snaps back to its old value for the entire RPC
+  // round-trip and looks like nothing saved. `null` = trust Redux.
+  const [optimistic, setOptimistic] = useState<string[] | null>(null);
+
+  const selected = isControlled
+    ? props.value!
+    : (optimistic ?? uncontrolledHook.scopeIds);
   const selectedSet = useMemo(() => new Set(selected), [selected]);
 
   // ─── Per-org is_scopeable gate ─────────────────────────────────────────
@@ -148,7 +159,10 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
   // so the effect only ever calls setState from the subscription callback —
   // never synchronously (react-hooks/set-state-in-effect).
   const gateKey =
-    !isControlled && orgId && uncontrolledEntityType && getEntry(uncontrolledEntityType)
+    !isControlled &&
+    orgId &&
+    uncontrolledEntityType &&
+    getEntry(uncontrolledEntityType)
       ? `${orgId}:${uncontrolledEntityType}`
       : null;
   const [scopeableByKey, setScopeableByKey] = useState<Record<string, boolean>>(
@@ -175,32 +189,55 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
   const scopeableAllowed = gateKey ? (scopeableByKey[gateKey] ?? true) : true;
 
   // ─── Toggle handler with the cardinality rule ──────────────────────────
-  // In-flight guard: the write is an atomic replace of the FULL selection,
-  // so a second click computed from a stale baseline would silently undo
-  // the first. Clicks while saving are dropped (not queued).
-  const [saving, setSaving] = useState(false);
+  // The write is an atomic replace of the FULL selection, so two concurrent
+  // writes computed from stale baselines would clobber each other. The old
+  // fix DROPPED every click made while a write was in flight — which silently
+  // lost the user's later selections (the #1 "it doesn't save" complaint when
+  // tagging several types in quick succession). Instead we now SERIALIZE
+  // writes and coalesce the latest intent: clicks while saving are queued
+  // (never dropped), and each write persists the most recent full selection,
+  // so there is no stale-baseline clobber. The UI updates optimistically.
+  const writingRef = useRef(false);
+  const queuedRef = useRef<string[] | null>(null);
+
+  const runWrite = async (initial: string[]) => {
+    const uProps = props as UncontrolledProps;
+    writingRef.current = true;
+    let next = initial;
+    for (;;) {
+      const res = await uncontrolledHook.setScopes(next);
+      if (!res.ok) {
+        // Drop the queue and revert to persisted truth — loudly.
+        queuedRef.current = null;
+        writingRef.current = false;
+        setOptimistic(null);
+        toast.error(res.error || "Could not update scopes");
+        return;
+      }
+      if (uProps.onAfterSave) uProps.onAfterSave(next);
+      if (queuedRef.current !== null) {
+        next = queuedRef.current;
+        queuedRef.current = null;
+        continue; // a newer selection arrived mid-write — persist it too
+      }
+      break;
+    }
+    writingRef.current = false;
+    setOptimistic(null); // Redux cache is now authoritative and matches
+  };
+
   const applyNext = (next: string[]) => {
     if (isControlled) {
       (props as ControlledProps).onChange(next);
       return;
     }
     if (!scopeableAllowed) return; // gated off for this kind in this org
-    if (saving) return;
-    setSaving(true);
-    void uncontrolledHook
-      .setScopes(next)
-      .then((res) => {
-        const uProps = props as UncontrolledProps;
-        if (res.ok) {
-          if (uProps.onAfterSave) uProps.onAfterSave(next);
-        } else {
-          // The Redux cache was not updated on failure, so the chips revert
-          // to the persisted state on their own — but the user must hear
-          // about it, loudly.
-          toast.error(res.error || "Could not update scopes");
-        }
-      })
-      .finally(() => setSaving(false));
+    setOptimistic(next); // reflect the user's choice immediately
+    if (writingRef.current) {
+      queuedRef.current = next; // coalesce — never drop the latest intent
+      return;
+    }
+    void runWrite(next);
   };
 
   const handleToggle = (scopeId: string, scopeTypeId: string) => {
@@ -225,7 +262,9 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
   // type is selected with the chosen one ("none" clears the type).
   const setTypeScope = (scopeTypeId: string, scopeId: string) => {
     const typeIds = new Set(
-      scopeTypesAll.find((t) => t.id === scopeTypeId)?.scopes.map((s) => s.id) ?? [],
+      scopeTypesAll
+        .find((t) => t.id === scopeTypeId)
+        ?.scopes.map((s) => s.id) ?? [],
     );
     const withoutType = selected.filter((sid) => !typeIds.has(sid));
     applyNext(scopeId === "none" ? withoutType : [...withoutType, scopeId]);
@@ -266,11 +305,13 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
 
   if (!isControlled && !scopeableAllowed) {
     const label =
-      (uncontrolledEntityType && getEntry(uncontrolledEntityType)?.labelPlural) ??
+      (uncontrolledEntityType &&
+        getEntry(uncontrolledEntityType)?.labelPlural) ??
       "items of this kind";
     return (
       <div className={cn("text-xs text-muted-foreground px-3 py-2", className)}>
-        Scope tagging is turned off for {label.toLowerCase()} in this organization.
+        Scope tagging is turned off for {label.toLowerCase()} in this
+        organization.
       </div>
     );
   }
@@ -301,7 +342,11 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
             return (
               <div key={type.id} className="space-y-1.5">
                 <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                  <DynamicIcon name={type.icon} color={type.color} className="h-3.5 w-3.5" />
+                  <DynamicIcon
+                    name={type.icon}
+                    color={type.color}
+                    className="h-3.5 w-3.5"
+                  />
                   {type.label_singular}
                 </Label>
                 <Select
@@ -309,7 +354,9 @@ export function EntityScopeTagger(props: EntityScopeTaggerProps) {
                   onValueChange={(v) => setTypeScope(type.id, v)}
                 >
                   <SelectTrigger className="h-9">
-                    <SelectValue placeholder={`Select ${type.label_singular.toLowerCase()}…`} />
+                    <SelectValue
+                      placeholder={`Select ${type.label_singular.toLowerCase()}…`}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>

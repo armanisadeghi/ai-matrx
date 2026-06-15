@@ -1,10 +1,11 @@
 // features/notes/actions/QuickNotesSheet.tsx
 "use client";
 
-import React, { useCallback, useMemo, useEffect, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { NoteEditor } from "../components/NoteEditor";
 import { useNotesRedux } from "../hooks/useNotesRedux";
 import { useAllFolders } from "../utils/folderUtils";
+import { PHANTOM_NOTE_ID, createPhantomNote } from "../utils/phantomNote";
 import type { Note } from "../types";
 import {
   Select,
@@ -46,28 +47,21 @@ export function QuickNotesSheet({ onClose, className }: QuickNotesSheetProps) {
     deleteNote,
     copyNote,
     updateNote,
-    refreshNotes,
     findOrCreateEmptyNote,
   } = useNotesRedux();
   const toast = useToastManager("notes");
   const [shareNoteId, setShareNoteId] = useState<string | null>(null);
 
-  // Refresh when sheet opens and ensure we have a new note ready
-  useEffect(() => {
-    const initialize = async () => {
-      await refreshNotes();
-      // After refresh, find or create an empty note for quick capture
-      // This ensures we always start with a new note, reusing existing empty ones
-      try {
-        await findOrCreateEmptyNote("Draft");
-      } catch (error) {
-        console.error("Error initializing new note:", error);
-      }
-    };
-
-    initialize();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once when component mounts
+  // Drop the user straight into an editable draft. "Quick" means capture, not
+  // a "select a note" prompt. The phantom is a purely client-side note shown
+  // when nothing real is active — it is NEVER persisted until the first edit
+  // materialises it (see `handleUpdateNote`). Switching to another note before
+  // typing therefore saves nothing. Same pattern as the full /notes layout.
+  const [phantomNote] = useState<Note>(() => createPhantomNote("Draft"));
+  const materialisingRef = useRef(false);
+  // During the list load, pass null so the editor shows its spinner rather than
+  // flashing the phantom; otherwise the phantom is the editable fallback.
+  const editorNote = activeNote ?? (isLoading ? null : phantomNote);
 
   // Get all folders - optimized to only recalculate when folder names change
   const allFolders = useAllFolders(notes);
@@ -136,11 +130,34 @@ export function QuickNotesSheet({ onClose, className }: QuickNotesSheetProps) {
   }, [activeNote]);
 
   const handleUpdateNote = useCallback(
-    (noteId: string, updates: Partial<Note>) => {
-      // Context handles the update
+    async (noteId: string, updates: Partial<Note>) => {
+      // First edit of the phantom → materialise it into a real DB note, then
+      // apply the edit. This is the "only save if you do something" guarantee.
+      if (noteId === PHANTOM_NOTE_ID) {
+        if (materialisingRef.current) return;
+        materialisingRef.current = true;
+        try {
+          const realNote = await findOrCreateEmptyNote(
+            updates.folder_name || "Draft",
+          );
+          const { folder_name: _folder, ...rest } = updates;
+          const hasPayload = Object.keys(rest).some(
+            (k) => rest[k as keyof typeof rest] !== undefined,
+          );
+          if (hasPayload) {
+            await updateNote(realNote.id, rest);
+          }
+        } catch (error) {
+          console.error("Error materialising phantom note:", error);
+          toast.error(error);
+        } finally {
+          materialisingRef.current = false;
+        }
+        return;
+      }
       updateNote(noteId, updates);
     },
-    [updateNote],
+    [updateNote, findOrCreateEmptyNote, toast],
   );
 
   const handleSelectNote = useCallback(
@@ -292,7 +309,7 @@ export function QuickNotesSheet({ onClose, className }: QuickNotesSheetProps) {
       {/* Editor - Takes full remaining space */}
       <div className="flex-1 overflow-hidden">
         <NoteEditor
-          note={activeNote}
+          note={editorNote}
           onUpdate={handleUpdateNote}
           allNotes={notes}
           className="h-full"

@@ -44,15 +44,17 @@ describe("overlaySlice", () => {
         emptyState(),
         openOverlay({ overlayId: "notesWindow", data: { foo: "bar" } }),
       );
-      const inst =
-        s.overlays.notesWindow[DEFAULT_INSTANCE_ID];
+      const inst = s.overlays.notesWindow[DEFAULT_INSTANCE_ID];
       expect(inst.isOpen).toBe(true);
       expect(inst.data).toEqual({ foo: "bar" });
       expect(typeof inst.lastUsedAt).toBe("number");
     });
 
     it("supports multiple instances of the same overlay", () => {
-      let s = run(emptyState(), openOverlay({ overlayId: xId, instanceId: "i1" }));
+      let s = run(
+        emptyState(),
+        openOverlay({ overlayId: xId, instanceId: "i1" }),
+      );
       s = run(s, openOverlay({ overlayId: xId, instanceId: "i2" }));
       expect(Object.keys(s.overlays.x).sort()).toEqual(["i1", "i2"]);
     });
@@ -68,12 +70,18 @@ describe("overlaySlice", () => {
     it("deletes multi-instance entry entirely", () => {
       let s = run(
         emptyState(),
-        openOverlay({ overlayId: "contentEditorWindow", instanceId: "inst-42" }),
+        openOverlay({
+          overlayId: "contentEditorWindow",
+          instanceId: "inst-42",
+        }),
       );
       expect(s.overlays.contentEditorWindow["inst-42"]).toBeDefined();
       s = run(
         s,
-        closeOverlay({ overlayId: "contentEditorWindow", instanceId: "inst-42" }),
+        closeOverlay({
+          overlayId: "contentEditorWindow",
+          instanceId: "inst-42",
+        }),
       );
       // Bucket is GC'd when empty
       expect(s.overlays.contentEditorWindow).toBeUndefined();
@@ -126,7 +134,10 @@ describe("overlaySlice", () => {
 
   describe("closeAllInstancesOfOverlay", () => {
     it("removes every instance of a given overlay", () => {
-      let s = run(emptyState(), openOverlay({ overlayId: xId, instanceId: "a" }));
+      let s = run(
+        emptyState(),
+        openOverlay({ overlayId: xId, instanceId: "a" }),
+      );
       s = run(s, openOverlay({ overlayId: xId, instanceId: "b" }));
       s = run(s, openOverlay({ overlayId: otherId }));
       s = run(s, closeAllInstancesOfOverlay({ overlayId: xId }));
@@ -139,7 +150,10 @@ describe("overlaySlice", () => {
   describe("pruneStaleInstances", () => {
     it("removes closed multi-instance entries older than threshold", () => {
       // Open two instances, close one
-      let s = run(emptyState(), openOverlay({ overlayId: xId, instanceId: "a" }));
+      let s = run(
+        emptyState(),
+        openOverlay({ overlayId: xId, instanceId: "a" }),
+      );
       s = run(s, openOverlay({ overlayId: xId, instanceId: "b" }));
       s = run(s, closeOverlay({ overlayId: xId, instanceId: "a" }));
       // "a" was deleted immediately by closeOverlay — so that's already GC'd.
@@ -184,7 +198,10 @@ describe("overlaySlice", () => {
     });
 
     it("keeps closed instances younger than threshold", () => {
-      let s = run(emptyState(), openOverlay({ overlayId: xId, instanceId: "recent" }));
+      let s = run(
+        emptyState(),
+        openOverlay({ overlayId: xId, instanceId: "recent" }),
+      );
       // Mark closed but recent
       s = {
         overlays: {
@@ -202,7 +219,15 @@ describe("overlaySlice", () => {
     });
 
     it("cleans up empty buckets after pruning last entry", () => {
-      let s: { overlays: Record<string, Record<string, { isOpen: boolean; data: unknown; lastUsedAt?: number }>> } = {
+      let s: {
+        overlays: Record<
+          string,
+          Record<
+            string,
+            { isOpen: boolean; data: unknown; lastUsedAt?: number }
+          >
+        >;
+      } = {
         overlays: {
           x: {
             onlyOne: {

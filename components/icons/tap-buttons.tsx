@@ -290,6 +290,15 @@ export function ChevronLeftTapButton(props: TapButtonProps) {
   );
 }
 
+// lucide: chevron-right v0.577.0
+export function ChevronRightTapButton(props: TapButtonProps) {
+  return (
+    <Wrap ariaLabel="Next" {...props}>
+      <path d="m9 18 6-6-6-6" />
+    </Wrap>
+  );
+}
+
 // lucide: panel-left v0.577.0
 export function PanelLeftTapButton(props: TapButtonProps) {
   return (

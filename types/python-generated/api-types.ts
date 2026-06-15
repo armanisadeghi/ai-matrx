@@ -4145,6 +4145,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -11290,6 +11314,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/app-logs/norm-exceptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Norm Exceptions Route
+         * @description The manual collapse/normalization rules (admin UI-managed).
+         */
+        get: operations["list_norm_exceptions_route_admin_app_logs_norm_exceptions_get"];
+        put?: never;
+        /**
+         * Add Norm Exception Route
+         * @description Register a rule that canonicalizes a log family so it collapses correctly.
+         */
+        post: operations["add_norm_exception_route_admin_app_logs_norm_exceptions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/app-logs/norm-exceptions/{exc_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Norm Exception Route */
+        delete: operations["delete_norm_exception_route_admin_app_logs_norm_exceptions__exc_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/app-logs/unclassified": {
         parameters: {
             query?: never;
@@ -13370,6 +13435,12 @@ export interface components {
              */
             classified: boolean;
             metadata?: components["schemas"]["JsonValue"] | null;
+            /** Occurrences */
+            occurrences?: number | null;
+            /** First Seen */
+            first_seen?: string | null;
+            /** Last Seen */
+            last_seen?: string | null;
         };
         /** AppLogListResponse */
         AppLogListResponse: {
@@ -15178,6 +15249,8 @@ export interface components {
             token_count?: number | null;
             /** Section Kind */
             section_kind?: string | null;
+            /** Section Subtype */
+            section_subtype?: string | null;
         };
         /** CitationLookupRequest */
         CitationLookupRequest: {
@@ -16893,6 +16966,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -21300,6 +21400,45 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * NormException
+         * @description A manual collapse/normalization rule (app_log_norm_exception row).
+         */
+        NormException: {
+            /** Id */
+            id: string;
+            /** Match */
+            match: string;
+            /** Replace Pattern */
+            replace_pattern: string;
+            /** Replacement */
+            replacement: string;
+            /** Label */
+            label?: string | null;
+            /** Created By */
+            created_by?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** NormExceptionListResponse */
+        NormExceptionListResponse: {
+            /** Exceptions */
+            exceptions: components["schemas"]["NormException"][];
+        };
+        /** NormExceptionRequest */
+        NormExceptionRequest: {
+            /** Match */
+            match: string;
+            /** Replace Pattern */
+            replace_pattern: string;
+            /** Replacement */
+            replacement?: string | null;
+            /** Label */
+            label?: string | null;
+        };
+        /**
          * OccupationalCodesResponse
          * @description Wrapper around the bundled California job-codes config.
          *
@@ -21476,6 +21615,8 @@ export interface components {
             cleaned_text: string;
             /** Section Kind */
             section_kind?: string | null;
+            /** Section Subtype */
+            section_subtype?: string | null;
             /** Section Title */
             section_title?: string | null;
             /**
@@ -21530,6 +21671,8 @@ export interface components {
             cleaned_char_count: number;
             /** Section Kind */
             section_kind?: string | null;
+            /** Section Subtype */
+            section_subtype?: string | null;
             /** Section Title */
             section_title?: string | null;
             /** Extraction Method */
@@ -35236,6 +35379,41 @@ export interface operations {
             };
         };
     };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -48425,6 +48603,8 @@ export interface operations {
                 classified?: boolean | null;
                 /** @description Substring match on message (ILIKE). */
                 text?: string | null;
+                /** @description Join identical lines (timestamp/number/uuid-insensitive + manual rules): one row per signature, the latest occurrence, with occurrences + first/last seen. */
+                collapse?: boolean;
                 limit?: number;
                 offset?: number;
             };
@@ -48441,6 +48621,92 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AppLogListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_norm_exceptions_route_admin_app_logs_norm_exceptions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NormExceptionListResponse"];
+                };
+            };
+        };
+    };
+    add_norm_exception_route_admin_app_logs_norm_exceptions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NormExceptionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NormException"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_norm_exception_route_admin_app_logs_norm_exceptions__exc_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exc_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
                 };
             };
             /** @description Validation Error */

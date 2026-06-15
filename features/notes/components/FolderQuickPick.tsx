@@ -9,7 +9,7 @@
 // in the calling instance.
 //
 // Used by both the full-page NotesView (route /notes) and the floating
-// NotesWindow (overlay notesBetaWindow). Don't inline this anywhere else —
+// NotesWindow (overlay notesWindow). Don't inline this anywhere else —
 // share via this single source so the empty state stays consistent.
 
 import { useCallback, useState } from "react";

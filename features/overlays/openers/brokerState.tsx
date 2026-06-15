@@ -22,8 +22,6 @@ const OVERLAY_ID = "brokerState" as const;
 export interface OpenFullscreenBrokerStateOptions {
   triggerClassName?: string;
   triggerLabel?: string;
-  /** TODO callback — wire via callback registry in stage 3. */
-  onOpen?: () => void;
 }
 
 export interface FullscreenBrokerStateHandle {
@@ -40,7 +38,6 @@ export function useOpenFullscreenBrokerState() {
           data: {
             triggerClassName: opts.triggerClassName,
             triggerLabel: opts.triggerLabel,
-            onOpen: opts.onOpen,
           },
         }),
       );
@@ -62,6 +59,6 @@ export function FullscreenBrokerStateController(props: OpenFullscreenBrokerState
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.triggerClassName, props.triggerLabel, props.onOpen]);
+  }, [open, props.triggerClassName, props.triggerLabel]);
   return null;
 }

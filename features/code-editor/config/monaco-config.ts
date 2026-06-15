@@ -7,6 +7,7 @@
 
 import { loader } from "@monaco-editor/react";
 import { registerJsonMonacoThemes } from "./syntax-themes";
+import { getAllTypeDefinitions } from "./type-definitions";
 
 // Track if configuration has been initiated
 let configurationPromise: Promise<void> | null = null;

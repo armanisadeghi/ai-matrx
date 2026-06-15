@@ -69,8 +69,18 @@ import { cn } from "@/utils/cn";
 
 type Priority = TaskPriority;
 
-export default function TaskEditor() {
-  const taskId = useAppSelector(selectSelectedTaskId);
+export default function TaskEditor({
+  taskId: taskIdProp,
+  embedded,
+}: {
+  /** When provided, edit this task directly (e.g. embedded in a War Room tile).
+   *  Falls back to the global selected task (the /tasks/[id] route) when omitted. */
+  taskId?: string;
+  /** Embedded surfaces (tiles) hide the redundant "open in full page" link. */
+  embedded?: boolean;
+} = {}) {
+  const selectedTaskId = useAppSelector(selectSelectedTaskId);
+  const taskId = taskIdProp ?? selectedTaskId;
 
   if (!taskId) {
     return (
@@ -86,10 +96,16 @@ export default function TaskEditor() {
     );
   }
 
-  return <TaskEditorInner taskId={taskId} key={taskId} />;
+  return <TaskEditorInner taskId={taskId} embedded={embedded} key={taskId} />;
 }
 
-function TaskEditorInner({ taskId }: { taskId: string }) {
+function TaskEditorInner({
+  taskId,
+  embedded,
+}: {
+  taskId: string;
+  embedded?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const task = useAppSelector((s) => selectTaskById(s, taskId));
   const draft = useAppSelector(selectTaskEdit(taskId));
@@ -363,17 +379,19 @@ function TaskEditorInner({ taskId }: { taskId: string }) {
               </Button>
             </>
           )}
-          <Button
-            size="sm"
-            variant="ghost"
-            asChild
-            className="h-7 w-7 p-0"
-            title="Open in full page"
-          >
-            <Link href={`/tasks/${taskId}`}>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </Link>
-          </Button>
+          {!embedded ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              asChild
+              className="h-7 w-7 p-0"
+              title="Open in full page"
+            >
+              <Link href={`/tasks/${taskId}`}>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
+            </Button>
+          ) : null}
           <Button
             size="sm"
             variant="ghost"

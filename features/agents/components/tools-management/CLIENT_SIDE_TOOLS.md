@@ -151,7 +151,7 @@ Response:
 { message: string; not_found: string[]; resolved: string[] }
 ```
 
-**Timing:** the server holds the AI loop open for **120 seconds per delegated call** (per-tool `timeout_seconds`, configurable in the DB). If you don't POST within that window, the server resolves the call as a `client_tool_timeout` error and continues the loop. Take longer than ~2 min for real work? Start a background job and short-circuit the response — do not block the user.
+**Timing:** the server does NOT hold a connection open waiting for you — a delegated call HARD-SUSPENDS the loop (the stream ends) and the turn is persisted as `paused`. You may answer in seconds, minutes, hours, or weeks; when you POST results the server returns `continuation_needed` and you open `/resume`. The only timeout is a far-future server-side **abandonment backstop** on `cx_tool_call.expires_at` (default 30 days, per-tool override via `tools.max_client_wait_seconds`) — and even an expired call is superseded by a late genuine answer. The client never enforces its own answer deadline. (For *long-running* local work, still prefer a background job + short-circuit so the user isn't staring at a spinner.)
 
 **The AI loop continues on the same stream** you're already reading. You do NOT open a new stream after posting results.
 
@@ -201,7 +201,7 @@ POST /ai/conversation/{id}/tool_results ───▶
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `404 not_found` from tool_results POST | `call_id` unknown — either already timed out (>120s) or a duplicate POST | Don't POST twice for the same `call_id`; watch for slow local execution |
+| `404 not_found` from tool_results POST | `call_id` genuinely unknown — a stale POST or wrong client (NOT a normal timeout: a delegated row lives ~30 days and a late answer is accepted/superseded) | Don't POST a `call_id` the server never delegated; the stream stays alive |
 | Stream ends before you POST | AI loop hit a `client_tool_timeout` error and the model finished without you | Execute faster, or raise `tool_def.timeout_seconds` in the DB for that tool |
 | Tool invoked but never delegated | Tool name was not in `client_tools`, or inline `custom_tools` entry had a different name than what the model called | Verify `client_tools` contains the *exact* tool `name`; for `custom_tools`, the `name` field *is* what the model sees |
 | `is_error: true` result | Your local executor reported an error | Include `error_message`; the server feeds it back to the model as a tool error and the loop continues gracefully |

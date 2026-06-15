@@ -28694,6 +28694,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: string
       }
+      ensure_updated_at_on_table: {
+        Args: { p_schema: string; p_table: string }
+        Returns: boolean
+      }
       execute_admin_query: { Args: { query: string }; Returns: Json }
       execute_complex_save: {
         Args: { operations: Json; options?: Json }

@@ -185,6 +185,13 @@ export async function resolveSourceTitle(
         return data?.title?.trim() || null;
       }
       case "cld_file": {
+        // A `cld_file` suggestion's `source_id` is the ingested document's
+        // `source_id` (the cloud-file id), NOT a `user_files.id` — so the
+        // filename lives on `processed_documents.name`, not `user_files`. The
+        // ingested doc is the reliable source of the human filename here.
+        const doc = await fetchProcessedDocument(kind, id);
+        if (doc?.name?.trim()) return doc.name.trim();
+        // Fallback: some environments DO key by the user_files id.
         const { data } = await supabase
           .from("user_files")
           .select("filename")
@@ -211,25 +218,207 @@ export async function resolveSourceTitle(
   }
 }
 
+/** A source reference (kind + id) for batch title resolution. */
+export interface SourceRef {
+  kind: string;
+  id: string;
+}
+
+/** Stable map key for a `(kind, id)` source reference. */
+export function sourceRefKey(kind: string, id: string): string {
+  return `${kind}:${id}`;
+}
+
+/**
+ * Resolve MANY source titles at once — one query per distinct kind instead of
+ * one per row. Used by the manager table so a 50-row page surfaces every
+ * filename without 50 round-trips. Returns a map keyed by `sourceRefKey`.
+ *
+ * `cld_file` (the dominant kind) resolves from `processed_documents.name`,
+ * preferring each source's ROOT ingested doc for a clean filename. Other kinds
+ * resolve from their own table; anything still unresolved falls back to
+ * `processed_documents`. Never throws — unresolved refs are simply absent.
+ */
+export async function resolveSourceTitles(
+  refs: SourceRef[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (!refs.length) return out;
+
+  // De-dupe and group ids by kind.
+  const byKind = new Map<string, Set<string>>();
+  for (const { kind, id } of refs) {
+    if (!kind || !id) continue;
+    if (!byKind.has(kind)) byKind.set(kind, new Set());
+    byKind.get(kind)!.add(id);
+  }
+
+  const setTitle = (kind: string, id: string, title: string | null) => {
+    const t = title?.trim();
+    if (t) out.set(sourceRefKey(kind, id), t);
+  };
+
+  const tasks: Promise<void>[] = [];
+
+  for (const [kind, idSet] of byKind) {
+    const ids = Array.from(idSet);
+    tasks.push(
+      (async () => {
+        try {
+          await resolveTitlesForKind(kind, ids, setTitle);
+        } catch {
+          /* best-effort — leave unresolved ids absent */
+        }
+      })(),
+    );
+  }
+
+  await Promise.all(tasks);
+
+  // Fallback pass: any id still unresolved may live in processed_documents
+  // (files, scraped pages, unknown kinds keyed by source_id).
+  const unresolved: SourceRef[] = [];
+  for (const { kind, id } of refs) {
+    if (kind && id && !out.has(sourceRefKey(kind, id))) {
+      unresolved.push({ kind, id });
+    }
+  }
+  if (unresolved.length) {
+    await Promise.all(
+      unresolved.map(async ({ kind, id }) => {
+        try {
+          const doc = await fetchProcessedDocument(kind, id);
+          if (doc?.name) setTitle(kind, id, doc.name);
+        } catch {
+          /* ignore */
+        }
+      }),
+    );
+  }
+
+  return out;
+}
+
+async function resolveTitlesForKind(
+  kind: string,
+  ids: string[],
+  setTitle: (kind: string, id: string, title: string | null) => void,
+): Promise<void> {
+  switch (kind) {
+    case "cld_file": {
+      // Prefer each source's ROOT ingested doc (clean filename). One query for
+      // the whole page; pick the best row per source_id client-side.
+      const { data } = await supabase
+        .from("processed_documents")
+        .select("source_id, name, parent_processed_id, updated_at")
+        .eq("source_kind", "cld_file")
+        .in("source_id", ids)
+        .is("archived_at", null);
+      const best = new Map<
+        string,
+        { name: string | null; isRoot: boolean; updated: number }
+      >();
+      for (const r of data ?? []) {
+        const sid = r.source_id as string;
+        const isRoot = r.parent_processed_id == null;
+        const updated = new Date(r.updated_at ?? 0).getTime();
+        const cur = best.get(sid);
+        // Root beats non-root; within the same tier, newer wins.
+        if (
+          !cur ||
+          (isRoot && !cur.isRoot) ||
+          (isRoot === cur.isRoot && updated > cur.updated)
+        ) {
+          best.set(sid, { name: r.name as string | null, isRoot, updated });
+        }
+      }
+      for (const [sid, v] of best) setTitle(kind, sid, v.name);
+      return;
+    }
+    case "note": {
+      const { data } = await supabase
+        .from("notes")
+        .select("id, label")
+        .in("id", ids);
+      for (const r of data ?? []) setTitle(kind, r.id as string, r.label);
+      return;
+    }
+    case "task": {
+      const { data } = await supabase
+        .from("ctx_tasks")
+        .select("id, title")
+        .in("id", ids);
+      for (const r of data ?? []) setTitle(kind, r.id as string, r.title);
+      return;
+    }
+    case "project": {
+      const { data } = await supabase
+        .from("ctx_projects")
+        .select("id, name")
+        .in("id", ids);
+      for (const r of data ?? []) setTitle(kind, r.id as string, r.name);
+      return;
+    }
+    case "transcript": {
+      const { data } = await supabase
+        .from("transcripts")
+        .select("id, title")
+        .in("id", ids);
+      for (const r of data ?? []) setTitle(kind, r.id as string, r.title);
+      return;
+    }
+    case "conversation":
+    case "cx_message": {
+      const { data } = await supabase
+        .from("cx_conversation")
+        .select("id, title")
+        .in("id", ids);
+      for (const r of data ?? []) setTitle(kind, r.id as string, r.title);
+      return;
+    }
+    case "code_file": {
+      const { data } = await supabase
+        .from("code_files")
+        .select("id, name, path")
+        .in("id", ids);
+      for (const r of data ?? [])
+        setTitle(kind, r.id as string, r.name || r.path);
+      return;
+    }
+    default:
+      // Unknown kinds resolve in the processed_documents fallback pass.
+      return;
+  }
+}
+
 interface ProcessedDocLite {
   name: string | null;
+  mime_type: string | null;
   clean_content: string | null;
   content: string | null;
   total_pages: number | null;
   updated_at: string | null;
 }
 
-/** Latest non-archived ingested doc for a source, or null. */
+/**
+ * Latest non-archived ingested doc for a source, or null. The ROOT document
+ * (`parent_processed_id is null`) is preferred over derived rows (e.g. agent
+ * extraction runs named "<file>.pdf (agent extract run …)") so the resolved
+ * title is the clean original filename, not a derivation's decorated name.
+ */
 async function fetchProcessedDocument(
   kind: string,
   id: string,
 ): Promise<ProcessedDocLite | null> {
   const { data, error } = await supabase
     .from("processed_documents")
-    .select("name, clean_content, content, total_pages, updated_at")
+    .select(
+      "name, mime_type, clean_content, content, total_pages, updated_at, parent_processed_id",
+    )
     .eq("source_kind", kind)
     .eq("source_id", id)
     .is("archived_at", null)
+    .order("parent_processed_id", { ascending: true, nullsFirst: true })
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -432,6 +621,10 @@ async function loadViaProcessedDocument(
     return base;
   }
   if (!base.title) base.title = pdoc.name?.trim() || sourceKindLabel(kind);
+  const hasType = base.meta.some((m) => m.label === "Type");
+  if (!hasType && pdoc.mime_type) {
+    base.meta.push({ label: "Type", value: pdoc.mime_type });
+  }
   if (pdoc.total_pages != null) {
     base.meta.push({ label: "Pages", value: String(pdoc.total_pages) });
   }

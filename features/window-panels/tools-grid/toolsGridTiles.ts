@@ -256,14 +256,13 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
 
   // ── Notes ──────────────────────────────────────────────────────────────
   {
-    // Pins a default instance of the canonical Notes window so it behaves
-    // like a singleton home-notes surface. (The overlayId `notesBetaWindow`
-    // is a historical name kept for window_sessions compatibility.)
+    // Pins a default instance of the Notes window so it behaves
+    // like a singleton home-notes surface.
     id: "tile.notes-pinned",
     label: "Notes",
     icon: StickyNote,
     category: "notes",
-    overlayId: "notesBetaWindow",
+    overlayId: "notesWindow",
     instanceStrategy: "singleton-default",
     seedData: () => ({ title: "Notes" }),
   },

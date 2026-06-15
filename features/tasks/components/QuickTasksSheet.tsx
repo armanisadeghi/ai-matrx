@@ -95,6 +95,21 @@ interface QuickTasksOverlayData {
   className?: string;
 }
 
+/** Hollow circle glyph for the "Incomplete" filter (module-scope, stable). */
+const Circle = ({ size, className }: { size: number; className?: string }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    className={className}
+  >
+    <circle cx="12" cy="12" r="10" />
+  </svg>
+);
+
 function QuickTasksSheetContent({ className }: { className?: string }) {
   const dispatch = useAppDispatch();
   const projects = useAppSelector(selectProjects);
@@ -119,12 +134,11 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
     "low" | "medium" | "high" | ""
   >("");
   const [showExpandedForm, setShowExpandedForm] = useState(false);
-  const [selectedProjectForTask, setSelectedProjectForTask] = useState<
-    string | null
-  >(null);
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
   const [hasPrePopulated, setHasPrePopulated] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Quick mode: open focused on capture, not on the Views/Filters/Projects
+  // sidebar. The sidebar is one Menu-toggle away.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Access overlay data for pre-population (data payload only — not the wrapper).
   const overlayData = useAppSelector(
@@ -151,14 +165,10 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
     }
   }, [overlayData, hasPrePopulated, dispatch]);
 
-  // Update selected project when activeProject changes
-  useEffect(() => {
-    if (activeProject) {
-      setSelectedProjectForTask(activeProject);
-    } else if (projects.length > 0) {
-      setSelectedProjectForTask(projects[0].id);
-    }
-  }, [activeProject, projects]);
+  // The project a new task lands in: the active project, else the first
+  // available. Purely derived — never user-set — so no state/effect needed.
+  const selectedProjectForTask =
+    activeProject ?? (projects.length > 0 ? projects[0].id : null);
 
   // filteredTasks is sourced from Redux above
 
@@ -188,26 +198,6 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
       }
     },
     [dispatch],
-  );
-
-  const Circle = ({
-    size,
-    className,
-  }: {
-    size: number;
-    className?: string;
-  }) => (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className={className}
-    >
-      <circle cx="12" cy="12" r="10" />
-    </svg>
   );
 
   const handleAddTask = useCallback(
@@ -278,7 +268,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
   }
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
+    <div className={cn("flex flex-row h-full", className)}>
       {/* Collapsible Sidebar */}
       <div
         className={cn(
@@ -447,32 +437,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
           {!selectedTask ? (
             /* Task List View */
             <div className="flex flex-col h-full bg-white dark:bg-gray-800">
-              {/* Search Bar */}
-              <div className="p-2 border-b border-zinc-200 dark:border-zinc-800">
-                <div className="relative">
-                  <Search
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"
-                    size={14}
-                  />
-                  <Input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-                    placeholder="Search tasks..."
-                    className="pl-8 pr-8 h-8 text-xs"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => dispatch(setSearchQuery(""))}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Quick Add Task Form */}
+              {/* Quick Add Task Form — first, so capture is immediate */}
               <div className="p-2 border-b border-zinc-200 dark:border-zinc-800">
                 <form onSubmit={handleAddTask} className="space-y-2">
                   <div className="flex gap-2">
@@ -569,6 +534,31 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
                     </div>
                   )}
                 </form>
+              </div>
+
+              {/* Search Bar */}
+              <div className="p-2 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="relative">
+                  <Search
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                    size={14}
+                  />
+                  <Input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => dispatch(setSearchQuery(e.target.value))}
+                    placeholder="Search tasks..."
+                    className="pl-8 pr-8 h-8 text-xs"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => dispatch(setSearchQuery(""))}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Tasks List */}

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useCallback, useRef } from "react";
 import { useAppSelector, useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { emitFullScreenEditorSave } from "@/features/overlays/callbacks/fullScreenEditor";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { useHtmlPreviewState } from "@/features/html-pages/hooks/useHtmlPreviewState";
 import HtmlPreviewFullScreenEditor from "@/features/html-pages/components/HtmlPreviewFullScreenEditor";
@@ -23,6 +24,14 @@ interface HtmlPreviewBridgeProps {
   onClose: () => void;
   title?: string;
   description?: string;
+  /**
+   * Callback-group id (from `callbackManager`) for callers that need to own
+   * the save (e.g. the rich-document source adapters saving back to a note).
+   * Takes precedence over the bridge's `editMessage` self-handle. Functions
+   * never travel through Redux; this string is the channel back. Reuses the
+   * editor-save callback shape — see features/overlays/callbacks/fullScreenEditor.ts.
+   */
+  callbackGroupId?: string | null;
   onSave?: (markdownContent: string) => void;
   showSaveButton?: boolean;
   isAgentSystem?: boolean;
@@ -35,6 +44,7 @@ export function HtmlPreviewBridge({
   onClose,
   title = "HTML Preview & Publishing",
   description = "Edit markdown, preview HTML, and publish your content",
+  callbackGroupId,
   onSave,
   showSaveButton,
   isAgentSystem,
@@ -161,6 +171,12 @@ export function HtmlPreviewBridge({
   // caller that passes its own `onSave` still wins.
   const handleMarkdownSave = useCallback(
     async (markdownContent: string) => {
+      // Callback group wins — the caller (e.g. a rich-document source adapter)
+      // owns the save. Then a direct-mount onSave prop. Else self-handle.
+      if (callbackGroupId) {
+        emitFullScreenEditorSave(callbackGroupId, markdownContent);
+        return;
+      }
       if (onSave) {
         onSave(markdownContent);
         return;
@@ -194,7 +210,7 @@ export function HtmlPreviewBridge({
         );
       }
     },
-    [onSave, conversationId, messageId, dispatch, store],
+    [callbackGroupId, onSave, conversationId, messageId, dispatch, store],
   );
 
   return (

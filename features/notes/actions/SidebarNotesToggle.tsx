@@ -7,7 +7,7 @@
  * component — that would pull the entire registry chunk graph into the
  * boot bundle and trip the lazy-bundle-guard.
  *
- * The window itself (`notesBetaWindow`) is registered in
+ * The window itself (`notesWindow`) is registered in
  * `windowRegistry.ts` and rendered by `UnifiedOverlayController`. We
  * just toggle the overlay's open/close state via Redux. Active state
  * for the button comes from the same selector — no local useState.
@@ -21,10 +21,10 @@ import { useOverlayOpen } from "@/features/window-panels/hooks/useOverlay";
 
 export default function SidebarNotesToggle() {
   const dispatch = useAppDispatch();
-  const isOpen = useOverlayOpen("notesBetaWindow");
+  const isOpen = useOverlayOpen("notesWindow");
 
   const toggle = useCallback(() => {
-    dispatch(toggleOverlay({ overlayId: "notesBetaWindow" }));
+    dispatch(toggleOverlay({ overlayId: "notesWindow" }));
   }, [dispatch]);
 
   return (

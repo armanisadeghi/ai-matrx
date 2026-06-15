@@ -29,6 +29,7 @@ import {
   ackSuggestions,
   fetchAckedSuggestionIds,
 } from "@/features/kg-suggestions/service/kgSuggestionAckService";
+import { isLowConfidence } from "@/features/kg-suggestions/constants";
 
 const TOAST_ID = "kg-new-suggestion";
 // Let the user land and orient before interrupting.
@@ -63,7 +64,11 @@ export default function KgNewSuggestionNotifier() {
 
   useEffect(() => {
     if (!userId || acked == null || shownRef.current) return;
-    const unseen = items.filter((i) => !acked.has(i.id));
+    // Never interrupt the user for low-quality (<50%) proposals — they're mostly
+    // noise and live quietly in the manager's low-quality section instead.
+    const unseen = items.filter(
+      (i) => !acked.has(i.id) && !isLowConfidence(i),
+    );
     if (unseen.length === 0) return;
     const unseenIds = unseen.map((i) => i.id);
     const count = unseen.length;

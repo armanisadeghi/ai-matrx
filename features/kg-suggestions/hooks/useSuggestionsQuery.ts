@@ -33,6 +33,11 @@ import {
   type KgSuggestionStat,
 } from "@/features/kg-suggestions/service/kgSuggestionsService";
 import {
+  resolveSourceTitles,
+  sourceRefKey,
+} from "@/features/kg-suggestions/service/sourcePreviewService";
+import { LOW_CONFIDENCE_THRESHOLD } from "@/features/kg-suggestions/constants";
+import {
   isHeavyHitter,
   type KgEnrichedSuggestionRow,
   type KgSuggestionsQuery,
@@ -59,6 +64,20 @@ export interface UseSuggestionsQueryResult {
   rows: KgEnrichedSuggestionRow[];
   /** Heavy-hitter rows (recurring entity → new scope), confidence-ranked. */
   heavyHitters: KgEnrichedSuggestionRow[];
+  /**
+   * Low-quality rows (confidence < 50%). Pulled OUT of the main table into a
+   * de-emphasized section so the user can review/dismiss them without them
+   * crowding the strong suggestions. Empty when the user filters by confidence.
+   */
+  lowQuality: KgEnrichedSuggestionRow[];
+  /** Total low-quality matches (the list itself is capped). */
+  lowQualityTotal: number;
+  /**
+   * Resolved human SOURCE titles (filenames, note labels, …) keyed by
+   * `sourceRefKey(source_kind, source_id)`. Batch-resolved per loaded page so
+   * the table can show the file a suggestion came from without per-row reads.
+   */
+  sourceTitles: Map<string, string>;
   total: number;
   stats: KgSuggestionStat[];
   loading: boolean;
@@ -90,19 +109,32 @@ export function useSuggestionsQuery(
   const [heavyHitters, setHeavyHitters] = useState<KgEnrichedSuggestionRow[]>(
     [],
   );
+  const [lowQuality, setLowQuality] = useState<KgEnrichedSuggestionRow[]>([]);
+  const [lowQualityTotal, setLowQualityTotal] = useState(0);
   const [total, setTotal] = useState(0);
+  const [sourceTitles, setSourceTitles] = useState<Map<string, string>>(
+    new Map(),
+  );
   const [stats, setStats] = useState<KgSuggestionStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
   const heavyAbortRef = useRef<AbortController | null>(null);
+  const lowAbortRef = useRef<AbortController | null>(null);
   const rowsRef = useRef<KgEnrichedSuggestionRow[]>([]);
   rowsRef.current = rows;
   const heavyRef = useRef<KgEnrichedSuggestionRow[]>([]);
   heavyRef.current = heavyHitters;
+  const lowRef = useRef<KgEnrichedSuggestionRow[]>([]);
+  lowRef.current = lowQuality;
 
   const showHeavy = shouldShowHeavyHitters(query);
+  // Split off low-quality (<50%) rows into their own bucket UNLESS the user is
+  // explicitly filtering by confidence (then we respect their threshold as-is).
+  const splitLow = query.minConfidence == null;
+  // Effective floor applied to the "strong" lists (main table + heavy hitters).
+  const strongFloor = splitLow ? LOW_CONFIDENCE_THRESHOLD : null;
 
   const patchQuery = useCallback((patch: Partial<KgSuggestionsQuery>) => {
     setQuery((prev) => ({
@@ -129,10 +161,13 @@ export function useSuggestionsQuery(
     abortRef.current = controller;
     setLoading(true);
     setError(null);
-    void queryScopeSuggestions(query, {
-      signal: controller.signal,
-      excludeHeavyHitter: showHeavy,
-    })
+    void queryScopeSuggestions(
+      strongFloor != null ? { ...query, minConfidence: strongFloor } : query,
+      {
+        signal: controller.signal,
+        excludeHeavyHitter: showHeavy,
+      },
+    )
       .then((res) => {
         if (controller.signal.aborted) return;
         setRows(res.rows);
@@ -146,7 +181,7 @@ export function useSuggestionsQuery(
         setLoading(false);
       });
     return () => controller.abort();
-  }, [query, showHeavy]);
+  }, [query, showHeavy, strongFloor]);
 
   // ── Heavy-hitter fetch (own section, confidence-ranked, no pagination) ────
   useEffect(() => {
@@ -161,6 +196,8 @@ export function useSuggestionsQuery(
       ...query,
       stage: "association",
       matchKind: "heavy_hitter",
+      // Only STRONG heavy hitters lead the page; weak ones drop to low-quality.
+      minConfidence: strongFloor ?? query.minConfidence ?? null,
       sortBy: "confidence",
       sortDir: "desc",
       page: 0,
@@ -177,7 +214,70 @@ export function useSuggestionsQuery(
         setHeavyHitters([]);
       });
     return () => controller.abort();
-  }, [query, showHeavy]);
+  }, [query, showHeavy, strongFloor]);
+
+  // ── Low-quality fetch (<50%, de-emphasized section, capped, no pagination) ─
+  // Includes weak heavy hitters too, so nothing is silently lost. Skipped when
+  // the user is explicitly filtering by confidence (then there's no "low" tier).
+  useEffect(() => {
+    lowAbortRef.current?.abort();
+    if (!splitLow) {
+      setLowQuality([]);
+      setLowQualityTotal(0);
+      return;
+    }
+    const controller = new AbortController();
+    lowAbortRef.current = controller;
+    const lowQuery: KgSuggestionsQuery = {
+      ...query,
+      minConfidence: null,
+      maxConfidence: LOW_CONFIDENCE_THRESHOLD,
+      sortBy: "confidence",
+      sortDir: "desc",
+      page: 0,
+      pageSize: 100,
+    };
+    void queryScopeSuggestions(lowQuery, { signal: controller.signal })
+      .then((res) => {
+        if (controller.signal.aborted) return;
+        setLowQuality(res.rows);
+        setLowQualityTotal(res.total);
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setLowQuality([]);
+        setLowQualityTotal(0);
+      });
+    return () => controller.abort();
+  }, [query, splitLow]);
+
+  // ── Batch-resolve SOURCE titles for the visible rows ─────────────────────
+  // One query per kind across both lists; merge results so previously-resolved
+  // titles persist across pages (the map only ever grows).
+  useEffect(() => {
+    const all = [...rows, ...heavyHitters, ...lowQuality];
+    if (!all.length) return;
+    const missing = all.filter(
+      (r) =>
+        r.source_id &&
+        !sourceTitles.has(sourceRefKey(r.source_kind, r.source_id)),
+    );
+    if (!missing.length) return;
+    let active = true;
+    void resolveSourceTitles(
+      missing.map((r) => ({ kind: r.source_kind, id: r.source_id })),
+    ).then((resolved) => {
+      if (!active || resolved.size === 0) return;
+      setSourceTitles((prev) => {
+        const next = new Map(prev);
+        for (const [k, v] of resolved) next.set(k, v);
+        return next;
+      });
+    });
+    return () => {
+      active = false;
+    };
+  }, [rows, heavyHitters, lowQuality, sourceTitles]);
 
   const loadStats = useCallback(() => {
     void fetchScopeSuggestionStats()
@@ -200,7 +300,8 @@ export function useSuggestionsQuery(
   const getRow = useCallback(
     (id: string): KgEnrichedSuggestionRow | undefined =>
       rowsRef.current.find((r) => r.id === id) ??
-      heavyRef.current.find((r) => r.id === id),
+      heavyRef.current.find((r) => r.id === id) ??
+      lowRef.current.find((r) => r.id === id),
     [],
   );
 
@@ -208,9 +309,12 @@ export function useSuggestionsQuery(
   // a paginated `total`, so decrement that only when the row was a main row.
   const dropRow = useCallback((id: string) => {
     const wasMain = rowsRef.current.some((r) => r.id === id);
+    const wasLow = lowRef.current.some((r) => r.id === id);
     setRows((prev) => prev.filter((r) => r.id !== id));
     setHeavyHitters((prev) => prev.filter((r) => r.id !== id));
+    setLowQuality((prev) => prev.filter((r) => r.id !== id));
     if (wasMain) setTotal((t) => Math.max(0, t - 1));
+    if (wasLow) setLowQualityTotal((t) => Math.max(0, t - 1));
   }, []);
 
   // ── Decisions ────────────────────────────────────────────────────────────
@@ -275,6 +379,7 @@ export function useSuggestionsQuery(
           r.id === id ? { ...r, is_starred: val } : r;
         setRows((prev) => prev.map(apply));
         setHeavyHitters((prev) => prev.map(apply));
+        setLowQuality((prev) => prev.map(apply));
       };
       flip(starred);
       try {
@@ -307,6 +412,9 @@ export function useSuggestionsQuery(
     patchQuery,
     rows,
     heavyHitters,
+    lowQuality,
+    lowQualityTotal,
+    sourceTitles,
     total,
     stats,
     loading,

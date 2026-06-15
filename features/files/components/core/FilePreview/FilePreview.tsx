@@ -115,8 +115,8 @@ const HtmlPreview = dynamic(() => import("./previewers/HtmlPreview"), {
 // this out by deleting the DEBUG_* constants and <DebugLayerLabel/>
 // usages once we're done untangling the wrappers.
 // ---------------------------------------------------------------------------
-const DEBUG_RING_FILE_PREVIEW = "ring-2 ring-inset ring-blue-500";
-const DEBUG_RING_FILE_PREVIEW_BODY = "ring-2 ring-inset ring-cyan-500";
+const DEBUG_RING_FILE_PREVIEW = "";
+const DEBUG_RING_FILE_PREVIEW_BODY = "";
 
 function DebugLayerLabel({
   label,

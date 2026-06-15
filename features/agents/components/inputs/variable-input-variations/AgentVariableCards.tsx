@@ -7,6 +7,8 @@
 import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceVariableDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { BoundVariableChips } from "@/features/agents/components/inputs/BoundVariableChips";
 import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectShowVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
@@ -347,11 +349,13 @@ export function AgentVariableCards({
   const shouldShowVariables = useAppSelector(
     selectShouldShowVariables(conversationId),
   );
-  const defs = useAppSelector(
+  const definitions = useAppSelector(
     selectInstanceVariableDefinitions(conversationId),
   );
+  // Plain + unresolved bound vars (inherited component) as cards; resolved bound vars as pills.
+  const defs = useAppSelector(selectVisibleInputDefinitions(conversationId));
 
-  if (!shouldShowVariables || !showVariablePanel || defs.length === 0) {
+  if (!shouldShowVariables || !showVariablePanel || definitions.length === 0) {
     return null;
   }
 
@@ -359,6 +363,7 @@ export function AgentVariableCards({
 
   return (
     <div className="flex flex-col gap-2 border-b border-border px-2 py-2 max-h-64 overflow-y-auto">
+      <BoundVariableChips conversationId={conversationId} />
       {defs.map((variable) => (
         <div
           key={variable.name}

@@ -377,6 +377,9 @@ export const selectIsInstanceReady = (
 
         for (const def of definitions) {
           if (!def.required) continue;
+          // A scope-bound variable is never a hard requirement — it falls back to an
+          // ordinary input when no context provides it, so it must never block a run.
+          if (def.binding?.itemKey || def.binding?.contextItemId) continue;
           const hasValue =
             def.name in userValues ||
             def.name in scopeValues ||

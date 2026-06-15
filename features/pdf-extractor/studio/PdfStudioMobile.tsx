@@ -467,9 +467,11 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
                 }}
                 view="files"
                 onChangeView={() => {}}
+                activeDoc={activeDoc}
+                pageRowCount={pages.length}
+                hasPageRows={pages.length > 0}
                 pages={pages}
                 pagesLoading={false}
-                totalPages={activeDoc?.totalPages ?? pages.length}
                 activePage={activePage}
                 onSelectPage={setActivePage}
               />

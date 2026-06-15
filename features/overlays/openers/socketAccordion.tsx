@@ -23,8 +23,6 @@ export interface OpenFullscreenSocketAccordionOptions {
   triggerClassName?: string;
   triggerLabel?: string;
   taskId?: string;
-  /** TODO callback — wire via callback registry in stage 3. */
-  onOpen?: () => void;
   showTrigger?: boolean;
 }
 
@@ -43,7 +41,6 @@ export function useOpenFullscreenSocketAccordion() {
             triggerClassName: opts.triggerClassName,
             triggerLabel: opts.triggerLabel,
             taskId: opts.taskId,
-            onOpen: opts.onOpen,
             showTrigger: opts.showTrigger,
           },
         }),
@@ -66,6 +63,6 @@ export function FullscreenSocketAccordionController(props: OpenFullscreenSocketA
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.triggerClassName, props.triggerLabel, props.taskId, props.onOpen, props.showTrigger]);
+  }, [open, props.triggerClassName, props.triggerLabel, props.taskId, props.showTrigger]);
   return null;
 }

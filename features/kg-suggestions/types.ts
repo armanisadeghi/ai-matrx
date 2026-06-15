@@ -143,7 +143,10 @@ export interface KgSuggestionsQuery {
   itemId?: string | null;
   sourceKind?: string | null;
   matchKind?: KgMatchKind | null;
+  /** Inclusive lower bound on confidence (>=). */
   minConfidence?: number | null;
+  /** Exclusive upper bound on confidence (<) — used to isolate low-quality rows. */
+  maxConfidence?: number | null;
   starredOnly?: boolean;
   unseenOnly?: boolean;
   /** ilike across item_label / scope_name / suggested_value. */

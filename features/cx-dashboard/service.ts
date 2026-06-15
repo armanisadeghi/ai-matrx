@@ -17,7 +17,11 @@ import { buildSearchOr } from "@/utils/supabase-search";
 
 function buildTimeframeCondition(filters: CxFilters, col: string): string {
   if (filters.timeframe === "all") return "";
-  if (filters.timeframe === "custom" && filters.start_date && filters.end_date) {
+  if (
+    filters.timeframe === "custom" &&
+    filters.start_date &&
+    filters.end_date
+  ) {
     return `AND ${col} >= '${filters.start_date}' AND ${col} <= '${filters.end_date}'`;
   }
   const range = getTimeframeRange(filters.timeframe as any);
@@ -25,19 +29,93 @@ function buildTimeframeCondition(filters: CxFilters, col: string): string {
   return `AND ${col} >= '${range.start}' AND ${col} <= '${range.end}'`;
 }
 
+// ─── Conversation resolution via the cx_request m2m ──────────────────────────
+// `cx_user_request` no longer carries a `conversation_id` column — a single
+// user request maps to exactly one conversation but spawns many cx_request
+// rows, and every one of those rows carries the same `conversation_id`, so any
+// of them is an accurate reference. We resolve user_request → conversation
+// (title / model / provider) through `cx_request` here.
+
+type ServerSupabase = Awaited<ReturnType<typeof createClient>>;
+
+interface UrConversationInfo {
+  conversation_id: string | null;
+  conversation_title: string | null;
+  model_name: string | null;
+  provider: string | null;
+}
+
+async function resolveUserRequestConversations(
+  supabase: ServerSupabase,
+  userRequestIds: string[],
+): Promise<Map<string, UrConversationInfo>> {
+  const result = new Map<string, UrConversationInfo>();
+  if (userRequestIds.length === 0) return result;
+
+  // user_request_id → conversation_id. Any cx_request row is an accurate ref;
+  // take the first one we encounter per user_request_id.
+  const { data: links } = await supabase
+    .from("cx_request")
+    .select("user_request_id, conversation_id")
+    .in("user_request_id", userRequestIds)
+    .is("deleted_at", null);
+
+  const urToConv = new Map<string, string>();
+  for (const link of (links || []) as {
+    user_request_id: string;
+    conversation_id: string;
+  }[]) {
+    if (
+      link.user_request_id &&
+      link.conversation_id &&
+      !urToConv.has(link.user_request_id)
+    ) {
+      urToConv.set(link.user_request_id, link.conversation_id);
+    }
+  }
+
+  const conversationIds = Array.from(new Set(urToConv.values()));
+  const convMap = new Map<string, any>();
+  if (conversationIds.length > 0) {
+    const { data: convs } = (await supabase
+      .from("cx_conversation")
+      .select("id, title, ai_model:last_model_id(common_name, provider)")
+      .in("id", conversationIds)) as any;
+    for (const c of convs || []) convMap.set(c.id, c);
+  }
+
+  for (const urId of userRequestIds) {
+    const convId = urToConv.get(urId) ?? null;
+    const conv = convId ? convMap.get(convId) : null;
+    result.set(urId, {
+      conversation_id: convId,
+      conversation_title: conv?.title ?? null,
+      model_name: conv?.ai_model?.common_name ?? null,
+      provider: conv?.ai_model?.provider ?? null,
+    });
+  }
+  return result;
+}
+
 // ─── Overview KPIs ───────────────────────────────────────────────────────────
 
-export async function fetchOverviewKpis(filters: CxFilters): Promise<CxOverviewKpis> {
+export async function fetchOverviewKpis(
+  filters: CxFilters,
+): Promise<CxOverviewKpis> {
   const supabase = await createClient();
   const timeWhere = buildTimeframeCondition(filters, "ur.created_at");
-  const userWhere = filters.user_id ? `AND ur.user_id = '${filters.user_id}'` : "";
+  const userWhere = filters.user_id
+    ? `AND ur.user_id = '${filters.user_id}'`
+    : "";
 
   // KPIs are aggregated from direct queries below — the prior
   // `cx_dashboard_kpis` RPC was removed in the post-0023 schema and its
   // result was never consumed by the rest of this function.
   const { data: urStats } = await supabase
     .from("cx_user_request")
-    .select("id, total_input_tokens, total_output_tokens, total_cached_tokens, total_tokens, total_cost, total_duration_ms, status, finish_reason, error, created_at, completed_at, iterations, total_tool_calls")
+    .select(
+      "id, total_input_tokens, total_output_tokens, total_cached_tokens, total_tokens, total_cost, total_duration_ms, status, finish_reason, error, created_at, completed_at, iterations, total_tool_calls",
+    )
     .is("deleted_at", null);
 
   const { data: convStats } = await supabase
@@ -61,10 +139,10 @@ export async function fetchOverviewKpis(filters: CxFilters): Promise<CxOverviewK
     .is("deleted_at", null);
 
   // Model usage
-  const { data: modelUsage } = await supabase
+  const { data: modelUsage } = (await supabase
     .from("cx_request")
     .select("ai_model_id, cost, ai_model(common_name, provider)")
-    .is("deleted_at", null) as any;
+    .is("deleted_at", null)) as any;
 
   // Tool usage
   const { data: toolUsage } = await supabase
@@ -73,45 +151,91 @@ export async function fetchOverviewKpis(filters: CxFilters): Promise<CxOverviewK
     .is("deleted_at", null);
 
   const requests = urStats || [];
-  const totalCost = requests.reduce((sum, r) => sum + (Number(r.total_cost) || 0), 0);
-  const totalInputTokens = requests.reduce((sum, r) => sum + (r.total_input_tokens || 0), 0);
-  const totalOutputTokens = requests.reduce((sum, r) => sum + (r.total_output_tokens || 0), 0);
-  const totalCachedTokens = requests.reduce((sum, r) => sum + (r.total_cached_tokens || 0), 0);
-  const totalTokens = requests.reduce((sum, r) => sum + (r.total_tokens || 0), 0);
-  const errorCount = requests.filter((r) => r.error || r.status === "error").length;
+  const totalCost = requests.reduce(
+    (sum, r) => sum + (Number(r.total_cost) || 0),
+    0,
+  );
+  const totalInputTokens = requests.reduce(
+    (sum, r) => sum + (r.total_input_tokens || 0),
+    0,
+  );
+  const totalOutputTokens = requests.reduce(
+    (sum, r) => sum + (r.total_output_tokens || 0),
+    0,
+  );
+  const totalCachedTokens = requests.reduce(
+    (sum, r) => sum + (r.total_cached_tokens || 0),
+    0,
+  );
+  const totalTokens = requests.reduce(
+    (sum, r) => sum + (r.total_tokens || 0),
+    0,
+  );
+  const errorCount = requests.filter(
+    (r) => r.error || r.status === "error",
+  ).length;
   const pendingCount = requests.filter((r) => r.status === "pending").length;
-  const maxTokensCount = requests.filter((r) => r.finish_reason === "max_tokens").length;
+  const maxTokensCount = requests.filter(
+    (r) => r.finish_reason === "max_tokens",
+  ).length;
 
   const completedRequests = requests.filter((r) => r.status === "completed");
   const avgDuration =
     completedRequests.length > 0
       ? completedRequests.reduce((sum, r) => {
-          const dur = r.total_duration_ms && r.total_duration_ms > 0
-            ? r.total_duration_ms
-            : r.completed_at && r.created_at
-            ? new Date(r.completed_at).getTime() - new Date(r.created_at).getTime()
-            : 0;
+          const dur =
+            r.total_duration_ms && r.total_duration_ms > 0
+              ? r.total_duration_ms
+              : r.completed_at && r.created_at
+                ? new Date(r.completed_at).getTime() -
+                  new Date(r.created_at).getTime()
+                : 0;
           return sum + dur;
         }, 0) / completedRequests.length
       : 0;
 
   // Aggregate model usage
-  const modelMap = new Map<string, { model_name: string; provider: string; count: number; total_cost: number }>();
+  const modelMap = new Map<
+    string,
+    { model_name: string; provider: string; count: number; total_cost: number }
+  >();
   (modelUsage || []).forEach((r: any) => {
     const name = r.ai_model?.common_name || "Unknown";
     const provider = r.ai_model?.provider || "Unknown";
     const key = `${name}|${provider}`;
-    const existing = modelMap.get(key) || { model_name: name, provider, count: 0, total_cost: 0 };
+    const existing = modelMap.get(key) || {
+      model_name: name,
+      provider,
+      count: 0,
+      total_cost: 0,
+    };
     existing.count++;
     existing.total_cost += Number(r.cost) || 0;
     modelMap.set(key, existing);
   });
 
   // Aggregate tool usage
-  const toolMap = new Map<string, { tool_name: string; count: number; error_count: number; avg_duration_ms: number; total_cost: number; total_dur: number }>();
+  const toolMap = new Map<
+    string,
+    {
+      tool_name: string;
+      count: number;
+      error_count: number;
+      avg_duration_ms: number;
+      total_cost: number;
+      total_dur: number;
+    }
+  >();
   (toolUsage || []).forEach((t: any) => {
     const key = t.tool_name;
-    const existing = toolMap.get(key) || { tool_name: key, count: 0, error_count: 0, avg_duration_ms: 0, total_cost: 0, total_dur: 0 };
+    const existing = toolMap.get(key) || {
+      tool_name: key,
+      count: 0,
+      error_count: 0,
+      avg_duration_ms: 0,
+      total_cost: 0,
+      total_dur: 0,
+    };
     existing.count++;
     if (t.is_error) existing.error_count++;
     existing.total_dur += t.duration_ms || 0;
@@ -120,10 +244,25 @@ export async function fetchOverviewKpis(filters: CxFilters): Promise<CxOverviewK
   });
 
   // Daily stats
-  const dailyMap = new Map<string, { date: string; requests: number; cost: number; tokens: number; errors: number }>();
+  const dailyMap = new Map<
+    string,
+    {
+      date: string;
+      requests: number;
+      cost: number;
+      tokens: number;
+      errors: number;
+    }
+  >();
   requests.forEach((r) => {
     const date = r.created_at.slice(0, 10);
-    const existing = dailyMap.get(date) || { date, requests: 0, cost: 0, tokens: 0, errors: 0 };
+    const existing = dailyMap.get(date) || {
+      date,
+      requests: 0,
+      cost: 0,
+      tokens: 0,
+      errors: 0,
+    };
     existing.requests++;
     existing.cost += Number(r.total_cost) || 0;
     existing.tokens += r.total_tokens || 0;
@@ -143,23 +282,33 @@ export async function fetchOverviewKpis(filters: CxFilters): Promise<CxOverviewK
     total_cached_tokens: totalCachedTokens,
     total_tokens: totalTokens,
     avg_cost_per_request: requests.length > 0 ? totalCost / requests.length : 0,
-    avg_tokens_per_request: requests.length > 0 ? totalTokens / requests.length : 0,
+    avg_tokens_per_request:
+      requests.length > 0 ? totalTokens / requests.length : 0,
     avg_duration_ms: avgDuration,
     error_count: errorCount,
     error_rate: requests.length > 0 ? errorCount / requests.length : 0,
     pending_count: pendingCount,
     max_tokens_count: maxTokensCount,
-    models_used: Array.from(modelMap.values()).sort((a, b) => b.total_cost - a.total_cost),
+    models_used: Array.from(modelMap.values()).sort(
+      (a, b) => b.total_cost - a.total_cost,
+    ),
     tool_usage: Array.from(toolMap.values())
-      .map((t) => ({ ...t, avg_duration_ms: t.count > 0 ? t.total_dur / t.count : 0 }))
+      .map((t) => ({
+        ...t,
+        avg_duration_ms: t.count > 0 ? t.total_dur / t.count : 0,
+      }))
       .sort((a, b) => b.count - a.count),
-    daily_stats: Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date)),
+    daily_stats: Array.from(dailyMap.values()).sort((a, b) =>
+      a.date.localeCompare(b.date),
+    ),
   };
 }
 
 // ─── Conversations ──────────────────────────────────────────────────────────
 
-export async function fetchConversations(filters: CxFilters): Promise<CxPaginatedResponse<CxConversation>> {
+export async function fetchConversations(
+  filters: CxFilters,
+): Promise<CxPaginatedResponse<CxConversation>> {
   const supabase = await createClient();
   const page = filters.page || 1;
   const perPage = filters.per_page || 50;
@@ -167,22 +316,33 @@ export async function fetchConversations(filters: CxFilters): Promise<CxPaginate
 
   let query = supabase
     .from("cx_conversation")
-    .select("*, ai_model:last_model_id(common_name, provider)", { count: "exact" })
+    .select("*, ai_model:last_model_id(common_name, provider)", {
+      count: "exact",
+    })
     .is("deleted_at", null)
-    .order(filters.sort_by || "created_at", { ascending: filters.sort_dir === "asc" })
+    .order(filters.sort_by || "created_at", {
+      ascending: filters.sort_dir === "asc",
+    })
     .range(offset, offset + perPage - 1);
 
   if (filters.user_id) query = query.eq("user_id", filters.user_id);
   if (filters.status) query = query.eq("status", filters.status);
-  if (filters.search) query = query.or(buildSearchOr(filters.search, ["title"]));
+  if (filters.search)
+    query = query.or(buildSearchOr(filters.search, ["title"]));
 
   if (filters.timeframe !== "all" && filters.timeframe !== "custom") {
     const range = getTimeframeRange(filters.timeframe as any);
     if (range) {
       query = query.gte("created_at", range.start).lte("created_at", range.end);
     }
-  } else if (filters.timeframe === "custom" && filters.start_date && filters.end_date) {
-    query = query.gte("created_at", filters.start_date).lte("created_at", filters.end_date);
+  } else if (
+    filters.timeframe === "custom" &&
+    filters.start_date &&
+    filters.end_date
+  ) {
+    query = query
+      .gte("created_at", filters.start_date)
+      .lte("created_at", filters.end_date);
   }
 
   const { data, count, error } = await query;
@@ -208,39 +368,65 @@ export async function fetchConversations(filters: CxFilters): Promise<CxPaginate
 export async function fetchConversationDetail(id: string) {
   const supabase = await createClient();
 
-  const [convResult, messagesResult, userRequestsResult, childConvsResult] = await Promise.all([
-    supabase
-      .from("cx_conversation")
-      .select("*, ai_model:last_model_id(common_name, provider)")
-      .eq("id", id)
-      .single(),
-    supabase
-      .from("cx_message")
-      .select("*")
-      .eq("conversation_id", id)
-      .is("deleted_at", null)
-      .order("position", { ascending: true }),
-    supabase
+  const [convResult, messagesResult, reqLinksResult, childConvsResult] =
+    await Promise.all([
+      supabase
+        .from("cx_conversation")
+        .select("*, ai_model:last_model_id(common_name, provider)")
+        .eq("id", id)
+        .single(),
+      supabase
+        .from("cx_message")
+        .select("*")
+        .eq("conversation_id", id)
+        .is("deleted_at", null)
+        .order("position", { ascending: true }),
+      // User requests for this conversation are resolved through the cx_request
+      // m2m: every cx_request for this conversation_id points back at a
+      // user_request_id.
+      supabase
+        .from("cx_request")
+        .select("user_request_id")
+        .eq("conversation_id", id)
+        .is("deleted_at", null),
+      supabase
+        .from("cx_conversation")
+        .select("*, ai_model:last_model_id(common_name, provider)")
+        .eq("parent_conversation_id", id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true }),
+    ]);
+
+  const userRequestIds = Array.from(
+    new Set(
+      ((reqLinksResult.data || []) as { user_request_id: string | null }[])
+        .map((r) => r.user_request_id)
+        .filter((v): v is string => !!v),
+    ),
+  );
+
+  let userRequests: CxUserRequest[] = [];
+  if (userRequestIds.length > 0) {
+    const { data: urData } = await supabase
       .from("cx_user_request")
       .select("*")
-      .eq("conversation_id", id)
+      .in("id", userRequestIds)
       .is("deleted_at", null)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("cx_conversation")
-      .select("*, ai_model:last_model_id(common_name, provider)")
-      .eq("parent_conversation_id", id)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: true }),
-  ]);
+      .order("created_at", { ascending: true });
+    userRequests = (urData || []) as CxUserRequest[];
+  }
 
   const conv = convResult.data as any;
   return {
     conversation: conv
-      ? { ...conv, model_name: conv.ai_model?.common_name, provider: conv.ai_model?.provider }
+      ? {
+          ...conv,
+          model_name: conv.ai_model?.common_name,
+          provider: conv.ai_model?.provider,
+        }
       : null,
     messages: (messagesResult.data || []) as CxMessage[],
-    user_requests: (userRequestsResult.data || []) as CxUserRequest[],
+    user_requests: userRequests,
     child_conversations: (childConvsResult.data || []).map((c: any) => ({
       ...c,
       model_name: c.ai_model?.common_name,
@@ -251,7 +437,9 @@ export async function fetchConversationDetail(id: string) {
 
 // ─── User Requests ──────────────────────────────────────────────────────────
 
-export async function fetchUserRequests(filters: CxFilters): Promise<CxPaginatedResponse<CxUserRequest>> {
+export async function fetchUserRequests(
+  filters: CxFilters,
+): Promise<CxPaginatedResponse<CxUserRequest>> {
   const supabase = await createClient();
   const page = filters.page || 1;
   const perPage = filters.per_page || 50;
@@ -259,9 +447,11 @@ export async function fetchUserRequests(filters: CxFilters): Promise<CxPaginated
 
   let query = supabase
     .from("cx_user_request")
-    .select("*, cx_conversation:conversation_id(title, ai_model:last_model_id(common_name, provider))", { count: "exact" })
+    .select("*", { count: "exact" })
     .is("deleted_at", null)
-    .order(filters.sort_by || "created_at", { ascending: filters.sort_dir === "asc" })
+    .order(filters.sort_by || "created_at", {
+      ascending: filters.sort_dir === "asc",
+    })
     .range(offset, offset + perPage - 1);
 
   if (filters.user_id) query = query.eq("user_id", filters.user_id);
@@ -272,25 +462,42 @@ export async function fetchUserRequests(filters: CxFilters): Promise<CxPaginated
     if (range) {
       query = query.gte("created_at", range.start).lte("created_at", range.end);
     }
-  } else if (filters.timeframe === "custom" && filters.start_date && filters.end_date) {
-    query = query.gte("created_at", filters.start_date).lte("created_at", filters.end_date);
+  } else if (
+    filters.timeframe === "custom" &&
+    filters.start_date &&
+    filters.end_date
+  ) {
+    query = query
+      .gte("created_at", filters.start_date)
+      .lte("created_at", filters.end_date);
   }
 
   const { data, count, error } = await query;
   if (error) throw error;
 
-  const requests = (data || []).map((r: any) => ({
-    ...r,
-    conversation_title: r.cx_conversation?.title || null,
-    model_name: r.cx_conversation?.ai_model?.common_name || null,
-    provider: r.cx_conversation?.ai_model?.provider || null,
-    computed_duration_ms:
-      r.total_duration_ms && r.total_duration_ms > 0
-        ? r.total_duration_ms
-        : r.completed_at && r.created_at
-        ? new Date(r.completed_at).getTime() - new Date(r.created_at).getTime()
-        : null,
-  }));
+  const rows = (data || []) as any[];
+  const convInfo = await resolveUserRequestConversations(
+    supabase,
+    rows.map((r) => r.id),
+  );
+
+  const requests = rows.map((r) => {
+    const info = convInfo.get(r.id);
+    return {
+      ...r,
+      conversation_id: info?.conversation_id ?? null,
+      conversation_title: info?.conversation_title ?? null,
+      model_name: info?.model_name ?? null,
+      provider: info?.provider ?? null,
+      computed_duration_ms:
+        r.total_duration_ms && r.total_duration_ms > 0
+          ? r.total_duration_ms
+          : r.completed_at && r.created_at
+            ? new Date(r.completed_at).getTime() -
+              new Date(r.created_at).getTime()
+            : null,
+    };
+  });
 
   return {
     data: requests,
@@ -307,11 +514,7 @@ export async function fetchUserRequestDetail(id: string) {
   const supabase = await createClient();
 
   const [urResult, requestsResult, toolCallsResult] = await Promise.all([
-    supabase
-      .from("cx_user_request")
-      .select("*, cx_conversation:conversation_id(title, ai_model:last_model_id(common_name, provider))")
-      .eq("id", id)
-      .single(),
+    supabase.from("cx_user_request").select("*").eq("id", id).single(),
     supabase
       .from("cx_request")
       .select("*, ai_model:ai_model_id(common_name, provider, name)")
@@ -328,10 +531,19 @@ export async function fetchUserRequestDetail(id: string) {
   ]);
 
   const ur = urResult.data as any;
+  const urConvInfo = ur
+    ? (await resolveUserRequestConversations(supabase, [ur.id])).get(ur.id)
+    : null;
 
   // Cost verification
-  const requestCosts = (requestsResult.data || []).reduce((sum: number, r: any) => sum + (Number(r.cost) || 0), 0);
-  const toolCosts = (toolCallsResult.data || []).reduce((sum: number, t: any) => sum + (Number(t.cost_usd) || 0), 0);
+  const requestCosts = (requestsResult.data || []).reduce(
+    (sum: number, r: any) => sum + (Number(r.cost) || 0),
+    0,
+  );
+  const toolCosts = (toolCallsResult.data || []).reduce(
+    (sum: number, t: any) => sum + (Number(t.cost_usd) || 0),
+    0,
+  );
   const urTotalCost = Number(ur?.total_cost) || 0;
   const combinedTotal = requestCosts + toolCosts;
 
@@ -348,15 +560,17 @@ export async function fetchUserRequestDetail(id: string) {
     user_request: ur
       ? {
           ...ur,
-          conversation_title: ur.cx_conversation?.title,
-          model_name: ur.cx_conversation?.ai_model?.common_name,
-          provider: ur.cx_conversation?.ai_model?.provider,
+          conversation_id: urConvInfo?.conversation_id ?? null,
+          conversation_title: urConvInfo?.conversation_title ?? null,
+          model_name: urConvInfo?.model_name ?? null,
+          provider: urConvInfo?.provider ?? null,
           computed_duration_ms:
             ur.total_duration_ms && ur.total_duration_ms > 0
               ? ur.total_duration_ms
               : ur.completed_at && ur.created_at
-              ? new Date(ur.completed_at).getTime() - new Date(ur.created_at).getTime()
-              : null,
+                ? new Date(ur.completed_at).getTime() -
+                  new Date(ur.created_at).getTime()
+                : null,
         }
       : null,
     requests: (requestsResult.data || []).map((r: any) => ({
@@ -371,7 +585,9 @@ export async function fetchUserRequestDetail(id: string) {
 
 // ─── Messages for a conversation ────────────────────────────────────────────
 
-export async function fetchMessages(conversationId: string): Promise<CxMessage[]> {
+export async function fetchMessages(
+  conversationId: string,
+): Promise<CxMessage[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("cx_message")
@@ -391,7 +607,7 @@ export async function fetchErrors(filters: CxFilters) {
   // User requests with errors
   const { data: errorRequests } = await supabase
     .from("cx_user_request")
-    .select("*, cx_conversation:conversation_id(title)")
+    .select("*")
     .is("deleted_at", null)
     .or("error.neq.null,status.eq.error,finish_reason.eq.max_tokens")
     .order("created_at", { ascending: false })
@@ -406,11 +622,20 @@ export async function fetchErrors(filters: CxFilters) {
     .order("created_at", { ascending: false })
     .limit(200);
 
+  const errConvInfo = await resolveUserRequestConversations(
+    supabase,
+    (errorRequests || []).map((r: any) => r.id),
+  );
+
   return {
-    error_requests: (errorRequests || []).map((r: any) => ({
-      ...r,
-      conversation_title: r.cx_conversation?.title,
-    })),
+    error_requests: (errorRequests || []).map((r: any) => {
+      const info = errConvInfo.get(r.id);
+      return {
+        ...r,
+        conversation_id: info?.conversation_id ?? null,
+        conversation_title: info?.conversation_title ?? null,
+      };
+    }),
     error_tool_calls: errorToolCalls || [],
   };
 }
@@ -432,38 +657,58 @@ export async function fetchUsageAnalytics(filters: CxFilters) {
     if (range) {
       query = query.gte("created_at", range.start).lte("created_at", range.end);
     }
-  } else if (filters.timeframe === "custom" && filters.start_date && filters.end_date) {
-    query = query.gte("created_at", filters.start_date).lte("created_at", filters.end_date);
+  } else if (
+    filters.timeframe === "custom" &&
+    filters.start_date &&
+    filters.end_date
+  ) {
+    query = query
+      .gte("created_at", filters.start_date)
+      .lte("created_at", filters.end_date);
   }
 
   const { data: requests } = await query;
 
   // Aggregate by model
-  const byModel = new Map<string, {
-    model_name: string;
-    provider: string;
-    count: number;
-    total_cost: number;
-    total_input_tokens: number;
-    total_output_tokens: number;
-    total_cached_tokens: number;
-    total_tokens: number;
-    avg_duration_ms: number;
-    total_dur: number;
-  }>();
+  const byModel = new Map<
+    string,
+    {
+      model_name: string;
+      provider: string;
+      count: number;
+      total_cost: number;
+      total_input_tokens: number;
+      total_output_tokens: number;
+      total_cached_tokens: number;
+      total_tokens: number;
+      avg_duration_ms: number;
+      total_dur: number;
+    }
+  >();
 
   // Aggregate by day
-  const byDay = new Map<string, {
-    date: string;
-    count: number;
-    cost: number;
-    input_tokens: number;
-    output_tokens: number;
-    cached_tokens: number;
-  }>();
+  const byDay = new Map<
+    string,
+    {
+      date: string;
+      count: number;
+      cost: number;
+      input_tokens: number;
+      output_tokens: number;
+      cached_tokens: number;
+    }
+  >();
 
   // Aggregate by provider
-  const byProvider = new Map<string, { provider: string; count: number; total_cost: number; total_tokens: number }>();
+  const byProvider = new Map<
+    string,
+    {
+      provider: string;
+      count: number;
+      total_cost: number;
+      total_tokens: number;
+    }
+  >();
 
   (requests || []).forEach((r: any) => {
     const modelName = r.ai_model?.common_name || "Unknown";
@@ -478,7 +723,18 @@ export async function fetchUsageAnalytics(filters: CxFilters) {
 
     // By model
     const mKey = `${modelName}|${provider}`;
-    const m = byModel.get(mKey) || { model_name: modelName, provider, count: 0, total_cost: 0, total_input_tokens: 0, total_output_tokens: 0, total_cached_tokens: 0, total_tokens: 0, avg_duration_ms: 0, total_dur: 0 };
+    const m = byModel.get(mKey) || {
+      model_name: modelName,
+      provider,
+      count: 0,
+      total_cost: 0,
+      total_input_tokens: 0,
+      total_output_tokens: 0,
+      total_cached_tokens: 0,
+      total_tokens: 0,
+      avg_duration_ms: 0,
+      total_dur: 0,
+    };
     m.count++;
     m.total_cost += cost;
     m.total_input_tokens += inputTokens;
@@ -489,7 +745,14 @@ export async function fetchUsageAnalytics(filters: CxFilters) {
     byModel.set(mKey, m);
 
     // By day
-    const d = byDay.get(date) || { date, count: 0, cost: 0, input_tokens: 0, output_tokens: 0, cached_tokens: 0 };
+    const d = byDay.get(date) || {
+      date,
+      count: 0,
+      cost: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+      cached_tokens: 0,
+    };
     d.count++;
     d.cost += cost;
     d.input_tokens += inputTokens;
@@ -498,7 +761,12 @@ export async function fetchUsageAnalytics(filters: CxFilters) {
     byDay.set(date, d);
 
     // By provider
-    const p = byProvider.get(provider) || { provider, count: 0, total_cost: 0, total_tokens: 0 };
+    const p = byProvider.get(provider) || {
+      provider,
+      count: 0,
+      total_cost: 0,
+      total_tokens: 0,
+    };
     p.count++;
     p.total_cost += cost;
     p.total_tokens += totalTokens;
@@ -507,10 +775,17 @@ export async function fetchUsageAnalytics(filters: CxFilters) {
 
   return {
     by_model: Array.from(byModel.values())
-      .map((m) => ({ ...m, avg_duration_ms: m.count > 0 ? m.total_dur / m.count : 0 }))
+      .map((m) => ({
+        ...m,
+        avg_duration_ms: m.count > 0 ? m.total_dur / m.count : 0,
+      }))
       .sort((a, b) => b.total_cost - a.total_cost),
-    by_day: Array.from(byDay.values()).sort((a, b) => a.date.localeCompare(b.date)),
-    by_provider: Array.from(byProvider.values()).sort((a, b) => b.total_cost - a.total_cost),
+    by_day: Array.from(byDay.values()).sort((a, b) =>
+      a.date.localeCompare(b.date),
+    ),
+    by_provider: Array.from(byProvider.values()).sort(
+      (a, b) => b.total_cost - a.total_cost,
+    ),
     total_requests: requests?.length || 0,
   };
 }

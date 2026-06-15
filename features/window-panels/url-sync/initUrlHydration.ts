@@ -37,11 +37,11 @@ export function initUrlHydration() {
     );
   });
 
-  // Notes (NotesBetaWindow — primary instance; title stays "Notes" in chrome)
+  // Notes (NotesWindow — primary instance; title stays "Notes" in chrome)
   registerPanelHydrator("notes", (dispatch) => {
     dispatch(
       openOverlay({
-        overlayId: "notesBetaWindow",
+        overlayId: "notesWindow",
         instanceId: "default",
         data: { title: "Notes" },
       }),

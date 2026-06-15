@@ -105,6 +105,10 @@ export function statusBadgeVariant(
   }
 }
 
-export function truncateId(id: string, chars: number = 8): string {
+export function truncateId(
+  id: string | null | undefined,
+  chars: number = 8,
+): string {
+  if (!id) return "";
   return id.slice(0, chars);
 }

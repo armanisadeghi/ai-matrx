@@ -17,19 +17,6 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
-### D7 — 11 overlay callbacks still severed (`onSave={undefined} /* pass via callbackGroupId */`)
-**Severity: medium — each is a button/flow that looks alive but silently does nothing; no data loss, no crash.**
-
-**What.** When `OverlayController.tsx` was seeded by codegen, every component prop that was a *function* got stubbed to `undefined` with a `/* fn — pass via callbackGroupId */ /* TODO: review */` marker. Correct (a function can't travel through Redux) but **never finished** — no callback group was wired to replace it, so the callback never fires. This is the exact class that broke chat's Edit / Edit & resubmit and HTML-preview Save (both **fixed** 2026-06-14 — see Resolved). As of 2026-06-14, `grep "pass via callbackGroupId" features/overlays/OverlayController.tsx` still finds **11** in other overlays:
-- `EmailDialogWindow.onSubmit` — *potentially high* (an email send handoff may be severed).
-- `ResourcePickerWindow.{onResourceSelected,onSettingsClick,onDebugClick}` — *potentially high* (`onResourceSelected` = picker can't return its choice).
-- `QuickSaveCodeDialog.{onOpenChange,onSaved}`, `QuickNoteSaveOverlay.onSaved`×2 — save-complete notifiers (the save itself may self-handle; needs per-case check).
-- `FullscreenBrokerState.onOpen`, `FullscreenMarkdownEditor.onOpen`, `FullscreenSocketAccordion.onOpen`, `ImageViewerWindow.onIndexChange` — lifecycle/notify callbacks, likely low impact.
-
-**Why it happened.** The codegen seed stubbed functions and left a TODO; the overhaul shipped before every stub was finished, and a severed callback is invisible at runtime (the UI renders fine).
-
-**Fence.** Documented as a bug *class* in [`features/overlays/FEATURE.md`](features/overlays/FEATURE.md) ("The severed-callback bug class") with the two correct completions (callback group vs self-handle) and the exact grep to enumerate them. Each needs an audit: is the callback actually consumed by a caller? If yes → finish it (callback group or self-handle); if no → delete the dead prop.
-
 ### D6 — Window geometry restore keyed by `overlayId`, but windows register by `id`/slug
 **Severity: low — saved window size/position silently doesn't restore for affected windows; no data loss.**
 
@@ -231,6 +218,13 @@ add a resource injection path; build dynamic-context menu filtering) — none bl
 the web feature.
 
 ## RESOLVED
+
+### R2 — All 11 remaining severed overlay callbacks (D7) were dead — deleted (2026-06-14)
+**What.** The 11 `undefined /* pass via callbackGroupId */` stubs that remained after R1 (`EmailDialogWindow.onSubmit`; `ResourcePickerWindow.{onResourceSelected,onSettingsClick,onDebugClick}`; `QuickSaveCodeDialog.{onOpenChange,onSaved}`; `QuickNoteSaveOverlay.onSaved`×2; `FullscreenBrokerState.onOpen`, `FullscreenMarkdownEditor.onOpen`, `FullscreenSocketAccordion.onOpen`, `ImageViewerWindow.onIndexChange`) were each audited and confirmed to have **zero consumers** — no callsite passed a handler and the relevant opener hooks had no callers. So every one was the *delete-dead-prop* completion, not a callback-group rewire.
+
+**Fix.** For each: removed the controller stub, removed the now-unused prop (+ destructure + internal `onOpen?.()`/guard) from the component, and removed the dead option from the opener (interface + dispatched `data` + Controller effect deps). `EmailDialogWindow` now closes synchronously on a valid submit (the dead async send path is gone). `QuickSaveCodeDialog` dropped its legacy `open`/`onOpenChange`/`onSaved` (now `isOpen`/`onClose` only); `QuickNoteSaveOverlay` dropped `onSaved`. The `resourcePickerWindow` overlay branch was deleted wholesale (it was never opened — both real consumers, `ResourcePickerButton` + `SmartAgentResourcePickerButton`, render the component directly — and `onResourceSelected` is *required*, so the branch was a latent `undefined is not a function` crash); its dead opener file `features/overlays/openers/resourcePickerWindow.tsx` was removed. `ImageViewerWindow` kept the body `ImageViewer`'s controlled-index props (the window shell legitimately uses them to sync its thumbnail sidebar) but `ImageViewerWindowProps` now `Omit`s them, closing the dead external/overlay surface.
+
+**Result.** `grep "pass via callbackGroupId" features/overlays/OverlayController.tsx` → **0**. The `resourcePickerWindow` id is intentionally retained in `features/overlays/catalogue.ts` + `features/window-panels/registry/overlay-ids.ts` (harmless metadata) because the still-used `ResourcePickerWindow` component declares `overlayId="resourcePickerWindow"` on its `WindowPanel`; removing the `OverlayId` union member would type-error there. D7 is closed.
 
 ### R1 — Chat "Edit" / "Edit & resubmit" silently did nothing (severed editor `onSave`) + two missing RPCs (2026-06-14)
 **What.** Editing a user message or "Edit & resubmit" opened the editor but Save did nothing; "Edit content" (overflow) and "HTML preview → Save" were broken the same way. Root cause: `OverlayController` hard-coded `fullScreenEditor.onSave={undefined}` (and `htmlPreview.onSave`) — a function can't travel through Redux, but the replacement callback channel was never wired (the D7 class). Compounding it, two RPCs the resubmit/delete paths called had **never been created** in the DB (`cx_message_soft_delete`, `cx_truncate_conversation_after`), so even once `onSave` fired, Overwrite + Delete would fail server-side.

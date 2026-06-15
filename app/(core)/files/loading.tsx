@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function CloudFilesLoading() {
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] flex overflow-hidden bg-background">
+    <div className="h-full flex overflow-hidden bg-background">
       {/* Sidebar */}
       <aside className="w-[280px] shrink-0 border-r flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">

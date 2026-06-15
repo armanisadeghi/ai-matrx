@@ -7,6 +7,7 @@
 import { Eye, Globe, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { openOverlay, closeOverlay } from "@/lib/redux/slices/overlaySlice";
+import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { loadWordPressCSS } from "@/features/html-pages/css/wordpress-styles";
 import { registerAction } from "../registry";
@@ -23,9 +24,34 @@ registerAction({
   order: 0,
   run: (ctx) => {
     const instanceId = ctx.instanceKey("html-preview");
-    // For sources that support edit (via the source adapter), wire the
-    // save callback. Otherwise the editor opens read-only / no save button.
     const canSave = Boolean(ctx.sourceAdapter.edit);
+
+    // Save is source-agnostic via the source adapter (chat → editMessage,
+    // note → NotesAPI.update, …). Route it through the callback registry so
+    // it reaches the caller — htmlPreview is now callback-aware. A function
+    // can't survive Redux; only the `callbackGroupId` string travels.
+    const callbackGroupId = canSave
+      ? createFullScreenEditorCallbackGroup({
+          onSave: async (newContent: string) => {
+            try {
+              await ctx.sourceAdapter.edit?.({
+                newContent,
+                source: ctx.source,
+                dispatch: ctx.dispatch,
+              });
+            } catch (err) {
+              console.error(
+                "[html-preview] save failed",
+                serializeError(err),
+              );
+              toast.error(getErrorMessage(err, "Failed to save"));
+            }
+            ctx.dispatch(
+              closeOverlay({ overlayId: "htmlPreview", instanceId }),
+            );
+          },
+        }).callbackGroupId
+      : null;
 
     ctx.dispatch(
       openOverlay({
@@ -41,30 +67,10 @@ registerAction({
             ctx.source.type === "chat-message"
               ? ctx.source.conversationId
               : undefined,
+          callbackGroupId,
           title: "HTML Preview & Publishing",
           description:
             "Edit markdown, preview HTML, and publish your content",
-          onSave: canSave
-            ? async (newContent: string) => {
-                try {
-                  await ctx.sourceAdapter.edit?.({
-                    newContent,
-                    source: ctx.source,
-                    dispatch: ctx.dispatch,
-                  });
-                } catch (err) {
-                   
-                  console.error(
-                    "[html-preview] save failed",
-                    serializeError(err),
-                  );
-                  toast.error(getErrorMessage(err, "Failed to save"));
-                }
-                ctx.dispatch(
-                  closeOverlay({ overlayId: "htmlPreview", instanceId }),
-                );
-              }
-            : undefined,
           showSaveButton: canSave,
           isAgentSystem: ctx.source.type === "chat-message",
         },

@@ -41,6 +41,7 @@ interface UserTable {
   description: string;
   row_count: number;
   field_count: number;
+  updated_at?: string;
 }
 
 /**
@@ -105,7 +106,13 @@ export function QuickDataSheet({
       if (matchesInitial) {
         setSelectedTableId(initialTableId!);
       } else if (tablesList.length > 0 && !selectedTableId) {
-        setSelectedTableId(tablesList[0].id);
+        // Default to the most recently updated table, mirroring the list order.
+        const mostRecent = [...tablesList].sort(
+          (a, b) =>
+            (b.updated_at ? new Date(b.updated_at).getTime() : 0) -
+            (a.updated_at ? new Date(a.updated_at).getTime() : 0),
+        )[0];
+        setSelectedTableId(mostRecent.id);
       }
     } catch (err) {
       console.error("Error loading tables:", err);
@@ -167,12 +174,13 @@ export function QuickDataSheet({
     );
   }
 
-  // Get selected table name for display
-  const selectedTable = tables.find((t) => t.id === selectedTableId);
-
-  const sortedTables = [...tables].sort((a, b) =>
-    a.table_name.localeCompare(b.table_name),
-  );
+  // Most recently updated first — quick access surfaces what you touched last,
+  // not an alphabetical directory.
+  const sortedTables = [...tables].sort((a, b) => {
+    const at = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+    const bt = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+    return bt - at;
+  });
   const filteredTables = sortedTables.filter((t) =>
     t.table_name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
@@ -243,13 +251,13 @@ export function QuickDataSheet({
             size="icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="h-8 w-8 mr-2 shrink-0"
-            title="Toggle Sidebar"
+            title={sidebarOpen ? "Hide table list" : "Show table list"}
           >
             <Menu className="h-4 w-4" />
           </Button>
-          <span className="font-medium text-sm truncate flex-1">
-            {selectedTable?.table_name || "Select a table"}
-          </span>
+          {/* Table name is rendered by UserTableViewer below — don't repeat it
+              here. This row is just the sidebar toggle + actions. */}
+          <div className="flex-1" />
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

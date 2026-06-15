@@ -1943,7 +1943,8 @@ function ClientToolsTab({
         </p>
         <p className="text-[11px] text-muted-foreground mt-0.5">
           When the AI calls a client tool, the server delegates it back to the
-          browser for execution. You have 120 seconds to respond.
+          browser for execution, then waits for the result — there's no
+          countdown, so it's fine if a tool needs you to act first.
         </p>
       </div>
 
@@ -2009,7 +2010,8 @@ function ClientToolsTab({
                   tool_delegated
                 </code>{" "}
                 event instead of executing it. Your client code receives the
-                call and must respond within 120 seconds.
+                call, runs it, and POSTs the result back; the loop stays
+                suspended until then, with no short response deadline.
               </p>
               <p>
                 Custom tools are automatically delegated — they have no

@@ -11,7 +11,6 @@ interface FullscreenMarkdownEditorProps {
   initialMarkdown?: string;
   showSampleSelector?: boolean;
   showConfigSelector?: boolean;
-  onOpen?: () => void;
   onClose?: () => void;
   isOpen?: boolean; // External control of open state
 }
@@ -22,7 +21,6 @@ const FullscreenMarkdownEditor = ({
   initialMarkdown,
   showSampleSelector = true,
   showConfigSelector = true,
-  onOpen,
   onClose,
   isOpen: externalIsOpen,
 }: FullscreenMarkdownEditorProps) => {
@@ -37,7 +35,6 @@ const FullscreenMarkdownEditor = ({
     if (externalIsOpen === undefined) {
       setInternalIsOpen(true);
     }
-    onOpen?.();
   };
   
   const closeEditor = (e?: React.MouseEvent | MouseEvent) => {

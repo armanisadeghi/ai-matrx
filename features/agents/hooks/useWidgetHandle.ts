@@ -19,8 +19,8 @@
  *     "function"` checks and dynamic invocation.
  *   - Unregisters on unmount. A widget that disappears mid-stream leaves
  *     `callbackManager.get(id)` → undefined; the dispatcher treats that as
- *     `{ok:false, reason:"not_found"}` and POSTs back so the loop can
- *     finish gracefully instead of timing out at 120s.
+ *     `{ok:false, reason:"not_found"}` and POSTs back so the loop resumes
+ *     gracefully on that result instead of hanging on one that never arrives.
  */
 
 import { useEffect, useRef } from "react";

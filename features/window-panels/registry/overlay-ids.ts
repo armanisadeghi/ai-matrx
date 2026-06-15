@@ -95,7 +95,6 @@ export const OVERLAY_IDS = [
   "multiFileSmartCodeEditorWindow",
   "newsWindow",
   "noteInfoWindow",
-  "notesBetaWindow",
   "notesWindow",
   "observationalMemoryWindow",
   "pdfExtractorWindow",

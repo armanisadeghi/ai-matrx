@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ContextItemPicker } from "@/features/scope-system/components/ContextItemPicker";
 import {
   Select,
   SelectContent,
@@ -113,6 +114,13 @@ interface SlotFormState {
   sourceId: string;
   sourceField: string;
   sourceExtra: string; // JSON string in the textarea
+  // Scope-context binding (source.kind="ctx_item") — fills the slot from the active scope.
+  // Independent of mutable/persist (read-fill always; writeback only if mutable+auto).
+  ctxBound: boolean;
+  ctxItemId: string;
+  ctxScopeTypeId: string;
+  ctxItemKey: string;
+  ctxOnMissing: string;
 }
 
 const EMPTY_FORM: SlotFormState = {
@@ -129,6 +137,11 @@ const EMPTY_FORM: SlotFormState = {
   sourceId: "",
   sourceField: "",
   sourceExtra: "",
+  ctxBound: false,
+  ctxItemId: "",
+  ctxScopeTypeId: "",
+  ctxItemKey: "",
+  ctxOnMissing: "empty",
 };
 
 function getSlotKey(slot: ContextSlot): string {
@@ -146,6 +159,7 @@ function slotToForm(slot: ContextSlot): SlotFormState {
   );
 
   const source = slot.source;
+  const isCtx = source?.kind === "ctx_item";
 
   return {
     key: slot.key || legacy.id || "",
@@ -157,13 +171,19 @@ function slotToForm(slot: ContextSlot): SlotFormState {
     summaryAgentId: slot.summary_agent_id ?? "",
     mutable: slot.mutable ?? false,
     persist: slot.persist ?? "never",
-    sourceKind: source?.kind ?? "",
-    sourceId: source?.id ?? "",
+    // Manual source inputs are only for non-ctx_item kinds.
+    sourceKind: isCtx ? "" : (source?.kind ?? ""),
+    sourceId: isCtx ? "" : (source?.id ?? ""),
     sourceField: source?.field ?? "",
     sourceExtra:
       source?.extra && Object.keys(source.extra).length > 0
         ? JSON.stringify(source.extra, null, 2)
         : "",
+    ctxBound: isCtx,
+    ctxItemId: isCtx ? (source?.id ?? "") : "",
+    ctxScopeTypeId: isCtx ? (source?.scope_type_id ?? "") : "",
+    ctxItemKey: isCtx ? (source?.item_key ?? "") : "",
+    ctxOnMissing: isCtx ? (source?.on_missing ?? "empty") : "empty",
   };
 }
 
@@ -196,34 +216,44 @@ function formToContextSlot(form: SlotFormState): {
   if (form.mutable) {
     slot.mutable = true;
     slot.persist = form.persist;
+  }
 
-    if (form.persist === "auto") {
-      if (!form.sourceKind.trim()) {
-        return {
-          slot: null,
-          error: "Source 'kind' is required when persistence is 'auto'.",
-        };
-      }
-      const source: ContextSlotSource = { kind: form.sourceKind.trim() };
-      if (form.sourceId.trim()) source.id = form.sourceId.trim();
-      if (form.sourceField.trim()) source.field = form.sourceField.trim();
-      if (form.sourceExtra.trim()) {
-        try {
-          const parsed = JSON.parse(form.sourceExtra);
-          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-            source.extra = parsed as Record<string, unknown>;
-          } else {
-            return {
-              slot: null,
-              error: "Source extra must be a JSON object.",
-            };
-          }
-        } catch {
-          return { slot: null, error: "Source extra is not valid JSON." };
-        }
-      }
-      slot.source = source;
+  // Scope-context binding (independent of mutable): fills the slot from the active scope,
+  // and — when also mutable+auto — is the same source used for write-back.
+  if (form.ctxBound) {
+    if (!form.ctxItemId.trim()) {
+      return { slot: null, error: "Choose a context item to bind this slot to." };
     }
+    slot.source = {
+      kind: "ctx_item",
+      id: form.ctxItemId.trim(),
+      scope_type_id: form.ctxScopeTypeId.trim() || undefined,
+      item_key: form.ctxItemKey.trim() || undefined,
+      on_missing: form.ctxOnMissing.trim() || "empty",
+    };
+  } else if (form.mutable && form.persist === "auto") {
+    if (!form.sourceKind.trim()) {
+      return {
+        slot: null,
+        error: "Source 'kind' is required when persistence is 'auto'.",
+      };
+    }
+    const source: ContextSlotSource = { kind: form.sourceKind.trim() };
+    if (form.sourceId.trim()) source.id = form.sourceId.trim();
+    if (form.sourceField.trim()) source.field = form.sourceField.trim();
+    if (form.sourceExtra.trim()) {
+      try {
+        const parsed = JSON.parse(form.sourceExtra);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          source.extra = parsed as Record<string, unknown>;
+        } else {
+          return { slot: null, error: "Source extra must be a JSON object." };
+        }
+      } catch {
+        return { slot: null, error: "Source extra is not valid JSON." };
+      }
+    }
+    slot.source = source;
   }
 
   return { slot, error: null };
@@ -340,6 +370,57 @@ function SlotEditorFields({
             style={{ fontSize: "16px" }}
           />
         </Field>
+      </Section>
+
+      {/* ──────────────────── Scope binding ──────────────────── */}
+      <Section
+        title="Scope binding"
+        subtitle="Optionally fill this slot from a scope context item. When the active scope provides a value, it's used automatically; with no context set, the slot simply stays empty (no requirement)."
+      >
+        <Field>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <Checkbox
+              checked={form.ctxBound}
+              onCheckedChange={(c) => onChange({ ctxBound: c === true })}
+            />
+            <span className="text-xs">Bind to a context item (auto-fill from scope)</span>
+          </label>
+        </Field>
+        {form.ctxBound && (
+          <Field className="pl-6 pt-1 space-y-2">
+            <ContextItemPicker
+              value={{
+                scopeTypeId: form.ctxScopeTypeId,
+                contextItemId: form.ctxItemId,
+              }}
+              onChange={(sel) =>
+                onChange({
+                  ctxItemId: sel.contextItemId,
+                  ctxScopeTypeId: sel.scopeTypeId,
+                  ctxItemKey: sel.itemKey,
+                })
+              }
+            />
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                When no scope provides it
+              </Label>
+              <Select
+                value={form.ctxOnMissing}
+                onValueChange={(v) => onChange({ ctxOnMissing: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="empty">Empty — leave the slot unfilled</SelectItem>
+                  <SelectItem value="skip">Skip — same as empty</SelectItem>
+                  <SelectItem value="error">Error — refuse to run if missing</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </Field>
+        )}
       </Section>
 
       {/* ──────────────────── Inline policy ──────────────────── */}

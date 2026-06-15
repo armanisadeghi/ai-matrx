@@ -54,8 +54,7 @@ import {
   NoteEditorCore,
   type EditorMode,
 } from "@/features/notes/components/NoteEditorCore";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindow";
 import type { Note } from "@/features/notes/types";
 import { useQuickNoteSave } from "./useQuickNoteSave";
 
@@ -76,7 +75,11 @@ export interface QuickNoteSaveCoreProps {
   saveLabel?: string;
 }
 
-const VIEW_MODES: Array<{ value: EditorMode; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+const VIEW_MODES: Array<{
+  value: EditorMode;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}> = [
   { value: "plain", label: "Edit only", icon: FileText },
   { value: "split", label: "Split view", icon: Columns2 },
   { value: "preview", label: "Preview only", icon: Eye },
@@ -101,8 +104,8 @@ export function QuickNoteSaveCore({
   // downstream `.length` / `.trim()` / `.slice()` call stays safe.
   const safeInitialContent =
     typeof initialContent === "string" ? initialContent : "";
-  const dispatch = useAppDispatch();
   const router = useRouter();
+  const openNoteInWindow = useOpenNoteInWindow();
 
   const {
     workingContent,
@@ -170,20 +173,11 @@ export function QuickNoteSaveCore({
       } else if (action === "navigate") {
         router.push(`/notes/${savedNote.id}`);
       } else if (action === "openWindow") {
-        dispatch(
-          openOverlay({
-            overlayId: "notesWindow",
-            data: {
-              singleNoteId: savedNote.id,
-              initialTabs: [savedNote.id],
-              initialActiveTab: savedNote.id,
-            },
-          }),
-        );
+        openNoteInWindow({ noteId: savedNote.id });
       }
       onSaved?.(savedNote, action);
     },
-    [savedNote, router, dispatch, onSaved],
+    [savedNote, router, openNoteInWindow, onSaved],
   );
 
   const rawLen = safeInitialContent.length;
@@ -204,8 +198,7 @@ export function QuickNoteSaveCore({
           <div className="shrink-0 flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs">
             <Check className="h-3.5 w-3.5 text-green-600" />
             <span className="font-medium">
-              Saved to{" "}
-              <span className="font-semibold">{savedNote.label}</span>
+              Saved to <span className="font-semibold">{savedNote.label}</span>
             </span>
             <span className="text-muted-foreground">
               · {workingContent.length.toLocaleString()} chars
@@ -562,8 +555,8 @@ export function QuickNoteSaveCore({
                 <Save className="h-3.5 w-3.5" />
                 {isSaving
                   ? "Saving…"
-                  : saveLabel ??
-                    (mode === "create" ? "Save Note" : "Update Note")}
+                  : (saveLabel ??
+                    (mode === "create" ? "Save Note" : "Update Note"))}
               </Button>
             </>
           )}

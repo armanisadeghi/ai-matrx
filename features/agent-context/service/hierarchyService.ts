@@ -365,10 +365,11 @@ export const hierarchyService = {
     organization_id?: string;
     description?: string;
   }): Promise<HierarchyProject> {
-    // Delegate to the canonical create path so an owner `ctx_project_members`
-    // row is always written and `is_personal` is set correctly. Without that
-    // member row the project becomes invisible to `/projects` and to every
-    // permission/sharing query that traverses project membership.
+    // Delegate to the canonical create path. The owner `ctx_project_members`
+    // row is written by the DB trigger `trg_ctx_projects_add_creator_membership`
+    // (fired on ctx_projects INSERT), and `is_personal` is derived from the org.
+    // Without that member row the project becomes invisible to `/projects` and
+    // to every permission/sharing query that traverses project membership.
     //
     // The canonical service also normalizes the synthetic "Personal"
     // pseudo-org sentinel to `null`, so passing it through is safe.

@@ -11,13 +11,14 @@
  * Prop: conversationId only.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ChevronLeft, ChevronsRight, ChevronRight } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
 } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
 import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
@@ -25,6 +26,7 @@ import {
   selectVariableInputStyle,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { VariableInputComponent } from "../input-components/VariableInputComponent";
+import { BoundVariableChips } from "../BoundVariableChips";
 import { formatText } from "@/utils/text/text-case-converter";
 
 interface AgentVariablesWizardProps {
@@ -55,6 +57,10 @@ export function AgentVariablesWizard({
   const definitions = useAppSelector(
     selectInstanceVariableDefinitions(conversationId),
   );
+  // Wizard steps through plain + unresolved bound vars; resolved bound vars show as pills.
+  const visibleDefs = useAppSelector(
+    selectVisibleInputDefinitions(conversationId),
+  );
   const userValues = useAppSelector(selectUserVariableValues(conversationId));
 
   const handleValueChange = useCallback(
@@ -65,17 +71,24 @@ export function AgentVariablesWizard({
   );
 
   const goNext = useCallback(() => {
-    if (currentIndex < definitions.length - 1) {
+    if (currentIndex < visibleDefs.length - 1) {
       setCurrentIndex((i) => i + 1);
     } else {
       onSubmit?.();
       onComplete?.();
     }
-  }, [currentIndex, definitions.length, onSubmit, onComplete]);
+  }, [currentIndex, visibleDefs.length, onSubmit, onComplete]);
 
   const goBack = useCallback(() => {
     setCurrentIndex((i) => Math.max(0, i - 1));
   }, []);
+
+  // Clamp when a variable resolves mid-session and visibleDefs shrinks past the cursor.
+  useEffect(() => {
+    if (currentIndex > visibleDefs.length - 1 && visibleDefs.length > 0) {
+      setCurrentIndex(visibleDefs.length - 1);
+    }
+  }, [visibleDefs.length, currentIndex]);
 
   const skipAll = useCallback(() => {
     onSubmit?.();
@@ -91,20 +104,26 @@ export function AgentVariablesWizard({
     return null;
   }
 
-  const variable = definitions[currentIndex];
-  if (!variable) return null;
+  const variable = visibleDefs[currentIndex];
+
+  // All variables are resolved from scope → no wizard steps, just the informative pills.
+  if (!variable) {
+    return <BoundVariableChips conversationId={conversationId} />;
+  }
 
   const rawValue = userValues[variable.name] ?? variable.defaultValue ?? "";
   // VariableInputComponent now accepts `unknown` so MediaRef objects flow
   // through for media-typed variables without coercion-to-string.
   const value: unknown = rawValue;
   const isFirst = currentIndex === 0;
-  const isLast = currentIndex === definitions.length - 1;
-  const total = definitions.length;
+  const isLast = currentIndex === visibleDefs.length - 1;
+  const total = visibleDefs.length;
   const current = currentIndex + 1;
 
   return (
-    <div className="flex flex-col h-72 max-h-72 w-full overflow-hidden border-b border-border">
+    <div className="flex flex-col w-full overflow-hidden border-b border-border">
+      <BoundVariableChips conversationId={conversationId} />
+      <div className="flex flex-col h-72 max-h-72 w-full overflow-hidden">
       {/* Header — variable name + counter */}
       <div className="grid grid-cols-[1fr_auto] gap-2 items-start px-3 pt-3 pb-0.5 shrink-0">
         <p className="text-[11px] text-muted-foreground leading-snug">
@@ -172,6 +191,7 @@ export function AgentVariablesWizard({
             </button>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

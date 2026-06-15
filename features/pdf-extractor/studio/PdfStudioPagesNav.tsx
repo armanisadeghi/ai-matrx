@@ -4,19 +4,25 @@ import React, { useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { toTitleCase } from "@/utils/dataUtils";
+import { PdfStudioPagesMeta } from "./PdfStudioPagesMeta";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
+import type { PdfDocument } from "../hooks/usePdfExtractor";
 
 interface PdfStudioPagesNavProps {
+  doc: PdfDocument;
+  pageRowCount: number;
+  hasPageRows: boolean;
   pages: PdfPageRow[];
-  totalPages: number;
   activePage: number | null;
   loading: boolean;
   onSelectPage: (pageNumber: number) => void;
 }
 
 export function PdfStudioPagesNav({
+  doc,
+  pageRowCount,
+  hasPageRows,
   pages,
-  totalPages,
   activePage,
   loading,
   onSelectPage,
@@ -28,8 +34,13 @@ export function PdfStudioPagesNav({
 
   return (
     <div className="flex flex-col min-h-0 flex-1">
-      <div className="px-3 py-2 border-b border-border text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-        Pages {totalPages > 0 && `(${totalPages.toLocaleString()})`}
+      <PdfStudioPagesMeta
+        doc={doc}
+        pageRowCount={pageRowCount}
+        hasPageRows={hasPageRows}
+      />
+      <div className="px-3 py-1.5 border-b border-border/60 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+        Pages
       </div>
       <ScrollArea className="flex-1">
         {loading && sorted.length === 0 ? (

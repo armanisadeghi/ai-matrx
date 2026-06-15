@@ -10583,6 +10583,66 @@
         }
       }
     },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tools/test/list": {
       "get": {
         "tags": [
@@ -31346,6 +31406,18 @@
             "description": "Substring match on message (ILIKE)."
           },
           {
+            "name": "collapse",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Join identical lines (timestamp/number/uuid-insensitive + manual rules): one row per signature, the latest occurrence, with occurrences + first/last seen.",
+              "default": false,
+              "title": "Collapse"
+            },
+            "description": "Join identical lines (timestamp/number/uuid-insensitive + manual rules): one row per signature, the latest occurrence, with occurrences + first/last seen."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -31376,6 +31448,117 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AppLogListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/app-logs/norm-exceptions": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin App Logs"
+        ],
+        "summary": "List Norm Exceptions Route",
+        "description": "The manual collapse/normalization rules (admin UI-managed).",
+        "operationId": "list_norm_exceptions_route_admin_app_logs_norm_exceptions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NormExceptionListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin App Logs"
+        ],
+        "summary": "Add Norm Exception Route",
+        "description": "Register a rule that canonicalizes a log family so it collapses correctly.",
+        "operationId": "add_norm_exception_route_admin_app_logs_norm_exceptions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NormExceptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NormException"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/app-logs/norm-exceptions/{exc_id}": {
+      "delete": {
+        "tags": [
+          "Admin",
+          "Admin App Logs"
+        ],
+        "summary": "Delete Norm Exception Route",
+        "operationId": "delete_norm_exception_route_admin_app_logs_norm_exceptions__exc_id__delete",
+        "parameters": [
+          {
+            "name": "exc_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Exc Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Norm Exception Route Admin App Logs Norm Exceptions  Exc Id  Delete"
                 }
               }
             }
@@ -37539,6 +37722,41 @@
                 "type": "null"
               }
             ]
+          },
+          "occurrences": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurrences"
+          },
+          "first_seen": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen"
+          },
+          "last_seen": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen"
           }
         },
         "additionalProperties": false,
@@ -42852,6 +43070,17 @@
               }
             ],
             "title": "Section Kind"
+          },
+          "section_subtype": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Subtype"
           }
         },
         "type": "object",
@@ -47619,6 +47848,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -60016,6 +60300,122 @@
         "title": "NodeTypeDescriptor",
         "description": "One palette item from ``GET /workflow/node-types`` /\n``GET /actions``. Shape varies per node — fields beyond the\ndocumented core are passed through verbatim."
       },
+      "NormException": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "match": {
+            "type": "string",
+            "title": "Match"
+          },
+          "replace_pattern": {
+            "type": "string",
+            "title": "Replace Pattern"
+          },
+          "replacement": {
+            "type": "string",
+            "title": "Replacement"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "match",
+          "replace_pattern",
+          "replacement",
+          "created_at"
+        ],
+        "title": "NormException",
+        "description": "A manual collapse/normalization rule (app_log_norm_exception row)."
+      },
+      "NormExceptionListResponse": {
+        "properties": {
+          "exceptions": {
+            "items": {
+              "$ref": "#/components/schemas/NormException"
+            },
+            "type": "array",
+            "title": "Exceptions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "exceptions"
+        ],
+        "title": "NormExceptionListResponse"
+      },
+      "NormExceptionRequest": {
+        "properties": {
+          "match": {
+            "type": "string",
+            "title": "Match"
+          },
+          "replace_pattern": {
+            "type": "string",
+            "title": "Replace Pattern"
+          },
+          "replacement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replacement"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "match",
+          "replace_pattern"
+        ],
+        "title": "NormExceptionRequest"
+      },
       "OccupationalCodesResponse": {
         "properties": {
           "codes": {
@@ -60499,6 +60899,17 @@
             ],
             "title": "Section Kind"
           },
+          "section_subtype": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Subtype"
+          },
           "section_title": {
             "anyOf": [
               {
@@ -60655,6 +61066,17 @@
               }
             ],
             "title": "Section Kind"
+          },
+          "section_subtype": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Subtype"
           },
           "section_title": {
             "anyOf": [

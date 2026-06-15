@@ -10,7 +10,6 @@ import { Loader2, Mail } from "lucide-react";
 interface EmailDialogWindowProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit?: (email: string) => Promise<void>;
   title?: string;
   description?: string;
   submitLabel?: string;
@@ -19,7 +18,6 @@ interface EmailDialogWindowProps {
 export default function EmailDialogWindow({
   isOpen,
   onClose,
-  onSubmit,
   title = "Email to yourself",
   description = "Enter your email address to receive the content.",
   submitLabel = "Send Email",
@@ -47,23 +45,8 @@ export default function EmailDialogWindow({
       return;
     }
 
-    if (!onSubmit) {
-      onClose();
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      await onSubmit(email);
-      setEmail("");
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send email");
-    } finally {
-      setLoading(false);
-    }
+    setEmail("");
+    onClose();
   };
 
   const handleClose = () => {

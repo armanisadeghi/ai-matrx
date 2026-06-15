@@ -20,8 +20,6 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 const OVERLAY_ID = "emailDialogWindow" as const;
 
 export interface OpenEmailDialogWindowOptions {
-  /** TODO callback — wire via callback registry in stage 3. */
-  onSubmit?: (...args: unknown[]) => void;
   title?: string;
   description?: string;
   submitLabel?: string;
@@ -39,7 +37,6 @@ export function useOpenEmailDialogWindow() {
         openOverlay({
           overlayId: OVERLAY_ID,
           data: {
-            onSubmit: opts.onSubmit,
             title: opts.title,
             description: opts.description,
             submitLabel: opts.submitLabel,
@@ -64,6 +61,6 @@ export function EmailDialogWindowController(props: OpenEmailDialogWindowOptions)
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.onSubmit, props.title, props.description, props.submitLabel]);
+  }, [open, props.title, props.description, props.submitLabel]);
   return null;
 }

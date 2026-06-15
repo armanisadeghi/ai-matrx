@@ -493,6 +493,7 @@ export async function queryScopeSuggestions(
   if (q.sourceKind) query = query.eq("source_kind", q.sourceKind);
   if (q.matchKind) query = query.eq("match_kind", q.matchKind);
   if (q.minConfidence != null) query = query.gte("confidence", q.minConfidence);
+  if (q.maxConfidence != null) query = query.lt("confidence", q.maxConfidence);
   if (q.starredOnly) query = query.eq("is_starred", true);
   if (q.unseenOnly) query = query.is("viewed_at", null);
 

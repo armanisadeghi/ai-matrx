@@ -143,6 +143,10 @@ export const selectMissingRequiredVariables = (conversationId: string) =>
       const missing = definitions
         .filter((def) => {
           if (!def.required) return false;
+          // A scope-bound variable is NEVER a hard requirement — when no context provides
+          // it, it falls back to an ordinary (optional) input. The server fills it from
+          // scope when available. Bound vars must never block a run.
+          if (def.binding?.itemKey || def.binding?.contextItemId) return false;
           if (def.name in userValues) {
             return isEmpty(userValues[def.name]);
           }

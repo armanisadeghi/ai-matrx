@@ -24,6 +24,17 @@
  * Session selection is URL-driven (`?session=<id>`) via
  * `window.history.replaceState` — no RSC roundtrip on switch; this page is
  * high-volume and switching must be instant.
+ *
+ * EMBEDDED MODE — `opts`:
+ *   - `sessionId`  pins the active session to a host-owned id (the War Room
+ *     tile owns its `source='war_room'` studio session and is the master).
+ *   - `urlSync: false` makes the hook ignore the page URL entirely: it never
+ *     calls `useSearchParams()` (so it forces no Suspense boundary and never
+ *     reacts to an unrelated host page's `?session=`), and never writes
+ *     `window.history`. Selection/create/delete update internal state only.
+ *   `urlSync` MUST be stable for the lifetime of the hook (it gates a hook
+ *   call) — pass a literal, not a value that can toggle. Default (no opts) is
+ *   the standalone page behavior, unchanged.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

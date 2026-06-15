@@ -28,7 +28,10 @@ one click and never destructive. Phase F of the Knowledge-Graph plan.
   embedded under a scope-item slot editor ("N suggested fills for <slot>").
 - `GlobalSuggestionsDrawer` (`components/GlobalSuggestionsDrawer.tsx`) — the
   global inbox; Drawer on mobile, right Sheet on desktop; grouped by source +
-  a heavy-hitter section. Rendered (gated) by the overlay system.
+  a heavy-hitter section, all CONFIDENCE-RANKED (strongest first). Low-confidence
+  (<50%) rows are excluded from the list and folded into a single "review in the
+  manager" banner at the bottom; the header count reflects only shown rows.
+  Rendered (gated) by the overlay system.
 - `HeavyHitterSuggestionsInbox` (`components/HeavyHitterSuggestionsInbox.tsx`) —
   the "Suggest a scope" card on the `/scopes` hub (Phase F.4).
 - `KgSuggestionsNavButton` (`components/KgSuggestionsNavButton.tsx`) — a
@@ -74,17 +77,24 @@ from the three cache-keyed inbox views.
   orchestrator: a stats summary strip, the filter bar, a bulk-action bar
   (accept/defer/reject/star across the selection), the table (desktop) or
   stacked decision cards (mobile — tables are banned on phones), and server-side
-  pagination. Stamps rows `viewed_at` as they load.
+  pagination. Stamps rows `viewed_at` as they load. Low-confidence (<50%) rows
+  are pulled out of the main table into a collapsed, muted footer section with a
+  "Dismiss all" action (skipped when the user explicitly filters by confidence).
 - `SuggestionsFilterBar` (`components/manager/SuggestionsFilterBar.tsx`) —
   multi-status chips + stage / org / scope-type / scope / field / source /
   confidence selects + starred-only / unseen-only toggles + free-text search.
   Dimension option lists are derived from the loaded rows (search covers the
   rest). Every change flows up via `patchQuery` (resets to page 0).
 - `SuggestionsTable` (`components/manager/SuggestionsTable.tsx`) — the dense,
-  sortable desktop table (scope / field / org / confidence / status / detected
-  sort SERVER-SIDE), with a per-row star, unseen dot, inline quick
+  sortable desktop table. Leads with a prominent **Source file** column (file/
+  note icon + resolved filename + a one-click snippet preview that opens the
+  floating source panel) because the file a suggestion came from is the most
+  important triage signal. Then scope / field / org / confidence / status /
+  detected (sort SERVER-SIDE), a per-row star, unseen dot, inline quick
   accept/defer/reject (pending) or restore (decided), row select for bulk, and
   an expand row that renders the canonical `KgSuggestionRowItem` decision card.
+  Filenames come from `useSuggestionsQuery`'s batch-resolved `sourceTitles` map
+  (keyed by `sourceRefKey`), so the column fills without per-row reads.
 
 **Enrichment layer** (resolves opaque ids → human-readable decision context)
 - `service/kgEnrichmentService.ts` (`enrichSuggestion`) — combines the scopes
@@ -94,12 +104,21 @@ from the three cache-keyed inbox views.
   transcript/conversation/file/code_file + ingested-doc fallback) — no longer
   notes-only.
 - `service/sourcePreviewService.ts` — the SOURCE read layer. `resolveSourceTitle`
-  (lightweight, per-kind, used by the always-on card line) and `loadSourcePreview`
-  (full body — direct-Supabase per kind: notes/ctx_tasks/ctx_projects/transcripts
-  /cx_conversation/user_files/code_files; bodies for files/scraped/unknown kinds
-  come from the ingested `processed_documents.clean_content`/`content`). Never
-  throws — degrades to a `notFound` doc. `sourceLinkFor` is the chunk-less
-  link-out router (sibling of `rag/api/search.ts#citationHrefFor`).
+  (lightweight, per-kind, used by the always-on card line), `resolveSourceTitles`
+  (BATCH — one query per kind across a whole page, used by the manager table),
+  and `loadSourcePreview` (full body — direct-Supabase per kind: notes/ctx_tasks/
+  ctx_projects/transcripts/cx_conversation/user_files/code_files; bodies for
+  files/scraped/unknown kinds come from the ingested
+  `processed_documents.clean_content`/`content`). Never throws — degrades to a
+  `notFound` doc. `sourceLinkFor` is the chunk-less link-out router (sibling of
+  `rag/api/search.ts#citationHrefFor`).
+  - **`cld_file` titles come from `processed_documents.name`, NOT `user_files`.**
+    A `cld_file` suggestion's `source_id` is the ingested doc's `source_id` (the
+    cloud-file id), which is **not** a `user_files.id` — resolving against
+    `user_files` returns null (the old "Untitled file" bug). Resolution reads
+    `processed_documents` keyed by `(source_kind, source_id)`, preferring the
+    ROOT doc (`parent_processed_id is null`) so the title is the clean original
+    filename, not a derived "… (agent extract run …)" name.
 - `hooks/useKgSuggestionEnrichment.ts` — per-card resolver with a module-level
   promise cache keyed by suggestion id (dedupes repeat/concurrent resolves).
 - `hooks/useSourcePreviewDoc.ts` — on-demand source-body loader, promise-cached
@@ -421,6 +440,40 @@ end-to-end runtime needs NER to produce live rows in both ledgers.
 
 ## Change log
 
+- `2026-06-14` — **Low-confidence (<50%) suggestions are de-emphasized
+  everywhere; drawer is confidence-ranked.** New shared floor
+  `LOW_CONFIDENCE_THRESHOLD = 0.5` (`constants.ts`, `isLowConfidence`). The
+  producer's sub-50% proposals are mostly noise, so: (1) the global notifier
+  (`KgNewSuggestionNotifier`) no longer counts them — it only interrupts for
+  strong suggestions; (2) the drawer (`GlobalSuggestionsDrawer`) now sorts
+  heavy hitters + each source group by confidence DESC (groups ordered by their
+  strongest member) and keeps low-confidence rows OUT of the list, folding them
+  into one quiet "N more low-confidence suggestions (<50%) hidden — review in
+  the manager" banner; the header count reflects only what's shown; (3) the
+  manager splits low-confidence rows out of the main table into a collapsed,
+  muted footer section (`SuggestionsManager`) with a "Dismiss all" action — they
+  stay reviewable but visibly flagged as weak. New plumbing: `maxConfidence` on
+  `KgSuggestionsQuery` + `.lt("confidence", …)` in `queryScopeSuggestions`;
+  `useSuggestionsQuery` now runs a third (low-quality) fetch (skipped when the
+  user explicitly filters by confidence), applies the floor to the main table +
+  heavy-hitter fetches, and reconciles decisions/star/source-titles across the
+  new `lowQuality` list (`lowQuality`, `lowQualityTotal`).
+- `2026-06-14` — **Filenames now resolve everywhere + a prominent Source-file
+  column.** Root-cause fix: a `cld_file` suggestion's `source_id` is the ingested
+  document's `source_id` (the cloud-file id), NOT a `user_files.id`, so
+  `resolveSourceTitle` was querying `user_files` by id, finding nothing, and
+  every card/drawer/manager row showed "Untitled file" — even though the
+  filename was the single most important triage signal. `resolveSourceTitle`
+  (and `loadFile`/`fetchProcessedDocument`) now read
+  `processed_documents.name` keyed by `(source_kind, source_id)`, preferring the
+  ROOT doc (`parent_processed_id is null`) for the clean filename rather than a
+  derived "… (agent extract run …)" name; `user_files` remains a fallback. Added
+  `resolveSourceTitles` (batch — one query per kind across a page) + threaded a
+  `sourceTitles` map through `useSuggestionsQuery`. The `/suggestions` manager
+  table now LEADS with a **Source file** column (icon + filename + inline snippet
+  + one-click floating preview), so the file a suggestion came from is visible at
+  a glance instead of buried in an expanded card. `loadViaProcessedDocument` also
+  surfaces the ingested mime type in the preview meta.
 - `2026-06-14` — **Source preview + non-blocking review.** Suggestions now show
   the actual document they came from, with the `context_snippet` highlighted in
   context, in a resizable non-blocking panel that never dismisses the inbox. New
@@ -531,8 +584,8 @@ end-to-end runtime needs NER to produce live rows in both ledgers.
   `ConfirmDialog` (so accepting over a manual value is no longer a silent
   data loss), and a collapsible "all fields on this scope" list with the
   target highlighted. The source "Open" uses the new `useOpenNoteInWindow`
-  primitive (`features/notes/actions/`) → canonical `notesBetaWindow`, not
-  the deprecated `notesWindow`. Widened `GlobalSuggestionsDrawer` to
+  primitive (`features/notes/actions/`) → canonical `notesWindow` overlay.
+  Widened `GlobalSuggestionsDrawer` to
   `sm:max-w-xl` and
   added a framing hint. Made `ScopeItemSuggestionsPanel` scope-aware
   (`scopeId` prop filters out fills meant for other scopes of the same type)

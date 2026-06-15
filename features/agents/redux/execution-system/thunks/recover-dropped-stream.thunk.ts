@@ -77,9 +77,13 @@ export const recoverDroppedStream = createAsyncThunk<
         return { recovered: false, serverStatus: null };
       }
 
+      // `cx_user_request` no longer carries `conversation_id`. We find the
+      // newest user_request that ran in this conversation through the
+      // `cx_request` m2m (the latest cx_request row for the conversation), then
+      // read its parent user_request's status via the FK join.
       const { data, error } = await supabase
-        .from("cx_user_request")
-        .select("id,status")
+        .from("cx_request")
+        .select("created_at, cx_user_request:user_request_id(id, status)")
         .eq("conversation_id", conversationId)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
@@ -87,7 +91,12 @@ export const recoverDroppedStream = createAsyncThunk<
         .maybeSingle();
 
       if (error || !data) continue;
-      const serverStatus = (data.status as string | null) ?? null;
+      const parentUserRequest = (
+        data as {
+          cx_user_request?: { id: string; status: string | null } | null;
+        }
+      ).cx_user_request;
+      const serverStatus = parentUserRequest?.status ?? null;
       if (!serverStatus || !TERMINAL_STATUSES.has(serverStatus)) continue;
 
       // Terminal — the detached run finished. Rehydrate from the DB so the

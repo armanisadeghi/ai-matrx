@@ -410,14 +410,9 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
-  notesBetaWindow: {
+  notesWindow: {
     label: "Notes Window",
     instanceMode: "multi",
-    isWindow: true,
-  },
-  notesWindow: {
-    label: "Notes Window (legacy)",
-    instanceMode: "singleton",
     isWindow: true,
   },
   observationalMemoryWindow: {

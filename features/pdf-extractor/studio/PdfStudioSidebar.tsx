@@ -46,6 +46,7 @@ import { PdfStudioSidebarToggle } from "./PdfStudioSidebarToggle";
 import { PdfStudioPagesNav } from "./PdfStudioPagesNav";
 import type { SidebarView } from "../state/types";
 import type { PdfPageRow } from "../hooks/useProcessedDocumentPages";
+import type { PdfDocument } from "../hooks/usePdfExtractor";
 
 export type StudioDocsState = ReturnType<typeof usePdfStudioDocs>;
 
@@ -61,9 +62,11 @@ interface PdfStudioSidebarProps {
   view: SidebarView;
   onChangeView: (view: SidebarView) => void;
   /** For the pages view. */
+  activeDoc: PdfDocument | null;
+  pageRowCount: number;
+  hasPageRows: boolean;
   pages: PdfPageRow[];
   pagesLoading: boolean;
-  totalPages: number;
   activePage: number | null;
   onSelectPage: (pageNumber: number) => void;
 }
@@ -76,9 +79,11 @@ export function PdfStudioSidebar({
   onAddDocs,
   view,
   onChangeView,
+  activeDoc,
+  pageRowCount,
+  hasPageRows,
   pages,
   pagesLoading,
-  totalPages,
   activePage,
   onSelectPage,
 }: PdfStudioSidebarProps) {
@@ -121,15 +126,17 @@ export function PdfStudioSidebar({
         />
       </div>
 
-      {inPagesView ? (
+      {inPagesView && activeDoc ? (
         <PdfStudioPagesNav
+          doc={activeDoc}
+          pageRowCount={pageRowCount}
+          hasPageRows={hasPageRows}
           pages={pages}
-          totalPages={totalPages || pages.length}
           activePage={activePage}
           loading={pagesLoading}
           onSelectPage={onSelectPage}
         />
-      ) : (
+      ) : inPagesView ? null : (
         <>
           {/* Search + Add */}
           <div className="shrink-0 px-3 pt-1 pb-2 space-y-2">

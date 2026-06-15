@@ -8,11 +8,13 @@
 
 import { formatText } from "@/utils/text/text-case-converter";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
+import { BoundVariableChips } from "@/features/agents/components/inputs/BoundVariableChips";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
 } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
 import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectShowVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
@@ -32,8 +34,12 @@ export function AgentVariablesStacked({
   const shouldShowVariables = useAppSelector(
     selectShouldShowVariables(conversationId),
   );
-  const variableDefaults = useAppSelector(
+  const definitions = useAppSelector(
     selectInstanceVariableDefinitions(conversationId),
+  );
+  // Plain vars + unresolved bound vars (inherited component); resolved bound vars are pills.
+  const variableDefaults = useAppSelector(
+    selectVisibleInputDefinitions(conversationId),
   );
   const variableValues = useAppSelector(
     selectUserVariableValues(conversationId),
@@ -48,16 +54,13 @@ export function AgentVariablesStacked({
     [conversationId, dispatch],
   );
 
-  if (
-    !shouldShowVariables ||
-    !showVariablePanel ||
-    variableDefaults.length === 0
-  ) {
+  if (!shouldShowVariables || !showVariablePanel || definitions.length === 0) {
     return null;
   }
 
   return (
     <div className="max-h-72 overflow-y-auto bg-transparent border-b border-border">
+      <BoundVariableChips conversationId={conversationId} />
       {variableDefaults.map((variable, index) => {
         const value =
           variableValues[variable.name] ?? variable.defaultValue ?? "";

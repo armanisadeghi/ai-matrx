@@ -105,77 +105,77 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
     <ReactQueryProvider>
       <StoreProvider initialState={initialReduxState}>
         <WindowPersistenceManager>
-        <PersistentComponentProvider>
-          <ContextMenuProvider>
-            <ToastProvider>
-              <RefProvider>
-                <TooltipProvider delayDuration={200}>
-                  <ModuleHeaderProvider>
-                    <UniformHeightProvider>
-                      <SelectedImagesProvider>
-                        <TranscriptsProvider>
-                          <AudioRecoveryProvider>
-                            <RequestRecoveryProvider>
-                              <GlobalRecordingProvider>
-                                {children}
-                                <RecordingPill />
-                              </GlobalRecordingProvider>
-                              <RecoveryWindow />
-                              <RecoveryNudge />
-                              <DeferredSingletons />
-                              <ServerToggleQueryReset />
-                              <ExtensionBridgeSubscriber />
-                              <GlobalTaskShortcut />
-                              <CreateTaskFromSourceDialog />
-                              {/* Cloud-files realtime — mounted globally so
+          <PersistentComponentProvider>
+            <ContextMenuProvider>
+              <ToastProvider>
+                <RefProvider>
+                  <TooltipProvider delayDuration={200}>
+                    <ModuleHeaderProvider>
+                      <UniformHeightProvider>
+                        <SelectedImagesProvider>
+                          <TranscriptsProvider>
+                            <AudioRecoveryProvider>
+                              <RequestRecoveryProvider>
+                                <GlobalRecordingProvider>
+                                  {children}
+                                  <RecordingPill />
+                                  <RecoveryWindow />
+                                  <RecoveryNudge />
+                                  <DeferredSingletons />
+                                  <ServerToggleQueryReset />
+                                  <ExtensionBridgeSubscriber />
+                                  <GlobalTaskShortcut />
+                                  <CreateTaskFromSourceDialog />
+                                  {/* Cloud-files realtime — mounted globally so
                                   every authed page receives file/folder/share
                                   link updates. Reads userId from Redux and
                                   tears down on sign-out. Replaces five
                                   previous per-route mounts (Phase 0 of the
                                   file-handling consolidation). See
                                   docs/FILE_HANDLING_CONSOLIDATION_PLAN.md. */}
-                              <CloudFilesRealtimeProvider />
-                              {/* Cloud-files imperative pickers:
+                                  <CloudFilesRealtimeProvider />
+                                  {/* Cloud-files imperative pickers:
                                   openFilePicker() / openFolderPicker() / openSaveAs()
                                   are callable from anywhere in the app once this host
                                   mounts. See features/files/components/pickers/. */}
-                              <CloudFilesPickerHost />
-                              {/* Upload guard — exposes the imperative
+                                  <CloudFilesPickerHost />
+                                  {/* Upload guard — exposes the imperative
                                   `requestUpload()` API. Hashes incoming
                                   files, scans Redux for duplicates,
                                   shows the resolution dialog when
                                   needed, then dispatches the upload.
                                   See features/files/upload/. */}
-                              <UploadGuardHost />
-                              {/* Imperative confirm dialog host. Exposes
+                                  <UploadGuardHost />
+                                  {/* Imperative confirm dialog host. Exposes
                                   `confirm({title, variant, ...})` — the
                                   global replacement for `window.confirm`.
                                   See components/dialogs/confirm/. */}
-                              <ConfirmDialogHost />
-                              <ValuePromptsDialogHost />
-                              {/* Imperative audio modal host. Exposes the global
+                                  <ConfirmDialogHost />
+                                  <ValuePromptsDialogHost />
+                                  {/* Imperative audio modal host. Exposes the global
                                   `showAudioModal({ text, title, ... })` helper
                                   (see utils/audio/audioModal.ts). The modal is
                                   next/dynamic — no TTS code loads until first use. */}
-                              <AudioModalHost />
-                              {/* File preview is delivered via a registered
+                                  <AudioModalHost />
+                                  {/* File preview is delivered via a registered
                                   WindowPanel (`filePreviewWindow`) mounted by
                                   the UnifiedOverlayController — no host needed
                                   here. Anywhere in the app:
                                     import { openFilePreview } from
                                       "@/features/files/components/preview/openFilePreview";
                                     openFilePreview(fileId); */}
-                            </RequestRecoveryProvider>
-                          </AudioRecoveryProvider>
-                        </TranscriptsProvider>
-                      </SelectedImagesProvider>
-                    </UniformHeightProvider>
-                  </ModuleHeaderProvider>
-                </TooltipProvider>
-              </RefProvider>
-            </ToastProvider>
-          </ContextMenuProvider>
-        </PersistentComponentProvider>
+                                </GlobalRecordingProvider>
+                              </RequestRecoveryProvider>
+                            </AudioRecoveryProvider>
+                          </TranscriptsProvider>
+                        </SelectedImagesProvider>
+                      </UniformHeightProvider>
+                    </ModuleHeaderProvider>
+                  </TooltipProvider>
+                </RefProvider>
+              </ToastProvider>
+            </ContextMenuProvider>
+          </PersistentComponentProvider>
         </WindowPersistenceManager>
       </StoreProvider>
     </ReactQueryProvider>

@@ -27,14 +27,11 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import {
-  PanelLeftClose,
-  PanelLeftOpen,
-  PanelRightClose,
-  PanelRightOpen,
-  Search,
-  X,
-} from "lucide-react";
+  PanelLeftTapButton,
+  PanelRightTapButton,
+} from "@/components/icons/tap-buttons";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/utils/supabase/client";
@@ -558,15 +555,12 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       >
         {sidebarOpen ? (
           <>
-            <div className="flex items-center justify-end px-2 py-3 border-b border-border shrink-0">
-              <button
-                type="button"
+            <div className="flex shrink-0 items-center justify-end border-b border-border">
+              <PanelLeftTapButton
+                variant="transparent"
                 onClick={() => setSidebarOpen(false)}
-                className="rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                title="Collapse inspector"
-              >
-                <PanelRightClose className="w-5 h-5" />
-              </button>
+                ariaLabel="Collapse sidebar"
+              />
             </div>
             <PdfStudioSidebar
               docsState={docsState}
@@ -576,22 +570,21 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
               onAddDocs={() => setUploadOpen(true)}
               view={sidebarView}
               onChangeView={handleChangeSidebarView}
+              activeDoc={activeDoc}
+              pageRowCount={pages.length}
+              hasPageRows={pages.length > 0}
               pages={pages}
               pagesLoading={pagesLoading}
-              totalPages={activeDoc?.totalPages ?? pages.length}
               activePage={activePage}
               onSelectPage={jumpToPage}
             />
           </>
         ) : (
-          <button
-            type="button"
+          <CollapsedPanelRail
+            chevron="right"
+            ariaLabel="Expand sidebar"
             onClick={() => setSidebarOpen(true)}
-            className="flex-1 flex items-start justify-center pt-3 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-            title="Expand sidebar"
-          >
-            <PanelLeftOpen className="w-4 h-4" />
-          </button>
+          />
         )}
       </div>
 
@@ -619,9 +612,8 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       <div className="flex-1 min-w-0 flex flex-col min-h-0">
         <PdfStudioToolbar
           doc={activeDoc}
-          pageRowCount={pages.length}
-          hasPageRows={pages.length > 0}
           activePage={activePage}
+          totalPages={activeDoc?.totalPages ?? pages.length}
           onJumpToPage={jumpToPage}
           onOpenFind={() => setFindOpen(true)}
           onRunPipeline={handleRunPipeline}
@@ -724,15 +716,12 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       >
         {inspectorOpen ? (
           <>
-            <div className="flex items-center justify-start px-2 py-3 border-b border-border shrink-0">
-              <button
-                type="button"
+            <div className="flex shrink-0 items-center justify-start border-b border-border">
+              <PanelRightTapButton
+                variant="transparent"
                 onClick={() => setInspectorOpen(false)}
-                className="rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                title="Collapse inspector"
-              >
-                <PanelRightClose className="w-5 h-5" />
-              </button>
+                ariaLabel="Collapse inspector"
+              />
             </div>
             {activeDoc ? (
               <PdfStudioInspector
@@ -754,17 +743,37 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
             )}
           </>
         ) : (
-          <button
-            type="button"
+          <CollapsedPanelRail
+            chevron="left"
+            ariaLabel="Expand inspector"
             onClick={() => setInspectorOpen(true)}
-            className="flex-1 flex items-start justify-center pt-3 text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-            title="Expand inspector"
-          >
-            <PanelRightOpen className="w-4 h-4" />
-          </button>
+          />
         )}
       </div>
     </div>
+  );
+}
+
+/** Collapsed side rail — full-height hit target with a centered chevron hint. */
+function CollapsedPanelRail({
+  chevron,
+  ariaLabel,
+  onClick,
+}: {
+  chevron: "left" | "right";
+  ariaLabel: string;
+  onClick: () => void;
+}) {
+  const Icon = chevron === "left" ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className="flex min-h-0 flex-1 w-full items-center justify-center text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+    >
+      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+    </button>
   );
 }
 

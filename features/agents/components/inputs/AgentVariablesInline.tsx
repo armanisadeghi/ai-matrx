@@ -11,7 +11,7 @@
  * Prop: conversationId only.
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { ChevronRight, ChevronUp } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
@@ -24,6 +24,7 @@ import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
 } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
 import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
@@ -62,19 +63,14 @@ export function AgentVariablesInline({
   const definitions = useAppSelector(
     selectInstanceVariableDefinitions(conversationId),
   );
+  // Visible inputs = plain vars + UNRESOLVED bound vars (with inherited component). Bound
+  // vars that resolved to a scope value are shown as pills by BoundVariableChips instead.
+  const visibleDefs = useAppSelector(
+    selectVisibleInputDefinitions(conversationId),
+  );
   const userValues = useAppSelector(selectUserVariableValues(conversationId));
   const expandedVariableId = useAppSelector(
     selectExpandedVariableId(conversationId),
-  );
-
-  // Scope-bound variables render as informative chips (BoundVariableChips); only the
-  // remaining "plain" variables get normal inline input rows.
-  const plainDefs = useMemo(
-    () =>
-      definitions.filter(
-        (d) => !(d.binding?.itemKey || d.binding?.contextItemId),
-      ),
-    [definitions],
   );
 
   const handleValueChange = useCallback(
@@ -96,7 +92,7 @@ export function AgentVariablesInline({
       if (e.key !== "Enter" || e.shiftKey) return;
       e.preventDefault();
 
-      const isLast = index === plainDefs.length - 1;
+      const isLast = index === visibleDefs.length - 1;
       if (!isLast) {
         // Move focus to next variable input
         const container = (e.currentTarget as HTMLElement).closest(
@@ -113,7 +109,7 @@ export function AgentVariablesInline({
         onSubmit?.();
       }
     },
-    [plainDefs.length, submitOnEnter, onSubmit],
+    [visibleDefs.length, submitOnEnter, onSubmit],
   );
 
   if (!shouldShowVariables || !showVariablePanel || definitions.length === 0)
@@ -126,7 +122,7 @@ export function AgentVariablesInline({
         className="max-h-72 overflow-y-auto w-full divide-y divide-border/40"
         data-variable-inputs
       >
-        {plainDefs.map((variable, index) => {
+        {visibleDefs.map((variable, index) => {
         const isExpanded = expandedVariableId === variable.name;
         const rawValue =
           userValues[variable.name] ?? variable.defaultValue ?? "";

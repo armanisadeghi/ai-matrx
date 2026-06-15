@@ -11,7 +11,6 @@ import BrokerValuesAdvancedViewer from "./BrokerValuesAdvancedViewer";
 interface FullscreenBrokerStateProps {
   triggerClassName?: string;
   triggerLabel?: string;
-  onOpen?: () => void;
   onClose?: () => void;
   isOpen?: boolean; // External control of open state
 }
@@ -19,7 +18,6 @@ interface FullscreenBrokerStateProps {
 const FullscreenBrokerState = ({
   triggerClassName,
   triggerLabel = "Broker State",
-  onOpen,
   onClose,
   isOpen: externalIsOpen,
 }: FullscreenBrokerStateProps) => {
@@ -40,7 +38,6 @@ const FullscreenBrokerState = ({
     if (externalIsOpen === undefined) {
       setInternalIsOpen(true);
     }
-    onOpen?.();
   };
 
   const tabs = [

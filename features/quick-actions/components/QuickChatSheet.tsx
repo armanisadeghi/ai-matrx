@@ -1,8 +1,8 @@
 // features/quick-actions/components/QuickChatSheet.tsx
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { MessageSquarePlus, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { useCallback, useState } from "react";
+import { MessageSquarePlus, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -11,85 +11,148 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useShortcutTrigger } from "@/features/agents/hooks/useShortcutTrigger";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
-import { extractErrorMessage } from "@/utils/errors";
+import { ChatHistorySidebar } from "@/features/agents/components/chat/ChatHistorySidebar";
+import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
+import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { DEFAULT_NEW_CHAT_AGENT_ID } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
+import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 
 interface QuickChatSheetProps {
   className?: string;
 }
 
-// TODO(prompt-to-agent-sweep): The "Matrx Custom Chat" agent shortcut id below
-// was discovered by querying `agx_shortcut` for the agent that previously sat
-// behind `prompt_builtins['matrix-custom-chat']`. Treating it as a hard-coded
-// id keeps us coupled to the migration's 1:1 mapping and bypasses the agent
-// system's shortcut discovery flow. When this surface gets its proper rebuild,
-// drive the chat from a configurable shortcut/agent reference (e.g.
-// `useShortcut()` or a feature-flagged "default chat" lookup) instead of a
-// literal uuid.
-const MATRX_CUSTOM_CHAT_SHORTCUT_ID = "e9e9639d-2970-4125-870e-09c1e9b7462f";
-
-const SURFACE_KEY = "quick-chat-sheet";
 const SOURCE_FEATURE = "quick-chat";
+const HISTORY_SCOPE = "quick-chat";
+const LOADED_SURFACE_KEY = "quick-chat:loaded";
 
 /**
- * QuickChatSheet — pop-over AI chat surface.
+ * QuickChatSheet — pop-over chat that mirrors the live `/chat` route.
  *
- * Hosts a live agent conversation inline using the SAME column the live
- * `/chat` route renders (`AgentConversationColumn` over the execution-system
- * streams) — transcript, smart input, pending-ask cards, and the task-panel
- * chip all behave identically to the full route. The conversation is created
- * by triggering the "Matrx Custom Chat" shortcut in `direct` display mode (no
- * overlay opens); the resulting conversation id is bound to the column.
+ * Like `/chat`, it is agent-first: a compact agent picker switches the active
+ * agent (starting a fresh conversation with it), the transcript + input are the
+ * route's own `AgentConversationColumn` (centered), and an optional history
+ * sidebar lets you jump to any past conversation.
  *
- * Rendered as bare content. The surrounding chrome (side panel header + close,
- * or the Utilities Hub tab) is supplied by the consumer — see
- * `OverlayController` (`quickChat` → `SidePanelSurface`) and `UtilitiesOverlay`.
+ * Two conversation modes share one column:
+ *  - **live** — `useAgentLauncher(agentId)` owns a fresh conversation. Switching
+ *    agent or hitting "New chat" bumps `session`, minting a new surface key so
+ *    the launcher starts a brand-new conversation.
+ *  - **loaded** — a history row was clicked; we hydrate that conversation and
+ *    render it. "New chat" returns to live mode.
+ *
+ * Rendered as bare content — surrounding chrome (the side panel header / the
+ * Utilities Hub tab) is supplied by the consumer.
  */
 export function QuickChatSheet({ className }: QuickChatSheetProps) {
-  const trigger = useShortcutTrigger();
+  const dispatch = useAppDispatch();
 
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [isInitializing, setIsInitializing] = useState(false);
-  const [initError, setInitError] = useState<string | null>(null);
+  const [agentId, setAgentId] = useState<string>(DEFAULT_NEW_CHAT_AGENT_ID);
+  const [session, setSession] = useState(0);
+  const [loadedConversationId, setLoadedConversationId] = useState<
+    string | null
+  >(null);
+  const [showHistory, setShowHistory] = useState(false);
 
-  const initializeChat = useCallback(async () => {
-    setIsInitializing(true);
-    setInitError(null);
-    try {
-      await trigger(MATRX_CUSTOM_CHAT_SHORTCUT_ID, {
-        sourceFeature: SOURCE_FEATURE,
-        surfaceKey: SURFACE_KEY,
-        config: { displayMode: "direct" },
-        onConversationCreated: (cid) => setConversationId(cid),
-      });
-    } catch (error) {
-      console.error("[QuickChatSheet] Failed to initialize chat:", error);
-      setInitError(extractErrorMessage(error));
-    } finally {
-      setIsInitializing(false);
-    }
-  }, [trigger]);
+  const agentName = useAppSelector((state) => selectAgentName(state, agentId));
 
-  useEffect(() => {
-    if (!conversationId && !isInitializing && !initError) {
-      initializeChat();
-    }
-  }, [conversationId, isInitializing, initError, initializeChat]);
+  // Live launcher — gated off while viewing a loaded (history) conversation.
+  // The surface key carries `session` so "New chat" / agent-switch always mints
+  // a fresh conversation rather than reviving the previous one.
+  const liveSurfaceKey = `quick-chat:${agentId}:${session}`;
+  const { conversationId: liveConversationId } = useAgentLauncher(agentId, {
+    surfaceKey: liveSurfaceKey,
+    sourceFeature: SOURCE_FEATURE,
+    ready: !loadedConversationId,
+    config: { responseDensity: "compact" },
+  });
 
-  const handleNewChat = useCallback(async () => {
-    setConversationId(null);
-    setInitError(null);
-    await initializeChat();
-  }, [initializeChat]);
+  const isLoaded = !!loadedConversationId;
+  const conversationId = loadedConversationId ?? liveConversationId ?? null;
+  const surfaceKey = isLoaded ? LOADED_SURFACE_KEY : liveSurfaceKey;
 
-  const isReady = !!conversationId && !isInitializing;
+  const handleNewChat = useCallback(() => {
+    setLoadedConversationId(null);
+    setSession((s) => s + 1);
+  }, []);
+
+  const handleSelectAgent = useCallback(
+    (id: string) => {
+      if (id === agentId && !loadedConversationId) return;
+      setLoadedConversationId(null);
+      setAgentId(id);
+      setSession((s) => s + 1);
+    },
+    [agentId, loadedConversationId],
+  );
+
+  const handleOpenConversation = useCallback(
+    async (conv: ConversationListItem) => {
+      try {
+        if (conv.agentId) {
+          await dispatch(
+            createManualInstance({
+              agentId: conv.agentId,
+              conversationId: conv.conversationId,
+              apiEndpointMode: "agent",
+              responseDensity: "compact",
+            }),
+          )
+            .unwrap()
+            .catch(() => {
+              /* instance may already exist — loadConversation handles it */
+            });
+        }
+        await dispatch(
+          loadConversation({
+            conversationId: conv.conversationId,
+            surfaceKey: LOADED_SURFACE_KEY,
+          }),
+        );
+        setLoadedConversationId(conv.conversationId);
+        setShowHistory(false);
+      } catch (error) {
+        console.error("[QuickChatSheet] Failed to open conversation:", error);
+      }
+    },
+    [dispatch],
+  );
 
   return (
     <div className={cn("flex h-full flex-col overflow-hidden", className)}>
-      {/* Slim action row — the surrounding surface owns the title + close, so
-          this only carries the "New chat" affordance. */}
-      <div className="flex h-9 shrink-0 items-center justify-end border-b border-border px-2">
+      {/* Agent-first control row — picker + history toggle + new chat. */}
+      <div className="flex h-10 shrink-0 items-center gap-1 border-b border-border px-2">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={showHistory ? "secondary" : "ghost"}
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={() => setShowHistory((v) => !v)}
+                aria-label="Toggle conversation history"
+              >
+                <PanelLeft className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Conversations</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <div className="flex min-w-0 flex-1 items-center">
+          <AgentListDropdown
+            onSelect={handleSelectAgent}
+            label={agentName?.trim() || "Select an agent"}
+            compact
+            noBorder
+          />
+        </div>
+
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -98,7 +161,6 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
                 size="sm"
                 className="h-7 gap-1.5 px-2 text-xs"
                 onClick={handleNewChat}
-                disabled={isInitializing}
               >
                 <MessageSquarePlus className="h-3.5 w-3.5" />
                 New chat
@@ -109,49 +171,36 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
         </TooltipProvider>
       </div>
 
-      <div className="min-h-0 flex-1">
-        {initError ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="flex max-w-md flex-col items-center gap-3 p-4 text-destructive">
-              <AlertCircle className="h-8 w-8" />
-              <span className="text-sm font-medium">
-                Failed to initialize chat
-              </span>
-              <span className="break-all text-center text-xs text-muted-foreground">
-                {initError}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNewChat}
-                className="mt-2 gap-2"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                Retry
-              </Button>
-            </div>
-          </div>
-        ) : isReady && conversationId ? (
-          <AgentConversationColumn
-            key={conversationId}
-            conversationId={conversationId}
-            surfaceKey={SURFACE_KEY}
-            constrainWidth
-            edgeToEdgeScroll
-            smartInputProps={{
-              sendButtonVariant: "blue",
-              showSubmitOnEnterToggle: false,
-              compact: true,
-            }}
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="text-sm">Starting chat...</span>
-            </div>
+      {/* Body: optional history sidebar + centered conversation column. */}
+      <div className="flex min-h-0 flex-1">
+        {showHistory && (
+          <div className="w-60 shrink-0 border-r border-border">
+            <ChatHistorySidebar
+              scopeId={HISTORY_SCOPE}
+              activeConversationId={conversationId}
+              onOpenConversation={handleOpenConversation}
+              excludeSourceFeatures={["voice-agent"]}
+            />
           </div>
         )}
+
+        <div className="min-w-0 flex-1">
+          {conversationId ? (
+            <AgentConversationColumn
+              key={conversationId}
+              conversationId={conversationId}
+              surfaceKey={surfaceKey}
+              constrainWidth
+              smartInputProps={{
+                sendButtonVariant: "blue",
+                showSubmitOnEnterToggle: false,
+                compact: true,
+              }}
+            />
+          ) : (
+            <ChatRoomSkeleton />
+          )}
+        </div>
       </div>
     </div>
   );

@@ -25,7 +25,10 @@ import {
   hydrateConversation,
   setConversationLabel,
 } from "../conversations/conversations.slice";
-import { hydrateMessages, updateMessageRecord } from "../messages/messages.slice";
+import {
+  hydrateMessages,
+  updateMessageRecord,
+} from "../messages/messages.slice";
 import { reconcileMessagesArtifacts } from "@/features/canvas/materialization/reconcileArtifacts";
 import type { Json } from "@/types/database.types";
 import { hydrateObservability } from "../observability/observability.slice";
@@ -269,7 +272,9 @@ export const loadConversation = createAsyncThunk<
     if (authedUserId && conv.user_id === authedUserId) {
       void reconcileMessagesArtifacts(
         messageRecords
-          .filter((r) => r.role === "assistant" || (r.role as string) === "output")
+          .filter(
+            (r) => r.role === "assistant" || (r.role as string) === "output",
+          )
           .map((r) => ({
             id: r.id,
             conversationId,
@@ -423,7 +428,9 @@ export const loadConversation = createAsyncThunk<
       );
     }
 
-    const userRequestRecords = rawUserRequests.map(userRequestRowToRecord);
+    const userRequestRecords = rawUserRequests.map((row) =>
+      userRequestRowToRecord(row, conversationId),
+    );
     dispatch(
       hydrateObservability({
         conversationId,

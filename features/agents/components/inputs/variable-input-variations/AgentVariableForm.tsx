@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { BoundVariableChips } from "@/features/agents/components/inputs/BoundVariableChips";
 import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
@@ -48,6 +50,10 @@ export function AgentVariableForm({ conversationId }: AgentVariableFormProps) {
   const definitions = useAppSelector(
     selectInstanceVariableDefinitions(conversationId),
   );
+  // Plain + unresolved bound vars (inherited component); resolved bound vars are pills.
+  const visibleDefs = useAppSelector(
+    selectVisibleInputDefinitions(conversationId),
+  );
   const userValues = useAppSelector(selectUserVariableValues(conversationId));
   const showVariables = useAppSelector(selectShowVariablePanel(conversationId));
 
@@ -91,8 +97,9 @@ export function AgentVariableForm({ conversationId }: AgentVariableFormProps) {
 
       {showVariables && (
         <div className="border-t border-border flex-1 min-h-0 overflow-y-auto">
+          <BoundVariableChips conversationId={conversationId} />
           <div className="px-2.5 py-2">
-            {definitions.map((def, i) => (
+            {visibleDefs.map((def, i) => (
               <div key={def.name}>
                 {i > 0 && <div className="border-t border-border my-2" />}
                 <VariableField

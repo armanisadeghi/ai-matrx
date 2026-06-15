@@ -25,9 +25,6 @@ export interface OpenImageViewerWindowOptions {
   images: string[];
   initialIndex?: number;
   alts?: string[];
-  activeIndex?: number;
-  /** TODO callback — wire via callback registry in stage 3. */
-  onIndexChange?: (...args: unknown[]) => void;
   title?: string;
 }
 
@@ -49,8 +46,6 @@ export function useOpenImageViewerWindow() {
             images: opts.images,
             initialIndex: opts.initialIndex,
             alts: opts.alts,
-            activeIndex: opts.activeIndex,
-            onIndexChange: opts.onIndexChange,
             title: opts.title,
           },
         }),
@@ -74,6 +69,6 @@ export function ImageViewerWindowController(props: OpenImageViewerWindowOptions)
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.images, props.initialIndex, props.alts, props.activeIndex, props.onIndexChange, props.title]);
+  }, [open, props.images, props.initialIndex, props.alts, props.title]);
   return null;
 }

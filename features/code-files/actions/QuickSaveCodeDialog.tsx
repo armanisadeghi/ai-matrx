@@ -21,53 +21,36 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import type { CodeFile } from "../redux/code-files.types";
-import {
-  QuickSaveCodeCore,
-  type CodePostSaveAction,
-} from "./QuickSaveCodeCore";
+import { QuickSaveCodeCore } from "./QuickSaveCodeCore";
 
 export interface QuickSaveCodeDialogProps {
-  /** Legacy: shadcn-style `open`. Use `isOpen` for the unified overlay surface. */
-  open?: boolean;
   /** Unified overlay surface convention: `isOpen` + `onClose`. */
   isOpen?: boolean;
-  /** Legacy: shadcn-style change handler. */
-  onOpenChange?: (open: boolean) => void;
   /** Unified overlay surface convention. */
   onClose?: () => void;
   initialContent: string;
   initialLanguage?: string;
   suggestedName?: string;
   defaultFolderId?: string | null;
-  onSaved?: (file?: CodeFile, action?: CodePostSaveAction) => void;
 }
 
 export function QuickSaveCodeDialog({
-  open,
   isOpen,
-  onOpenChange,
   onClose,
   initialContent,
   initialLanguage,
   suggestedName,
   defaultFolderId = null,
-  onSaved,
 }: QuickSaveCodeDialogProps) {
   const isMobile = useIsMobile();
 
-  // Normalize the two prop styles to a single source of truth so both
-  // the legacy `open` / `onOpenChange` callers and the unified
-  // `isOpen` / `onClose` overlay surface render correctly.
-  const dialogOpen = isOpen ?? open ?? false;
+  const dialogOpen = isOpen ?? false;
   const setDialogOpen = (next: boolean) => {
-    onOpenChange?.(next);
     if (!next) onClose?.();
   };
 
-  const handleSaved = (file: CodeFile, action: CodePostSaveAction) => {
-    onSaved?.(file, action);
-    setDialogOpen(false);
+  const handleSaved = () => {
+    onClose?.();
   };
 
   const handleCancel = () => setDialogOpen(false);

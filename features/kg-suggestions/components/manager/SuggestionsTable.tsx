@@ -18,8 +18,11 @@ import {
   ArrowUp,
   Check,
   Clock,
+  Eye,
+  FileText,
   RotateCcw,
   Star,
+  StickyNote,
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +32,11 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKgRowMutation } from "@/lib/redux/slices/kgSuggestionsSlice";
 import { ScopeGlyph } from "@/features/scope-system/components/ScopeGlyph";
 import { KgSuggestionRowItem } from "@/features/kg-suggestions/components/KgSuggestionRowItem";
+import { useOpenSourcePreview } from "@/features/kg-suggestions/components/source-preview/SourcePreviewContext";
+import {
+  sourceKindLabel,
+  sourceRefKey,
+} from "@/features/kg-suggestions/service/sourcePreviewService";
 import {
   isHeavyHitter,
   type KgAcceptResult,
@@ -55,6 +63,8 @@ export interface SuggestionsTableProps {
   selected: Set<string>;
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: () => void;
+  /** Resolved source titles keyed by `sourceRefKey(kind, id)`. */
+  sourceTitles: Map<string, string>;
   accept: (id: string) => Promise<KgAcceptResult>;
   reject: (id: string, note?: string | null) => Promise<unknown>;
   defer: (id: string, note?: string | null) => Promise<unknown>;
@@ -62,7 +72,7 @@ export interface SuggestionsTableProps {
   restore: (id: string) => Promise<void>;
 }
 
-const COL_COUNT = 11;
+const COL_COUNT = 12;
 
 export function SuggestionsTable({
   rows,
@@ -73,6 +83,7 @@ export function SuggestionsTable({
   selected,
   onToggleSelect,
   onToggleSelectAll,
+  sourceTitles,
   accept,
   reject,
   defer,
@@ -92,7 +103,7 @@ export function SuggestionsTable({
   const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
 
   return (
-    <div className="min-w-[60rem]">
+    <div className="min-w-[72rem]">
       <table className="w-full border-collapse text-[11px]">
         <thead className="sticky top-0 z-10 bg-card">
           <tr className="border-b border-border text-left text-muted-foreground">
@@ -104,6 +115,7 @@ export function SuggestionsTable({
               />
             </th>
             <th className="w-7 px-1 py-1.5" />
+            <th className="px-2 py-1.5 font-medium">Source file</th>
             <th className="px-2 py-1.5 font-medium">Type</th>
             <SortHead
               label="Scope"
@@ -156,6 +168,11 @@ export function SuggestionsTable({
             <SuggestionTableRow
               key={row.id}
               row={row}
+              sourceTitle={
+                sourceTitles.get(
+                  sourceRefKey(row.source_kind, row.source_id),
+                ) ?? null
+              }
               expanded={expandedId === row.id}
               onToggleExpand={() => onToggleExpand(row.id)}
               selected={selected.has(row.id)}
@@ -212,6 +229,7 @@ function SortHead({
 
 function SuggestionTableRow({
   row,
+  sourceTitle,
   expanded,
   onToggleExpand,
   selected,
@@ -223,6 +241,7 @@ function SuggestionTableRow({
   restore,
 }: {
   row: KgEnrichedSuggestionRow;
+  sourceTitle: string | null;
   expanded: boolean;
   onToggleExpand: () => void;
   selected: boolean;
@@ -234,10 +253,17 @@ function SuggestionTableRow({
   restore: (id: string) => Promise<void>;
 }) {
   const mutation = useAppSelector((s) => selectKgRowMutation(s, row.id));
+  const openSourcePreview = useOpenSourcePreview();
   const busy = mutation !== "idle";
   const unseen = !row.viewed_at;
   const isPending = row.status === "pending";
   const canQuickAccept = isPending && !isHeavyHitter(row);
+
+  const isNoteSource = row.source_kind === "note";
+  const SourceIcon = isNoteSource ? StickyNote : FileText;
+  const sourceLabel =
+    sourceTitle ?? `Untitled ${sourceKindLabel(row.source_kind)}`;
+  const canPreviewSource = !!row.source_id && !!openSourcePreview;
 
   const fieldLabel =
     row.itemLabel ??
@@ -273,6 +299,43 @@ function SuggestionTableRow({
               )}
             />
           </button>
+        </td>
+        <td className="px-2 py-1.5 max-w-[15rem]">
+          <button
+            type="button"
+            disabled={!canPreviewSource}
+            onClick={() =>
+              openSourcePreview?.({
+                kind: row.source_kind,
+                id: row.source_id,
+                snippet: row.context_snippet,
+                title: sourceTitle,
+              })
+            }
+            title={canPreviewSource ? `Preview ${sourceLabel}` : sourceLabel}
+            className={cn(
+              "group flex w-full items-center gap-1.5 text-left",
+              canPreviewSource && "cursor-pointer",
+            )}
+          >
+            <SourceIcon className="h-3.5 w-3.5 shrink-0 text-primary" />
+            <span
+              className={cn(
+                "min-w-0 flex-1 truncate font-medium text-foreground",
+                canPreviewSource && "group-hover:underline",
+              )}
+            >
+              {sourceLabel}
+            </span>
+            {canPreviewSource ? (
+              <Eye className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+            ) : null}
+          </button>
+          {row.context_snippet ? (
+            <div className="truncate pl-5 text-[10px] text-muted-foreground/80">
+              “{row.context_snippet}”
+            </div>
+          ) : null}
         </td>
         <td className="px-2 py-1.5">
           <div className="flex items-center gap-1 text-muted-foreground">

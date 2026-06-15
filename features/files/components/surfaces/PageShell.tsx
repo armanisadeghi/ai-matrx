@@ -27,7 +27,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useGroupRef, type Layout } from "react-resizable-panels";
+import {
+  useGroupRef,
+  usePanelRef,
+  type Layout,
+  type OnPanelResize,
+} from "react-resizable-panels";
 import {
   DndContext,
   DragOverlay,
@@ -195,6 +200,23 @@ const PANEL_IDS = {
 const PREVIEW_DEFAULT_PCT = 38;
 const PREVIEW_MIN_PCT = 10;
 const PREVIEW_MAX_PCT = 60;
+
+/** Persist the sidebar collapsed/expanded intent so it survives reloads. */
+const SIDEBAR_COLLAPSED_COOKIE = "cloud-files:sidebar-collapsed";
+
+function readSidebarCollapsedCookie(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie
+    .split(";")
+    .some((entry) => entry.trim() === `${SIDEBAR_COLLAPSED_COOKIE}=1`);
+}
+
+function writeSidebarCollapsedCookie(collapsed: boolean): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${SIDEBAR_COLLAPSED_COOKIE}=${
+    collapsed ? "1" : "0"
+  }; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+}
 
 function PageShellDesktop({
   initialFolderId,
@@ -570,6 +592,49 @@ function PageShellDesktop({
   const groupRef = useGroupRef();
   const savedLayoutRef = useRef<Layout | null>(null);
   const [previewMaximized, setPreviewMaximized] = useState(false);
+  const previewMaximizedRef = useRef(false);
+  previewMaximizedRef.current = previewMaximized;
+
+  // ---- Sidebar collapse ----------------------------------------------------
+  // The folders sidebar collapses to a slim icon rail (`IconRail`). The library
+  // owns the panel width; we only mirror the open/closed *intent* so the rail
+  // and the collapse/expand buttons can render. Drag-to-collapse is tracked via
+  // `onResize`. Collapse triggered by the maximize feature (which drives SIDE to
+  // 0% imperatively) is ignored so it doesn't flip the user-facing intent.
+  const sidebarPanelRef = usePanelRef();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Restore the persisted collapsed state once on mount.
+  useEffect(() => {
+    if (readSidebarCollapsedCookie()) {
+      setSidebarCollapsed(true);
+      sidebarPanelRef.current?.collapse();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const collapseSidebar = useCallback(() => {
+    sidebarPanelRef.current?.collapse();
+    setSidebarCollapsed(true);
+    writeSidebarCollapsedCookie(true);
+  }, [sidebarPanelRef]);
+
+  const expandSidebar = useCallback(() => {
+    sidebarPanelRef.current?.expand();
+    setSidebarCollapsed(false);
+    writeSidebarCollapsedCookie(false);
+  }, [sidebarPanelRef]);
+
+  const handleSidebarResize = useCallback<OnPanelResize>((next, _id, prev) => {
+    if (prev === undefined) return; // first mount
+    if (previewMaximizedRef.current) return; // maximize transient — not user intent
+    const wasCollapsed = prev.asPercentage === 0;
+    const isCollapsed = next.asPercentage === 0;
+    if (wasCollapsed !== isCollapsed) {
+      setSidebarCollapsed(isCollapsed);
+      writeSidebarCollapsedCookie(isCollapsed);
+    }
+  }, []);
 
   // If the user closes the preview while it's maximized, fall back to the
   // normal layout so the next file opens in the regular sheet.
@@ -584,11 +649,16 @@ function PageShellDesktop({
     const group = groupRef.current;
     if (!group || !showPreviewPane) return;
     if (previewMaximized) {
+      // Keep the ref true across the synchronous setLayout below so the
+      // resulting onResize events aren't mistaken for a user collapse.
+      previewMaximizedRef.current = true;
       const saved = savedLayoutRef.current;
       if (saved) group.setLayout(saved);
       savedLayoutRef.current = null;
+      previewMaximizedRef.current = false;
       setPreviewMaximized(false);
     } else {
+      previewMaximizedRef.current = true;
       savedLayoutRef.current = group.getLayout();
       group.setLayout({
         [PANEL_IDS.SIDE]: 0,
@@ -608,12 +678,14 @@ function PageShellDesktop({
       onDragCancel={handleDragCancel}
     >
       <div
-        className={cn(
-          "flex h-[calc(100dvh-var(--header-height))] overflow-hidden bg-background",
-          className,
-        )}
+        className={cn("flex h-full overflow-hidden bg-background", className)}
       >
-        <IconRail section={section} />
+        {/* Collapsed sidebar = slim icon rail. Expanding swaps it back for the
+         * full NavSidebar. Hidden during preview-maximize so it doesn't eat
+         * width from the full-bleed preview. */}
+        {sidebarCollapsed && !previewMaximized && (
+          <IconRail section={section} onExpand={expandSidebar} />
+        )}
 
         <ResizablePanelGroup
           orientation="horizontal"
@@ -627,19 +699,24 @@ function PageShellDesktop({
            * with auto-collapse only at the lower bound). */}
           <ResizablePanel
             id={PANEL_IDS.SIDE}
+            panelRef={sidebarPanelRef}
             defaultSize={pct(sidebarDefaultPercent)}
             minSize={pct(sidebarMinPercent)}
             maxSize={pct(40)}
             collapsible
             collapsedSize="0%"
+            onResize={handleSidebarResize}
             className="border-r border-border/70"
           >
-            <NavSidebar section={section} />
+            <NavSidebar section={section} onCollapse={collapseSidebar} />
           </ResizablePanel>
 
           <ResizableHandle
-            disabled={previewMaximized}
-            className={cn(previewMaximized && "pointer-events-none !opacity-0")}
+            disabled={previewMaximized || sidebarCollapsed}
+            className={cn(
+              (previewMaximized || sidebarCollapsed) &&
+                "pointer-events-none !opacity-0",
+            )}
           />
 
           {/* Main — also collapsible for the same maximize-to-100 path. */}

@@ -15,6 +15,7 @@
 
 import Link from "next/link";
 import { ArrowRight, Lightbulb, Network } from "lucide-react";
+import { isLowConfidence } from "@/features/kg-suggestions/constants";
 import {
   Sheet,
   SheetContent,
@@ -83,9 +84,16 @@ export function GlobalSuggestionsDrawer({
   };
 
   // React Compiler is on — no manual memoization. Group rows for render.
+  // Low-confidence (<50%) rows are mostly noise — keep them OUT of the normal
+  // list and relegate them to a single "view in manager" banner at the bottom.
   const heavyHitters: KgSuggestionRow[] = [];
   const groupMap = new Map<string, KgSuggestionRow[]>();
+  let lowQualityCount = 0;
   for (const row of items) {
+    if (isLowConfidence(row)) {
+      lowQualityCount += 1;
+      continue;
+    }
     if (row.match_kind === "heavy_hitter") {
       heavyHitters.push(row);
       continue;
@@ -94,9 +102,20 @@ export function GlobalSuggestionsDrawer({
     list.push(row);
     groupMap.set(row.source_kind, list);
   }
-  const grouped = Array.from(groupMap.entries()).sort((a, b) =>
-    sourceLabel(a[0]).localeCompare(sourceLabel(b[0])),
-  );
+  // Highest-confidence first, both for heavy hitters and within each group.
+  const byConfidenceDesc = (a: KgSuggestionRow, b: KgSuggestionRow) =>
+    b.confidence - a.confidence;
+  heavyHitters.sort(byConfidenceDesc);
+  for (const rows of groupMap.values()) rows.sort(byConfidenceDesc);
+  // Order the groups so the one holding the single strongest suggestion leads.
+  const grouped = Array.from(groupMap.entries()).sort((a, b) => {
+    const maxA = a[1][0]?.confidence ?? 0;
+    const maxB = b[1][0]?.confidence ?? 0;
+    if (maxB !== maxA) return maxB - maxA;
+    return sourceLabel(a[0]).localeCompare(sourceLabel(b[0]));
+  });
+  // What's actually shown in the list (excludes the relegated low-quality rows).
+  const shownCount = count - lowQualityCount;
 
   const body = (
     <ScrollArea className="flex-1 min-h-0">
@@ -120,6 +139,14 @@ export function GlobalSuggestionsDrawer({
             <Lightbulb className="mx-auto mb-2 h-6 w-6 text-muted-foreground/60" />
             No pending suggestions. As your notes, tasks, and files are
             analyzed, proposed scope fills will appear here.
+          </div>
+        ) : null}
+
+        {/* Everything left is low-quality — say so rather than look empty. */}
+        {status === "success" && count > 0 && shownCount === 0 ? (
+          <div className="py-8 text-center text-sm text-muted-foreground">
+            <Lightbulb className="mx-auto mb-2 h-6 w-6 text-muted-foreground/60" />
+            You&apos;re caught up on the strong suggestions.
           </div>
         ) : null}
 
@@ -159,6 +186,24 @@ export function GlobalSuggestionsDrawer({
             ))}
           </section>
         ))}
+
+        {/* Low-quality (<50%) rows are relegated to the manager, not listed
+            here. One quiet banner tells the user they exist without cluttering
+            the inbox with noise. */}
+        {lowQualityCount > 0 ? (
+          <Link
+            href="/suggestions"
+            onClick={onClose}
+            className="flex items-center justify-between gap-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
+          >
+            <span>
+              {lowQualityCount} more low-confidence{" "}
+              {lowQualityCount === 1 ? "suggestion" : "suggestions"} (&lt;50%)
+              hidden — review in the manager
+            </span>
+            <ArrowRight className="h-3.5 w-3.5 shrink-0" />
+          </Link>
+        ) : null}
       </div>
     </ScrollArea>
   );
@@ -174,7 +219,7 @@ export function GlobalSuggestionsDrawer({
         <DrawerHeader className="border-b border-border">
           <DrawerTitle className="flex items-center gap-2">
             <Lightbulb className="h-4 w-4 text-primary" />
-            Suggestions {count > 0 ? `(${count})` : ""}
+            Suggestions {shownCount > 0 ? `(${shownCount})` : ""}
           </DrawerTitle>
           <Link
             href="/suggestions"
@@ -201,7 +246,7 @@ export function GlobalSuggestionsDrawer({
           <div className="flex items-center justify-between gap-2 pr-8">
             <SheetTitle className="flex items-center gap-2 text-base">
               <Lightbulb className="h-4 w-4 text-primary" />
-              Suggestions {count > 0 ? `(${count})` : ""}
+              Suggestions {shownCount > 0 ? `(${shownCount})` : ""}
             </SheetTitle>
             <Link
               href="/suggestions"

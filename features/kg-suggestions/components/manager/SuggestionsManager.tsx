@@ -15,6 +15,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -22,6 +23,7 @@ import {
   Network,
   RefreshCw,
   Star,
+  Trash2,
   X,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,6 +47,9 @@ export function SuggestionsManager() {
     patchQuery,
     rows,
     heavyHitters,
+    lowQuality,
+    lowQualityTotal,
+    sourceTitles,
     total,
     stats,
     loading,
@@ -59,6 +64,7 @@ export function SuggestionsManager() {
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [showLowQuality, setShowLowQuality] = useState(false);
 
   // Source preview floats in a non-blocking, resizable panel beside the table —
   // review the document a suggestion came from without losing your place.
@@ -106,7 +112,79 @@ export function SuggestionsManager() {
     else toast.error(`${label}: ${ids.length - failed} done, ${failed} failed`);
   };
 
+  const dismissAllLowQuality = async () => {
+    const ids = lowQuality.map((r) => r.id);
+    if (ids.length === 0) return;
+    const results = await Promise.allSettled(ids.map((id) => reject(id)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (failed === 0) toast.success(`Dismissed ${ids.length} low-quality`);
+    else toast.error(`Dismissed ${ids.length - failed}, ${failed} failed`);
+  };
+
   const hasHeavy = heavyHitters.length > 0;
+
+  // Low-quality (<50%) suggestions are pulled out of the main table and parked
+  // in this collapsed, muted footer. The user can still see them and clear them
+  // — we just signal loudly that we consider them weak.
+  const lowQualitySection =
+    lowQualityTotal > 0 ? (
+      <div className="shrink-0 border-t border-border bg-muted/20">
+        <div className="flex items-center gap-2 px-3 py-1.5">
+          <button
+            type="button"
+            onClick={() => setShowLowQuality((v) => !v)}
+            className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Trash2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+            <span className="font-medium">
+              {lowQualityTotal} low-quality{" "}
+              {lowQualityTotal === 1 ? "suggestion" : "suggestions"}
+            </span>
+            <span className="hidden sm:inline text-muted-foreground/70">
+              · below 50% confidence — usually noise
+            </span>
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 shrink-0 transition-transform",
+                showLowQuality && "rotate-180",
+              )}
+            />
+          </button>
+          {showLowQuality ? (
+            <button
+              type="button"
+              onClick={() => void dismissAllLowQuality()}
+              className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-background px-2 py-0.5 text-[11px] text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              <X className="h-3 w-3" />
+              Dismiss all
+            </button>
+          ) : null}
+        </div>
+        {showLowQuality ? (
+          <div className="px-3 pb-2 pb-safe sm:max-h-[40vh] sm:overflow-auto">
+            <div className="grid gap-2 opacity-70 lg:grid-cols-2 2xl:grid-cols-3">
+              {lowQuality.map((row) => (
+                <KgSuggestionRowItem
+                  key={row.id}
+                  row={row}
+                  accept={accept}
+                  reject={reject}
+                  defer={defer}
+                  compact
+                />
+              ))}
+            </div>
+            {lowQualityTotal > lowQuality.length ? (
+              <p className="mt-2 text-center text-[10px] text-muted-foreground">
+                Showing the {lowQuality.length} strongest of {lowQualityTotal}.
+                Dismiss these or tighten your filters to see the rest.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    ) : null;
 
   // The prominent "heavy hitter" section — suggested NEW scopes. They lead the
   // page because the field suggestions below often depend on them.
@@ -190,6 +268,7 @@ export function SuggestionsManager() {
         selected={selected}
         onToggleSelect={toggleSelect}
         onToggleSelectAll={toggleSelectAll}
+        sourceTitles={sourceTitles}
         accept={accept}
         reject={reject}
         defer={defer}
@@ -284,6 +363,7 @@ export function SuggestionsManager() {
           <div className="flex-1 min-h-0 overflow-auto">
             {heavySection}
             {mainArea}
+            {lowQualitySection}
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col">
@@ -293,6 +373,7 @@ export function SuggestionsManager() {
               </div>
             ) : null}
             <div className="min-h-0 flex-1 overflow-auto">{mainArea}</div>
+            {lowQualitySection}
           </div>
         )}
 

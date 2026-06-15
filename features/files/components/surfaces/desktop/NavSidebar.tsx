@@ -15,7 +15,7 @@
 import { useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Plus, Star } from "lucide-react";
+import { ChevronDown, PanelLeftClose, Plus, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -25,6 +25,7 @@ import {
 import { selectAllFoldersMap } from "@/features/files/redux/selectors";
 import { encodeFolderPathSegments } from "@/features/files/utils/url-state";
 import { FileTree } from "@/features/files/components/core/FileTree/FileTree";
+import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
 import { NavSidebarFlatFolders } from "./NavSidebarFlatFolders";
 import { SidebarModeToggle, useSidebarMode } from "./SidebarModeToggle";
 import { StorageQuotaChip } from "./StorageQuotaChip";
@@ -33,9 +34,11 @@ import type { CloudFilesSection } from "./section";
 
 export interface NavSidebarProps {
   section: CloudFilesSection;
+  /** Collapse the sidebar down to the slim icon rail. */
+  onCollapse?: () => void;
 }
 
-export function NavSidebar({ section }: NavSidebarProps) {
+export function NavSidebar({ section, onCollapse }: NavSidebarProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { mode } = useSidebarMode();
@@ -97,9 +100,23 @@ export function NavSidebar({ section }: NavSidebarProps) {
       aria-label="Cloud files secondary"
       className="flex h-full flex-col overflow-hidden bg-muted/30"
     >
-      <div className="flex items-center justify-between px-3 pb-2 pt-3 shrink-0">
+      <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-3 shrink-0">
         <h2 className="text-base font-semibold tracking-tight">Home</h2>
-        <SidebarModeToggle />
+        <div className="flex items-center gap-1.5">
+          <SidebarModeToggle />
+          {onCollapse && (
+            <TooltipIcon label="Collapse sidebar">
+              <button
+                type="button"
+                aria-label="Collapse sidebar"
+                onClick={onCollapse}
+                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+              >
+                <PanelLeftClose className="h-3.5 w-3.5" />
+              </button>
+            </TooltipIcon>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden">

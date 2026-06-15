@@ -179,7 +179,8 @@ with `results: [...]`. The endpoint contract natively supports batching.
 `useWidgetHandle` unregisters on unmount. If the widget disappears while a
 `widget_*` is delegated, `callbackManager.get(widgetHandleId)` returns
 undefined, the dispatcher posts `{ok:false, reason:"not_found"}`, and the
-stream completes gracefully instead of timing out at 120s.
+loop resumes gracefully on that result instead of hanging on a result that
+will never arrive.
 
 ## Per-turn derivation (the important bit)
 

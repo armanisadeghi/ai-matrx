@@ -136,7 +136,14 @@ export interface CxToolCallRow {
 
 export interface CxUserRequestRow {
   id: string;
-  conversation_id: string;
+  /**
+   * No longer a column on `cx_user_request` — a user request maps to one
+   * conversation but spawns many `cx_request` rows, so the conversation is
+   * resolved through that m2m. Optional here for back-compat with any legacy
+   * payload that still includes it; the owning conversationId is passed
+   * explicitly to {@link userRequestRowToRecord}.
+   */
+  conversation_id?: string | null;
   user_id: string;
   agent_id: string | null;
   agent_version_id: string | null;
@@ -276,33 +283,44 @@ export async function fetchConversationBundle(
     messageQuery.lt("position", beforePosition);
   }
 
-  const observabilityQueries = skipObservabilityFallback
-    ? [Promise.resolve({ data: [] }), Promise.resolve({ data: [] })]
-    : [
-        supabase
-          .from("cx_user_request")
-          .select("*")
-          .eq("conversation_id", conversationId)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: true }),
-        supabase
-          .from("cx_request")
-          .select("*")
-          .eq("conversation_id", conversationId)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: true }),
-      ];
-
-  const [conversationRes, messagesRes, userRequestsRes, requestsRes] =
-    await Promise.all([
-      supabase
-        .from("cx_conversation")
+  // `cx_request` keeps `conversation_id`; it's the m2m between conversations
+  // and user requests. `cx_user_request` no longer carries `conversation_id`,
+  // so we fetch the conversation's requests first, then resolve the distinct
+  // parent user_request_ids from them.
+  const requestsQuery = skipObservabilityFallback
+    ? Promise.resolve({ data: [] as CxRequestRow[] })
+    : supabase
+        .from("cx_request")
         .select("*")
-        .eq("id", conversationId)
-        .single(),
-      messageQuery,
-      ...observabilityQueries,
-    ]);
+        .eq("conversation_id", conversationId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true });
+
+  const [conversationRes, messagesRes, requestsRes] = await Promise.all([
+    supabase
+      .from("cx_conversation")
+      .select("*")
+      .eq("id", conversationId)
+      .single(),
+    messageQuery,
+    requestsQuery,
+  ]);
+
+  let userRequestsRes: { data: CxUserRequestRow[] | null } = { data: [] };
+  if (!skipObservabilityFallback) {
+    const reqRows = (requestsRes?.data ?? []) as unknown as CxRequestRow[];
+    const userRequestIds = Array.from(
+      new Set(reqRows.map((r) => r.user_request_id).filter(Boolean)),
+    );
+    if (userRequestIds.length > 0) {
+      userRequestsRes = await supabase
+        .from("cx_user_request")
+        .select("*")
+        .in("id", userRequestIds)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true });
+    }
+  }
 
   if (conversationRes.error) {
     // eslint-disable-next-line no-console
@@ -395,10 +413,14 @@ export function messageRowToRecord(row: CxMessageRow): MessageRecord {
 
 export function userRequestRowToRecord(
   row: CxUserRequestRow,
+  conversationId: string,
 ): CxUserRequestRecord {
   return {
     id: row.id,
-    conversationId: row.conversation_id,
+    // Sourced from the owning conversation (the bundle's conversation), not the
+    // row — `cx_user_request` no longer carries `conversation_id`. Fall back to
+    // any legacy value on the row if present.
+    conversationId: conversationId ?? row.conversation_id ?? "",
     userId: row.user_id,
     agentId: row.agent_id,
     agentVersionId: row.agent_version_id,

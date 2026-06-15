@@ -114,22 +114,13 @@ export async function createProject(
       return { success: false, error: "Project created but no data returned" };
     }
 
-    // Add creator as owner
-    const { error: memberError } = await supabase
-      .from("ctx_project_members")
-      .insert({
-        project_id: project.id,
-        user_id: currentUserId,
-        role: "owner",
-      });
-
-    if (memberError) {
-      console.error("Error adding project owner:", memberError.message);
-      return {
-        success: false,
-        error: memberError.message || "Failed to add you as project owner",
-      };
-    }
+    // Creator ownership is granted by the DB trigger
+    // `trg_ctx_projects_add_creator_membership` (AFTER INSERT on ctx_projects,
+    // SECURITY DEFINER, `ON CONFLICT (project_id, user_id) DO NOTHING`). The
+    // owner `ctx_project_members` row already exists by the time this insert
+    // returns — do NOT insert it again here, or it violates the
+    // `(project_id, user_id)` unique constraint and surfaces a spurious
+    // "duplicate" error even though the project + membership are created.
 
     return {
       success: true,

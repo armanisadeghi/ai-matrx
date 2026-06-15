@@ -10,6 +10,7 @@ import { RECORDING_LIMITS } from "../constants/recording";
 import {
   normalizeAudioContentType,
   audioExtensionForType,
+  toAudioFile,
 } from "@/features/audio/utils/audio-mime";
 
 interface UploadResult {
@@ -96,11 +97,18 @@ export async function saveAudioToStorage(
   // cld_files classified as audio, not video. Recordings (webm/opus, often
   // with an empty blob type) normalize to `audio/webm`; imported files keep
   // their true audio type (mp3 → audio/mpeg, m4a/mp4 → audio/mp4, etc.).
+  //
+  // We need the `recording_<iso>_<rand>` name convention, so derive the
+  // extension from the normalized type first, then let `toAudioFile` stamp
+  // the clean type + matching extension (the audio-mime rule: never
+  // hand-build an audio `File` at a send/upload site).
   const sourceName = audioBlob instanceof File ? audioBlob.name : undefined;
   const contentType = normalizeAudioContentType(audioBlob.type, sourceName);
-  const ext = audioExtensionForType(contentType);
-  const filename = generateAudioFilename("recording", ext);
-  const file = new File([audioBlob], filename, { type: contentType });
+  const filename = generateAudioFilename(
+    "recording",
+    audioExtensionForType(contentType),
+  );
+  const file = toAudioFile(audioBlob, { fileName: filename });
 
   let lastError: Error | null = null;
   let attempt = 0;

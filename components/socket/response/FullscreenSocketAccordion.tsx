@@ -9,7 +9,6 @@ interface FullscreenSocketAccordionProps {
   triggerClassName?: string;
   triggerLabel?: string;
   taskId?: string;
-  onOpen?: () => void;
   onClose?: () => void;
   isOpen?: boolean; // External control of open state
   showTrigger?: boolean; // Explicit control over trigger button visibility
@@ -19,7 +18,6 @@ const FullscreenSocketAccordion = ({
   triggerClassName,
   triggerLabel = "Socket Admin",
   taskId,
-  onOpen,
   onClose,
   isOpen: externalIsOpen,
   showTrigger,
@@ -34,7 +32,6 @@ const FullscreenSocketAccordion = ({
     if (externalIsOpen === undefined) {
       setInternalIsOpen(true);
     }
-    onOpen?.();
   };
   
   const closeDialog = () => {

@@ -56,13 +56,10 @@ function ShellSkeleton() {
         </div>
       </div>
       <div className="flex-1 min-w-0 flex flex-col min-h-0">
-        <div className="h-14 border-b border-border bg-muted/20 animate-pulse" />
+        <div className="h-11 border-b border-border bg-muted/20 animate-pulse" />
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="bg-card animate-pulse hidden md:block"
-            />
+            <div key={i} className="bg-card animate-pulse hidden md:block" />
           ))}
           <div className="bg-card animate-pulse md:hidden" />
         </div>

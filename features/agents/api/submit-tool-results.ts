@@ -173,16 +173,18 @@ function postToolResults(
           return;
         }
 
-        // Continuation handshake. When the original stream is gone
-        // (hard-suspended after delegating) AND the last outstanding
-        // client-delegated call just cleared, the server flags
-        // `continuation_needed=true` and returns the owning
-        // `user_request_id`. We reopen the agent loop against the resume
+        // Continuation handshake. Delegation ALWAYS hard-suspends the loop and
+        // ends the stream (there is no live in-memory continuation path on the
+        // server — that was removed in the Phase 1 delegation rewrite). When the
+        // last outstanding client-delegated call for the user_request clears,
+        // the server flags `continuation_needed=true` and returns the owning
+        // `user_request_id`; we reopen the agent loop against the resume
         // endpoint — see features/agents/docs/CLIENT_TOOL_SUSPEND_RESUME.md.
         //
-        // When the live in-memory waiter on the originating stream picked up
-        // the result, `continuation_needed=false` and the existing stream
-        // keeps streaming under us — we do nothing.
+        // `continuation_needed=false` here means OTHER delegated calls in the
+        // same turn are still outstanding (a partial answer in a parallel
+        // multi-tool turn), or this was a duplicate POST — either way we do
+        // nothing and let the eventual final answer trigger the resume.
         const data = result.data as ToolResultsResponse | undefined;
         if (data?.continuation_needed && data.user_request_id) {
           // Dynamic import breaks the would-be cycle:

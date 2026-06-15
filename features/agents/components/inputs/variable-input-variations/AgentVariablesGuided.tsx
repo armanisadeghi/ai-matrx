@@ -20,6 +20,8 @@ import {
   selectInstanceVariableDefinitions,
   selectUserVariableValues,
 } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectVisibleInputDefinitions } from "@/features/agents/redux/execution-system/instance-variable-values/bound-variable.selectors";
+import { BoundVariableChips } from "@/features/agents/components/inputs/BoundVariableChips";
 import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { selectShowVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
@@ -605,8 +607,13 @@ export function AgentVariablesGuided({
   seamless = false,
 }: AgentVariablesGuidedProps) {
   const dispatch = useAppDispatch();
-  const variableDefaults = useAppSelector(
+  const allDefinitions = useAppSelector(
     selectInstanceVariableDefinitions(conversationId),
+  );
+  // Guided steps through plain + unresolved bound vars (inherited component); resolved
+  // bound vars are shown as pills (BoundVariableChips), never as guided steps.
+  const variableDefaults = useAppSelector(
+    selectVisibleInputDefinitions(conversationId),
   );
   const values = useAppSelector(selectUserVariableValues(conversationId));
   const showVariablePanel = useAppSelector(
@@ -631,6 +638,13 @@ export function AgentVariablesGuided({
     ro.observe(el);
     return () => ro.disconnect();
   }, [activeIndex, isCollapsed]);
+
+  // Clamp when a variable resolves mid-session and the step list shrinks past the cursor.
+  useEffect(() => {
+    if (activeIndex > variableDefaults.length - 1 && variableDefaults.length > 0) {
+      setActiveIndex(variableDefaults.length - 1);
+    }
+  }, [variableDefaults.length, activeIndex]);
 
   // Compute the active variable BEFORE the early-return so all downstream hooks
   // (useCallback) run unconditionally. Fall back to a safe placeholder when the
@@ -694,8 +708,12 @@ export function AgentVariablesGuided({
 
   // Early-returns AFTER all hooks have been called — guarantees stable hook
   // count across renders even when `shouldShowVariables` toggles.
-  if (total === 0 || !variable) return null;
-  if (!shouldShowVariables || !showVariablePanel) return null;
+  if (!shouldShowVariables || !showVariablePanel || allDefinitions.length === 0)
+    return null;
+  // No guided steps left (every variable resolved from scope) → just the pills.
+  if (total === 0 || !variable) {
+    return <BoundVariableChips conversationId={conversationId} />;
+  }
 
   const value: unknown = values[variable.name] ?? variable.defaultValue ?? "";
   const formattedName = formatText(variable.name);
@@ -753,6 +771,8 @@ export function AgentVariablesGuided({
   // --- Collapsed state ---
   if (isCollapsed) {
     return (
+      <>
+      <BoundVariableChips conversationId={conversationId} />
       <div
         className={cn(
           `w-full bg-card border border-border ${collapsedRadius} ${seamless ? "border-b-0" : ""}`,
@@ -780,11 +800,14 @@ export function AgentVariablesGuided({
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
         </div>
       </div>
+      </>
     );
   }
 
   // --- Expanded state ---
   return (
+    <>
+    <BoundVariableChips conversationId={conversationId} />
     <div
       className={cn(
         `flex flex-col h-64 max-h-64 w-full overflow-hidden bg-muted border border-border ${outerRadius} ${seamless ? "border-b-0" : ""}`,
@@ -870,5 +893,6 @@ export function AgentVariablesGuided({
         )}
       </div>
     </div>
+    </>
   );
 }

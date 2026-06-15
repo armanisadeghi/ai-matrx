@@ -25,8 +25,6 @@ export interface OpenFullscreenMarkdownEditorOptions {
   initialMarkdown?: string;
   showSampleSelector?: boolean;
   showConfigSelector?: boolean;
-  /** TODO callback — wire via callback registry in stage 3. */
-  onOpen?: () => void;
 }
 
 export interface FullscreenMarkdownEditorHandle {
@@ -46,7 +44,6 @@ export function useOpenFullscreenMarkdownEditor() {
             initialMarkdown: opts.initialMarkdown,
             showSampleSelector: opts.showSampleSelector,
             showConfigSelector: opts.showConfigSelector,
-            onOpen: opts.onOpen,
           },
         }),
       );
@@ -68,6 +65,6 @@ export function FullscreenMarkdownEditorController(props: OpenFullscreenMarkdown
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.triggerClassName, props.triggerLabel, props.initialMarkdown, props.showSampleSelector, props.showConfigSelector, props.onOpen]);
+  }, [open, props.triggerClassName, props.triggerLabel, props.initialMarkdown, props.showSampleSelector, props.showConfigSelector]);
   return null;
 }

@@ -513,6 +513,15 @@ export interface ContextSlotSource {
   id?: string;
   field?: string;
   extra?: Record<string, unknown>;
+  /**
+   * Scope-context source (kind="ctx_item"). The slot is filled at run time from the active
+   * scope of `scope_type_id` supplying `item_key` (resolved by scope_binding_resolution).
+   * `id` carries the exact ctx_context_items UUID (collision-proof). `on_missing` is
+   * "empty" | "skip" | "error" (default "empty").
+   */
+  scope_type_id?: string;
+  item_key?: string;
+  on_missing?: string;
 }
 
 export interface ContextSlot {

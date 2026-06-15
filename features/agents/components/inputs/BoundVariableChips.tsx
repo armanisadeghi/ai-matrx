@@ -3,15 +3,19 @@
 /**
  * BoundVariableChips
  *
- * Renders agent variables BOUND to a scope context item as informative pills (instead of
- * a normal input). A resolved pill shows what the active scope supplies and is auto-filled
- * server-side — you can ignore it, or click to override for this run and optionally write
- * the value back to the scope. A pill whose scope type has no active scope lights up red:
- * the agent is built for a single-scope job, so it asks you to pick one.
+ * Renders ONLY the agent variables that are bound to a scope context item AND actually
+ * resolved to a value from the active scope — as informative pills. You can ignore a pill
+ * (the value is auto-filled server-side), click it to override for this run, and optionally
+ * write the value back to the scope.
+ *
+ * Bound variables that did NOT resolve (no context, or no value yet) are NOT shown here —
+ * they fall through to the normal input list with their inherited component, with zero
+ * requirement. Mounting this component also drives the runtime hook that loads the scope
+ * data + inherited components, so every layout renders it (even when it shows nothing).
  */
 
 import { useState } from "react";
-import { Link2, AlertTriangle, ChevronDown, Save } from "lucide-react";
+import { Link2, ChevronDown, Save } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -41,11 +45,14 @@ interface BoundVariableChipsProps {
 }
 
 export function BoundVariableChips({ conversationId }: BoundVariableChipsProps) {
+  // Always runs the hook (loads catalog + inherited components + prefills scope values),
+  // even when nothing renders.
   const infos = useBoundVariableScope(conversationId);
-  if (infos.length === 0) return null;
+  const resolved = infos.filter((i) => !!i.resolved);
+  if (resolved.length === 0) return null;
   return (
     <div className="flex flex-wrap items-center gap-1.5 px-2.5 py-1.5">
-      {infos.map((info) => (
+      {resolved.map((info) => (
         <BoundChip key={info.name} conversationId={conversationId} info={info} />
       ))}
     </div>
@@ -111,37 +118,21 @@ function BoundChip({
     }
   };
 
-  // Visual state: red when the binding's scope type isn't active (pick one);
-  // linked/subtle when resolved; neutral when the scope is active but the item is empty.
-  const tone = info.missing
-    ? "border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-300"
-    : info.resolved || hasUserOverride
-      ? "border-border bg-muted/60 text-foreground"
-      : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300";
-
-  const summary = info.missing
-    ? `select a ${info.scopeTypeLabel}`
-    : displayValue ||
-      (info.scopeActive ? `not set in ${info.scopeTypeLabel}` : "—");
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1.5 max-w-[260px] rounded-full border px-2 py-0.5 text-xs transition-colors hover:brightness-110",
-            tone,
+            "inline-flex items-center gap-1.5 max-w-[260px] rounded-full border border-border bg-muted/60 px-2 py-0.5 text-xs text-foreground transition-colors hover:bg-muted",
           )}
-          title={`${formatText(info.name)} — bound to ${info.scopeTypeLabel} context`}
+          title={`${formatText(info.name)} — auto-filled from ${info.scopeTypeLabel}. Click to override.`}
         >
-          {info.missing ? (
-            <AlertTriangle className="h-3 w-3 shrink-0" />
-          ) : (
-            <Link2 className="h-3 w-3 shrink-0 opacity-70" />
-          )}
+          <Link2 className="h-3 w-3 shrink-0 opacity-70" />
           <span className="font-medium shrink-0">{formatText(info.name)}</span>
-          <span className="text-muted-foreground truncate">{summary}</span>
+          <span className="text-muted-foreground truncate">
+            {displayValue || "—"}
+          </span>
           <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
         </button>
       </PopoverTrigger>
@@ -155,31 +146,19 @@ function BoundChip({
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Link2 className="h-3.5 w-3.5" />
             <span>
-              Bound to <span className="font-medium text-foreground">{info.scopeTypeLabel}</span>
-              {info.resolved ? " · auto-filled from the active scope" : ""}
+              Auto-filled from{" "}
+              <span className="font-medium text-foreground">
+                {info.scopeTypeLabel}
+              </span>
+              . Editing overrides it for this run.
             </span>
           </div>
-
-          {info.missing && (
-            <div className="rounded-md border border-rose-500/40 bg-rose-500/10 px-2.5 py-1.5 text-xs text-rose-700 dark:text-rose-300 inline-flex items-start gap-1.5">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-              <span>
-                No {info.scopeTypeLabel} is active. This agent is built for one — pick a{" "}
-                {info.scopeTypeLabel}, or enter a value just for this run.
-              </span>
-            </div>
-          )}
 
           <VariableInputComponent
             value={effectiveValue}
             onChange={handleChange}
             variableName={info.name}
             customComponent={info.customComponent}
-            helpText={
-              info.resolved
-                ? "Editing overrides the scope value for this run."
-                : undefined
-            }
             hideLabel
             compact
           />
