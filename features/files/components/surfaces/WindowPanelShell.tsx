@@ -171,6 +171,7 @@ function BrowseTab() {
                 dispatch(setActiveFolderId(id));
                 dispatch(setActiveFileId(null));
               }}
+              showContext
               className="h-full w-full"
             />
           )}

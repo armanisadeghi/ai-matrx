@@ -20,6 +20,7 @@ import {
   FolderRowContextMenu,
 } from "@/features/files/components/core/RowContextMenu/RowContextMenu";
 import { formatFileSize, formatRelativeTime } from "@/features/files/utils/format";
+import { FileContextCell } from "../../surfaces/desktop/FileContextCell";
 import type { CloudFileRecord, CloudFolderRecord } from "@/features/files/types";
 
 export interface FileListRowProps {
@@ -33,6 +34,9 @@ export interface FileListRowProps {
   onMove?: () => void;
   /** Disable drag-and-drop (read-only contexts). */
   dragDisabled?: boolean;
+  /** Show the per-file Context cell (value + picker). The list primes the
+   *  shared row-scope store in bulk; the cell never fetches on its own. */
+  showContext?: boolean;
 }
 
 function FileListRowImpl({
@@ -45,6 +49,7 @@ function FileListRowImpl({
   onShare,
   onMove,
   dragDisabled,
+  showContext,
 }: FileListRowProps) {
   const isFolder = kind === "folder";
   const name = isFolder
@@ -84,7 +89,10 @@ function FileListRowImpl({
       {...attributes}
       {...listeners}
       className={cn(
-        "group grid grid-cols-[auto_1fr_100px_120px_auto] items-center gap-3 px-3 py-1.5",
+        "group grid items-center gap-3 px-3 py-1.5",
+        showContext
+          ? "grid-cols-[auto_1fr_100px_120px_150px_auto]"
+          : "grid-cols-[auto_1fr_100px_120px_auto]",
         "text-sm select-none cursor-pointer border-b border-border/50",
         "hover:bg-accent/60",
         selected && "bg-accent text-accent-foreground",
@@ -106,6 +114,16 @@ function FileListRowImpl({
       <span className="text-xs text-muted-foreground">
         {formatRelativeTime(updated)}
       </span>
+
+      {showContext && (
+        <div className="min-w-0">
+          {isFolder ? (
+            <span className="text-xs text-muted-foreground/40">—</span>
+          ) : (
+            <FileContextCell fileId={record.id} fileName={name} />
+          )}
+        </div>
+      )}
 
       <div
         className="opacity-0 group-hover:opacity-100"

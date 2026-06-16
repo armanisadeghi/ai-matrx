@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -25,6 +25,7 @@ import { moveFile } from "@/features/files/redux/thunks";
 import { setSort } from "@/features/files/redux/slice";
 import { useFolderContents } from "@/features/files/hooks/useFolderContents";
 import { useFileSelection } from "@/features/files/hooks/useFileSelection";
+import { primeEntityScopes } from "@/features/scopes/components/context-assignment/data";
 import { FileListRow } from "./FileListRow";
 import { FileListGridCell } from "./FileListGridCell";
 import type { SortBy } from "@/features/files/types";
@@ -40,6 +41,9 @@ export interface FileListProps {
   readOnly?: boolean;
   emptyState?: React.ReactNode;
   className?: string;
+  /** Show a per-file Context column (value + picker), matching the main
+   *  /files route. Off by default so pickers/embeds stay lean. */
+  showContext?: boolean;
 }
 
 const SORT_LABELS: Record<SortBy, string> = {
@@ -65,12 +69,22 @@ export function FileList({
   readOnly,
   emptyState,
   className,
+  showContext,
 }: FileListProps) {
   const dispatch = useAppDispatch();
   const { files, folders, loading } = useFolderContents(folderId);
   const selection = useFileSelection();
   const sort = useAppSelector(selectSort);
   const viewMode = useAppSelector(selectViewMode);
+
+  // Prime the shared row-scope store ONCE per visible page so each Context
+  // cell reads from cache instead of fetching (N rows ≠ N requests).
+  const fileIdsKey = files.map((f) => f.id).join(",");
+  useEffect(() => {
+    if (!showContext) return;
+    const ids = fileIdsKey ? fileIdsKey.split(",") : [];
+    if (ids.length) primeEntityScopes("file", ids);
+  }, [showContext, fileIdsKey]);
 
   // Ordered list for shift-click ranges.
   const orderedIds = useMemo(
@@ -136,7 +150,12 @@ export function FileList({
         {viewMode === "list" ? (
           <>
             <div
-              className="grid grid-cols-[auto_1fr_100px_120px_auto] items-center gap-3 px-3 py-1.5 border-b bg-muted/40 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
+              className={cn(
+                "grid items-center gap-3 px-3 py-1.5 border-b bg-muted/40 text-[11px] font-medium uppercase tracking-wide text-muted-foreground",
+                showContext
+                  ? "grid-cols-[auto_1fr_100px_120px_150px_auto]"
+                  : "grid-cols-[auto_1fr_100px_120px_auto]",
+              )}
               role="row"
             >
               <span className="w-4" />
@@ -162,6 +181,7 @@ export function FileList({
                 direction={sort.sortDir}
                 onClick={handleHeaderClick}
               />
+              {showContext && <span>Context</span>}
               <span className="w-6" />
             </div>
             <div className="flex-1 overflow-auto" role="rowgroup">
@@ -176,6 +196,7 @@ export function FileList({
                   }
                   onDoubleClick={() => onActivateFolder?.(folder.id)}
                   dragDisabled={readOnly}
+                  showContext={showContext}
                 />
               ))}
               {files.map((file) => (
@@ -196,6 +217,7 @@ export function FileList({
                     onMoveRequest ? () => onMoveRequest(file.id) : undefined
                   }
                   dragDisabled={readOnly}
+                  showContext={showContext}
                 />
               ))}
             </div>
