@@ -1373,6 +1373,18 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         />
       );
 
+    case "item_presentation":
+      // Owns all its phases internally: instant skeleton from a partial JSON
+      // scan → recognized icon/accent + DB auto-enrichment → grow-in details →
+      // window-panel open on click. Forgiving for unknown types; never errors.
+      return (
+        <BlockComponents.ItemPresentationBlock
+          key={index}
+          content={block.content}
+          isStreamActive={Boolean(block.isStreamingBlock) || isStreamActive}
+        />
+      );
+
     case "math_problem":
       if (block.serverData) {
         return (

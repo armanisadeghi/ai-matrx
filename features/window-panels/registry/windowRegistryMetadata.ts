@@ -235,6 +235,25 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "file_preview" },
   },
 
+  // ── Item Detail ───────────────────────────────────────────────────────────
+  // Generic fallback detail view for an item_presentation entity (task,
+  // project, scope, document, …) that has no bespoke window yet. Tied to the
+  // clicked entity, so ephemeral — nothing to restore.
+  {
+    slug: "item-detail-window",
+    overlayId: "itemDetailWindow",
+    kind: "window",
+    label: "Item details",
+    defaultData: {
+      itemType: null,
+      itemId: null,
+      initialName: null,
+      initialAbout: null,
+    },
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+
   // ── Web Scraper ───────────────────────────────────────────────────────────
   {
     slug: "scraper-window",

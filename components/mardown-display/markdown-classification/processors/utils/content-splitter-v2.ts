@@ -153,6 +153,16 @@ const JSON_BLOCK_PATTERNS = {
     validate: (parsed: any) =>
       parsed?.math_problem && typeof parsed.math_problem === "object",
   },
+  // A clickable reference to a platform entity (agent, note, task, file, …).
+  // Deliberately forgiving: any object under the key with a string `type`
+  // qualifies — the renderer handles unknown types via a neutral fallback.
+  item_presentation: {
+    rootKey: "item_presentation",
+    validate: (parsed: any) =>
+      parsed?.item_presentation &&
+      typeof parsed.item_presentation === "object" &&
+      typeof parsed.item_presentation.type === "string",
+  },
 } as const;
 
 /** Extracts the first key from a JSON object string without full parsing. */

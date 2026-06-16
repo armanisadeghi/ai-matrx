@@ -33,10 +33,13 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectMessageById,
+  selectFirstMessageId,
+  selectHasMoreOlderMessages,
   extractFlatText,
   extractContentBlocks,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { UserActionBar } from "./UserActionBar";
+import { FirstTurnVariables } from "./FirstTurnVariables";
 import { BlockHoverPreview } from "@/features/agents/components/previews/BlockHoverPreview";
 import { FileResourceChip } from "@/features/files";
 import { InlineMediaRef } from "@/features/files";
@@ -513,6 +516,16 @@ export function AgentUserMessage({
       state.conversations.byConversationId[conversationId]?.agentId ?? null,
   );
 
+  // The conversation's first turn carries its launch variables. Show the
+  // variables strip only on the genuinely-first user message — i.e. the
+  // first message currently loaded AND no older history paginated above it
+  // (otherwise the "first loaded" message isn't actually turn 1).
+  const firstMessageId = useAppSelector(selectFirstMessageId(conversationId));
+  const hasMoreOlder = useAppSelector(
+    selectHasMoreOlderMessages(conversationId),
+  );
+  const isFirstTurnMessage = !hasMoreOlder && firstMessageId === messageId;
+
   const [isHovered, setIsHovered] = useState(false);
 
   const content = extractFlatText(record);
@@ -570,6 +583,14 @@ export function AgentUserMessage({
 
       <div className="bg-muted border border-border rounded-lg px-2 py-2">
         <div className="space-y-1.5">
+          {/* First-turn variables — the values this conversation was launched
+              with. Display-only, sourced from the instance variable slice, so
+              live and reloaded conversations render identically. Shown once,
+              on turn 1. */}
+          {isFirstTurnMessage && (
+            <FirstTurnVariables conversationId={conversationId} />
+          )}
+
           {/* Context slot chips — live state of instanceContext for this
               conversation. Note: until the request thunk stamps the per-turn
               context snapshot onto message metadata, every user bubble in a

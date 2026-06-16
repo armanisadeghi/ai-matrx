@@ -504,6 +504,7 @@ interface AgentRunWindowProps {
   onClose: () => void;
   initialAgentId?: string | null;
   initialSelectedConversationId?: string | null;
+  initialAgentName?: string | null;
 }
 
 export default function AgentRunWindow({
@@ -511,6 +512,7 @@ export default function AgentRunWindow({
   onClose,
   initialAgentId,
   initialSelectedConversationId,
+  initialAgentName,
 }: AgentRunWindowProps) {
   if (!isOpen) return null;
   return (
@@ -518,6 +520,7 @@ export default function AgentRunWindow({
       onClose={onClose}
       initialAgentId={initialAgentId ?? null}
       initialSelectedConversationId={initialSelectedConversationId ?? null}
+      initialAgentName={initialAgentName ?? null}
     />
   );
 }
@@ -526,19 +529,29 @@ function AgentRunWindowInner({
   onClose,
   initialAgentId,
   initialSelectedConversationId,
+  initialAgentName,
 }: {
   onClose: () => void;
   initialAgentId: string | null;
   initialSelectedConversationId: string | null;
+  initialAgentName: string | null;
 }) {
   const [agentId, setAgentId] = useState<string | null>(initialAgentId);
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(initialSelectedConversationId);
 
-  const agentName = useAppSelector((state: RootState) =>
-    agentId ? (selectAgentName(state, agentId) ?? "Agent") : "Agent",
+  // Prefer the live name from the store; fall back to the caller-supplied name
+  // — but only while we're still on the agent that name belongs to. Once the
+  // user picks a different agent, the seed no longer applies (the dropdown has
+  // loaded real names by then), so we drop to the generic placeholder.
+  const liveAgentName = useAppSelector((state: RootState) =>
+    agentId ? (selectAgentName(state, agentId) ?? null) : null,
   );
+  const agentName =
+    liveAgentName ??
+    (agentId && agentId === initialAgentId ? initialAgentName : null) ??
+    "Agent";
 
   const liveConversationId = useLiveConversationId(agentId);
   const activeConversationId = selectedConversationId ?? liveConversationId;

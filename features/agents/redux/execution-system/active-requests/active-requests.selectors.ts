@@ -510,7 +510,15 @@ export type UnifiedSlot =
       label: string;
       statusKind: "phase" | "info";
       seq: number;
-    };
+    }
+  // A stream `error` event that occurred MID-TURN (content follows it in the
+  // timeline). It is interleaved here so it holds its chronological position
+  // instead of floating to the bottom of the message. The error payload is
+  // read from `request.error` by the renderer (one error per request). A
+  // FATAL error (no content after it — the stream died) is intentionally NOT
+  // emitted as a slot: it stays the trailing failed-turn render in
+  // `AgentAssistantMessage`, which keeps the Retry affordance untouched.
+  | { kind: "error"; seq: number };
 
 /**
  * Render-block types that need the unified-slot rendering path even when
@@ -620,9 +628,27 @@ export const selectUnifiedSlots = (requestId: string) =>
       // Tracks how many blocks from renderBlockOrder have been emitted into slots.
       // Used by both text_end and reasoning_end to emit their respective blocks.
       let lastEmittedBlockIndex = 0;
+      // A stream `error` event sets this; it becomes an inline slot the moment
+      // the NEXT content slot (block or tool) is pushed — i.e. only when the
+      // error was MID-TURN. If nothing more follows (fatal — stream died),
+      // `pendingError` is never flushed and the error stays the trailing
+      // failed-turn render in AgentAssistantMessage (Retry affordance intact).
+      // One error per request, so at most one error slot is ever emitted.
+      let pendingError = false;
+      let errorEmitted = false;
+
+      const flushPendingError = () => {
+        if (!pendingError || errorEmitted) return;
+        pendingError = false;
+        errorEmitted = true;
+        slots.push({ kind: "error", seq: nextSeq++ });
+      };
 
       const pushBlock = (blockId: string) => {
         if (emittedBlockIds.has(blockId)) return;
+        // Content follows the error → pin the error to its chronological spot,
+        // just before this block.
+        flushPendingError();
         emittedBlockIds.add(blockId);
         slots.push({
           kind: "render_block",
@@ -662,6 +688,8 @@ export const selectUnifiedSlots = (requestId: string) =>
           !seenTools.has(entry.data.call_id)
         ) {
           pendingStatus = null;
+          // A tool starting after the error is content → pin the error first.
+          flushPendingError();
           seenTools.add(entry.data.call_id);
           slots.push({
             kind: "tool",
@@ -707,11 +735,14 @@ export const selectUnifiedSlots = (requestId: string) =>
               }
             }
           }
-        } else if (
-          entry.kind === "completion" ||
-          entry.kind === "end" ||
-          entry.kind === "error"
-        ) {
+        } else if (entry.kind === "error") {
+          // Arm an inline error slot. It's only emitted (by flushPendingError)
+          // if real content follows — a mid-turn, recovered error. A fatal
+          // error has nothing after it, so this stays armed-but-unflushed and
+          // the trailing render owns it.
+          pendingStatus = null;
+          pendingError = true;
+        } else if (entry.kind === "completion" || entry.kind === "end") {
           pendingStatus = null;
         }
       }
@@ -750,6 +781,20 @@ export const selectUnifiedSlots = (requestId: string) =>
 
       return slots;
     },
+  );
+
+/**
+ * True when the request's unified slots contain an inline `error` slot — i.e.
+ * a mid-turn error that `selectUnifiedSlots` pinned to its chronological
+ * position. `AgentAssistantMessage` uses this to suppress its trailing
+ * failed-turn render so the error isn't shown twice. Derived from the same
+ * `selectUnifiedSlots` output, so the two can never disagree (no lost / no
+ * duplicate error). Fatal errors produce no inline slot → returns false →
+ * the trailing render (with Retry) is kept exactly as before.
+ */
+export const selectHasInlineError = (requestId: string) =>
+  createSelector(selectUnifiedSlots(requestId), (slots) =>
+    slots.some((s) => s.kind === "error"),
   );
 
 /** Pending tool calls that haven't been resolved yet. Memoized. */

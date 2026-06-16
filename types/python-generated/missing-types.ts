@@ -85,13 +85,28 @@ export interface ChartRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * A clickable reference to a platform entity (agent, note, task, file, etc.).
+ * Emitted by an agent as a ```json fence keyed by `item_presentation`:
+ *   { "item_presentation": { "id": "...", "type": "agent", "name": "...", "about": "..." } }
+ * Client-only for now (detected by the splitter's JSON_BLOCK_PATTERNS). The
+ * renderer auto-enriches recognized types from the DB and opens the matching
+ * window panel on click. See features/item-presentation/.
+ */
+export interface ItemPresentationRenderBlock {
+  type: "item_presentation";
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
 export type ClientOnlyRenderBlock =
   | TreeRenderBlock
   | AccentDividerRenderBlock
   | HeavyDividerRenderBlock
   | AudioRenderBlock
   | SvgRenderBlock
-  | ChartRenderBlock;
+  | ChartRenderBlock
+  | ItemPresentationRenderBlock;
 
 export type ClientOnlyBlockType = ClientOnlyRenderBlock["type"];
 

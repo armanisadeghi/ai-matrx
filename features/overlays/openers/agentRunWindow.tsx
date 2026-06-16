@@ -22,6 +22,12 @@ const OVERLAY_ID = "agentRunWindow" as const;
 export interface OpenAgentRunWindowOptions {
   initialAgentId?: string | null;
   initialSelectedConversationId?: string | null;
+  /**
+   * Known agent name, if the caller already has it. Shown in the title bar
+   * instantly so the user doesn't see a generic "Agent" placeholder while the
+   * agent definition (and the full agent list) lazy-loads.
+   */
+  initialAgentName?: string | null;
 }
 
 export interface AgentRunWindowHandle {
@@ -38,6 +44,7 @@ export function useOpenAgentRunWindow() {
           data: {
             initialAgentId: opts.initialAgentId,
             initialSelectedConversationId: opts.initialSelectedConversationId,
+            initialAgentName: opts.initialAgentName,
           },
         }),
       );
@@ -59,6 +66,11 @@ export function AgentRunWindowController(props: OpenAgentRunWindowOptions): null
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.initialAgentId, props.initialSelectedConversationId]);
+  }, [
+    open,
+    props.initialAgentId,
+    props.initialSelectedConversationId,
+    props.initialAgentName,
+  ]);
   return null;
 }

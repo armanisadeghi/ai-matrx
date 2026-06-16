@@ -31,6 +31,7 @@ import { selectMessageInterleavedContent } from "@/features/agents/redux/executi
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { InlineToolCard, DbToolCard } from "./internal-handlers/ToolHandlers";
+import { InlineAssistantError } from "./internal-handlers/InlineAssistantError";
 import { PlainTextFallback } from "./internal-handlers/PlainTextFallback";
 import { SafeBlockRenderer } from "./internal-handlers/SafeBlockRenderer";
 import { MarkdownErrorBoundary } from "./internal-handlers/MarkdownErrorBoundary";
@@ -183,6 +184,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
     (s) =>
       s.kind === "tool" ||
       s.kind === "status" ||
+      s.kind === "error" ||
       (s.kind === "render_block" &&
         s.blockType !== undefined &&
         SPECIAL_RENDER_BLOCK_TYPES.has(s.blockType)),
@@ -622,6 +624,14 @@ export const EnhancedChatMarkdownInternal: React.FC<
                     <InlineStatusIndicator
                       key={`status-${slot.seq}`}
                       label={slot.label}
+                    />
+                  );
+                }
+                if (slot.kind === "error") {
+                  return (
+                    <InlineAssistantError
+                      key={`error-${slot.seq}`}
+                      requestId={requestId}
                     />
                   );
                 }

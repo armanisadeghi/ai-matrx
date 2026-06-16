@@ -17,6 +17,13 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D7 — `item_presentation` cards: most types have no by-id window opener yet
+**Severity: low — those cards render + enrich fine, they just aren't clickable-to-open yet.**
+
+**What.** The `item_presentation` render block ([`features/item-presentation/FEATURE.md`](features/item-presentation/FEATURE.md)) dispatches a window-panel opener per `type` via `useOpenItemPresentation`. Only types with a clean "open this specific record by id" opener are wired: `agent`, `note`, `file`/`image`/`video`/`audio`, `picklist`. These types have NO by-id opener and stay info-only cards: `app`, `task`, `project`, `scope`, `scope_type`, `context_item`, `session`, `table`, `workbook`, `document`, `message`, `email`. Notable mismatches found while wiring: `scopeEditWindow` hard-requires `scopeTypeId` + `organizationId` (not a clean by-id open); `workingDocumentWindow` and `singleMessageWindow` are keyed by `conversationId`, not a `udt_documents`/message id; `emailDialogWindow` is compose, not view-by-id; `projectsWindow`/`taskQuickCreateWindow` are list/create, not open-by-id.
+
+**Fence.** `useOpenItemPresentation` returns `false` for any unwired kind, and `canOpen` only flips true when `config.open` is set — so an unwired type can never produce a dead click. Drop-in path is one branch in `useOpenItemPresentation` + one `open: { kind }` entry in `registry.tsx` per type as each opener ships (the `ItemOpenKind` union already enumerates them). Each new opener should expose a hook like `useOpenXWindow({ <type>Id })`.
+
 ### D6 — Window geometry restore keyed by `overlayId`, but windows register by `id`/slug
 **Severity: low — saved window size/position silently doesn't restore for affected windows; no data loss.**
 

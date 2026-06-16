@@ -69,6 +69,9 @@ const InteractiveDiagramBlock = lazy(
 const MermaidBlock = lazy(() => import("../../blocks/mermaid/MermaidBlock"));
 const SvgBlock = lazy(() => import("../../blocks/svg/SvgBlock"));
 const ChartBlock = lazy(() => import("../../blocks/chart/ChartBlock"));
+const ItemPresentationBlock = lazy(
+  () => import("@/features/item-presentation/ItemPresentationBlock"),
+);
 const MathProblemBlock = lazy(
   () => import("../../blocks/math/MathProblemBlock"),
 );
@@ -361,6 +364,11 @@ export const BlockComponents = {
   ChartBlock: (props: any) => (
     <LazyBlockWrapper>
       <ChartBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  ItemPresentationBlock: (props: any) => (
+    <LazyBlockWrapper>
+      <ItemPresentationBlock {...props} />
     </LazyBlockWrapper>
   ),
   MathProblemBlock: (props: any) => (

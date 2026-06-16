@@ -38,6 +38,7 @@ import {
   selectErrorIsFatal,
   selectRequestError,
   selectRenderBlockCount,
+  selectHasInlineError,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectBufferStream } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectStreamPhase } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
@@ -220,6 +221,18 @@ export function AgentAssistantMessage({
   const streamedBlockCount = useAppSelector(
     requestId ? selectRenderBlockCount(requestId) : () => 0,
   );
+
+  // A MID-TURN error is already rendered inline at its chronological position
+  // by EnhancedChatMarkdown (the `error` unified slot). When that happens we
+  // must NOT also render the trailing copy below the content — that's the very
+  // "error floats to the bottom and slides down" bug. A FATAL error (no
+  // content after it) produces no inline slot, so this is false and the
+  // trailing render (with Retry) is kept exactly as before.
+  const hasInlineErrorSelector = useMemo(
+    () => (requestId ? selectHasInlineError(requestId) : () => false),
+    [requestId],
+  );
+  const hasInlineError = useAppSelector(hasInlineErrorSelector);
   const hasBody =
     flatText.length > 0 ||
     (serverProcessedBlocks?.length ?? 0) > 0 ||
@@ -333,8 +346,11 @@ export function AgentAssistantMessage({
         </>
       )}
       {/* Failed turn WITH content: the error renders BELOW everything that
-          already streamed — never instead of it. */}
-      {failedError}
+          already streamed — never instead of it. EXCEPT when the error was
+          mid-turn (`hasInlineError`): then EnhancedChatMarkdown already placed
+          it at its chronological spot inline, so the trailing copy is
+          suppressed to avoid a duplicate that floats to the bottom. */}
+      {!hasInlineError && failedError}
       {messageId && (
         <MessageFilesStrip
           conversationId={conversationId}

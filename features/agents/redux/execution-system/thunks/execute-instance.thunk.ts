@@ -59,7 +59,7 @@ import {
 } from "./run-ai-stream";
 import { validateMessageBlocks } from "@/features/agents/runtime/validation";
 import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
-import { formatVariablesForDisplay } from "@/features/agents/utils/variable-utils";
+import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import {
   selectIsBlockMode,
   selectIsMemoryToggleRequested,
@@ -312,14 +312,39 @@ export const executeInstance = createAsyncThunk<
       // in smartExecute; without this early dispatch the bubble doesn't
       // appear until `buildToolInjection` resolves (the sandbox provider may
       // mint a token, the cache-bypass module may be lazy-loaded), creating
-      // a visible gap where the message looks "lost". The variables formatted
-      // for display and the assembled text both come from the sync payload
-      // above — no need to wait for tool/client injection to render the bubble.
+      // a visible gap where the message looks "lost". The assembled text comes
+      // from the sync payload above — no need to wait for tool/client injection
+      // to render the bubble.
+      //
+      // Variables are a FIRST-TURN-ONLY concern and are NEVER baked into the
+      // message text. They fill the agent's declared template once, never
+      // change within a conversation, and are omitted from every continuation
+      // payload (see the turn-2+ branch below). Baking them into the optimistic
+      // bubble's content was wrong twice over:
+      //   1. The DB-persisted user message only ever carries the raw text, so
+      //      on reload the variable line vanished (the server stores
+      //      `user_input`, not our display string) — variables silently
+      //      disappeared from the first turn after a refresh.
+      //   2. On continuations the same code re-rendered a stale agent default
+      //      the agent never received.
+      // Instead the first user bubble renders a display-only variables strip
+      // sourced from the instance variable slice (see `FirstTurnVariables`).
+      // To make the live first turn identical to a reload, we stamp the exact
+      // variables we're sending into `userValues` here — which is precisely
+      // what `loadConversation` does with the persisted `cx_conversation.variables`.
       // ─────────────────────────────────────────────────────────────────────
-      const variablesForDisplay = payload.variables;
-      const variableLinesEarly = variablesForDisplay
-        ? formatVariablesForDisplay(variablesForDisplay)
-        : "";
+      if (
+        isFirstTurn(state, conversationId) &&
+        payload.variables &&
+        Object.keys(payload.variables).length > 0
+      ) {
+        dispatch(
+          setUserVariableValues({
+            conversationId,
+            values: payload.variables,
+          }),
+        );
+      }
       const resourceBlocks = Array.isArray(payload.user_input)
         ? payload.user_input.filter((b) => b.type !== "text")
         : [];
@@ -332,9 +357,7 @@ export const executeInstance = createAsyncThunk<
         : typeof payload.user_input === "string"
           ? payload.user_input
           : "";
-      const displayContent = [variableLinesEarly, assembledUserText]
-        .filter(Boolean)
-        .join("\n");
+      const displayContent = assembledUserText;
 
       let userMessageClientTempId: string | undefined;
       if (
@@ -536,9 +559,8 @@ export const executeInstance = createAsyncThunk<
       // 2+ today and persist which scopes the conversation ran under.
       // Skipped for ephemeral conversations (no persisted rows by design).
       if (!isEphemeral && payload.scope_ids?.length) {
-        const { syncConversationScopes } = await import(
-          "@/features/scopes/redux/thunks/syncConversationScopes"
-        );
+        const { syncConversationScopes } =
+          await import("@/features/scopes/redux/thunks/syncConversationScopes");
         void dispatch(syncConversationScopes(conversationId));
       }
 

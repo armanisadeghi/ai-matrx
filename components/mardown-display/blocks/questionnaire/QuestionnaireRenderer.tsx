@@ -812,8 +812,11 @@ const QuestionnaireRenderer = ({
   const rehydratedRef = useRef(false);
   useEffect(() => {
     if (rehydratedRef.current) return;
-    const saved = (blockState?._matrxState as { formState?: Record<string, unknown> } | undefined)
-      ?.formState;
+    const saved = (
+      blockState?._matrxState as
+        | { formState?: Record<string, unknown> }
+        | undefined
+    )?.formState;
     if (saved && Object.keys(saved).length > 0) {
       rehydratedRef.current = true;
       lastPersistedRef.current = JSON.stringify(saved); // don't echo it straight back

@@ -1933,6 +1933,11 @@ export default function OverlayController() {
                 ? data.initialSelectedConversationId
                 : null
             }
+            initialAgentName={
+              typeof data?.initialAgentName === "string"
+                ? data.initialAgentName
+                : null
+            }
           />
         );
       })()}
