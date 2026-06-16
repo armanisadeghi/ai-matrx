@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Trash2, Loader2, Search, RefreshCw, X } from "lucide-react";
+import Link from "next/link";
+import {
+  Plus,
+  Trash2,
+  Loader2,
+  Search,
+  RefreshCw,
+  X,
+  ChevronRight,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useTopicContext } from "../../context/ResearchContext";
@@ -204,8 +213,11 @@ export default function KeywordManager() {
               key={kw.id}
               className="group flex items-center gap-2 rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-2.5 min-h-[44px] transition-all hover:border-primary/25 hover:bg-card/80"
             >
-              <div className="min-w-0 flex-1">
-                <div className="font-medium text-sm leading-tight">
+              <Link
+                href={`/research/topics/${topicId}/keywords/${kw.id}`}
+                className="min-w-0 flex-1"
+              >
+                <div className="font-medium text-sm leading-tight truncate">
                   {kw.keyword}
                 </div>
                 <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
@@ -224,7 +236,8 @@ export default function KeywordManager() {
                     </span>
                   )}
                 </div>
-              </div>
+              </Link>
+              <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-foreground transition-colors shrink-0" />
               <button
                 className="h-7 w-7 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-all shrink-0"
                 disabled={deletingId === kw.id}
