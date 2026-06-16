@@ -150,6 +150,13 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
+      name: "Tile flavors + project association",
+      filePath: "features/war-room/components/shared/WarRoomProjectPicker.tsx",
+      description:
+        "A tile's flavor (thread | task | project) + project_id FK. PROJECT flavor binds a tile to a ctx_projects row; its Task tab is the project's task list (TileProjectTaskList). Surfaces: QuickAddThread (flavor segmented picker + WarRoomProjectPicker), TileFlavorBadge (header marker for task/project tiles), RoomProjectButton (header: tie the WHOLE room to a project / clear), NewRoomFromProjectButton (/all: 'From project' → createRoomFromProject seeds a project room + tile), ProjectConflictDialog (the per-thread vs keep-room prompt). WarRoomProjectPicker is a flat cross-org project picker (useUserProjects) — the canonical EntityTargetPicker kind='project' is org-gated and can't express 'any of my projects'. INVARIANT (see invariant 8): a room and its threads never hold conflicting projects; tasks auto-associate via the app-wide ctx_tasks.project_id (createTileTask stamps selectEffectiveTileProjectId). Foundation: redux/thunks (checkTileProjectConflict, convertRoomToPerThreadThunk, setTileProjectThunk, absorbRoomIntoProjectThunk, createRoomFromProject) + selectors (selectTileFlavor / selectEffectiveTileProjectId / selectSessionProjectMode). DB: migrations/ctx_war_room_tiles_flavor_project.sql.",
+      tier: "candidate",
+    },
+    {
       name: "WarRoomContextPicker + TileContextOverride + SessionContextButton",
       filePath: "features/war-room/components/shared/WarRoomContextPicker.tsx",
       description:
