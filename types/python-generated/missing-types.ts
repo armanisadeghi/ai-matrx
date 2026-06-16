@@ -74,12 +74,24 @@ export interface SvgRenderBlock {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * A data chart emitted by an agent in a ```chart fence — a small JSON spec
+ * (type + data) rendered with recharts (loaded via next/dynamic ssr:false).
+ * Client-only for now. See components/mardown-display/blocks/chart/ChartBlock.tsx.
+ */
+export interface ChartRenderBlock {
+  type: "chart";
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
 export type ClientOnlyRenderBlock =
   | TreeRenderBlock
   | AccentDividerRenderBlock
   | HeavyDividerRenderBlock
   | AudioRenderBlock
-  | SvgRenderBlock;
+  | SvgRenderBlock
+  | ChartRenderBlock;
 
 export type ClientOnlyBlockType = ClientOnlyRenderBlock["type"];
 

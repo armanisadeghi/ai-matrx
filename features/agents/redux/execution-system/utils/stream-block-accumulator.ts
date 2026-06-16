@@ -429,7 +429,9 @@ export class StreamBlockAccumulator {
             ? "mermaid"
             : lang === "svg"
               ? "svg"
-              : "code";
+              : lang === "chart"
+                ? "chart"
+                : "code";
         this.openBlock(blockType, dispatch);
         this.subState = {
           kind: "code_fence",

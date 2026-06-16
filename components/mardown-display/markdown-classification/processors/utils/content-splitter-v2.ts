@@ -77,6 +77,7 @@ export const SPECIAL_CODE_LANGUAGES = [
   "cooking_recipe",
   "mermaid",
   "svg",
+  "chart",
 ];
 
 /**

@@ -1363,6 +1363,16 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         />
       );
 
+    case "chart":
+      // Client-only fence type (JSON spec → recharts via next/dynamic ssr:false).
+      return (
+        <BlockComponents.ChartBlock
+          key={index}
+          content={block.content}
+          isStreamActive={Boolean(block.isStreamingBlock)}
+        />
+      );
+
     case "math_problem":
       if (block.serverData) {
         return (

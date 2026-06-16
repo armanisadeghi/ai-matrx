@@ -104,6 +104,9 @@ export function reconstructBlockMarkdown(block: {
     // SVG is likewise a fence-promoted type — reconstruct as a ```svg fence.
     case "svg":
       return `\`\`\`svg\n${content}\n\`\`\``;
+    // Chart (JSON spec) is fence-promoted too — reconstruct as a ```chart fence.
+    case "chart":
+      return `\`\`\`chart\n${content}\n\`\`\``;
     case "reasoning":
     case "thinking":
       return `<thinking>\n${content}\n</thinking>`;
