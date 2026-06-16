@@ -17,7 +17,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 **Routes** — all under `app/(core)/research/` (NOT `(public)/p/research` — that path is dead).
 - `/research` — landing.
 - `/research/topics` · `/research/topics/new` — list + creation wizard.
-- `/research/topics/[topicId]` — live-run overview (the orchestra). Sub-routes: `sources`, `sources/[sourceId]`, `content`, `keywords`, `keywords/[keywordId]` (per-keyword home: its synthesis + ranked search results), `analysis`, `synthesis`, `document`, `documents`, `tags`, `tags/[tagId]`, `media`, `costs`, `settings`, `agents`, `tasks`.
+- `/research/topics/[topicId]` — live-run overview (the orchestra). Sub-routes: `sources`, `sources/[sourceId]`, `content`, `curate` (curation workbench — filter/sort/group + batch include/exclude), `keywords`, `keywords/[keywordId]` (per-keyword home: its synthesis + ranked search results), `analysis`, `synthesis`, `document`, `documents`, `tags`, `tags/[tagId]`, `media`, `costs`, `settings`, `agents`, `tasks`.
 - Admin surface: `app/(admin)/administration/research-system/` (super-admin). Standardized `/research/admin` `FeatureAdminMap` not yet built — TODO.
 
 **Hooks** (`features/research/hooks/`)
@@ -49,6 +49,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 - **Live render** — `PipelineOrchestra` (graph) + `LivePipelineActivity`: finished stages → `StageStatSquare` rail, active stage(s) → large card, writing streams via `StreamingTextPanel` (MarkdownStream).
 - **Document** — `/document` → `DocumentViewer` auto-generates (`api.generateDocument`, streams `chunk`+`document_complete`) when report-ready and none exists; persists to `rs_document`.
 - **Tags** — Tags page: create tag + consolidate. Source detail: `SourceTagPicker` assigns sources to tags (`assignTagsToSource`/`removeSourceTag`); consolidation synthesizes over a tag's sources.
+- **Curate** — `/curate` (`CurationTable`): `getCurationData` joins each source with importance + per-keyword rank + scraped content size + analysis state + tags in one shape; filter/sort/group by keyword or tag; select across groups → batch include/exclude (`bulkUpdateSources`) to clean the set before the final synthesis. Casual browsing stays on `sources`/`content` (shared `SourceResultsTable`).
 
 ---
 
@@ -86,6 +87,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 ## Change log
 
+- `2026-06-15` — Power curation table at `/curate` (`CurationTable` + `getCurationData`): human-in-the-loop work surface — filter/sort/group by keyword+tag, importance + content-size columns (large pages flagged as likely-junk), batch include/exclude. Keyword + content lists made tabular via shared `SourceResultsTable`; "Page Summary" labels; page summary expanded by default; ugly streaming carets removed everywhere.
 - `2026-06-15` — Per-keyword home route (`keywords/[keywordId]`); per-keyword importance ranking (`ranking.ts` + `IMPORTANCE_CONFIG`) surfaced on source detail/list, analysis list, keyword home (replaced ambiguous `rs_source.rank`); re-analyze + all result views preserve content + show an honest "provider stopped early" reason instead of blanking.
 - `2026-06-15` — Research UI overhaul: terminal sweep stops perpetual spinners; `isLive`-gated graph animation; `MarkdownStream` everywhere (doc keeps ReactMarkdown for TOC); honest analysis/synthesis empty states + rank ordering + canonical counts; document auto-generates on report-ready; tags honesty + manual `SourceTagPicker` loop; finished stages collapse into an animated `StageStatSquare` rail; `ActivityFeed` fills height. Created this FEATURE.md; corrected README route paths.
 
