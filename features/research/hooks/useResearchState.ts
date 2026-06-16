@@ -17,6 +17,7 @@ import type {
   SourceFilters,
 } from "../types";
 import type { SourceImportance } from "../ranking";
+import type { CurationData } from "../service";
 
 // ============================================================================
 // Generic fetch hook
@@ -228,6 +229,14 @@ export function useSourceTags(sourceId: string | undefined) {
 export function useSourceImportance(topicId: string) {
   return useServiceQuery<Map<string, SourceImportance>>(
     () => service.getSourceImportance(topicId),
+    [topicId],
+    !!topicId,
+  );
+}
+
+export function useCurationData(topicId: string) {
+  return useServiceQuery<CurationData>(
+    () => service.getCurationData(topicId),
     [topicId],
     !!topicId,
   );

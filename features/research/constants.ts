@@ -192,6 +192,14 @@ export const RESEARCH_NAV_ITEMS: ResearchNavItem[] = [
     mobileVisible: true,
   },
   {
+    key: "curate",
+    label: "Curate",
+    icon: "ListChecks",
+    href: (id) => `/research/topics/${id}/curate`,
+    group: "primary",
+    mobileVisible: true,
+  },
+  {
     key: "analysis",
     label: "Analysis",
     icon: "Brain",

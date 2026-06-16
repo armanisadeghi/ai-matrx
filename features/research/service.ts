@@ -573,6 +573,154 @@ export async function getSourceImportance(
 }
 
 // ============================================================================
+// Curation workbench — one aggregate the power table consumes
+// ============================================================================
+
+export type CurationAnalysisState = "content" | "empty" | "failed" | "none";
+
+export interface CurationRow {
+  source: ResearchSource;
+  /** Cross-keyword importance + per-keyword ranks (null if it ranks for none). */
+  importance: SourceImportance | null;
+  /** Scraped content size (chars) for the current content version. */
+  charCount: number | null;
+  /** Analysis outcome for this source (best of any analyses it has). */
+  analysis: CurationAnalysisState;
+  /** Tags assigned to this source. */
+  tags: { id: string; name: string }[];
+}
+
+export interface CurationData {
+  rows: CurationRow[];
+  keywords: { id: string; keyword: string }[];
+  tags: { id: string; name: string }[];
+}
+
+const ANALYSIS_RANK: Record<Exclude<CurationAnalysisState, "none">, number> = {
+  content: 3,
+  empty: 2,
+  failed: 1,
+};
+
+/**
+ * Everything the curation table needs for a topic, joined into one shape:
+ * each source with its importance + per-keyword ranks, scraped content size,
+ * analysis outcome, and tags — plus the keyword/tag lists for filter/group.
+ * Reuses the canonical `summarizeImportance`; the raw selects are simple.
+ */
+export async function getCurationData(topicId: string): Promise<CurationData> {
+  const { data: kwRows, error: kwErr } = await supabase
+    .from("rs_keyword")
+    .select("id, keyword")
+    .eq("topic_id", topicId);
+  if (kwErr) throw kwErr;
+  const keywords = (kwRows ?? []) as { id: string; keyword: string }[];
+  const kwText = new Map(keywords.map((k) => [k.id, k.keyword]));
+
+  const { data: srcRows, error: srcErr } = await supabase
+    .from("rs_source")
+    .select("*")
+    .eq("topic_id", topicId);
+  if (srcErr) throw srcErr;
+  const sources = (srcRows ?? []) as ResearchSource[];
+
+  // Tags + source⇄tag links
+  const { data: tagRows } = await supabase
+    .from("rs_tag")
+    .select("id, name")
+    .eq("topic_id", topicId);
+  const tags = (tagRows ?? []) as { id: string; name: string }[];
+  const tagName = new Map(tags.map((t) => [t.id, t.name]));
+  const tagsBySource = new Map<string, { id: string; name: string }[]>();
+  if (tags.length > 0) {
+    const { data: stRows } = await supabase
+      .from("rs_source_tag")
+      .select("source_id, tag_id")
+      .in(
+        "tag_id",
+        tags.map((t) => t.id),
+      );
+    for (const st of stRows ?? []) {
+      const arr = tagsBySource.get(st.source_id) ?? [];
+      arr.push({ id: st.tag_id, name: tagName.get(st.tag_id) ?? "Tag" });
+      tagsBySource.set(st.source_id, arr);
+    }
+  }
+
+  // Importance from per-keyword ranks
+  const importanceBySource = new Map<string, SourceImportance>();
+  if (keywords.length > 0) {
+    const { data: links } = await supabase
+      .from("rs_keyword_source")
+      .select("source_id, keyword_id, rank_for_keyword")
+      .in(
+        "keyword_id",
+        keywords.map((k) => k.id),
+      );
+    const perSource = new Map<string, KeywordRank[]>();
+    for (const l of links ?? []) {
+      const arr = perSource.get(l.source_id) ?? [];
+      arr.push({
+        keyword_id: l.keyword_id,
+        keyword: kwText.get(l.keyword_id) ?? "Keyword",
+        rank: l.rank_for_keyword,
+      });
+      perSource.set(l.source_id, arr);
+    }
+    for (const [sid, pk] of perSource) {
+      importanceBySource.set(sid, summarizeImportance(pk));
+    }
+  }
+
+  // Content size (current version)
+  const charBySource = new Map<string, number>();
+  const { data: contentRows } = await supabase
+    .from("rs_content")
+    .select("source_id, char_count, is_current")
+    .eq("topic_id", topicId);
+  for (const c of contentRows ?? []) {
+    if (c.is_current !== true || c.char_count == null) continue;
+    charBySource.set(
+      c.source_id,
+      Math.max(charBySource.get(c.source_id) ?? 0, c.char_count),
+    );
+  }
+
+  // Analysis outcome (best across a source's analyses)
+  const analysisBySource = new Map<string, CurationAnalysisState>();
+  const { data: anRows } = await supabase
+    .from("rs_analysis")
+    .select("source_id, status, result")
+    .eq("topic_id", topicId);
+  for (const a of anRows ?? []) {
+    const state: CurationAnalysisState =
+      a.status === "failed"
+        ? "failed"
+        : a.result && a.result.trim().length > 0
+          ? "content"
+          : "empty";
+    const cur = analysisBySource.get(a.source_id);
+    if (
+      !cur ||
+      cur === "none" ||
+      ANALYSIS_RANK[state] > ANALYSIS_RANK[cur as Exclude<CurationAnalysisState, "none">]
+    ) {
+      analysisBySource.set(a.source_id, state);
+    }
+  }
+
+  const rows: CurationRow[] = sources.map((s) => ({
+    source: s,
+    importance: importanceBySource.get(s.id) ?? null,
+    charCount: charBySource.get(s.id) ?? null,
+    analysis: analysisBySource.get(s.id) ?? "none",
+    tags: tagsBySource.get(s.id) ?? [],
+  }));
+
+  return { rows, keywords, tags };
+}
+
+// ============================================================================
 // Documents
 // ============================================================================
 
