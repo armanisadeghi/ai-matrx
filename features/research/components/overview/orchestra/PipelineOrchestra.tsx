@@ -493,40 +493,54 @@ export function PipelineOrchestra() {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-56 rounded-xl border-border/60 bg-popover/95 backdrop-blur"
+              className="w-72 rounded-xl border-border/60 bg-popover/95 backdrop-blur"
             >
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                Run options
+                Run the pipeline
               </DropdownMenuLabel>
-              <DropdownMenuItem onClick={handleRunAll} disabled={!canRunAll}>
-                <Play className="h-3 w-3 mr-2" />
-                Run from current state
-                <span className="ml-auto text-[10px] text-muted-foreground">
-                  resumes
+              <DropdownMenuItem
+                onClick={handleRunAll}
+                disabled={!canRunAll}
+                className="flex-col items-start gap-0.5 py-2"
+              >
+                <span className="flex items-center text-xs font-medium">
+                  <Play className="h-3 w-3 mr-2 shrink-0" />
+                  Run everything pending
+                </span>
+                <span className="pl-5 text-[10px] leading-snug text-muted-foreground">
+                  Search, scrape, analyze, then write the report — skips steps
+                  already done.
                 </span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                Iterate the report
+                Iterate the report — no re-scraping
               </DropdownMenuLabel>
               <DropdownMenuItem
                 onClick={handleUpdateReport}
                 disabled={!canRunReport}
+                className="flex-col items-start gap-0.5 py-2"
               >
-                <Pencil className="h-3 w-3 mr-2" />
-                Update report
-                <span className="ml-auto text-[10px] text-muted-foreground">
-                  +new only
+                <span className="flex items-center text-xs font-medium">
+                  <Pencil className="h-3 w-3 mr-2 shrink-0" />
+                  Update report
+                </span>
+                <span className="pl-5 text-[10px] leading-snug text-muted-foreground">
+                  Keep the current report and fold in new or changed sources.
                 </span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleRebuildReport}
                 disabled={!canRunReport}
+                className="flex-col items-start gap-0.5 py-2"
               >
-                <RefreshCw className="h-3 w-3 mr-2" />
-                Rebuild report
-                <span className="ml-auto text-[10px] text-muted-foreground">
-                  full
+                <span className="flex items-center text-xs font-medium">
+                  <RefreshCw className="h-3 w-3 mr-2 shrink-0" />
+                  Rebuild report
+                </span>
+                <span className="pl-5 text-[10px] leading-snug text-muted-foreground">
+                  Rewrite from scratch using all included sources (reuses
+                  existing analyses).
                 </span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

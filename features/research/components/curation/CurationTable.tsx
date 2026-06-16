@@ -16,6 +16,7 @@ import {
 } from "../../service";
 import type { CurationRow, CurationAnalysisState } from "../../service";
 import { sourceTypeFromDb } from "../../types";
+import { fmtCount } from "../../format";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { CurationBatchBar } from "./CurationBatchBar";
@@ -51,12 +52,6 @@ const ANALYSIS_SORT: Record<CurationAnalysisState, number> = {
   failed: 1,
   none: 0,
 };
-
-function fmtSize(n: number | null): string {
-  if (n == null) return "—";
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(n);
-}
 
 function rankInKeyword(row: CurationRow, keywordId: string): number | null {
   return (
@@ -571,7 +566,7 @@ function GroupRows({
               )}
               title={huge ? "Large page — likely has junk worth trimming" : undefined}
             >
-              {fmtSize(r.charCount)}
+              {fmtCount(r.charCount)}
             </td>
             <td className="py-1.5 px-2 align-middle">
               <span

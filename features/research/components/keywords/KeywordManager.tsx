@@ -22,19 +22,12 @@ import {
 } from "../../hooks/useResearchState";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { deleteKeyword as deleteKeywordService } from "../../service";
+import { fmtCount } from "../../format";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchKeyword, ResearchSource } from "../../types";
 import { Favicon } from "../overview/live-pipeline/ui/Favicon";
 import { idMatchesQuery } from "@/utils/search-scoring";
-
-/** Compact number: 6234393 → "6.2M", 1234 → "1.2k". */
-const fmtNum = (n: number): string =>
-  n >= 1_000_000
-    ? `${(n / 1_000_000).toFixed(1)}M`
-    : n >= 1000
-      ? `${(n / 1000).toFixed(1)}k`
-      : String(n);
 
 interface KeywordStat {
   sources: number;
@@ -289,7 +282,7 @@ export default function KeywordManager() {
                         </span>
                         <ChevronRight className="h-2.5 w-2.5 opacity-40" />
                         <span>
-                          <b className="text-foreground">{fmtNum(stat.chars)}</b>{" "}
+                          <b className="text-foreground">{fmtCount(stat.chars)}</b>{" "}
                           chars
                         </span>
                         <ChevronRight className="h-2.5 w-2.5 opacity-40" />
