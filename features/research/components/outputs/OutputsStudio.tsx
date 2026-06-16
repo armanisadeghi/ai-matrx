@@ -31,12 +31,25 @@ import type {
   PodcastType,
   PodcastRunState,
 } from "@/features/podcasts/generator/types";
+import { useRunAgent } from "@/features/agents/run/useRunAgent";
+import MarkdownStream from "@/components/MarkdownStream";
+import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import {
   parseOutputs,
   appendAsset,
   assetsFor,
   type OutputAsset,
 } from "./outputs";
+
+/** Research content-engine generator agents (created as data; run live via
+ *  /ai/agents/{id}). content_to_blog forks the Document Assembly agent. */
+const BLOG_AGENT_ID = "d5a17f12-c06e-4b07-8222-3fd1dfbdd85b";
+
+/** First H1 in a markdown doc, for an asset title. */
+function extractMarkdownTitle(md: string): string | null {
+  const m = md.match(/^#\s+(.+?)\s*$/m);
+  return m ? m[1].trim() : null;
+}
 
 const HOST_COUNTS = [1, 2, 3, 4] as const;
 const PODCAST_TYPES: { value: PodcastType; label: string }[] = [
@@ -117,10 +130,17 @@ export default function OutputsStudio() {
           }}
         />
 
-        <PlaceholderCard
-          icon={<FileText className="h-4 w-4" />}
-          title="Blog post"
-          blurb="An SEO-optimized article from the same cited research — publishable to WordPress."
+        <BlogOutputCard
+          reportMarkdown={reportMarkdown}
+          hasReport={hasReport}
+          toneProfile={topic?.tone_profile ?? ""}
+          defaultTitle={topic?.name ?? "Research"}
+          existing={assetsFor(outputs, "blog")}
+          onPersisted={async (asset) => {
+            const next = appendAsset(parseOutputs(topic?.outputs), "blog", asset);
+            await updateTopic(topicId, { outputs: next });
+            refresh();
+          }}
         />
         <PlaceholderCard
           icon={<Presentation className="h-4 w-4" />}
@@ -435,6 +455,181 @@ function LiveRun({
       {state.audioUrl && (
         <audio controls src={state.audioUrl} className="w-full h-9" />
       )}
+    </div>
+  );
+}
+
+// ── Blog output (live: runs the content_to_blog agent over the report) ──────
+
+function BlogOutputCard({
+  reportMarkdown,
+  hasReport,
+  toneProfile,
+  defaultTitle,
+  existing,
+  onPersisted,
+}: {
+  reportMarkdown: string;
+  hasReport: boolean;
+  toneProfile: string;
+  defaultTitle: string;
+  existing: OutputAsset[];
+  onPersisted: (asset: OutputAsset) => Promise<void>;
+}) {
+  const { run, running } = useRunAgent();
+  const [streamText, setStreamText] = useState("");
+  const [viewing, setViewing] = useState<OutputAsset | null>(null);
+
+  const handleGenerate = async () => {
+    if (!hasReport || running) return;
+    setStreamText("");
+    setViewing(null);
+    const input =
+      (toneProfile.trim() ? `Voice & Lens: ${toneProfile.trim()}\n\n` : "") +
+      `Research report:\n\n${reportMarkdown}`;
+    try {
+      const md = await run({
+        agentId: BLOG_AGENT_ID,
+        userInput: input,
+        onChunk: (full) => setStreamText(full),
+      });
+      if (md && md.trim()) {
+        const asset: OutputAsset = {
+          id: crypto.randomUUID(),
+          kind: "blog",
+          title: extractMarkdownTitle(md) || `${defaultTitle} — blog`,
+          status: "ready",
+          created_at: new Date().toISOString(),
+          meta: { markdown: md },
+        };
+        await onPersisted(asset);
+        setStreamText("");
+        setViewing(asset);
+        toast.success("Blog article saved to outputs");
+      } else {
+        toast.error("The blog generator returned no content.");
+      }
+    } catch (e) {
+      toast.error(
+        `Blog generation failed: ${e instanceof Error ? e.message : "unknown error"}`,
+      );
+    }
+  };
+
+  const viewingMarkdown =
+    typeof viewing?.meta?.markdown === "string"
+      ? (viewing.meta.markdown as string)
+      : "";
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm overflow-hidden">
+      <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-b border-border/50">
+        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <FileText className="h-4 w-4 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-semibold">Blog post</span>
+            <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
+              Live
+            </Badge>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            An SEO-optimized, cited article from this research — copy or export to
+            WordPress.
+          </p>
+        </div>
+        {existing.length > 0 && (
+          <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+            {existing.length} generated
+          </span>
+        )}
+      </div>
+
+      <div className="p-3.5 space-y-3">
+        {!running && !viewing && (
+          <Button
+            size="sm"
+            className="gap-1.5 h-8"
+            onClick={handleGenerate}
+            disabled={!hasReport}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Generate blog
+          </Button>
+        )}
+
+        {running && (
+          <div className="rounded-lg border border-primary/30 bg-primary/[0.04] overflow-hidden">
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
+              <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
+              <span className="text-xs font-medium text-primary">
+                Writing the article…
+              </span>
+            </div>
+            {streamText && (
+              <div className="px-3 py-3 max-h-[420px] overflow-y-auto">
+                <MarkdownStream content={streamText} isStreamActive />
+              </div>
+            )}
+          </div>
+        )}
+
+        {!running && viewing && (
+          <div className="rounded-lg border border-border/50 bg-card/40 overflow-hidden">
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
+              <span className="text-xs font-medium flex-1 truncate">
+                {viewing.title}
+              </span>
+              <button
+                onClick={() => setViewing(null)}
+                className="text-[10px] text-muted-foreground hover:text-foreground"
+              >
+                Close
+              </button>
+            </div>
+            <div className="px-3 py-3 max-h-[460px] overflow-y-auto">
+              <MarkdownStream content={viewingMarkdown} />
+              <div className="flex justify-end mt-2">
+                <ContentActionBar
+                  content={viewingMarkdown}
+                  title={viewing.title}
+                  instanceKey={`research-blog-${viewing.id}`}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {existing.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Generated articles
+            </span>
+            <div className="space-y-1">
+              {existing.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => {
+                    setViewing(a);
+                    setStreamText("");
+                  }}
+                  className="w-full flex items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5 text-left hover:bg-accent/40 transition-colors"
+                >
+                  <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-[11px] font-medium truncate flex-1">
+                    {a.title}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                    {new Date(a.created_at).toLocaleDateString()}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
