@@ -7,13 +7,14 @@
 // immediately, all on the tile's own studio_sessions row (source='war_room',
 // invisible to the Studio list) linked via ctx_war_room_tile_audio_sessions.
 //
-// The TILE owns session lifecycle (the compact "N/M" switcher + "New Session").
-// CleanupPad is bound to the active session via `sessionId` and rendered
-// chrome-free (variant="embedded", urlSync=false). Sidebar, dictionary, and
-// custom panes are hidden here — Expand opens the full transcript studio for
-// the same session. Hiding the sidebar also removes its ActiveContextButton,
-// so the embedded pad can never mutate the global active context (War Room
-// carries its own context).
+// The TILE owns session lifecycle (the always-visible session switcher +
+// "New Session"). CleanupPad is bound to the active session via `sessionId`
+// (variant="embedded", urlSync=false), and the FULL pipeline stays one click
+// away IN PLACE — never stripped: the pad's own reveal bar opens the clean
+// agent, context items, dictionary + clean-up (the "Controls" drawer) and the
+// custom-agent slots ("Custom"). The only things hidden in embedded are the
+// pad's PAGE-scoped session list + the GLOBAL ActiveContextButton (the tile
+// owns sessions, and War Room carries its own context, never the global one).
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
@@ -73,19 +74,24 @@ export function TileAudioTab({ tileId }: { tileId: string }) {
           Audio
         </span>
 
-        {sessionIds.length > 1 ? (
+        {/* Always-visible session list for this tile — switch between this
+            thread's recordings (the tile owns sessions; the pad's page-scoped
+            list is hidden in embedded). */}
+        {sessionIds.length >= 1 ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 className="ml-auto inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                title="Switch recording session"
+                title="This thread's recording sessions"
               >
-                {activeIndex >= 0 ? activeIndex + 1 : "—"}/{sessionIds.length}
+                <Radio className="size-3 opacity-70" />
+                Session {activeIndex >= 0 ? activeIndex + 1 : "—"}/
+                {sessionIds.length}
                 <ChevronDown className="size-3 opacity-60" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuContent align="end" className="w-44">
               {sessionIds.map((sid, i) => (
                 <DropdownMenuItem
                   key={sid}
@@ -100,15 +106,14 @@ export function TileAudioTab({ tileId }: { tileId: string }) {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : null}
+        ) : (
+          <span className="ml-auto" />
+        )}
 
         <button
           type="button"
           onClick={() => void dispatch(addAudioSessionToTile(tileId))}
-          className={cn(
-            "inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-            sessionIds.length > 1 ? "" : "ml-auto",
-          )}
+          className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           title="Start a new recording session in this tile"
         >
           <Plus className="size-3.5" />

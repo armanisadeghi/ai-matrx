@@ -404,6 +404,40 @@ interface CleanupPadProps {
   showNewSession?: boolean;
 }
 
+/** A compact toggle chip for the embedded pad's reveal bar (Controls / Custom). */
+function RevealChip({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+  title,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: typeof SlidersHorizontal;
+  label: string;
+  title: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      title={title}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+        active
+          ? "bg-primary/10 text-primary"
+          : "text-muted-foreground hover:bg-accent hover:text-foreground",
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </button>
+  );
+}
+
 export default function CleanupPad({
   defaultHLayout,
   defaultVLayout,
@@ -417,10 +451,24 @@ export default function CleanupPad({
   const isMobile = useIsMobile();
   const session = useCleanupSession({ sessionId, urlSync });
   const isEmbedded = variant === "embedded";
-  const showSidebar = sections?.sidebar ?? true;
-  const showDictionary = sections?.dictionary ?? true;
+  const propSidebar = sections?.sidebar ?? true;
+  const propDictionary = sections?.dictionary ?? true;
   const showClean = sections?.clean ?? true;
-  const showCustom = sections?.custom ?? true;
+  const propCustom = sections?.custom ?? true;
+  // Embedded hosts (e.g. a War Room tile) open COMPACT, but every section stays
+  // one click away — revealed IN PLACE, never stripped. The `sections` prop seeds
+  // the initial reveal; the embedded control bar toggles from there. The page
+  // variant is unchanged — its props remain authoritative.
+  const [embeddedReveal, setEmbeddedReveal] = useState({
+    sidebar: propSidebar,
+    custom: propCustom,
+  });
+  const toggleReveal = (key: "sidebar" | "custom", force?: boolean) =>
+    setEmbeddedReveal((r) => ({ ...r, [key]: force ?? !r[key] }));
+  const showSidebar = isEmbedded ? embeddedReveal.sidebar : propSidebar;
+  const showCustom = isEmbedded ? embeddedReveal.custom : propCustom;
+  // In embedded the dictionary rides inside the revealed Controls drawer.
+  const showDictionary = isEmbedded ? embeddedReveal.sidebar : propDictionary;
 
   /**
    * VoicePad slice key — isolates each pad's transcript draft/entries. Embedded
@@ -1554,31 +1602,49 @@ export default function CleanupPad({
 
   const sidebarBody = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className={SIDE_COLUMN_TOP_BAND}>
-        <CleanupSessionsToolbar
-          scope={session.scope}
-          onScopeChange={session.setScope}
-          onCreate={() => void handleNewSession()}
-        />
-      </div>
+      {/* Session list + scope toolbar are PAGE-scoped (the standalone cleanup
+          page browses all your sessions). An embedded host owns session
+          lifecycle itself (the War Room tile's switcher), so they're hidden in
+          embedded — the rest of the sidebar (clean agent · context · dictionary
+          · clean-up) stays fully available. */}
+      {!isEmbedded && (
+        <div className={SIDE_COLUMN_TOP_BAND}>
+          <CleanupSessionsToolbar
+            scope={session.scope}
+            onScopeChange={session.setScope}
+            onCreate={() => void handleNewSession()}
+          />
+        </div>
+      )}
 
       <div className="flex-1 min-h-0 overflow-y-auto px-3 pt-2 pb-3">
-        <CleanupSessionList
-          sessions={session.sessions}
-          fetchStatus={session.fetchStatus}
-          activeSessionId={session.activeSessionId}
-          scope={session.scope}
-          onScopeChange={session.setScope}
-          onSelect={handleSelectSession}
-          onCreate={() => void handleNewSession()}
-          onDelete={(id) => void session.deleteSession(id)}
-          showToolbar={false}
-        />
+        {!isEmbedded && (
+          <CleanupSessionList
+            sessions={session.sessions}
+            fetchStatus={session.fetchStatus}
+            activeSessionId={session.activeSessionId}
+            scope={session.scope}
+            onScopeChange={session.setScope}
+            onSelect={handleSelectSession}
+            onCreate={() => void handleNewSession()}
+            onDelete={(id) => void session.deleteSession(id)}
+            showToolbar={false}
+          />
+        )}
 
-        {/* Working context — org · scopes · project · task. Shows only what
-            is explicitly selected (a scope never implies its organization). */}
-        <SidebarSectionLabel icon={SlidersHorizontal} label="Working Context" />
-        <ActiveContextButton size="sm" triggerClassName="w-full" />
+        {/* Working context — org · scopes · project · task. This writes the
+            GLOBAL active context (appContextSlice), so it is hidden in embedded
+            War Room tiles (invariant: War Room carries its OWN context and never
+            mutates the global). The per-session Context items below ARE shown. */}
+        {!isEmbedded && (
+          <>
+            <SidebarSectionLabel
+              icon={SlidersHorizontal}
+              label="Working Context"
+            />
+            <ActiveContextButton size="sm" triggerClassName="w-full" />
+          </>
+        )}
 
         <SidebarSectionLabel
           icon={Stars}
@@ -2042,12 +2108,28 @@ export default function CleanupPad({
     return (
       <>
         {transcriptInsertDialog}
-        <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
-          {showSidebar && (
-            <div className="max-h-[40%] min-h-0 shrink-0 overflow-y-auto border-b border-border">
-              {sidebarBody}
-            </div>
-          )}
+        <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background">
+          {/* Reveal bar — the full pipeline stays one click away (never
+              stripped): "Controls" opens the session-scoped sidebar (clean agent
+              · context · dictionary · clean-up) as an in-place drawer; "Custom"
+              stacks the custom-agent output slots below the clean pane. */}
+          <div className="flex shrink-0 items-center gap-1 border-b border-border px-1.5 py-1">
+            <RevealChip
+              active={showSidebar}
+              onClick={() => toggleReveal("sidebar")}
+              icon={SlidersHorizontal}
+              label="Controls"
+              title="Clean agent, context, dictionary, clean-up"
+            />
+            <RevealChip
+              active={showCustom}
+              onClick={() => toggleReveal("custom")}
+              icon={Stars}
+              label="Custom"
+              title="Custom refine agents (raw or clean → output)"
+            />
+          </div>
+
           {recordBand}
           <div className="flex min-h-0 flex-1 flex-col">
             <div
@@ -2069,6 +2151,36 @@ export default function CleanupPad({
               </div>
             )}
           </div>
+
+          {/* Controls drawer — the REAL sidebar body (clean agent · context ·
+              dictionary · clean-up), overlaid in place so transcript + clean stay
+              visible behind it. Same component, nothing forked. */}
+          {showSidebar && (
+            <div className="absolute inset-0 z-20">
+              <div
+                className="absolute inset-0 bg-black/30"
+                onClick={() => toggleReveal("sidebar", false)}
+              />
+              <aside className="absolute inset-y-0 right-0 flex w-[88%] max-w-sm flex-col border-l border-border bg-background shadow-xl">
+                <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Controls
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => toggleReveal("sidebar", false)}
+                    aria-label="Close controls"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  {sidebarBody}
+                </div>
+              </aside>
+            </div>
+          )}
         </div>
       </>
     );
