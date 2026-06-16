@@ -23,20 +23,15 @@ const Slideshow = (
   presentationData: PresentationData & { taskId?: string },
 ) => {
   const { slides, theme } = presentationData;
+  // Visual tier: "generic" (clean) | "fancy" (default — gradients, layouts) |
+  // "deluxe" (fancy + imagery). Read from the theme; default to "fancy" so
+  // existing decks instantly look better.
+  const variant: SlideVariant = ((theme?.variant as SlideVariant) || "fancy") as SlideVariant;
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState("next");
   const [isFullScreen, setIsFullScreen] = useState(false);
   const slideContainerRef = useRef<HTMLDivElement>(null);
   const { open: openCanvas } = useCanvas();
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "ArrowLeft") goToPrevious();
-      if (e.key === "ArrowRight") goToNext();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentSlide]);
 
   const goToNext = () => {
     if (currentSlide < slides.length - 1) {
@@ -56,6 +51,15 @@ const Slideshow = (
     setDirection(index > currentSlide ? "next" : "prev");
     setCurrentSlide(index);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "ArrowLeft") goToPrevious();
+      if (e.key === "ArrowRight") goToNext();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentSlide]);
 
   const slide = slides[currentSlide];
 
@@ -160,76 +164,11 @@ const Slideshow = (
           >
             <div
               key={currentSlide}
-              className={`w-full animate-fadeIn ${isFullScreen ? "max-w-5xl" : "max-w-3xl"}`}
+              className={`w-full animate-fadeIn ${isFullScreen ? "max-w-6xl" : "max-w-4xl"}`}
             >
-              {slide.type === "intro" ? (
-                <div className="text-center space-y-6">
-                  <div
-                    className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold mb-3"
-                    style={{
-                      backgroundColor: `${theme.primaryColor}20`,
-                      color: theme.primaryColor,
-                    }}
-                  >
-                    Introduction
-                  </div>
-                  <h1
-                    className={`font-bold leading-tight mb-4 text-gray-900 dark:text-gray-100 ${isFullScreen ? "text-5xl" : "text-3xl"}`}
-                    style={{ color: theme.primaryColor }}
-                  >
-                    {parseMarkdown(slide.title)}
-                  </h1>
-                  <p
-                    className={`leading-relaxed opacity-80 max-w-2xl mx-auto text-gray-700 dark:text-gray-300 ${isFullScreen ? "text-xl" : "text-base"}`}
-                  >
-                    {parseMarkdown(slide.subtitle)}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* Title and Description - min 2 lines of text */}
-                  <div
-                    className={isFullScreen ? "min-h-[120px]" : "min-h-[80px]"}
-                  >
-                    <h2
-                      className={`font-bold mb-3 text-gray-900 dark:text-gray-100 ${isFullScreen ? "text-4xl" : "text-2xl"}`}
-                      style={{ color: theme.primaryColor }}
-                    >
-                      {parseMarkdown(slide.title)}
-                    </h2>
-                    <p
-                      className={`opacity-75 leading-relaxed text-gray-700 dark:text-gray-300 ${isFullScreen ? "text-lg" : "text-sm"}`}
-                    >
-                      {parseMarkdown(slide.description)}
-                    </p>
-                  </div>
-
-                  {/* Bullets - min space for 5 bullets */}
-                  <div
-                    className={`space-y-3 mt-6 ${isFullScreen ? "min-h-[280px]" : "min-h-[240px]"}`}
-                  >
-                    {slide.bullets.map((bullet, i) => (
-                      <div
-                        key={i}
-                        className="flex items-start gap-3 p-3 rounded-lg transition-all hover:translate-x-1 bg-gray-50 dark:bg-gray-800/50"
-                        style={{
-                          animation: `slideIn 0.5s ease-out ${i * 0.1}s both`,
-                        }}
-                      >
-                        <div
-                          className={`w-2 h-2 rounded-full flex-shrink-0 ${isFullScreen ? "mt-3" : "mt-2.5"}`}
-                          style={{ backgroundColor: theme.primaryColor }}
-                        />
-                        <p
-                          className={`leading-relaxed text-gray-800 dark:text-gray-200 ${isFullScreen ? "text-base" : "text-sm"}`}
-                        >
-                          {parseMarkdown(bullet)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="aspect-[16/9] w-full">
+                <SlideView slide={slide} theme={theme} variant={variant} fullScreen={isFullScreen} />
+              </div>
             </div>
           </div>
 
