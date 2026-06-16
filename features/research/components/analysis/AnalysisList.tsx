@@ -27,6 +27,7 @@ import { useTopicContext } from "../../context/ResearchContext";
 import {
   useAnalysesForTopic,
   useResearchSources,
+  useSourceImportance,
 } from "../../hooks/useResearchState";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
@@ -39,6 +40,7 @@ import {
   type ResearchSource,
   tokenUsageFromJson,
 } from "../../types";
+import type { SourceImportance } from "../../ranking";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 
 /** A string with real (non-whitespace) content. */
@@ -137,11 +139,18 @@ function StatsBar({
 interface ListItemProps {
   analysis: ResearchAnalysis;
   source: ResearchSource | undefined;
+  importance: SourceImportance | undefined;
   isSelected: boolean;
   onSelect: () => void;
 }
 
-function ListItem({ analysis, source, isSelected, onSelect }: ListItemProps) {
+function ListItem({
+  analysis,
+  source,
+  importance,
+  isSelected,
+  onSelect,
+}: ListItemProps) {
   const isFailed = analysis.status === "failed";
   const isEmpty = !isFailed && !isDoneAnalysis(analysis);
   const usage = tokenUsageFromJson(analysis.token_usage);
@@ -179,6 +188,14 @@ function ListItem({ analysis, source, isSelected, onSelect }: ListItemProps) {
           <MinusCircle className="h-3 w-3 text-amber-500 shrink-0" />
         ) : (
           <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
+        )}
+        {importance?.bestRank != null && (
+          <span
+            className="text-[10px] font-mono tabular-nums text-primary/70 shrink-0"
+            title={`importance ${importance.score} · ranks for ${importance.keywordCount} keyword${importance.keywordCount === 1 ? "" : "s"}`}
+          >
+            #{importance.bestRank}
+          </span>
         )}
         <span
           className={cn(
@@ -426,6 +443,7 @@ export default function AnalysisList() {
     refresh: refetchAnalyses,
   } = useAnalysesForTopic(topicId);
   const { data: sources } = useResearchSources(topicId, { limit: 500 });
+  const { data: importanceMap } = useSourceImportance(topicId);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -477,11 +495,21 @@ export default function AnalysisList() {
 
   // Best Google rank first (when not searching); split "done" (has content)
   // from "incomplete" (empty results + failures) into a separate section.
-  const rankOf = (a: ResearchAnalysis) =>
-    sourceMap.get(a.source_id)?.rank ?? Number.POSITIVE_INFINITY;
+  // Order completed analyses by real source importance (multi-keyword rank) —
+  // NOT the ambiguous rs_source.rank. Most important first, then best rank.
+  const impOf = (a: ResearchAnalysis) => importanceMap?.get(a.source_id);
   const doneItems = search
     ? filtered.filter(isDoneAnalysis)
-    : filtered.filter(isDoneAnalysis).sort((a, b) => rankOf(a) - rankOf(b));
+    : filtered.filter(isDoneAnalysis).sort((a, b) => {
+        const ia = impOf(a);
+        const ib = impOf(b);
+        const sb = ib?.score ?? 0;
+        const sa = ia?.score ?? 0;
+        if (sb !== sa) return sb - sa;
+        const ra = ia?.bestRank ?? Number.POSITIVE_INFINITY;
+        const rb = ib?.bestRank ?? Number.POSITIVE_INFINITY;
+        return ra - rb;
+      });
   const incompleteItems = filtered.filter((a) => !isDoneAnalysis(a));
 
   const selectedAnalysis = filtered.find((a) => a.id === selectedId) ?? null;
@@ -706,6 +734,7 @@ export default function AnalysisList() {
                     key={analysis.id}
                     analysis={analysis}
                     source={sourceMap.get(analysis.source_id)}
+                    importance={importanceMap?.get(analysis.source_id)}
                     isSelected={selectedId === analysis.id}
                     onSelect={() => setSelectedId(analysis.id)}
                   />
@@ -724,6 +753,7 @@ export default function AnalysisList() {
                       key={analysis.id}
                       analysis={analysis}
                       source={sourceMap.get(analysis.source_id)}
+                      importance={importanceMap?.get(analysis.source_id)}
                       isSelected={selectedId === analysis.id}
                       onSelect={() => setSelectedId(analysis.id)}
                     />

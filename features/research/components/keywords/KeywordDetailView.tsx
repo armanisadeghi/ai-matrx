@@ -153,8 +153,8 @@ export function KeywordDetailView({
             </p>
           ) : (
             <div className="space-y-1.5">
-              {srcList.map((src, i) => {
-                const rank = rankFor(src.id) ?? i + 1;
+              {srcList.map((src) => {
+                const rank = rankFor(src.id);
                 return (
                   <Link
                     key={src.id}
@@ -162,7 +162,7 @@ export function KeywordDetailView({
                     className="group flex items-center gap-2 rounded-lg border border-border/50 bg-card/60 p-2 hover:border-primary/30 hover:bg-card/80 transition-colors min-h-[44px]"
                   >
                     <span className="w-8 shrink-0 text-center font-mono text-[11px] tabular-nums text-muted-foreground">
-                      #{rank}
+                      {rank != null ? `#${rank}` : "—"}
                     </span>
                     <SourceTypeIcon type={sourceTypeFromDb(src.source_type)} />
                     <div className="min-w-0 flex-1">

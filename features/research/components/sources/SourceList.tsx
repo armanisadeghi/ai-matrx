@@ -34,6 +34,7 @@ import { useTopicContext, useStreamDebug } from "../../context/ResearchContext";
 import {
   useResearchSources,
   useResearchKeywords,
+  useSourceImportance,
 } from "../../hooks/useResearchState";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
@@ -45,6 +46,7 @@ import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { OriginBadge } from "../shared/OriginBadge";
 import type { ResearchSource, BulkAction, SourceSortBy } from "../../types";
+import type { SourceImportance } from "../../ranking";
 import {
   sourceOriginFromDb,
   sourceTypeFromDb,
@@ -111,6 +113,7 @@ function SortHeader({
 
 interface SourceRowProps {
   source: ResearchSource;
+  importance: SourceImportance | undefined;
   topicId: string;
   selected: boolean;
   scraping: boolean;
@@ -124,6 +127,7 @@ interface SourceRowProps {
 
 function SourceRow({
   source,
+  importance,
   topicId,
   selected,
   scraping,
@@ -172,9 +176,12 @@ function SourceRow({
               className="scale-[0.6]"
               disabled={anyNavigating}
             />
-            {source.rank ? (
-              <span className="text-[10px] font-mono font-semibold text-muted-foreground tabular-nums">
-                #{source.rank}
+            {importance?.bestRank != null ? (
+              <span
+                className="text-[10px] font-mono font-semibold text-primary/70 tabular-nums"
+                title={`importance ${importance.score} · ${importance.keywordCount} keyword${importance.keywordCount === 1 ? "" : "s"}`}
+              >
+                #{importance.bestRank}
               </span>
             ) : null}
           </div>
@@ -381,6 +388,7 @@ export default function SourceList() {
     refresh();
   });
   const { data: keywords } = useResearchKeywords(topicId);
+  const { data: importanceMap } = useSourceImportance(topicId);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [scrapingIds, setScrapingIds] = useState<Set<string>>(new Set());
@@ -571,6 +579,7 @@ export default function SourceList() {
                 <SourceRow
                   key={source.id}
                   source={source}
+                  importance={importanceMap?.get(source.id)}
                   topicId={topicId}
                   selected={selected.has(source.id)}
                   scraping={scrapingIds.has(source.id)}
@@ -600,6 +609,7 @@ export default function SourceList() {
               source.scrape_status === "pending" ||
               source.scrape_status === "failed" ||
               source.scrape_status === "thin";
+            const imp = importanceMap?.get(source.id);
             return (
               <Link
                 key={source.id}
@@ -635,10 +645,13 @@ export default function SourceList() {
                   ) : (
                     <Globe className="h-8 w-8 text-muted-foreground/30" />
                   )}
-                  {/* Rank badge overlay */}
-                  {source.rank && (
-                    <span className="absolute top-1.5 left-1.5 text-[10px] font-mono font-bold bg-black/60 text-white px-1.5 py-0.5 rounded-md tabular-nums">
-                      #{source.rank}
+                  {/* Rank badge overlay — real best rank across keywords */}
+                  {imp?.bestRank != null && (
+                    <span
+                      className="absolute top-1.5 left-1.5 text-[10px] font-mono font-bold bg-black/60 text-white px-1.5 py-0.5 rounded-md tabular-nums"
+                      title={`importance ${imp.score} · ${imp.keywordCount} keyword(s)`}
+                    >
+                      #{imp.bestRank}
                     </span>
                   )}
                   {/* Checkbox overlay */}
