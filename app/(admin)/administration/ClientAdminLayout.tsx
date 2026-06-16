@@ -24,7 +24,13 @@ function isFullscreenRoute(pathname: string): boolean {
   return false;
 }
 
-export function ClientAdminLayout({ children }: { children: React.ReactNode }) {
+export function ClientAdminLayout({
+  children,
+  routes = [],
+}: {
+  children: React.ReactNode;
+  routes?: string[];
+}) {
   const pathname = usePathname() ?? "";
   const fullscreen = isFullscreenRoute(pathname);
 
@@ -36,6 +42,7 @@ export function ClientAdminLayout({ children }: { children: React.ReactNode }) {
           currentPath={pathname}
           moduleHome={MODULE_HOME}
           moduleName={MODULE_NAME}
+          routes={routes}
         />
       )}
       <main className="w-full flex-1 min-h-0 bg-textured overflow-y-auto">

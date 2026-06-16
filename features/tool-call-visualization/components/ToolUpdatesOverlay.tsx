@@ -33,10 +33,7 @@ import { cn } from "@/lib/utils";
 
 import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 
-import {
-  getOverlayTabs,
-  getToolDisplayName,
-} from "../registry/registry";
+import { getOverlayTabs, getToolDisplayName } from "../registry/registry";
 import type { ToolOverlayTabSpec } from "../types";
 import {
   CustomOverlayBody,
@@ -90,16 +87,6 @@ const ResultsTabContent: React.FC<{
 }> = ({ entries, selectedCallId, onSelect }) => {
   const entry =
     entries.find((e) => e.callId === selectedCallId) ?? entries[0] ?? null;
-
-  if (entry) {
-    console.log(
-      "[DIAG-3b ToolGroupTab] callId=%s toolName=%s result type=%s result=%o",
-      entry.callId,
-      entry.toolName,
-      typeof entry.result,
-      entry.result,
-    );
-  }
 
   return (
     <div className="flex flex-col h-full">
@@ -260,10 +247,7 @@ export const ToolUpdatesOverlay: React.FC<ToolUpdatesOverlayProps> = ({
         id: spec.id,
         label: spec.label,
         content: (
-          <CustomOverlayBody
-            entry={selectedEntry}
-            Component={spec.Component}
-          />
+          <CustomOverlayBody entry={selectedEntry} Component={spec.Component} />
         ),
       }));
       return [...customTabDefs, ...adminTabs];

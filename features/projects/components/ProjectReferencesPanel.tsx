@@ -24,7 +24,6 @@ import {
   Box,
   Users,
   Mail,
-  Settings2,
   RefreshCw,
   ChevronDown,
   ChevronUp,
@@ -214,12 +213,6 @@ const TABLE_META: Record<string, TableMeta> = {
   broker_values: {
     label: "Broker Values",
     icon: Database,
-    category: "Data",
-    categoryColor: CATEGORY_COLORS.Data,
-  },
-  ctx_context_variables: {
-    label: "Context Variables",
-    icon: Settings2,
     category: "Data",
     categoryColor: CATEGORY_COLORS.Data,
   },

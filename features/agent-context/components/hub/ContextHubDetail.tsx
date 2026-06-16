@@ -5,7 +5,6 @@ import {
   Tags,
   FileText,
   LayoutTemplate,
-  Variable,
   BarChart3,
   Building2,
   FolderKanban,
@@ -40,7 +39,6 @@ import { ScopeInstancePanel } from "../scope-admin/ScopeInstancePanel";
 import { ScopeTemplateStarter } from "../scope-admin/ScopeTemplateStarter";
 import { ContextItemList } from "../ContextItemList";
 import { ContextTemplateBrowser } from "../ContextTemplateBrowser";
-import { ContextVariablesPanel } from "../ContextVariablesPanel";
 
 const NODE_ICONS: Record<
   HierarchyNodeType,
@@ -140,7 +138,6 @@ export function ContextHubDetail({
       : []),
     { id: "items", label: "Context Items", icon: FileText },
     { id: "templates", label: "Templates", icon: LayoutTemplate },
-    { id: "variables", label: "Variables", icon: Variable },
   ];
 
   if (isMobile) {
@@ -191,13 +188,6 @@ export function ContextHubDetail({
             Templates
           </h3>
           <ContextTemplateBrowser scope={scope} />
-        </div>
-        <Separator />
-        <div>
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-            <Variable className="h-4 w-4 text-muted-foreground" /> Variables
-          </h3>
-          <ContextVariablesPanel scope={scope} />
         </div>
       </div>
     );
@@ -262,10 +252,6 @@ export function ContextHubDetail({
 
           <TabsContent value="templates" className="px-6 py-4 mt-0">
             <ContextTemplateBrowser scope={scope} />
-          </TabsContent>
-
-          <TabsContent value="variables" className="px-6 py-4 mt-0">
-            <ContextVariablesPanel scope={scope} />
           </TabsContent>
         </div>
       </Tabs>

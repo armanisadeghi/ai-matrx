@@ -18,11 +18,13 @@ interface AdminModuleHeaderProps {
   moduleHome: string;
   moduleName?: string;
   className?: string;
+  routes: string[];
 }
 
 export default function AdminModuleHeaderDesktopContent({
   pages,
   moduleHome,
+  routes,
   className = "",
 }: AdminModuleHeaderProps) {
   const router = useRouter();
@@ -70,7 +72,7 @@ export default function AdminModuleHeaderDesktopContent({
 
         <div className="mx-1 h-5 w-px bg-border" />
 
-        <AdminBreadcrumbs />
+        <AdminBreadcrumbs routes={routes} />
 
         {leftItems.length > 0 && (
           <div className="flex items-center gap-2 pl-1">

@@ -871,6 +871,15 @@ export async function processStream({
               message: toolData.message,
               data: toolData.data as Record<string, unknown> | null,
               event: toolData,
+              // The agent's call arguments arrive on `tool_started` (and any
+              // later event that re-sends them) in `data.arguments`. Forward
+              // them so the Input / Raw tabs show what the agent actually
+              // passed — previously dropped, leaving arguments permanently {}.
+              ...((toolData.data as Record<string, unknown> | null)
+                ?.arguments !== undefined && {
+                arguments: (toolData.data as Record<string, unknown>)
+                  .arguments as Record<string, unknown>,
+              }),
               ...(toolData.event === "tool_completed" && {
                 result: (toolData.data as Record<string, unknown>)?.result,
               }),

@@ -9,10 +9,8 @@ import { useContextScope } from "@/features/agent-context/hooks/useContextScope"
 import { ContextDashboard } from "@/features/agent-context/components/ContextDashboard";
 import { ContextItemList } from "@/features/agent-context/components/ContextItemList";
 import { ContextTemplateBrowser } from "@/features/agent-context/components/ContextTemplateBrowser";
-import { ContextVariablesPanel } from "@/features/agent-context/components/ContextVariablesPanel";
 import {
   LayoutDashboard,
-  Code2,
   FileText,
   LayoutTemplate,
   TreePine,
@@ -47,10 +45,6 @@ export default function ContextPage() {
             <LayoutDashboard className="h-3 w-3" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="variables" className="text-xs gap-1.5 h-7">
-            <Code2 className="h-3 w-3" />
-            Variables
-          </TabsTrigger>
           <TabsTrigger value="items" className="text-xs gap-1.5 h-7">
             <FileText className="h-3 w-3" />
             Items
@@ -64,12 +58,6 @@ export default function ContextPage() {
         <TabsContent value="overview" className="mt-4">
           <Suspense fallback={<Skeleton className="h-64 rounded-xl" />}>
             <ContextDashboard scope={scope} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="variables" className="mt-4">
-          <Suspense fallback={<Skeleton className="h-64 rounded-xl" />}>
-            <ContextVariablesPanel scope={scope} />
           </Suspense>
         </TabsContent>
 

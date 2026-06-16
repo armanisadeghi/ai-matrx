@@ -527,6 +527,18 @@ const activeRequestsSlice = createSlice({
 
       if (existing) {
         existing.status = status;
+        // Backfill arguments on any event that carries a populated object.
+        // Guard against an empty `{}` clobbering real args already captured
+        // (events after `tool_started` may omit them), and against a late
+        // populated payload never landing because the entry already existed.
+        if (
+          args &&
+          typeof args === "object" &&
+          !Array.isArray(args) &&
+          Object.keys(args).length > 0
+        ) {
+          existing.arguments = args;
+        }
         if (message !== undefined) existing.latestMessage = message ?? null;
         if (data !== undefined) existing.latestData = data ?? null;
         if (result !== undefined) existing.result = result;

@@ -1,7 +1,9 @@
 // route-tree.ts
-// Builds a navigable tree of every admin route from the single source of truth
-// (categories.tsx → config.ts → filteredPages). Used by the admin breadcrumbs
-// (sibling dropdowns at every level) and the admin tree menu.
+// Builds a navigable tree of every admin route from the filesystem route
+// scanner (utils/route-discovery → scanRoutes), so the breadcrumb dropdowns
+// reflect the ACTUAL route hierarchy. Each crumb exposes its direct children
+// (the routes one step below it). Friendly labels/icons are merged in from the
+// curated categories.tsx where a path matches.
 //
 // Admin-only. Do not generalize into the shared ModuleHeader.
 
@@ -16,7 +18,7 @@ export interface AdminTreeNode {
   /** Human label — feature title when the path is a registered page, else title-cased. */
   label: string;
   icon?: ModulePageIcon;
-  /** True when this node maps to an actual registered admin page. */
+  /** True when this node maps to an actual page (has its own page.tsx). */
   isPage: boolean;
   children: AdminTreeNode[];
 }
@@ -51,52 +53,27 @@ function titleCase(segment: string): string {
     .join(" ");
 }
 
-// Map of absolute path → registered page metadata (title + icon).
+// Friendly labels/icons from the curated categories, keyed by absolute path.
 const pageMeta = new Map<string, { title: string; icon?: ModulePageIcon }>();
 for (const page of filteredPages) {
   const fullPath = `${MODULE_HOME}/${page.path}`.replace(/\/+/g, "/");
   pageMeta.set(fullPath, { title: page.title, icon: page.icon });
 }
 
-function emptyRoot(): AdminTreeNode {
+function makeNode(
+  fullPath: string,
+  segment: string,
+  isPage: boolean,
+): AdminTreeNode {
+  const meta = pageMeta.get(fullPath);
   return {
-    segment: "administration",
-    fullPath: MODULE_HOME,
-    label: MODULE_NAME,
-    isPage: true,
+    segment,
+    fullPath,
+    label: meta?.title ?? titleCase(segment),
+    icon: meta?.icon,
+    isPage,
     children: [],
   };
-}
-
-function buildTree(): AdminTreeNode {
-  const root = emptyRoot();
-
-  for (const page of filteredPages) {
-    const segments = page.path.split("/").filter(Boolean);
-    let cursor = root;
-    let accumulated = MODULE_HOME;
-
-    segments.forEach((segment) => {
-      accumulated = `${accumulated}/${segment}`;
-      let child = cursor.children.find((c) => c.segment === segment);
-      if (!child) {
-        const meta = pageMeta.get(accumulated);
-        child = {
-          segment,
-          fullPath: accumulated,
-          label: meta?.title ?? titleCase(segment),
-          icon: meta?.icon,
-          isPage: Boolean(meta),
-          children: [],
-        };
-        cursor.children.push(child);
-      }
-      cursor = child;
-    });
-  }
-
-  sortTree(root);
-  return root;
 }
 
 function sortTree(node: AdminTreeNode) {
@@ -106,53 +83,84 @@ function sortTree(node: AdminTreeNode) {
   node.children.forEach(sortTree);
 }
 
-export const adminRouteRoot = buildTree();
+/**
+ * Build the admin route tree from scanned filesystem routes.
+ * `routes` are paths relative to the admin root, e.g.
+ * "system-agents/agents" or "system-agents/shortcuts".
+ * Intermediate directories without their own page still become nodes so the
+ * hierarchy stays navigable; their `isPage` is false.
+ */
+export function buildAdminTree(routes: string[]): AdminTreeNode {
+  const root = makeNode(MODULE_HOME, "administration", true);
+  const list = Array.isArray(routes) ? routes : [];
+
+  for (const raw of list) {
+    const rel = raw.replace(/^\/?administration\/?/, "").replace(/^\/+/, "");
+    const segments = rel.split("/").filter(Boolean);
+    if (segments.length === 0) continue;
+
+    let cursor = root;
+    let accumulated = MODULE_HOME;
+
+    segments.forEach((segment, index) => {
+      accumulated = `${accumulated}/${segment}`;
+      let child = cursor.children.find((c) => c.segment === segment);
+      const isLeaf = index === segments.length - 1;
+      if (!child) {
+        child = makeNode(accumulated, segment, isLeaf);
+        cursor.children.push(child);
+      } else if (isLeaf) {
+        // A deeper route already created this as an intermediate; it's a page too.
+        child.isPage = true;
+      }
+      cursor = child;
+    });
+  }
+
+  sortTree(root);
+  return root;
+}
 
 function findChild(node: AdminTreeNode, segment: string): AdminTreeNode | null {
   return node.children.find((c) => c.segment === segment) ?? null;
 }
 
 export interface AdminCrumb {
-  /** Absolute path for this crumb. */
   fullPath: string;
   label: string;
-  /** Whether this crumb resolves to a real page (clickable link). */
   isPage: boolean;
-  /** Whether this is the final crumb in the trail. */
   isLast: boolean;
-  /**
-   * Sibling routes available where this crumb sits (its parent's children,
-   * or the root's children for the first crumb). Powers the per-level dropdown.
-   */
-  options: AdminTreeNode[];
+  /** Direct children of this crumb — the routes one step below it. Powers the dropdown. */
+  children: AdminTreeNode[];
 }
 
 /**
- * Resolve a pathname into a breadcrumb trail. Each crumb carries the set of
- * sibling routes for its level so the UI can render a dropdown at every level.
- * Unknown/dynamic segments (e.g. UUIDs) degrade gracefully: title-cased label,
- * no options.
+ * Resolve a pathname into a breadcrumb trail. Each crumb carries its direct
+ * children so the UI renders a "drill one level deeper" dropdown at every level.
+ * Unknown/dynamic segments (e.g. UUIDs) degrade gracefully.
  */
-export function getAdminCrumbs(pathname: string): AdminCrumb[] {
+export function getAdminCrumbs(
+  root: AdminTreeNode,
+  pathname: string,
+): AdminCrumb[] {
   const segments = pathname.split("/").filter(Boolean);
   const crumbs: AdminCrumb[] = [];
 
   // First crumb is always the admin root.
-  let cursor: AdminTreeNode | null = adminRouteRoot;
+  let cursor: AdminTreeNode | null = root;
   crumbs.push({
     fullPath: MODULE_HOME,
     label: MODULE_NAME,
     isPage: true,
     isLast: segments.length <= 1,
-    options: adminRouteRoot.children,
+    children: root.children,
   });
 
   let accumulated = MODULE_HOME;
   for (let i = 1; i < segments.length; i++) {
     const segment = segments[i];
     accumulated = `${accumulated}/${segment}`;
-    const parent = cursor;
-    const node = parent ? findChild(parent, segment) : null;
+    const node = cursor ? findChild(cursor, segment) : null;
     const isLast = i === segments.length - 1;
 
     crumbs.push({
@@ -160,7 +168,7 @@ export function getAdminCrumbs(pathname: string): AdminCrumb[] {
       label: node?.label ?? titleCase(segment),
       isPage: node?.isPage ?? false,
       isLast,
-      options: parent ? parent.children : [],
+      children: node?.children ?? [],
     });
 
     cursor = node;

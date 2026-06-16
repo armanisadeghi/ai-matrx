@@ -66,6 +66,36 @@ export const RESOURCE_ATTACHMENT_TILE_THEMES: Record<
       "bg-gradient-to-br from-gray-100 via-gray-50/95 to-white/80 dark:from-gray-900/60 dark:via-gray-900/40 dark:to-gray-950/20",
     icon: "text-gray-600 dark:text-gray-400",
   },
+  agent: {
+    surface:
+      "bg-gradient-to-br from-emerald-100 via-emerald-50/95 to-white/80 dark:from-emerald-950/50 dark:via-emerald-950/25 dark:to-emerald-950/10",
+    icon: "text-emerald-600 dark:text-emerald-400",
+  },
+  project: {
+    surface:
+      "bg-gradient-to-br from-amber-100 via-amber-50/95 to-white/80 dark:from-amber-950/50 dark:via-amber-950/25 dark:to-amber-950/10",
+    icon: "text-amber-600 dark:text-amber-400",
+  },
+  agent_app: {
+    surface:
+      "bg-gradient-to-br from-fuchsia-100 via-fuchsia-50/95 to-white/80 dark:from-fuchsia-950/50 dark:via-fuchsia-950/25 dark:to-fuchsia-950/10",
+    icon: "text-fuchsia-600 dark:text-fuchsia-400",
+  },
+  transcript: {
+    surface:
+      "bg-gradient-to-br from-sky-100 via-sky-50/95 to-white/80 dark:from-sky-950/50 dark:via-sky-950/25 dark:to-sky-950/10",
+    icon: "text-sky-600 dark:text-sky-400",
+  },
+  transcript_session: {
+    surface:
+      "bg-gradient-to-br from-cyan-100 via-cyan-50/95 to-white/80 dark:from-cyan-950/50 dark:via-cyan-950/25 dark:to-cyan-950/10",
+    icon: "text-cyan-600 dark:text-cyan-400",
+  },
+  workbook: {
+    surface:
+      "bg-gradient-to-br from-lime-100 via-lime-50/95 to-white/80 dark:from-lime-950/50 dark:via-lime-950/25 dark:to-lime-950/10",
+    icon: "text-lime-600 dark:text-lime-400",
+  },
   default: {
     surface:
       "bg-gradient-to-br from-gray-100 via-gray-50/95 to-white/80 dark:from-gray-900/60 dark:via-gray-900/40 dark:to-gray-950/20",
@@ -90,6 +120,13 @@ const BLOCK_TYPE_THEME_KEY: Record<string, string> = {
   input_table: "table",
   input_list: "list",
   input_data: "data",
+  input_agent: "agent",
+  input_project: "project",
+  input_agent_app: "agent_app",
+  input_transcript: "transcript",
+  input_transcript_session: "transcript_session",
+  input_workbook: "workbook",
+  input_document: "document",
   youtube_video: "youtube",
   image: "image",
   image_output: "image",

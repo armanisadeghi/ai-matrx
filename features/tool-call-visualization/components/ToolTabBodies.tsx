@@ -309,15 +309,8 @@ export const ErrorView: React.FC<{ entry: ToolLifecycleEntry }> = ({
 export const RawDataView: React.FC<{ entry: ToolLifecycleEntry }> = ({
   entry,
 }) => {
-  console.log(
-    "[DIAG-4 RawDataView] callId=%s result type=%s result=%o",
-    entry.callId,
-    typeof entry.result,
-    entry.result,
-  );
   const [wordWrap, setWordWrap] = useState(false);
   const displayText = JSON.stringify({ entry, events: entry.events }, null, 2);
-  console.log("[TOOL UPDATES OVERLAY] RawDataView entry:", entry);
 
   return (
     <div className="flex flex-col h-full">
@@ -367,44 +360,47 @@ export const RawDataView: React.FC<{ entry: ToolLifecycleEntry }> = ({
 // ErrorView; tool with custom OverlayComponent → that renderer; else fall
 // back to OutputView. Used when the tool does NOT register OverlayTabs.
 
-export const EntryResultsBody: React.FC<{ entry: ToolLifecycleEntry | null }> =
-  ({ entry }) => {
-    if (!entry) {
-      return (
-        <div className="p-8 text-center text-muted-foreground">
-          <p className="text-sm">No tool data available</p>
-        </div>
-      );
-    }
-
-    if (entry.status === "error") return <ErrorView entry={entry} />;
-
-    if (hasCustomRenderer(entry.toolName)) {
-      const OverlayRenderer = getOverlayRenderer(entry.toolName);
-      return (
-        <OverlayRenderer
-          entry={entry}
-          events={entry.events}
-          toolGroupId={entry.callId}
-          isPersisted={false}
-        />
-      );
-    }
-
-    if (entry.result != null) return <OutputView entry={entry} />;
-
+export const EntryResultsBody: React.FC<{
+  entry: ToolLifecycleEntry | null;
+}> = ({ entry }) => {
+  if (!entry) {
     return (
       <div className="p-8 text-center text-muted-foreground">
-        <p className="text-sm">Results not yet available</p>
+        <p className="text-sm">No tool data available</p>
       </div>
     );
-  };
+  }
+
+  if (entry.status === "error") return <ErrorView entry={entry} />;
+
+  if (hasCustomRenderer(entry.toolName)) {
+    const OverlayRenderer = getOverlayRenderer(entry.toolName);
+    return (
+      <OverlayRenderer
+        entry={entry}
+        events={entry.events}
+        toolGroupId={entry.callId}
+        isPersisted={false}
+      />
+    );
+  }
+
+  if (entry.result != null) return <OutputView entry={entry} />;
+
+  return (
+    <div className="p-8 text-center text-muted-foreground">
+      <p className="text-sm">Results not yet available</p>
+    </div>
+  );
+};
 
 // ─── CustomOverlayBody — wraps a ToolOverlayTabSpec.Component ─────────────────
 
 export const CustomOverlayBody: React.FC<{
   entry: ToolLifecycleEntry;
-  Component: ToolOverlayTabSpec["Component"] | React.ComponentType<ToolRendererProps>;
+  Component:
+    | ToolOverlayTabSpec["Component"]
+    | React.ComponentType<ToolRendererProps>;
 }> = ({ entry, Component }) => (
   <div className="flex flex-col h-full">
     <div className="flex-1 overflow-auto">

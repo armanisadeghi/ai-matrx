@@ -5152,7 +5152,7 @@
         }
       }
     },
-    "/api/skills": {
+    "/skills": {
       "get": {
         "tags": [
           "Skills",
@@ -5160,7 +5160,7 @@
         ],
         "summary": "List Skills",
         "description": "List skills visible to the caller (user-owned + system + public).\n\nFilters:\n  - category_id: only skills in that category\n  - is_public_only: skip system + own; only is_public=true\n  - project_id: only skills associated with that ctx_project via\n    skl_skill_projects (the many-to-many join)",
-        "operationId": "list_skills_api_skills_get",
+        "operationId": "list_skills_skills_get",
         "parameters": [
           {
             "name": "category_id",
@@ -5246,7 +5246,7 @@
           "skills"
         ],
         "summary": "Create Skill",
-        "operationId": "create_skill_api_skills_post",
+        "operationId": "create_skill_skills_post",
         "requestBody": {
           "required": true,
           "content": {
@@ -5281,14 +5281,14 @@
         }
       }
     },
-    "/api/skills/categories": {
+    "/skills/categories": {
       "get": {
         "tags": [
           "Skills",
           "skills"
         ],
         "summary": "List Categories",
-        "operationId": "list_categories_api_skills_categories_get",
+        "operationId": "list_categories_skills_categories_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -5308,7 +5308,7 @@
           "skills"
         ],
         "summary": "Create Category",
-        "operationId": "create_category_api_skills_categories_post",
+        "operationId": "create_category_skills_categories_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -5343,14 +5343,14 @@
         }
       }
     },
-    "/api/skills/categories/{category_id}": {
+    "/skills/categories/{category_id}": {
       "patch": {
         "tags": [
           "Skills",
           "skills"
         ],
         "summary": "Patch Category",
-        "operationId": "patch_category_api_skills_categories__category_id__patch",
+        "operationId": "patch_category_skills_categories__category_id__patch",
         "parameters": [
           {
             "name": "category_id",
@@ -5403,7 +5403,7 @@
         ],
         "summary": "Delete Category",
         "description": "Soft-deactivate the category. Skills pointing at it are NOT\ncascaded — they stay with the dangling FK reference (`category_id`\non `skl_definitions` is a SET NULL FK so they become uncategorized\non the DB side when the row is actually deleted; deactivation just\nhides them from the picker).",
-        "operationId": "delete_category_api_skills_categories__category_id__delete",
+        "operationId": "delete_category_skills_categories__category_id__delete",
         "parameters": [
           {
             "name": "category_id",
@@ -5433,14 +5433,14 @@
         }
       }
     },
-    "/api/skills/{skill_ref}": {
+    "/skills/{skill_ref}": {
       "get": {
         "tags": [
           "Skills",
           "skills"
         ],
         "summary": "Get Skill",
-        "operationId": "get_skill_api_skills__skill_ref__get",
+        "operationId": "get_skill_skills__skill_ref__get",
         "parameters": [
           {
             "name": "skill_ref",
@@ -5476,14 +5476,14 @@
         }
       }
     },
-    "/api/skills/{skill_id}": {
+    "/skills/{skill_id}": {
       "patch": {
         "tags": [
           "Skills",
           "skills"
         ],
         "summary": "Patch Skill",
-        "operationId": "patch_skill_api_skills__skill_id__patch",
+        "operationId": "patch_skill_skills__skill_id__patch",
         "parameters": [
           {
             "name": "skill_id",
@@ -5536,7 +5536,7 @@
         ],
         "summary": "Delete Skill",
         "description": "Soft-deactivate. Hard delete is admin-only and not exposed here.",
-        "operationId": "delete_skill_api_skills__skill_id__delete",
+        "operationId": "delete_skill_skills__skill_id__delete",
         "parameters": [
           {
             "name": "skill_id",
@@ -5566,7 +5566,7 @@
         }
       }
     },
-    "/api/skills/ingest": {
+    "/skills/ingest": {
       "post": {
         "tags": [
           "Skills",
@@ -5574,7 +5574,7 @@
         ],
         "summary": "Admin Ingest Filesystem",
         "description": "Admin-only: walk one or more directories of SKILL.md files and upsert\ninto ``skl_definitions`` with ``is_system=true``. The body hash is\nrecorded so repeat calls leave unchanged skills alone. When the same\n``skill_id`` appears in multiple roots, the last one wins.",
-        "operationId": "admin_ingest_filesystem_api_skills_ingest_post",
+        "operationId": "admin_ingest_filesystem_skills_ingest_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -5609,7 +5609,7 @@
         }
       }
     },
-    "/api/skills/{skill_id}/projects/{project_id}": {
+    "/skills/{skill_id}/projects/{project_id}": {
       "post": {
         "tags": [
           "Skills",
@@ -5617,7 +5617,7 @@
         ],
         "summary": "Associate Skill With Project",
         "description": "Associate a skill with a ctx_project. Requires skill ownership\n(or admin) OR project owner/admin role; RLS enforces the same check\nserver-side.\n\nIdempotent: existing rows are returned as-is.",
-        "operationId": "associate_skill_with_project_api_skills__skill_id__projects__project_id__post",
+        "operationId": "associate_skill_with_project_skills__skill_id__projects__project_id__post",
         "parameters": [
           {
             "name": "skill_id",
@@ -5670,7 +5670,7 @@
         ],
         "summary": "Disassociate Skill From Project",
         "description": "Remove a skill ↔ project association. RLS enforces who can delete.",
-        "operationId": "disassociate_skill_from_project_api_skills__skill_id__projects__project_id__delete",
+        "operationId": "disassociate_skill_from_project_skills__skill_id__projects__project_id__delete",
         "parameters": [
           {
             "name": "skill_id",
@@ -10164,6 +10164,619 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SystemErrorRecord"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-service/agents": {
+      "get": {
+        "tags": [
+          "Agent Service"
+        ],
+        "summary": "List Agents",
+        "operationId": "list_agents_agent_service_agents_get",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tags"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 200,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogTree"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Agent Service"
+        ],
+        "summary": "Create Agent",
+        "operationId": "create_agent_agent_service_agents_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAgentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-service/agents/{agent_id}": {
+      "get": {
+        "tags": [
+          "Agent Service"
+        ],
+        "summary": "Get Agent",
+        "operationId": "get_agent_agent_service_agents__agent_id__get",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Agent Service"
+        ],
+        "summary": "Update Agent",
+        "operationId": "update_agent_agent_service_agents__agent_id__patch",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAgentInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-service/agents/{agent_id}/versions": {
+      "get": {
+        "tags": [
+          "Agent Service"
+        ],
+        "summary": "List Versions",
+        "operationId": "list_versions_agent_service_agents__agent_id__versions_get",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentVersionInfo"
+                  },
+                  "title": "Response List Versions Agent Service Agents  Agent Id  Versions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-service/versions/{version_id}": {
+      "get": {
+        "tags": [
+          "Agent Service"
+        ],
+        "summary": "Get Version",
+        "operationId": "get_version_agent_service_versions__version_id__get",
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Version Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-service/models": {
+      "get": {
+        "tags": [
+          "Agent Service"
+        ],
+        "summary": "List Models",
+        "operationId": "list_models_agent_service_models_get",
+        "parameters": [
+          {
+            "name": "include_deprecated",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Deprecated"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModelInfo"
+                  },
+                  "title": "Response List Models Agent Service Models Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-service/tools": {
+      "get": {
+        "tags": [
+          "Agent Service"
+        ],
+        "summary": "List Tools",
+        "operationId": "list_tools_agent_service_tools_get",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tags"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ToolInfo"
+                  },
+                  "title": "Response List Tools Agent Service Tools Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-service/skills": {
+      "get": {
+        "tags": [
+          "Agent Service"
+        ],
+        "summary": "List Skills",
+        "operationId": "list_skills_agent_service_skills_get",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SkillInfo"
+                  },
+                  "title": "Response List Skills Agent Service Skills Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-service/agents/structured": {
+      "post": {
+        "tags": [
+          "Agent Service"
+        ],
+        "summary": "Create Structured Agent",
+        "operationId": "create_structured_agent_agent_service_agents_structured_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAgentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-service/validate-schema": {
+      "post": {
+        "tags": [
+          "Agent Service"
+        ],
+        "summary": "Validate Schema",
+        "operationId": "validate_schema_agent_service_validate_schema_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateSchemaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaGateReport"
                 }
               }
             }
@@ -36044,6 +36657,121 @@
         "title": "AgentConfigSettings",
         "description": "Sampling / decode settings on an agent_config."
       },
+      "AgentDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "agent_type": {
+            "type": "string",
+            "title": "Agent Type",
+            "default": ""
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "is_public": {
+            "type": "boolean",
+            "title": "Is Public",
+            "default": false
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "default": 1
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "variables": {
+            "items": {
+              "$ref": "#/components/schemas/AgentVariableDetail"
+            },
+            "type": "array",
+            "title": "Variables"
+          },
+          "output_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Schema"
+          },
+          "settings": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Settings"
+          },
+          "tool_config": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Tool Config"
+          },
+          "skill_config": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Skill Config"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "AgentDetail",
+        "description": "Everything a caller needs to invoke an agent correctly."
+      },
       "AgentMessage": {
         "properties": {
           "role": {
@@ -36397,6 +37125,63 @@
         "type": "object",
         "title": "AgentStartRequest"
       },
+      "AgentSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "agent_type": {
+            "type": "string",
+            "title": "Agent Type",
+            "default": ""
+          },
+          "is_public": {
+            "type": "boolean",
+            "title": "Is Public",
+            "default": false
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "AgentSummary",
+        "description": "Lightweight catalog row."
+      },
       "AgentTaskCreate": {
         "properties": {
           "agent_id": {
@@ -36614,6 +37399,54 @@
         "title": "AgentUserInputBody",
         "description": "Minimal request body for endpoints that previously took no body.\n\nUse as `request: AgentUserInputBody = Body(default_factory=AgentUserInputBody)`\nin routes that historically POST'd with an empty payload — old clients\nstill work (FastAPI parses an absent body as the factory default), and\nnew clients can opt into `{\"user_input\": \"...\"}` and/or\n`{\"use_user_agent_overrides\": true}`."
       },
+      "AgentVariableDetail": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
+          },
+          "default_value": {
+            "type": "string",
+            "title": "Default Value",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "AgentVariableDetail"
+      },
+      "AgentVariableInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Variable name the agent template references."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "What this variable contains.",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "AgentVariableInput"
+      },
       "AgentVersion": {
         "properties": {
           "version": {
@@ -36692,6 +37525,56 @@
         ],
         "title": "AgentVersion",
         "description": "One iteration step. version=1 is the original agent's output,\nversions 2+ are produced by the Rebuild Chain."
+      },
+      "AgentVersionInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "version_number": {
+            "type": "integer",
+            "title": "Version Number"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": ""
+          },
+          "change_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Note"
+          },
+          "changed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "agent_id",
+          "version_number"
+        ],
+        "title": "AgentVersionInfo"
       },
       "AnalysisPreferencesBody": {
         "properties": {
@@ -40978,6 +41861,41 @@
           "task_cancelled"
         ],
         "title": "CancelRunResponse"
+      },
+      "CatalogTree": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "categories": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Categories"
+          },
+          "tags": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Tags"
+          },
+          "agents": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSummary"
+            },
+            "type": "array",
+            "title": "Agents"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total"
+        ],
+        "title": "CatalogTree",
+        "description": "Faceted catalog view: distinct categories + tag counts + the agents."
       },
       "CategorizeRequest": {
         "properties": {
@@ -45583,6 +46501,94 @@
           "base_url"
         ],
         "title": "CrawlRequest"
+      },
+      "CreateAgentInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Short snake_case identifier / name for the agent."
+          },
+          "goals": {
+            "type": "string",
+            "title": "Goals",
+            "description": "Goals / objectives — what the agent must accomplish."
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "description": "One-sentence description of the agent.",
+            "default": ""
+          },
+          "variables": {
+            "items": {
+              "$ref": "#/components/schemas/AgentVariableInput"
+            },
+            "type": "array",
+            "title": "Variables",
+            "description": "Variables the agent will be given, each with a description."
+          },
+          "response_format": {
+            "type": "string",
+            "enum": [
+              "text",
+              "json",
+              "json_schema"
+            ],
+            "title": "Response Format",
+            "description": "'text' (prose), 'json' (free JSON), or 'json_schema' (schema-enforced).",
+            "default": "text"
+          },
+          "output_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Schema",
+            "description": "Required when response_format='json_schema'. Validated against provider rules."
+          },
+          "sample_output": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sample Output",
+            "description": "Optional sample output; checked for consistency against output_schema."
+          },
+          "sample_inputs": {
+            "type": "string",
+            "title": "Sample Inputs",
+            "description": "Optional example variable values.",
+            "default": ""
+          },
+          "model_guidance": {
+            "type": "string",
+            "title": "Model Guidance",
+            "description": "Model preference/guidance, e.g. cost vs speed vs intelligence.",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "goals"
+        ],
+        "title": "CreateAgentInput",
+        "description": "Structured agent request. Goes through the trained agent-builder\nmeta-agent — NOT a freeform agx_agent insert."
       },
       "CreateArgs": {
         "properties": {
@@ -59879,6 +60885,56 @@
         "title": "ModelCostBreakdown",
         "description": "Cost subtotal for one model within a run."
       },
+      "ModelInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "common_name": {
+            "type": "string",
+            "title": "Common Name",
+            "default": ""
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": ""
+          },
+          "api_class": {
+            "type": "string",
+            "title": "Api Class",
+            "default": ""
+          },
+          "context_window": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Window"
+          },
+          "is_premium": {
+            "type": "boolean",
+            "title": "Is Premium",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ModelInfo",
+        "description": "An AI model an agent can be assigned. Agents stop hallucinating 'gpt-4'."
+      },
       "MoveArgs": {
         "properties": {
           "new_parent_id": {
@@ -68360,6 +69416,73 @@
         ],
         "title": "ScheduleSaveRequest"
       },
+      "SchemaFinding": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning"
+            ],
+            "title": "Severity"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "severity",
+          "path",
+          "message"
+        ],
+        "title": "SchemaFinding"
+      },
+      "SchemaGateReport": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaFinding"
+            },
+            "type": "array",
+            "title": "Findings"
+          },
+          "portable_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portable Schema"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "title": "SchemaGateReport",
+        "description": "Outcome of validating an output schema (+ optional sample). ``ok`` is\nFalse when there is any error finding; warnings never flip it."
+      },
       "SchemaTypesResponse": {
         "properties": {
           "types": {
@@ -69776,6 +70899,47 @@
           "description"
         ],
         "title": "SkillCreate"
+      },
+      "SkillInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "skill_id": {
+            "type": "string",
+            "title": "Skill Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "skill_type": {
+            "type": "string",
+            "title": "Skill Type",
+            "default": ""
+          },
+          "category_path": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Category Path"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "skill_id",
+          "label"
+        ],
+        "title": "SkillInfo",
+        "description": "A skill that can be attached to an agent (skill_config)."
       },
       "SkillPatch": {
         "properties": {
@@ -73549,6 +74713,48 @@
         ],
         "title": "ToolFinding"
       },
+      "ToolInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "admin_only": {
+            "type": "boolean",
+            "title": "Admin Only",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ToolInfo",
+        "description": "A registered tool an agent can be given."
+      },
       "ToolListResponse": {
         "properties": {
           "summary": {
@@ -75508,6 +76714,211 @@
         "title": "TurnRange",
         "description": "Identify one or more contiguous turns to compact.\n\n``from_user_message_id`` — the user message that starts the first\nturn in the range. Required.\n\n``to_user_message_id`` — the user message that starts the FIRST turn\nAFTER the range. The turn-range covers everything from\n``from_user_message_id`` up to but NOT including\n``to_user_message_id``. If omitted, the range extends to the end of\nthe conversation (inclusive of the final turn)."
       },
+      "UpdateAgentInput": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "is_public": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Public"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "is_archived": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Archived"
+          },
+          "output_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Schema"
+          },
+          "settings": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Settings"
+          },
+          "tool_config": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Config"
+          },
+          "skill_config": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill Config"
+          },
+          "context_slots": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Slots"
+          },
+          "messages": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Messages"
+          },
+          "variable_definitions": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variable Definitions"
+          }
+        },
+        "type": "object",
+        "title": "UpdateAgentInput",
+        "description": "Partial update — only provided (non-None) fields are written. This is the\nfull manual-edit surface over an agx_agent row."
+      },
       "UpdateMessageResponse": {
         "properties": {
           "updated": {
@@ -76467,6 +77878,39 @@
           "definition"
         ],
         "title": "ValidateRequest"
+      },
+      "ValidateSchemaRequest": {
+        "properties": {
+          "output_schema": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Output Schema",
+            "description": "Candidate JSON Schema for an agent's structured output."
+          },
+          "sample_output": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sample Output",
+            "description": "Optional sample output checked against the schema."
+          }
+        },
+        "type": "object",
+        "required": [
+          "output_schema"
+        ],
+        "title": "ValidateSchemaRequest",
+        "description": "Standalone schema-gate request — validate without creating anything."
       },
       "ValidationError": {
         "properties": {

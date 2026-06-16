@@ -82,9 +82,11 @@ export default function AdminNavTreeMenu() {
               <span className={cn(iconSlot, "text-muted-foreground")}>
                 {category.icon}
               </span>
-              <span className="truncate">{category.name}</span>
-              <span className="ml-auto pl-2 text-xs text-muted-foreground">
-                {category.features.length}
+              <span className="truncate">
+                {category.name}{" "}
+                <span className="text-muted-foreground">
+                  ({category.features.length})
+                </span>
               </span>
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>

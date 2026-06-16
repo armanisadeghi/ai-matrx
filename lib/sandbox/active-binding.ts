@@ -26,6 +26,17 @@
  *      when `sourceFeature === "code-editor"`.
  *   4. None → returns `null` → the capability is omitted → multi-tenant aidream.
  *
+ * Liveness tombstone: a bound box can EXPIRE long after selection, and the
+ * stored ref carries no liveness signal. When a token mint reports the box is
+ * terminally gone (409 / "not running" / "status: expired|stopped|failed"), we
+ * tombstone its rowId (`markSandboxDead`). `resolveAgentSandboxRef` then refuses
+ * to resolve it at every level — which suppresses BOTH the binding AND the
+ * `ec2-dedicated` server routing — so the turn (and every new conversation that
+ * would otherwise inherit the surface-default corpse) falls back to the global
+ * server instead of POSTing to a dead EC2 host (502 + CORS). The mint runs
+ * before the AI stream in the same turn, so tombstoning in turn N protects
+ * turn N. A successful mint or `clearSandboxBindingCache` (re-attach) clears it.
+ *
  * The override and each per-surface entry store `{ rowId, proxyUrl, tier }`
  * together, so the common path needs no extra fetch. The access token is
  * minted on demand via `POST /api/sandbox/[id]/access-tokens` and cached in
@@ -90,6 +101,43 @@ interface CachedToken {
 const TOKEN_CACHE = new Map<string, CachedToken>();
 const REFRESH_LEEWAY_SECONDS = 30;
 
+/**
+ * Box rowIds we KNOW are dead (terminal: expired / stopped / failed), learned
+ * from the orchestrator at token-mint time. A bound box can expire long after
+ * it was selected; the stored Redux ref has no liveness signal, so without this
+ * the resolver keeps handing back a corpse — and a NEW conversation auto-
+ * inherits the surface-default corpse and routes its whole turn to a dead EC2
+ * host (502 + CORS). Once a box is in here, `resolveAgentSandboxRef` refuses to
+ * resolve it, which suppresses BOTH the sandbox binding AND the `ec2-dedicated`
+ * server routing, so the turn falls back to the global server.
+ *
+ * The mint runs (buildToolInjection → getActiveSandboxBinding) BEFORE the AI
+ * stream fires (runAiStream) within the same turn, so marking dead here in turn
+ * N stops the stream in turn N from ever reaching the dead host.
+ */
+const DEAD_SANDBOXES = new Map<string, string>();
+
+/** Substrings in a mint failure body that mean the box is terminally gone. */
+const TERMINAL_STATUS_RE =
+  /not running|status:\s*(expired|stopped|terminated|failed|deleted|gone)/i;
+
+/**
+ * Mark a box terminally dead so the resolver stops routing/binding to it for
+ * the rest of the session. Loud + idempotent.
+ */
+export function markSandboxDead(rowId: string, reason: string): void {
+  if (DEAD_SANDBOXES.has(rowId)) return;
+  DEAD_SANDBOXES.set(rowId, reason);
+  console.warn(
+    `${LOG} ⚰️ box ${rowId} marked DEAD (${reason}). It will no longer be bound or routed to this session — turns fall back to the global server. Re-attach a live box to use sandbox tools again.`,
+  );
+}
+
+/** True if the box was learned to be terminally dead this session. */
+export function isSandboxDead(rowId: string): boolean {
+  return DEAD_SANDBOXES.has(rowId);
+}
+
 function nowSec(): number {
   return Math.floor(Date.now() / 1000);
 }
@@ -122,13 +170,26 @@ export function resolveAgentSandboxRef(
     return null;
   }
 
+  // A box we've already learned is dead (token mint reported it not-running)
+  // must NEVER resolve again — otherwise a new conversation re-inherits the
+  // corpse and routes its turn to a dead host. Skip dead refs at every level.
+  const live = (ref: ResolvedSandboxRef): ResolvedSandboxRef | null => {
+    if (DEAD_SANDBOXES.has(ref.rowId)) {
+      console.warn(
+        `${LOG} skipping bound box ${ref.rowId} for conversation ${conversationId ?? "(none)"} — it is dead (${DEAD_SANDBOXES.get(ref.rowId)}). Falling back to the global server.`,
+      );
+      return null;
+    }
+    return ref;
+  };
+
   // Level 1: explicit per-conversation override (applies on ANY surface — the
   // user pinned this specific conversation to a box).
   const override = conversationId
     ? selectConversationSandboxOverride(conversationId)(state)
     : null;
   if (override?.rowId && (override.proxyUrl || override.kind === "local-pc")) {
-    return { ...override, source: "conversation-override" };
+    return live({ ...override, source: "conversation-override" });
   }
 
   // The surface this conversation belongs to ("chat-route", "transcript-studio",
@@ -148,7 +209,7 @@ export function resolveAgentSandboxRef(
     surfaceBound?.rowId &&
     (surfaceBound.proxyUrl || surfaceBound.kind === "local-pc")
   ) {
-    return { ...surfaceBound, source: "surface-active" };
+    return live({ ...surfaceBound, source: "surface-active" });
   }
 
   // The /code editor's connected box — scoped to the code-editor surface ONLY,
@@ -157,11 +218,11 @@ export function resolveAgentSandboxRef(
     const editorRowId = selectActiveSandboxId(state);
     const editorProxyUrl = selectActiveSandboxProxyUrl(state);
     if (editorRowId && editorProxyUrl) {
-      return {
+      return live({
         rowId: editorRowId,
         proxyUrl: editorProxyUrl,
         source: "editor-active",
-      };
+      });
     }
   }
 
@@ -202,6 +263,13 @@ async function fetchAccessToken(
     console.error(
       `${LOG} ❌ token mint FAILED for box ${sandboxRowId}: HTTP ${resp.status} ${resp.statusText}. The agent will get NO sandbox tools this turn. Server said: ${body}`,
     );
+    // A 409 "Sandbox is not running (status: expired)" (or any terminal status)
+    // means this box is gone for good — tombstone it so the resolver stops
+    // binding it AND stops routing turns to its dead EC2 host. A transient 5xx
+    // / network error is NOT terminal, so we only tombstone on a clear signal.
+    if (resp.status === 409 || TERMINAL_STATUS_RE.test(body)) {
+      markSandboxDead(sandboxRowId, `mint HTTP ${resp.status}: ${body}`);
+    }
     return null;
   }
   const json = (await resp.json().catch(() => null)) as {
@@ -233,6 +301,7 @@ async function fetchAccessToken(
 
   const fresh: CachedToken = { token: json.token, exp: expSec };
   TOKEN_CACHE.set(sandboxRowId, fresh);
+  DEAD_SANDBOXES.delete(sandboxRowId); // a successful mint means it's alive again
   return fresh;
 }
 
@@ -306,6 +375,11 @@ export async function getActiveSandboxBinding(
 }
 
 export function clearSandboxBindingCache(sandboxRowId?: string) {
-  if (sandboxRowId) TOKEN_CACHE.delete(sandboxRowId);
-  else TOKEN_CACHE.clear();
+  if (sandboxRowId) {
+    TOKEN_CACHE.delete(sandboxRowId);
+    DEAD_SANDBOXES.delete(sandboxRowId); // re-attach gets a clean slate
+  } else {
+    TOKEN_CACHE.clear();
+    DEAD_SANDBOXES.clear();
+  }
 }

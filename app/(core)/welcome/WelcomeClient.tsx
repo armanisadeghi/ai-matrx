@@ -147,7 +147,7 @@ export function WelcomeClient({ firstName }: { firstName: string | null }) {
                 type="button"
                 onClick={() => go(option.href)}
                 disabled={busy}
-                className="group relative flex items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                className="group relative flex cursor-pointer items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/40 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <span
                   className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[22%] bg-gradient-to-br ${option.gradient} text-white shadow-sm ring-1 ring-white/10`}

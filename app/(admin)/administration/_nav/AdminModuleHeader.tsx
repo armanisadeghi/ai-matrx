@@ -12,6 +12,8 @@ interface AdminModuleHeaderProps {
   moduleHome: string;
   moduleName?: string;
   className?: string;
+  /** Filesystem route hierarchy under /administration (from scanRoutes). */
+  routes: string[];
 }
 
 /**

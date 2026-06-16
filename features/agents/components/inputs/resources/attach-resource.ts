@@ -17,6 +17,7 @@ import {
   refineBlockType,
   resourceDataToSource,
 } from "@/features/agents/redux/execution-system/instance-resources/resource-source";
+import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
 import type { Resource } from "@/features/prompts/types/resources";
 import type { ResourceBlockType } from "@/features/agents/types/instance.types";
 
@@ -27,7 +28,7 @@ export function resourceTypeToBlockType(
   const map: Record<string, ResourceBlockType> = {
     note: "input_notes",
     task: "input_task",
-    project: "input_notes",
+    project: "input_project",
     file: "document",
     table: "input_table",
     webpage: "input_webpage",
@@ -35,6 +36,12 @@ export function resourceTypeToBlockType(
     image_url: "image",
     file_url: "document",
     audio: "audio",
+    agent: "input_agent",
+    agent_app: "input_agent_app",
+    transcript: "input_transcript",
+    transcript_session: "input_transcript_session",
+    workbook: "input_workbook",
+    document: "input_document",
   };
   return map[type] ?? "text";
 }
@@ -62,6 +69,18 @@ export function resourceLabel(resource: Resource): string {
       return resource.data.filename ?? "File";
     case "audio":
       return resource.data.filename ?? "Audio";
+    case "agent":
+      return resource.data.name ?? "Agent";
+    case "agent_app":
+      return resource.data.name ?? "App";
+    case "transcript":
+      return resource.data.title ?? "Transcript";
+    case "transcript_session":
+      return resource.data.title ?? "Session";
+    case "workbook":
+      return resource.data.name ?? "Workbook";
+    case "document":
+      return resource.data.title ?? "Document";
     default:
       return "Resource";
   }
@@ -93,6 +112,12 @@ export function useAttachResource(
         blockType,
         source: resourceDataToSource(blockType, resource.data),
         resourceId,
+        // Default editable-capable resources to EDITABLE. The server defaults
+        // to locked, so the FE must explicitly mark `editable: true` (which the
+        // payload selector then emits). The user opts OUT by clicking the lock.
+        options: isEditableCapableBlockType(blockType)
+          ? { editable: true }
+          : undefined,
       }),
     );
     dispatch(

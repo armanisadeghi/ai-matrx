@@ -23,6 +23,7 @@ import {
   GitBranch,
   Monitor,
   Server,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -35,6 +36,7 @@ import { setConversationSandboxOverride } from "@/features/agents/redux/conversa
 import { selectChatIncognitoActive } from "@/features/agents/components/chat/chat-incognito.slice";
 import { useSandboxInstances } from "@/hooks/sandbox/use-sandbox";
 import { useComputeTargets } from "@/hooks/sandbox/use-compute-targets";
+import { useVerifiedSandboxBinding } from "@/hooks/sandbox/use-verified-binding";
 import type { ComputeTarget } from "@/hooks/sandbox/use-compute-targets";
 import { selectSandboxPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { CloneRepoDialog } from "@/features/code/views/sandboxes/CloneRepoDialog";
@@ -115,6 +117,14 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
     : surfaceBound
       ? "surface"
       : null;
+
+  // Liveness layer: a rehydrated binding is only shown as "attached" once it's
+  // confirmed reachable. While verifying we show nothing definitive; if the box
+  // is gone we surface a re-attach hint instead of a fake "bound" chip.
+  const verified = useVerifiedSandboxBinding(conversationId);
+  const bindingConfirmed = verified.status === "verified";
+  const bindingVerifying = verified.status === "verifying";
+  const bindingUnavailable = verified.status === "unavailable";
 
   const { instances, loading, fetchInstances, createInstance } =
     useSandboxInstances();
@@ -253,8 +263,37 @@ export function SandboxPanel({ conversationId }: SandboxPanelProps) {
           </p>
         </div>
 
-        {/* Current binding */}
-        {resolved && (
+        {/* Current binding — only shown once liveness is confirmed. While we're
+            still checking we show a quiet "verifying" line; if the saved box is
+            gone we show a re-attach hint instead of pretending it's bound. */}
+        {resolved && bindingVerifying && (
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/40 text-[11px] text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin shrink-0" />
+            Checking bound sandbox…
+          </div>
+        )}
+
+        {resolved && bindingUnavailable && (
+          <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-amber-500/10">
+            <div className="min-w-0 flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+              <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-snug">
+                Your previously bound sandbox is no longer available. Attach a
+                running one below.
+              </p>
+            </div>
+            <button
+              onClick={() => applyRef(null)}
+              className="flex items-center gap-1 shrink-0 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              title="Clear the stale binding"
+            >
+              <X className="h-3 w-3" />
+              Clear
+            </button>
+          </div>
+        )}
+
+        {resolved && bindingConfirmed && (
           <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-muted/40">
             <div className="min-w-0">
               <p className="text-xs font-medium text-foreground truncate">

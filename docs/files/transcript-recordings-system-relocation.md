@@ -236,3 +236,39 @@ your byte-level `detect_av_track_kind` is the backstop. Good to have both.
    `SYSTEM_ORIGIN_FOLDERS` is sufficient for us today.
 
 Nothing outstanding on our side — closing this out.
+
+---
+
+## Update (2026-06-15) — two open items resolved/sequenced
+
+Backend replied to the FYIs above. Status:
+
+### 1. Legacy Recents guard — drop is SEQUENCED behind a backend deploy
+Backend cleared us to drop `TRANSCRIPT_RECORDINGS_LEGACY`, BUT the presigned +
+TUS (chunked / large-file) relocation path was genuinely missing — it's
+committed but **not yet in prod**. So we are **keeping the guard** until that
+deploys. Dropping it earlier would let a chunked/large recording slip through
+unhidden. Sequence is explicit: **backend deploys presigned/TUS relocation →
+then FE removes the guard** (`TRANSCRIPT_RECORDINGS_LEGACY` in
+`isSystemManagedContentPath`, and the constant). The constant's doc comment now
+spells out this gate so it isn't dropped early.
+
+### 2. Imported audio — decision made: imports stay VISIBLE
+Resolved the open product question. Previously **everything** uploaded through
+`saveAudioToStorage` carried `origin: "transcripts"`, so user-IMPORTED audio
+(via `AudioImportDialog`) was hidden under `system-files/` alongside mic
+recordings. That's wrong — a file the user deliberately chose should stay
+theirs to see.
+
+FE change (no backend change required):
+- `saveAudioToStorage` now takes `{ source: "recording" | "import" }`.
+- `recording` (default) — unchanged: `origin: "transcripts"`, hidden/relocated.
+- `import` (only `AudioImportDialog`) — **no `origin` tag** (so your origin→
+  system-folder map leaves it in place), original filename preserved, stored
+  under `Transcripts/Imports`, fully visible in the tree + Recents.
+
+No action needed on the backend for #2 — flagging only so the `origin`
+distribution makes sense to you: going forward, mic recordings carry
+`origin: "transcripts"`; imports carry `metadata.source: "transcript_import"`
+and **no** `origin`. (We chose "omit origin" over a new `transcripts_import`
+origin value so there's zero chance a future map entry accidentally hides them.)

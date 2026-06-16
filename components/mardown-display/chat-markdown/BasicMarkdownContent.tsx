@@ -213,8 +213,13 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
 
     // Replace leading spaces on each line with non-breaking spaces so HTML
     // doesn't collapse them — this preserves indentation visually.
-    processed = processed.replace(/^( +)/gm, (spaces) =>
-      "\u00A0\u00A0".repeat(spaces.length),
+    // EXCEPTION: never touch indented list items. Markdown relies on real
+    // leading spaces to detect nesting; converting them to nbsp flattens
+    // nested bullets/numbers into literal "- " / "1." text. So skip any line
+    // whose indented content begins with a list marker (*, -, + or "1." / "1)").
+    processed = processed.replace(
+      /^( +)(?![*+-][ \t]|\d+[.)][ \t])/gm,
+      (spaces) => "\u00A0\u00A0".repeat(spaces.length),
     );
 
     // Convert bracketed bare URLs [https://...] into proper markdown links

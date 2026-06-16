@@ -17,15 +17,35 @@ interface UploadResult {
   /**
    * cld_files UUID — the only durable handle. Everything downstream
    * (transcripts.audio_file_path, playback, download, delete) keys off
-   * this id. We intentionally do NOT return a `filePath`: the backend
-   * relocates `origin: "transcripts"` uploads under the hidden system
-   * namespace (`system-files/transcripts/Recordings/...`), so any path the
-   * client constructs would be wrong. See
+   * this id. We intentionally do NOT return a `filePath`: a `recording`
+   * upload is relocated by the backend under the hidden system namespace
+   * (`system-files/transcripts/Recordings/...`), so any path the client
+   * constructs would be wrong. See
    * docs/files/transcript-recordings-system-relocation.md.
    */
   fileId: string;
   filename: string;
   size: number;
+}
+
+export type AudioUploadSource = "recording" | "import";
+
+export interface SaveAudioOptions {
+  /**
+   * What produced this audio — decides whether it's hidden or visible:
+   *
+   * - `"recording"` (default): a microphone capture. Tagged
+   *   `origin: "transcripts"`, which the backend relocates under the hidden
+   *   `system-files/transcripts/Recordings/...` root. Machine-named, never
+   *   shown in the file tree or Recents — managed only via the Transcripts UI.
+   *
+   * - `"import"`: a file the user deliberately chose (AudioImportDialog).
+   *   It stays an ordinary, VISIBLE user file: no `origin` tag (so the
+   *   backend leaves it where it lands — anything not in the origin map is
+   *   untouched), original filename preserved, stored under
+   *   `Transcripts/Imports`. A file the user picked is theirs to see.
+   */
+  source?: AudioUploadSource;
 }
 
 interface ValidationResult {
@@ -89,26 +109,31 @@ export async function saveAudioToStorage(
   userId: string,
   onProgress?: (percent: number, status: string) => void,
   maxRetries: number = 5,
+  options: SaveAudioOptions = {},
 ): Promise<UploadResult> {
   const validation = validateAudioFile(audioBlob);
   if (!validation.valid) throw new Error(validation.error);
+
+  const isImport = (options.source ?? "recording") === "import";
 
   // Present a clean `audio/*` type + matching extension so the file lands in
   // cld_files classified as audio, not video. Recordings (webm/opus, often
   // with an empty blob type) normalize to `audio/webm`; imported files keep
   // their true audio type (mp3 → audio/mpeg, m4a/mp4 → audio/mp4, etc.).
   //
-  // We need the `recording_<iso>_<rand>` name convention, so derive the
-  // extension from the normalized type first, then let `toAudioFile` stamp
-  // the clean type + matching extension (the audio-mime rule: never
-  // hand-build an audio `File` at a send/upload site).
+  // Naming: recordings get the machine `recording_<iso>_<rand>` name (they're
+  // hidden, never browsed). Imports keep the user's original filename — it's a
+  // visible file they chose. `toAudioFile` is the single send-site File builder
+  // (the audio-mime rule: never hand-build an audio `File`); it also corrects
+  // the extension to match the normalized type when they disagree.
   const sourceName = audioBlob instanceof File ? audioBlob.name : undefined;
   const contentType = normalizeAudioContentType(audioBlob.type, sourceName);
-  const filename = generateAudioFilename(
-    "recording",
-    audioExtensionForType(contentType),
-  );
-  const file = toAudioFile(audioBlob, { fileName: filename });
+  const ext = audioExtensionForType(contentType);
+  const desiredName =
+    isImport && sourceName
+      ? sourceName
+      : generateAudioFilename(isImport ? "audio" : "recording", ext);
+  const file = toAudioFile(audioBlob, { fileName: desiredName });
 
   let lastError: Error | null = null;
   let attempt = 0;
@@ -120,16 +145,26 @@ export async function saveAudioToStorage(
 
       const normalized = await fileHandler.upload(
         { kind: "file", file },
-        {
-          // `folderPath` is a hint; the backend remaps `origin: "transcripts"`
-          // uploads to the hidden system root `system-files/transcripts/...`.
-          folderPath: "Transcripts/Recordings",
-          visibility: "private",
-          // `origin: "transcripts"` is the REQUIRED signal that triggers
-          // server-side relocation + hiding. Drop it and the recording lands
-          // in the user namespace and reappears in the file tree.
-          metadata: { origin: "transcripts", recorded_by: userId },
-        },
+        isImport
+          ? {
+              // Imports stay VISIBLE in the user's tree (a file they chose).
+              // No `origin` tag → the backend leaves it in place (anything not
+              // in the origin→system-folder map is untouched).
+              folderPath: "Transcripts/Imports",
+              visibility: "private",
+              metadata: { source: "transcript_import", imported_by: userId },
+            }
+          : {
+              // `folderPath` is a hint; the backend remaps `origin:
+              // "transcripts"` uploads to the hidden system root
+              // `system-files/transcripts/...`.
+              folderPath: "Transcripts/Recordings",
+              visibility: "private",
+              // `origin: "transcripts"` is the REQUIRED signal that triggers
+              // server-side relocation + hiding. Drop it and the recording
+              // lands in the user namespace and reappears in the file tree.
+              metadata: { origin: "transcripts", recorded_by: userId },
+            },
       );
 
       onProgress?.(100, "Upload complete!");
@@ -140,7 +175,7 @@ export async function saveAudioToStorage(
 
       return {
         fileId: normalized.fileId,
-        filename,
+        filename: file.name,
         size: audioBlob.size,
       };
     } catch (error) {

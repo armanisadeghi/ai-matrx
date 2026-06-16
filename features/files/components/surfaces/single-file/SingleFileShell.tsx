@@ -39,6 +39,7 @@ import { getPreviewCapability } from "@/features/files/utils/preview-capabilitie
 import { MobileStack } from "../MobileStack";
 import { FileTabsBody, type FileTab } from "../FileTabsBody";
 import { FileViewerControlsProvider } from "../FileViewerControlsContext";
+import { SidebarModeProvider } from "../desktop/SidebarModeToggle";
 import { SingleFileTopBar } from "./SingleFileTopBar";
 import { FileViewerControlRail } from "./FileViewerControlRail";
 
@@ -56,9 +57,11 @@ export function SingleFileShell({ fileId, className }: SingleFileShellProps) {
     return <MobileStack initialFolderId={null} initialFileId={fileId} />;
   }
   return (
-    <FileViewerControlsProvider>
-      <SingleFileShellDesktop fileId={fileId} className={className} />
-    </FileViewerControlsProvider>
+    <SidebarModeProvider>
+      <FileViewerControlsProvider>
+        <SingleFileShellDesktop fileId={fileId} className={className} />
+      </FileViewerControlsProvider>
+    </SidebarModeProvider>
   );
 }
 
@@ -84,7 +87,8 @@ function SingleFileShellDesktop({ fileId, className }: SingleFileShellProps) {
     void (async () => {
       if (selectFileById(store.getState(), fileId)) return;
       const { supabase } = await import("@/utils/supabase/client");
-      const { dbRowToCloudFile } = await import("@/features/files/redux/converters");
+      const { dbRowToCloudFile } =
+        await import("@/features/files/redux/converters");
       const { upsertFile } = await import("@/features/files/redux/slice");
       const { data, error } = await supabase
         .from("cld_files")

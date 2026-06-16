@@ -24,20 +24,30 @@ import {
   FolderKanban,
   AlertCircle,
   Code2,
+  Bot,
+  Folder,
+  LayoutGrid,
+  Captions,
+  AudioLines,
+  Notebook,
 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
-import { removeResource } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import {
+  removeResource,
+  updateResourceOptions,
+} from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
+import { isEditableCapableBlockType } from "@/features/agents/redux/execution-system/instance-resources/editable-resource-types";
 import { selectShowAttachments } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import type {
   ManagedResource,
   ResourceBlockType,
 } from "@/features/agents/types/instance.types";
+import type { ResourceEditableState } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
 import { NoteHoverPreview } from "@/features/agents/components/previews/NoteHoverPreview";
 import { TaskHoverPreview } from "@/features/agents/components/previews/TaskHoverPreview";
 import { WebpageHoverPreview } from "@/features/agents/components/previews/WebpageHoverPreview";
 import { DataRefHoverPreview } from "@/features/agents/components/previews/DataRefHoverPreview";
-import { FileResourceChip } from "@/features/files";
 import { ResourceAttachmentTile } from "@/features/agents/components/messages-display/user/ResourceAttachmentTile";
 import type { DataRef } from "@/features/agents/types/message-types";
 
@@ -96,6 +106,34 @@ function getBlockTypeDisplay(blockType: ResourceBlockType) {
     input_data: {
       icon: FileText,
       label: "Data",
+    },
+    input_agent: {
+      icon: Bot,
+      label: "Agent",
+    },
+    input_project: {
+      icon: Folder,
+      label: "Project",
+    },
+    input_agent_app: {
+      icon: LayoutGrid,
+      label: "App",
+    },
+    input_transcript: {
+      icon: Captions,
+      label: "Transcript",
+    },
+    input_transcript_session: {
+      icon: AudioLines,
+      label: "Session",
+    },
+    input_workbook: {
+      icon: Notebook,
+      label: "Workbook",
+    },
+    input_document: {
+      icon: FileText,
+      label: "Document",
     },
     editor_error: {
       icon: AlertCircle,
@@ -157,54 +195,34 @@ function getResourceLabel(resource: ManagedResource): string {
   return getBlockTypeDisplay(resource.blockType).label;
 }
 
-/**
- * Media blocks (image / audio / video / document) whose source carries a
- * cld_files UUID get the rich `FileResourceChip` — real thumbnail,
- * hover-peek, click-to-preview. Everything else uses `ResourceAttachmentTile`.
- */
-function extractFileId(resource: ManagedResource): string | null {
-  const isMedia =
-    resource.blockType === "image" ||
-    resource.blockType === "audio" ||
-    resource.blockType === "video" ||
-    resource.blockType === "document";
-  if (!isMedia) return null;
-  const src = resource.source as Record<string, unknown> | null;
-  if (!src || typeof src !== "object") return null;
-  if (typeof src.file_id === "string") return src.file_id;
-  // Tolerate older shapes that put the cld_files UUID under `id` or `fileId`.
-  if (typeof src.fileId === "string") return src.fileId;
-  if (typeof src.id === "string") return src.id;
-  return null;
-}
-
 interface ResourceChipProps {
   resource: ManagedResource;
   onRemove: () => void;
+  onToggleEditable: () => void;
 }
 
-function ResourceChip({ resource, onRemove }: ResourceChipProps) {
-  const fileId = extractFileId(resource);
+function ResourceChip({
+  resource,
+  onRemove,
+  onToggleEditable,
+}: ResourceChipProps) {
   const isPending =
     resource.status === "pending" || resource.status === "resolving";
   const isError = resource.status === "error";
 
-  // Rich file chip path — preserve the same enter/exit animation
-  // envelope so AnimatePresence still gets to do its thing on add/remove.
-  if (fileId && !isPending && !isError) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.85 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.85 }}
-      >
-        <FileResourceChip fileId={fileId} onRemove={onRemove} size="sm" />
-      </motion.div>
-    );
-  }
-
+  // Every attachment — files, media, notes, tasks, everything — renders as the
+  // SAME ResourceAttachmentTile so the row is uniform regardless of content.
   const display = getBlockTypeDisplay(resource.blockType);
   const label = getResourceLabel(resource);
+
+  // Editable toggle only for reference resources the agent can write back, and
+  // only once the resource is settled (no point toggling a pending/errored one).
+  const editableState: ResourceEditableState =
+    isEditableCapableBlockType(resource.blockType) && !isPending && !isError
+      ? resource.options.editable
+        ? "editable"
+        : "readonly"
+      : null;
 
   const tile = (
     <motion.div
@@ -218,6 +236,8 @@ function ResourceChip({ resource, onRemove }: ResourceChipProps) {
         icon={display.icon}
         themeKey={resource.blockType}
         onRemove={onRemove}
+        editableState={editableState}
+        onToggleEditable={onToggleEditable}
         pending={isPending}
         error={isError}
       />
@@ -320,6 +340,19 @@ export function SmartAgentResourceChips({
     [conversationId, dispatch],
   );
 
+  const handleToggleEditable = useCallback(
+    (resourceId: string, current: boolean) => {
+      dispatch(
+        updateResourceOptions({
+          conversationId,
+          resourceId,
+          options: { editable: !current },
+        }),
+      );
+    },
+    [conversationId, dispatch],
+  );
+
   if (!showAttachments) return null;
   if (resources.length === 0) return null;
 
@@ -331,6 +364,12 @@ export function SmartAgentResourceChips({
             key={resource.resourceId}
             resource={resource}
             onRemove={() => handleRemove(resource.resourceId)}
+            onToggleEditable={() =>
+              handleToggleEditable(
+                resource.resourceId,
+                resource.options.editable,
+              )
+            }
           />
         ))}
       </AnimatePresence>

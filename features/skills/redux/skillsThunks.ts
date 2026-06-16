@@ -214,7 +214,7 @@ export const createSkill = createAsyncThunk<
     const body = draftToCreateBody(draft) satisfies SkillCreateBody;
     const result = await dispatch(
       callApi({
-        path: "/api/skills",
+        path: "/skills",
         method: "POST",
         body,
       }),
@@ -274,7 +274,7 @@ export const patchSkill = createAsyncThunk<
     const body = patch satisfies SkillPatchBody;
     const result = await dispatch(
       callApi({
-        path: "/api/skills/{skill_id}",
+        path: "/skills/{skill_id}",
         method: "PATCH",
         pathParams: { skill_id: skillId },
         body,
@@ -333,7 +333,7 @@ export const deleteSkill = createAsyncThunk<
   if (isSystemRow) {
     const result = await dispatch(
       callApi({
-        path: "/api/skills/{skill_id}",
+        path: "/skills/{skill_id}",
         method: "DELETE",
         pathParams: { skill_id: skillId },
       }),
@@ -368,7 +368,7 @@ export const ingestSkills = createAsyncThunk<
   const body: IngestRequestBody = { roots, dry_run: dryRun };
   const result = await dispatch(
     callApi({
-      path: "/api/skills/ingest",
+      path: "/skills/ingest",
       method: "POST",
       body,
     }),
@@ -505,7 +505,7 @@ export const createCategoryThunk = createAsyncThunk<
     };
     const result = await dispatch(
       callApi({
-        path: "/api/skills/categories",
+        path: "/skills/categories",
         method: "POST",
         body,
       }),
@@ -585,7 +585,7 @@ export const updateCategoryThunk = createAsyncThunk<
 
     const result = await dispatch(
       callApi({
-        path: "/api/skills/categories/{category_id}",
+        path: "/skills/categories/{category_id}",
         method: "PATCH",
         pathParams: { category_id: id },
         body: wireBody,
@@ -648,7 +648,7 @@ export const deleteCategoryThunk = createAsyncThunk<
     }
     const result = await dispatch(
       callApi({
-        path: "/api/skills/categories/{category_id}",
+        path: "/skills/categories/{category_id}",
         method: "DELETE",
         pathParams: { category_id: id },
       }),

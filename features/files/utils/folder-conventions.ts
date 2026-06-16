@@ -195,10 +195,16 @@ export const CloudFolders = {
   /**
    * LEGACY user-namespace location for transcript recordings, before the
    * 2026-06-14 backend relocation to `system-files/transcripts/...`. Kept
-   * ONLY as a defensive Recents guard: the backend is supposed to relocate
-   * every `origin: "transcripts"` upload, but a straggler with correct
-   * metadata was still observed landing here in prod, so we keep filtering
-   * this path out of Recents until the backend hook is airtight.
+   * ONLY as a defensive Recents guard: the backend relocates every
+   * `origin: "transcripts"` upload, but the presigned/TUS (chunked + large
+   * file) relocation path was genuinely missing and is committed but NOT yet
+   * in prod as of 2026-06-15.
+   *
+   * DO NOT DROP THIS GUARD until that backend fix has DEPLOYED to prod —
+   * dropping it earlier would let a chunked/large recording slip through
+   * unhidden. Sequence: backend deploys → then remove this constant from
+   * `isSystemManagedContentPath` (and delete it). See the FE-response /
+   * "open items" in docs/files/transcript-recordings-system-relocation.md.
    */
   TRANSCRIPT_RECORDINGS_LEGACY: "Transcripts/Recordings",
 

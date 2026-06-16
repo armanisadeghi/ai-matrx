@@ -6050,98 +6050,6 @@ export type Database = {
           },
         ]
       }
-      ctx_context_variables: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          description: string
-          id: string
-          inject_as: string
-          is_active: boolean
-          is_secret: boolean
-          is_system: boolean
-          key: string
-          organization_id: string | null
-          project_id: string | null
-          scope_id: string | null
-          tags: string[]
-          task_id: string | null
-          updated_at: string
-          user_id: string | null
-          value: Json
-          value_type: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string
-          id?: string
-          inject_as?: string
-          is_active?: boolean
-          is_secret?: boolean
-          is_system?: boolean
-          key: string
-          organization_id?: string | null
-          project_id?: string | null
-          scope_id?: string | null
-          tags?: string[]
-          task_id?: string | null
-          updated_at?: string
-          user_id?: string | null
-          value: Json
-          value_type?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string
-          id?: string
-          inject_as?: string
-          is_active?: boolean
-          is_secret?: boolean
-          is_system?: boolean
-          key?: string
-          organization_id?: string | null
-          project_id?: string | null
-          scope_id?: string | null
-          tags?: string[]
-          task_id?: string | null
-          updated_at?: string
-          user_id?: string | null
-          value?: Json
-          value_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "context_variables_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "context_variables_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "context_variables_scope_id_fkey"
-            columns: ["scope_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_scopes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "context_variables_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "ctx_tasks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       ctx_project_invitations: {
         Row: {
           email: string
@@ -10982,6 +10890,7 @@ export type Database = {
           created_at: string
           decided_at: string | null
           decided_by: string | null
+          deleted_at: string | null
           description: string
           evidence: string | null
           id: string
@@ -11002,6 +10911,7 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          deleted_at?: string | null
           description: string
           evidence?: string | null
           id?: string
@@ -11022,6 +10932,7 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          deleted_at?: string | null
           description?: string
           evidence?: string | null
           id?: string
@@ -11280,6 +11191,7 @@ export type Database = {
           confidence: number
           created_at: string
           current_value_snapshot: string | null
+          deleted_at: string | null
           evidence_chunk_id: string | null
           id: string
           kg_entity_id: string | null
@@ -11297,6 +11209,7 @@ export type Database = {
           confidence?: number
           created_at?: string
           current_value_snapshot?: string | null
+          deleted_at?: string | null
           evidence_chunk_id?: string | null
           id?: string
           kg_entity_id?: string | null
@@ -11314,6 +11227,7 @@ export type Database = {
           confidence?: number
           created_at?: string
           current_value_snapshot?: string | null
+          deleted_at?: string | null
           evidence_chunk_id?: string | null
           id?: string
           kg_entity_id?: string | null
@@ -13653,6 +13567,7 @@ export type Database = {
           cleaner_version: string | null
           content: string | null
           created_at: string
+          deleted_at: string | null
           derivation_kind: string
           derivation_metadata: Json
           extractor_name: string
@@ -13687,6 +13602,7 @@ export type Database = {
           cleaner_version?: string | null
           content?: string | null
           created_at?: string
+          deleted_at?: string | null
           derivation_kind?: string
           derivation_metadata?: Json
           extractor_name?: string
@@ -13721,6 +13637,7 @@ export type Database = {
           cleaner_version?: string | null
           content?: string | null
           created_at?: string
+          deleted_at?: string | null
           derivation_kind?: string
           derivation_metadata?: Json
           extractor_name?: string
@@ -16827,6 +16744,7 @@ export type Database = {
           decided_at: string | null
           decided_by: string | null
           decision_note: string | null
+          deleted_at: string | null
           id: string
           is_starred: boolean
           kg_chunk_entity_id: string | null
@@ -16852,6 +16770,7 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_note?: string | null
+          deleted_at?: string | null
           id?: string
           is_starred?: boolean
           kg_chunk_entity_id?: string | null
@@ -16877,6 +16796,7 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_note?: string | null
+          deleted_at?: string | null
           id?: string
           is_starred?: boolean
           kg_chunk_entity_id?: string | null
@@ -16921,6 +16841,7 @@ export type Database = {
           decided_at: string | null
           decided_by: string | null
           decision_note: string | null
+          deleted_at: string | null
           evidence_chunk_id: string | null
           id: string
           is_starred: boolean
@@ -16947,6 +16868,7 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_note?: string | null
+          deleted_at?: string | null
           evidence_chunk_id?: string | null
           id?: string
           is_starred?: boolean
@@ -16973,6 +16895,7 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_note?: string | null
+          deleted_at?: string | null
           evidence_chunk_id?: string | null
           id?: string
           is_starred?: boolean
@@ -17014,6 +16937,7 @@ export type Database = {
           created_at: string
           decided_at: string | null
           decided_by: string | null
+          deleted_at: string | null
           id: string
           organization_id: string | null
           reasoning: string | null
@@ -17033,6 +16957,7 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          deleted_at?: string | null
           id?: string
           organization_id?: string | null
           reasoning?: string | null
@@ -17052,6 +16977,7 @@ export type Database = {
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          deleted_at?: string | null
           id?: string
           organization_id?: string | null
           reasoning?: string | null
@@ -25452,6 +25378,8 @@ export type Database = {
           description: string | null
           error_count: number | null
           id: string | null
+          initial_agent_id: string | null
+          initial_agent_version_id: string | null
           is_ephemeral: boolean | null
           is_favorite: boolean | null
           is_public: boolean | null
@@ -25478,6 +25406,20 @@ export type Database = {
           user_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cx_conversation_initial_agent_fk"
+            columns: ["initial_agent_id"]
+            isOneToOne: false
+            referencedRelation: "agx_agent"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cx_conversation_initial_agent_version_fk"
+            columns: ["initial_agent_version_id"]
+            isOneToOne: false
+            referencedRelation: "agx_version"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cx_conversation_last_model_id_fkey"
             columns: ["last_model_id"]

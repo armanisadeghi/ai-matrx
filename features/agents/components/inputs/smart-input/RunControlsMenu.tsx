@@ -76,8 +76,8 @@ import {
   selectSubmitOnEnter,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { setSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { selectConversationSandboxOverride } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectChatIncognitoActive } from "@/features/agents/components/chat/chat-incognito.slice";
+import { useVerifiedSandboxBinding } from "@/hooks/sandbox/use-verified-binding";
 import {
   selectShowCreatorPanel,
   toggleShowCreatorPanel,
@@ -147,22 +147,16 @@ export function RunControlsMenu({
   const settings = useAppSelector(
     selectBuilderAdvancedSettings(conversationId),
   );
-  const sandboxOverride = useAppSelector(
-    selectConversationSandboxOverride(conversationId),
-  );
   const sourceFeature = useAppSelector(
     (s) =>
       s.conversations.byConversationId[conversationId]?.sourceFeature ?? null,
   );
   const chatIncognito = useAppSelector(selectChatIncognitoActive);
   const sandboxBlocked = chatIncognito && sourceFeature === "chat-route";
-  // Surface-scoped binding: a box bound for THIS conversation's surface.
-  const surfaceSandbox = useAppSelector((s) => {
-    const sf = s.conversations.byConversationId[conversationId]?.sourceFeature;
-    return sf
-      ? (s.userPreferences.coding.activeAgentSandboxBySurface[sf] ?? null)
-      : null;
-  });
+  // Liveness-verified binding: a bound box is only treated as "attached" once
+  // `/api/compute-targets` confirms it's actually online. A stale/expired box
+  // rehydrated from preferences never lights the indicator.
+  const sandboxBinding = useVerifiedSandboxBinding(conversationId);
   const overrideState = useAppSelector(
     selectInstanceOverrideState(conversationId),
   );
@@ -226,7 +220,7 @@ export function RunControlsMenu({
       : tab;
 
   const addedCount = settings?.addedTools?.length ?? 0;
-  const hasSandbox = !sandboxBlocked && !!(sandboxOverride ?? surfaceSandbox);
+  const hasSandbox = !sandboxBlocked && sandboxBinding.status === "verified";
   const isCustomized =
     addedCount > 0 ||
     hasSandbox ||

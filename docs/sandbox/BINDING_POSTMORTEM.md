@@ -103,6 +103,29 @@ localhost button. **Fix:** auto-routing only applies on the `production` toggle.
   co-located pattern (it imports its own tools at the bottom of the file that's
   read on the client) — not affected.
 
+## 4b. Stale-binding hardening (2026-06-15)
+
+A bound box can **expire after it was selected**. The stored ref carries no
+liveness signal, so a new conversation auto-inherited the surface-default
+**corpse** — minted a 409 and routed the whole turn to a dead EC2 host (502 +
+CORS). Two layers now prevent this:
+
+1. **Turn-time tombstone** (`lib/sandbox/active-binding.ts`): when a token mint
+   reports the box terminally gone (409 / "not running" / "status: expired|
+   stopped|failed"), the rowId is tombstoned (`markSandboxDead`).
+   `resolveAgentSandboxRef` then refuses to resolve it at every level —
+   suppressing **both** the binding and the `ec2-dedicated` routing — so the
+   turn falls back to the global server. The mint runs before the AI stream in
+   the same turn, so turn N is protected. A successful mint or
+   `clearSandboxBindingCache` (re-attach) clears the tombstone.
+2. **Load-time verification** (`hooks/sandbox/use-verified-binding.ts`): the UI
+   no longer shows a binding straight from preferences. `useVerifiedSandboxBinding`
+   checks the bound box against `/api/compute-targets` (real status) and only
+   reports `verified` once it's confirmed online — `verifying` shows nothing,
+   `unavailable` shows a re-attach hint. `RunControlsMenu` (the indicator dot)
+   and `SandboxPanel` (the binding chip) both consume it, so a stale box never
+   appears attached and the user can simply pick a live one.
+
 ## 5. Still open (separate, tracked)
 
 - **Deploy the aidream `sandbox-fs` `enabled_tools` change** (uncommitted in the

@@ -12,54 +12,33 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { getAdminCrumbs, type AdminCrumb } from "./route-tree";
+import { buildAdminTree, getAdminCrumbs, type AdminCrumb } from "./route-tree";
 
 function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
-  const hasOptions = crumb.options.length > 0;
+  const hasChildren = crumb.children.length > 0;
 
-  const trigger = (
-    <button
-      type="button"
-      className={cn(
-        "inline-flex items-center gap-0.5 rounded-sm px-1.5 py-0.5 text-sm transition-colors",
-        "hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-        crumb.isLast ? "font-medium text-foreground" : "text-muted-foreground",
-      )}
-    >
-      <span className="max-w-[180px] truncate">{crumb.label}</span>
-      {hasOptions && <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />}
-    </button>
+  const labelClass = cn(
+    "max-w-[180px] truncate",
+    crumb.isLast ? "font-medium text-foreground" : "text-muted-foreground",
   );
 
-  // No siblings to switch between — render a plain (clickable when it's a page) crumb.
-  if (!hasOptions) {
+  // Leaf crumb (no children to drill into) — plain link / text.
+  if (!hasChildren) {
     if (crumb.isPage) {
       return (
         <button
           type="button"
           onClick={() => router.push(crumb.fullPath)}
-          className={cn(
-            "rounded-sm px-1.5 py-0.5 text-sm transition-colors hover:bg-accent hover:text-foreground",
-            crumb.isLast
-              ? "font-medium text-foreground"
-              : "text-muted-foreground",
-          )}
+          className="rounded-sm px-1.5 py-0.5 text-sm transition-colors hover:bg-accent hover:text-foreground"
         >
-          <span className="max-w-[180px] truncate">{crumb.label}</span>
+          <span className={labelClass}>{crumb.label}</span>
         </button>
       );
     }
     return (
-      <span
-        className={cn(
-          "px-1.5 py-0.5 text-sm",
-          crumb.isLast
-            ? "font-medium text-foreground"
-            : "text-muted-foreground",
-        )}
-      >
+      <span className={cn("px-1.5 py-0.5 text-sm", labelClass)}>
         {crumb.label}
       </span>
     );
@@ -67,7 +46,18 @@ function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "inline-flex items-center gap-0.5 rounded-sm px-1.5 py-0.5 text-sm transition-colors",
+            "hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          )}
+        >
+          <span className={labelClass}>{crumb.label}</span>
+          <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
+        </button>
+      </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
         className="max-h-[70vh] w-60 overflow-y-auto"
@@ -75,20 +65,22 @@ function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
         {crumb.isPage && (
           <>
             <DropdownMenuItem onSelect={() => router.push(crumb.fullPath)}>
-              <span className="font-medium">{crumb.label}</span>
+              <span className="font-medium">{crumb.label} overview</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
         )}
         <DropdownMenuLabel className="text-xs text-muted-foreground">
-          Switch
+          Go to
         </DropdownMenuLabel>
-        {crumb.options.map((option) => {
-          const active = pathname === option.fullPath;
+        {crumb.children.map((child) => {
+          const active =
+            pathname === child.fullPath ||
+            pathname.startsWith(`${child.fullPath}/`);
           return (
             <DropdownMenuItem
-              key={option.fullPath}
-              onSelect={() => router.push(option.fullPath)}
+              key={child.fullPath}
+              onSelect={() => router.push(child.fullPath)}
               className={cn("gap-2", active && "bg-accent/60")}
             >
               {active ? (
@@ -96,7 +88,7 @@ function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
               ) : (
                 <span className="w-3.5 shrink-0" />
               )}
-              <span className="truncate">{option.label}</span>
+              <span className="truncate">{child.label}</span>
             </DropdownMenuItem>
           );
         })}
@@ -105,9 +97,10 @@ function CrumbDropdown({ crumb }: { crumb: AdminCrumb }) {
   );
 }
 
-export default function AdminBreadcrumbs() {
+export default function AdminBreadcrumbs({ routes }: { routes: string[] }) {
   const pathname = usePathname() ?? "";
-  const crumbs = getAdminCrumbs(pathname);
+  const tree = React.useMemo(() => buildAdminTree(routes), [routes]);
+  const crumbs = getAdminCrumbs(tree, pathname);
 
   return (
     <nav aria-label="breadcrumb" className="flex items-center">

@@ -210,7 +210,10 @@ export const selectScopeTypesError = (state: StateWithScopeTypes) =>
 
 export const selectScopeTypesByOrg = createSelector(
   [selectAllScopeTypes, (_state: StateWithScopeTypes, orgId: string) => orgId],
-  (types, orgId) => types.filter((t) => t.organization_id === orgId),
+  // is_system scope types are PLATFORM infrastructure (the "Environment" home for ambient
+  // items, etc.) — they live under a real org for FK reasons but must NOT appear in that
+  // org's normal scope management. They're managed via the admin surface, not here.
+  (types, orgId) => types.filter((t) => t.organization_id === orgId && !t.is_system),
 );
 
 /**
@@ -233,7 +236,10 @@ export const selectTopLevelScopeTypes = createSelector(
   [selectAllScopeTypes, (_state: StateWithScopeTypes, orgId: string) => orgId],
   (types, orgId) =>
     types.filter(
-      (t) => t.organization_id === orgId && t.parent_type_id === null,
+      (t) =>
+        t.organization_id === orgId &&
+        t.parent_type_id === null &&
+        !t.is_system,
     ),
 );
 

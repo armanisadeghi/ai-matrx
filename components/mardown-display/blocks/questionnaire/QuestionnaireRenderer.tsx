@@ -777,9 +777,9 @@ const QuestionnaireRenderer = ({
   data,
   theme = "default",
   questionnaireId = null,
-  conversationId,
-  messageId,
-  blockIndex,
+  conversationId = undefined,
+  messageId = undefined,
+  blockIndex = undefined,
 }) => {
   // Generate a unique ID for this questionnaire if not provided
   const uniqueId =

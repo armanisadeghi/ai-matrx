@@ -571,8 +571,11 @@ export const selectMessageInterleavedContent = (
                   ? stubArgs
                   : {};
 
+            // Prefer the FULL output — `output_preview` is a truncated string
+            // for the slim row only. The overlay must show everything the
+            // agent saw, so full `output` wins; preview is the fallback.
             const resolvedResult =
-              toolCallRecord?.outputPreview ?? toolCallRecord?.output ?? null;
+              toolCallRecord?.output ?? toolCallRecord?.outputPreview ?? null;
             const resolvedIsError =
               toolCallRecord?.isError ??
               (toolCallRecord ? !toolCallRecord.success : false);

@@ -2247,7 +2247,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/skills": {
+    "/skills": {
         parameters: {
             query?: never;
             header?: never;
@@ -2264,17 +2264,17 @@ export interface paths {
          *       - project_id: only skills associated with that ctx_project via
          *         skl_skill_projects (the many-to-many join)
          */
-        get: operations["list_skills_api_skills_get"];
+        get: operations["list_skills_skills_get"];
         put?: never;
         /** Create Skill */
-        post: operations["create_skill_api_skills_post"];
+        post: operations["create_skill_skills_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/skills/categories": {
+    "/skills/categories": {
         parameters: {
             query?: never;
             header?: never;
@@ -2282,17 +2282,17 @@ export interface paths {
             cookie?: never;
         };
         /** List Categories */
-        get: operations["list_categories_api_skills_categories_get"];
+        get: operations["list_categories_skills_categories_get"];
         put?: never;
         /** Create Category */
-        post: operations["create_category_api_skills_categories_post"];
+        post: operations["create_category_skills_categories_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/skills/categories/{category_id}": {
+    "/skills/categories/{category_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2310,14 +2310,14 @@ export interface paths {
          *     on the DB side when the row is actually deleted; deactivation just
          *     hides them from the picker).
          */
-        delete: operations["delete_category_api_skills_categories__category_id__delete"];
+        delete: operations["delete_category_skills_categories__category_id__delete"];
         options?: never;
         head?: never;
         /** Patch Category */
-        patch: operations["patch_category_api_skills_categories__category_id__patch"];
+        patch: operations["patch_category_skills_categories__category_id__patch"];
         trace?: never;
     };
-    "/api/skills/{skill_ref}": {
+    "/skills/{skill_ref}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2325,7 +2325,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Skill */
-        get: operations["get_skill_api_skills__skill_ref__get"];
+        get: operations["get_skill_skills__skill_ref__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2334,7 +2334,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/skills/{skill_id}": {
+    "/skills/{skill_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2348,14 +2348,14 @@ export interface paths {
          * Delete Skill
          * @description Soft-deactivate. Hard delete is admin-only and not exposed here.
          */
-        delete: operations["delete_skill_api_skills__skill_id__delete"];
+        delete: operations["delete_skill_skills__skill_id__delete"];
         options?: never;
         head?: never;
         /** Patch Skill */
-        patch: operations["patch_skill_api_skills__skill_id__patch"];
+        patch: operations["patch_skill_skills__skill_id__patch"];
         trace?: never;
     };
-    "/api/skills/ingest": {
+    "/skills/ingest": {
         parameters: {
             query?: never;
             header?: never;
@@ -2371,14 +2371,14 @@ export interface paths {
          *     recorded so repeat calls leave unchanged skills alone. When the same
          *     ``skill_id`` appears in multiple roots, the last one wins.
          */
-        post: operations["admin_ingest_filesystem_api_skills_ingest_post"];
+        post: operations["admin_ingest_filesystem_skills_ingest_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/skills/{skill_id}/projects/{project_id}": {
+    "/skills/{skill_id}/projects/{project_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2395,12 +2395,12 @@ export interface paths {
          *
          *     Idempotent: existing rows are returned as-is.
          */
-        post: operations["associate_skill_with_project_api_skills__skill_id__projects__project_id__post"];
+        post: operations["associate_skill_with_project_skills__skill_id__projects__project_id__post"];
         /**
          * Disassociate Skill From Project
          * @description Remove a skill ↔ project association. RLS enforces who can delete.
          */
-        delete: operations["disassociate_skill_from_project_api_skills__skill_id__projects__project_id__delete"];
+        delete: operations["disassociate_skill_from_project_skills__skill_id__projects__project_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3992,6 +3992,161 @@ export interface paths {
         get: operations["get_error_admin_system_errors__error_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-service/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Agents */
+        get: operations["list_agents_agent_service_agents_get"];
+        put?: never;
+        /** Create Agent */
+        post: operations["create_agent_agent_service_agents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-service/agents/{agent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Agent */
+        get: operations["get_agent_agent_service_agents__agent_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Agent */
+        patch: operations["update_agent_agent_service_agents__agent_id__patch"];
+        trace?: never;
+    };
+    "/agent-service/agents/{agent_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Versions */
+        get: operations["list_versions_agent_service_agents__agent_id__versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-service/versions/{version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Version */
+        get: operations["get_version_agent_service_versions__version_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-service/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Models */
+        get: operations["list_models_agent_service_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-service/tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tools */
+        get: operations["list_tools_agent_service_tools_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-service/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Skills */
+        get: operations["list_skills_agent_service_skills_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-service/agents/structured": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Structured Agent */
+        post: operations["create_structured_agent_agent_service_agents_structured_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-service/validate-schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate Schema */
+        post: operations["validate_schema_agent_service_validate_schema_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12833,6 +12988,65 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * AgentDetail
+         * @description Everything a caller needs to invoke an agent correctly.
+         */
+        AgentDetail: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Agent Type
+             * @default
+             */
+            agent_type: string;
+            /** Category */
+            category?: string | null;
+            /** Tags */
+            tags?: string[];
+            /**
+             * Is Public
+             * @default false
+             */
+            is_public: boolean;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+            /** Model Id */
+            model_id?: string | null;
+            /** Variables */
+            variables?: components["schemas"]["AgentVariableDetail"][];
+            /** Output Schema */
+            output_schema?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Settings */
+            settings?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Tool Config */
+            tool_config?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Skill Config */
+            skill_config?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
         /** AgentMessage */
         AgentMessage: {
             /**
@@ -12950,6 +13164,40 @@ export interface components {
             max_retries_per_iteration: number;
         };
         /**
+         * AgentSummary
+         * @description Lightweight catalog row.
+         */
+        AgentSummary: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Category */
+            category?: string | null;
+            /** Tags */
+            tags?: string[];
+            /**
+             * Agent Type
+             * @default
+             */
+            agent_type: string;
+            /**
+             * Is Public
+             * @default false
+             */
+            is_public: boolean;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
+        /**
          * AgentTaskCreate
          * @description Child sch_agent_task row payload (used for kind=agent/tool).
          */
@@ -13059,6 +13307,40 @@ export interface components {
              */
             use_user_agent_overrides: boolean;
         };
+        /** AgentVariableDetail */
+        AgentVariableDetail: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Required
+             * @default false
+             */
+            required: boolean;
+            /**
+             * Default Value
+             * @default
+             */
+            default_value: string;
+        };
+        /** AgentVariableInput */
+        AgentVariableInput: {
+            /**
+             * Name
+             * @description Variable name the agent template references.
+             */
+            name: string;
+            /**
+             * Description
+             * @description What this variable contains.
+             * @default
+             */
+            description: string;
+        };
         /**
          * AgentVersion
          * @description One iteration step. version=1 is the original agent's output,
@@ -13080,6 +13362,24 @@ export interface components {
             architect_validated?: boolean | null;
             /** Model Id */
             model_id?: string | null;
+        };
+        /** AgentVersionInfo */
+        AgentVersionInfo: {
+            /** Id */
+            id: string;
+            /** Agent Id */
+            agent_id: string;
+            /** Version Number */
+            version_number: number;
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /** Change Note */
+            change_note?: string | null;
+            /** Changed At */
+            changed_at?: string | null;
         };
         /** AnalysisPreferencesBody */
         AnalysisPreferencesBody: {
@@ -14700,6 +15000,24 @@ export interface components {
             /** Task Cancelled */
             task_cancelled: boolean;
         };
+        /**
+         * CatalogTree
+         * @description Faceted catalog view: distinct categories + tag counts + the agents.
+         */
+        CatalogTree: {
+            /** Total */
+            total: number;
+            /** Categories */
+            categories?: {
+                [key: string]: number;
+            };
+            /** Tags */
+            tags?: {
+                [key: string]: number;
+            };
+            /** Agents */
+            agents?: components["schemas"]["AgentSummary"][];
+        };
         /** CategorizeRequest */
         CategorizeRequest: {
             /** Prompt Id */
@@ -16169,6 +16487,67 @@ export interface components {
              * @description Which screenshot variants to capture when render_mode is browser_with_screenshot.
              */
             screenshot_kinds?: ("viewport_desktop" | "viewport_mobile" | "viewport_tablet" | "full_page")[];
+        };
+        /**
+         * CreateAgentInput
+         * @description Structured agent request. Goes through the trained agent-builder
+         *     meta-agent — NOT a freeform agx_agent insert.
+         */
+        CreateAgentInput: {
+            /**
+             * Name
+             * @description Short snake_case identifier / name for the agent.
+             */
+            name: string;
+            /**
+             * Goals
+             * @description Goals / objectives — what the agent must accomplish.
+             */
+            goals: string;
+            /**
+             * Summary
+             * @description One-sentence description of the agent.
+             * @default
+             */
+            summary: string;
+            /**
+             * Variables
+             * @description Variables the agent will be given, each with a description.
+             */
+            variables?: components["schemas"]["AgentVariableInput"][];
+            /**
+             * Response Format
+             * @description 'text' (prose), 'json' (free JSON), or 'json_schema' (schema-enforced).
+             * @default text
+             * @enum {string}
+             */
+            response_format: "text" | "json" | "json_schema";
+            /**
+             * Output Schema
+             * @description Required when response_format='json_schema'. Validated against provider rules.
+             */
+            output_schema?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Sample Output
+             * @description Optional sample output; checked for consistency against output_schema.
+             */
+            sample_output?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Sample Inputs
+             * @description Optional example variable values.
+             * @default
+             */
+            sample_inputs: string;
+            /**
+             * Model Guidance
+             * @description Model preference/guidance, e.g. cost vs speed vs intelligence.
+             * @default
+             */
+            model_guidance: string;
         };
         /** CreateArgs */
         CreateArgs: {
@@ -21250,6 +21629,38 @@ export interface components {
             /** Cost Usd */
             cost_usd: number;
         };
+        /**
+         * ModelInfo
+         * @description An AI model an agent can be assigned. Agents stop hallucinating 'gpt-4'.
+         */
+        ModelInfo: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Common Name
+             * @default
+             */
+            common_name: string;
+            /**
+             * Provider
+             * @default
+             */
+            provider: string;
+            /**
+             * Api Class
+             * @default
+             */
+            api_class: string;
+            /** Context Window */
+            context_window?: number | null;
+            /**
+             * Is Premium
+             * @default false
+             */
+            is_premium: boolean;
+        };
         /** MoveArgs */
         MoveArgs: {
             /** New Parent Id */
@@ -24444,6 +24855,35 @@ export interface components {
              */
             enabled: boolean;
         };
+        /** SchemaFinding */
+        SchemaFinding: {
+            /** Provider */
+            provider: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "error" | "warning";
+            /** Path */
+            path: string;
+            /** Message */
+            message: string;
+        };
+        /**
+         * SchemaGateReport
+         * @description Outcome of validating an output schema (+ optional sample). ``ok`` is
+         *     False when there is any error finding; warnings never flip it.
+         */
+        SchemaGateReport: {
+            /** Ok */
+            ok: boolean;
+            /** Findings */
+            findings?: components["schemas"]["SchemaFinding"][];
+            /** Portable Schema */
+            portable_schema?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+        };
         /**
          * SchemaTypesResponse
          * @description Map of ``field_name -> data_type``.
@@ -25039,6 +25479,30 @@ export interface components {
              * @default false
              */
             is_public: boolean;
+        };
+        /**
+         * SkillInfo
+         * @description A skill that can be attached to an agent (skill_config).
+         */
+        SkillInfo: {
+            /** Id */
+            id: string;
+            /** Skill Id */
+            skill_id: string;
+            /** Label */
+            label: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Skill Type
+             * @default
+             */
+            skill_type: string;
+            /** Category Path */
+            category_path?: string[];
         };
         /** SkillPatch */
         SkillPatch: {
@@ -26281,6 +26745,28 @@ export interface components {
             /** @default {} */
             detail: components["schemas"]["JsonValue"];
         };
+        /**
+         * ToolInfo
+         * @description A registered tool an agent can be given.
+         */
+        ToolInfo: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Category */
+            category?: string | null;
+            /** Tags */
+            tags?: string[];
+            /**
+             * Admin Only
+             * @default false
+             */
+            admin_only: boolean;
+        };
         /** ToolListResponse */
         ToolListResponse: {
             summary: components["schemas"]["ToolSummary"];
@@ -26959,6 +27445,57 @@ export interface components {
             /** To User Message Id */
             to_user_message_id?: string | null;
         };
+        /**
+         * UpdateAgentInput
+         * @description Partial update — only provided (non-None) fields are written. This is the
+         *     full manual-edit surface over an agx_agent row.
+         */
+        UpdateAgentInput: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Model Id */
+            model_id?: string | null;
+            /** Category */
+            category?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Is Public */
+            is_public?: boolean | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Is Archived */
+            is_archived?: boolean | null;
+            /** Output Schema */
+            output_schema?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Settings */
+            settings?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Tool Config */
+            tool_config?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Skill Config */
+            skill_config?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Context Slots */
+            context_slots?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[] | null;
+            /** Messages */
+            messages?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[] | null;
+            /** Variable Definitions */
+            variable_definitions?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[] | null;
+        };
         /** UpdateMessageResponse */
         UpdateMessageResponse: {
             /** Updated */
@@ -27294,6 +27831,26 @@ export interface components {
         /** ValidateRequest */
         ValidateRequest: {
             definition: components["schemas"]["Definition"];
+        };
+        /**
+         * ValidateSchemaRequest
+         * @description Standalone schema-gate request — validate without creating anything.
+         */
+        ValidateSchemaRequest: {
+            /**
+             * Output Schema
+             * @description Candidate JSON Schema for an agent's structured output.
+             */
+            output_schema: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Sample Output
+             * @description Optional sample output checked against the schema.
+             */
+            sample_output?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -31772,7 +32329,7 @@ export interface operations {
             };
         };
     };
-    list_skills_api_skills_get: {
+    list_skills_skills_get: {
         parameters: {
             query?: {
                 category_id?: string | null;
@@ -31806,7 +32363,7 @@ export interface operations {
             };
         };
     };
-    create_skill_api_skills_post: {
+    create_skill_skills_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -31839,7 +32396,7 @@ export interface operations {
             };
         };
     };
-    list_categories_api_skills_categories_get: {
+    list_categories_skills_categories_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -31859,7 +32416,7 @@ export interface operations {
             };
         };
     };
-    create_category_api_skills_categories_post: {
+    create_category_skills_categories_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -31892,7 +32449,7 @@ export interface operations {
             };
         };
     };
-    delete_category_api_skills_categories__category_id__delete: {
+    delete_category_skills_categories__category_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -31921,7 +32478,7 @@ export interface operations {
             };
         };
     };
-    patch_category_api_skills_categories__category_id__patch: {
+    patch_category_skills_categories__category_id__patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -31956,7 +32513,7 @@ export interface operations {
             };
         };
     };
-    get_skill_api_skills__skill_ref__get: {
+    get_skill_skills__skill_ref__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -31987,7 +32544,7 @@ export interface operations {
             };
         };
     };
-    delete_skill_api_skills__skill_id__delete: {
+    delete_skill_skills__skill_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -32016,7 +32573,7 @@ export interface operations {
             };
         };
     };
-    patch_skill_api_skills__skill_id__patch: {
+    patch_skill_skills__skill_id__patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -32051,7 +32608,7 @@ export interface operations {
             };
         };
     };
-    admin_ingest_filesystem_api_skills_ingest_post: {
+    admin_ingest_filesystem_skills_ingest_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -32084,7 +32641,7 @@ export interface operations {
             };
         };
     };
-    associate_skill_with_project_api_skills__skill_id__projects__project_id__post: {
+    associate_skill_with_project_skills__skill_id__projects__project_id__post: {
         parameters: {
             query?: never;
             header?: never;
@@ -32116,7 +32673,7 @@ export interface operations {
             };
         };
     };
-    disassociate_skill_from_project_api_skills__skill_id__projects__project_id__delete: {
+    disassociate_skill_from_project_skills__skill_id__projects__project_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -35103,6 +35660,364 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemErrorRecord"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_agents_agent_service_agents_get: {
+        parameters: {
+            query?: {
+                category?: string | null;
+                tags?: string[] | null;
+                query?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogTree"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_agent_agent_service_agents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAgentInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_agent_agent_service_agents__agent_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_agent_agent_service_agents__agent_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAgentInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_versions_agent_service_agents__agent_id__versions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentVersionInfo"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_version_agent_service_versions__version_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_models_agent_service_models_get: {
+        parameters: {
+            query?: {
+                include_deprecated?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelInfo"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tools_agent_service_tools_get: {
+        parameters: {
+            query?: {
+                category?: string | null;
+                tags?: string[] | null;
+                query?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolInfo"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_skills_agent_service_skills_get: {
+        parameters: {
+            query?: {
+                category?: string | null;
+                query?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillInfo"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_structured_agent_agent_service_agents_structured_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAgentInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    validate_schema_agent_service_validate_schema_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateSchemaRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaGateReport"];
                 };
             };
             /** @description Validation Error */

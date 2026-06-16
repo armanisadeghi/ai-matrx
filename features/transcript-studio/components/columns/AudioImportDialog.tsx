@@ -37,7 +37,10 @@ import {
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { saveAudioToStorage, getAudioUrl } from "@/features/transcripts/service/audioStorageService";
+import {
+  saveAudioToStorage,
+  getAudioUrl,
+} from "@/features/transcripts/service/audioStorageService";
 import { rawSegmentsAppended } from "../../redux/slice";
 import { insertRawSegment } from "../../service/studioService";
 import type { RawSegment } from "../../types";
@@ -88,7 +91,10 @@ export function AudioImportDialog({
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const readTail = useCallback((): { nextChunkIndex: number; tailTime: number } => {
+  const readTail = useCallback((): {
+    nextChunkIndex: number;
+    tailTime: number;
+  } => {
     const state = store.getState();
     const ids = state.transcriptStudio.rawIdsBySession[sessionId];
     const byId = state.transcriptStudio.rawById[sessionId];
@@ -171,37 +177,40 @@ export function AudioImportDialog({
     [dispatch, sessionId, readTail],
   );
 
-  const transcribeStorageUrl = useCallback(
-    async (storageUrl: string) => {
-      const res = await fetch("/api/audio/transcribe-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: storageUrl }),
-      });
-      const data = (await res.json()) as TranscribeUrlResponse;
-      if (!res.ok || data.success === false) {
-        throw new Error(data.error || `Transcription failed (${res.status}).`);
-      }
-      return data;
-    },
-    [],
-  );
+  const transcribeStorageUrl = useCallback(async (storageUrl: string) => {
+    const res = await fetch("/api/audio/transcribe-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: storageUrl }),
+    });
+    const data = (await res.json()) as TranscribeUrlResponse;
+    if (!res.ok || data.success === false) {
+      throw new Error(data.error || `Transcription failed (${res.status}).`);
+    }
+    return data;
+  }, []);
 
   const handleSubmitFile = useCallback(async () => {
     if (!file || !userId) return;
     try {
       setBusy(true);
       setProgressLabel("Uploading audio…");
-      const upload = await saveAudioToStorage(file, userId, (_pct, status) => {
-        setProgressLabel(status);
-      });
+      // Imported audio is a file the user deliberately chose, so it stays a
+      // visible user file (no `origin: "transcripts"` tag, not relocated/hidden)
+      // — unlike mic recordings, which the backend hides under system-files/.
+      const upload = await saveAudioToStorage(
+        file,
+        userId,
+        (_pct, status) => {
+          setProgressLabel(status);
+        },
+        5,
+        { source: "import" },
+      );
       setProgressLabel("Transcribing…");
       const signedUrl = await getAudioUrl(upload.fileId);
       const data = await transcribeStorageUrl(signedUrl);
-      const count = await ingestSegments(
-        data.segments ?? [],
-        data.text ?? "",
-      );
+      const count = await ingestSegments(data.segments ?? [], data.text ?? "");
       toast.success(
         `Imported ${count} segment${count === 1 ? "" : "s"} from "${file.name}".`,
       );
@@ -214,14 +223,7 @@ export function AudioImportDialog({
       setBusy(false);
       setProgressLabel(null);
     }
-  }, [
-    file,
-    userId,
-    transcribeStorageUrl,
-    ingestSegments,
-    reset,
-    onOpenChange,
-  ]);
+  }, [file, userId, transcribeStorageUrl, ingestSegments, reset, onOpenChange]);
 
   const handleSubmitUrl = useCallback(async () => {
     const trimmed = url.trim();
@@ -230,13 +232,8 @@ export function AudioImportDialog({
       setBusy(true);
       setProgressLabel("Transcribing…");
       const data = await transcribeStorageUrl(trimmed);
-      const count = await ingestSegments(
-        data.segments ?? [],
-        data.text ?? "",
-      );
-      toast.success(
-        `Imported ${count} segment${count === 1 ? "" : "s"}.`,
-      );
+      const count = await ingestSegments(data.segments ?? [], data.text ?? "");
+      toast.success(`Imported ${count} segment${count === 1 ? "" : "s"}.`);
       reset();
       onOpenChange(false);
     } catch (err) {
@@ -255,35 +252,33 @@ export function AudioImportDialog({
     );
   }, [dispatch]);
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      setDragOver(false);
-      const dropped = e.dataTransfer.files?.[0];
-      if (dropped) setFile(dropped);
-    },
-    [],
-  );
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(false);
+    const dropped = e.dataTransfer.files?.[0];
+    if (dropped) setFile(dropped);
+  }, []);
 
   return (
-    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : handleClose())}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => (next ? onOpenChange(true) : handleClose())}
+    >
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Import audio</DialogTitle>
           <DialogDescription>
-            Transcribe an existing audio or video file into this session.
-            Each detected speech segment becomes a row on the Raw timeline.
+            Transcribe an existing audio or video file into this session. Each
+            detected speech segment becomes a row on the Raw timeline.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex border-b border-border">
-          {(
-            [
-              { id: "file" as const, icon: FileAudio, label: "Upload file" },
-              { id: "url" as const, icon: LinkIcon, label: "From URL" },
-              { id: "cloud" as const, icon: FolderOpen, label: "Cloud Files" },
-            ]
-          ).map((tab) => {
+          {[
+            { id: "file" as const, icon: FileAudio, label: "Upload file" },
+            { id: "url" as const, icon: LinkIcon, label: "From URL" },
+            { id: "cloud" as const, icon: FolderOpen, label: "Cloud Files" },
+          ].map((tab) => {
             const Icon = tab.icon;
             const active = mode === tab.id;
             return (
@@ -367,7 +362,9 @@ export function AudioImportDialog({
                 disabled={!file || !userId || busy}
                 busy={busy}
                 onClick={handleSubmitFile}
-                label={busy ? progressLabel ?? "Working…" : "Upload + transcribe"}
+                label={
+                  busy ? (progressLabel ?? "Working…") : "Upload + transcribe"
+                }
               />
             </div>
           </div>
@@ -385,9 +382,9 @@ export function AudioImportDialog({
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
             />
             <p className="text-[11px] text-muted-foreground">
-              For now we only transcribe URLs that point to your cloud
-              files. To import from a public link (e.g. YouTube), download
-              the audio first and use the Upload tab.
+              For now we only transcribe URLs that point to your cloud files. To
+              import from a public link (e.g. YouTube), download the audio first
+              and use the Upload tab.
             </p>
             <div className="flex items-center justify-end gap-1.5">
               <CancelButton onClick={handleClose} disabled={busy} />
@@ -395,7 +392,9 @@ export function AudioImportDialog({
                 disabled={!url.trim() || busy}
                 busy={busy}
                 onClick={handleSubmitUrl}
-                label={busy ? progressLabel ?? "Transcribing…" : "Transcribe URL"}
+                label={
+                  busy ? (progressLabel ?? "Transcribing…") : "Transcribe URL"
+                }
               />
             </div>
           </div>
@@ -408,8 +407,8 @@ export function AudioImportDialog({
               Pick from your cloud files
             </div>
             <div className="text-xs text-muted-foreground">
-              Opens your Cloud Files browser. Copy the URL of the audio you
-              want to transcribe, then paste it into the <b>From URL</b> tab.
+              Opens your Cloud Files browser. Copy the URL of the audio you want
+              to transcribe, then paste it into the <b>From URL</b> tab.
             </div>
             <div className="flex items-center justify-center gap-1.5">
               <button

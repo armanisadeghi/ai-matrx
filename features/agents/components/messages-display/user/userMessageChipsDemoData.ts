@@ -312,6 +312,137 @@ export const DEMO_INPUT_CHIP_RESOURCES: {
   },
 ];
 
+/**
+ * Every resource type in one conversation — drives the real
+ * SmartAgentResourceChips so the editable toggle, remove, hover previews, and
+ * mobile long-press can be confirmed together. Editable-capable types (notes,
+ * task, table, list, data, webpage) show the Lock/Pencil toggle; the rest don't.
+ */
+export const DEMO_CONV_ALL_RESOURCES = "demo-user-msg-all-resources";
+
+export const DEMO_ALL_RESOURCES: {
+  resourceId: string;
+  blockType: import("@/features/agents/types/instance.types").ResourceBlockType;
+  preview: string;
+  source: Record<string, unknown>;
+}[] = [
+  {
+    resourceId: "demo-all-note",
+    blockType: "input_notes",
+    preview: "Sprint retro notes",
+    source: { note_ids: ["demo-note-id"] },
+  },
+  {
+    resourceId: "demo-all-task",
+    blockType: "input_task",
+    preview: "Fix record button UX",
+    source: { task_ids: ["demo-task-id"] },
+  },
+  {
+    resourceId: "demo-all-table",
+    blockType: "input_table",
+    preview: "Active customers",
+    source: { bookmarks: [{ id: "tbl-1", table_name: "customers" }] },
+  },
+  {
+    resourceId: "demo-all-list",
+    blockType: "input_list",
+    preview: "Action items",
+    source: { bookmarks: [{ id: "list-1" }] },
+  },
+  {
+    resourceId: "demo-all-data",
+    blockType: "input_data",
+    preview: "Analytics export",
+    source: { refs: [{ id: "data-1", label: "Analytics export" }] },
+  },
+  {
+    resourceId: "demo-all-webpage",
+    blockType: "input_webpage",
+    preview: "aimatrx.com/docs",
+    source: { urls: ["https://aimatrx.com/docs"] },
+  },
+  {
+    resourceId: "demo-all-image",
+    blockType: "image",
+    preview: "screenshot.png",
+    source: { file_id: "00000000-0000-0000-0000-000000000000" },
+  },
+  {
+    resourceId: "demo-all-audio",
+    blockType: "audio",
+    preview: "voice-memo.m4a",
+    source: { file_id: "00000000-0000-0000-0000-000000000001" },
+  },
+  {
+    resourceId: "demo-all-video",
+    blockType: "video",
+    preview: "walkthrough.mp4",
+    source: { url: "https://cdn.example.com/walkthrough.mp4" },
+  },
+  {
+    resourceId: "demo-all-document",
+    blockType: "document",
+    preview: "brief.pdf",
+    source: { url: "https://cdn.example.com/brief.pdf" },
+  },
+  {
+    resourceId: "demo-all-youtube",
+    blockType: "youtube_video",
+    preview: "Demo walkthrough",
+    source: { url: "https://youtube.com/watch?v=demo" },
+  },
+  {
+    resourceId: "demo-all-text",
+    blockType: "text",
+    preview: "Pasted snippet",
+    source: { text: "Some pasted text content" },
+  },
+  // New Matrx entity references (pending backend support).
+  {
+    resourceId: "demo-all-agent",
+    blockType: "input_agent",
+    preview: "Research Assistant",
+    source: { id: "agent-1" },
+  },
+  {
+    resourceId: "demo-all-project",
+    blockType: "input_project",
+    preview: "Agent UX Refresh",
+    source: { id: "project-1" },
+  },
+  {
+    resourceId: "demo-all-agent-app",
+    blockType: "input_agent_app",
+    preview: "Meeting Summarizer",
+    source: { id: "app-1" },
+  },
+  {
+    resourceId: "demo-all-transcript",
+    blockType: "input_transcript",
+    preview: "Q3 planning call",
+    source: { id: "transcript-1" },
+  },
+  {
+    resourceId: "demo-all-transcript-session",
+    blockType: "input_transcript_session",
+    preview: "Session 2 — design review",
+    source: { id: "session-1" },
+  },
+  {
+    resourceId: "demo-all-workbook",
+    blockType: "input_workbook",
+    preview: "Pricing model",
+    source: { id: "workbook-1" },
+  },
+  {
+    resourceId: "demo-all-document",
+    blockType: "input_document",
+    preview: "Product brief",
+    source: { id: "document-1" },
+  },
+];
+
 export const DEMO_LEGACY_ATTACHMENTS: DemoAttachmentSpec[] = [
   {
     id: "webpage",

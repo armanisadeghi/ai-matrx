@@ -219,6 +219,29 @@ export const selectResourcePayloads = (conversationId: string) =>
             case "input_data":
               payload.refs = content;
               break;
+            // ── Matrx entity references (pending backend support; see
+            //    RESOURCE_WIRE_SPEC.md). All ship a lean id list. ──
+            case "input_agent":
+              payload.agent_ids = toResourceIdList(content);
+              break;
+            case "input_project":
+              payload.project_ids = toResourceIdList(content);
+              break;
+            case "input_agent_app":
+              payload.agent_app_ids = toResourceIdList(content);
+              break;
+            case "input_transcript":
+              payload.transcript_ids = toResourceIdList(content);
+              break;
+            case "input_transcript_session":
+              payload.transcript_session_ids = toResourceIdList(content);
+              break;
+            case "input_workbook":
+              payload.workbook_ids = toResourceIdList(content);
+              break;
+            case "input_document":
+              payload.document_ids = toResourceIdList(content);
+              break;
           }
 
           return payload as unknown as MessagePart;

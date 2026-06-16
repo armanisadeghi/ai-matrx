@@ -277,6 +277,15 @@ export type ResourceBlockType =
   | "input_table"
   | "input_list"
   | "input_data"
+  // ── Matrx entity references (added 2026-06; pending backend support — see
+  //    features/agents/redux/execution-system/instance-resources/RESOURCE_WIRE_SPEC.md) ──
+  | "input_agent"
+  | "input_project"
+  | "input_agent_app"
+  | "input_transcript"
+  | "input_transcript_session"
+  | "input_workbook"
+  | "input_document"
   | "editor_error"
   | "editor_code_snippet";
 

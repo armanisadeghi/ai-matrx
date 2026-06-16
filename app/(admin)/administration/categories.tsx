@@ -65,6 +65,7 @@ import {
   CalendarClock,
   Boxes,
   LayoutDashboard,
+  Globe,
 } from "lucide-react";
 
 export const adminCategories = [
@@ -226,6 +227,21 @@ export const adminCategories = [
           "Manage research templates, agent wiring, system constants, and monitor active research projects",
         icon: <Search />,
         link: "/administration/research-system",
+        isNew: true,
+      },
+    ],
+  },
+  {
+    name: "Context System",
+    icon: <Globe className="w-6 h-6" />,
+    iconColor: "text-sky-600",
+    features: [
+      {
+        title: "System Context",
+        description:
+          "Platform-wide context items — ambient (date/time/user), curated globals, and industry datasets — that resolve for every user with no scope set.",
+        icon: <Globe />,
+        link: "/administration/system-context",
         isNew: true,
       },
     ],
