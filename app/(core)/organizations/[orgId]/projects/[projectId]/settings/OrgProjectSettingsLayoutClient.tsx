@@ -79,29 +79,29 @@ export function OrgProjectSettingsLayoutClient({
 
           {isMobile && resolvedOrgId && (
             <>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 rounded-full"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <Menu className="h-4 w-4" />
-            </Button>
-            <MatrxDynamicPanelHost
-              open={mobileMenuOpen}
-              onOpenChange={setMobileMenuOpen}
-              title="Projects"
-              position="left"
-              defaultSize={72}
-              contentClassName="overflow-y-auto"
-            >
-              <div onClick={() => setMobileMenuOpen(false)}>
-                <ProjectSidebar
-                  organizationId={resolvedOrgId}
-                  orgSlug={orgParam}
-                />
-              </div>
-            </MatrxDynamicPanelHost>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full"
+                onClick={() => setMobileMenuOpen(true)}
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+              <MatrxDynamicPanelHost
+                open={mobileMenuOpen}
+                onOpenChange={setMobileMenuOpen}
+                title="Projects"
+                position="left"
+                defaultSize={72}
+                contentClassName="overflow-y-auto"
+              >
+                <div onClick={() => setMobileMenuOpen(false)}>
+                  <ProjectSidebar
+                    organizationId={resolvedOrgId}
+                    orgSlug={orgParam}
+                  />
+                </div>
+              </MatrxDynamicPanelHost>
             </>
           )}
         </div>

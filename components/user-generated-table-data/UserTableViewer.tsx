@@ -552,17 +552,13 @@ const UserTableViewer = ({
   // Apply active column filters to a row set (case-insensitive substring).
   const applyColumnFilters = (rows: any[]): any[] => {
     if (!hasColumnFilters) return rows;
-    const active = Object.entries(columnFilters).filter(([, v]) =>
-      v.trim(),
-    );
+    const active = Object.entries(columnFilters).filter(([, v]) => v.trim());
     return rows.filter((row) =>
       active.every(([fieldName, term]) => {
         const value = row?.data?.[fieldName];
         if (value === null || value === undefined) return false;
         const haystack =
-          typeof value === "object"
-            ? JSON.stringify(value)
-            : String(value);
+          typeof value === "object" ? JSON.stringify(value) : String(value);
         return haystack.toLowerCase().includes(term.trim().toLowerCase());
       }),
     );
@@ -571,18 +567,27 @@ const UserTableViewer = ({
   // Live updates from other clients (or our own writes that bypass the
   // local refetch). Debounced so a 1k-row bulk import doesn't trigger 1k
   // refetches; a single refetch ~400ms after the burst stops is enough.
-  const realtimeRefetchTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const realtimeRefetchTimer = React.useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   useTableRealtime(tableId, () => {
     if (realtimeRefetchTimer.current) {
       clearTimeout(realtimeRefetchTimer.current);
     }
     realtimeRefetchTimer.current = setTimeout(() => {
-      void loadTableData(currentPage, limit, sortField, sortDirection, searchTerm);
+      void loadTableData(
+        currentPage,
+        limit,
+        sortField,
+        sortDirection,
+        searchTerm,
+      );
     }, 400);
   });
   useEffect(
     () => () => {
-      if (realtimeRefetchTimer.current) clearTimeout(realtimeRefetchTimer.current);
+      if (realtimeRefetchTimer.current)
+        clearTimeout(realtimeRefetchTimer.current);
     },
     [],
   );
@@ -1598,218 +1603,220 @@ const UserTableViewer = ({
               </TableHead>
             </TableRow>
           </TableHeader>
-            <TableBody>
-              {showLoadingRow ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={fields.length + 1}
-                    className="text-center py-8"
-                  >
-                    <div className="flex justify-center items-center">
-                      <Loader className="animate-spin h-5 w-5 mr-3 text-primary" />
-                      {filteringInProgress ? "Filtering data..." : "Loading data..."}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : displayRows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={fields.length + 1}
-                    className="text-center py-8"
-                  >
-                    {hasColumnFilters
-                      ? "No rows match the current filters"
-                      : "No data found"}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                displayRows.map((row, index) => (
-                  <TableRow
-                    key={row.id}
-                    className={`
+          <TableBody>
+            {showLoadingRow ? (
+              <TableRow>
+                <TableCell
+                  colSpan={fields.length + 1}
+                  className="text-center py-8"
+                >
+                  <div className="flex justify-center items-center">
+                    <Loader className="animate-spin h-5 w-5 mr-3 text-primary" />
+                    {filteringInProgress
+                      ? "Filtering data..."
+                      : "Loading data..."}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : displayRows.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={fields.length + 1}
+                  className="text-center py-8"
+                >
+                  {hasColumnFilters
+                    ? "No rows match the current filters"
+                    : "No data found"}
+                </TableCell>
+              </TableRow>
+            ) : (
+              displayRows.map((row, index) => (
+                <TableRow
+                  key={row.id}
+                  className={`
                     ${index % 2 === 0 ? "bg-white dark:bg-gray-950" : "bg-gray-50 dark:bg-gray-900"}
                     hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${isReadOnly ? "cursor-default" : "cursor-pointer"}
                   `}
-                    onClick={() => {
-                      if (isReadOnly) {
-                        // In read-only mode, don't open edit modal
-                        return;
-                      }
-                      handleEditRow(row.id, row.data);
-                    }}
-                  >
-                    {fields.map((field) => {
-                      const rawValue = row.data[field.field_name];
-                      const cellData =
-                        rawValue !== null
-                          ? formatCellValue(rawValue, field.data_type)
-                          : null;
-                      const display = cellData ? (
-                        <div className="flex items-center justify-between group min-w-0">
-                          <div className="flex-1 min-w-0">
-                            <div
-                              className="truncate text-left"
-                              title={
-                                cellData.isTruncated
-                                  ? cellData.fullText
-                                  : undefined
-                              }
-                            >
-                              {String(cellData.display)}
-                            </div>
-                            {cellData.multilineIndicator && (
-                              <div className="text-xs text-muted-foreground mt-0.5">
-                                {cellData.multilineIndicator}
-                              </div>
-                            )}
+                  onClick={() => {
+                    if (isReadOnly) {
+                      // In read-only mode, don't open edit modal
+                      return;
+                    }
+                    handleEditRow(row.id, row.data);
+                  }}
+                >
+                  {fields.map((field) => {
+                    const rawValue = row.data[field.field_name];
+                    const cellData =
+                      rawValue !== null
+                        ? formatCellValue(rawValue, field.data_type)
+                        : null;
+                    const display = cellData ? (
+                      <div className="flex items-center justify-between group min-w-0">
+                        <div className="flex-1 min-w-0">
+                          <div
+                            className="truncate text-left"
+                            title={
+                              cellData.isTruncated
+                                ? cellData.fullText
+                                : undefined
+                            }
+                          >
+                            {String(cellData.display)}
                           </div>
+                          {cellData.multilineIndicator && (
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {cellData.multilineIndicator}
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      );
-                      return (
-                        <TableCell
-                          key={`${row.id}-${field.id}`}
-                          className="py-3 max-w-0 group"
-                        >
-                          <div className="flex items-center justify-between gap-2 min-w-0">
-                            <div className="flex-1 min-w-0">
-                              <EditableCell
-                                tableId={tableId}
-                                rowId={row.id}
-                                fieldName={field.field_name}
-                                fieldDisplayName={field.display_name}
-                                dataType={field.data_type as FieldDataType}
-                                value={rawValue}
-                                display={display}
-                                editable={!isReadOnly}
-                                onSaved={() => {
-                                  setAllSortedData(null);
-                                  void loadTableData(
-                                    currentPage,
-                                    limit,
-                                    sortField,
-                                    sortDirection,
-                                    searchTerm,
-                                  );
-                                }}
-                              />
-                            </div>
-                            {cellData && (
-                              <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
-                                {cellData.hasCleanableHtml && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                                    onClick={(e) =>
-                                      handleCleanupText(
-                                        field.field_name,
-                                        cellData.fullText,
-                                        row.id,
-                                        e,
-                                      )
-                                    }
-                                    title={`Clean up HTML formatting in ${field.display_name}`}
-                                  >
-                                    <Zap className="h-3 w-3 text-purple-500 dark:text-purple-400" />
-                                  </Button>
-                                )}
-                                {cellData.isTruncated && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                                    onClick={(e) =>
-                                      handleExpandText(
-                                        cellData.fullText,
-                                        field.display_name,
-                                        row.id,
-                                        field.field_name,
-                                        e,
-                                      )
-                                    }
-                                    title={`Expand ${field.display_name}`}
-                                  >
-                                    <Expand className="h-3 w-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    );
+                    return (
+                      <TableCell
+                        key={`${row.id}-${field.id}`}
+                        className="py-3 max-w-0 group"
+                      >
+                        <div className="flex items-center justify-between gap-2 min-w-0">
+                          <div className="flex-1 min-w-0">
+                            <EditableCell
+                              tableId={tableId}
+                              rowId={row.id}
+                              fieldName={field.field_name}
+                              fieldDisplayName={field.display_name}
+                              dataType={field.data_type as FieldDataType}
+                              value={rawValue}
+                              display={display}
+                              editable={!isReadOnly}
+                              onSaved={() => {
+                                setAllSortedData(null);
+                                void loadTableData(
+                                  currentPage,
+                                  limit,
+                                  sortField,
+                                  sortDirection,
+                                  searchTerm,
+                                );
+                              }}
+                            />
                           </div>
-                        </TableCell>
-                      );
-                    })}
-                    <TableCell className="text-center">
-                      <div className="flex justify-center space-x-1">
+                          {cellData && (
+                            <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
+                              {cellData.hasCleanableHtml && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                                  onClick={(e) =>
+                                    handleCleanupText(
+                                      field.field_name,
+                                      cellData.fullText,
+                                      row.id,
+                                      e,
+                                    )
+                                  }
+                                  title={`Clean up HTML formatting in ${field.display_name}`}
+                                >
+                                  <Zap className="h-3 w-3 text-purple-500 dark:text-purple-400" />
+                                </Button>
+                              )}
+                              {cellData.isTruncated && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                                  onClick={(e) =>
+                                    handleExpandText(
+                                      cellData.fullText,
+                                      field.display_name,
+                                      row.id,
+                                      field.field_name,
+                                      e,
+                                    )
+                                  }
+                                  title={`Expand ${field.display_name}`}
+                                >
+                                  <Expand className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                    );
+                  })}
+                  <TableCell className="text-center">
+                    <div className="flex justify-center space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShowReference(row.id, row.data, e);
+                        }}
+                        title="Get Reference"
+                      >
+                        <Link className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                      </Button>
+                      {isReadOnly ? (
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleShowReference(row.id, row.data, e);
+                            showReadOnlyToast();
                           }}
-                          title="Get Reference"
+                          title="View only - no edit access"
+                          className="cursor-not-allowed"
                         >
-                          <Link className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                          <Eye className="h-4 w-4 text-purple-400 dark:text-purple-500" />
                         </Button>
-                        {isReadOnly ? (
+                      ) : (
+                        <>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={(e) => {
                               e.stopPropagation();
-                              showReadOnlyToast();
+                              handleEditRow(row.id, row.data);
                             }}
-                            title="View only - no edit access"
-                            className="cursor-not-allowed"
+                            title="Edit Row"
                           >
-                            <Eye className="h-4 w-4 text-purple-400 dark:text-purple-500" />
+                            <Pencil className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                           </Button>
-                        ) : (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditRow(row.id, row.data);
-                              }}
-                              title="Edit Row"
-                            >
-                              <Pencil className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setHistoryRowId(row.id);
-                              }}
-                              title="View row history"
-                            >
-                              <History className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteRow(row.id);
-                              }}
-                              title="Delete Row"
-                            >
-                              <Trash className="h-4 w-4 text-red-500 dark:text-red-400" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHistoryRowId(row.id);
+                            }}
+                            title="View row history"
+                          >
+                            <History className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteRow(row.id);
+                            }}
+                            title="Delete Row"
+                          >
+                            <Trash className="h-4 w-4 text-red-500 dark:text-red-400" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       {/* Pagination */}

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 import {
   MoreVertical,
   Inbox,
@@ -11,8 +11,8 @@ import {
   Eye,
   EyeOff,
   ChevronRight,
-} from 'lucide-react';
-import { useAppDispatch } from '@/lib/redux/hooks';
+} from "lucide-react";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectTaskFilter,
   selectShowCompleted,
@@ -25,12 +25,21 @@ import {
   setSortBy,
   setShowAllProjects,
   setActiveProject,
-} from '@/features/tasks/redux/taskUiSlice';
-import { TaskFilterType } from '@/features/tasks/types';
-import { TaskSortField } from '@/features/tasks/types/sort';
+} from "@/features/tasks/redux/taskUiSlice";
+import { TaskFilterType } from "@/features/tasks/types";
+import { TaskSortField } from "@/features/tasks/types/sort";
 
-type TaskSortOption = `${TaskSortField}-${'asc' | 'desc'}` | 'title-asc' | 'title-desc' | 'due-date-asc' | 'due-date-desc' | 'priority-asc' | 'priority-desc' | 'created-asc' | 'created-desc';
-import { Button } from '@/components/ui/ButtonMine';
+type TaskSortOption =
+  | `${TaskSortField}-${"asc" | "desc"}`
+  | "title-asc"
+  | "title-desc"
+  | "due-date-asc"
+  | "due-date-desc"
+  | "priority-asc"
+  | "priority-desc"
+  | "created-asc"
+  | "created-desc";
+import { Button } from "@/components/ui/ButtonMine";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,15 +50,22 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MatrxDynamicPanelHost } from '@/components/matrx/resizable/MatrxDynamicPanelHost';
-import MobileProjectSelector from './MobileProjectSelector';
-import TaskScopeFilter from '../TaskScopeFilter';
-import { useAppSelector } from '@/lib/redux/hooks';
-import { Filter as FilterIcon } from 'lucide-react';
+} from "@/components/ui/dropdown-menu";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import MobileProjectSelector from "./MobileProjectSelector";
+import TaskScopeFilter from "../TaskScopeFilter";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { Filter as FilterIcon } from "lucide-react";
 
 const Circle = ({ size }: { size: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
     <circle cx="12" cy="12" r="10" />
   </svg>
 );
@@ -68,32 +84,32 @@ export default function MobileFilterMenu() {
 
   const getFilterIcon = (filterType: TaskFilterType) => {
     switch (filterType) {
-      case 'all':
+      case "all":
         return <Inbox size={18} />;
-      case 'incomplete':
+      case "incomplete":
         return <Circle size={18} />;
-      case 'overdue':
+      case "overdue":
         return <AlertCircle size={18} />;
     }
   };
 
   const getSortLabel = (sort: TaskSortOption) => {
     const labels: Partial<Record<TaskSortOption, string>> = {
-      'due-date-asc': 'Due Date (Earliest)',
-      'due-date-desc': 'Due Date (Latest)',
-      'priority-desc': 'Priority (High to Low)',
-      'priority-asc': 'Priority (Low to High)',
-      'created-desc': 'Created (Newest)',
-      'created-asc': 'Created (Oldest)',
-      'title-asc': 'Title (A-Z)',
-      'title-desc': 'Title (Z-A)',
+      "due-date-asc": "Due Date (Earliest)",
+      "due-date-desc": "Due Date (Latest)",
+      "priority-desc": "Priority (High to Low)",
+      "priority-asc": "Priority (Low to High)",
+      "created-desc": "Created (Newest)",
+      "created-asc": "Created (Oldest)",
+      "title-asc": "Title (A-Z)",
+      "title-desc": "Title (Z-A)",
     };
     return labels[sort] || sort;
   };
 
   const handleFilterSelect = (filterType: TaskFilterType) => {
     dispatch(setFilter(filterType));
-    if (filterType !== 'all' && !showAllProjects && !activeProject) {
+    if (filterType !== "all" && !showAllProjects && !activeProject) {
       dispatch(setShowAllProjects(true));
     }
   };
@@ -112,9 +128,11 @@ export default function MobileFilterMenu() {
           <DropdownMenuItem
             onClick={() => {
               dispatch(setShowAllProjects(true));
-              dispatch(setFilter('all'));
+              dispatch(setFilter("all"));
             }}
-            className={showAllProjects && filter === 'all' ? 'bg-primary/10' : ''}
+            className={
+              showAllProjects && filter === "all" ? "bg-primary/10" : ""
+            }
           >
             <Layers size={18} className="mr-2" />
             All Tasks
@@ -138,16 +156,18 @@ export default function MobileFilterMenu() {
 
           {/* Filter Section */}
           <DropdownMenuLabel>Filter</DropdownMenuLabel>
-          {(['all', 'incomplete', 'overdue'] as TaskFilterType[]).map((filterType) => (
-            <DropdownMenuItem
-              key={filterType}
-              onClick={() => handleFilterSelect(filterType)}
-              className={filter === filterType ? 'bg-primary/10' : ''}
-            >
-              {getFilterIcon(filterType)}
-              <span className="ml-2 capitalize">{filterType}</span>
-            </DropdownMenuItem>
-          ))}
+          {(["all", "incomplete", "overdue"] as TaskFilterType[]).map(
+            (filterType) => (
+              <DropdownMenuItem
+                key={filterType}
+                onClick={() => handleFilterSelect(filterType)}
+                className={filter === filterType ? "bg-primary/10" : ""}
+              >
+                {getFilterIcon(filterType)}
+                <span className="ml-2 capitalize">{filterType}</span>
+              </DropdownMenuItem>
+            ),
+          )}
 
           <DropdownMenuSeparator />
 
@@ -161,22 +181,28 @@ export default function MobileFilterMenu() {
             <DropdownMenuSubContent className="w-56">
               {(
                 [
-                  'due-date-asc',
-                  'due-date-desc',
-                  'priority-desc',
-                  'priority-asc',
-                  'created-desc',
-                  'created-asc',
-                  'title-asc',
-                  'title-desc',
+                  "due-date-asc",
+                  "due-date-desc",
+                  "priority-desc",
+                  "priority-asc",
+                  "created-desc",
+                  "created-asc",
+                  "title-asc",
+                  "title-desc",
                 ] as TaskSortOption[]
               ).map((sort) => {
                 // Extract field from TaskSortOption (e.g., 'priority-asc' -> 'priority')
-                const field = sort.split('-')[0] === 'due' ? 'dueDate' : 
-                             sort.split('-')[0] === 'priority' ? 'priority' :
-                             sort.split('-')[0] === 'created' ? 'created' :
-                             sort.split('-')[0] === 'title' ? 'title' : 'lastUpdated';
-                
+                const field =
+                  sort.split("-")[0] === "due"
+                    ? "dueDate"
+                    : sort.split("-")[0] === "priority"
+                      ? "priority"
+                      : sort.split("-")[0] === "created"
+                        ? "created"
+                        : sort.split("-")[0] === "title"
+                          ? "title"
+                          : "lastUpdated";
+
                 return (
                   <DropdownMenuItem
                     key={sort}
@@ -185,7 +211,7 @@ export default function MobileFilterMenu() {
                       dispatch(setSortBy(field as TaskSortField));
                     }}
                     // @ts-ignore - COMPLEX: Comparison between TaskSortField and TaskSortOption types
-                    className={sortBy === field ? 'bg-primary/10' : ''}
+                    className={sortBy === field ? "bg-primary/10" : ""}
                   >
                     {getSortLabel(sort)}
                   </DropdownMenuItem>
@@ -198,9 +224,15 @@ export default function MobileFilterMenu() {
 
           {/* Display Options */}
           <DropdownMenuLabel>Display</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => dispatch(setShowCompleted(!showCompleted))}>
-            {showCompleted ? <Eye size={18} className="mr-2" /> : <EyeOff size={18} className="mr-2" />}
-            {showCompleted ? 'Hide' : 'Show'} Completed
+          <DropdownMenuItem
+            onClick={() => dispatch(setShowCompleted(!showCompleted))}
+          >
+            {showCompleted ? (
+              <Eye size={18} className="mr-2" />
+            ) : (
+              <EyeOff size={18} className="mr-2" />
+            )}
+            {showCompleted ? "Hide" : "Show"} Completed
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -241,4 +273,3 @@ export default function MobileFilterMenu() {
     </>
   );
 }
-

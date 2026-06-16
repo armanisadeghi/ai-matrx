@@ -175,9 +175,8 @@ export default function MobileTasksList({
                 >
                   <span className="truncate">
                     {selectedProjectForTask
-                      ? projects.find(
-                          (p) => p.id === selectedProjectForTask,
-                        )?.name
+                      ? projects.find((p) => p.id === selectedProjectForTask)
+                          ?.name
                       : "Select Project"}
                   </span>
                 </Button>

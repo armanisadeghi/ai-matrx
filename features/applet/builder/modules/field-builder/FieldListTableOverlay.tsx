@@ -13,7 +13,10 @@ import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamic
 import { Button } from "@/components/ui/button";
 import { X, List, Eye, ArrowLeft, Plus, Edit } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { startFieldCreation, setActiveField } from "@/lib/redux/app-builder/slices/fieldBuilderSlice";
+import {
+  startFieldCreation,
+  setActiveField,
+} from "@/lib/redux/app-builder/slices/fieldBuilderSlice";
 import { selectFieldComponent } from "@/lib/redux/app-builder/selectors/fieldSelectors";
 import { v4 as uuidv4 } from "uuid";
 import FieldListTable from "./FieldListTable";
@@ -30,7 +33,7 @@ interface FieldListTableOverlayProps {
   onOpenChange?: (open: boolean) => void;
   trigger?: React.ReactNode;
   overlayType?: "dialog" | "sheet";
-  
+
   // Overlay appearance props
   overlayTitle?: string;
   overlayDescription?: string;
@@ -38,16 +41,16 @@ interface FieldListTableOverlayProps {
   sheetSide?: "top" | "right" | "bottom" | "left";
   showCloseButton?: boolean;
   closeOnSelect?: boolean;
-  
+
   // Auto-configured props for overlay context
   autoConfigureForOverlay?: boolean;
-  
+
   // Field management capabilities
   allowCreate?: boolean;
   allowEdit?: boolean;
   allowView?: boolean;
   allowDelete?: boolean;
-  
+
   // Event handlers
   onFieldView?: (id: string) => void;
   onFieldEdit?: (id: string) => void;
@@ -56,7 +59,7 @@ interface FieldListTableOverlayProps {
   onFieldCreate?: () => void;
   onFieldCreated?: (fieldId: string) => void;
   onFieldUpdated?: (fieldId: string) => void;
-  
+
   // All original FieldListTable props
   hiddenColumns?: string[];
   defaultPageSize?: number;
@@ -66,7 +69,7 @@ interface FieldListTableOverlayProps {
   hideStatusColumn?: boolean;
   hideIconColumn?: boolean;
   hideTableFooter?: boolean;
-  
+
   title?: string;
   allowSelectAction?: boolean;
   showStripedRows?: boolean;
@@ -75,9 +78,12 @@ interface FieldListTableOverlayProps {
   createButtonText?: string;
   selectLabel?: string;
   allowRefresh?: boolean;
-  
+
   renderCustomHeader?: React.ReactNode;
-  customSelectActionRender?: (field: any, onClick: (e: React.MouseEvent) => void) => React.ReactNode;
+  customSelectActionRender?: (
+    field: any,
+    onClick: (e: React.MouseEvent) => void,
+  ) => React.ReactNode;
 }
 
 export default function FieldListTableOverlay({
@@ -86,7 +92,7 @@ export default function FieldListTableOverlay({
   onOpenChange,
   trigger,
   overlayType = "dialog",
-  
+
   // Overlay appearance props
   overlayTitle = "Select Field Component",
   overlayDescription = "Choose a field component from the list below.",
@@ -94,16 +100,16 @@ export default function FieldListTableOverlay({
   sheetSide = "right",
   showCloseButton = true,
   closeOnSelect = true,
-  
+
   // Auto-configuration
   autoConfigureForOverlay = true,
-  
+
   // Field management capabilities
   allowCreate = false,
   allowEdit = false,
   allowView = false,
   allowDelete = false,
-  
+
   // Event handlers
   onFieldView,
   onFieldEdit,
@@ -112,7 +118,7 @@ export default function FieldListTableOverlay({
   onFieldCreate,
   onFieldCreated,
   onFieldUpdated,
-  
+
   // Original table props
   hiddenColumns = [],
   defaultPageSize = 10,
@@ -122,7 +128,7 @@ export default function FieldListTableOverlay({
   hideStatusColumn = false,
   hideIconColumn = false,
   hideTableFooter = false,
-  
+
   title,
   allowSelectAction = true,
   showStripedRows = true,
@@ -131,79 +137,89 @@ export default function FieldListTableOverlay({
   createButtonText,
   selectLabel = "Select",
   allowRefresh = true,
-  
+
   renderCustomHeader,
   customSelectActionRender,
 }: FieldListTableOverlayProps) {
-  
   const dispatch = useAppDispatch();
-  
+
   // State for managing overlay views and current field
   const [currentView, setCurrentView] = useState<OverlayView>("list");
   const [currentFieldId, setCurrentFieldId] = useState<string | null>(null);
-  
+
   // Get current field component type for preview
-  const currentFieldComponentType = useAppSelector((state) => 
-    currentFieldId ? selectFieldComponent(state, currentFieldId) : null
+  const currentFieldComponentType = useAppSelector((state) =>
+    currentFieldId ? selectFieldComponent(state, currentFieldId) : null,
   );
-  
+
   // Auto-configure props for overlay context
-  const overlayOptimizedProps = autoConfigureForOverlay ? {
-    // Show the table header when we have an overlay title or table title
-    hideTableHeader: (overlayTitle || title) ? false : true,
-    
-    // Reduce default page size for better overlay experience
-    defaultPageSize: defaultPageSize || 8,
-    
-    // Configure actions for overlay context
-    allowSelectAction: onFieldSelect ? true : allowSelectAction,
-    selectLabel: onFieldSelect ? (selectLabel || "Select") : selectLabel,
-    
-    // Auto-hide columns that might not be needed in overlay
-    hiddenColumns: onFieldSelect ? [...hiddenColumns] : hiddenColumns,
-    
-    // Optimize for smaller screens
-    showStripedRows: showStripedRows,
-    
-    // Custom search placeholder for overlay
-    searchPlaceholder: searchPlaceholder || "Search fields...",
-  } : {};
+  const overlayOptimizedProps = autoConfigureForOverlay
+    ? {
+        // Show the table header when we have an overlay title or table title
+        hideTableHeader: overlayTitle || title ? false : true,
+
+        // Reduce default page size for better overlay experience
+        defaultPageSize: defaultPageSize || 8,
+
+        // Configure actions for overlay context
+        allowSelectAction: onFieldSelect ? true : allowSelectAction,
+        selectLabel: onFieldSelect ? selectLabel || "Select" : selectLabel,
+
+        // Auto-hide columns that might not be needed in overlay
+        hiddenColumns: onFieldSelect ? [...hiddenColumns] : hiddenColumns,
+
+        // Optimize for smaller screens
+        showStripedRows: showStripedRows,
+
+        // Custom search placeholder for overlay
+        searchPlaceholder: searchPlaceholder || "Search fields...",
+      }
+    : {};
 
   // Handle field selection with optional close
-  const handleFieldSelect = useCallback((id: string) => {
-    onFieldSelect?.(id);
-    if (closeOnSelect && onOpenChange) {
-      onOpenChange(false);
-    }
-  }, [onFieldSelect, closeOnSelect, onOpenChange]);
+  const handleFieldSelect = useCallback(
+    (id: string) => {
+      onFieldSelect?.(id);
+      if (closeOnSelect && onOpenChange) {
+        onOpenChange(false);
+      }
+    },
+    [onFieldSelect, closeOnSelect, onOpenChange],
+  );
 
   // Handle field view
-  const handleFieldView = useCallback((id: string) => {
-    if (allowView) {
-      setCurrentFieldId(id);
-      setCurrentView("view");
-      dispatch(setActiveField(id));
-    } else {
-      onFieldView?.(id);
-      if (closeOnSelect && onOpenChange) {
-        onOpenChange(false);
+  const handleFieldView = useCallback(
+    (id: string) => {
+      if (allowView) {
+        setCurrentFieldId(id);
+        setCurrentView("view");
+        dispatch(setActiveField(id));
+      } else {
+        onFieldView?.(id);
+        if (closeOnSelect && onOpenChange) {
+          onOpenChange(false);
+        }
       }
-    }
-  }, [allowView, onFieldView, closeOnSelect, onOpenChange, dispatch]);
+    },
+    [allowView, onFieldView, closeOnSelect, onOpenChange, dispatch],
+  );
 
   // Handle field edit
-  const handleFieldEdit = useCallback((id: string) => {
-    if (allowEdit) {
-      setCurrentFieldId(id);
-      setCurrentView("edit");
-      dispatch(setActiveField(id));
-    } else {
-      onFieldEdit?.(id);
-      if (closeOnSelect && onOpenChange) {
-        onOpenChange(false);
+  const handleFieldEdit = useCallback(
+    (id: string) => {
+      if (allowEdit) {
+        setCurrentFieldId(id);
+        setCurrentView("edit");
+        dispatch(setActiveField(id));
+      } else {
+        onFieldEdit?.(id);
+        if (closeOnSelect && onOpenChange) {
+          onOpenChange(false);
+        }
       }
-    }
-  }, [allowEdit, onFieldEdit, closeOnSelect, onOpenChange, dispatch]);
+    },
+    [allowEdit, onFieldEdit, closeOnSelect, onOpenChange, dispatch],
+  );
 
   // Handle field creation
   const handleFieldCreate = useCallback(() => {
@@ -218,17 +234,20 @@ export default function FieldListTableOverlay({
   }, [allowCreate, onFieldCreate, dispatch]);
 
   // Handle save success from FieldEditor
-  const handleSaveSuccess = useCallback((fieldId: string) => {
-    if (currentView === "create") {
-      onFieldCreated?.(fieldId);
-    } else if (currentView === "edit") {
-      onFieldUpdated?.(fieldId);
-    }
-    
-    // Return to list view
-    setCurrentView("list");
-    setCurrentFieldId(null);
-  }, [currentView, onFieldCreated, onFieldUpdated]);
+  const handleSaveSuccess = useCallback(
+    (fieldId: string) => {
+      if (currentView === "create") {
+        onFieldCreated?.(fieldId);
+      } else if (currentView === "edit") {
+        onFieldUpdated?.(fieldId);
+      }
+
+      // Return to list view
+      setCurrentView("list");
+      setCurrentFieldId(null);
+    },
+    [currentView, onFieldCreated, onFieldUpdated],
+  );
 
   // Handle cancel from FieldEditor
   const handleCancel = useCallback(() => {
@@ -276,9 +295,13 @@ export default function FieldListTableOverlay({
     onFieldEdit: allowEdit ? handleFieldEdit : onFieldEdit,
     onFieldDelete: allowDelete ? onFieldDelete : undefined,
     onFieldSelect: handleFieldSelect,
-    onFieldCreate: allowCreate ? handleFieldCreate : (onFieldCreate ? handleFieldCreate : undefined),
+    onFieldCreate: allowCreate
+      ? handleFieldCreate
+      : onFieldCreate
+        ? handleFieldCreate
+        : undefined,
     allowDelete: allowDelete,
-    
+
     hiddenColumns,
     defaultPageSize,
     customSettings,
@@ -287,7 +310,7 @@ export default function FieldListTableOverlay({
     hideStatusColumn,
     hideIconColumn,
     hideTableFooter,
-    
+
     title: title,
     allowSelectAction,
     showStripedRows,
@@ -296,10 +319,10 @@ export default function FieldListTableOverlay({
     createButtonText: createButtonText,
     selectLabel,
     allowRefresh,
-    
+
     renderCustomHeader,
     customSelectActionRender,
-    
+
     // Apply overlay optimizations
     ...overlayOptimizedProps,
   };
@@ -315,7 +338,7 @@ export default function FieldListTableOverlay({
   // Render the appropriate content based on current view
   const renderContent = () => {
     switch (currentView) {
-            case "create":
+      case "create":
       case "edit":
         return (
           <div className="flex-1 overflow-auto px-2 py-0">
@@ -327,51 +350,59 @@ export default function FieldListTableOverlay({
             />
           </div>
         );
-      
-            case "view":
+
+      case "view":
         return (
-                       <div className="flex-1 overflow-auto p-0">
-               <FieldPreview 
-                 fieldId={currentFieldId!} 
-                 componentType={currentFieldComponentType} 
-               />
-             </div>
+          <div className="flex-1 overflow-auto p-0">
+            <FieldPreview
+              fieldId={currentFieldId!}
+              componentType={currentFieldComponentType}
+            />
+          </div>
         );
-      
-             default:
-         return (
-           <div className="flex flex-col h-full">
-             {showCloseButton && overlayType === "sheet" && (
-               <div className="flex justify-end p-2 border-b">
-                 <Button
-                   variant="ghost"
-                   size="sm"
-                   onClick={() => onOpenChange?.(false)}
-                 >
-                   <X className="h-4 w-4" />
-                 </Button>
-               </div>
-             )}
-             
-             <div className="flex-1 overflow-auto p-0">
-               <FieldListTable {...tableProps} />
-             </div>
-           </div>
-         );
+
+      default:
+        return (
+          <div className="flex flex-col h-full">
+            {showCloseButton && overlayType === "sheet" && (
+              <div className="flex justify-end p-2 border-b">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onOpenChange?.(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            <div className="flex-1 overflow-auto p-0">
+              <FieldListTable {...tableProps} />
+            </div>
+          </div>
+        );
     }
   };
 
   // Get dialog size classes
   const getDialogSizeClass = (size: string) => {
     switch (size) {
-      case "sm": return "max-w-md";
-      case "md": return "max-w-lg";
-      case "lg": return "max-w-2xl";
-      case "xl": return "max-w-4xl";
-      case "2xl": return "max-w-6xl";
-      case "3xl": return "max-w-7xl";
-      case "full": return "max-w-[95vw]";
-      default: return "max-w-4xl";
+      case "sm":
+        return "max-w-md";
+      case "md":
+        return "max-w-lg";
+      case "lg":
+        return "max-w-2xl";
+      case "xl":
+        return "max-w-4xl";
+      case "2xl":
+        return "max-w-6xl";
+      case "3xl":
+        return "max-w-7xl";
+      case "full":
+        return "max-w-[95vw]";
+      default:
+        return "max-w-4xl";
     }
   };
 
@@ -392,7 +423,9 @@ export default function FieldListTableOverlay({
           onOpenChange={onOpenChange}
           title={getDynamicTitle()}
           description={getDynamicDescription() ?? undefined}
-          position={sheetSide === "left" || sheetSide === "right" ? sheetSide : "right"}
+          position={
+            sheetSide === "left" || sheetSide === "right" ? sheetSide : "right"
+          }
           defaultSize={overlaySize === "full" ? 88 : 55}
           maxSize={92}
           contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
@@ -407,16 +440,22 @@ export default function FieldListTableOverlay({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className={`${getDialogSizeClass(overlaySize)} max-h-[90dvh] flex flex-col p-0 gap-0`}>
+      <DialogContent
+        className={`${getDialogSizeClass(overlaySize)} max-h-[90dvh] flex flex-col p-0 gap-0`}
+      >
         <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <DialogTitle>{getDynamicTitle()}</DialogTitle>
               {getDynamicDescription() && (
-                <DialogDescription className="mt-1">{getDynamicDescription()}</DialogDescription>
+                <DialogDescription className="mt-1">
+                  {getDynamicDescription()}
+                </DialogDescription>
               )}
             </div>
-            {(currentView === "create" || currentView === "edit" || currentView === "view") && (
+            {(currentView === "create" ||
+              currentView === "edit" ||
+              currentView === "view") && (
               <div className="flex items-center gap-2 ml-4">
                 <Button
                   variant="ghost"
@@ -442,16 +481,19 @@ export default function FieldListTableOverlay({
             )}
           </div>
         </DialogHeader>
-        <div className="flex-1 overflow-auto">
-          {renderContent()}
-        </div>
+        <div className="flex-1 overflow-auto">{renderContent()}</div>
       </DialogContent>
     </Dialog>
   );
 }
 
 // Export some common configurations for ease of use
-export const FieldSelectOverlay = (props: Omit<FieldListTableOverlayProps, 'overlayTitle' | 'overlayDescription' | 'selectLabel' | 'closeOnSelect'>) => (
+export const FieldSelectOverlay = (
+  props: Omit<
+    FieldListTableOverlayProps,
+    "overlayTitle" | "overlayDescription" | "selectLabel" | "closeOnSelect"
+  >,
+) => (
   <FieldListTableOverlay
     overlayTitle="Select Field Component"
     overlayDescription="Choose a field component to use in your form."
@@ -461,7 +503,12 @@ export const FieldSelectOverlay = (props: Omit<FieldListTableOverlayProps, 'over
   />
 );
 
-export const FieldBrowserOverlay = (props: Omit<FieldListTableOverlayProps, 'overlayTitle' | 'overlayDescription' | 'closeOnSelect'>) => (
+export const FieldBrowserOverlay = (
+  props: Omit<
+    FieldListTableOverlayProps,
+    "overlayTitle" | "overlayDescription" | "closeOnSelect"
+  >,
+) => (
   <FieldListTableOverlay
     overlayTitle="Browse Field Components"
     overlayDescription="View and manage your field components."
@@ -471,7 +518,19 @@ export const FieldBrowserOverlay = (props: Omit<FieldListTableOverlayProps, 'ove
   />
 );
 
-export const FieldManagerOverlay = (props: Omit<FieldListTableOverlayProps, 'overlayTitle' | 'overlayDescription' | 'overlayType' | 'overlaySize' | 'allowCreate' | 'allowEdit' | 'allowView' | 'allowDelete'>) => (
+export const FieldManagerOverlay = (
+  props: Omit<
+    FieldListTableOverlayProps,
+    | "overlayTitle"
+    | "overlayDescription"
+    | "overlayType"
+    | "overlaySize"
+    | "allowCreate"
+    | "allowEdit"
+    | "allowView"
+    | "allowDelete"
+  >,
+) => (
   <FieldListTableOverlay
     overlayTitle="Manage Field Components"
     overlayDescription="Create, edit, and organize your field components."

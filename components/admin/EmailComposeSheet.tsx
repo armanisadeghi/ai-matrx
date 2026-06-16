@@ -3,7 +3,15 @@
 import { useState, useEffect } from "react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
-import { Mail, Send, Loader2, CheckCircle, XCircle, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Mail,
+  Send,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 
 interface Recipient {
   id: string;
@@ -42,7 +50,10 @@ export function EmailComposeSheet({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [emailConfig, setEmailConfig] = useState<EmailConfig | null>(null);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; msg: string } | null>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    msg: string;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/email")
@@ -127,7 +138,8 @@ export function EmailComposeSheet({
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1.5">
-            To ({recipients.length} recipient{recipients.length !== 1 ? "s" : ""})
+            To ({recipients.length} recipient
+            {recipients.length !== 1 ? "s" : ""})
           </label>
           <div className="flex flex-wrap gap-2 p-2 bg-muted rounded-lg max-h-24 overflow-y-auto">
             {recipients.slice(0, 10).map((r) => (
@@ -191,14 +203,20 @@ export function EmailComposeSheet({
               type="text"
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
-              placeholder={emailConfig?.defaultFrom || "Display Name <email@domain.com>"}
+              placeholder={
+                emailConfig?.defaultFrom || "Display Name <email@domain.com>"
+              }
               className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              {emailConfig?.allowedDomains && emailConfig.allowedDomains.length > 0 ? (
+              {emailConfig?.allowedDomains &&
+              emailConfig.allowedDomains.length > 0 ? (
                 <>Allowed domains: {emailConfig.allowedDomains.join(", ")}</>
               ) : (
-                <>Leave blank to use default: {emailConfig?.defaultFrom || "loading..."}</>
+                <>
+                  Leave blank to use default:{" "}
+                  {emailConfig?.defaultFrom || "loading..."}
+                </>
               )}
             </p>
           </div>

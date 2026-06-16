@@ -249,3 +249,186 @@ Dependencies: Phase 1 before deep source value; Phase 2 before Phase 3; the podc
 4. **YouTube transcripts:** prefer a transcript/caption API, `yt-dlp` captions, or reuse the Speechmatics audio pipeline as fallback?
 5. **Autonomy default:** should the Studio always pause at curation before fan-out (safe), or let `auto` topics run straight through to the full bundle?
 6. **SEO scope:** v1 = on-page (title/meta/slug/keywords/schema.org/OG), or also off-page (SERP gap analysis, internal-link suggestions)?
+
+# Research Content Engine — Enhancement Addendum (§10–§13)
+
+> **Status:** addendum to *Research — Vision & Gap Analysis* · **Reconciled:** 2026-06-16
+> **How to read this:** these sections extend the main doc. §10 is the *output engine* (what the bundle produces and how it stays coherent + trustworthy). §11 is *hardening* (the unglamorous decisions that decide whether the fan-out is robust). §12 is *evergreen / monitor mode*. §13 is the big one neither pass covered in depth — **how we actually acquire high-value data that isn't readily available** (YouTube, X, and beyond). Each item points at the seam in the main doc it attaches to, and is honest about greenfield vs. existing substrate.
+>
+> The keystone for almost everything below is **§10.0 — the structured synthesis hub.** Build that first; citations, charts, and per-format reshaping all hang off it.
+
+---
+
+## 10. The output engine
+
+### 10.0 🔑 Keystone — make the synthesis hub *structured*, not a flat markdown blob. (M)
+
+The main doc's strongest principle is *"one report, many formats — never re-research per format"* (§6). But a 5k-word prose synthesis maps badly onto a 10-slide deck or a 12-minute script — and if each generator re-derives structure from prose independently, the outputs **won't agree with each other** (the slide deck's "three key findings" won't match the blog's). They'll also each re-discover the same statistics and the same citations, differently.
+
+Fix: `synth_project` emits a **format-neutral spine** alongside the prose, and every downstream generator reshapes *that*:
+
+```jsonc
+{
+  "sections": [{ "id", "heading", "summary", "claim_ids": [...] }],
+  "claims":   [{ "id", "text", "confidence", "source_refs": [{ "rs_content_id", "anchor" }] }],
+  "stats":    [{ "id", "label", "value", "unit", "comparison_group?", "source_refs" }],
+  "entities": [{ "name", "type", "source_refs" }],
+  "timeline": [{ "date", "event", "source_refs" }]   // when temporal
+}
+```
+
+This one schema change is what makes 10.2 (citations) and 10.3 (charts) *cheap* instead of *heroic* — the claims carry their sources, and the stats/timeline arrays are pre-extracted for visualization. Attaches to: `research/service.py` (`synth_project` / `run_initial_pass:969-1334`), and the synthesis artifact schema.
+
+### 10.1 Global "Voice & Lens" injection. (S–M)
+
+Without this, a podcast, blog, and deck from the same report sound like three unrelated LLMs. Add a **`tone_profile`** (a.k.a. "Lens") to `rs_topic`: brand voice, target-audience expertise level, framing stance (e.g. *"skeptical, data-driven, for senior engineers"*), reading level, and do/don't notes. Inject it as standard context into **every** fan-out node (`gen_podcast`, `gen_slides`, `gen_blog`, `gen_seo`). The whole bundle then reads as one authored voice, and the user tunes it **once** instead of per-agent. It's one more overridable field in the role map you already have, and it composes with the per-role "Copy & Update" fork. Attaches to: `rs_topic` model; `agent_config` role map (`features/research/components/agents/constants.ts`); injected at each generator node.
+
+### 10.2 🔴 Citation lineage, end-to-end (trust-as-a-feature). (M — but cheap given 10.0)
+
+*This is the differentiator, and it's the one we can do well today.* The entire value of research is **vetted, ranked, cited** knowledge — but provenance currently dead-ends at the synthesis. The moment we fan out, a podcast asserts a claim with no traceable source and a blog ships without links, which is the exact *"it lied to me"* failure mode the codebase fights, just relocated downstream.
+
+- **Principle (new — add to §6):** *Provenance survives generation.* No output drops citations. Every generator reads the `claims[].source_refs` from the spine (10.0) and **preserves inline references** mapped to the originating `rs_content` IDs.
+- **Per-format rendering:** blog → inline links + a sources list; slides → per-slide source footnotes; podcast → show-notes source list (and, where diarized, "as *X* said on *show/date*"); SEO → schema.org `citation` + author/`sameAs`.
+- **The premium UI (Studio):** in `/outputs`, hovering a claim highlights it and opens the corresponding source side-by-side — and for time-coded sources (10.0 `anchor`), it **deep-links to the exact YouTube timestamp or X post** (see §13.2/§13.3 for why word-level anchors are available). That hover-to-source overlay is the moment a reviewer *feels* the trust.
+
+This is also a moat: "research-grounded, cited, source-linked content" is a categorically different product than "an LLM wrote a post." Attaches to: spine `source_refs` (10.0); each generator's output contract; new Studio overlay (greenfield UI, but reuses the existing source panel).
+
+### 10.3 ⭐ Automated DataViz / tables / comparisons materialization. (M)
+
+Text-only slides and blogs are forgettable; **tables, charts, comparisons, and timelines are what people screenshot and share** — and this app already renders them well, so we should lean all the way in. A dedicated **`gen_visuals`** node runs in parallel during fan-out, scans the spine's `stats` / `timeline` / `entities` (pre-extracted in 10.0, so no re-parsing prose), and emits render-block artifacts:
+
+| Block | When it fires | Renderer |
+|---|---|---|
+| `chart` (bar/line/area) | numeric series, trends | existing chart block (Recharts/ECharts JSON) |
+| `comparison_table` | ≥2 entities across shared dimensions | existing render-block / table |
+| `timeline` | dated events present | timeline block |
+| `stat_callout` | single headline figures | lightweight block |
+
+These artifacts are then handed to `gen_slides` and `gen_blog` **as context**, so the generators embed real interactive visuals instead of describing data in prose — automating the single most tedious part of content production. Every emitted viz carries its `source_refs` (10.2), so a chart is itself citeable. Attaches to: render-block registry (`BlockComponentRegistry.tsx`), `cx_artifact` types, fan-out DAG (`study_pack_v1` precedent). Greenfield: the `gen_visuals` agent + comparison/timeline block types if not already registered.
+
+### 10.4 Output set (reconciles §3.2)
+
+No change to the four outputs — but with 10.0–10.3 in place, each becomes *cited and illustrated* rather than plain prose. Recommended v1 landing order (cheapest visible win first): **podcast** (generator already live) → **blog** (with embedded charts from 10.3) → **slides** → **SEO**.
+
+---
+
+## 11. Hardening — the decisions that make the fan-out robust
+
+**11.1 🟡 Pre-flight cost estimate at the curation gate. (S–M)**
+The fan-out turns one "go" into ~5 generator calls (podcast and slides aren't cheap), and `auto` topics run straight through. The autonomy-gated curation pause (§4.3) is the natural place to show *"this bundle, with these outputs and this curated set, will cost ≈ $X"* **before** committing. You already have budget gating + `/costs`; this just surfaces the estimate at the decision point. A surprise bill is its own trust break.
+
+**11.2 🔴 Per-asset failure isolation + edit/regenerate semantics. (M)**
+Two unspecified decisions hide in the Studio:
+- *Failure isolation:* when `gen_slides` fails but `gen_podcast` succeeds, `finalize` must **not** block or fail the whole bundle. Each asset needs first-class status — `pending | generating | ready | failed | stale` — and the fan-in completes on partial success. (The `study_pack_v1` fan-in note at :297-300 is about fan-in *correctness*, not partial failure.)
+- *Edit vs. regenerate:* you offer per-asset edit **and** per-asset regenerate — define what happens when a user hand-edits the blog, then hits regenerate. Edit-lock? Version + diff? Silently overwriting a human edit is a bug under "loud recovery." Extending `/document`'s version history to all `cx_artifact` types covers both.
+
+**11.3 🟡 Source-type-aware trust & ranking. (M)**
+`ranking.ts` / `IMPORTANCE_CONFIG` was built for web pages. Once sources are heterogeneous, each surface must contribute its **native quality signal**, normalized into one rank:
+
+| Surface | Quality signal |
+|---|---|
+| Web | domain authority, recency |
+| YouTube | views, likes, channel size, captions-present, recency |
+| X | engagement (reposts/likes/quotes), **author authority**, recency |
+| Reddit / HN | score / points, awards |
+| Academic | citation count / influence |
+
+Without this, the social firehose pollutes the curated set every output inherits. A stale viral X post should rank below a quiet authoritative one. Fold into the registry work (§5.1 / B3) as a per-`source_type` scoring profile.
+
+**11.4 🟢 Eval / sample-capture hooks on new nodes. (S)**
+Every new generator node (`gen_*`) should register the same eval + stage-sample capture your existing stages use, or the fan-out becomes the one unobservable part of the pipeline. One-liner per node, but skip it and you're flying blind on the new surface area.
+
+---
+
+## 12. Evergreen — "Monitor Mode" (delta runs)
+
+Research goes stale the moment it's published, especially with live surfaces like X and YouTube. Add a **Monitor Mode** toggle to the topic, backed by a lightweight CRON workflow (greenfield: `research_monitor_v1.py`) that runs daily/weekly and does **not** re-run everything:
+
+1. **Time-boxed delta search** — re-query the enabled surfaces with a recency window (e.g. X/YouTube from the last 7 days), reusing the same idempotency/skip logic so nothing already-ingested is re-charged.
+2. **Signal gate** — only proceed if the delta clears a relevance/quality bar (using 11.3 scoring), so noise doesn't trigger churn.
+3. **Append, don't rewrite** — high-signal delta is summarized into a **"Recent Developments"** section appended to the hub synthesis (10.0), carrying its own `source_refs`.
+4. **Prompt, don't auto-publish** — the topic is flagged and the user is prompted in the UI to regenerate the podcast/blog with the new data. Output **staleness** is tracked against the synthesis timestamp (you already have an `updater` role — this is its real job), so a "ready" asset visibly becomes "stale" when the hub moves underneath it.
+
+Ties §11.2's `stale` status to a real trigger, and turns a one-shot report into a living one.
+
+---
+
+## 13. Data acquisition — getting the data that isn't readily available
+
+This is the part that decides whether "expand sources" is real or aspirational. The hard truth: **YouTube, X, and Reddit all actively block datacenter IPs and gate their best data behind auth, cost, or anti-bot defenses.** Naïve `fetch()` from a cloud server gets thin/empty/blocked responses — silently. So the design has two halves: a **shared acquisition gateway** that solves blocking once, and **per-surface tiered ladders** that degrade loudly.
+
+### 13.0 Acquisition philosophy (new principles for §6)
+
+- **One egress gateway.** All acquisition network egress routes through a single **fetch gateway** with rotating **residential** proxy support, per-surface rate limiting, exponential backoff, and a headless-browser (Playwright) render fallback for JS-heavy/blocked pages. Datacenter IPs are blocked by every interesting platform — solve it in one place, not per adapter. *(Forward-looking: Matrx Chrome could later act as a consented distributed residential fetcher — flag, don't build for v1.)*
+- **Tiered, loud fallback.** Every `SourceAdapter` (§5.1) acquires through an ordered ladder: Tier 1 cheap/official → Tier 2 resilient third-party → Tier 3 heavy fallback. Each downgrade **screams** (per "loud recovery") — a source that silently fell back to thin HTML is a bug.
+- **Native quality signal in, every time.** Acquisition isn't just content — it captures the surface's quality metadata (views, engagement, author authority, score, citation count) for 11.3.
+- **Pointer vs. payload.** Some sources (an X post, an HN comment) are as valuable as **discovery pointers** as they are content — expand their outbound links into their own sources, then dedup across surfaces (13.5).
+
+### 13.1 The shared fetch gateway (greenfield, foundational)
+
+A new module that every adapter calls instead of `httpx`/`fetch` directly:
+
+- Residential/rotating proxy pool (config-driven; off in dev, on in prod).
+- Per-host rate limits + jittered exponential backoff + retry budget.
+- Static-fetch → **Playwright render** fallback when a response is suspiciously thin or returns a bot wall.
+- Caches raw fetches (idempotency + cost control on re-runs / monitor mode).
+
+Everything in 13.2–13.4 assumes this exists. Without it, the integrations work in dev and die in prod.
+
+### 13.2 YouTube — tiered transcript ladder (closes B4)
+
+The official **YouTube Data API `captions.download`** only works for videos **you own** (OAuth as owner) — useless for third-party research. State that plainly so nobody burns a sprint on it. Instead, a three-tier adapter:
+
+| Tier | Method | Gives | Notes |
+|---|---|---|---|
+| **1** | `yt-dlp` captions, `--sub-format json3` (manual + auto-gen) | transcript **with word/segment-level timestamps** | free, fast; **needs the gateway** (datacenter IPs blocked). json3 timing is what powers the timestamp-deep-link citations in 10.2. |
+| **2** | Third-party transcript API (Supadata / AssemblyAI-YouTube / Deepgram, etc.) | transcript, proxy-resilient | per-video cost; use when Tier 1 is blocked or has no captions. |
+| **3** | `yt-dlp -x` audio → **Speechmatics** (your existing `SPEECHMATICS_API_KEY` pipeline) | ASR transcript **+ speaker diarization** | always works (even zero-caption uploads); diarization enables *"Guest said X at 14:02"* citations for interviews/panels. |
+
+Store as `rs_content` with `capture_method="transcript_link"` (the enum slot exists). Beyond the transcript, **harvest the free structure**: yt-dlp returns title, channel, subscriber/view/like counts (→ 11.3), upload date, **chapters** (pre-segment the video into topics → maps directly onto 10.0 `sections`), and the description's outbound links (→ 13.5). Translate non-English captions to widen the aperture. Replaces the `multisource.py:522-535` stub.
+
+### 13.3 X / Twitter — discovery + hydration (extends §3.3)
+
+`x_search` (Grok) alone is a *search-and-summarize* surface: great for discovery, but it won't hand you clean structured metrics for ranking, and a lone post is thin content. Combine two paths:
+
+- **Discovery — xAI `x_search` (Grok):** per-keyword, returns the relevant posts. Already the plan; gate to Grok models via `internal_x_search` (`unified_client.py:90-102`); register `XAI_API_KEY` (B6).
+- **Hydration — X API v2 (`tweets/search/recent`, last 7 days; full-archive on higher tiers):** pull structured objects — `public_metrics` (likes/reposts/replies/quotes/impressions), `author` (followers, verified, account age), `created_at`, `conversation_id`, `referenced_tweets`, `entities.urls`. This is what 11.3 needs to rank X honestly. *(Cost honesty: X API Basic ≈ $200/mo; budget it.)*
+- **Thread reconstruction:** store the **reconstructed thread** (`conversation_id`) + quoted/replied context (`referenced_tweets`) as one `rs_content` unit — not a single orphan post. A lone tweet scraped flat is the "YouTube-as-HTML" mistake again.
+- **Link expansion:** expand `entities.urls` into their own web sources (13.5). X is often the *pointer* to the real artifact (a paper, a post, a repo).
+
+### 13.4 Other high-value surfaces, ranked by ROI
+
+| Surface | Access | Why | Effort |
+|---|---|---|---|
+| **Hacker News** | Algolia HN Search API — free, no auth | deep expert comments on tech topics | 🟢 trivial — do early |
+| **arXiv / Semantic Scholar / OpenAlex** | all free APIs | primary literature; citation counts feed 11.3 | 🟢 easy — gold for research-grade topics |
+| **Reddit** | `.json` on any thread URL (read, no auth) or official API | practitioner experience, long-tail; comment score = pre-curated signal | 🟡 (gateway needed; honor rate limits) |
+| **Podcasts (others')** | Listen Notes / iTunes search → RSS → audio → **Speechmatics** | huge primary expertise; **closes the loop — you both produce and consume podcasts** | 🟡 reuses your ASR pipeline |
+| **GitHub** | REST/GraphQL API, generous | READMEs, issues, discussions for technical topics | 🟢 easy |
+| **Substack / newsletters** | per-publication RSS | expert long-form | 🟢 easy |
+| **TikTok / Instagram** | no good official content-search API; aggressive anti-scraping | low signal-to-effort for research | 🔴 **skip v1** — be honest about ROI |
+
+Each registers as a `SearchSurface` + `SourceAdapter` pair (§5.1), so adding one is a registry entry, not a new pipeline.
+
+### 13.5 Cross-surface dedup + link expansion (S–M)
+
+The same idea shows up as a YouTube talk, an X thread summarizing it, and a blog post about it. Two cross-cutting steps in the gather phase:
+- **Link expansion:** outbound URLs from X/YouTube/HN/Reddit become candidate web sources.
+- **Dedup:** collapse near-duplicates across surfaces (URL canonicalization + content hash/similarity) **before** the curation gate, so the user curates distinct knowledge — not five copies of one idea with different rankings.
+
+---
+
+## Roadmap deltas (extends §7)
+
+- **Phase 0 (cheap):** + register `tone_profile` field (10.1) · + HN/arXiv adapters (13.4, trivial, immediate source-value win).
+- **Phase 1 (source funnel):** + **fetch gateway** (13.1) *before any blocked surface* · YouTube tiered ladder (13.2) · X discovery+hydration (13.3) · Reddit/podcast/GitHub adapters (13.4) · cross-surface dedup (13.5) · per-`source_type` ranking (11.3).
+- **Phase 2 (output substrate):** + **structured synthesis spine** (10.0 — the keystone, do first in this phase) · `gen_visuals` charts/tables/timelines (10.3) · citation refs in every generator (10.2).
+- **Phase 3 (Studio):** + cost pre-flight at curation gate (11.1) · per-asset status + failure isolation + edit/regen semantics (11.2) · hover-to-source citation overlay incl. timestamp deep-links (10.2) · eval hooks on new nodes (11.4).
+- **Phase 4 (distribution + living):** + Monitor Mode / `research_monitor_v1` delta runs (§12).
+
+## New open decisions (extends §9)
+
+7. **Fetch resilience:** self-host a residential proxy pool, or lean on third-party transcript/search APIs that absorb the blocking problem (simpler, per-call cost)?
+8. **X cost:** `x_search`-only (cheap, less control, no clean metrics) vs. add X API v2 hydration (ranking-grade metadata, ~$200+/mo)?
+9. **Citation depth for v1:** source-level links everywhere (easy, ship now) vs. timestamp/segment-level deep-links for YouTube/X from day one (needs 13.2 Tier-1 word timing)?
+10. **`gen_visuals` placement:** a standalone parallel node feeding slides/blog (recommended), or fold viz generation into each output agent (simpler graph, less reuse, inconsistent charts)?
