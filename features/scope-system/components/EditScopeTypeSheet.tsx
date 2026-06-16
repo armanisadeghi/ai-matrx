@@ -11,13 +11,7 @@ import {
   Check,
   Pencil,
 } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -113,7 +107,9 @@ export function EditScopeTypeSheet({
       );
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Only super admins can change this",
+        err instanceof Error
+          ? err.message
+          : "Only super admins can change this",
       );
     }
   }
@@ -328,292 +324,292 @@ export function EditScopeTypeSheet({
 
   return (
     <>
-      <Sheet open={open} onOpenChange={(o) => (!busy ? onOpenChange(o) : null)}>
-        <SheetContent
-          side="right"
-          className="w-full sm:max-w-lg overflow-y-auto"
-        >
-          <SheetHeader>
-            <SheetTitle>Edit scope type</SheetTitle>
-            <SheetDescription>
-              Rename, change the icon and color, manage context items, and
-              adjust advanced settings.
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="mt-6 space-y-5">
-            {/* Names */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Name (one item)</Label>
-                <Input
-                  value={labelSingular}
-                  onChange={(e) => setLabelSingular(e.target.value)}
-                  style={{ fontSize: "16px" }}
-                  disabled={busy}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Name (many)</Label>
-                <Input
-                  value={labelPlural}
-                  onChange={(e) => setLabelPlural(e.target.value)}
-                  style={{ fontSize: "16px" }}
-                  disabled={busy}
-                />
-              </div>
-            </div>
-
-            {/* Icon + Color in one row */}
-            <div className="grid grid-cols-[1fr_auto] gap-3 items-start">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Icon</Label>
-                <IconInputWithValidation
-                  value={icon}
-                  onChange={setIcon}
-                  showLucideLink={false}
-                  disabled={busy}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Color</Label>
-                <ScopeColorPicker
-                  value={color}
-                  onChange={setColor}
-                  disabled={busy}
-                />
-              </div>
-            </div>
-
+      <MatrxDynamicPanelHost
+        open={open}
+        onOpenChange={onOpenChange}
+        title="Edit scope type"
+        description="Rename, change the icon and color, manage context items, and adjust advanced settings."
+        expandButtonLabel="Scope type"
+        dismissDisabled={busy}
+        position="right"
+        defaultSize={38}
+      >
+        <div className="space-y-5">
+          {/* Names */}
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs">Description (optional)</Label>
-              <ProTextarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                minHeight={64}
-                autoGrow
+              <Label className="text-xs">Name (one item)</Label>
+              <Input
+                value={labelSingular}
+                onChange={(e) => setLabelSingular(e.target.value)}
+                style={{ fontSize: "16px" }}
                 disabled={busy}
               />
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Name (many)</Label>
+              <Input
+                value={labelPlural}
+                onChange={(e) => setLabelPlural(e.target.value)}
+                style={{ fontSize: "16px" }}
+                disabled={busy}
+              />
+            </div>
+          </div>
 
-            {/* Rapid-add context items list */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs">
-                  Context items ({items.filter((i) => !i.toDelete).length})
-                </Label>
-                <span className="text-[10px] text-muted-foreground">
-                  Press Enter to add another
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                {items.map((row, idx) => {
-                  const isNew = row.id.startsWith("new:");
-                  const removed = !!row.toDelete;
-                  return (
-                    <div key={row.rowId} className="flex items-center gap-1.5">
-                      <Input
-                        ref={(el) => {
-                          if (el) rowInputsRef.current.set(row.rowId, el);
-                          else rowInputsRef.current.delete(row.rowId);
-                        }}
-                        placeholder="Context item name"
-                        value={row.display_name}
-                        onChange={(e) =>
-                          patchItem(row.rowId, {
-                            display_name: e.target.value,
-                          })
-                        }
-                        onKeyDown={(e) => handleRowKeyDown(e, row, idx)}
-                        disabled={busy || removed}
-                        style={{ fontSize: "16px" }}
-                        className={
-                          removed
-                            ? "line-through text-muted-foreground bg-rose-50/40 dark:bg-rose-950/20"
-                            : isNew
-                              ? "border-emerald-400/60 dark:border-emerald-600/50"
-                              : ""
-                        }
-                      />
-                      {!isNew && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setEditingItemId(row.id)}
-                          disabled={busy}
-                          aria-label="Open full editor"
-                          title="Full edit (type, sensitivity, tags, …)"
-                          className="shrink-0"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      )}
+          {/* Icon + Color in one row */}
+          <div className="grid grid-cols-[1fr_auto] gap-3 items-start">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Icon</Label>
+              <IconInputWithValidation
+                value={icon}
+                onChange={setIcon}
+                showLucideLink={false}
+                disabled={busy}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Color</Label>
+              <ScopeColorPicker
+                value={color}
+                onChange={setColor}
+                disabled={busy}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Description (optional)</Label>
+            <ProTextarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              minHeight={64}
+              autoGrow
+              disabled={busy}
+            />
+          </div>
+
+          {/* Rapid-add context items list */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">
+                Context items ({items.filter((i) => !i.toDelete).length})
+              </Label>
+              <span className="text-[10px] text-muted-foreground">
+                Press Enter to add another
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {items.map((row, idx) => {
+                const isNew = row.id.startsWith("new:");
+                const removed = !!row.toDelete;
+                return (
+                  <div key={row.rowId} className="flex items-center gap-1.5">
+                    <Input
+                      ref={(el) => {
+                        if (el) rowInputsRef.current.set(row.rowId, el);
+                        else rowInputsRef.current.delete(row.rowId);
+                      }}
+                      placeholder="Context item name"
+                      value={row.display_name}
+                      onChange={(e) =>
+                        patchItem(row.rowId, {
+                          display_name: e.target.value,
+                        })
+                      }
+                      onKeyDown={(e) => handleRowKeyDown(e, row, idx)}
+                      disabled={busy || removed}
+                      style={{ fontSize: "16px" }}
+                      className={
+                        removed
+                          ? "line-through text-muted-foreground bg-rose-50/40 dark:bg-rose-950/20"
+                          : isNew
+                            ? "border-emerald-400/60 dark:border-emerald-600/50"
+                            : ""
+                      }
+                    />
+                    {!isNew && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        onClick={() => toggleDelete(row.rowId)}
+                        onClick={() => setEditingItemId(row.id)}
                         disabled={busy}
-                        aria-label={removed ? "Restore" : "Remove"}
-                        title={removed ? "Restore" : "Remove"}
-                        className={`shrink-0 ${
-                          removed
-                            ? "text-emerald-600"
-                            : "text-muted-foreground hover:text-rose-600"
-                        }`}
+                        aria-label="Open full editor"
+                        title="Full edit (type, sensitivity, tags, …)"
+                        className="shrink-0"
                       >
-                        {removed ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
+                        <Pencil className="h-4 w-4" />
                       </Button>
-                    </div>
-                  );
-                })}
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={appendNewRow}
-                disabled={busy}
-              >
-                <Plus className="h-3.5 w-3.5 mr-1" />
-                Add context item
-              </Button>
-            </div>
-
-            {/* Advanced */}
-            <div className="border-t border-border pt-4">
-              <button
-                type="button"
-                onClick={() => setAdvancedOpen((v) => !v)}
-                className="w-full flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-                disabled={busy}
-              >
-                {advancedOpen ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-                Advanced
-                <span className="text-xs font-normal">
-                  URL slug, sort order, max assignments
-                </span>
-              </button>
-            </div>
-
-            {advancedOpen && (
-              <div className="space-y-5">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">URL slug</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={slug}
-                      onChange={(e) => setSlug(e.target.value)}
-                      placeholder={toSlug(labelPlural) || "url-slug"}
-                      style={{ fontSize: "16px" }}
-                      disabled={busy}
-                      className="flex-1 font-mono"
-                    />
+                    )}
                     <Button
                       type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSlug(toSlug(labelPlural))}
-                      disabled={busy || !labelPlural.trim()}
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => toggleDelete(row.rowId)}
+                      disabled={busy}
+                      aria-label={removed ? "Restore" : "Remove"}
+                      title={removed ? "Restore" : "Remove"}
+                      className={`shrink-0 ${
+                        removed
+                          ? "text-emerald-600"
+                          : "text-muted-foreground hover:text-rose-600"
+                      }`}
                     >
-                      Auto
+                      {removed ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    Used in the page URL, e.g. /organizations/acme/scopes/
-                    <span className="font-mono">
-                      {slug || toSlug(labelPlural) || "url-slug"}
-                    </span>
-                    . Must be unique in this organization.
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Sort order</Label>
-                    <Input
-                      type="number"
-                      value={sortOrder}
-                      onChange={(e) =>
-                        setSortOrder(parseInt(e.target.value, 10) || 0)
-                      }
-                      min={0}
-                      style={{ fontSize: "16px" }}
-                      disabled={busy}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Max assignments</Label>
-                    <Input
-                      type="number"
-                      value={maxAssignments}
-                      onChange={(e) => setMaxAssignments(e.target.value)}
-                      placeholder="Unlimited"
-                      min={1}
-                      style={{ fontSize: "16px" }}
-                      disabled={busy}
-                    />
-                  </div>
-                </div>
-
-                {/* System Context — platform-global, super-admin only */}
-                {isSuperAdmin && (
-                  <div className="flex items-start justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
-                    <div>
-                      <Label className="text-xs font-medium">System context</Label>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        Platform-global. Items in this scope type resolve for{" "}
-                        <span className="font-medium">every user with no scope selection</span>{" "}
-                        (date, headlines, datasets). Super-admin only.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={isSystem}
-                      onCheckedChange={handleToggleSystem}
-                      disabled={busy}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="flex gap-2 pt-4 border-t border-border">
-              <Button
-                variant="outline"
-                onClick={handleDelete}
-                disabled={busy}
-                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-              >
-                <Trash2 className="h-4 w-4 mr-1.5" />
-                Delete
-              </Button>
-              <div className="flex-1" />
-              <Button
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-                disabled={busy}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={busy || !labelSingular.trim()}
-              >
-                {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Save changes
-              </Button>
+                );
+              })}
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={appendNewRow}
+              disabled={busy}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Add context item
+            </Button>
           </div>
-        </SheetContent>
-      </Sheet>
+
+          {/* Advanced */}
+          <div className="border-t border-border pt-4">
+            <button
+              type="button"
+              onClick={() => setAdvancedOpen((v) => !v)}
+              className="w-full flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+              disabled={busy}
+            >
+              {advancedOpen ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+              Advanced
+              <span className="text-xs font-normal">
+                URL slug, sort order, max assignments
+              </span>
+            </button>
+          </div>
+
+          {advancedOpen && (
+            <div className="space-y-5">
+              <div className="space-y-1.5">
+                <Label className="text-xs">URL slug</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder={toSlug(labelPlural) || "url-slug"}
+                    style={{ fontSize: "16px" }}
+                    disabled={busy}
+                    className="flex-1 font-mono"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSlug(toSlug(labelPlural))}
+                    disabled={busy || !labelPlural.trim()}
+                  >
+                    Auto
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Used in the page URL, e.g. /organizations/acme/scopes/
+                  <span className="font-mono">
+                    {slug || toSlug(labelPlural) || "url-slug"}
+                  </span>
+                  . Must be unique in this organization.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Sort order</Label>
+                  <Input
+                    type="number"
+                    value={sortOrder}
+                    onChange={(e) =>
+                      setSortOrder(parseInt(e.target.value, 10) || 0)
+                    }
+                    min={0}
+                    style={{ fontSize: "16px" }}
+                    disabled={busy}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Max assignments</Label>
+                  <Input
+                    type="number"
+                    value={maxAssignments}
+                    onChange={(e) => setMaxAssignments(e.target.value)}
+                    placeholder="Unlimited"
+                    min={1}
+                    style={{ fontSize: "16px" }}
+                    disabled={busy}
+                  />
+                </div>
+              </div>
+
+              {/* System Context — platform-global, super-admin only */}
+              {isSuperAdmin && (
+                <div className="flex items-start justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                  <div>
+                    <Label className="text-xs font-medium">
+                      System context
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Platform-global. Items in this scope type resolve for{" "}
+                      <span className="font-medium">
+                        every user with no scope selection
+                      </span>{" "}
+                      (date, headlines, datasets). Super-admin only.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={isSystem}
+                    onCheckedChange={handleToggleSystem}
+                    disabled={busy}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-4 border-t border-border">
+            <Button
+              variant="outline"
+              onClick={handleDelete}
+              disabled={busy}
+              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              Delete
+            </Button>
+            <div className="flex-1" />
+            <Button
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              disabled={busy}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={busy || !labelSingular.trim()}
+            >
+              {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save changes
+            </Button>
+          </div>
+        </div>
+      </MatrxDynamicPanelHost>
 
       <EditContextItemSheet
         open={!!editingItemId}

@@ -2,13 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Plus, X, Loader2, ChevronDown, ChevronRight } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -222,290 +216,289 @@ export function AddScopeModal({
   const parentCandidates = existingTypes;
 
   return (
-    <Sheet open={open} onOpenChange={(o) => (!busy ? onOpenChange(o) : null)}>
-      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Add a scope type</SheetTitle>
-          <SheetDescription>
-            A scope type is a dimension you track — Clients, Products, Teams,
-            anything. Define the context items you want for each one.
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="mt-6 space-y-5">
-          {/* Basics */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Name (one item)</Label>
-              <Input
-                autoFocus
-                value={labelSingular}
-                onChange={(e) => handleSingularChange(e.target.value)}
-                placeholder="Client"
-                style={{ fontSize: "16px" }}
-                disabled={busy}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Name (many)</Label>
-              <Input
-                value={labelPlural}
-                onChange={(e) => {
-                  setPluralEdited(true);
-                  setLabelPlural(e.target.value);
-                }}
-                placeholder="Clients"
-                style={{ fontSize: "16px" }}
-                disabled={busy}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-[1fr_auto] gap-3 items-start">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Icon</Label>
-              <IconInputWithValidation
-                value={icon}
-                onChange={setIcon}
-                showLucideLink={false}
-                disabled={busy}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Color</Label>
-              <ScopeColorPicker
-                value={color}
-                onChange={setColor}
-                disabled={busy}
-              />
-            </div>
-          </div>
-
+    <MatrxDynamicPanelHost
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Add a scope type"
+      description="A scope type is a dimension you track — Clients, Products, Teams, anything. Define the context items you want for each one."
+      expandButtonLabel="Scope type"
+      dismissDisabled={busy}
+      position="right"
+      defaultSize={38}
+    >
+      <div className="space-y-5">
+        {/* Basics */}
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label className="text-xs">Description (optional)</Label>
-            <ProTextarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What goes here?"
-              minHeight={64}
-              autoGrow
+            <Label className="text-xs">Name (one item)</Label>
+            <Input
+              autoFocus
+              value={labelSingular}
+              onChange={(e) => handleSingularChange(e.target.value)}
+              placeholder="Client"
+              style={{ fontSize: "16px" }}
               disabled={busy}
             />
           </div>
-
-          {/* Context items to track */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <Label className="text-xs">
-                  Context items to track for each {labelSingular || "item"}
-                </Label>
-                <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-                  Add a few now or skip — you can add more later from any scope.
-                </p>
-              </div>
-              <span className="text-[10px] text-muted-foreground shrink-0">
-                Press Enter to add another
-              </span>
-            </div>
-            <div className="space-y-1.5">
-              {items.map((row, idx) => (
-                <div key={row.id} className="flex items-center gap-2">
-                  <Input
-                    ref={(el) => {
-                      if (el) rowInputsRef.current.set(row.id, el);
-                      else rowInputsRef.current.delete(row.id);
-                    }}
-                    placeholder={
-                      idx === 0
-                        ? "e.g. Industry"
-                        : idx === 1
-                          ? "e.g. Tier"
-                          : "Another context item"
-                    }
-                    value={row.display_name}
-                    onChange={(e) => updateItemRow(row.id, e.target.value)}
-                    onKeyDown={(e) => handleItemRowKeyDown(e, idx)}
-                    disabled={busy}
-                    style={{ fontSize: "16px" }}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeItemRow(row.id)}
-                    disabled={busy || items.length === 1}
-                    aria-label="Remove context item"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={appendItemRow}
+          <div className="space-y-1.5">
+            <Label className="text-xs">Name (many)</Label>
+            <Input
+              value={labelPlural}
+              onChange={(e) => {
+                setPluralEdited(true);
+                setLabelPlural(e.target.value);
+              }}
+              placeholder="Clients"
+              style={{ fontSize: "16px" }}
               disabled={busy}
-            >
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              Add context item
-            </Button>
-          </div>
-
-          {/* Advanced disclosure */}
-          <div className="border-t border-border pt-4">
-            <button
-              type="button"
-              onClick={() => setAdvancedOpen((v) => !v)}
-              className="w-full flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-              disabled={busy}
-            >
-              {advancedOpen ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-              Advanced settings
-              <span className="text-xs text-muted-foreground font-normal">
-                parent, sort order, max, default variables
-              </span>
-            </button>
-          </div>
-
-          {advancedOpen && (
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Sort order</Label>
-                  <Input
-                    type="number"
-                    value={sortOrder}
-                    onChange={(e) =>
-                      setSortOrder(parseInt(e.target.value, 10) || 0)
-                    }
-                    min={0}
-                    style={{ fontSize: "16px" }}
-                    disabled={busy}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Max assignments</Label>
-                  <Input
-                    type="number"
-                    value={maxAssignments}
-                    onChange={(e) => setMaxAssignments(e.target.value)}
-                    placeholder="Unlimited"
-                    min={1}
-                    style={{ fontSize: "16px" }}
-                    disabled={busy}
-                  />
-                  <p className="text-[10px] text-muted-foreground">
-                    Leave blank for unlimited
-                  </p>
-                </div>
-              </div>
-
-              {parentCandidates.length > 0 && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Parent type</Label>
-                  <Select
-                    value={parentTypeId}
-                    onValueChange={setParentTypeId}
-                    disabled={busy}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="None" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE_VALUE}>None</SelectItem>
-                      {parentCandidates.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.label_singular}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <Label className="text-xs">Default variable keys</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={variableKeyInput}
-                    onChange={(e) => setVariableKeyInput(e.target.value)}
-                    placeholder="e.g. budget_code"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addVariableKey();
-                      }
-                    }}
-                    style={{ fontSize: "16px" }}
-                    disabled={busy}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addVariableKey}
-                    disabled={busy || !variableKeyInput.trim()}
-                  >
-                    Add
-                  </Button>
-                </div>
-                {variableKeys.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1.5">
-                    {variableKeys.map((key) => (
-                      <Badge
-                        key={key}
-                        variant="secondary"
-                        className="text-xs gap-1 pl-2 pr-1"
-                      >
-                        <code className="font-mono">{key}</code>
-                        <button
-                          type="button"
-                          onClick={() => removeVariableKey(key)}
-                          className="hover:bg-muted-foreground/10 rounded p-0.5"
-                          aria-label="Remove variable key"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-                <p className="text-[10px] text-muted-foreground">
-                  Context variable keys auto-created when this scope is assigned
-                  to a record.
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-2 pt-4 border-t border-border">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => onOpenChange(false)}
-              disabled={busy}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={handleSave}
-              disabled={!canSave || busy}
-            >
-              {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Create scope type
-            </Button>
+            />
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+
+        <div className="grid grid-cols-[1fr_auto] gap-3 items-start">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Icon</Label>
+            <IconInputWithValidation
+              value={icon}
+              onChange={setIcon}
+              showLucideLink={false}
+              disabled={busy}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Color</Label>
+            <ScopeColorPicker
+              value={color}
+              onChange={setColor}
+              disabled={busy}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs">Description (optional)</Label>
+          <ProTextarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="What goes here?"
+            minHeight={64}
+            autoGrow
+            disabled={busy}
+          />
+        </div>
+
+        {/* Context items to track */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <Label className="text-xs">
+                Context items to track for each {labelSingular || "item"}
+              </Label>
+              <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+                Add a few now or skip — you can add more later from any scope.
+              </p>
+            </div>
+            <span className="text-[10px] text-muted-foreground shrink-0">
+              Press Enter to add another
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            {items.map((row, idx) => (
+              <div key={row.id} className="flex items-center gap-2">
+                <Input
+                  ref={(el) => {
+                    if (el) rowInputsRef.current.set(row.id, el);
+                    else rowInputsRef.current.delete(row.id);
+                  }}
+                  placeholder={
+                    idx === 0
+                      ? "e.g. Industry"
+                      : idx === 1
+                        ? "e.g. Tier"
+                        : "Another context item"
+                  }
+                  value={row.display_name}
+                  onChange={(e) => updateItemRow(row.id, e.target.value)}
+                  onKeyDown={(e) => handleItemRowKeyDown(e, idx)}
+                  disabled={busy}
+                  style={{ fontSize: "16px" }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeItemRow(row.id)}
+                  disabled={busy || items.length === 1}
+                  aria-label="Remove context item"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={appendItemRow}
+            disabled={busy}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Add context item
+          </Button>
+        </div>
+
+        {/* Advanced disclosure */}
+        <div className="border-t border-border pt-4">
+          <button
+            type="button"
+            onClick={() => setAdvancedOpen((v) => !v)}
+            className="w-full flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+            disabled={busy}
+          >
+            {advancedOpen ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+            Advanced settings
+            <span className="text-xs text-muted-foreground font-normal">
+              parent, sort order, max, default variables
+            </span>
+          </button>
+        </div>
+
+        {advancedOpen && (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Sort order</Label>
+                <Input
+                  type="number"
+                  value={sortOrder}
+                  onChange={(e) =>
+                    setSortOrder(parseInt(e.target.value, 10) || 0)
+                  }
+                  min={0}
+                  style={{ fontSize: "16px" }}
+                  disabled={busy}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Max assignments</Label>
+                <Input
+                  type="number"
+                  value={maxAssignments}
+                  onChange={(e) => setMaxAssignments(e.target.value)}
+                  placeholder="Unlimited"
+                  min={1}
+                  style={{ fontSize: "16px" }}
+                  disabled={busy}
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Leave blank for unlimited
+                </p>
+              </div>
+            </div>
+
+            {parentCandidates.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Parent type</Label>
+                <Select
+                  value={parentTypeId}
+                  onValueChange={setParentTypeId}
+                  disabled={busy}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE_VALUE}>None</SelectItem>
+                    {parentCandidates.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.label_singular}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Default variable keys</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={variableKeyInput}
+                  onChange={(e) => setVariableKeyInput(e.target.value)}
+                  placeholder="e.g. budget_code"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addVariableKey();
+                    }
+                  }}
+                  style={{ fontSize: "16px" }}
+                  disabled={busy}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addVariableKey}
+                  disabled={busy || !variableKeyInput.trim()}
+                >
+                  Add
+                </Button>
+              </div>
+              {variableKeys.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {variableKeys.map((key) => (
+                    <Badge
+                      key={key}
+                      variant="secondary"
+                      className="text-xs gap-1 pl-2 pr-1"
+                    >
+                      <code className="font-mono">{key}</code>
+                      <button
+                        type="button"
+                        onClick={() => removeVariableKey(key)}
+                        className="hover:bg-muted-foreground/10 rounded p-0.5"
+                        aria-label="Remove variable key"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <p className="text-[10px] text-muted-foreground">
+                Context variable keys auto-created when this scope is assigned
+                to a record.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-2 pt-4 border-t border-border">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => onOpenChange(false)}
+            disabled={busy}
+          >
+            Cancel
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={handleSave}
+            disabled={!canSave || busy}
+          >
+            {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Create scope type
+          </Button>
+        </div>
+      </div>
+    </MatrxDynamicPanelHost>
   );
 }

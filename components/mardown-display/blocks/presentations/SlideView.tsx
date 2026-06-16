@@ -12,8 +12,10 @@
  * fields plus the free-form `extra` dict.
  */
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { InlineMediaRef } from "@/features/files";
+
+import { resolveUnsplashImage, type ResolvedImage } from "./slide-images";
 
 export type SlideVariant = "generic" | "fancy" | "deluxe";
 
@@ -77,14 +79,54 @@ function resolveLayout(slide: SlideData): string {
   if (raw === "content" || raw === "" || raw === "default") {
     if (slide.quote) return "quote";
     if (Array.isArray((slide.extra as { stats?: unknown[] })?.stats)) return "stat";
-    if (slideImage(slide)) return "image-split";
+    if (slideWantsImage(slide)) return "image-split";
     return "bullets";
   }
   return raw;
 }
 
-function slideImage(slide: SlideData): string | undefined {
+/** An explicitly-provided image URL on the slide. */
+function slideImageRef(slide: SlideData): string | undefined {
   return slide.image_url || slide.imageUrl || (slide.extra?.image as string | undefined);
+}
+
+/** A short art-direction phrase to source an image for (Unsplash fallback). */
+function slideImagePrompt(slide: SlideData): string | undefined {
+  const p = (slide.extra?.imagePrompt ?? (slide.extra as { image_prompt?: unknown })?.image_prompt) as
+    | string
+    | undefined;
+  return typeof p === "string" && p.trim() ? p.trim() : undefined;
+}
+
+/** The slide should show an image (it has a URL, or a prompt to source one). */
+function slideWantsImage(slide: SlideData): boolean {
+  return Boolean(slideImageRef(slide) || slideImagePrompt(slide));
+}
+
+/**
+ * Resolve the slide's image: an explicit URL wins; otherwise an `imagePrompt`
+ * is sourced from Unsplash (cached). Returns the URL + optional attribution.
+ */
+function useSlideImage(slide: SlideData): { url?: string; credit?: string; creditUrl?: string; loading: boolean } {
+  const explicit = slideImageRef(slide);
+  const prompt = slideImagePrompt(slide);
+  // setState happens only in the async resolver callback (never synchronously
+  // in the effect) — keeps the React Compiler rules happy.
+  const [state, setState] = useState<{ img: ResolvedImage | null; done: boolean }>({ img: null, done: false });
+
+  useEffect(() => {
+    if (explicit || !prompt) return;
+    let cancelled = false;
+    resolveUnsplashImage(prompt).then((img) => {
+      if (!cancelled) setState({ img, done: true });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [explicit, prompt]);
+
+  if (explicit) return { url: explicit, loading: false };
+  return { url: state.img?.url, credit: state.img?.credit, creditUrl: state.img?.creditUrl, loading: !state.done };
 }
 
 export function SlideView({
@@ -108,26 +150,8 @@ export function SlideView({
   const bodySize = big ? "text-xl" : "text-base";
 
   // ── Full-bleed image cover (deluxe / explicit) ──────────────────────────
-  if ((layout === "image-full" || layout === "image") && slideImage(slide)) {
-    return (
-      <div className="relative h-full w-full overflow-hidden rounded-xl">
-        <div className="absolute inset-0">
-          <InlineMediaRef ref={slideImage(slide)!} alt={slide.title ?? "Slide image"} size="fill" fit="cover" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-        <div className={`absolute inset-x-0 bottom-0 ${big ? "p-12" : "p-7"}`}>
-          {eyebrow && <Eyebrow text={eyebrow} color={c.accent} onDark />}
-          <h2 className={`font-bold leading-tight text-white ${titleSize}`}>
-            <RichText text={slide.title} />
-          </h2>
-          {slide.description && (
-            <p className={`mt-3 max-w-3xl text-white/85 ${bodySize}`}>
-              <RichText text={slide.description} />
-            </p>
-          )}
-        </div>
-      </div>
-    );
+  if ((layout === "image-full" || layout === "image") && slideWantsImage(slide)) {
+    return <ImageFullSlide slide={slide} c={c} eyebrow={eyebrow} big={big} titleSize={titleSize} bodySize={bodySize} />;
   }
 
   // ── Title / cover ───────────────────────────────────────────────────────
@@ -230,22 +254,17 @@ export function SlideView({
   }
 
   // ── Image split (image + content side by side) ──────────────────────────
-  if ((layout === "image-split" || layout === "image-left" || layout === "image-right") && slideImage(slide)) {
-    const imageRight = layout === "image-right";
+  if ((layout === "image-split" || layout === "image-left" || layout === "image-right") && slideWantsImage(slide)) {
     return (
-      <Frame variant={variant} c={c}>
-        <div className={`grid h-full grid-cols-2 items-center gap-7 ${imageRight ? "" : ""}`}>
-          <div className={imageRight ? "order-1" : "order-2"}>
-            <SlideHeading slide={slide} c={c} fancy={fancy} big={big} eyebrow={eyebrow} />
-            <div className="mt-5">
-              <BulletList bullets={slide.bullets ?? []} c={c} fancy={fancy} big={big} />
-            </div>
-          </div>
-          <div className={`${imageRight ? "order-2" : "order-1"} h-full max-h-full overflow-hidden rounded-xl`}>
-            <InlineMediaRef ref={slideImage(slide)!} alt={slide.title ?? "Slide image"} size="fill" fit="cover" />
-          </div>
-        </div>
-      </Frame>
+      <ImageSplitSlide
+        slide={slide}
+        c={c}
+        variant={variant}
+        fancy={fancy}
+        big={big}
+        eyebrow={eyebrow}
+        imageRight={layout === "image-right"}
+      />
     );
   }
 
@@ -374,6 +393,112 @@ function Eyebrow({ text, color, center, onDark }: { text: string; color: string;
     >
       {text}
     </div>
+  );
+}
+
+// ── Image layouts (resolve explicit URL, else Unsplash from imagePrompt) ────
+
+function ImagePlaceholder({ c, loading }: { c: ReturnType<typeof palette>; loading: boolean }) {
+  return (
+    <div
+      className={`h-full w-full ${loading ? "animate-pulse" : ""}`}
+      style={{ background: `linear-gradient(135deg, ${c.primary}1A, ${c.accent}1A)` }}
+    />
+  );
+}
+
+function Attribution({ credit, creditUrl, onDark }: { credit?: string; creditUrl?: string; onDark?: boolean }) {
+  if (!credit) return null;
+  const cls = `absolute bottom-1.5 right-2 z-10 rounded bg-black/35 px-1.5 py-0.5 text-[10px] ${onDark ? "text-white/80" : "text-white/85"}`;
+  const label = `Photo: ${credit} / Unsplash`;
+  return creditUrl ? (
+    <a href={creditUrl} target="_blank" rel="noopener noreferrer" className={`${cls} hover:underline`}>
+      {label}
+    </a>
+  ) : (
+    <span className={cls}>{label}</span>
+  );
+}
+
+function ImageFullSlide({
+  slide,
+  c,
+  eyebrow,
+  big,
+  titleSize,
+  bodySize,
+}: {
+  slide: SlideData;
+  c: ReturnType<typeof palette>;
+  eyebrow?: string;
+  big: boolean;
+  titleSize: string;
+  bodySize: string;
+}) {
+  const { url, credit, creditUrl, loading } = useSlideImage(slide);
+  return (
+    <div className="relative h-full w-full overflow-hidden rounded-xl">
+      <div className="absolute inset-0">
+        {url ? (
+          <InlineMediaRef ref={url} alt={slide.title ?? "Slide image"} size="fill" fit="cover" />
+        ) : (
+          <ImagePlaceholder c={c} loading={loading} />
+        )}
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+      <div className={`absolute inset-x-0 bottom-0 ${big ? "p-12" : "p-7"}`}>
+        {eyebrow && <Eyebrow text={eyebrow} color={c.accent} onDark />}
+        <h2 className={`font-bold leading-tight text-white ${titleSize}`}>
+          <RichText text={slide.title} />
+        </h2>
+        {slide.description && (
+          <p className={`mt-3 max-w-3xl text-white/85 ${bodySize}`}>
+            <RichText text={slide.description} />
+          </p>
+        )}
+      </div>
+      <Attribution credit={credit} creditUrl={creditUrl} onDark />
+    </div>
+  );
+}
+
+function ImageSplitSlide({
+  slide,
+  c,
+  variant,
+  fancy,
+  big,
+  eyebrow,
+  imageRight,
+}: {
+  slide: SlideData;
+  c: ReturnType<typeof palette>;
+  variant: SlideVariant;
+  fancy: boolean;
+  big: boolean;
+  eyebrow?: string;
+  imageRight: boolean;
+}) {
+  const { url, credit, creditUrl, loading } = useSlideImage(slide);
+  return (
+    <Frame variant={variant} c={c}>
+      <div className="grid h-full grid-cols-2 items-center gap-7">
+        <div className={imageRight ? "order-1" : "order-2"}>
+          <SlideHeading slide={slide} c={c} fancy={fancy} big={big} eyebrow={eyebrow} />
+          <div className="mt-5">
+            <BulletList bullets={slide.bullets ?? []} c={c} fancy={fancy} big={big} />
+          </div>
+        </div>
+        <div className={`${imageRight ? "order-2" : "order-1"} relative h-full max-h-full overflow-hidden rounded-xl`}>
+          {url ? (
+            <InlineMediaRef ref={url} alt={slide.title ?? "Slide image"} size="fill" fit="cover" />
+          ) : (
+            <ImagePlaceholder c={c} loading={loading} />
+          )}
+          <Attribution credit={credit} creditUrl={creditUrl} />
+        </div>
+      </div>
+    </Frame>
   );
 }
 

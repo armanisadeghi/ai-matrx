@@ -373,6 +373,20 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-06-16` — claude: **Markdown → Document/Workbook export targets**. New
+  `markdown-to-univer-doc.ts` converts a markdown string to a Univer
+  `IDocumentData` snapshot — rendered content (headings, bold/italic, lists,
+  tables, code), never literal markdown syntax; strips `<think>` blocks. New
+  `export-targets.ts` adds two canonical, content-agnostic push helpers:
+  `pushMarkdownToDocument(markdown, name?)` → `udt_documents` (powers the live
+  "Save to Document" action in the chat message menu + RichDocument overflow,
+  replacing the old "Add to docs" stubs) and `pushTableToWorkbook({name,
+  headers, rows})` → `udt_workbooks` (powers the new "Workbook" button on our
+  fancy markdown tables — `StreamingTableRenderer` + `MarkdownTable` — alongside
+  the existing data-table "Save"). Both return a `PushResult { href }` and are
+  lazy-imported by consumers so Univer stays out of the chat bundle. (Parallel
+  `pushToWorkbook` in `features/page-extraction/data-review` remains its
+  feature-bound adapter; this is the generic version.)
 - `2026-06-12` — claude: **Cloud Documents surface launched (`/documents`)**. Sibling to
   `/workbooks` — same architecture, Univer's `preset-docs-core` instead of
   `preset-sheets-core`. New DB tables `udt_documents` + `udt_document_snapshots`

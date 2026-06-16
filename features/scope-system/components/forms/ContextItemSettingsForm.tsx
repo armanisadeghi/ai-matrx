@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Trash2, X, Hash, Tag as TagIcon, AlertTriangle } from "lucide-react";
+import {
+  Loader2,
+  Trash2,
+  X,
+  Hash,
+  Tag as TagIcon,
+  AlertTriangle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -31,7 +38,11 @@ import {
   VALUE_TYPE_CONFIG,
   DEFAULT_CATEGORIES,
 } from "@/features/agent-context/constants";
-import { toSlug, isValidSlug, isReservedSlug } from "@/features/scope-system/utils/slugify";
+import {
+  toSlug,
+  isValidSlug,
+  isReservedSlug,
+} from "@/features/scope-system/utils/slugify";
 import { CustomComponentConfigurator } from "@/features/agents/components/variables-management/CustomComponentConfigurator";
 import { componentToValueType } from "@/features/scope-system/utils/componentValueType";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
@@ -48,7 +59,7 @@ interface ContextItemSettingsFormProps {
 
 /**
  * The full editor for a context item's own settings (the THING — applies to every
- * scope of its type). Shared by the quick-edit drawer (`EditContextItemSheet`) and
+ * scope of its type). Shared by the quick-edit panel (`EditContextItemSheet`) and
  * the full-page Manage route, so there is exactly one form.
  */
 export function ContextItemSettingsForm({
@@ -69,7 +80,8 @@ export function ContextItemSettingsForm({
     VariableCustomComponent | undefined
   >(undefined);
   const [fetchHint, setFetchHint] = useState<ContextFetchHint>("on_demand");
-  const [sensitivity, setSensitivity] = useState<ContextSensitivity>("internal");
+  const [sensitivity, setSensitivity] =
+    useState<ContextSensitivity>("internal");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [statusNote, setStatusNote] = useState("");
@@ -89,7 +101,9 @@ export function ContextItemSettingsForm({
     setTagInput("");
     setStatusNote(item.status_note ?? "");
     setReviewIntervalDays(
-      item.review_interval_days != null ? String(item.review_interval_days) : "",
+      item.review_interval_days != null
+        ? String(item.review_interval_days)
+        : "",
     );
     setSortOrder(item.sort_order != null ? String(item.sort_order) : "");
   }, [item]);
@@ -221,8 +235,8 @@ export function ContextItemSettingsForm({
           </Button>
         </div>
         <p className="text-[10px] text-muted-foreground">
-          Human-readable segment in the item URL. Must be unique within this scope
-          type.
+          Human-readable segment in the item URL. Must be unique within this
+          scope type.
         </p>
       </div>
 
@@ -318,11 +332,13 @@ export function ContextItemSettingsForm({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {(Object.keys(SENSITIVITY_CONFIG) as ContextSensitivity[]).map((k) => (
-              <SelectItem key={k} value={k}>
-                {SENSITIVITY_CONFIG[k].label}
-              </SelectItem>
-            ))}
+            {(Object.keys(SENSITIVITY_CONFIG) as ContextSensitivity[]).map(
+              (k) => (
+                <SelectItem key={k} value={k}>
+                  {SENSITIVITY_CONFIG[k].label}
+                </SelectItem>
+              ),
+            )}
           </SelectContent>
         </Select>
         <p className="text-[10px] text-muted-foreground">
@@ -405,7 +421,9 @@ export function ContextItemSettingsForm({
             style={{ fontSize: "16px" }}
             disabled={busy}
           />
-          <p className="text-[10px] text-muted-foreground">Stale after N days</p>
+          <p className="text-[10px] text-muted-foreground">
+            Stale after N days
+          </p>
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Status</Label>

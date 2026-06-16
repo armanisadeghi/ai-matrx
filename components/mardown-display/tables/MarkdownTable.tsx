@@ -35,6 +35,7 @@ import {
 import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES } from "../themes";
 import SaveTableModal from "./SaveTableModal";
+import { SendToWorkbookButton } from "./SendToWorkbookButton";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { TableEditToolbar } from "./editing/TableEditToolbar";
@@ -306,7 +307,10 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
         const processedBefore = beforeText
           .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>") // Bold with **
           .replace(/\*([^*]+)\*/g, "<em>$1</em>") // Italic with *
-          .replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, "<em>$1</em>"); // Italic with _ (not intra-word)
+          .replace(
+            /(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g,
+            "<em>$1</em>",
+          ); // Italic with _ (not intra-word)
         parts.push(processedBefore);
       }
 
@@ -908,6 +912,12 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
             </Button>
           )}
           {renderTableActionButton()}
+          {internalTableData.normalizedData && (
+            <SendToWorkbookButton
+              headers={internalTableData.headers}
+              rows={internalTableData.rows}
+            />
+          )}
           <ExportDropdownMenu
             tableData={internalTableData}
             content={content}

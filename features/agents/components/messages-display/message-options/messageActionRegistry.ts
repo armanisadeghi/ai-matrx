@@ -973,15 +973,42 @@ function assistantOnlyItems(ctx: MessageActionContext): MenuItem[] {
       key: "add-docs",
       icon: BookText,
       iconColor: "text-emerald-500 dark:text-emerald-400",
-      label: "Add to docs",
-      action: () => {
-        toast.info("Coming soon", {
-          description: "Add to docs will be available shortly.",
+      label: "Save to Document",
+      action: async () => {
+        if (
+          !requireAuth(
+            ctx,
+            "add-docs",
+            "Save to Document",
+            "Sign in to save this response as a document.",
+          )
+        )
+          return;
+        // Lazy-import so Univer (heavy) stays out of the chat bundle until used.
+        const { pushMarkdownToDocument } =
+          await import("@/features/data-tables/export-targets");
+        const res = await pushMarkdownToDocument(ctx.content);
+        if (!res.ok || !res.href) {
+          // showToast is false on this item, so AdvancedMenu won't surface a
+          // thrown error — toast it ourselves.
+          toast.error("Failed to create document", {
+            description: res.error,
+          });
+          return;
+        }
+        const href = res.href;
+        toast.success("Saved to Document", {
+          description: "Your content is ready as a normal document.",
+          action: {
+            label: "Open",
+            onClick: () => window.open(href, "_blank", "noopener,noreferrer"),
+          },
         });
         ctx.onClose();
       },
       category: "Actions",
       showToast: false,
+      errorMessage: "Failed to create document",
     },
   ];
 }
@@ -1250,9 +1277,7 @@ function serverApiTestItems(ctx: MessageActionContext): MenuItem[] {
               ).unwrap();
               toast.success("Replaced with summary (server)");
             } catch (err) {
-              toast.error(
-                getErrorMessage(err, "Replace-with-summary failed"),
-              );
+              toast.error(getErrorMessage(err, "Replace-with-summary failed"));
             }
           },
         });

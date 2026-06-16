@@ -8,12 +8,7 @@ import {
   updateScopeType,
 } from "../../redux/scope/scopeTypesSlice";
 import type { ScopeType } from "../../redux/scope/types";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -161,188 +156,185 @@ export function ScopeTypeFormSheet({
     labelSingular.trim().length > 0 && labelPlural.trim().length > 0;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>
-            {isEdit ? "Edit Scope Type" : "New Scope Type"}
-          </SheetTitle>
-        </SheetHeader>
-
-        <div className="mt-6 space-y-5">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Singular Label</Label>
-              <Input
-                value={labelSingular}
-                onChange={(e) => handleSingularChange(e.target.value)}
-                placeholder="Department"
-                className="text-base"
-                style={{ fontSize: "16px" }}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Plural Label</Label>
-              <Input
-                value={labelPlural}
-                onChange={(e) => setLabelPlural(e.target.value)}
-                placeholder="Departments"
-                className="text-base"
-                style={{ fontSize: "16px" }}
-              />
-            </div>
-          </div>
-
+    <MatrxDynamicPanelHost
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isEdit ? "Edit Scope Type" : "New Scope Type"}
+      expandButtonLabel="Scope type"
+      dismissDisabled={saving}
+      position="right"
+      defaultSize={34}
+    >
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label className="text-xs">Description</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="What this scope type represents..."
-              rows={2}
-              className="text-base resize-none"
+            <Label className="text-xs">Singular Label</Label>
+            <Input
+              value={labelSingular}
+              onChange={(e) => handleSingularChange(e.target.value)}
+              placeholder="Department"
+              className="text-base"
               style={{ fontSize: "16px" }}
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Icon</Label>
-              <IconInputWithValidation
-                value={icon}
-                onChange={setIcon}
-                showLucideLink={false}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Color</Label>
-              <TailwindColorPicker
-                selectedColor={color}
-                onColorChange={setColor}
-                size="sm"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Sort Order</Label>
-              <Input
-                type="number"
-                value={sortOrder}
-                onChange={(e) =>
-                  setSortOrder(parseInt(e.target.value, 10) || 0)
-                }
-                min={0}
-                className="text-base"
-                style={{ fontSize: "16px" }}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Max Assignments</Label>
-              <Input
-                type="number"
-                value={maxAssignments}
-                onChange={(e) => setMaxAssignments(e.target.value)}
-                placeholder="Unlimited"
-                min={1}
-                className="text-base"
-                style={{ fontSize: "16px" }}
-              />
-              <p className="text-[10px] text-muted-foreground">
-                Leave blank for unlimited
-              </p>
-            </div>
-          </div>
-
-          {!isEdit && existingTypes.length > 0 && (
-            <div className="space-y-1.5">
-              <Label className="text-xs">Parent Type (optional)</Label>
-              <Select value={parentTypeId} onValueChange={setParentTypeId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE_VALUE}>None</SelectItem>
-                  {existingTypes
-                    .filter((t) => t.id !== editingType?.id)
-                    .map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.label_singular}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
           <div className="space-y-1.5">
-            <Label className="text-xs">Default Variable Keys</Label>
-            <div className="flex gap-2">
-              <Input
-                value={variableKeyInput}
-                onChange={(e) => setVariableKeyInput(e.target.value)}
-                placeholder="e.g. budget_code"
-                onKeyDown={(e) =>
-                  e.key === "Enter" && (e.preventDefault(), addVariableKey())
-                }
-                className="text-base flex-1"
-                style={{ fontSize: "16px" }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addVariableKey}
-              >
-                Add
-              </Button>
-            </div>
-            {variableKeys.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1.5">
-                {variableKeys.map((key) => (
-                  <Badge
-                    key={key}
-                    variant="secondary"
-                    className="text-xs gap-1 pl-2 pr-1"
-                  >
-                    <code className="font-mono">{key}</code>
-                    <button
-                      type="button"
-                      onClick={() => removeVariableKey(key)}
-                      className="hover:bg-muted-foreground/10 rounded p-0.5"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-            <p className="text-[10px] text-muted-foreground">
-              Context variable keys auto-created when this scope type is
-              assigned
-            </p>
-          </div>
-
-          <div className="flex gap-2 pt-4 border-t border-border">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={handleSubmit}
-              disabled={!canSave || saving}
-            >
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isEdit ? "Save Changes" : "Create Type"}
-            </Button>
+            <Label className="text-xs">Plural Label</Label>
+            <Input
+              value={labelPlural}
+              onChange={(e) => setLabelPlural(e.target.value)}
+              placeholder="Departments"
+              className="text-base"
+              style={{ fontSize: "16px" }}
+            />
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs">Description</Label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="What this scope type represents..."
+            rows={2}
+            className="text-base resize-none"
+            style={{ fontSize: "16px" }}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Icon</Label>
+            <IconInputWithValidation
+              value={icon}
+              onChange={setIcon}
+              showLucideLink={false}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Color</Label>
+            <TailwindColorPicker
+              selectedColor={color}
+              onColorChange={setColor}
+              size="sm"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Sort Order</Label>
+            <Input
+              type="number"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(parseInt(e.target.value, 10) || 0)}
+              min={0}
+              className="text-base"
+              style={{ fontSize: "16px" }}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Max Assignments</Label>
+            <Input
+              type="number"
+              value={maxAssignments}
+              onChange={(e) => setMaxAssignments(e.target.value)}
+              placeholder="Unlimited"
+              min={1}
+              className="text-base"
+              style={{ fontSize: "16px" }}
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Leave blank for unlimited
+            </p>
+          </div>
+        </div>
+
+        {!isEdit && existingTypes.length > 0 && (
+          <div className="space-y-1.5">
+            <Label className="text-xs">Parent Type (optional)</Label>
+            <Select value={parentTypeId} onValueChange={setParentTypeId}>
+              <SelectTrigger>
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE_VALUE}>None</SelectItem>
+                {existingTypes
+                  .filter((t) => t.id !== editingType?.id)
+                  .map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.label_singular}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <Label className="text-xs">Default Variable Keys</Label>
+          <div className="flex gap-2">
+            <Input
+              value={variableKeyInput}
+              onChange={(e) => setVariableKeyInput(e.target.value)}
+              placeholder="e.g. budget_code"
+              onKeyDown={(e) =>
+                e.key === "Enter" && (e.preventDefault(), addVariableKey())
+              }
+              className="text-base flex-1"
+              style={{ fontSize: "16px" }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addVariableKey}
+            >
+              Add
+            </Button>
+          </div>
+          {variableKeys.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {variableKeys.map((key) => (
+                <Badge
+                  key={key}
+                  variant="secondary"
+                  className="text-xs gap-1 pl-2 pr-1"
+                >
+                  <code className="font-mono">{key}</code>
+                  <button
+                    type="button"
+                    onClick={() => removeVariableKey(key)}
+                    className="hover:bg-muted-foreground/10 rounded p-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
+          <p className="text-[10px] text-muted-foreground">
+            Context variable keys auto-created when this scope type is assigned
+          </p>
+        </div>
+
+        <div className="flex gap-2 pt-4 border-t border-border">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={handleSubmit}
+            disabled={!canSave || saving}
+          >
+            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {isEdit ? "Save Changes" : "Create Type"}
+          </Button>
+        </div>
+      </div>
+    </MatrxDynamicPanelHost>
   );
 }

@@ -1,6 +1,13 @@
 "use client";
 
-import { Bot, Lightbulb, ListChecks, Settings2, X, Zap } from "lucide-react";
+import {
+  Webhook,
+  Lightbulb,
+  ListChecks,
+  Settings2,
+  X,
+  Zap,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
@@ -70,7 +77,7 @@ export function SettingsSidebar({
 
         <div className="mt-6 flex flex-col gap-6">
           {/* Audio assistant — the chat agent in the Agent / Live / Agent+ tabs */}
-          <SettingsGroup icon={Bot} title="Scribe assistant">
+          <SettingsGroup icon={Webhook} title="Scribe assistant">
             <DefaultAssistantAgentPicker />
           </SettingsGroup>
 
@@ -200,7 +207,7 @@ function DefaultAssistantAgentPicker() {
               type="button"
               className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md border border-border/60 bg-background px-2 py-1.5 text-left transition-colors active:bg-accent"
             >
-              <Bot className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <Webhook className="h-3.5 w-3.5 shrink-0 text-primary" />
               <span className="truncate text-[12px] text-foreground">
                 {name ?? "Default assistant"}
               </span>

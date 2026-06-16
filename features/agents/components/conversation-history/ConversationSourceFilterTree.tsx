@@ -38,7 +38,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import { fetchConversationHistory, fetchSourceFacets } from "@/features/agents/redux/conversation-history/thunks";
+import {
+  fetchConversationHistory,
+  fetchSourceFacets,
+} from "@/features/agents/redux/conversation-history/thunks";
 import { setScopeSourceFilter } from "@/features/agents/redux/conversation-history/slice";
 import {
   makeSelectConversationHistoryScope,
@@ -220,7 +223,7 @@ export const ConversationSourceFilterTree: React.FC<
 
   // Load facets once (cached on the slice root with a TTL).
   useEffect(() => {
-    void dispatch(fetchSourceFacets());
+    void dispatch(fetchSourceFacets(undefined));
   }, [dispatch]);
 
   const tree = useMemo(() => buildSourceTree(facets), [facets]);
@@ -239,7 +242,10 @@ export const ConversationSourceFilterTree: React.FC<
         }
       }
     }
-    return { selectedFeatures: selected, emptySelected: scope.includeEmptySource };
+    return {
+      selectedFeatures: selected,
+      emptySelected: scope.includeEmptySource,
+    };
   }, [
     scope.includeSourceFeatures,
     scope.includeSourceApps,
@@ -247,8 +253,7 @@ export const ConversationSourceFilterTree: React.FC<
     tree,
   ]);
 
-  const activeCount =
-    selectedFeatures.size + (emptySelected ? 1 : 0);
+  const activeCount = selectedFeatures.size + (emptySelected ? 1 : 0);
 
   // Commit a new selection → persist + refetch first page.
   const commit = useCallback(

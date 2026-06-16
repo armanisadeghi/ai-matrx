@@ -40,7 +40,7 @@ export interface ScopeFormProps {
 /**
  * The shared create/edit body for a single Scope. Owns name/description/parent
  * state and writes via the canonical `createScope`/`updateScope` thunks. Hosted
- * by both `ScopeFormSheet` (side sheet) and `ScopeEditWindow` (window panel) so
+ * by both `ScopeFormSheet` (floating panel) and `ScopeEditWindow` (window panel) so
  * the two surfaces never fork field/validation/write logic.
  */
 export function ScopeForm({

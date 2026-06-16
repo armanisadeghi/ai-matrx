@@ -31,12 +31,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { cn } from "@/utils/cn";
 
 type LucideIcon = React.ComponentType<{
@@ -638,212 +633,207 @@ function TemplateSheet({
     ? presets.filter((_, i) => checkedPresets.has(i)).length
     : 0;
 
+  const panelTitle = presets
+    ? `${industry?.label ?? selectedIndustry} Template`
+    : "Scope Templates";
+
   return (
-    <Sheet
+    <MatrxDynamicPanelHost
       open={open}
       onOpenChange={(v) => {
         onOpenChange(v);
         if (!v) onSelectIndustry("");
       }}
+      title={panelTitle}
+      expandButtonLabel="Scope templates"
+      dismissDisabled={applying}
+      position="right"
+      defaultSize={38}
     >
-      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>
-            {presets
-              ? `${industry?.label ?? selectedIndustry} Template`
-              : "Scope Templates"}
-          </SheetTitle>
-        </SheetHeader>
+      <div>
+        {presets && selectedIndustry ? (
+          <div className="space-y-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs"
+              onClick={() => onSelectIndustry("")}
+            >
+              &larr; All Templates
+            </Button>
 
-        <div className="mt-4">
-          {presets && selectedIndustry ? (
-            <div className="space-y-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs"
-                onClick={() => onSelectIndustry("")}
-              >
-                &larr; All Templates
-              </Button>
+            <p className="text-xs text-muted-foreground">
+              Select which scope types to create. Types you already have are
+              marked and skipped automatically.
+            </p>
 
-              <p className="text-xs text-muted-foreground">
-                Select which scope types to create. Types you already have are
-                marked and skipped automatically.
-              </p>
+            <div className="space-y-2">
+              {presets.map((preset, i) => {
+                const alreadyExists = existingLabels.has(
+                  preset.label_singular.toLowerCase(),
+                );
+                const isChecked = checkedPresets.has(i);
+                const Icon = resolveIcon(preset.icon);
 
-              <div className="space-y-2">
-                {presets.map((preset, i) => {
-                  const alreadyExists = existingLabels.has(
-                    preset.label_singular.toLowerCase(),
-                  );
-                  const isChecked = checkedPresets.has(i);
-                  const Icon = resolveIcon(preset.icon);
-
-                  return (
-                    <Card
-                      key={i}
-                      className={cn(
-                        "transition-all",
-                        alreadyExists && "opacity-50",
-                        isChecked && !alreadyExists && "ring-1 ring-primary/20",
-                      )}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-start gap-3">
-                          <div className="pt-0.5">
-                            {alreadyExists ? (
-                              <div className="h-4 w-4 rounded border border-green-500/40 bg-green-500/10 flex items-center justify-center">
-                                <Check className="h-3 w-3 text-green-500" />
-                              </div>
-                            ) : (
-                              <Checkbox
-                                checked={isChecked}
-                                onCheckedChange={() => onTogglePreset(i)}
-                              />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <div
-                                className="h-6 w-6 rounded flex items-center justify-center bg-muted"
-                                style={{
-                                  backgroundColor: hexToRgba(
-                                    preset.color,
-                                    0.15,
-                                  ),
-                                }}
-                              >
-                                <Icon
-                                  className="h-3.5 w-3.5"
-                                  style={{ color: preset.color }}
-                                />
-                              </div>
-                              <h4 className="text-xs font-semibold">
-                                {preset.label_plural}
-                              </h4>
-                              {preset.max_assignments && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[9px] h-4"
-                                >
-                                  max {preset.max_assignments}
-                                </Badge>
-                              )}
-                              {alreadyExists && (
-                                <Badge
-                                  variant="secondary"
-                                  className="text-[9px] h-4 text-green-600 dark:text-green-400"
-                                >
-                                  Already exists
-                                </Badge>
-                              )}
+                return (
+                  <Card
+                    key={i}
+                    className={cn(
+                      "transition-all",
+                      alreadyExists && "opacity-50",
+                      isChecked && !alreadyExists && "ring-1 ring-primary/20",
+                    )}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="pt-0.5">
+                          {alreadyExists ? (
+                            <div className="h-4 w-4 rounded border border-green-500/40 bg-green-500/10 flex items-center justify-center">
+                              <Check className="h-3 w-3 text-green-500" />
                             </div>
-                            {preset.scopes.length > 0 ? (
-                              <div className="flex flex-wrap gap-1">
-                                {preset.scopes.map((s) => (
-                                  <Badge
-                                    key={s}
-                                    variant="outline"
-                                    className="text-[10px]"
-                                    style={{
-                                      borderColor: hexToRgba(preset.color, 0.4),
-                                      color: preset.color,
-                                    }}
-                                  >
-                                    {s}
-                                  </Badge>
-                                ))}
-                              </div>
-                            ) : (
-                              <p className="text-[10px] text-muted-foreground italic">
-                                Empty — you add instances after creation
-                              </p>
+                          ) : (
+                            <Checkbox
+                              checked={isChecked}
+                              onCheckedChange={() => onTogglePreset(i)}
+                            />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div
+                              className="h-6 w-6 rounded flex items-center justify-center bg-muted"
+                              style={{
+                                backgroundColor: hexToRgba(preset.color, 0.15),
+                              }}
+                            >
+                              <Icon
+                                className="h-3.5 w-3.5"
+                                style={{ color: preset.color }}
+                              />
+                            </div>
+                            <h4 className="text-xs font-semibold">
+                              {preset.label_plural}
+                            </h4>
+                            {preset.max_assignments && (
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] h-4"
+                              >
+                                max {preset.max_assignments}
+                              </Badge>
+                            )}
+                            {alreadyExists && (
+                              <Badge
+                                variant="secondary"
+                                className="text-[9px] h-4 text-green-600 dark:text-green-400"
+                              >
+                                Already exists
+                              </Badge>
                             )}
                           </div>
+                          {preset.scopes.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {preset.scopes.map((s) => (
+                                <Badge
+                                  key={s}
+                                  variant="outline"
+                                  className="text-[10px]"
+                                  style={{
+                                    borderColor: hexToRgba(preset.color, 0.4),
+                                    color: preset.color,
+                                  }}
+                                >
+                                  {s}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-muted-foreground italic">
+                              Empty — you add instances after creation
+                            </p>
+                          )}
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-
-              <Button
-                className="w-full"
-                onClick={onApply}
-                disabled={applying || creatableCount === 0}
-              >
-                {applying ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />{" "}
-                    Creating...
-                  </>
-                ) : creatableCount === 0 ? (
-                  "All types already exist"
-                ) : (
-                  `Create ${creatableCount} Scope Type${creatableCount !== 1 ? "s" : ""}`
-                )}
-              </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
-          ) : (
-            <div className="space-y-1.5">
-              <button
-                type="button"
-                onClick={() => onSelectIndustry("create_my_own")}
-                className="w-full flex items-center gap-3 p-3 rounded-lg border-2 border-primary/30 bg-primary/5 text-left transition-all hover:bg-primary/10 hover:border-primary/50"
-              >
-                <div className="h-9 w-9 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
-                  <PenLine className="h-4 w-4 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-primary">
-                    Create My Own
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    Start from scratch with placeholder groupings
-                  </p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-primary flex-shrink-0" />
-              </button>
 
-              <div className="flex items-center gap-2 py-1">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-[10px] text-muted-foreground px-1">
-                  or use a template
-                </span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
-
-              {INDUSTRY_CATEGORIES.filter((c) => c.key !== "create_my_own").map(
-                (cat) => {
-                  const Icon = INDUSTRY_ICONS[cat.iconName] ?? Globe;
-                  const presetCount = SCOPE_TYPE_PRESETS[cat.key]?.length ?? 0;
-
-                  return (
-                    <button
-                      key={cat.key}
-                      type="button"
-                      onClick={() => onSelectIndustry(cat.key)}
-                      className="w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all border-border hover:border-primary/20 hover:bg-muted/40"
-                    >
-                      <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Icon className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium">{cat.label}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {presetCount} scope type{presetCount !== 1 ? "s" : ""}
-                        </p>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    </button>
-                  );
-                },
+            <Button
+              className="w-full"
+              onClick={onApply}
+              disabled={applying || creatableCount === 0}
+            >
+              {applying ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating...
+                </>
+              ) : creatableCount === 0 ? (
+                "All types already exist"
+              ) : (
+                `Create ${creatableCount} Scope Type${creatableCount !== 1 ? "s" : ""}`
               )}
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <button
+              type="button"
+              onClick={() => onSelectIndustry("create_my_own")}
+              className="w-full flex items-center gap-3 p-3 rounded-lg border-2 border-primary/30 bg-primary/5 text-left transition-all hover:bg-primary/10 hover:border-primary/50"
+            >
+              <div className="h-9 w-9 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
+                <PenLine className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-primary">
+                  Create My Own
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  Start from scratch with placeholder groupings
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-primary flex-shrink-0" />
+            </button>
+
+            <div className="flex items-center gap-2 py-1">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-[10px] text-muted-foreground px-1">
+                or use a template
+              </span>
+              <div className="flex-1 h-px bg-border" />
             </div>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+
+            {INDUSTRY_CATEGORIES.filter((c) => c.key !== "create_my_own").map(
+              (cat) => {
+                const Icon = INDUSTRY_ICONS[cat.iconName] ?? Globe;
+                const presetCount = SCOPE_TYPE_PRESETS[cat.key]?.length ?? 0;
+
+                return (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    onClick={() => onSelectIndustry(cat.key)}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all border-border hover:border-primary/20 hover:bg-muted/40"
+                  >
+                    <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium">{cat.label}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {presetCount} scope type{presetCount !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  </button>
+                );
+              },
+            )}
+          </div>
+        )}
+      </div>
+    </MatrxDynamicPanelHost>
   );
 }

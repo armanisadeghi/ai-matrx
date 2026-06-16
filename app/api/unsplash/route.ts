@@ -32,6 +32,7 @@ type UnsplashMethod =
   | "photos.list"
   | "photos.get"
   | "photos.getRandom"
+  | "photos.trackDownload"
   | "collections.list"
   | "collections.getPhotos"
   | "topics.list"
@@ -52,6 +53,10 @@ async function dispatch(method: UnsplashMethod, args: Record<string, unknown>) {
       return unsplash.photos.get(argsAny);
     case "photos.getRandom":
       return unsplash.photos.getRandom(argsAny);
+    case "photos.trackDownload":
+      // Unsplash API guideline: trigger a download event when a photo is
+      // actually used (e.g. embedded in a slide). args: { downloadLocation }.
+      return unsplash.photos.trackDownload(argsAny);
     case "collections.list":
       return unsplash.collections.list(argsAny);
     case "collections.getPhotos":

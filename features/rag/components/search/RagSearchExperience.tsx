@@ -25,7 +25,7 @@ import { motion } from "motion/react";
 import {
   AlertCircle,
   Beaker,
-  Bot,
+  Webhook,
   Brain,
   Copy,
   Database,
@@ -1413,7 +1413,7 @@ function AgentChatTab({ scope }: { scope: Scope }) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <header className="border-b p-3 flex items-center gap-2">
-        <Bot className="h-4 w-4 text-primary" />
+        <Webhook className="h-4 w-4 text-primary" />
         <div className="flex-1">
           <div className="text-sm font-semibold">Agent Chat</div>
           <div className="text-[11px] text-muted-foreground">
@@ -1510,7 +1510,7 @@ function ChatMessageView({ message }: { message: ChatMessage }) {
   return (
     <div className="rounded-md border bg-card overflow-hidden">
       <div className="px-3 py-2 border-b bg-muted/30 flex items-center gap-2 text-xs">
-        <Bot className="h-3.5 w-3.5 text-primary" />
+        <Webhook className="h-3.5 w-3.5 text-primary" />
         <span className="font-semibold">Agent</span>
         <Badge variant="outline" className="text-[10px]">
           {turns.length} turn{turns.length === 1 ? "" : "s"}

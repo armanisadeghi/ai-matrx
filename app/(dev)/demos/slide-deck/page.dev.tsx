@@ -55,7 +55,14 @@ const SLIDES = [
     layout: "image-split",
     title: "From pilots to production",
     bullets: ["Most teams moved past experiments", "The winners standardized their stack", "Observability became table stakes"],
-    image_url: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=1200&q=80",
+    // No image_url — auto-sourced from Unsplash via the prompt.
+    extra: { imagePrompt: "team collaborating in a modern office with laptops, candid" },
+  },
+  {
+    layout: "image-full",
+    title: "The road ahead",
+    description: "Agents move from copilots to coworkers",
+    extra: { imagePrompt: "sunrise over a winding mountain road, cinematic, wide" },
   },
   { layout: "closing", title: "Thank you", subtitle: "Questions welcome — let's talk about your stack" },
 ];

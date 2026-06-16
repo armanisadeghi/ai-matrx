@@ -8,7 +8,7 @@ import {
   ScanText,
   Network,
   Search,
-  Bot,
+  Webhook,
   Swords,
   NotebookPen,
   ShieldCheck,
@@ -82,7 +82,7 @@ const CAPABILITIES: Capability[] = [
     hrefLabel: "Search Lab",
   },
   {
-    icon: Bot,
+    icon: Webhook,
     title: "Agents on every node",
     description:
       "Attach an agent anywhere in the pipeline — as a chatbot, a button, a form, an app, or an automation. The same agent reshapes to the job.",

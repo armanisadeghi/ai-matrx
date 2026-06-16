@@ -3,7 +3,7 @@
 // "Coming soon" placeholder actions. Kept in the registry so the UI slots
 // stay consistent across surfaces while we build the real implementations.
 
-import { Briefcase, BookText } from "lucide-react";
+import { Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { registerAction } from "../registry";
 
@@ -19,22 +19,6 @@ registerAction({
   run: () => {
     toast.info("Coming soon", {
       description: "Convert to broker will be available shortly.",
-    });
-  },
-});
-
-registerAction({
-  id: "add-to-docs",
-  label: "Add to docs",
-  icon: BookText,
-  iconColor: "text-emerald-500 dark:text-emerald-400",
-  category: "save",
-  supportedSources: "*",
-  renderSlot: "overflow",
-  order: 21,
-  run: () => {
-    toast.info("Coming soon", {
-      description: "Add to docs will be available shortly.",
     });
   },
 });

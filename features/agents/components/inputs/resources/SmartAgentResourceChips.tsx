@@ -24,7 +24,7 @@ import {
   FolderKanban,
   AlertCircle,
   Code2,
-  Bot,
+  Webhook,
   Folder,
   LayoutGrid,
   Captions,
@@ -108,7 +108,7 @@ function getBlockTypeDisplay(blockType: ResourceBlockType) {
       label: "Data",
     },
     input_agent: {
-      icon: Bot,
+      icon: Webhook,
       label: "Agent",
     },
     input_project: {

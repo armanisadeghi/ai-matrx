@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** 2026-05-13
+**Last updated:** 2026-06-15
 
 ---
 
@@ -53,7 +53,7 @@ The single user-facing surface for every preference in the app — a VS Code-sty
 - Shared types: `SettingsBadge`, `SettingsCommonProps`, `SettingsRowVariant`, `SettingsRowDensity`, `SettingsControlSize`, `SettingsOption`, `SettingsTreeNode`
 
 **Redux slice(s) exposed through `useSetting`**
-- `userPreferences` (`lib/redux/slices/userPreferencesSlice.ts`) — 17 modules; persistence: **synced** (warm-cache: IDB + localStorage + Supabase).
+- `userPreferences` (`lib/redux/preferences/userPreferencesSlice.ts`) — 19 modules; persistence: **synced** (warm-cache: IDB + localStorage + Supabase).
 - `theme` (`styles/themes/themeSlice.ts`) — `{ mode: "light" | "dark" }`; persistence: **synced** (boot-critical: pre-paint localStorage).
 - `adminPreferences` (`lib/redux/slices/adminPreferencesSlice.ts`) — server override; persistence: **local-only** (flagged for sync migration).
 - `layout` (`lib/redux/slices/layoutSlice.ts`) — layoutStyle + isInWindow; persistence: **local-only** (flagged for sync migration).
@@ -143,7 +143,7 @@ Path:
 - **Depends on:**
   - `features/window-panels` — `WindowPanel`, `UnifiedOverlayController`, `OverlaySurface`, `windowRegistry`.
   - `lib/redux/slices/overlaySlice` — open/close dispatching.
-  - `lib/redux/slices/userPreferencesSlice` — primary write target.
+  - `lib/redux/preferences/userPreferencesSlice` — primary write target.
   - `lib/sync/*` — warm-cache + boot-critical persistence engine.
   - `components/official/settings/*` — primitives library.
 - **Depended on by:**
@@ -171,6 +171,7 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- `2026-06-15` — **Conversation filters tab.** Added the `conversationFilters` module to `userPreferences` (`{ surfaces: Record<surfaceId, { includeFeatures, includeApps, includeEmptySource }> }`, synced) and a lazy `ConversationFiltersTab` (`features/settings/tabs/ConversationFiltersTab.tsx`) registered under **General** (`id: general.conversationFilters`). It lets the user edit the default `source_app`/`source_feature` ALLOW-list each filterable surface (`chat`, `code`, `history-window`) shows, composing only `SettingsMultiSelect` / `SettingsSwitch` / `SettingsButton`. Note: `useSetting` only nests two levels (`module.preference`), so the tab reads/writes the entire `conversationFilters.surfaces` map and patches per-surface entries in place. Feeds the `conversation-history` source-filter tree (see `features/agents/components/chat/FEATURE.md`).
 - `2026-05-13` — **Presentation-aware navigation.** Added `SettingsPresentationContext` + `useSettingsPresentation` + `useSettingsNavigate` + `useSettingsTabNavigate` in `features/settings/components/SettingsPresentationContext.tsx`. `SettingsShell` now wraps its tree with `<SettingsPresentationProvider presentation="window"|"drawer">` so descendants can do the right thing instead of unconditionally `router.push`-ing and silently dismissing the shell. Reference consumers updated: `components/official/settings/primitives/SettingsLink` (internal hrefs route through the hook; external links and Cmd/Ctrl/middle-click "open in new tab" still work), `features/organizations/components/OrganizationCard` (was the worst offender — every card click pushed straight to `/organizations/{id}/settings` and dismissed the window), `features/content-templates/components/UserContentTemplateManager` (four `router.push` calls to `/settings/content-templates/…`). New invariant added in this doc.
 - `2026-04-25` — Internal imports no longer use `features/settings/index.ts`; consumers use `hooks/useSetting`, `hooks/useSettingsSearch`, `registry`, `components/SettingsShell`, etc. Barrel file kept for now.
 - `2026-04-23` — Phase 1–9 initial migration shipped.

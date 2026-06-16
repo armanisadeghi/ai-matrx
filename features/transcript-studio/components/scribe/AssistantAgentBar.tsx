@@ -4,7 +4,7 @@
 // the user change it. Rendered once at the top of every tab (above the working
 // document) so the choice is always visible and reachable.
 //
-//   [ Bot  Agent name  ]   Scribe assistant            [ History (N) ]
+//   [ Webhook  Agent name  ]   Scribe assistant            [ History (N) ]
 //      └ AgentListDropdown (all agents)                  └ conversation roster
 //
 // Switching to an agent that already has a conversation in this session prompts
@@ -12,7 +12,7 @@
 // conversation is kept, so the History control flips between them.
 
 import { useState } from "react";
-import { Bot, History } from "lucide-react";
+import { Webhook, History } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentById,
@@ -99,7 +99,7 @@ export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
           key: "fresh",
           label: "Start fresh chat",
           description: `Begin a new conversation with ${pendingAgentName}.`,
-          icon: <Bot className="h-4 w-4" />,
+          icon: <Webhook className="h-4 w-4" />,
           onSelect: () => switchTo("fresh"),
         },
       ]
@@ -114,7 +114,7 @@ export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
         key: c.conversationId,
         label: agents[c.agentId]?.name ?? "Assistant",
         description: `${relativeTime(c.lastUsedAt)}${isActive ? " · current" : ""}`,
-        icon: <Bot className="h-4 w-4" />,
+        icon: <Webhook className="h-4 w-4" />,
         disabled: isActive,
         onSelect: () => {
           if (!isActive) {
@@ -141,7 +141,7 @@ export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
             className="flex min-w-0 items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-1 text-left transition-colors active:bg-accent"
             title="Change the Scribe assistant agent"
           >
-            <Bot className="h-3.5 w-3.5 shrink-0 text-primary" />
+            <Webhook className="h-3.5 w-3.5 shrink-0 text-primary" />
             <span className="max-w-[12rem] truncate text-xs font-medium text-foreground">
               {activeAgentName ?? "Assistant agent"}
             </span>
@@ -159,7 +159,11 @@ export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
           assistant run (backend access), and it is the context the artifacts
           this page saves (recordings, conversation, working doc) should
           inherit. Save-side stamping lands with the ctx_associations work. */}
-      <ActiveContextButton size="xs" align="end" triggerClassName="max-w-[280px]" />
+      <ActiveContextButton
+        size="xs"
+        align="end"
+        triggerClassName="max-w-[280px]"
+      />
 
       {conversations.length > 1 && (
         <button

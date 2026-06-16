@@ -185,4 +185,10 @@ export const defaultUserPreferences: UserPreferences = {
     look: "classic",
     layout: "dagre",
   },
+  // Empty = every filterable surface uses its registry default
+  // (source-registry.ts → SURFACE_DEFAULTS). Keep in sync with the in-slice
+  // defaults at lib/redux/preferences/userPreferencesSlice.ts.
+  conversationFilters: {
+    surfaces: {},
+  },
 };

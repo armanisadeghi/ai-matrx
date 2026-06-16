@@ -14,7 +14,7 @@
 
 import type { ComponentType } from "react";
 import {
-  Bot,
+  Webhook,
   AppWindow,
   StickyNote,
   CheckSquare,
@@ -154,7 +154,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   agent: {
     type: "agent",
     label: "Agent",
-    icon: Bot,
+    icon: Webhook,
     accent: {
       text: "text-violet-600 dark:text-violet-400",
       bg: "bg-violet-500/10",

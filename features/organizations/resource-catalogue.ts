@@ -19,7 +19,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
-  Bot,
+  Webhook,
   AppWindow,
   Zap,
   Sparkles,
@@ -72,7 +72,8 @@ export const CONTENT_ROLES: ContentRoleMeta[] = [
   {
     id: "utility",
     title: "Utilities",
-    tagline: "What your team can do — the agents and tools that act on your knowledge.",
+    tagline:
+      "What your team can do — the agents and tools that act on your knowledge.",
     accentText: "text-violet-600 dark:text-violet-400",
     accentBg: "bg-violet-500/10",
     accentBar: "bg-violet-500",
@@ -80,7 +81,8 @@ export const CONTENT_ROLES: ContentRoleMeta[] = [
   {
     id: "source",
     title: "Sources",
-    tagline: "Knowledge coming in — the raw material your team brings to the org.",
+    tagline:
+      "Knowledge coming in — the raw material your team brings to the org.",
     accentText: "text-sky-600 dark:text-sky-400",
     accentBg: "bg-sky-500/10",
     accentBar: "bg-sky-500",
@@ -104,7 +106,8 @@ export const CONTENT_ROLES: ContentRoleMeta[] = [
   {
     id: "container",
     title: "Workspaces",
-    tagline: "How work is organized — the containers that group everything else.",
+    tagline:
+      "How work is organized — the containers that group everything else.",
     accentText: "text-amber-600 dark:text-amber-400",
     accentBg: "bg-amber-500/10",
     accentBar: "bg-amber-500",
@@ -177,7 +180,7 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     label: "Agent",
     labelPlural: "Agents",
     role: "utility",
-    icon: Bot,
+    icon: Webhook,
     description: "Custom AI agents the team can run.",
     table: "agx_agent",
     hasOrgColumn: true,
@@ -496,7 +499,9 @@ export function getEntry(key: string): OrgResourceEntry | undefined {
 }
 
 /** Canonical-table → entry lookup, for resolving a permissions grant's kind. */
-export function getEntryByShareKey(shareKey: string): OrgResourceEntry | undefined {
+export function getEntryByShareKey(
+  shareKey: string,
+): OrgResourceEntry | undefined {
   return ORG_RESOURCE_CATALOGUE.find((e) => e.shareKey === shareKey);
 }
 

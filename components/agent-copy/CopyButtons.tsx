@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Copy, Bot, Check } from "lucide-react";
+import { Copy, Webhook, Check } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,7 @@ export interface CopyButtonsProps {
   label: string;
   /** "icon" = compact icon-only pair (rows/cards); "sm" = icon + text (headers). */
   size?: "icon" | "sm";
-  /** Disable both buttons. */
+  /** Disable Webhookh buttons. */
   disabled?: boolean;
   /** Wrapper className. */
   className?: string;
@@ -129,7 +129,7 @@ export function CopyButtons({
         {copied === "agent" ? (
           <Check className={isIcon ? "h-3.5 w-3.5" : "h-4 w-4"} />
         ) : (
-          <Bot className={isIcon ? "h-3.5 w-3.5" : "h-4 w-4"} />
+          <Webhook className={isIcon ? "h-3.5 w-3.5" : "h-4 w-4"} />
         )}
         {!isIcon && <span className="ml-1">Copy for AI</span>}
       </Button>

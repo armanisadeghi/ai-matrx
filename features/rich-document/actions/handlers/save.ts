@@ -5,12 +5,7 @@
 // because it hard-coded `entity_type: "cx_message"`; we generalize via
 // a source → entity_type map so any source can produce a task.
 
-import {
-  FileText,
-  Save,
-  FileCode,
-  CheckSquare,
-} from "lucide-react";
+import { FileText, Save, FileCode, CheckSquare, BookText } from "lucide-react";
 import { toast } from "sonner";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { NotesAPI } from "@/features/notes/service/notesApi";
@@ -244,6 +239,48 @@ registerAction({
       toast.success("File saved!");
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to save file"));
+    }
+  },
+});
+
+registerAction({
+  id: "add-to-docs",
+  label: "Save to Document",
+  icon: BookText,
+  iconColor: "text-emerald-500 dark:text-emerald-400",
+  category: "save",
+  supportedSources: "*",
+  renderSlot: "overflow",
+  order: 6,
+  run: async (ctx) => {
+    if (
+      !requireAuth(
+        ctx,
+        "add-to-docs",
+        "Save to Document",
+        "Sign in to save this content as a document.",
+      )
+    )
+      return;
+    try {
+      // Lazy-import so Univer (heavy) stays out of the bundle until used.
+      const { pushMarkdownToDocument } =
+        await import("@/features/data-tables/export-targets");
+      const res = await pushMarkdownToDocument(ctx.content);
+      if (!res.ok || !res.href) {
+        toast.error(res.error || "Failed to create document");
+        return;
+      }
+      const href = res.href;
+      toast.success("Saved to Document", {
+        description: "Your content is ready as a normal document.",
+        action: {
+          label: "Open",
+          onClick: () => window.open(href, "_blank", "noopener,noreferrer"),
+        },
+      });
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to create document"));
     }
   },
 });

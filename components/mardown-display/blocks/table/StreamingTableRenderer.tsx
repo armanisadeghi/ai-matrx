@@ -35,6 +35,7 @@ import {
 import { useToastManager } from "@/hooks/useToastManager";
 import { THEMES } from "../../themes";
 import SaveTableModal from "../../tables/SaveTableModal";
+import { SendToWorkbookButton } from "../../tables/SendToWorkbookButton";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { TableEditToolbar } from "../../tables/editing/TableEditToolbar";
@@ -356,7 +357,10 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
         const processedBefore = beforeText
           .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
           .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-          .replace(/(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g, "<em>$1</em>");
+          .replace(
+            /(?<![A-Za-z0-9])_([^_\n]+?)_(?![A-Za-z0-9])/g,
+            "<em>$1</em>",
+          );
         parts.push(processedBefore);
       }
 
@@ -997,6 +1001,9 @@ export const StreamingTableRenderer: React.FC<StreamingTableRendererProps> = ({
                 </Button>
               )}
               {renderTableActionButton()}
+              {tableData.normalizedData && (
+                <SendToWorkbookButton headers={headers} rows={rows} />
+              )}
               <ExportDropdownMenu
                 tableData={tableData}
                 content={content}

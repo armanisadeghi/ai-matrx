@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  Bot,
+  Webhook,
   Check,
   ChevronDown,
   Braces,
@@ -130,7 +130,7 @@ export function SystemAgentCopyForAiMenu({
           {copied ? (
             <Check className="w-3.5 h-3.5 text-emerald-500" />
           ) : (
-            <Bot className="w-3.5 h-3.5" />
+            <Webhook className="w-3.5 h-3.5" />
           )}
           Copy for AI
           <ChevronDown className="w-3 h-3 opacity-70" />

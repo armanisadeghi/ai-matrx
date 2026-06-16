@@ -1,12 +1,7 @@
 "use client";
 
 import type { ScopeType, Scope } from "../../redux/scope/types";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { ScopeForm } from "./ScopeForm";
 
 interface ScopeFormSheetProps {
@@ -27,28 +22,27 @@ export function ScopeFormSheet({
   parentScopeId,
 }: ScopeFormSheetProps) {
   const isEdit = !!editingScope;
+  const title = isEdit
+    ? `Edit ${scopeType.label_singular}`
+    : `New ${scopeType.label_singular}`;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-sm overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>
-            {isEdit
-              ? `Edit ${scopeType.label_singular}`
-              : `New ${scopeType.label_singular}`}
-          </SheetTitle>
-        </SheetHeader>
-
-        <ScopeForm
-          className="mt-6"
-          organizationId={organizationId}
-          scopeType={scopeType}
-          editingScope={editingScope}
-          parentScopeId={parentScopeId}
-          onDone={() => onOpenChange(false)}
-          onCancel={() => onOpenChange(false)}
-        />
-      </SheetContent>
-    </Sheet>
+    <MatrxDynamicPanelHost
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      expandButtonLabel={scopeType.label_singular}
+      position="right"
+      defaultSize={32}
+    >
+      <ScopeForm
+        organizationId={organizationId}
+        scopeType={scopeType}
+        editingScope={editingScope}
+        parentScopeId={parentScopeId}
+        onDone={() => onOpenChange(false)}
+        onCancel={() => onOpenChange(false)}
+      />
+    </MatrxDynamicPanelHost>
   );
 }
