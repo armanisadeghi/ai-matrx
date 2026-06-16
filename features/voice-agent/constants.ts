@@ -155,3 +155,13 @@ export const PERSISTENCE_REGION = "us-east-1";
  * Builder is the supported way to create a custom voice agent.
  */
 export const VOICE_INTRO_AGENT_ID = "00000000-0000-4000-8000-000000000001";
+
+/**
+ * Built-in Scribe Live Assistant agent (`migrations/scribe_live_agent.sql`,
+ * agent_type='builtin', is_public=true). Model = xAI Realtime Voice. Carries
+ * the inline working-document mutator client tools (`scribe_working_doc_append`
+ * / `_append_heading`) plus the auto-injected `data`/`data_action` server tools.
+ * Passed to `useRealtimeAgentConfig` + `useXaiVoiceSession` on the Scribe Live
+ * tab so the backend resolves + classifies those tools for the voice session.
+ */
+export const SCRIBE_LIVE_AGENT_ID = "00000000-0000-4000-8000-000000000002";

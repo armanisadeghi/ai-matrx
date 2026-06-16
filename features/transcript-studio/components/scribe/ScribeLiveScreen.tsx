@@ -21,6 +21,7 @@ import { useVoiceAgentInstance } from "@/features/voice-agent/hooks/useVoiceAgen
 import { useRealtimeAgentConfig } from "@/features/voice-agent/hooks/useRealtimeAgentConfig";
 import { useXaiVoiceSession } from "@/features/voice-agent/hooks/useXaiVoiceSession";
 import { usePersistVoiceTranscript } from "@/features/voice-agent/hooks/usePersistVoiceTranscript";
+import { SCRIBE_LIVE_AGENT_ID } from "@/features/voice-agent/constants";
 // Side-effect import: registers the working-document mutator client tools into
 // the shared realtime client-tool registry so `execution:"client"` calls for
 // them resolve to a runner. Phase 2 of the realtime tool bridge.
@@ -98,17 +99,20 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
     persist: false,
   });
 
-  // Resolve the realtime tool set for the scribe-live surface. When a
-  // dedicated scribe-live agent row exists (carrying the working-doc mutator
-  // tools), pass its id here so the backend classifies them `client` and they
-  // appear in session.update. Until then this is a no-op (no agentId) and the
-  // session runs with the seeded builtins. See the file-level note + handoff.
+  // Resolve the realtime tool set for the scribe-live surface from the built-in
+  // Scribe Live agent — the backend classifies its inline working-doc mutators
+  // as `client` (declared to xAI, run locally via the shared registry) and the
+  // auto-injected data/data_action as `server`. This OVERWRITES the seeded
+  // builtins above with the full resolved set; instructions stay locally owned
+  // (the working document is injected via buildLiveInstructions, not the agent).
   useRealtimeAgentConfig({
     instanceId,
+    agentId: SCRIBE_LIVE_AGENT_ID,
     surface: SCRIBE_LIVE_SURFACE,
   });
   const { status, error, toggle } = useXaiVoiceSession({
     instanceId,
+    agentId: SCRIBE_LIVE_AGENT_ID,
     surface: SCRIBE_LIVE_SURFACE,
     sessionId,
   });
