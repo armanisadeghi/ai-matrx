@@ -12,7 +12,7 @@
 // Pure presentational, semantic colors only. This is what makes the peripheral
 // rail tiles feel "live" instead of being a wall of identical rows.
 
-import { Check, ListChecks, NotebookPen } from "lucide-react";
+import { Check, ListChecks, NotebookPen, AudioLines } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TilePulse } from "@/features/war-room/hooks/useTilePulse";
 
@@ -25,8 +25,9 @@ export function PulseGlyph({
   size?: number;
   className?: string;
 }) {
-  // Recording / audio takes visual priority — it implies "live right now".
-  if (pulse.audioSessionCount > 0 || pulse.transcriptChars > 0) {
+  // LIVE capture wins — the animated equalizer is the ONLY animated state, and
+  // it requires the real recordingsSlice signal (not "has a session").
+  if (pulse.isRecording) {
     return <Equalizer className={className} />;
   }
 
@@ -77,6 +78,23 @@ export function PulseGlyph({
         style={{ width: size, height: size }}
       >
         <NotebookPen className="size-3" />
+      </span>
+    );
+  }
+
+  // Has audio sessions / a transcript but NOT live — a quiet STATIC audio glyph
+  // (no animation; it's not capturing right now).
+  if (pulse.audioSessionCount > 0 || pulse.transcriptChars > 0) {
+    return (
+      <span
+        className={cn(
+          "grid place-items-center rounded-full bg-warning/12 text-warning",
+          className,
+        )}
+        style={{ width: size, height: size }}
+        title="Audio thread"
+      >
+        <AudioLines className="size-3" />
       </span>
     );
   }

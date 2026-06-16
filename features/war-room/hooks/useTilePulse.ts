@@ -53,6 +53,10 @@ export interface TilePulse {
   // ── Audio signal ──
   audioSessionCount: number;
   transcriptChars: number;
+  /** TRUE only while one of this tile's sessions is ACTUALLY capturing /
+   *  transcribing right now (the live recordingsSlice signal) — NOT merely
+   *  "has a session". The only thing that may animate as "live". */
+  isRecording: boolean;
 
   // ── Context signal ──
   contextOverridden: boolean;
@@ -92,6 +96,23 @@ export function useTilePulse(tileId: string): TilePulse {
   const activeAudioId = useAppSelector(selectActiveAudioSessionId(tileId));
   const transcript = useAppSelector(selectSessionRawText(activeAudioId));
 
+  // LIVE recording signal — the ONLY source of a "Recording" claim. Reads the
+  // global recordingsSlice (at most ONE capture app-wide) and matches its target
+  // session against THIS tile's sessions. Returns a STABLE primitive, so the
+  // ~60fps audioLevel ticks during a recording never re-render the pulse. The
+  // mere EXISTENCE of a session is NOT recording (that was the bug — every tile
+  // that ever opened Audio/Agent showed "Recording" forever).
+  const recStatus = useAppSelector((s): "idle" | "recording" | "transcribing" => {
+    const c = s.recordings.context;
+    if (!c || c.kind !== "studio" || !audioSessionIds.includes(c.sessionId)) {
+      return "idle";
+    }
+    if (s.recordings.isRecording) return "recording";
+    if (s.recordings.isTranscribing) return "transcribing";
+    return "idle";
+  });
+  const isRecording = recStatus !== "idle";
+
   const ctx = useAppSelector((s) => selectTileEffectiveContext(tileId)(s));
 
   const activeTab = (tile?.active_tab as TileTab) ?? "task";
@@ -103,8 +124,12 @@ export function useTilePulse(tileId: string): TilePulse {
   const transcriptChars = transcript.trim().length;
 
   // Headline: a single tight phrase summarizing the tile's dominant state.
+  // LIVE recording wins (it's happening now); otherwise a session that merely
+  // exists reads as a static, honest label — never "Recording".
   let headline = "Empty";
-  if (taskId) {
+  if (isRecording) {
+    headline = recStatus === "transcribing" ? "Transcribing" : "Recording";
+  } else if (taskId) {
     if (subtaskTotal > 0) headline = `${subtaskDone}/${subtaskTotal} done`;
     else if (taskDone) headline = "Done";
     else headline = "Active task";
@@ -112,7 +137,9 @@ export function useTilePulse(tileId: string): TilePulse {
     headline =
       audioSessionIds.length > 1
         ? `${audioSessionIds.length} recordings`
-        : "Recording";
+        : transcriptChars > 0
+          ? "Transcript"
+          : "Audio";
   } else if (noteChars > 0) {
     headline = "Notes";
   }
@@ -155,6 +182,7 @@ export function useTilePulse(tileId: string): TilePulse {
     noteChars,
     audioSessionCount: audioSessionIds.length,
     transcriptChars,
+    isRecording,
     contextOverridden: ctx.isOverridden,
     hasContext: !!ctx.organizationId || ctx.scopeIds.length > 0,
     activity,
