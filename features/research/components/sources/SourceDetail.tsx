@@ -22,6 +22,7 @@ import {
   Link2,
   Brain,
   TrendingUp,
+  RotateCcw,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -37,12 +38,18 @@ import {
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
 import { useStreamDebug } from "../../context/ResearchContext";
-import { updateSource } from "../../service";
+import {
+  updateSource,
+  updateContentCurated,
+  restoreOriginalContent,
+} from "../../service";
+import { toast } from "sonner";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { OriginBadge } from "../shared/OriginBadge";
 import { ContentViewer } from "./ContentViewer";
 import { PasteContentModal } from "./PasteContentModal";
+import { AnalyzeCurationDialog } from "./AnalyzeCurationDialog";
 import { AnalysisCard } from "../analysis/AnalysisCard";
 import { SourceTagPicker } from "./SourceTagPicker";
 import { SourceRankBadges } from "./SourceRankBadges";
@@ -220,6 +227,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
     text: string;
     reason: string;
   } | null>(null);
+  const [analyzeDialogOpen, setAnalyzeDialogOpen] = useState(false);
 
   const handleAnalyze = useCallback(async () => {
     if (!currentContent || analyzeStream.isStreaming) return;
@@ -297,6 +305,43 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
     refetchAnalyses,
     debug,
   ]);
+
+  // Plain fns — React Compiler memoizes; no manual useCallback/deps.
+  const openAnalyzeDialog = () => setAnalyzeDialogOpen(true);
+
+  // From the curation popup: save the trimmed/edited content (original backed
+  // up once), then analyze the now-curated stored content. `null` = analyze the
+  // full content as-is.
+  const handleCuratedAnalyze = async (curated: string | null) => {
+    setAnalyzeDialogOpen(false);
+    if (curated !== null && currentContent) {
+      try {
+        await updateContentCurated(currentContent, curated);
+        await refetchContent();
+      } catch (err) {
+        toast.error(
+          `Couldn't save curated content: ${
+            err instanceof Error ? err.message : "unknown error"
+          }`,
+        );
+        return;
+      }
+    }
+    handleAnalyze();
+  };
+
+  const handleRestoreOriginal = async () => {
+    if (!currentContent?.original_content) return;
+    try {
+      await restoreOriginalContent(currentContent);
+      refetchContent();
+      toast.success("Restored the original scrape");
+    } catch (err) {
+      toast.error(
+        `Couldn't restore: ${err instanceof Error ? err.message : "unknown error"}`,
+      );
+    }
+  };
 
   const typedSource = source as ResearchSource | null | undefined;
   const extraSnippets = typedSource
@@ -675,6 +720,18 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
               <ClipboardPaste className="h-3.5 w-3.5" />
               Paste Content
             </Button>
+            {currentContent?.original_content && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-8"
+                onClick={handleRestoreOriginal}
+                title="Replace the curated content with the original scrape"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Restore original
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -825,7 +882,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                 topicId={topicId}
                 sourceId={sourceId}
                 contentId={currentContent.id}
-                onAnalyzed={handleAnalyze}
+                onAnalyzed={openAnalyzeDialog}
                 triggerOnly
               />
             )}
@@ -878,7 +935,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                       topicId={topicId}
                       sourceId={sourceId}
                       contentId={currentContent.id}
-                      onAnalyzed={handleAnalyze}
+                      onAnalyzed={openAnalyzeDialog}
                     />
                   ))}
                 </div>
@@ -888,7 +945,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   topicId={topicId}
                   sourceId={sourceId}
                   contentId={currentContent.id}
-                  onAnalyzed={handleAnalyze}
+                  onAnalyzed={openAnalyzeDialog}
                 />
               ) : null}
             </>
@@ -915,6 +972,14 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
           setPasteOpen(false);
           refetchContent();
         }}
+      />
+
+      <AnalyzeCurationDialog
+        open={analyzeDialogOpen}
+        onOpenChange={setAnalyzeDialogOpen}
+        content={currentContent?.content ?? ""}
+        onAnalyze={handleCuratedAnalyze}
+        busy={isAnalyzing}
       />
     </div>
   );

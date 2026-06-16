@@ -15645,6 +15645,7 @@ export type Database = {
           linked_extraction_id: string | null
           linked_transcript_id: string | null
           modified_at: string | null
+          original_content: string | null
           published_at: string | null
           quality_override: string | null
           scraped_at: string | null
@@ -15668,6 +15669,7 @@ export type Database = {
           linked_extraction_id?: string | null
           linked_transcript_id?: string | null
           modified_at?: string | null
+          original_content?: string | null
           published_at?: string | null
           quality_override?: string | null
           scraped_at?: string | null
@@ -15691,6 +15693,7 @@ export type Database = {
           linked_extraction_id?: string | null
           linked_transcript_id?: string | null
           modified_at?: string | null
+          original_content?: string | null
           published_at?: string | null
           quality_override?: string | null
           scraped_at?: string | null

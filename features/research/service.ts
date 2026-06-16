@@ -720,6 +720,46 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
   return { rows, keywords, tags };
 }
 
+/**
+ * Save user-curated content (the trimmed/edited text the model will analyze),
+ * backing up the original scrape ONCE on the first edit so it stays
+ * recoverable. Reads go straight to Supabase, so there is no FE cache to bust.
+ */
+export async function updateContentCurated(
+  content: ResearchContent,
+  newText: string,
+): Promise<void> {
+  const updates: Record<string, unknown> = {
+    content: newText,
+    char_count: newText.length,
+  };
+  if (!content.original_content && content.content) {
+    // First edit of real content — preserve the pre-edit scrape. (Nothing to
+    // back up if the scrape was empty/null.)
+    updates.original_content = content.content;
+  }
+  const { error } = await supabase
+    .from("rs_content")
+    .update(updates)
+    .eq("id", content.id);
+  if (error) throw error;
+}
+
+/** Restore the backed-up original scrape (undo curation). */
+export async function restoreOriginalContent(
+  content: ResearchContent,
+): Promise<void> {
+  if (!content.original_content) return;
+  const { error } = await supabase
+    .from("rs_content")
+    .update({
+      content: content.original_content,
+      char_count: content.original_content.length,
+    })
+    .eq("id", content.id);
+  if (error) throw error;
+}
+
 // ============================================================================
 // Documents
 // ============================================================================

@@ -257,6 +257,8 @@ export interface ResearchContent {
   source_id: string;
   topic_id: string;
   content: string | null;
+  /** Original scraped content, backed up once on the first user edit (recoverable). */
+  original_content: string | null;
   content_hash: string | null;
   char_count: number | null;
   content_type: string | null;
