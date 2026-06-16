@@ -241,9 +241,10 @@ the `shareable_resource_registry` (both `udt_datasets` and `udt_workbooks` are r
 **6. Agent reads/edits WORKBOOK or DOCUMENT content (Univer snapshots, not datasets)**
 - Trigger: user attaches a workbook/document (resource picker → `input_workbook`/`input_document`
   block) or names one in chat.
-- Path: the **aidream** backend tools `workbook_read`/`workbook_edit` + `document_read`/`document_edit`
-  (RLS-enforced, as the user) read the latest `udt_*_snapshots` row, mutate the Univer JSON, and
+- Path: the **aidream** backend tools `workbook` / `document` (`action: create | read | edit`,
+  RLS-enforced, as the user) read the latest `udt_*_snapshots` row, mutate the Univer JSON, and
   write a NEW `origin='agent'` snapshot. The editor's realtime subscription reflects it live.
+  `action="create"` makes a brand-new workbook/document (optionally seeded) for the user.
 - **Distinct from flow 1:** flow 1 writes `udt_datasets` cells (relational rows via `udt_upsert_cell`).
   This flow writes the *visual* workbook/document a user edits in Univer. They are not auto-synced.
 - Contract lives backend-side: [`aidream/services/udt_content/FEATURE.md`].
@@ -421,8 +422,8 @@ Decide before agent-heavy workloads land.
 - `2026-06-16` — claude: **Agents can attach + edit workbooks/documents.** New
   `{Workbooks,Documents}ResourcePicker.tsx` + entries in `ResourcePickerMenu.tsx` let users attach
   a workbook/document to a chat (emitting the `input_workbook`/`input_document` resource blocks that
-  were already type-wired). The agent reads/edits the actual Univer content through new **backend**
-  tools (`workbook_read`/`workbook_edit`/`document_read`/`document_edit` in
+  were already type-wired). The agent creates/reads/edits the actual Univer content through new
+  **backend** action-dispatched tools (`workbook` / `document`, `action: create|read|edit`, in
   `aidream/services/udt_content/`). See Key flow 6. FE: pickers only (no migration, no slice).
 - `2026-06-16` — claude: **Save Table → existing dataset (append / replace + smart column
   reconciliation)**. New shared, Supabase-free `features/data-tables/reconcile.ts`
