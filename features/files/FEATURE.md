@@ -318,6 +318,26 @@ domain block. To light up a new kind end-to-end:
    `audio_output` / `video_output` / `media_block` render-block types
    pick it up.
 
+**Canonical renderers shipped:** image
+([`blocks/image/UnifiedImageBlockRenderer.tsx`](blocks/image/UnifiedImageBlockRenderer.tsx))
+and **video** ([`blocks/video/UnifiedVideoBlockRenderer.tsx`](blocks/video/UnifiedVideoBlockRenderer.tsx),
+its `useUnifiedVideoUrl` / `useVideoActions` / `VideoSharePopover` mirror
+the image trio). Both expose the same affordances — expand → fullscreen
+lightbox, ONE "…" menu, right-click context menu, mobile long-press
+drawer, share via the shared share-link path — and accept an optional
+`extraActions?: MediaExtraAction[]`
+([`blocks/actions.ts`](blocks/actions.ts)) folded into that single menu so
+domain callers never add a second "…" menu.
+
+**Feeding a bare reference into a renderer:** the renderers consume a
+`block`, not a `MediaRef`. When a callsite only has a `{file_id}` / `{url}`
+(durable refs), use
+[`blockFromMediaRef(ref, kind)`](blocks/adapters/from-media-ref.ts) (or
+`imageBlockFromMediaRef` / `videoBlockFromMediaRef`) to synthesize a
+minimal `complete` block — `file_id` → matrx (resolved via the handler),
+`url` → external. Generic platform primitive; don't hand-build block
+literals at callsites.
+
 **Contract for core components:**
 - `fileId` (never path) is the stable identity.
 - Always accept `{ className?: string }`.

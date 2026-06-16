@@ -15,8 +15,12 @@ import {
   Plus,
   RefreshCw,
   Bookmark,
+  Clapperboard,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { InlineMediaRef } from "@/features/files";
+import { podcastMediaRef } from "@/features/podcasts/generator/media";
 import { ComingSoonCard } from "@/components/coming-soon/ComingSoonCard";
 import { EpisodeContentStudio } from "@/features/podcasts/studio/components/EpisodeContentStudio";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -118,6 +122,17 @@ export function StudioRunView({ runId }: { runId: string }) {
   const hasStages = state.stages.length > 0;
   const publicLink = episodeHref(state.episodeSlug, state.episodeId);
 
+  // The merged "official" video — every clip + still stitched into one
+  // crossfaded MP4 (square stills get blurred-fill sides). It's the episode's
+  // primary, share-ready video and the default cover. Surfaced prominently so
+  // the user can see/play it; absence on a finished multi-asset run is called
+  // out (loud) rather than left silently missing.
+  const mergedVideoUrl = state.officialVideoUrl;
+  const doneMediaCount =
+    state.images.filter((s) => s.status === "done" && s.url).length +
+    state.videos.filter((s) => s.status === "done" && s.url).length;
+  const mergedVideoMissing = isDone && !mergedVideoUrl && doneMediaCount >= 2;
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
       {/* Header */}
@@ -161,6 +176,48 @@ export function StudioRunView({ runId }: { runId: string }) {
         {/* LEFT — the episode: title, description, audio, then the visual options. */}
         <div className="order-1 min-w-0 space-y-6">
           <MetadataHero state={state} />
+
+          {/* The merged episode video — the primary, share-ready video stitched
+              from every clip + still. Shown first so it reads as the hero/default
+              cover. */}
+          {mergedVideoUrl && (
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+              <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Clapperboard className="h-4 w-4 text-primary" />
+                  Episode video
+                </h3>
+                <span className="hidden text-xs text-muted-foreground sm:inline">
+                  Default cover — stitched from every image &amp; clip
+                </span>
+              </div>
+              <div className="relative aspect-video w-full bg-black">
+                <InlineMediaRef
+                  ref={podcastMediaRef(mergedVideoUrl)}
+                  as="video"
+                  size="fill"
+                  fit="contain"
+                  rounded="none"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="absolute inset-0"
+                  alt="Episode video"
+                />
+              </div>
+            </div>
+          )}
+
+          {mergedVideoMissing && (
+            <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+              <span>
+                The combined episode video couldn&apos;t be assembled from this
+                run&apos;s media. Your individual clips and images are still
+                available below; you can pick any image as the cover.
+              </span>
+            </div>
+          )}
 
           {/* Audio: the finished player; the live (streaming) player while the
               TTS is still rendering; or the teaser before any audio exists. */}
