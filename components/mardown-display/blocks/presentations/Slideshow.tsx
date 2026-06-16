@@ -9,23 +9,10 @@ import {
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 
+import { SlideView, type SlideVariant } from "./SlideView";
+
 // Lazy load PresentationExportMenu to avoid loading GoogleAPIProvider on initial render
 const PresentationExportMenu = lazy(() => import("./PresentationExportMenu"));
-
-// Helper to parse markdown bold syntax
-const parseMarkdown = (text) => {
-  const parts = text.split(/(\*\*.*?\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return (
-        <strong key={i} className="font-bold">
-          {part.slice(2, -2)}
-        </strong>
-      );
-    }
-    return <span key={i}>{part}</span>;
-  });
-};
 
 export interface PresentationData {
   slides: any[];

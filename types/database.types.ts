@@ -29824,6 +29824,14 @@ export type Database = {
         }
         Returns: Json
       }
+      get_cx_conversation_source_facets: {
+        Args: never
+        Returns: {
+          n: number
+          source_app: string
+          source_feature: string
+        }[]
+      }
       get_cx_conversations_shared_with_me: {
         Args: never
         Returns: {

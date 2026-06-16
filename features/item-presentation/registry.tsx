@@ -143,7 +143,7 @@ async function fetchRow(
     .maybeSingle();
   if (error) return {}; // soft-fail — keep the agent-provided fields
   if (!data) return { notFound: true };
-  return map(data as Record<string, unknown>);
+  return map(data as unknown as Record<string, unknown>);
 }
 
 // ---------------------------------------------------------------------------

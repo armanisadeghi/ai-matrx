@@ -20,6 +20,8 @@
 import React, { useEffect, useState } from "react";
 import { AlertCircle, Check, Copy, Loader2 } from "lucide-react";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -67,14 +69,21 @@ function formatValue(value: unknown): { text: string; mono?: boolean } | null {
   if (value === null || value === undefined) return null;
   if (typeof value === "boolean") return { text: value ? "Yes" : "No" };
   if (typeof value === "number")
-    return { text: Number.isFinite(value) ? value.toLocaleString() : String(value) };
+    return {
+      text: Number.isFinite(value) ? value.toLocaleString() : String(value),
+    };
   if (typeof value === "string") {
     const t = value.trim();
     if (!t) return null;
     if (ISO_RE.test(t)) {
       const d = new Date(t);
       if (!Number.isNaN(d.getTime())) {
-        return { text: d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) };
+        return {
+          text: d.toLocaleString([], {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }),
+        };
       }
     }
     return { text: t };
@@ -139,24 +148,32 @@ function ItemDetailWindowInner({
     setStatus("loading");
     setRow(null);
 
-    supabase
-      .from(detailSource.table)
-      .select("*")
-      .eq("id", itemId)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) {
-          setStatus("error");
-          return;
-        }
-        if (!data) {
-          setStatus("not-found");
-          return;
-        }
-        setRow(data as Row);
-        setStatus("ready");
-      });
+    // Dynamic table name → use the UNtyped generic client (same as the
+    // registry's fetchRow, which takes a plain `SupabaseClient` param). The
+    // typed `SupabaseClient<Database>` rejects `.from(string)` and blows the
+    // instantiation depth resolving the full schema union.
+    const db = supabase as unknown as SupabaseClient;
+    const table: string = detailSource.table;
+    const selectAll: string = "*";
+
+    void (async () => {
+      const { data, error } = await db
+        .from(table)
+        .select(selectAll)
+        .eq("id", itemId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        setStatus("error");
+        return;
+      }
+      if (!data) {
+        setStatus("not-found");
+        return;
+      }
+      setRow(data as unknown as Row);
+      setStatus("ready");
+    })();
 
     return () => {
       cancelled = true;
@@ -169,17 +186,17 @@ function ItemDetailWindowInner({
       ? (row[titleField] as string)
       : null;
   const displayTitle =
-    fetchedTitle?.trim() ||
-    initialName?.trim() ||
-    `Untitled ${config.label}`;
+    fetchedTitle?.trim() || initialName?.trim() || `Untitled ${config.label}`;
 
-  const fields: { key: string; value: { text: string; mono?: boolean } }[] =
-    row
-      ? Object.entries(row)
-          .filter(([k]) => !HIDDEN_FIELDS.has(k))
-          .map(([k, v]) => ({ key: k, value: formatValue(v) }))
-          .filter((f): f is { key: string; value: { text: string; mono?: boolean } } => f.value !== null)
-      : [];
+  const fields: { key: string; value: { text: string; mono?: boolean } }[] = row
+    ? Object.entries(row)
+        .filter(([k]) => !HIDDEN_FIELDS.has(k))
+        .map(([k, v]) => ({ key: k, value: formatValue(v) }))
+        .filter(
+          (f): f is { key: string; value: { text: string; mono?: boolean } } =>
+            f.value !== null,
+        )
+    : [];
 
   const handleCopyId = () => {
     if (!itemId) return;
@@ -270,8 +287,7 @@ function ItemDetailWindowInner({
             <div className="flex flex-col items-center gap-2 py-10 text-center">
               <AlertCircle className="h-6 w-6 text-amber-500" />
               <p className="text-sm text-muted-foreground">
-                This {config.label.toLowerCase()} couldn&apos;t be found — it may
-                have been moved, deleted, or isn&apos;t shared with you.
+                {`This ${config.label.toLowerCase()} couldn't be found — it may have been moved, deleted, or isn't shared with you.`}
               </p>
             </div>
           )}
@@ -280,7 +296,7 @@ function ItemDetailWindowInner({
             <div className="flex flex-col items-center gap-2 py-10 text-center">
               <AlertCircle className="h-6 w-6 text-destructive" />
               <p className="text-sm text-muted-foreground">
-                Couldn&apos;t load the details for this {config.label.toLowerCase()}.
+                {`Couldn't load the details for this ${config.label.toLowerCase()}.`}
               </p>
             </div>
           )}

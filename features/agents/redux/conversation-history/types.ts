@@ -47,8 +47,30 @@ export interface ConversationHistoryScopeState {
    * (`source_feature='voice-agent'`) from the text-chat history — they
    * render incorrectly in the chat conversation view and live on a future
    * dedicated voice-history surface.
+   *
+   * NOTE: this is the legacy DENY-list. The newer ALLOW-list below
+   * (`includeSourceFeatures` / `includeSourceApps`) is the canonical filter
+   * for "show only my surface's conversations". The two AND together when
+   * both are present; most surfaces use exactly one.
    */
   excludeSourceFeatures: string[];
+  /**
+   * `cx_conversation.source_feature` ALLOW-list. When non-empty, only rows
+   * whose `source_feature` is in this set are shown (OR-combined with the
+   * app/empty allow-lists below). Empty = no feature allow-list.
+   */
+  includeSourceFeatures: string[];
+  /**
+   * `cx_conversation.source_app` ALLOW-list. Whole-app selections from the
+   * filter tree land here. Empty = no app allow-list.
+   */
+  includeSourceApps: string[];
+  /**
+   * When true, conversations with an empty/null `source_feature` are
+   * included (the "Generic / system" tree node). Independent of the
+   * allow-lists above.
+   */
+  includeEmptySource: boolean;
   /** Typed-in filter (client-side filter over fetched items). */
   searchTerm: string;
   /** Active grouping. */
@@ -68,17 +90,42 @@ export interface ConversationHistoryScopeState {
 }
 
 /**
+ * A distinct (source_app, source_feature) pairing with the user's
+ * conversation count. Returned by `get_cx_conversation_source_facets` and
+ * used to populate the filter tree with real values + counts. `null`
+ * app/feature represent empty/uncategorized rows.
+ */
+export interface SourceFacet {
+  sourceApp: string | null;
+  sourceFeature: string | null;
+  count: number;
+}
+
+export type SourceFacetsStatus = "idle" | "loading" | "succeeded" | "failed";
+
+/**
  * Slice root state: scopeId → state. Using a plain record (not entity
  * adapter) keeps the shape simple — scope counts will stay small.
+ *
+ * `sourceFacets` is a single user-wide cache (not per-scope) of every
+ * (source_app, source_feature) pairing the user has, with counts — it
+ * powers the filter tree across all surfaces.
  */
 export interface ConversationHistoryState {
   scopes: Record<string, ConversationHistoryScopeState>;
+  sourceFacets: SourceFacet[];
+  sourceFacetsStatus: SourceFacetsStatus;
+  sourceFacetsError: string | null;
+  sourceFacetsLastFetchedAt: number | null;
 }
 
 /** Default state shape for a new scope. */
 export const defaultScopeState: ConversationHistoryScopeState = {
   agentIds: [],
   excludeSourceFeatures: [],
+  includeSourceFeatures: [],
+  includeSourceApps: [],
+  includeEmptySource: false,
   searchTerm: "",
   grouping: "date",
   pageSize: 30,
@@ -92,3 +139,6 @@ export const defaultScopeState: ConversationHistoryScopeState = {
 
 /** Fetched rows are considered stale after this window. */
 export const CONVERSATION_HISTORY_TTL_MS = 60_000;
+
+/** Source facets are cached longer — they change slowly. */
+export const SOURCE_FACETS_TTL_MS = 5 * 60_000;

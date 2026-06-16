@@ -61,14 +61,6 @@ const CHAT_HISTORY_SCOPE = "chat-route";
  *  searchTerm from bleeding into the always-on sidebar list when closed. */
 const CHAT_HISTORY_SEARCH_SCOPE = "chat-route-search";
 
-/**
- * `cx_conversation.source_feature` values to hide from the chat history.
- * Voice transcripts (xAI Realtime) live in `cx_conversation` too but can't
- * be replayed in the text-chat view, so they're filtered out here. A future
- * voice-history surface will load them via its own scope.
- */
-const CHAT_HISTORY_EXCLUDE: ReadonlyArray<string> = ["voice-agent"];
-
 /** Voice agent route. */
 const VOICE_AGENT_HREF = "/chat/voice";
 
@@ -179,8 +171,11 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           <div className="flex h-[min(70dvh,560px)] flex-col">
             <ChatHistorySidebar
               scopeId={CHAT_HISTORY_SEARCH_SCOPE}
+              // ALLOW-list: the "chat" surface defaults to real chats only
+              // (source_feature = chat-route). Everything else — system runs,
+              // transcription, voice — is reachable via the filter tree.
+              surfaceId="chat"
               activeConversationId={activeConversationId}
-              excludeSourceFeatures={CHAT_HISTORY_EXCLUDE as string[]}
               onOpenConversation={(conv) => {
                 openConversation(conv);
                 setChatSearchOpen(false);
@@ -243,9 +238,11 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
             scopeId={CHAT_HISTORY_SCOPE}
             activeConversationId={activeConversationId}
             onOpenConversation={openConversation}
-            // Voice transcripts can't be replayed in the text-chat view —
-            // filter them out at the query so they never enter this scope.
-            excludeSourceFeatures={CHAT_HISTORY_EXCLUDE as string[]}
+            // ALLOW-list (surface default): "chat" shows only real chats
+            // (source_feature = chat-route). System runs, transcription, and
+            // voice transcripts (which can't be replayed here) are hidden by
+            // default and reachable through the source-filter tree.
+            surfaceId="chat"
             // The Search chats chrome above is the single search entry
             // point — don't ship a second one inline.
             hideSearchAffordance

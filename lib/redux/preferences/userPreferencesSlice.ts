@@ -355,6 +355,25 @@ export interface AgentConnectionsPreferences {
  *  can never drift. */
 export type MermaidPreferences = import("@/components/mermaid/types").MermaidOptionPreferences;
 
+/**
+ * Per-surface override of the conversation source filter (which `source_app`
+ * / `source_feature` provenance a conversation-history surface shows by
+ * default). A surface absent from `surfaces` falls back to the registry
+ * default in
+ * `features/agents/redux/conversation-history/source-registry.ts`. Mirrors
+ * the registry's `SurfaceFilterPref` shape exactly.
+ */
+export interface ConversationFilterSurfacePref {
+  includeFeatures: string[];
+  includeApps: string[];
+  includeEmptySource: boolean;
+}
+
+export interface ConversationFilterPreferences {
+  /** surfaceId → override. Empty = every surface uses its registry default. */
+  surfaces: Record<string, ConversationFilterSurfacePref>;
+}
+
 // Combine all module preferences into one interface
 export interface UserPreferences {
   display: DisplayPreferences;
@@ -378,6 +397,7 @@ export interface UserPreferences {
   transcription: TranscriptionPreferences;
   agentConnections: AgentConnectionsPreferences;
   mermaid: MermaidPreferences;
+  conversationFilters: ConversationFilterPreferences;
 }
 
 // Add state interface for async operations
@@ -589,6 +609,11 @@ export const initializeUserPreferencesState = (
       look: "classic",
       layout: "dagre",
     },
+    conversationFilters: {
+      // Empty = every surface uses its registry default
+      // (source-registry.ts → SURFACE_DEFAULTS).
+      surfaces: {},
+    },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -638,6 +663,10 @@ export const initializeUserPreferencesState = (
       ...preferences.agentConnections,
     },
     mermaid: { ...defaultPreferences.mermaid, ...preferences.mermaid },
+    conversationFilters: {
+      ...defaultPreferences.conversationFilters,
+      ...preferences.conversationFilters,
+    },
   };
 
   // If setAsLoaded is true, store the merged preferences as the loaded state
@@ -727,6 +756,9 @@ const userPreferencesSlice = createSlice({
         state.messaging = { ...state._meta.loadedPreferences.messaging };
         state.agentContext = { ...state._meta.loadedPreferences.agentContext };
         state.mermaid = { ...state._meta.loadedPreferences.mermaid };
+        state.conversationFilters = {
+          ...state._meta.loadedPreferences.conversationFilters,
+        };
         state._meta.hasUnsavedChanges = false;
         state._meta.error = null;
       }
@@ -794,6 +826,11 @@ const userPreferencesSlice = createSlice({
         state.agentContext = { ...state.agentContext, ...loaded.agentContext };
       if (loaded.mermaid)
         state.mermaid = { ...state.mermaid, ...loaded.mermaid };
+      if (loaded.conversationFilters)
+        state.conversationFilters = {
+          ...state.conversationFilters,
+          ...loaded.conversationFilters,
+        };
 
       // Snapshot the loaded state so `resetToLoadedPreferences` still works.
       const { _meta, ...currentPreferences } = state;
@@ -855,6 +892,7 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "messaging",
   "agentContext",
   "mermaid",
+  "conversationFilters",
 ] as const;
 
 export const userPreferencesPolicy = definePolicy<UserPreferencesState>({

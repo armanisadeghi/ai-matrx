@@ -6,11 +6,34 @@ import {
   type ConversationHistoryState,
   type HistoryGrouping,
   type HistoryStatus,
+  type SourceFacet,
+  type SourceFacetsStatus,
 } from "./types";
 
 const initialState: ConversationHistoryState = {
   scopes: {},
+  sourceFacets: [],
+  sourceFacetsStatus: "idle",
+  sourceFacetsError: null,
+  sourceFacetsLastFetchedAt: null,
 };
+
+/** Shallow array equality (order-sensitive). */
+function sameStringArray(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+/** Resets the paged window so the next fetch repopulates from offset 0. */
+function invalidateScopeWindow(scope: ConversationHistoryScopeState): void {
+  scope.items = [];
+  scope.offset = 0;
+  scope.hasMore = false;
+  scope.status = "idle";
+  scope.error = null;
+  scope.lastFetchedAt = null;
+}
 
 /** Ensures `state.scopes[scopeId]` exists and returns it for mutation. */
 function ensureScope(
@@ -51,6 +74,12 @@ const slice = createSlice({
         agentIds?: string[];
         /** `source_feature` values to hide from this scope. Empty = no filter. */
         excludeSourceFeatures?: string[];
+        /** `source_feature` ALLOW-list. Empty = no feature allow-list. */
+        includeSourceFeatures?: string[];
+        /** `source_app` ALLOW-list. Empty = no app allow-list. */
+        includeSourceApps?: string[];
+        /** Include empty/null-source conversations. */
+        includeEmptySource?: boolean;
         grouping?: HistoryGrouping;
         pageSize?: number;
         /** When true, drops items/offset so a fresh fetch repopulates. */
@@ -61,6 +90,9 @@ const slice = createSlice({
         scopeId,
         agentIds,
         excludeSourceFeatures,
+        includeSourceFeatures,
+        includeSourceApps,
+        includeEmptySource,
         grouping,
         pageSize,
         reset,
@@ -70,16 +102,50 @@ const slice = createSlice({
       if (excludeSourceFeatures !== undefined) {
         scope.excludeSourceFeatures = excludeSourceFeatures;
       }
+      if (includeSourceFeatures !== undefined) {
+        scope.includeSourceFeatures = includeSourceFeatures;
+      }
+      if (includeSourceApps !== undefined) {
+        scope.includeSourceApps = includeSourceApps;
+      }
+      if (includeEmptySource !== undefined) {
+        scope.includeEmptySource = includeEmptySource;
+      }
       if (grouping !== undefined) scope.grouping = grouping;
       if (pageSize !== undefined) scope.pageSize = pageSize;
-      if (reset) {
-        scope.items = [];
-        scope.offset = 0;
-        scope.hasMore = false;
-        scope.status = "idle";
-        scope.error = null;
-        scope.lastFetchedAt = null;
-      }
+      if (reset) invalidateScopeWindow(scope);
+    },
+    /**
+     * Sets the source-provenance ALLOW-list for a scope (driven by the
+     * filter tree). Changing the filter invalidates the current page window
+     * so the next fetch re-queries with the new constraints. No-op when the
+     * filter is unchanged (avoids spurious refetch loops).
+     */
+    setScopeSourceFilter(
+      state,
+      action: PayloadAction<{
+        scopeId: string;
+        includeSourceFeatures: string[];
+        includeSourceApps: string[];
+        includeEmptySource: boolean;
+      }>,
+    ) {
+      const {
+        scopeId,
+        includeSourceFeatures,
+        includeSourceApps,
+        includeEmptySource,
+      } = action.payload;
+      const scope = ensureScope(state, scopeId);
+      const unchanged =
+        sameStringArray(scope.includeSourceFeatures, includeSourceFeatures) &&
+        sameStringArray(scope.includeSourceApps, includeSourceApps) &&
+        scope.includeEmptySource === includeEmptySource;
+      if (unchanged) return;
+      scope.includeSourceFeatures = includeSourceFeatures;
+      scope.includeSourceApps = includeSourceApps;
+      scope.includeEmptySource = includeEmptySource;
+      invalidateScopeWindow(scope);
     },
     setScopeAgentIds(
       state,
@@ -197,12 +263,33 @@ const slice = createSlice({
     clearScope(state, action: PayloadAction<{ scopeId: string }>) {
       delete state.scopes[action.payload.scopeId];
     },
+
+    // ── Source facets (user-wide, powers the filter tree) ─────────────────
+    setSourceFacetsStatus(
+      state,
+      action: PayloadAction<{
+        status: SourceFacetsStatus;
+        error?: string | null;
+      }>,
+    ) {
+      state.sourceFacetsStatus = action.payload.status;
+      if (action.payload.error !== undefined) {
+        state.sourceFacetsError = action.payload.error;
+      }
+    },
+    setSourceFacets(state, action: PayloadAction<{ facets: SourceFacet[] }>) {
+      state.sourceFacets = action.payload.facets;
+      state.sourceFacetsStatus = "succeeded";
+      state.sourceFacetsError = null;
+      state.sourceFacetsLastFetchedAt = Date.now();
+    },
   },
 });
 
 export const {
   configureScope,
   setScopeAgentIds,
+  setScopeSourceFilter,
   setScopeSearch,
   setScopeGrouping,
   setScopeStatus,
@@ -210,6 +297,8 @@ export const {
   patchConversationInScopes,
   removeConversationFromScopes,
   clearScope,
+  setSourceFacetsStatus,
+  setSourceFacets,
 } = slice.actions;
 
 export const conversationHistoryReducer = slice.reducer;

@@ -13,8 +13,19 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 import type { AppThunk, RootState } from "@/lib/redux/store";
-import { setScopePageSuccess, setScopeStatus, configureScope } from "./slice";
-import { CONVERSATION_HISTORY_TTL_MS, defaultScopeState } from "./types";
+import {
+  setScopePageSuccess,
+  setScopeStatus,
+  configureScope,
+  setSourceFacets,
+  setSourceFacetsStatus,
+} from "./slice";
+import {
+  CONVERSATION_HISTORY_TTL_MS,
+  SOURCE_FACETS_TTL_MS,
+  defaultScopeState,
+  type SourceFacet,
+} from "./types";
 
 export interface FetchConversationHistoryArgs {
   scopeId: string;
@@ -27,6 +38,16 @@ export interface FetchConversationHistoryArgs {
    * text-chat history.
    */
   excludeSourceFeatures?: string[];
+  /**
+   * Overrides the scope's stored `includeSourceFeatures` ALLOW-list. When
+   * non-empty, only rows whose `source_feature` is in this set are shown
+   * (OR-combined with `includeSourceApps` / `includeEmptySource`).
+   */
+  includeSourceFeatures?: string[];
+  /** Overrides the scope's stored `includeSourceApps` ALLOW-list. */
+  includeSourceApps?: string[];
+  /** Overrides the scope's stored `includeEmptySource` flag. */
+  includeEmptySource?: boolean;
   /** Overrides the scope's stored pageSize for this fetch. */
   pageSize?: number;
   /**
@@ -73,6 +94,9 @@ export const fetchConversationHistory = createAsyncThunk<
       !existing ||
       args.agentIds !== undefined ||
       args.excludeSourceFeatures !== undefined ||
+      args.includeSourceFeatures !== undefined ||
+      args.includeSourceApps !== undefined ||
+      args.includeEmptySource !== undefined ||
       args.pageSize !== undefined
     ) {
       dispatch(
@@ -83,6 +107,14 @@ export const fetchConversationHistory = createAsyncThunk<
             args.excludeSourceFeatures ??
             existing?.excludeSourceFeatures ??
             [],
+          includeSourceFeatures:
+            args.includeSourceFeatures ??
+            existing?.includeSourceFeatures ??
+            [],
+          includeSourceApps:
+            args.includeSourceApps ?? existing?.includeSourceApps ?? [],
+          includeEmptySource:
+            args.includeEmptySource ?? existing?.includeEmptySource ?? false,
           pageSize:
             args.pageSize ?? existing?.pageSize ?? defaultScopeState.pageSize,
         }),
@@ -96,6 +128,12 @@ export const fetchConversationHistory = createAsyncThunk<
     const agentIds = args.agentIds ?? scope.agentIds;
     const excludeSourceFeatures =
       args.excludeSourceFeatures ?? scope.excludeSourceFeatures;
+    const includeSourceFeatures =
+      args.includeSourceFeatures ?? scope.includeSourceFeatures;
+    const includeSourceApps =
+      args.includeSourceApps ?? scope.includeSourceApps;
+    const includeEmptySource =
+      args.includeEmptySource ?? scope.includeEmptySource;
 
     dispatch(
       setScopeStatus({
@@ -122,6 +160,28 @@ export const fetchConversationHistory = createAsyncThunk<
     // to drop voice-agent rows from the text-chat history.
     for (const sf of excludeSourceFeatures) {
       query = query.neq("source_feature", sf);
+    }
+
+    // Per-scope ALLOW-list on source provenance. OR-combined so a row shows
+    // if its `source_feature` is selected, OR its `source_app` is selected,
+    // OR it's an empty/null-source row and those are opted-in. An entirely
+    // empty allow-list means "no source filter" (show everything) — that's
+    // how the cross-agent browse window behaves. The OR group ANDs with the
+    // agent / exclude / soft-delete filters above.
+    const orParts: string[] = [];
+    if (includeSourceFeatures.length > 0) {
+      orParts.push(`source_feature.in.(${includeSourceFeatures.join(",")})`);
+    }
+    if (includeSourceApps.length > 0) {
+      orParts.push(`source_app.in.(${includeSourceApps.join(",")})`);
+    }
+    if (includeEmptySource) {
+      // Generic rows store '' (column default) or NULL — match both.
+      orParts.push("source_feature.is.null");
+      orParts.push('source_feature.eq.""');
+    }
+    if (orParts.length > 0) {
+      query = query.or(orParts.join(","));
     }
 
     const { data, error } = await query;
@@ -173,6 +233,58 @@ export const fetchConversationHistory = createAsyncThunk<
       nextOffset,
       replace,
     };
+  },
+);
+
+/**
+ * Loads the user-wide source facets — distinct (source_app, source_feature)
+ * pairings with counts — used to populate the filter tree. Cached on the
+ * slice root with a 5-minute TTL; pass `{ force: true }` to bypass it.
+ *
+ * Backed by the `get_cx_conversation_source_facets` RPC, which is RLS-scoped
+ * to the caller and excludes ephemeral / soft-deleted rows server-side.
+ */
+export const fetchSourceFacets = createAsyncThunk<
+  SourceFacet[],
+  { force?: boolean } | undefined,
+  { state: RootState; rejectValue: string }
+>(
+  "conversationHistory/fetchSourceFacets",
+  async (args, { dispatch, getState, rejectWithValue }) => {
+    const { sourceFacets, sourceFacetsStatus, sourceFacetsLastFetchedAt } =
+      getState().conversationHistory;
+    const force = args?.force ?? false;
+    const fresh =
+      sourceFacetsLastFetchedAt !== null &&
+      Date.now() - sourceFacetsLastFetchedAt < SOURCE_FACETS_TTL_MS;
+    if (!force && (sourceFacetsStatus === "loading" || fresh)) {
+      return sourceFacets;
+    }
+
+    dispatch(setSourceFacetsStatus({ status: "loading", error: null }));
+
+    const { data, error } = await supabase.rpc(
+      "get_cx_conversation_source_facets",
+    );
+    if (error) {
+      dispatch(
+        setSourceFacetsStatus({ status: "failed", error: error.message }),
+      );
+      return rejectWithValue(error.message);
+    }
+
+    const rows = (data ?? []) as Array<{
+      source_app: string | null;
+      source_feature: string | null;
+      n: number | string;
+    }>;
+    const facets: SourceFacet[] = rows.map((row) => ({
+      sourceApp: row.source_app ?? null,
+      sourceFeature: row.source_feature ?? null,
+      count: typeof row.n === "string" ? Number(row.n) || 0 : (row.n ?? 0),
+    }));
+    dispatch(setSourceFacets({ facets }));
+    return facets;
   },
 );
 

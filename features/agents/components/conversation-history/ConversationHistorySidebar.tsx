@@ -1,23 +1,25 @@
 "use client";
 
 /**
- * ConversationHistorySidebar — reusable, scoped conversation sidebar.
+ * ConversationHistorySidebar — the canonical, reusable scoped conversation
+ * list. It is fully decoupled from any specific route or feature:
  *
- * The sidebar is fully decoupled from any specific route or feature:
- * - A `scopeId` identifies the per-scope state in the
- *   `conversationHistory` Redux slice. Multiple consumers can mount with
- *   the same `scopeId` and share state.
- * - `agentIds` controls which agents' conversations are shown. Pass `[]`
- *   to fetch across all of the user's accessible agents.
- * - Grouping, pagination, search, and favorites are all UI-level concerns
- *   handled inside this component. Consumers provide: an active
- *   conversation id (for highlighting), an `onOpenConversation` callback,
- *   and the favorites handlers (since favorites live in the consumer's
- *   preference shape — see `useCodeWorkspaceHistory` for a reference
- *   implementation used by /code).
+ * - A `scopeId` identifies the per-scope state in the `conversationHistory`
+ *   Redux slice. Multiple consumers can mount with the same `scopeId` and
+ *   share state.
+ * - `agentIds` controls which agents' conversations are shown. Pass `[]` to
+ *   fetch across all of the user's accessible agents.
+ * - `surfaceId` (optional) wires the source-provenance filter: the surface
+ *   opens with its default `source_feature` allow-list (resolved from user
+ *   prefs → registry) and renders the `ConversationSourceFilterTree` so the
+ *   user can reach everything else. Omit it for surfaces that should show all
+ *   their agents' conversations unfiltered (per-agent run/build lists).
+ * - `variant` switches the presentation: `"dense"` (default — /code, agent
+ *   apps) or `"consumer"` (the comfortable /chat look). Both share ONE data
+ *   controller, so they never drift.
  *
- * Self-contained data-loading: the component triggers the initial fetch
- * on mount (and whenever `agentIds` changes) via
+ * Self-contained data-loading: the component triggers the initial fetch on
+ * mount (and whenever `agentIds` or the resolved source filter changes) via
  * `fetchConversationHistory`. Consumers don't need to prewire a thunk.
  */
 
@@ -37,10 +39,14 @@ import {
   Search,
   Star,
   StarOff,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { fetchConversationHistory } from "@/features/agents/redux/conversation-history/thunks";
+import {
+  fetchConversationHistory,
+  type FetchConversationHistoryArgs,
+} from "@/features/agents/redux/conversation-history/thunks";
 import {
   makeSelectConversationHistoryScope,
   makeSelectConversationHistoryStatus,
@@ -55,11 +61,13 @@ import {
 } from "@/features/agents/redux/conversation-history/slice";
 import type { HistoryGrouping } from "@/features/agents/redux/conversation-history/types";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import { useSurfaceSourceFilter } from "@/features/agents/redux/conversation-history/useSurfaceSourceFilter";
 import {
   renameConversation,
   setConversationFavorite,
 } from "@/features/agents/redux/conversation-list/conversation-row-actions.thunks";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
+import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { toast } from "sonner";
 
@@ -71,6 +79,18 @@ export interface ConversationHistorySidebarProps {
    * conversations for the user. The component manages fetches on change.
    */
   agentIds: string[];
+  /**
+   * Presentation. `"dense"` (default) for workspace/admin surfaces;
+   * `"consumer"` for the comfortable, ChatGPT-style /chat sidebar.
+   */
+  variant?: "dense" | "consumer";
+  /**
+   * Filterable-surface id (e.g. "chat", "code", "history-window"). When set,
+   * the surface opens with its default source filter and shows the
+   * `ConversationSourceFilterTree`. Omit to show all `agentIds` conversations
+   * unfiltered.
+   */
+  surfaceId?: string;
   /** Active conversation (used for highlight). */
   activeConversationId?: string | null;
   /** Called when a row is clicked. Required for interactivity. */
@@ -82,32 +102,29 @@ export interface ConversationHistorySidebarProps {
   pageSize?: number;
 
   /**
+   * Legacy DENY-list on `source_feature` (server-side `.neq`). Prefer
+   * `surfaceId` (ALLOW-list) for new surfaces. Both AND together if set.
+   */
+  excludeSourceFeatures?: string[];
+
+  /**
    * Returns whether a given conversation is a favorite. Optional —
-   * defaults to reading `conv.isFavorite` from the DB column. Pass only
-   * when the surface needs a non-DB-backed favorites source (legacy
-   * client-only preferences, scratch lists, etc.).
+   * defaults to reading `conv.isFavorite` from the DB column.
    */
   isFavorite?: (conversationId: string) => boolean;
   /**
    * Called when the user toggles the star on a row. Optional — defaults
-   * to dispatching `setConversationFavorite` which writes to the DB
-   * `cx_conversation.is_favorite` column. Pair with a custom
-   * `isFavorite` to override.
+   * to dispatching `setConversationFavorite`.
    */
   onToggleFavorite?: (conv: ConversationListItem) => void;
   /**
    * Builds the canonical href for "Open in new tab" / "Copy link" in the
-   * row context menu. Defaults to `/chat/<id>` — chat-style surfaces can
-   * accept the default; runner surfaces should pass a builder that
-   * returns `/agents/<agentId>/run?c=<id>` so the new tab lands on the
-   * right route.
+   * row context menu. Defaults to `/chat/<id>`.
    */
   getConversationHref?: (conv: ConversationListItem) => string;
   /**
    * Optional surface key passed to `duplicateConversation` — when set,
-   * focus jumps to the new copy on success. Sidebars hosted inside a
-   * focus-aware surface (runner, /code) should pass their surface id;
-   * sidebars without a focus system can omit.
+   * focus jumps to the new copy on success.
    */
   surfaceKey?: string;
 
@@ -117,67 +134,57 @@ export interface ConversationHistorySidebarProps {
   headerSlot?: React.ReactNode;
   /**
    * Content rendered below the header but above the search / grouping
-   * controls. Use this for surface-specific affordances that should sit
-   * above the conversation list — e.g. the chat route injects a Pinned
-   * Agents section here. Renders nothing when omitted.
+   * controls (e.g. the chat route's Pinned Agents section).
    */
   topSlot?: React.ReactNode;
   /** Extra header actions (shown next to grouping + search toggles). */
   headerActions?: React.ReactNode;
 
-  /**
-   * Controls whether the built-in search input is shown. Consumers that
-   * host their own search can hide it. Default: true.
-   */
+  /** Controls whether the built-in search input is shown. Default: true. */
   showSearch?: boolean;
-  /**
-   * Controls whether the built-in grouping toggle is shown. Consumers can
-   * hide it when the grouping is locked. Default: true.
-   */
+  /** Controls whether the grouping toggle is shown. Default: true (dense). */
   showGroupingToggle?: boolean;
 
+  /**
+   * Consumer variant only: start with the search field open + focused.
+   */
+  initialSearchOpen?: boolean;
+  /**
+   * Consumer variant only: suppress the built-in inline search affordance
+   * (when surrounding chrome already provides a search entry point).
+   */
+  hideSearchAffordance?: boolean;
+
   className?: string;
-  /**
-   * Extra classes for the built-in search input. Defaults blend with the
-   * project's semantic tokens (`bg-background` / `border-border` / etc.).
-   * Pass overrides here when a host surface (e.g. the /code workspace)
-   * needs a different look.
-   */
+  /** Extra classes for the built-in search input (dense). */
   searchInputClassName?: string;
-  /**
-   * Extra classes for each collapsible section's sticky header. Defaults
-   * use `bg-card` so the sticky background blends with a card-style
-   * sidebar; consumers rendering on a different surface can override.
-   */
+  /** Extra classes for each collapsible section's sticky header (dense). */
   sectionHeaderClassName?: string;
 }
 
-export const ConversationHistorySidebar: React.FC<
-  ConversationHistorySidebarProps
-> = ({
-  scopeId,
-  agentIds,
-  activeConversationId,
-  onOpenConversation,
-  defaultGrouping = "date",
-  pageSize = 30,
-  isFavorite,
-  onToggleFavorite,
-  getConversationHref,
-  surfaceKey,
-  emptyState,
-  headerSlot,
-  topSlot,
-  headerActions,
-  showSearch = true,
-  showGroupingToggle = true,
-  className,
-  searchInputClassName,
-  sectionHeaderClassName,
-}) => {
+// ── Shared data controller ───────────────────────────────────────────────────
+
+/**
+ * All data + effects + handlers for a conversation-history scope. Shared by
+ * both the dense and consumer renderers so they never diverge.
+ */
+function useConversationHistoryController(
+  props: ConversationHistorySidebarProps,
+) {
+  const {
+    scopeId,
+    agentIds,
+    surfaceId,
+    defaultGrouping = "date",
+    pageSize = 30,
+    excludeSourceFeatures,
+    isFavorite,
+    onToggleFavorite,
+    getConversationHref,
+  } = props;
   const dispatch = useAppDispatch();
 
-  // ── Stable selector instances per scopeId ──────────────────────────────────
+  // Stable selector instances per scopeId
   const selectScope = useMemo(
     () => makeSelectConversationHistoryScope(scopeId),
     [scopeId],
@@ -203,30 +210,38 @@ export const ConversationHistorySidebar: React.FC<
   const grouping = scope.grouping ?? defaultGrouping;
   const searchTerm = scope.searchTerm;
 
-  // ── Sync scope config + trigger fetch on agent set changes ──────────────────
+  // Resolve the surface's source filter (user pref → registry default).
+  const resolvedSource = useSurfaceSourceFilter(surfaceId);
+
+  // ── Sync scope config + trigger fetch on agent set / source filter change ──
   const agentIdsKey = useMemo(
     () => agentIds.slice().sort().join(","),
     [agentIds],
   );
-  const firstRunRef = useRef(true);
+  const excludeKey = JSON.stringify(excludeSourceFeatures ?? []);
+  // Re-seed when the *resolved default* changes (prefs edit). Tree edits write
+  // to the scope (not prefs), so they never re-trigger this — they persist.
+  const resolvedKey = surfaceId ? JSON.stringify(resolvedSource) : "";
 
   useEffect(() => {
-    dispatch(
-      setScopeAgentIds({
-        scopeId,
-        agentIds: agentIds.slice(),
-      }),
-    );
-    void dispatch(
-      fetchConversationHistory({
-        scopeId,
-        agentIds: agentIds.slice(),
-        pageSize,
-        replace: true,
-      }),
-    );
-    firstRunRef.current = false;
-  }, [dispatch, scopeId, agentIdsKey, pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
+    dispatch(setScopeAgentIds({ scopeId, agentIds: agentIds.slice() }));
+    const fetchArgs: FetchConversationHistoryArgs = {
+      scopeId,
+      agentIds: agentIds.slice(),
+      pageSize,
+      replace: true,
+    };
+    if (excludeSourceFeatures !== undefined) {
+      fetchArgs.excludeSourceFeatures = excludeSourceFeatures;
+    }
+    if (surfaceId) {
+      fetchArgs.includeSourceFeatures = resolvedSource.includeSourceFeatures;
+      fetchArgs.includeSourceApps = resolvedSource.includeSourceApps;
+      fetchArgs.includeEmptySource = resolvedSource.includeEmptySource;
+    }
+    void dispatch(fetchConversationHistory(fetchArgs));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, scopeId, agentIdsKey, pageSize, excludeKey, resolvedKey, surfaceId]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   const onSearchChange = useCallback(
@@ -245,21 +260,10 @@ export const ConversationHistorySidebar: React.FC<
 
   const onLoadMore = useCallback(() => {
     if (!hasMore || status === "loading" || status === "loading-more") return;
-    void dispatch(
-      fetchConversationHistory({
-        scopeId,
-        replace: false,
-      }),
-    );
+    void dispatch(fetchConversationHistory({ scopeId, replace: false }));
   }, [dispatch, scopeId, hasMore, status]);
 
   // ── Favorites — DB-backed by default, overridable per surface ────────────
-  //
-  // The DB-backed default reads `conv.isFavorite` from the entity row
-  // (`cx_conversation.is_favorite`). When the host passes its own
-  // `isFavorite`/`onToggleFavorite` (e.g. /code's old client-only
-  // preferences), we honor that as the source of truth instead — at most
-  // one favorites system per surface.
   const isFavoriteResolved = useCallback(
     (conversationId: string): boolean => {
       if (isFavorite) return isFavorite(conversationId);
@@ -292,11 +296,6 @@ export const ConversationHistorySidebar: React.FC<
     return scope.items.filter((i) => isFavoriteResolved(i.conversationId));
   }, [scope.items, isFavoriteResolved]);
 
-  // ── Row context menu href resolver ───────────────────────────────────────
-  // Each <ItemRow> builds its OWN menu (kebab + right-click) via
-  // `buildConversationMenu`. The parent only owns the surface-specific href
-  // convention + surfaceKey; rows reuse the exact href the old singleton menu
-  // computed (`getConversationHref` override, else `/chat/<id>`).
   const resolveHref = useCallback(
     (conv: ConversationListItem): string =>
       getConversationHref
@@ -305,16 +304,91 @@ export const ConversationHistorySidebar: React.FC<
     [getConversationHref],
   );
 
+  return {
+    scope,
+    byDate,
+    byAgent,
+    status,
+    hasMore,
+    error,
+    count,
+    grouping,
+    searchTerm,
+    onSearchChange,
+    onGroupingChange,
+    onLoadMore,
+    isFavoriteResolved,
+    onToggleFavoriteResolved,
+    favorites,
+    resolveHref,
+  };
+}
+
+type HistoryController = ReturnType<typeof useConversationHistoryController>;
+
+// ── Top-level component ──────────────────────────────────────────────────────
+
+export const ConversationHistorySidebar: React.FC<
+  ConversationHistorySidebarProps
+> = (props) => {
+  const ctl = useConversationHistoryController(props);
+  if (props.variant === "consumer") {
+    return <ConsumerView ctl={ctl} {...props} />;
+  }
+  return <DenseView ctl={ctl} {...props} />;
+};
+
+// ── Dense view (workspace / admin) ───────────────────────────────────────────
+
+const DenseView: React.FC<
+  ConversationHistorySidebarProps & { ctl: HistoryController }
+> = ({
+  ctl,
+  scopeId,
+  surfaceId,
+  activeConversationId,
+  onOpenConversation,
+  surfaceKey,
+  emptyState,
+  headerSlot,
+  topSlot,
+  headerActions,
+  showSearch = true,
+  showGroupingToggle = true,
+  className,
+  searchInputClassName,
+  sectionHeaderClassName,
+}) => {
+  const {
+    byDate,
+    byAgent,
+    status,
+    hasMore,
+    error,
+    count,
+    grouping,
+    searchTerm,
+    onSearchChange,
+    onGroupingChange,
+    onLoadMore,
+    isFavoriteResolved,
+    onToggleFavoriteResolved,
+    favorites,
+    resolveHref,
+  } = ctl;
+
   const empty =
     status !== "loading" && count === 0 && !searchTerm.trim() && emptyState;
+
+  const showControls =
+    showSearch || showGroupingToggle || !!headerActions || !!surfaceId;
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {headerSlot}
       {topSlot}
 
-      {/* ── Controls row: search + grouping toggle + actions ─────────────── */}
-      {(showSearch || showGroupingToggle || headerActions) && (
+      {showControls && (
         <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1">
           {showSearch && (
             <div className="relative flex min-w-0 flex-1 items-center">
@@ -336,6 +410,13 @@ export const ConversationHistorySidebar: React.FC<
               />
             </div>
           )}
+          {surfaceId && (
+            <ConversationSourceFilterTree
+              scopeId={scopeId}
+              surfaceId={surfaceId}
+              align="end"
+            />
+          )}
           {showGroupingToggle && (
             <GroupingToggle value={grouping} onChange={onGroupingChange} />
           )}
@@ -343,7 +424,6 @@ export const ConversationHistorySidebar: React.FC<
         </div>
       )}
 
-      {/* ── Main list ────────────────────────────────────────────────────── */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {error && (
           <div className="px-3 py-3 text-[11px] text-destructive">{error}</div>
@@ -467,7 +547,163 @@ export const ConversationHistorySidebar: React.FC<
   );
 };
 
-// ── Sub-components ───────────────────────────────────────────────────────────
+// ── Consumer view (the /chat sidebar) ────────────────────────────────────────
+
+const ConsumerView: React.FC<
+  ConversationHistorySidebarProps & { ctl: HistoryController }
+> = ({
+  ctl,
+  scopeId,
+  surfaceId,
+  activeConversationId,
+  onOpenConversation,
+  headerSlot,
+  topSlot,
+  initialSearchOpen = false,
+  hideSearchAffordance = false,
+  className,
+}) => {
+  const dispatch = useAppDispatch();
+  const {
+    byDate,
+    status,
+    hasMore,
+    error,
+    count,
+    searchTerm,
+    onSearchChange,
+    onLoadMore,
+    resolveHref,
+  } = ctl;
+
+  // Search — collapsed by default, summoned on click (ChatGPT/Claude style).
+  const [searchOpen, setSearchOpen] = useState(initialSearchOpen);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const openSearch = useCallback(() => {
+    setSearchOpen(true);
+    requestAnimationFrame(() => searchInputRef.current?.focus());
+  }, []);
+  useEffect(() => {
+    if (initialSearchOpen) {
+      requestAnimationFrame(() => searchInputRef.current?.focus());
+    }
+  }, [initialSearchOpen]);
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    dispatch(setScopeSearch({ scopeId, searchTerm: "" }));
+  }, [dispatch, scopeId]);
+
+  return (
+    <div className={cn("flex h-full min-h-0 flex-col bg-card", className)}>
+      {headerSlot}
+
+      {(!hideSearchAffordance || surfaceId) && (
+        <div className="flex shrink-0 items-center gap-1 px-1 pt-2">
+          {!hideSearchAffordance &&
+            (searchOpen ? (
+              <div className="relative flex flex-1 items-center">
+                <Search className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                <input
+                  ref={searchInputRef}
+                  type="search"
+                  value={searchTerm}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") closeSearch();
+                  }}
+                  placeholder="Search chats"
+                  className="h-8 w-full rounded-lg border border-border bg-background pl-8 pr-8 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none focus:border-ring/40"
+                  aria-label="Search conversations"
+                />
+                <button
+                  type="button"
+                  onClick={closeSearch}
+                  className="absolute right-1.5 flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+                  aria-label="Close search"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={openSearch}
+                className="flex h-8 flex-1 items-center gap-1.5 rounded-lg px-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                aria-label="Search conversations"
+              >
+                <Search className="h-3.5 w-3.5" />
+                <span>Search chats</span>
+              </button>
+            ))}
+          {surfaceId && (
+            <ConversationSourceFilterTree
+              scopeId={scopeId}
+              surfaceId={surfaceId}
+              align="end"
+            />
+          )}
+        </div>
+      )}
+
+      {topSlot}
+
+      <div className="min-h-0 flex-1 overflow-y-auto pt-1">
+        {error && (
+          <div className="px-3 py-3 text-xs text-destructive">{error}</div>
+        )}
+
+        {status === "loading" && count === 0 && (
+          <div className="flex items-center gap-2 px-3 py-3 text-xs text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Loading conversations…
+          </div>
+        )}
+
+        {status !== "loading" && count === 0 && !searchTerm.trim() && (
+          <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+            No conversations yet.
+          </div>
+        )}
+
+        {byDate.map((bucket) => (
+          <ConsumerSection key={bucket.key} label={bucket.label}>
+            {bucket.items.map((conv) => (
+              <ConsumerRow
+                key={conv.conversationId}
+                conv={conv}
+                active={conv.conversationId === activeConversationId}
+                onOpen={onOpenConversation}
+                resolveHref={resolveHref}
+              />
+            ))}
+          </ConsumerSection>
+        ))}
+
+        {hasMore && (
+          <div className="px-3 py-2">
+            <button
+              type="button"
+              onClick={onLoadMore}
+              disabled={status === "loading-more"}
+              className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg text-xs text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-60 transition-colors"
+            >
+              {status === "loading-more" ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Loading…
+                </>
+              ) : (
+                "Load more"
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Dense sub-components ──────────────────────────────────────────────────────
 
 interface GroupingToggleProps {
   value: HistoryGrouping;
@@ -564,11 +800,7 @@ const Section: React.FC<SectionProps> = ({
 
 /**
  * Tiny status dot rendered at the start of every conversation row.
- *
- * Idle: subtle muted dot (6px). Streaming: primary-colored dot with an
- * `animate-ping` ring for the breathing/radar effect. Reads
- * `selectIsStreaming(conversationId)` — true while the conversations slice
- * has `status === "streaming"` for this conversation.
+ * Idle: muted dot. Streaming: primary dot with an `animate-ping` ring.
  */
 const StreamingDot: React.FC<{ conversationId: string }> = ({
   conversationId,
@@ -598,9 +830,7 @@ interface RowProps {
   onOpen?: (conv: ConversationListItem) => void;
   isFavorite: boolean;
   onToggleFavorite?: (conv: ConversationListItem) => void;
-  /** Resolves the surface-specific href for the row's menu (new tab / copy). */
   resolveHref: (conv: ConversationListItem) => string;
-  /** Agent-run focus key — when set, Duplicate jumps focus to the new copy. */
   surfaceKey?: string;
   showAgentHint?: boolean;
 }
@@ -618,9 +848,6 @@ const Row: React.FC<RowProps> = ({
   const dispatch = useAppDispatch();
   const title = conv.title?.trim() || untitled(conv);
 
-  // Standalone star toggle — a real one-click button (NOT a menu entry), kept
-  // in the trailing slot so users can pin/unpin without opening the menu.
-  // Pin/Unpin ALSO exists in the kebab menu for discoverability + keyboard.
   const star = onToggleFavorite ? (
     <button
       type="button"
@@ -631,8 +858,6 @@ const Row: React.FC<RowProps> = ({
       }}
       className={cn(
         "flex h-4 w-4 items-center justify-center rounded-sm",
-        // Hidden until hover unless already pinned (ItemRow's group/item drives
-        // the reveal). Always visible on touch.
         isFavorite
           ? "opacity-100"
           : "opacity-0 group-hover/item:opacity-100 [@media(pointer:coarse)]:opacity-100",
@@ -650,9 +875,6 @@ const Row: React.FC<RowProps> = ({
 
   const meta = formatRelative(conv.updatedAt);
 
-  // The agent hint (sr-only) only matters in date grouping where the agent is
-  // not implied by the section header; folded into the trailing slot so the
-  // dense row stays a single ItemRow.
   const trailing =
     showAgentHint && conv.agentId ? (
       <>
@@ -690,13 +912,89 @@ const Row: React.FC<RowProps> = ({
         emptyFallback: untitled(conv),
         onCommit: (next) =>
           void dispatch(
-            renameConversation({ conversationId: conv.conversationId, title: next }),
+            renameConversation({
+              conversationId: conv.conversationId,
+              title: next,
+            }),
           ),
       }}
       kebabAriaLabel={`Options for ${title}`}
     />
   );
 };
+
+// ── Consumer sub-components ───────────────────────────────────────────────────
+
+const ConsumerSection: React.FC<{
+  label: string;
+  children: React.ReactNode;
+}> = ({ label, children }) => (
+  <div className="mb-2">
+    <div className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+      {label}
+    </div>
+    <div>{children}</div>
+  </div>
+);
+
+const ConsumerRow: React.FC<{
+  conv: ConversationListItem;
+  active: boolean;
+  onOpen?: (conv: ConversationListItem) => void;
+  resolveHref: (conv: ConversationListItem) => string;
+}> = ({ conv, active, onOpen, resolveHref }) => {
+  const dispatch = useAppDispatch();
+  const title = conv.title?.trim() || untitled(conv);
+  const isStreaming = useAppSelector(selectIsStreaming(conv.conversationId));
+
+  return (
+    <ItemRow
+      className="mx-1"
+      label={title}
+      active={active}
+      onOpen={() => onOpen?.(conv)}
+      menu={() =>
+        buildConversationMenu({
+          conversationId: conv.conversationId,
+          title: conv.title,
+          isFavorite: conv.isFavorite ?? false,
+          isArchived: conv.status === "archived",
+          excludeFromKg: conv.excludeFromKg ?? false,
+          isOwner: true,
+          href: resolveHref(conv),
+          dispatch,
+        })
+      }
+      rename={{
+        value: conv.title ?? "",
+        emptyFallback: untitled(conv),
+        onCommit: (next) =>
+          void dispatch(
+            renameConversation({
+              conversationId: conv.conversationId,
+              title: next,
+            }),
+          ),
+      }}
+      trailing={
+        isStreaming ? (
+          <span className="relative flex h-1.5 w-1.5" aria-hidden>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+          </span>
+        ) : conv.isFavorite ? (
+          <Star
+            className="h-3 w-3 text-amber-500"
+            fill="currentColor"
+            aria-hidden
+          />
+        ) : null
+      }
+    />
+  );
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function untitled(conv: ConversationListItem): string {
   return `Conversation ${conv.conversationId.slice(0, 6)}`;

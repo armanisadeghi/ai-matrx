@@ -8,6 +8,17 @@ import { defaultScopeState, type ConversationHistoryScopeState } from "./types";
 const selectConversationHistory = (state: RootState) =>
   state.conversationHistory;
 
+// ── Source facets (user-wide, powers the filter tree) ────────────────────────
+
+export const selectSourceFacets = (state: RootState) =>
+  state.conversationHistory.sourceFacets;
+
+export const selectSourceFacetsStatus = (state: RootState) =>
+  state.conversationHistory.sourceFacetsStatus;
+
+export const selectSourceFacetsError = (state: RootState) =>
+  state.conversationHistory.sourceFacetsError;
+
 /**
  * Per-scope state selector factory. Memoized so distinct `scopeId`s get
  * their own selector instance; passing the same `scopeId` returns the same

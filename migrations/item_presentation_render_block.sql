@@ -84,10 +84,10 @@ well immediately even before (or without) a DB hit.
 `image`, `video`, `audio`, `file`, `session`, `table`, `picklist`, `workbook`,
 `document`, `message`, `email`.
 
-- **Recognized** types get a custom icon + accent, DB enrichment, and (where wired)
-  click-to-open. Today **agent, note, file/image/video/audio, picklist** open a
-  window panel; the rest render an enriched, informative card (openers are being
-  added).
+- **Recognized** types get a custom icon + accent, DB enrichment, and click-to-open.
+  **agent, note, file/image/video/audio, picklist** open their dedicated window;
+  every other recognized type opens a clean detail window showing the full record.
+  Either way, a recognized type with a real `id` is always clickable.
 - **Unknown / future / misspelled** types never error — they render a neutral card
   that still shows your `name`/`about`. Prefer a value from the enum so it gets the
   custom treatment.

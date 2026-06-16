@@ -31,6 +31,7 @@ import {
   HardDrive,
   Chrome,
   MessageSquareMore,
+  Filter,
   FileText,
   IdCard,
   Phone,
@@ -95,6 +96,9 @@ const ExtensionTab = lazyTab(() => import("./tabs/ExtensionTab"));
 const ContentTemplatesTab = lazyTab(() => import("./tabs/ContentTemplatesTab"));
 const VoiceMicTab = lazyTab(() => import("./tabs/VoiceMicTab"));
 const MemoryTab = lazyTab(() => import("./tabs/MemoryTab"));
+const ConversationFiltersTab = lazyTab(
+  () => import("./tabs/ConversationFiltersTab"),
+);
 
 export const settingsRegistry: SettingsTabDef[] = [
   // ── General ───────────────────────────────────────────────────────────────
@@ -134,6 +138,27 @@ export const settingsRegistry: SettingsTabDef[] = [
     description: "Data capture and telemetry preferences.",
     searchKeywords: ["telemetry", "tracking", "watching"],
     component: PrivacyTab,
+    persistence: "synced",
+  },
+  {
+    id: "general.conversationFilters",
+    label: "Conversation filters",
+    icon: Filter,
+    parentId: "general",
+    description:
+      "Which surfaces' conversations each history view shows by default.",
+    searchKeywords: [
+      "chat",
+      "history",
+      "conversations",
+      "source",
+      "app",
+      "feature",
+      "filter",
+      "transcription",
+      "hide",
+    ],
+    component: ConversationFiltersTab,
     persistence: "synced",
   },
   {
