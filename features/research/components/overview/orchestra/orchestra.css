@@ -204,6 +204,90 @@
     }
   }
 
+  /* Vertical edge variant — same semantics, rotated for the stacked flow.
+     Used by the vertical (medium / narrow) orchestra layout. */
+
+  .orchestra-edge-flow--v {
+    height: 1.25rem;
+    width: 2px;
+    flex: 0 0 auto;
+    min-width: 0;
+    background: linear-gradient(
+      to bottom,
+      hsl(var(--border) / 0.45),
+      hsl(var(--border) / 0.45)
+    );
+  }
+
+  .orchestra-edge-flow--v[data-state="active"] {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--primary) / 0.05),
+      hsl(var(--primary)) 30%,
+      hsl(var(--primary)) 60%,
+      hsl(var(--primary) / 0.05)
+    );
+    background-size: 100% 220%;
+    animation: orchestra-flow-v 1.6s linear infinite;
+    box-shadow: 0 0 8px hsl(var(--primary) / 0.5);
+  }
+
+  .orchestra-edge-flow--v[data-state="complete"] {
+    background: linear-gradient(
+      to bottom,
+      hsl(142 71% 45% / 0.6),
+      hsl(142 71% 45% / 0.6)
+    );
+  }
+
+  .orchestra-edge-flow--v[data-state="dashed"] {
+    background: none;
+    border-top: 0;
+    border-left: 2px dashed hsl(var(--border) / 0.6);
+    width: 0;
+  }
+
+  @keyframes orchestra-flow-v {
+    from {
+      background-position: 50% 100%;
+    }
+    to {
+      background-position: 50% 0%;
+    }
+  }
+
+  /* Vertical traveling particle — top → bottom along an active vertical edge. */
+
+  .orchestra-edge-particle-v {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 8px hsl(var(--primary));
+    transform: translate(-50%, -50%);
+    animation: orchestra-particle-v 1.4s linear infinite;
+  }
+
+  @keyframes orchestra-particle-v {
+    from {
+      top: 0%;
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 1;
+    }
+    to {
+      top: 100%;
+      opacity: 0;
+    }
+  }
+
   /* SVG curve variant — used for the Tags branch fork/merge. */
 
   .orchestra-edge-curve path {
@@ -328,10 +412,12 @@
     .orchestra-edge-flow[data-state="active"],
     .orchestra-edge-curve[data-state="active"] path,
     .orchestra-edge-particle,
+    .orchestra-edge-particle-v,
     .orchestra-count[data-bumped="true"] {
       animation: none !important;
     }
-    .orchestra-edge-flow[data-state="active"] {
+    .orchestra-edge-flow[data-state="active"],
+    .orchestra-edge-flow--v[data-state="active"] {
       background: hsl(var(--primary));
     }
   }

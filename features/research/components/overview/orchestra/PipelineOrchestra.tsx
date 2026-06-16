@@ -555,14 +555,23 @@ export function PipelineOrchestra() {
 
       {/* ── The orchestra ─────────────────────────────────────────────── */}
       {/*
-        On large screens: a single horizontal flow with the Tags branch below
-        the spine, between Analysis and Synthesis. On small screens: stack
-        vertically with a single column of nodes.
+        Layout is driven by a CONTAINER query (`@container/orch`), not the
+        viewport — so it reacts to the real space available (which changes when
+        the sidebar collapses), never cramming the full horizontal spine into a
+        narrow column. Only when the container is genuinely wide enough for all
+        seven nodes + edges (@7xl) do we render the beautiful single-row flow
+        with the Tags branch beneath it. Below that, nodes flow into a readable
+        grid (2 → 3 → 4 columns) so every label/count stays legible at any width
+        and with any amount of data.
       */}
-      <div className="rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm p-3 lg:p-4 overflow-hidden">
-        {/* MOBILE / VERTICAL */}
-        <div className="lg:hidden space-y-2">
-          <div className="grid grid-cols-2 gap-2">
+      <div className="@container/orch rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm p-3 lg:p-4 overflow-hidden">
+        {/* COMPACT / VERTICAL FLOW — anything narrower than the full spine.
+            A centered stacked pipeline with animated vertical connectors, so the
+            flow + live animation survive at medium/narrow widths (where the
+            horizontal spine can't fit without cramming labels into single
+            letters). Tags is an inline manual branch with dashed connectors. */}
+        <div className="@7xl/orch:hidden">
+          <div className="mx-auto flex w-full max-w-sm flex-col">
             <OrchestraNode
               icon={Search}
               label="Keywords"
@@ -574,17 +583,19 @@ export function PipelineOrchestra() {
               actionDisabled={!canRunSearch}
               actionLabel="Search keywords"
             />
+            <VEdge state={edgeStateFor(keywordsStatus, sourcesStatus)} />
             <OrchestraNode
               icon={Globe}
               label="Sources"
               count={p.total_sources}
-              hint={`${p.included_sources} included`}
+              hint={`${p.included_sources} included · ${topic.scrapes_per_keyword ?? 5}/kw scraped`}
               status={sourcesStatus}
               href={`${base}/sources`}
               onAction={handleScrape}
               actionDisabled={!canRunScrape}
               actionLabel="Scrape pending sources"
             />
+            <VEdge state={edgeStateFor(sourcesStatus, contentStatus)} />
             <OrchestraNode
               icon={FileText}
               label="Content"
@@ -596,6 +607,7 @@ export function PipelineOrchestra() {
               actionDisabled={!canRunAnalyze}
               actionLabel="Analyze pages"
             />
+            <VEdge state={edgeStateFor(contentStatus, analysisStatus)} />
             <OrchestraNode
               icon={Brain}
               label="Analysis"
@@ -611,6 +623,8 @@ export function PipelineOrchestra() {
               actionDisabled={!canRunSynthesize}
               actionLabel="Synthesize keywords"
             />
+            {/* Tags — manual branch (dashed in/out, never animated flow). */}
+            <VEdge state="dashed" />
             <OrchestraNode
               icon={Tags}
               label="Tags"
@@ -619,11 +633,12 @@ export function PipelineOrchestra() {
               status={tagsStatus}
               href={`${base}/tags`}
               ribbon={
-                <span className="text-[9px] font-medium text-muted-foreground/70">
-                  manual
+                <span className="inline-flex items-center gap-1 text-[9px] font-medium text-muted-foreground/70">
+                  <span className="px-1 py-px rounded bg-muted/50">MANUAL</span>
                 </span>
               }
             />
+            <VEdge state="dashed" />
             <OrchestraNode
               icon={Layers}
               label="Synthesis"
@@ -635,6 +650,7 @@ export function PipelineOrchestra() {
               actionDisabled={!canRunSynthesize}
               actionLabel="Synthesize keywords"
             />
+            <VEdge state={edgeStateFor(synthesisStatus, reportStatus)} />
             <OrchestraNode
               icon={ScrollText}
               label="Report"
@@ -650,6 +666,7 @@ export function PipelineOrchestra() {
               actionDisabled={!canRunReport}
               actionLabel="Generate report"
             />
+            <VEdge state={edgeStateFor(reportStatus, documentStatus)} />
             <OrchestraNode
               icon={FileSpreadsheet}
               label="Document"
@@ -665,8 +682,8 @@ export function PipelineOrchestra() {
           </div>
         </div>
 
-        {/* DESKTOP / HORIZONTAL ORCHESTRA */}
-        <div className="hidden lg:block">
+        {/* WIDE / HORIZONTAL ORCHESTRA — full spine + Tags branch. */}
+        <div className="hidden @7xl/orch:block">
           {/* Spine row — 7 nodes with edges between them.
               The grid uses fr-units for nodes and fixed-min for edges so
               edges stretch to fill while nodes hold their natural width. */}
@@ -998,6 +1015,23 @@ export function PipelineOrchestra() {
           </DialogContent>
         </Dialog>
       )}
+    </div>
+  );
+}
+
+/**
+ * A vertical connector between two nodes in the compact vertical flow. Mirrors
+ * the horizontal spine edges: animated when the upstream stage is live, solid
+ * green when complete, dashed for the manual Tags branch.
+ */
+function VEdge({ state }: { state: EdgeState }) {
+  return (
+    <div className="flex justify-center py-0.5">
+      <OrchestraEdge
+        orientation="vertical"
+        state={state}
+        particle={state !== "dashed"}
+      />
     </div>
   );
 }

@@ -14,17 +14,16 @@ import {
   CheckCircle2,
   X,
   Headphones,
+  Link2,
+  Tag,
+  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTopicContext } from "../../context/ResearchContext";
-import {
-  useResearchDocument,
-  useResearchSynthesis,
-} from "../../hooks/useResearchState";
-import { updateTopic } from "../../service";
+import { updateTopic, getDocument, getSynthesis } from "../../service";
 import type { ResearchSynthesis } from "../../types";
 import { usePodcastRun } from "@/features/podcasts/generator/usePodcastRun";
 import type {
@@ -34,21 +33,69 @@ import type {
 import { useRunAgent } from "@/features/agents/run/useRunAgent";
 import MarkdownStream from "@/components/MarkdownStream";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import Slideshow from "@/components/mardown-display/blocks/presentations/Slideshow";
 import {
   parseOutputs,
   appendAsset,
   assetsFor,
   type OutputAsset,
+  type OutputKind,
 } from "./outputs";
 
 /** Research content-engine generator agents (created as data; run live via
- *  /ai/agents/{id}). content_to_blog forks the Document Assembly agent. */
+ *  /ai/agents/{id}). Each forks the runnable config of the blog generator. */
 const BLOG_AGENT_ID = "d5a17f12-c06e-4b07-8222-3fd1dfbdd85b";
+const SLIDES_AGENT_ID = "8f0bbfc2-85d9-4913-8cea-b09a50c62be6";
+const SEO_AGENT_ID = "de3e5a62-559b-406a-a6bd-c6064b4ba3fe";
 
 /** First H1 in a markdown doc, for an asset title. */
 function extractMarkdownTitle(md: string): string | null {
   const m = md.match(/^#\s+(.+?)\s*$/m);
   return m ? m[1].trim() : null;
+}
+
+/** Build the generator input: prepend the Voice & Lens, then the report. */
+function buildGeneratorInput(reportMarkdown: string, toneProfile: string): string {
+  return (
+    (toneProfile.trim() ? `Voice & Lens: ${toneProfile.trim()}\n\n` : "") +
+    `Research report:\n\n${reportMarkdown}`
+  );
+}
+
+/** Parse a JSON object out of an agent's text output, tolerating code fences
+ *  or stray prose around it. Returns null if no valid object is found. */
+function parseJsonLoose<T = Record<string, unknown>>(s: string): T | null {
+  if (!s) return null;
+  let t = s.trim();
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1].trim();
+  if (!t.startsWith("{")) {
+    const i = t.indexOf("{");
+    const j = t.lastIndexOf("}");
+    if (i >= 0 && j > i) t = t.slice(i, j + 1);
+  }
+  try {
+    return JSON.parse(t) as T;
+  } catch {
+    return null;
+  }
+}
+
+interface PresentationDeck {
+  title?: string;
+  theme?: Record<string, unknown>;
+  slides?: Array<Record<string, unknown>>;
+}
+
+interface SeoPackage {
+  title?: string;
+  meta_description?: string;
+  slug?: string;
+  primary_keyword?: string;
+  keywords?: string[];
+  schema_org?: Record<string, unknown>;
+  open_graph?: Record<string, unknown>;
+  faq?: Array<{ question?: string; answer?: string }>;
 }
 
 const HOST_COUNTS = [1, 2, 3, 4] as const;
@@ -59,27 +106,60 @@ const PODCAST_TYPES: { value: PodcastType; label: string }[] = [
 
 export default function OutputsStudio() {
   const { topicId, topic, refresh } = useTopicContext();
-  const { data: document } = useResearchDocument(topicId);
-  const { data: projectSyntheses } = useResearchSynthesis(topicId, {
-    scope: "project",
-  });
 
   // The report that feeds every output: prefer the assembled document, fall
-  // back to the current project synthesis.
-  const reportMarkdown = useMemo(() => {
-    if (document?.content?.trim()) return document.content;
-    const list = (projectSyntheses ?? []) as ResearchSynthesis[];
-    const current =
-      list.find((s) => s.is_current && s.result?.trim()) ??
-      list.find((s) => s.result?.trim());
-    return current?.result ?? "";
-  }, [document, projectSyntheses]);
+  // back to the current project synthesis. Self-contained client fetch (runs
+  // after mount when the Supabase session is ready) — more reliable here than
+  // the shared query hook, which got stuck loading on this surface.
+  const [reportMarkdown, setReportMarkdown] = useState("");
+  const [reportLoading, setReportLoading] = useState(true);
+
+  useEffect(() => {
+    if (!topicId) return;
+    let cancelled = false;
+    setReportLoading(true);
+    void (async () => {
+      try {
+        const [doc, synth] = await Promise.all([
+          getDocument(topicId).catch(() => null),
+          getSynthesis(topicId).catch(() => [] as ResearchSynthesis[]),
+        ]);
+        if (cancelled) return;
+        let md = "";
+        if (doc?.content?.trim()) {
+          md = doc.content;
+        } else {
+          const list = (synth ?? []).filter((s) => s.scope === "project");
+          const current =
+            list.find((s) => s.is_current && s.result?.trim()) ??
+            list.find((s) => s.result?.trim());
+          md = current?.result ?? "";
+        }
+        setReportMarkdown(md);
+      } finally {
+        if (!cancelled) setReportLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [topicId]);
 
   const hasReport = reportMarkdown.trim().length > 0;
   const outputs = useMemo(
     () => parseOutputs(topic?.outputs),
     [topic?.outputs],
   );
+
+  // Append a freshly generated asset to the topic's outputs index. `outputs` is
+  // a JSONB column (Record<string, unknown>); ResearchOutputs is its typed view.
+  const persistOutput = async (kind: OutputKind, asset: OutputAsset) => {
+    const next = appendAsset(parseOutputs(topic?.outputs), kind, asset);
+    await updateTopic(topicId, {
+      outputs: next as unknown as Record<string, unknown>,
+    });
+    refresh();
+  };
 
   return (
     <div className="h-full overflow-y-auto">
@@ -94,7 +174,14 @@ export default function OutputsStudio() {
           </span>
         </div>
 
-        {!hasReport && (
+        {reportLoading && (
+          <div className="flex items-center gap-2 rounded-xl border border-border/50 bg-card/40 px-3 py-2.5 text-xs text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+            <span>Loading the research report…</span>
+          </div>
+        )}
+
+        {!hasReport && !reportLoading && (
           <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
             <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
             <span>
@@ -123,11 +210,7 @@ export default function OutputsStudio() {
           hasReport={hasReport}
           defaultTitle={topic?.name ?? "Research"}
           existing={assetsFor(outputs, "podcast")}
-          onPersisted={async (asset) => {
-            const next = appendAsset(parseOutputs(topic?.outputs), "podcast", asset);
-            await updateTopic(topicId, { outputs: next });
-            refresh();
-          }}
+          onPersisted={(asset) => persistOutput("podcast", asset)}
         />
 
         <BlogOutputCard
@@ -142,15 +225,30 @@ export default function OutputsStudio() {
             refresh();
           }}
         />
-        <PlaceholderCard
-          icon={<Presentation className="h-4 w-4" />}
-          title="Slide deck"
-          blurb="A presentation rendered to a shareable web slideshow."
+        <SlidesOutputCard
+          reportMarkdown={reportMarkdown}
+          hasReport={hasReport}
+          toneProfile={topic?.tone_profile ?? ""}
+          defaultTitle={topic?.name ?? "Research"}
+          existing={assetsFor(outputs, "slides")}
+          onPersisted={async (asset) => {
+            const next = appendAsset(parseOutputs(topic?.outputs), "slides", asset);
+            await updateTopic(topicId, { outputs: next });
+            refresh();
+          }}
         />
-        <PlaceholderCard
-          icon={<SearchIcon className="h-4 w-4" />}
-          title="SEO package"
-          blurb="Title, meta, slug, keywords, schema.org + OG — on-page SEO for the published piece."
+
+        <SeoOutputCard
+          reportMarkdown={reportMarkdown}
+          hasReport={hasReport}
+          toneProfile={topic?.tone_profile ?? ""}
+          defaultTitle={topic?.name ?? "Research"}
+          existing={assetsFor(outputs, "seo")}
+          onPersisted={async (asset) => {
+            const next = appendAsset(parseOutputs(topic?.outputs), "seo", asset);
+            await updateTopic(topicId, { outputs: next });
+            refresh();
+          }}
         />
       </div>
     </div>
@@ -634,31 +732,434 @@ function BlogOutputCard({
   );
 }
 
-function PlaceholderCard({
+// ── Reusable output-card chrome ──────────────────────────────────────────────
+
+function OutputCardShell({
   icon,
   title,
   blurb,
+  count,
+  children,
 }: {
   icon: React.ReactNode;
   title: string;
   blurb: string;
+  count: number;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-border/50 bg-card/30 px-3.5 py-2.5 flex items-center gap-2.5">
-      <div className="h-7 w-7 rounded-lg bg-muted/50 flex items-center justify-center shrink-0 text-muted-foreground">
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm font-semibold text-foreground/70">
-            {title}
-          </span>
-          <Badge variant="secondary" className="text-[8px] h-3.5 px-1 font-normal">
-            Soon
-          </Badge>
+    <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm overflow-hidden">
+      <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-b border-border/50">
+        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-primary">
+          {icon}
         </div>
-        <p className="text-[11px] text-muted-foreground">{blurb}</p>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-semibold">{title}</span>
+            <Badge variant="secondary" className="text-[9px] h-4 px-1.5">
+              Live
+            </Badge>
+          </div>
+          <p className="text-[11px] text-muted-foreground">{blurb}</p>
+        </div>
+        {count > 0 && (
+          <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+            {count} generated
+          </span>
+        )}
       </div>
+      <div className="p-3.5 space-y-3">{children}</div>
+    </div>
+  );
+}
+
+function GeneratingNote({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-2.5">
+      <Loader2 className="h-3.5 w-3.5 text-primary animate-spin shrink-0" />
+      <span className="text-xs font-medium text-primary">{label}</span>
+    </div>
+  );
+}
+
+// ── Slides output (live: runs research_to_slides → renders a Slideshow) ───────
+
+function SlidesOutputCard({
+  reportMarkdown,
+  hasReport,
+  toneProfile,
+  defaultTitle,
+  existing,
+  onPersisted,
+}: {
+  reportMarkdown: string;
+  hasReport: boolean;
+  toneProfile: string;
+  defaultTitle: string;
+  existing: OutputAsset[];
+  onPersisted: (asset: OutputAsset) => Promise<void>;
+}) {
+  const { run, running } = useRunAgent();
+  const [viewing, setViewing] = useState<OutputAsset | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGenerate = async () => {
+    if (!hasReport || running) return;
+    setViewing(null);
+    setError(null);
+    try {
+      const raw = await run({
+        agentId: SLIDES_AGENT_ID,
+        userInput: buildGeneratorInput(reportMarkdown, toneProfile),
+      });
+      const deck = parseJsonLoose<PresentationDeck>(raw);
+      if (!deck || !Array.isArray(deck.slides) || deck.slides.length === 0) {
+        setError("The slides generator didn't return a valid deck. Try again.");
+        return;
+      }
+      const asset: OutputAsset = {
+        id: crypto.randomUUID(),
+        kind: "slides",
+        title: deck.title || `${defaultTitle} — slides`,
+        status: "ready",
+        created_at: new Date().toISOString(),
+        meta: { presentation: deck, slide_count: deck.slides.length },
+      };
+      await onPersisted(asset);
+      setViewing(asset);
+      toast.success("Slide deck saved to outputs");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "unknown error");
+    }
+  };
+
+  const deck =
+    (viewing?.meta?.presentation as PresentationDeck | undefined) ?? null;
+
+  return (
+    <OutputCardShell
+      icon={<Presentation className="h-4 w-4" />}
+      title="Slide deck"
+      blurb="A presentation built from this research — rendered as a live slideshow."
+      count={existing.length}
+    >
+      {!running && !viewing && (
+        <Button
+          size="sm"
+          className="gap-1.5 h-8"
+          onClick={handleGenerate}
+          disabled={!hasReport}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          Generate slides
+        </Button>
+      )}
+      {error && (
+        <span className="inline-flex items-center gap-1 text-[11px] text-destructive">
+          <AlertCircle className="h-3.5 w-3.5" />
+          {error}
+        </span>
+      )}
+      {running && <GeneratingNote label="Designing the deck…" />}
+
+      {!running && viewing && deck && (
+        <div className="rounded-lg border border-border/50 bg-card/40 overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
+            <span className="text-xs font-medium flex-1 truncate">
+              {viewing.title}
+            </span>
+            <span className="text-[10px] text-muted-foreground tabular-nums">
+              {deck.slides?.length ?? 0} slides
+            </span>
+            <button
+              onClick={() => setViewing(null)}
+              className="text-[10px] text-muted-foreground hover:text-foreground"
+            >
+              Close
+            </button>
+          </div>
+          <div className="h-[440px] relative bg-background">
+            <Slideshow slides={deck.slides ?? []} theme={deck.theme ?? {}} />
+          </div>
+        </div>
+      )}
+
+      {existing.length > 0 && (
+        <div className="space-y-1.5 pt-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Generated decks
+          </span>
+          <div className="space-y-1">
+            {existing.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => {
+                  setViewing(a);
+                  setError(null);
+                }}
+                className="w-full flex items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5 text-left hover:bg-accent/40 transition-colors"
+              >
+                <Presentation className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-[11px] font-medium truncate flex-1">
+                  {a.title}
+                </span>
+                <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                  {new Date(a.created_at).toLocaleDateString()}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </OutputCardShell>
+  );
+}
+
+// ── SEO output (live: runs research_to_seo → renders the package) ────────────
+
+function SeoOutputCard({
+  reportMarkdown,
+  hasReport,
+  toneProfile,
+  defaultTitle,
+  existing,
+  onPersisted,
+}: {
+  reportMarkdown: string;
+  hasReport: boolean;
+  toneProfile: string;
+  defaultTitle: string;
+  existing: OutputAsset[];
+  onPersisted: (asset: OutputAsset) => Promise<void>;
+}) {
+  const { run, running } = useRunAgent();
+  const [viewing, setViewing] = useState<OutputAsset | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGenerate = async () => {
+    if (!hasReport || running) return;
+    setViewing(null);
+    setError(null);
+    try {
+      const raw = await run({
+        agentId: SEO_AGENT_ID,
+        userInput: buildGeneratorInput(reportMarkdown, toneProfile),
+      });
+      const seo = parseJsonLoose<SeoPackage>(raw);
+      if (!seo || !seo.title) {
+        setError("The SEO generator didn't return a valid package. Try again.");
+        return;
+      }
+      const asset: OutputAsset = {
+        id: crypto.randomUUID(),
+        kind: "seo",
+        title: seo.title,
+        status: "ready",
+        created_at: new Date().toISOString(),
+        slug: seo.slug,
+        meta: { seo },
+      };
+      await onPersisted(asset);
+      setViewing(asset);
+      toast.success("SEO package saved to outputs");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "unknown error");
+    }
+  };
+
+  const seo = (viewing?.meta?.seo as SeoPackage | undefined) ?? null;
+
+  return (
+    <OutputCardShell
+      icon={<SearchIcon className="h-4 w-4" />}
+      title="SEO package"
+      blurb="Title, meta, slug, keywords, schema.org + OG — on-page SEO for the published piece."
+      count={existing.length}
+    >
+      {!running && !viewing && (
+        <Button
+          size="sm"
+          className="gap-1.5 h-8"
+          onClick={handleGenerate}
+          disabled={!hasReport}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          Generate SEO package
+        </Button>
+      )}
+      {error && (
+        <span className="inline-flex items-center gap-1 text-[11px] text-destructive">
+          <AlertCircle className="h-3.5 w-3.5" />
+          {error}
+        </span>
+      )}
+      {running && <GeneratingNote label="Optimizing for search…" />}
+
+      {!running && viewing && seo && (
+        <div className="rounded-lg border border-border/50 bg-card/40 overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50">
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
+            <span className="text-xs font-medium flex-1 truncate">
+              {viewing.title}
+            </span>
+            <button
+              onClick={() => setViewing(null)}
+              className="text-[10px] text-muted-foreground hover:text-foreground"
+            >
+              Close
+            </button>
+          </div>
+          <div className="p-3">
+            <SeoView seo={seo} />
+          </div>
+        </div>
+      )}
+
+      {existing.length > 0 && (
+        <div className="space-y-1.5 pt-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Generated packages
+          </span>
+          <div className="space-y-1">
+            {existing.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => {
+                  setViewing(a);
+                  setError(null);
+                }}
+                className="w-full flex items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5 text-left hover:bg-accent/40 transition-colors"
+              >
+                <SearchIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-[11px] font-medium truncate flex-1">
+                  {a.title}
+                </span>
+                <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+                  {new Date(a.created_at).toLocaleDateString()}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </OutputCardShell>
+  );
+}
+
+function SeoField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-0.5">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
+      <div className="text-xs text-foreground/90">{children}</div>
+    </div>
+  );
+}
+
+function SeoView({ seo }: { seo: SeoPackage }) {
+  const [showRaw, setShowRaw] = useState(false);
+  const jsonLd = JSON.stringify(
+    { schema_org: seo.schema_org ?? {}, open_graph: seo.open_graph ?? {} },
+    null,
+    2,
+  );
+  const copy = async (text: string, what: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${what} copied`);
+    } catch {
+      toast.error("Couldn't copy");
+    }
+  };
+  return (
+    <div className="space-y-3">
+      <SeoField label="Title">
+        <span className="font-medium">{seo.title}</span>
+        {typeof seo.title === "string" && (
+          <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">
+            {seo.title.length}/60
+          </span>
+        )}
+      </SeoField>
+      {seo.meta_description && (
+        <SeoField label="Meta description">
+          {seo.meta_description}
+          <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">
+            {seo.meta_description.length}/155
+          </span>
+        </SeoField>
+      )}
+      {seo.slug && (
+        <SeoField label="Slug">
+          <button
+            onClick={() => copy(seo.slug!, "Slug")}
+            className="inline-flex items-center gap-1 font-mono text-[11px] rounded bg-muted/60 px-1.5 py-0.5 hover:bg-muted"
+          >
+            <Link2 className="h-3 w-3" />
+            {seo.slug}
+          </button>
+        </SeoField>
+      )}
+      {Array.isArray(seo.keywords) && seo.keywords.length > 0 && (
+        <SeoField label="Keywords">
+          <div className="flex flex-wrap gap-1 mt-0.5">
+            {seo.keywords.map((k, i) => (
+              <span
+                key={i}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px]",
+                  k === seo.primary_keyword
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "bg-muted/60 text-muted-foreground",
+                )}
+              >
+                <Tag className="h-2.5 w-2.5" />
+                {k}
+              </span>
+            ))}
+          </div>
+        </SeoField>
+      )}
+      {Array.isArray(seo.faq) && seo.faq.length > 0 && (
+        <SeoField label="FAQ">
+          <div className="space-y-1.5 mt-0.5">
+            {seo.faq.map((f, i) => (
+              <div key={i} className="rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5">
+                <div className="flex items-start gap-1.5">
+                  <HelpCircle className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+                  <span className="text-[11px] font-medium">{f.question}</span>
+                </div>
+                {f.answer && (
+                  <p className="text-[11px] text-muted-foreground mt-0.5 pl-4.5">
+                    {f.answer}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </SeoField>
+      )}
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          onClick={() => setShowRaw((v) => !v)}
+          className="text-[11px] text-muted-foreground hover:text-foreground"
+        >
+          {showRaw ? "Hide" : "Show"} schema.org + OpenGraph
+        </button>
+        <button
+          onClick={() => copy(jsonLd, "JSON-LD")}
+          className="text-[11px] text-primary hover:underline"
+        >
+          Copy JSON-LD
+        </button>
+      </div>
+      {showRaw && (
+        <pre className="text-[10px] bg-muted/50 rounded-lg p-2.5 overflow-x-auto max-h-60 overflow-y-auto leading-relaxed">
+          {jsonLd}
+        </pre>
+      )}
     </div>
   );
 }

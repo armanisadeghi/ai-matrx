@@ -20,11 +20,12 @@ import {
 import { Loader2, ExternalLink, AlertTriangle, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/utils/supabase/client";
-import { addRow, getTableDetails } from "@/utils/user-table-utls/table-utils";
+import { getTableDetails } from "@/utils/user-table-utls/table-utils";
 import type { TableField } from "@/utils/user-table-utls/table-utils";
-import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { autoMapColumns, SKIP } from "@/features/data-tables/reconcile";
+import { appendToTable } from "@/features/data-tables/save-to-table";
 
 interface UserTableSummary {
   id: string;
@@ -41,50 +42,6 @@ interface AppendToTableDialogProps {
   rows: Record<string, unknown>[];
   /** Column order from the source JSON (union of keys). */
   columns: string[];
-}
-
-/** Special mapping value meaning "don't insert this JSON column". */
-const SKIP = "__skip__";
-
-/**
- * Auto-map JSON columns to existing table fields by trying, in order:
- *   1. exact match on field_name (sanitized JSON column name)
- *   2. case-insensitive match on display_name
- *   3. case-insensitive sanitized match on display_name
- *
- * Returns a map { jsonColumn -> table.field_name | SKIP }.
- */
-function autoMap(
-  jsonColumns: string[],
-  fields: TableField[],
-): Record<string, string> {
-  const byFieldName = new Map(fields.map((f) => [f.field_name, f.field_name]));
-  const byDisplayLower = new Map(
-    fields.map((f) => [f.display_name.toLowerCase(), f.field_name]),
-  );
-  const bySanitizedDisplay = new Map(
-    fields.map((f) => [sanitizeFieldName(f.display_name), f.field_name]),
-  );
-
-  const mapping: Record<string, string> = {};
-  for (const col of jsonColumns) {
-    const sanitized = sanitizeFieldName(col);
-    if (byFieldName.has(sanitized)) {
-      mapping[col] = byFieldName.get(sanitized)!;
-      continue;
-    }
-    const lower = col.toLowerCase();
-    if (byDisplayLower.has(lower)) {
-      mapping[col] = byDisplayLower.get(lower)!;
-      continue;
-    }
-    if (bySanitizedDisplay.has(sanitized)) {
-      mapping[col] = bySanitizedDisplay.get(sanitized)!;
-      continue;
-    }
-    mapping[col] = SKIP;
-  }
-  return mapping;
 }
 
 /** Compact sample preview: first non-null value for a column, stringified. */
@@ -187,7 +144,7 @@ export const AppendToTableDialog: React.FC<AppendToTableDialogProps> = ({
         }
         if (!cancelled) {
           setFields(result.fields);
-          setMapping(autoMap(columns, result.fields));
+          setMapping(autoMapColumns(columns, result.fields));
         }
       } catch (err) {
         if (!cancelled) {
@@ -228,62 +185,51 @@ export const AppendToTableDialog: React.FC<AppendToTableDialogProps> = ({
     setSubmitting(true);
     setError(null);
 
-    let inserted = 0;
-    let failed = 0;
-    try {
-      for (const row of rows) {
-        const payload: Record<string, unknown> = {};
-        for (const [jsonCol, target] of Object.entries(mapping)) {
-          if (target === SKIP) continue;
-          if (jsonCol in row) {
-            payload[target] = row[jsonCol];
-          }
-        }
-        if (Object.keys(payload).length === 0) continue;
-        const res = await addRow(supabase, {
-          tableId: selectedTableId,
-          data: payload,
-        });
-        if (res.success) inserted++;
-        else {
-          failed++;
-          console.warn("[AppendToTable] addRow failed:", res.error);
-        }
-      }
+    // One atomic `udt_bulk_write` instead of N per-row round-trips. The shared
+    // engine filters SKIP-mapped columns and any empty payloads. This dialog
+    // does not create new columns (unmapped JSON columns are skipped), so
+    // `newColumns` stays empty.
+    const result = await appendToTable({
+      tableId: selectedTableId,
+      rows,
+      mapping,
+      newColumns: [],
+    });
 
-      const target = tables.find((t) => t.id === selectedTableId);
-      toast.success(
-        `Appended ${inserted} row${inserted === 1 ? "" : "s"} to "${target?.table_name ?? "table"}"` +
-          (failed > 0 ? ` (${failed} failed)` : ""),
-        {
-          action: {
-            label: "Open",
-            onClick: () => {
-              dispatch(
-                openOverlay({
-                  overlayId: "quickDataWindow",
-                  data: { selectedTable: selectedTableId },
-                }),
-              );
-            },
+    if (!result.success) {
+      setError(result.error ?? "Failed to append rows");
+      setSubmitting(false);
+      return;
+    }
+
+    const target = tables.find((t) => t.id === selectedTableId);
+    toast.success(
+      `Appended ${result.inserted} row${result.inserted === 1 ? "" : "s"} to "${target?.table_name ?? "table"}"` +
+        (result.failed > 0 ? ` (${result.failed} failed)` : ""),
+      {
+        action: {
+          label: "Open",
+          onClick: () => {
+            dispatch(
+              openOverlay({
+                overlayId: "quickDataWindow",
+                data: { selectedTable: selectedTableId },
+              }),
+            );
           },
         },
-      );
+      },
+    );
 
-      dispatch(
-        openOverlay({
-          overlayId: "quickDataWindow",
-          data: { selectedTable: selectedTableId },
-        }),
-      );
+    dispatch(
+      openOverlay({
+        overlayId: "quickDataWindow",
+        data: { selectedTable: selectedTableId },
+      }),
+    );
 
-      onOpenChange(false);
-    } catch (err) {
-      console.error("Append-to-table failed:", err);
-      setError(err instanceof Error ? err.message : "Unexpected error");
-    } finally {
-      setSubmitting(false);
-    }
+    setSubmitting(false);
+    onOpenChange(false);
   };
 
   return (

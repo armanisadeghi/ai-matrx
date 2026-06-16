@@ -21,21 +21,37 @@ interface OrchestraEdgeProps {
   className?: string;
   /** Show a traveling particle when state="active". */
   particle?: boolean;
+  /**
+   * Orientation of the connector. "horizontal" (default) is the thin line used
+   * between spine nodes; "vertical" is the stacked variant used by the vertical
+   * (medium / narrow) orchestra layout.
+   */
+  orientation?: "horizontal" | "vertical";
 }
 
 export function OrchestraEdge({
   state,
   className,
   particle = true,
+  orientation = "horizontal",
 }: OrchestraEdgeProps) {
+  const vertical = orientation === "vertical";
   return (
     <div
       data-state={state}
-      className={cn("orchestra-edge-flow", className)}
+      className={cn(
+        "orchestra-edge-flow",
+        vertical && "orchestra-edge-flow--v",
+        className,
+      )}
       aria-hidden
     >
       {state === "active" && particle && (
-        <span className="orchestra-edge-particle" />
+        <span
+          className={
+            vertical ? "orchestra-edge-particle-v" : "orchestra-edge-particle"
+          }
+        />
       )}
     </div>
   );

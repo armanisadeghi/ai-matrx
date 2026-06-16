@@ -8,9 +8,14 @@ import {
   Check,
   X,
   Search,
-  Image as ImageLucide,
   Shapes,
-  Zap
+  Zap,
+  RectangleHorizontal,
+  Square,
+  RectangleVertical,
+  HelpCircle,
+  LayoutGrid,
+  Bug,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +31,8 @@ import { useResearchMedia } from "../../hooks/useResearchState";
 import { updateMedia } from "../../service";
 import type { ResearchMedia } from "../../types";
 import { idMatchesQuery } from "@/utils/search-scoring";
+import { bucketMedia, formatResolvedSizeLabel } from "./mediaCategorization";
+import MediaDebugPanel from "./MediaDebugPanel";
 
 const TYPE_ICONS = {
   image: ImageIcon,
@@ -33,45 +40,11 @@ const TYPE_ICONS = {
   document: File,
 };
 
-type SizeTier = "photo" | "graphic" | "icon";
-
-const ICON_MAX_DIM = 64;
-const GRAPHIC_MAX_DIM = 200;
-
-function isLikelyIconUrl(url: string): boolean {
-  const u = url.toLowerCase();
-  return (
-    u.includes("favicon") ||
-    u.endsWith(".ico") ||
-    u.includes("/favicon") ||
-    /\/icons?\//.test(u) ||
-    /-icon\.(png|svg|webp|gif|jpe?g)(\?|$)/.test(u) ||
-    /apple-touch-icon/.test(u)
-  );
-}
-
-function categorize(item: ResearchMedia): SizeTier {
-  if (item.media_type !== "image") return "photo";
-
-  const w = item.width ?? 0;
-  const h = item.height ?? 0;
-  const max = Math.max(w, h);
-
-  if (max === 0) {
-    return isLikelyIconUrl(item.url) ? "icon" : "photo";
-  }
-  if (max <= ICON_MAX_DIM) return "icon";
-  if (max < GRAPHIC_MAX_DIM) return "graphic";
-  return "photo";
-}
-
-function sizeLabel(item: ResearchMedia): string | null {
-  if (item.width && item.height) return `${item.width}×${item.height}`;
-  return null;
-}
+type GalleryView = "gallery" | "debug";
 
 export default function MediaGallery() {
   const { topicId } = useTopicContext();
+  const [view, setView] = useState<GalleryView>("gallery");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [relevanceFilter, setRelevanceFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -101,30 +74,7 @@ export default function MediaGallery() {
     return items;
   }, [mediaList, typeFilter, relevanceFilter, search]);
 
-  const buckets = useMemo(() => {
-    const photos: ResearchMedia[] = [];
-    const graphics: ResearchMedia[] = [];
-    const icons: ResearchMedia[] = [];
-
-    for (const item of filtered) {
-      const tier = categorize(item);
-      if (tier === "photo") photos.push(item);
-      else if (tier === "graphic") graphics.push(item);
-      else icons.push(item);
-    }
-
-    const byAreaDesc = (a: ResearchMedia, b: ResearchMedia) => {
-      const aa = (a.width ?? 0) * (a.height ?? 0);
-      const bb = (b.width ?? 0) * (b.height ?? 0);
-      return bb - aa;
-    };
-
-    photos.sort(byAreaDesc);
-    graphics.sort(byAreaDesc);
-    icons.sort(byAreaDesc);
-
-    return { photos, graphics, icons };
-  }, [filtered]);
+  const buckets = useMemo(() => bucketMedia(filtered), [filtered]);
 
   const handleToggleRelevance = useCallback(
     async (item: ResearchMedia) => {
@@ -135,6 +85,11 @@ export default function MediaGallery() {
   );
 
   const totalEmpty = filtered.length === 0;
+  const hasPhotoSections =
+    buckets.landscape.length > 0 ||
+    buckets.square.length > 0 ||
+    buckets.portrait.length > 0 ||
+    buckets.unknownAspect.length > 0;
 
   return (
     <div className="p-3 sm:p-4 space-y-4">
@@ -143,46 +98,88 @@ export default function MediaGallery() {
         <span className="text-[10px] text-muted-foreground tabular-nums">
           {filtered.length}/{mediaList.length}
         </span>
-        <div className="flex-1 relative">
+        <div className="flex items-center rounded-full matrx-glass-card p-0.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setView("gallery")}
+            className={cn(
+              "flex items-center gap-1 px-2 h-5 rounded-full text-[10px] font-medium transition-colors",
+              view === "gallery"
+                ? "bg-background/80 text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <LayoutGrid className="h-3 w-3" />
+            Gallery
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("debug")}
+            className={cn(
+              "flex items-center gap-1 px-2 h-5 rounded-full text-[10px] font-medium transition-colors",
+              view === "debug"
+                ? "bg-background/80 text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Bug className="h-3 w-3" />
+            Debug
+          </button>
+        </div>
+        <div className="flex-1 relative min-w-0">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search alt text, caption, url..."
-            className="w-full h-6 pl-7 pr-2 text-[11px] rounded-full matrx-glass-card border-0 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
-            style={{ fontSize: "16px" }}
+            className="w-full h-6 pl-7 pr-2 text-[11px] max-md:text-base rounded-full matrx-glass-card border-0 bg-transparent outline-none text-foreground placeholder:text-muted-foreground shadow-none"
           />
         </div>
         <Select value={relevanceFilter} onValueChange={setRelevanceFilter}>
-          <SelectTrigger
-            className="w-24 h-6 text-[11px] rounded-full matrx-glass-card border-0 shrink-0"
-            style={{ fontSize: "16px" }}
-          >
+          <SelectTrigger className="w-[4.75rem] h-6 px-2 text-[11px] rounded-full matrx-glass-card border-0 shrink-0 shadow-none [&_svg]:h-3 [&_svg]:w-3">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="relevant">Relevant</SelectItem>
-            <SelectItem value="excluded">Excluded</SelectItem>
+          <SelectContent className="text-[11px]">
+            <SelectItem value="all" className="text-[11px]">
+              All
+            </SelectItem>
+            <SelectItem value="relevant" className="text-[11px]">
+              Relevant
+            </SelectItem>
+            <SelectItem value="excluded" className="text-[11px]">
+              Excluded
+            </SelectItem>
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger
-            className="w-24 h-6 text-[11px] rounded-full matrx-glass-card border-0 shrink-0"
-            style={{ fontSize: "16px" }}
-          >
+          <SelectTrigger className="w-[6.25rem] h-6 px-2 text-[11px] rounded-full matrx-glass-card border-0 shrink-0 shadow-none [&_svg]:h-3 [&_svg]:w-3">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="image">Images</SelectItem>
-            <SelectItem value="video">Videos</SelectItem>
-            <SelectItem value="document">Docs</SelectItem>
+          <SelectContent className="text-[11px]">
+            <SelectItem value="all" className="text-[11px]">
+              All Types
+            </SelectItem>
+            <SelectItem value="image" className="text-[11px]">
+              Images
+            </SelectItem>
+            <SelectItem value="video" className="text-[11px]">
+              Videos
+            </SelectItem>
+            <SelectItem value="document" className="text-[11px]">
+              Docs
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {totalEmpty ? (
+      {view === "debug" ? (
+        <MediaDebugPanel
+          topicId={topicId}
+          items={filtered}
+          totalCount={mediaList.length}
+          scope="filtered"
+        />
+      ) : totalEmpty ? (
         <div className="flex flex-col items-center justify-center min-h-[280px] gap-3 text-center px-4">
           <div className="h-12 w-12 rounded-2xl bg-primary/8 flex items-center justify-center">
             <ImageIcon className="h-6 w-6 text-primary/40" />
@@ -200,12 +197,57 @@ export default function MediaGallery() {
         </div>
       ) : (
         <div className="space-y-5">
-          {buckets.photos.length > 0 && (
-            <PhotosSection
-              items={buckets.photos}
+          {buckets.landscape.length > 0 && (
+            <PhotoAspectSection
+              icon={RectangleHorizontal}
+              title="Landscape"
+              description="Wider than tall"
+              items={buckets.landscape}
+              aspectClass="aspect-video"
+              gridClass="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2"
               onToggleRelevance={handleToggleRelevance}
             />
           )}
+          {buckets.square.length > 0 && (
+            <PhotoAspectSection
+              icon={Square}
+              title="Square"
+              description="Roughly 1:1"
+              items={buckets.square}
+              aspectClass="aspect-square"
+              gridClass="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2"
+              onToggleRelevance={handleToggleRelevance}
+            />
+          )}
+          {buckets.portrait.length > 0 && (
+            <PhotoAspectSection
+              icon={RectangleVertical}
+              title="Portrait"
+              description="Taller than wide"
+              items={buckets.portrait}
+              aspectClass="aspect-[3/4]"
+              gridClass="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"
+              onToggleRelevance={handleToggleRelevance}
+            />
+          )}
+          {buckets.unknownAspect.length > 0 && (
+            <PhotoAspectSection
+              icon={HelpCircle}
+              title="Unknown Dimensions"
+              description="Videos, documents, or images without width/height"
+              items={buckets.unknownAspect}
+              aspectClass="aspect-video"
+              gridClass="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2"
+              onToggleRelevance={handleToggleRelevance}
+            />
+          )}
+          {!hasPhotoSections &&
+            buckets.graphics.length === 0 &&
+            buckets.icons.length === 0 && (
+              <div className="text-[10px] text-muted-foreground px-1">
+                No items matched the current filters.
+              </div>
+            )}
           {buckets.graphics.length > 0 && (
             <GraphicsSection
               items={buckets.graphics}
@@ -262,20 +304,37 @@ interface SectionProps {
   onToggleRelevance: (item: ResearchMedia) => void;
 }
 
-function PhotosSection({ items, onToggleRelevance }: SectionProps) {
+interface PhotoAspectSectionProps extends SectionProps {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  aspectClass: string;
+  gridClass: string;
+}
+
+function PhotoAspectSection({
+  icon,
+  title,
+  description,
+  items,
+  aspectClass,
+  gridClass,
+  onToggleRelevance,
+}: PhotoAspectSectionProps) {
   return (
     <section className="space-y-2">
       <SectionHeader
-        icon={ImageLucide}
-        title="Photos & Media"
+        icon={icon}
+        title={title}
         count={items.length}
-        description="Full-size images, videos, and documents"
+        description={description}
       />
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+      <div className={gridClass}>
         {items.map((item) => (
           <PhotoCard
             key={item.id}
             item={item}
+            aspectClass={aspectClass}
             onToggleRelevance={onToggleRelevance}
           />
         ))}
@@ -291,7 +350,7 @@ function GraphicsSection({ items, onToggleRelevance }: SectionProps) {
         icon={Shapes}
         title="Graphics"
         count={items.length}
-        description="Logos, thumbnails, and small graphics"
+        description="Logos, thumbnails, and small graphics (under 200px)"
       />
       <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
         {items.map((item) => (
@@ -313,7 +372,7 @@ function IconsSection({ items, onToggleRelevance }: SectionProps) {
         icon={Zap}
         title="Icons & Favicons"
         count={items.length}
-        description="Tiny graphics shown at native size"
+        description="Tiny graphics shown at native size (64px or less)"
       />
       <div className="flex flex-wrap gap-1.5 rounded-xl matrx-glass-card p-2">
         {items.map((item) => (
@@ -330,13 +389,15 @@ function IconsSection({ items, onToggleRelevance }: SectionProps) {
 
 function PhotoCard({
   item,
+  aspectClass,
   onToggleRelevance,
 }: {
   item: ResearchMedia;
+  aspectClass: string;
   onToggleRelevance: (item: ResearchMedia) => void;
 }) {
   const Icon = TYPE_ICONS[item.media_type as keyof typeof TYPE_ICONS] ?? File;
-  const dims = sizeLabel(item);
+  const dims = formatResolvedSizeLabel(item);
 
   return (
     <div
@@ -345,7 +406,12 @@ function PhotoCard({
         item.is_relevant ? "border-primary/20" : "border-border/50 opacity-60",
       )}
     >
-      <div className="aspect-video bg-muted/50 flex items-center justify-center overflow-hidden">
+      <div
+        className={cn(
+          "bg-muted/50 flex items-center justify-center overflow-hidden",
+          aspectClass,
+        )}
+      >
         {item.media_type === "image" && item.url ? (
           <img
             src={item.thumbnail_url || item.url}
@@ -390,7 +456,7 @@ function GraphicCard({
   item: ResearchMedia;
   onToggleRelevance: (item: ResearchMedia) => void;
 }) {
-  const dims = sizeLabel(item);
+  const dims = formatResolvedSizeLabel(item);
   const tooltip = item.alt_text || item.caption || item.url;
 
   return (
@@ -441,7 +507,7 @@ function IconTile({
   item: ResearchMedia;
   onToggleRelevance: (item: ResearchMedia) => void;
 }) {
-  const dims = sizeLabel(item);
+  const dims = formatResolvedSizeLabel(item);
   const tooltip =
     [item.alt_text, item.caption, dims, item.url].filter(Boolean).join(" · ") ||
     item.url;

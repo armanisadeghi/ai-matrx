@@ -110,6 +110,13 @@ become 5 linked datasets under one workbook.
   `ExportTableModal.tsx`, `TableCards.tsx`, `TableListItem.tsx`
 - `features/udt-picklist/` — picklist (dropdown) management: `PicklistLanding.tsx`,
   `PicklistManagerV1/V2/V3.tsx`, `usePicklists.ts`
+- `components/mardown-display/tables/SaveTableModal.tsx` — saves a markdown/stream table to a
+  dataset. Default path creates a NEW dataset; a collapsed "Save to an existing table instead"
+  disclosure offers **Append** / **Replace** to an existing table with column reconciliation,
+  opt-in new-column creation, and optional shallow dedupe (skip / update). Consumes
+  `reconcile.ts` + `save-to-table.ts`.
+- `components/mardown-display/blocks/json/AppendToTableDialog.tsx` — appends a JSON block's rows
+  to an existing dataset; same shared engine (atomic `appendToTable`).
 - `features/data-tables/components/VersionHistoryViewer.tsx` — read-only row audit log;
   consumes `useRowVersions`. Drop into any sheet/dialog/inline panel that wants to show
   a single row's edit history. Renders insert/update/delete with key-level diffs, honours
@@ -117,9 +124,20 @@ become 5 linked datasets under one workbook.
 
 **Services / business logic**
 - `utils/user-tables-rpc.ts` — RPC response unwrapping (`unwrapGetUserTableComplete`,
-  `unwrapGetUserTables`, `unwrapSuccessEnvelope`)
-- `utils/user-table-utls/table-utils.ts` — `createTable()`, `addRow()`, `FieldDefinition`,
-  `TableField`, `VALID_DATA_TYPES`
+  `unwrapGetUserTables`, `unwrapSuccessEnvelope`, `unwrapGetUserTableDataPaginatedRows`,
+  `isPaginatedDataRow`)
+- `utils/user-table-utls/table-utils.ts` — `createTable()`, `addRow()`, `addColumn()`,
+  `getTableDetails()`, `FieldDefinition`, `TableField`, `VALID_DATA_TYPES`
+- `features/data-tables/reconcile.ts` — **pure** column reconciliation + shallow dedupe for
+  saving incoming tabular data into an existing table: `reconcileColumns()` (matched /
+  incoming-only / table-only), `autoMapColumns()` (3-tier header→field matcher, moved here from
+  the JSON `AppendToTableDialog`), `mapRowsToFields()`, `findDuplicates()` (single-identifier
+  scan). No Supabase access — trivially testable.
+- `features/data-tables/save-to-table.ts` — the **save-to-existing-table engine**:
+  `appendToTable()` and `replaceTable()`. Creates opt-in new columns via `addColumn`, scans
+  for duplicates (skip / update), and commits in ONE `udt_bulk_write` transaction. Also exports
+  `fetchExistingRows()` (capped read for dedupe/replace). Consumed by the markdown
+  `SaveTableModal` and the JSON `AppendToTableDialog`.
 - `utils/user-table-utls/type-inference.ts` — `inferDataType()`, `analyzeData()` (used by import)
 - `utils/user-table-utls/field-name-sanitizer.ts`, `template-utils.ts`, `sample-data.ts`
 - `features/resource-manager/resource-picker/TablesResourcePicker.tsx` — pick a dataset as a resource
@@ -202,6 +220,22 @@ the `shareable_resource_registry` (both `udt_datasets` and `udt_workbooks` are r
 - Permissive → returns immediately (no enforcement). Strict → required fields present (with
   grandfathering — see gotchas) + per-cell type checks.
 - Exit: passes (write proceeds) or `RAISE EXCEPTION` (write aborts).
+
+**5. Save incoming table data into an EXISTING dataset (append / replace)**
+- Trigger: user clicks Save on a markdown/stream table (or a JSON block) and chooses an existing
+  target table instead of creating a new one.
+- Path: `reconcileColumns(incomingHeaders, fields)` diffs the columns → `{ matched, incomingOnly,
+  tableOnly }`. The UI shows the diff and lets the user (a) opt in to adding `incomingOnly`
+  columns and (b) for append, opt in to a shallow dedupe on one matched "identifier" column.
+- Commit goes through `appendToTable()` / `replaceTable()` (`save-to-table.ts`):
+  1. New columns created first via `add_column_to_user_table` (necessary — `udt_bulk_write`
+     `insert` stores `data` wholesale and does NOT auto-create columns from unknown keys).
+  2. Append + dedupe → `fetchExistingRows()` + `findDuplicates()`; collisions are skipped or
+     turned into `op:'merge'` (partial update) per the user's choice.
+  3. Replace → `op:'delete'` for every existing row + `op:'insert'` for every new row.
+  4. Everything commits in ONE `udt_bulk_write` transaction.
+- Exit: `{ inserted, updated, skipped, failed, columnsAdded }` → success toast with real counts,
+  then opens `quickDataWindow` on the target table.
 
 ---
 
@@ -373,6 +407,18 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-06-16` — claude: **Save Table → existing dataset (append / replace + smart column
+  reconciliation)**. New shared, Supabase-free `features/data-tables/reconcile.ts`
+  (`reconcileColumns`, `autoMapColumns` moved out of the JSON dialog, `mapRowsToFields`,
+  `findDuplicates`) and engine `features/data-tables/save-to-table.ts` (`appendToTable` /
+  `replaceTable` / `fetchExistingRows`, all committing through a single `udt_bulk_write`
+  transaction; opt-in new-column creation via `add_column_to_user_table`; dedupe = skip or
+  `op:'merge'` update). The markdown `SaveTableModal` gained a collapsed "Save to an existing
+  table instead" disclosure (target picker → live column-diff summary → Append/Replace toggle →
+  optional dedupe; Replace gated by `<ConfirmDialog>`). The JSON `AppendToTableDialog` now
+  consumes the same engine — its per-row `addRow` loop replaced by one atomic `appendToTable`,
+  and its local `autoMap`/`SKIP` deleted in favor of the shared module. No DB migration (existing
+  `udt_bulk_write` / `add_column_to_user_table` / paginated reader cover it).
 - `2026-06-16` — claude: **Markdown → Document/Workbook export targets**. New
   `markdown-to-univer-doc.ts` converts a markdown string to a Univer
   `IDocumentData` snapshot — rendered content (headings, bold/italic, lists,

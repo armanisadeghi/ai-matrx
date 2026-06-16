@@ -316,14 +316,18 @@ export function AgentRoleCard({
       // the pinned `agx_version` (not the master) — so duplicate the VERSION, or
       // the user edits a different/corrupted agent. With an override, that's the
       // user's own master row, so a plain master duplicate is correct.
-      const newId = await dispatch(
-        currentOverrideId
-          ? duplicateAgent({ agentId: currentOverrideId, asSystem: false })
-          : duplicateAgentVersion({
+      // Dispatch inside each branch so each thunk action keeps its own type
+      // (a ternary between two different thunks has no single dispatch overload).
+      const newId = currentOverrideId
+        ? await dispatch(
+            duplicateAgent({ agentId: currentOverrideId, asSystem: false }),
+          ).unwrap()
+        : await dispatch(
+            duplicateAgentVersion({
               versionId: role.systemVersionId,
               asSystem: false,
             }),
-      ).unwrap();
+          ).unwrap();
       // The copy is the critical step — once it exists, open it for editing no
       // matter what. Connecting it as this role's override is best-effort; a
       // failed connect must not masquerade as a failed copy.
