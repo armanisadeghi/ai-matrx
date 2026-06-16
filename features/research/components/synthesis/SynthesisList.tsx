@@ -110,9 +110,7 @@ function SynthesisCard({
             </div>
           ) : hasText(synthesis.result) ? (
             <div className="space-y-2">
-              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-xs prose-headings:text-sm">
-                <MarkdownStream content={synthesis.result!} />
-              </div>
+              <MarkdownStream content={synthesis.result!} />
               <div className="flex justify-end">
                 <ContentActionBar
                   content={synthesis.result!}
@@ -131,11 +129,9 @@ function SynthesisCard({
           ) : synthesis.result_structured ? (
             // Completed with structured-only output — surface it honestly
             // rather than showing nothing for a paid-for call.
-            <div className="prose prose-sm dark:prose-invert max-w-none prose-pre:text-[11px]">
-              <MarkdownStream
-                content={structuredToMarkdown(synthesis.result_structured)}
-              />
-            </div>
+            <MarkdownStream
+              content={structuredToMarkdown(synthesis.result_structured)}
+            />
           ) : isTerminalStatus(synthesis.status) ? (
             // Terminal but empty — be explicit instead of an endless spinner.
             <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-2 text-xs text-amber-700 dark:text-amber-400">

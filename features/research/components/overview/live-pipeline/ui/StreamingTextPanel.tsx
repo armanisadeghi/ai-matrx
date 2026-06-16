@@ -57,7 +57,7 @@ export function StreamingTextPanel({
         ref={scrollRef}
         className="max-h-[32rem] overflow-y-auto p-3"
       >
-        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-[13px] prose-p:leading-relaxed prose-headings:text-sm prose-headings:font-semibold prose-h1:text-base prose-h2:text-[15px]">
+        <div>
           <MarkdownStream
             content={text}
             isStreamActive={isStreaming}

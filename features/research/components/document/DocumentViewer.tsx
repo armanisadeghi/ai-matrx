@@ -174,7 +174,7 @@ export default function DocumentViewer() {
           )}
         </div>
         {streamingDocText && (
-          <article className="prose prose-sm dark:prose-invert max-w-none prose-headings:scroll-mt-4">
+          <article>
             <MarkdownStream content={streamingDocText} />
             <span className="inline-block w-0.5 h-4 bg-primary animate-pulse ml-0.5 align-middle" />
           </article>
