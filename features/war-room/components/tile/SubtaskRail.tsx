@@ -22,6 +22,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
   CheckSquare,
+  Eye,
+  EyeOff,
   Loader2,
   MoreHorizontal,
   PanelRightOpen,
@@ -42,6 +44,10 @@ import {
   deleteTaskThunk,
   toggleTaskCompleteThunk,
 } from "@/features/tasks/redux/thunks";
+import {
+  selectShowCompleted,
+  setShowCompleted,
+} from "@/features/tasks/redux/taskUiSlice";
 import { cn } from "@/lib/utils";
 
 export function SubtaskRail({
@@ -60,6 +66,7 @@ export function SubtaskRail({
 }) {
   const dispatch = useAppDispatch();
   const subtasks = useAppSelector((s) => selectSubtasksByParent(s, taskId));
+  const showCompleted = useAppSelector(selectShowCompleted);
   const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -70,6 +77,9 @@ export function SubtaskRail({
   }, [autoFocus]);
 
   const completed = subtasks.filter((s) => s.status === "completed").length;
+  const visibleSubtasks = showCompleted
+    ? subtasks
+    : subtasks.filter((s) => s.status !== "completed");
 
   const addSubtask = async (): Promise<boolean> => {
     const title = draft.trim();
@@ -99,6 +109,32 @@ export function SubtaskRail({
           <span className="tabular-nums text-muted-foreground/60">
             {completed}/{subtasks.length}
           </span>
+        )}
+        {subtasks.length > 0 && completed > 0 && (
+          <button
+            type="button"
+            onClick={() => dispatch(setShowCompleted(!showCompleted))}
+            title={
+              showCompleted
+                ? "Hide completed subtasks"
+                : "Show completed subtasks"
+            }
+            aria-label={
+              showCompleted
+                ? "Hide completed subtasks"
+                : "Show completed subtasks"
+            }
+            className={cn(
+              "ml-auto grid size-6 shrink-0 place-items-center rounded-md transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              showCompleted ? "text-foreground" : "text-muted-foreground",
+            )}
+          >
+            {showCompleted ? (
+              <Eye className="size-3.5" />
+            ) : (
+              <EyeOff className="size-3.5" />
+            )}
+          </button>
         )}
       </div>
 
@@ -140,9 +176,13 @@ export function SubtaskRail({
           <p className="px-2.5 py-3 text-xs italic text-muted-foreground">
             No subtasks yet. Type above to add your first.
           </p>
+        ) : visibleSubtasks.length === 0 ? (
+          <p className="px-2.5 py-3 text-xs italic text-muted-foreground">
+            All subtasks completed. Use the eye icon above to show them.
+          </p>
         ) : (
           <ul>
-            {subtasks.map((st) => {
+            {visibleSubtasks.map((st) => {
               const isDone = st.status === "completed";
               return (
                 <li
@@ -162,7 +202,7 @@ export function SubtaskRail({
                     onClick={() => onOpenPane(st.id)}
                     className={cn(
                       "min-w-0 flex-1 truncate text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm",
-                      isDone
+                      isDone && showCompleted
                         ? "text-muted-foreground line-through"
                         : "text-foreground hover:text-primary",
                     )}

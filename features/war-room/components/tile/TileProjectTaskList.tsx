@@ -31,6 +31,8 @@
 import { useEffect, useState } from "react";
 import {
   ChevronLeft,
+  Eye,
+  EyeOff,
   ListTodo,
   Loader2,
   MoreHorizontal,
@@ -57,6 +59,10 @@ import {
   createTaskThunk,
   toggleTaskCompleteThunk,
 } from "@/features/tasks/redux/thunks";
+import {
+  selectShowCompleted,
+  setShowCompleted,
+} from "@/features/tasks/redux/taskUiSlice";
 import { selectEffectiveTileProjectId } from "@/features/war-room/redux/selectors";
 import { cn } from "@/lib/utils";
 import { SubtaskWindow } from "./SubtaskWindow";
@@ -96,6 +102,7 @@ function ProjectTaskBody({ projectId }: { projectId: string }) {
   const projectName = useAppSelector(
     (s) => selectProjectById(s, projectId)?.name ?? null,
   );
+  const showCompleted = useAppSelector(selectShowCompleted);
 
   // The task selected for the in-tile detail pane (null → list only).
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
@@ -124,6 +131,9 @@ function ProjectTaskBody({ projectId }: { projectId: string }) {
     setWindowIds((ids) => ids.filter((id) => id !== taskId));
 
   const completed = tasks.filter((t) => t.status === "completed").length;
+  const visibleTasks = showCompleted
+    ? tasks
+    : tasks.filter((t) => t.status !== "completed");
 
   return (
     <div className="flex h-full min-h-0 flex-col @container/proj">
@@ -147,6 +157,32 @@ function ProjectTaskBody({ projectId }: { projectId: string }) {
                 {completed}/{tasks.length}
               </span>
             )}
+            {tasks.length > 0 && completed > 0 && (
+              <button
+                type="button"
+                onClick={() => dispatch(setShowCompleted(!showCompleted))}
+                title={
+                  showCompleted
+                    ? "Hide completed tasks"
+                    : "Show completed tasks"
+                }
+                aria-label={
+                  showCompleted
+                    ? "Hide completed tasks"
+                    : "Show completed tasks"
+                }
+                className={cn(
+                  "grid size-6 shrink-0 place-items-center rounded-md transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  showCompleted ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
+                {showCompleted ? (
+                  <Eye className="size-3.5" />
+                ) : (
+                  <EyeOff className="size-3.5" />
+                )}
+              </button>
+            )}
           </div>
 
           <ProjectTaskCreate projectId={projectId} />
@@ -161,15 +197,20 @@ function ProjectTaskBody({ projectId }: { projectId: string }) {
               <p className="px-2.5 py-3 text-xs italic text-muted-foreground">
                 No tasks in this project yet. Type above to add the first.
               </p>
+            ) : visibleTasks.length === 0 ? (
+              <p className="px-2.5 py-3 text-xs italic text-muted-foreground">
+                All tasks completed. Use the eye icon above to show them.
+              </p>
             ) : (
               <ul>
-                {tasks.map((task) => (
+                {visibleTasks.map((task) => (
                   <ProjectTaskRow
                     key={task.id}
                     taskId={task.id}
                     isOpen={openTaskId === task.id}
                     onOpen={() => setOpenTaskId(task.id)}
                     onOpenWindow={() => openWindow(task.id)}
+                    showCompletedStyle={showCompleted}
                   />
                 ))}
               </ul>
@@ -281,11 +322,13 @@ function ProjectTaskRow({
   isOpen,
   onOpen,
   onOpenWindow,
+  showCompletedStyle,
 }: {
   taskId: string;
   isOpen: boolean;
   onOpen: () => void;
   onOpenWindow: () => void;
+  showCompletedStyle: boolean;
 }) {
   const dispatch = useAppDispatch();
   const task = useAppSelector((s) => selectTaskById(s, taskId));
@@ -313,7 +356,7 @@ function ProjectTaskRow({
         onClick={onOpen}
         className={cn(
           "flex min-w-0 flex-1 items-center gap-1.5 rounded-sm text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          isDone
+          isDone && showCompletedStyle
             ? "text-muted-foreground line-through"
             : "text-foreground hover:text-primary",
         )}
