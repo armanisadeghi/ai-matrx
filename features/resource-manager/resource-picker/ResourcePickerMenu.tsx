@@ -15,6 +15,7 @@ import {
   Image,
   File,
   Mic,
+  Notebook,
   Settings2,
   Bug,
 } from "lucide-react";
@@ -29,12 +30,16 @@ import { YouTubeResourcePicker } from "./YouTubeResourcePicker";
 import { ImageUrlResourcePicker } from "./ImageUrlResourcePicker";
 import { FileUrlResourcePicker } from "./FileUrlResourcePicker";
 import { AudioResourcePicker } from "./AudioResourcePicker";
+import { WorkbooksResourcePicker } from "./WorkbooksResourcePicker";
+import { DocumentsResourcePicker } from "./DocumentsResourcePicker";
 
 type ResourceType =
   | "upload"
   | "storage"
   | "notes"
   | "tasks"
+  | "workbooks"
+  | "documents"
   | "tables"
   | "webpage"
   | "youtube"
@@ -144,6 +149,18 @@ export function ResourcePickerMenu({
           requiresCapability: null,
         },
         {
+          id: "workbooks",
+          label: "Workbooks",
+          icon: Notebook,
+          requiresCapability: null,
+        },
+        {
+          id: "documents",
+          label: "Documents",
+          icon: FileText,
+          requiresCapability: null,
+        },
+        {
           id: "brokers",
           label: "Brokers",
           icon: Workflow,
@@ -209,6 +226,34 @@ export function ResourcePickerMenu({
           onBack={() => setActiveView(null)}
           onSelect={(selection) => {
             onResourceSelected(selection);
+          }}
+        />
+      );
+    }
+
+    if (activeView === "workbooks") {
+      return (
+        <WorkbooksResourcePicker
+          onBack={() => setActiveView(null)}
+          onSelect={(workbook) => {
+            onResourceSelected({
+              type: "workbook",
+              data: { id: workbook.id, name: workbook.workbook_name },
+            });
+          }}
+        />
+      );
+    }
+
+    if (activeView === "documents") {
+      return (
+        <DocumentsResourcePicker
+          onBack={() => setActiveView(null)}
+          onSelect={(document) => {
+            onResourceSelected({
+              type: "document",
+              data: { id: document.id, title: document.document_name },
+            });
           }}
         />
       );
