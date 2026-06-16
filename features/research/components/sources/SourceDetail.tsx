@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useTransition } from "react";
+import { useState, useCallback, useMemo, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   ExternalLink,
@@ -21,6 +21,7 @@ import {
   Info,
   Link2,
   Brain,
+  TrendingUp,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -31,6 +32,7 @@ import {
   useResearchSources,
   useSourceContent,
   useAnalysisForSource,
+  useSourceImportance,
 } from "../../hooks/useResearchState";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
@@ -43,6 +45,8 @@ import { ContentViewer } from "./ContentViewer";
 import { PasteContentModal } from "./PasteContentModal";
 import { AnalysisCard } from "../analysis/AnalysisCard";
 import { SourceTagPicker } from "./SourceTagPicker";
+import { SourceRankBadges } from "./SourceRankBadges";
+import MarkdownStream from "@/components/MarkdownStream";
 import type {
   ResearchSource,
   ResearchContent,
@@ -110,6 +114,8 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
   const { data: contentData, refresh: refetchContent } =
     useSourceContent(sourceId);
   const { data: allSources } = useResearchSources(topicId);
+  const { data: importanceMap } = useSourceImportance(topicId);
+  const importance = importanceMap?.get(sourceId);
   const { data: allAnalyses, refresh: refetchAnalyses } =
     useAnalysisForSource(sourceId);
 
@@ -205,16 +211,28 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
 
   // ── Analyze stream ───────────────────────────────────────────────────────
   const analyzeStream = useResearchStream();
+  // Accumulates the live tokens in a ref so failure handlers can read the full
+  // text (closures over `streamingAnalysisText` would be stale).
+  const streamedRef = useRef("");
+  // When the provider stops early (e.g. Gemini safety) we PRESERVE what already
+  // streamed + the reason, instead of throwing it away and showing nothing.
+  const [interrupted, setInterrupted] = useState<{
+    text: string;
+    reason: string;
+  } | null>(null);
 
   const handleAnalyze = useCallback(async () => {
     if (!currentContent || analyzeStream.isStreaming) return;
     setIsAnalyzing(true);
+    setInterrupted(null);
+    streamedRef.current = "";
     setStreamingAnalysisText("");
     const response = await api.analyzeSource(topicId, sourceId);
     analyzeStream.startStream(response, {
       onChunk: (text) => {
         // Live LLM token streaming — shows the analysis being written in real time
-        setStreamingAnalysisText((prev) => prev + text);
+        streamedRef.current += text;
+        setStreamingAnalysisText(streamedRef.current);
       },
       onData: (payload: ResearchDataEvent) => {
         if (
@@ -223,6 +241,8 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
         ) {
           // Stream only sends metadata (result_length, model_id) — not the full row.
           // Refetch from DB to get the complete analysis object.
+          setInterrupted(null);
+          streamedRef.current = "";
           setStreamingAnalysisText("");
           refetchAnalyses();
         }
@@ -230,10 +250,21 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
           payload.type === "analysis_failed" &&
           payload.source_id === sourceId
         ) {
+          // The model stopped early (safety filter, max tokens, etc.). We
+          // already received real content — KEEP it and report exactly what
+          // happened, rather than wiping it and looking broken.
+          if (streamedRef.current.trim()) {
+            setInterrupted({
+              text: streamedRef.current,
+              reason: payload.error || "The AI provider stopped early.",
+            });
+          }
           setStreamingAnalysisText("");
           setIsAnalyzing(false);
         }
         if (payload.type === "retry_complete") {
+          setInterrupted(null);
+          streamedRef.current = "";
           setStreamingAnalysisText("");
           refetchAnalyses();
         }
@@ -244,7 +275,14 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
         // Final sync in case analysis_complete wasn't caught (e.g. single-source endpoint)
         refetchAnalyses();
       },
-      onError: () => {
+      onError: (msg: string) => {
+        // Stream/network error after content streamed — preserve what we got.
+        if (streamedRef.current.trim()) {
+          setInterrupted({
+            text: streamedRef.current,
+            reason: msg || "The stream ended unexpectedly.",
+          });
+        }
         setIsAnalyzing(false);
         setStreamingAnalysisText("");
       },
@@ -366,9 +404,9 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                 <MetaRow label="Host" icon={<Globe className="h-3 w-3" />}>
                   <span>{typedSource.hostname ?? "—"}</span>
                 </MetaRow>
-                <MetaRow label="Rank" icon={<Hash className="h-3 w-3" />}>
-                  {typedSource.rank ? (
-                    <span className="font-mono">#{typedSource.rank}</span>
+                <MetaRow label="Best rank" icon={<Hash className="h-3 w-3" />}>
+                  {importance?.bestRank != null ? (
+                    <span className="font-mono">#{importance.bestRank}</span>
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
@@ -426,6 +464,15 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                     <Badge variant="destructive">Stale</Badge>
                   </MetaRow>
                 )}
+              </div>
+
+              {/* Search ranking — total importance + per-keyword ranks (no hiding) */}
+              <div className="space-y-2 rounded-lg border border-border p-3">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <TrendingUp className="h-3 w-3" />
+                  Search ranking
+                </div>
+                <SourceRankBadges importance={importance} />
               </div>
 
               {/* Tags — assign this source to dimensions for consolidation */}
@@ -794,6 +841,32 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   topicId={topicId}
                   sourceId={sourceId}
                 />
+              )}
+              {/* Provider stopped early (e.g. safety) — content preserved with
+                  an honest reason, instead of wiping it and looking broken. */}
+              {interrupted && !isAnalyzing && (
+                <div className="rounded-xl border border-amber-500/40 bg-amber-500/[0.06] overflow-hidden">
+                  <div className="flex items-start gap-2 px-4 py-2.5 border-b border-amber-500/20">
+                    <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                        The AI provider stopped early — content kept
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 break-words">
+                        {interrupted.reason}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setInterrupted(null)}
+                      className="text-[10px] text-muted-foreground hover:text-foreground shrink-0"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                  <div className="px-4 py-3">
+                    <MarkdownStream content={interrupted.text} />
+                  </div>
+                </div>
               )}
               {/* Completed analyses */}
               {currentAnalyses.length > 0 ? (

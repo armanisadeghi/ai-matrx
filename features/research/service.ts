@@ -22,6 +22,11 @@ import type {
   SourceTagRequest,
   MediaUpdate,
 } from "./types";
+import {
+  summarizeImportance,
+  type KeywordRank,
+  type SourceImportance,
+} from "./ranking";
 
 // ============================================================================
 // Topic Overview (lightweight RPC for counts)
@@ -522,6 +527,49 @@ export async function removeSourceTag(
     .eq("source_id", sourceId)
     .eq("tag_id", tagId);
   if (error) throw error;
+}
+
+/**
+ * Per-source importance for a topic, keyed by source_id. Both the total score
+ * and the per-keyword ranks come from `rs_keyword_source.rank_for_keyword` (the
+ * real per-keyword search rank — `rs_source.rank` is ambiguous and unused).
+ * Computed client-side via the shared `summarizeImportance`.
+ */
+export async function getSourceImportance(
+  topicId: string,
+): Promise<Map<string, SourceImportance>> {
+  const { data: kws, error: kwErr } = await supabase
+    .from("rs_keyword")
+    .select("id, keyword")
+    .eq("topic_id", topicId);
+  if (kwErr) throw kwErr;
+  const kwText = new Map<string, string>(
+    (kws ?? []).map((k) => [k.id, k.keyword]),
+  );
+  if (kwText.size === 0) return new Map();
+
+  const { data: links, error: linkErr } = await supabase
+    .from("rs_keyword_source")
+    .select("source_id, keyword_id, rank_for_keyword")
+    .in("keyword_id", Array.from(kwText.keys()));
+  if (linkErr) throw linkErr;
+
+  const bySource = new Map<string, KeywordRank[]>();
+  for (const l of links ?? []) {
+    const arr = bySource.get(l.source_id) ?? [];
+    arr.push({
+      keyword_id: l.keyword_id,
+      keyword: kwText.get(l.keyword_id) ?? "Keyword",
+      rank: l.rank_for_keyword,
+    });
+    bySource.set(l.source_id, arr);
+  }
+
+  const out = new Map<string, SourceImportance>();
+  for (const [sid, perKw] of bySource) {
+    out.set(sid, summarizeImportance(perKw));
+  }
+  return out;
 }
 
 // ============================================================================
