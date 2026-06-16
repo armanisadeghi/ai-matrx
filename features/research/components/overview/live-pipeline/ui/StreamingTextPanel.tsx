@@ -63,12 +63,6 @@ export function StreamingTextPanel({
             isStreamActive={isStreaming}
             hideCopyButton
           />
-          {isStreaming && (
-            <span
-              className="inline-block w-1.5 h-3.5 bg-primary/70 align-middle ml-0.5 animate-pulse"
-              aria-hidden="true"
-            />
-          )}
         </div>
       </div>
       {modelId && (

@@ -177,7 +177,6 @@ export default function DocumentViewer() {
         {streamingDocText && (
           <article>
             <MarkdownStream content={streamingDocText} />
-            <span className="inline-block w-0.5 h-4 bg-primary animate-pulse ml-0.5 align-middle" />
           </article>
         )}
       </div>
@@ -421,9 +420,6 @@ export default function DocumentViewer() {
           >
             {displayContent}
           </ReactMarkdown>
-          {stream.isStreaming && (
-            <span className="inline-block w-0.5 h-4 bg-primary animate-pulse ml-0.5 align-middle" />
-          )}
         </article>
 
         {/* Content actions — copy, TTS, full-screen viewer, save to notes/code/tasks, HTML preview, email, print. */}

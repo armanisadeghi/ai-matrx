@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import MarkdownStream from "@/components/markdown";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
+import { humanizeAgentType } from "../../labels";
 import { type ResearchAnalysis, tokenUsageFromJson } from "../../types";
 
 interface AnalysisCardProps {
@@ -40,7 +41,9 @@ export function AnalysisCard({
   triggerOnly,
 }: AnalysisCardProps) {
   const api = useResearchApi();
-  const [expanded, setExpanded] = useState(false);
+  // Expanded by default — the page summary is the most valuable, most
+  // expensive thing we produced; never hide it behind a click.
+  const [expanded, setExpanded] = useState(true);
   const [retrying, setRetrying] = useState(false);
 
   const handleRetry = useCallback(async () => {
@@ -84,8 +87,6 @@ export function AnalysisCard({
         </div>
         <div className="px-4 py-3">
           <MarkdownStream content={streamingText} isStreamActive />
-          {/* Blinking cursor */}
-          <span className="inline-block w-0.5 h-3.5 bg-primary animate-pulse ml-0.5 align-middle" />
         </div>
       </div>
     );
@@ -140,7 +141,7 @@ export function AnalysisCard({
                   Analysis failed
                 </span>
                 <Badge variant="secondary" className="text-[10px]">
-                  {analysis.agent_type}
+                  {humanizeAgentType(analysis.agent_type)}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
                   {new Date(analysis.created_at).toLocaleDateString()}
@@ -199,7 +200,7 @@ export function AnalysisCard({
             <Brain className="h-4 w-4 text-primary shrink-0" />
           )}
           <Badge variant="secondary" className="text-[10px]">
-            {analysis.agent_type}
+            {humanizeAgentType(analysis.agent_type)}
           </Badge>
           {analysis.model_id && (
             <span className="text-xs text-muted-foreground truncate">

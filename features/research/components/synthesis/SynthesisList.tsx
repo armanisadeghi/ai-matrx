@@ -357,9 +357,8 @@ export default function SynthesisList() {
               </span>
             </div>
             {streamingText && (
-              <div className="px-3 py-3 prose prose-sm dark:prose-invert max-w-none prose-p:text-xs">
+              <div className="px-3 py-3">
                 <MarkdownStream content={streamingText} isStreamActive />
-                <span className="inline-block w-0.5 h-3.5 bg-primary animate-pulse ml-0.5 align-middle" />
               </div>
             )}
           </div>
