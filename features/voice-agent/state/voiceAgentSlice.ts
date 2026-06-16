@@ -15,7 +15,7 @@ import type {
   VoiceAgentState,
   VoiceId,
   VoiceStatus,
-  ToolName,
+  RealtimeToolSet,
 } from "../types";
 
 const initialState: VoiceAgentState = {
@@ -33,7 +33,7 @@ interface InitInstancePayload {
   instanceId: string;
   voiceId: VoiceId;
   instructions: string;
-  tools: ToolName[];
+  tools: RealtimeToolSet;
   preset: VoiceAgentPreset;
   persist: boolean;
 }
@@ -335,7 +335,7 @@ const voiceAgentSlice = createSlice({
         InstanceIdPayload & {
           voiceId?: VoiceId;
           instructions?: string;
-          tools?: ToolName[];
+          tools?: RealtimeToolSet;
         }
       >,
     ) {
@@ -355,22 +355,34 @@ const voiceAgentSlice = createSlice({
      * for the intro preset too (the intro is now agent-driven). The
      * hook seeds the slice synchronously with fallback constants on
      * mount, then this action overwrites once the agent row resolves.
+     *
+     * Every field is OPTIONAL and applied only when present. This lets
+     * `useRealtimeAgentConfig` overwrite ONLY `tools` with the
+     * backend-resolved `RealtimeToolSet` without clobbering the
+     * voice/instructions that `useVoiceAgentInstance` derived from the
+     * agent row (the two hooks resolve different facets of the config).
      */
     applyAgentConfig(
       state,
       action: PayloadAction<
         InstanceIdPayload & {
-          voiceId: VoiceId;
-          instructions: string;
-          tools: ToolName[];
+          voiceId?: VoiceId;
+          instructions?: string;
+          tools?: RealtimeToolSet;
         }
       >,
     ) {
       const inst = getInstance(state, action.payload.instanceId);
       if (!inst) return;
-      inst.voiceId = action.payload.voiceId;
-      inst.instructions = action.payload.instructions;
-      inst.tools = action.payload.tools;
+      if (action.payload.voiceId !== undefined) {
+        inst.voiceId = action.payload.voiceId;
+      }
+      if (action.payload.instructions !== undefined) {
+        inst.instructions = action.payload.instructions;
+      }
+      if (action.payload.tools !== undefined) {
+        inst.tools = action.payload.tools;
+      }
     },
 
     disposeInstance(state, action: PayloadAction<InstanceIdPayload>) {

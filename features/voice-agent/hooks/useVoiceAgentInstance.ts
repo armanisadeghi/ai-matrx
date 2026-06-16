@@ -42,7 +42,12 @@ import {
   disposeInstance,
   initInstance,
 } from "../state/voiceAgentSlice";
-import type { ToolName, VoiceAgentPreset, VoiceId } from "../types";
+import type {
+  BuiltinToolName,
+  RealtimeToolSet,
+  VoiceAgentPreset,
+  VoiceId,
+} from "../types";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import type { RootState } from "@/lib/redux/store";
 
@@ -60,7 +65,14 @@ interface UseVoiceAgentInstanceOpts {
   /** Override knobs — used only when `agentId` is not set. */
   voiceId?: VoiceId;
   instructions?: string;
-  tools?: ToolName[];
+  /**
+   * Seed tool set. This is only the SYNCHRONOUS fallback that
+   * `useXaiVoiceSession` reads before the backend resolve lands —
+   * `useRealtimeAgentConfig` overwrites it with the authoritative
+   * `RealtimeToolSet` from `POST /ai/agents/{id}/realtime-tools`. Defaults
+   * to the two xAI builtins.
+   */
+  tools?: RealtimeToolSet;
   /** Whether to persist transcripts to Supabase. Defaults to true. */
   persist?: boolean;
 }
@@ -94,18 +106,38 @@ function readVoiceIdFromAgent(settings: unknown): VoiceId {
   return DEFAULT_INTRO_VOICE;
 }
 
-function readToolsFromAgent(settings: unknown): ToolName[] {
-  const fallback: ToolName[] = [...DEFAULT_INTRO_TOOLS];
+const BUILTIN_TOOL_NAMES: ReadonlySet<BuiltinToolName> = new Set([
+  "web_search",
+  "x_search",
+]);
+
+/**
+ * Reads the agent row's `settings.realtime_tools` (a list of xAI builtin
+ * names) into a `RealtimeToolSet` SEED. This is only the synchronous
+ * fallback shown before `useRealtimeAgentConfig` resolves the real set
+ * (server/client/builtin) from the backend — so it intentionally covers
+ * only the builtins, which need no schema. Anything else resolves later.
+ */
+function readToolsFromAgent(settings: unknown): RealtimeToolSet {
   if (settings && typeof settings === "object") {
     const t = (settings as Record<string, unknown>).realtime_tools;
     if (Array.isArray(t)) {
       const valid = t.filter(
-        (x): x is ToolName => x === "web_search" || x === "x_search",
+        (x): x is BuiltinToolName =>
+          typeof x === "string" && BUILTIN_TOOL_NAMES.has(x as BuiltinToolName),
       );
-      if (valid.length > 0) return valid;
+      if (valid.length > 0) {
+        return valid.map((name) => ({
+          name,
+          description:
+            name === "web_search" ? "Search the web." : "Search X (Twitter).",
+          parameters: {},
+          execution: "builtin" as const,
+        }));
+      }
     }
   }
-  return fallback;
+  return [...DEFAULT_INTRO_TOOLS];
 }
 
 export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {

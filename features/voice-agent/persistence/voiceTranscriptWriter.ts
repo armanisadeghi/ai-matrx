@@ -28,11 +28,16 @@ import type {
   LatencySummary,
 } from "../state/selectors";
 import type {
-  ToolName,
+  RealtimeToolSet,
   VoiceAgentPreset,
   VoiceId,
   VoiceTurn,
 } from "../types";
+
+/** `tools_enabled` in metadata is a flat name list — derive it from the set. */
+function toolNames(tools: RealtimeToolSet): string[] {
+  return tools.map((t) => t.name);
+}
 
 type CxConversationInsert =
   Database["public"]["Tables"]["cx_conversation"]["Insert"];
@@ -41,7 +46,7 @@ type CxMessageInsert = Database["public"]["Tables"]["cx_message"]["Insert"];
 export interface EnsureConversationOpts {
   voiceId: VoiceId;
   instructions: string;
-  tools: ToolName[];
+  tools: RealtimeToolSet;
   preset: VoiceAgentPreset;
 }
 
@@ -60,7 +65,7 @@ export interface FinalizeOpts {
   latency: LatencySummary;
   preset: VoiceAgentPreset;
   voiceId: VoiceId;
-  tools: ToolName[];
+  tools: RealtimeToolSet;
 }
 
 function clientOrThrow(): SupabaseClient<Database> {
@@ -91,7 +96,7 @@ export async function ensureConversation(
     // (which is a UUID FK to ai_model.id and would 22P02 with a slug).
     model: XAI_MODEL_ID,
     voice_id: opts.voiceId,
-    tools_enabled: opts.tools,
+    tools_enabled: toolNames(opts.tools),
     region: PERSISTENCE_REGION,
     preset: opts.preset,
     total_turns: 0,
@@ -210,7 +215,7 @@ export async function finalizeConversation(
     provider: PERSISTENCE_PROVIDER,
     model: XAI_MODEL_ID,
     voice_id: opts.voiceId,
-    tools_enabled: opts.tools,
+    tools_enabled: toolNames(opts.tools),
     region: PERSISTENCE_REGION,
     preset: opts.preset,
     total_turns: opts.totalTurns,

@@ -18,8 +18,13 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useVoiceAgentInstance } from "@/features/voice-agent/hooks/useVoiceAgentInstance";
+import { useRealtimeAgentConfig } from "@/features/voice-agent/hooks/useRealtimeAgentConfig";
 import { useXaiVoiceSession } from "@/features/voice-agent/hooks/useXaiVoiceSession";
 import { usePersistVoiceTranscript } from "@/features/voice-agent/hooks/usePersistVoiceTranscript";
+// Side-effect import: registers the working-document mutator client tools into
+// the shared realtime client-tool registry so `execution:"client"` calls for
+// them resolve to a runner. Phase 2 of the realtime tool bridge.
+import "./realtimeWorkingDocTools";
 import { updateConfig } from "@/features/voice-agent/state/voiceAgentSlice";
 import {
   selectVoiceError,
@@ -36,6 +41,9 @@ import { VoiceDebugPanel } from "@/features/voice-agent/components/VoiceDebugPan
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { cn } from "@/lib/utils";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
+
+/** DB surface name for the Scribe Live voice surface (re-parented under chat). */
+const SCRIBE_LIVE_SURFACE = "matrx-user/transcript-scribe-live";
 
 interface ScribeLiveScreenProps {
   sessionId: string;
@@ -78,15 +86,32 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
   const instanceId = useVoiceAgentInstance({
     preset: "playground",
     instructions: buildLiveInstructions(docContent),
-    // Give the live voice agent the full set of realtime tools the platform
-    // supports (xAI Realtime built-ins: web + X search), matching what the
-    // normal agent can reach for live look-ups. Function/MCP tools (e.g. doc
-    // editing) require xAI function-calling — the deferred Phase 2.
-    tools: ["web_search", "x_search"],
+    // Seed with the xAI Realtime built-ins (web + X search) for live look-ups.
+    // `useRealtimeAgentConfig` overwrites this with the backend-resolved set
+    // (incl. the working-doc mutator client tools) when a scribe-live agent id
+    // is supplied. The seed is `RealtimeToolSet`-shaped: builtins carry empty
+    // params and `execution: "builtin"`.
+    tools: [
+      { name: "web_search", description: "Search the web.", parameters: {}, execution: "builtin" },
+      { name: "x_search", description: "Search X (Twitter).", parameters: {}, execution: "builtin" },
+    ],
     persist: false,
   });
 
-  const { status, error, toggle } = useXaiVoiceSession({ instanceId });
+  // Resolve the realtime tool set for the scribe-live surface. When a
+  // dedicated scribe-live agent row exists (carrying the working-doc mutator
+  // tools), pass its id here so the backend classifies them `client` and they
+  // appear in session.update. Until then this is a no-op (no agentId) and the
+  // session runs with the seeded builtins. See the file-level note + handoff.
+  useRealtimeAgentConfig({
+    instanceId,
+    surface: SCRIBE_LIVE_SURFACE,
+  });
+  const { status, error, toggle } = useXaiVoiceSession({
+    instanceId,
+    surface: SCRIBE_LIVE_SURFACE,
+    sessionId,
+  });
   usePersistVoiceTranscript({ instanceId });
 
   const turns = useAppSelector((s) => selectVoiceTurns(s, instanceId));

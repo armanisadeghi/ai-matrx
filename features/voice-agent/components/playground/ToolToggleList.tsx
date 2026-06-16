@@ -9,15 +9,17 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { selectVoiceTools } from "../../state/selectors";
 import { updateConfig } from "../../state/voiceAgentSlice";
-import type { ToolName } from "../../types";
+import type { BuiltinToolName, ResolvedRealtimeTool } from "../../types";
 
 interface ToolToggleListProps {
   instanceId: string;
   disabled?: boolean;
 }
 
+/** Toggleable xAI builtins. Server/client function tools come from the agent's
+ *  resolved set and are not user-toggled in the playground. */
 const TOOLS: ReadonlyArray<{
-  id: ToolName;
+  id: BuiltinToolName;
   label: string;
   description: string;
 }> = [
@@ -35,17 +37,21 @@ const TOOLS: ReadonlyArray<{
   },
 ];
 
+function builtinTool(id: BuiltinToolName, label: string): ResolvedRealtimeTool {
+  return { name: id, description: label, parameters: {}, execution: "builtin" };
+}
+
 export function ToolToggleList({ instanceId, disabled }: ToolToggleListProps) {
   const dispatch = useAppDispatch();
   const enabledTools = useAppSelector((s) => selectVoiceTools(s, instanceId));
-  const enabled = new Set(enabledTools);
+  const enabledNames = new Set(enabledTools.map((t) => t.name));
 
   return (
     <div className="space-y-3">
       <Label className="text-sm font-medium">Tools</Label>
       <div className="space-y-3">
         {TOOLS.map((tool) => {
-          const isOn = enabled.has(tool.id);
+          const isOn = enabledNames.has(tool.id);
           return (
             <div
               key={tool.id}
@@ -63,15 +69,15 @@ export function ToolToggleList({ instanceId, disabled }: ToolToggleListProps) {
                 checked={isOn}
                 disabled={disabled}
                 onCheckedChange={(checked) => {
-                  const next = new Set(enabled);
-                  if (checked) next.add(tool.id);
-                  else next.delete(tool.id);
-                  dispatch(
-                    updateConfig({
-                      instanceId,
-                      tools: Array.from(next) as ToolName[],
-                    }),
+                  // Preserve any non-builtin (server/client) tools already on the
+                  // instance; only add/remove this builtin.
+                  const others = enabledTools.filter(
+                    (t) => t.name !== tool.id,
                   );
+                  const next = checked
+                    ? [...others, builtinTool(tool.id, tool.label)]
+                    : others;
+                  dispatch(updateConfig({ instanceId, tools: next }));
                 }}
                 aria-label={tool.label}
               />

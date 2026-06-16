@@ -5,8 +5,37 @@
 /** Voices supported by xAI Realtime as of 2026-05. */
 export type VoiceId = "ara" | "eve" | "leo" | "rex" | "sal";
 
-/** Tool families exposed in the playground. Function tools live in a future iteration. */
-export type ToolName = "web_search" | "x_search";
+/**
+ * xAI Realtime's first-party (server-side) tools. These are NOT function
+ * tools — xAI runs them itself and the call never reaches the client. They
+ * emit `{type: <name>}` in `session.update`, not `{type: "function", ...}`.
+ *
+ * Keep this union narrow to the actual builtins the realtime model supports.
+ * The contract's classification step (`execution === "builtin"`) maps to these.
+ */
+export type BuiltinToolName = "web_search" | "x_search";
+
+/**
+ * One resolved tool as returned by `POST /ai/agents/{id}/realtime-tools`.
+ * The shape mirrors the backend `RealtimeTool` model EXACTLY (contract §3):
+ *
+ *   - `execution: "server"`  → round-tripped through `POST /ai/tools/execute`.
+ *   - `execution: "client"`  → run locally via the client-tool registry.
+ *   - `execution: "builtin"` → xAI-native; emitted as `{type: name}` and never
+ *      executed by us (reaching the client is a backend classification bug).
+ *
+ * `parameters` is a JSON Schema object passed VERBATIM to xAI as the function
+ * tool's parameter schema — we never reshape it.
+ */
+export interface ResolvedRealtimeTool {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+  execution: "server" | "client" | "builtin";
+}
+
+/** The full resolved tool set for an instance — replaces the old `ToolName[]`. */
+export type RealtimeToolSet = ResolvedRealtimeTool[];
 
 /** Which route is mounting the session — drives slice instance key + persistence preset. */
 export type VoiceAgentPreset = "intro" | "playground";
@@ -71,7 +100,7 @@ export interface VoiceAgentInstance {
   // Config — set once at initInstance, then immutable for the life of the instance.
   voiceId: VoiceId;
   instructions: string;
-  tools: ToolName[];
+  tools: RealtimeToolSet;
   preset: VoiceAgentPreset;
   persist: boolean;
 

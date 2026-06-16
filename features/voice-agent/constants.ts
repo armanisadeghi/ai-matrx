@@ -2,7 +2,7 @@
 //
 // Frozen constants for the xAI Realtime voice agent.
 
-import type { ToolName, VoiceId } from "./types";
+import type { RealtimeToolSet, VoiceId } from "./types";
 
 export const XAI_REALTIME_URL =
   "wss://api.x.ai/v1/realtime?model=grok-voice-latest";
@@ -45,7 +45,16 @@ export const VOICES: ReadonlyArray<{ id: VoiceId; label: string }> = [
 
 export const DEFAULT_INTRO_VOICE: VoiceId = "ara";
 
-export const DEFAULT_INTRO_TOOLS: ToolName[] = ["web_search", "x_search"];
+/**
+ * Fallback tool set seeded synchronously before `useRealtimeAgentConfig`
+ * resolves the real set from the backend. Both are xAI builtins, so they
+ * carry empty params and `execution: "builtin"` — they emit `{type: name}`
+ * in `session.update` and are never client-executed.
+ */
+export const DEFAULT_INTRO_TOOLS: RealtimeToolSet = [
+  { name: "web_search", description: "Search the web.", parameters: {}, execution: "builtin" },
+  { name: "x_search", description: "Search X (Twitter).", parameters: {}, execution: "builtin" },
+];
 
 /**
  * The AI Matrx Introduction Agent system prompt. Frozen — the locked intro route

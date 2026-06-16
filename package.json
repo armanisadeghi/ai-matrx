@@ -14,6 +14,8 @@
     "start": "next start",
     "lint": "eslint .",
     "gate:tools": "tsx scripts/check-tool-db-drift.ts",
+    "check:realtime-tools": "tsx scripts/check-realtime-tools-drift.ts",
+    "check:realtime-tools:strict": "tsx scripts/check-realtime-tools-drift.ts --strict",
     "test": "ts-node -P tsconfig.json tests/setup.ts",
     "test:unit": "jest --no-coverage",
     "test:window-panels": "jest features/window-panels/__tests__ --no-coverage",

@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { useVoiceAgentInstance } from "../hooks/useVoiceAgentInstance";
+import { useRealtimeAgentConfig } from "../hooks/useRealtimeAgentConfig";
 import { useXaiVoiceSession } from "../hooks/useXaiVoiceSession";
 import { usePersistVoiceTranscript } from "../hooks/usePersistVoiceTranscript";
 import {
@@ -33,6 +34,9 @@ import { VoiceTranscriptStream } from "./VoiceTranscriptStream";
 import { VoiceErrorBanner } from "./VoiceErrorBanner";
 import { PlaygroundSettingsSheet } from "./playground/PlaygroundSettingsSheet";
 import type { VoiceAgentPreset } from "../types";
+
+/** DB surface name for the live `/chat/voice` route — drives allowed-set + default tools. */
+const VOICE_CHAT_SURFACE = "matrx-user/chat-voice";
 
 interface VoiceAgentSurfaceProps {
   preset: VoiceAgentPreset;
@@ -51,7 +55,19 @@ export function VoiceAgentSurface({ preset, agentId }: VoiceAgentSurfaceProps) {
   const dispatch = useAppDispatch();
 
   const instanceId = useVoiceAgentInstance({ preset, agentId });
-  const { status, error, toggle } = useXaiVoiceSession({ instanceId });
+  // Resolve the authoritative realtime tool set (server/client/builtin) from the
+  // backend and write it into the slice. Non-fatal on error — the slice keeps
+  // its seeded builtin tools and the mic still works.
+  useRealtimeAgentConfig({
+    instanceId,
+    agentId,
+    surface: VOICE_CHAT_SURFACE,
+  });
+  const { status, error, toggle } = useXaiVoiceSession({
+    instanceId,
+    agentId,
+    surface: VOICE_CHAT_SURFACE,
+  });
   usePersistVoiceTranscript({ instanceId });
 
   const turns = useAppSelector((s) => selectVoiceTurns(s, instanceId));

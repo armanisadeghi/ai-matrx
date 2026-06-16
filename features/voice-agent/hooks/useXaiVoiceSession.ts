@@ -23,6 +23,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import type { RootState } from "@/lib/redux/store";
 import {
   addLatencySample,
   appendAssistantTurn,
@@ -40,12 +41,24 @@ import {
 } from "../state/voiceAgentSlice";
 import { TRANSCRIPT_REVEAL_LAG_MS } from "../constants";
 import {
+  selectVoiceConversationId,
   selectVoiceError,
   selectVoiceInstructions,
   selectVoiceStatus,
   selectVoiceTools,
   selectVoiceVoiceId,
 } from "../state/selectors";
+import {
+  buildFunctionCallOutput,
+  buildResponseCreate,
+} from "../transport/clientEvents";
+import {
+  buildResolvedToolMap,
+  flushToolCalls,
+  type PendingCall,
+  type ToolLoopContext,
+} from "../runtime/realtime-tool-loop";
+import { realtimeToolService } from "../services/realtimeToolService";
 import { createAudioCapture, type CaptureError } from "../audio/audioCapture";
 import { createAudioPlayback } from "../audio/audioPlayback";
 import { createTokenManager, type TokenError } from "../transport/tokenManager";
@@ -71,7 +84,25 @@ interface UseXaiVoiceSessionOpts {
   instanceId: string;
   /** Dev-only: override token TTL for refresh testing. */
   devTokenTtlSeconds?: number;
+  /**
+   * Agent id this session runs. Required for SERVER tool execution
+   * (`POST /ai/tools/execute` constrains the call to the agent's resolved
+   * set). When absent, server/client tools cannot be flushed and any
+   * function call is answered with an explanatory string.
+   */
+  agentId?: string;
+  /**
+   * DB surface name for allowed-set resolution during tool execution
+   * (e.g. "matrx-user/chat-voice", "matrx-user/transcript-scribe-live").
+   * Defaults to the chat-voice surface.
+   */
+  surface?: string;
+  /** Studio session id, when the surface is Scribe Live (for working-doc tools). */
+  sessionId?: string | null;
 }
+
+/** Default DB surface for the live `/chat/voice` route. */
+const DEFAULT_VOICE_SURFACE = "matrx-user/chat-voice";
 
 export interface VoiceSessionApi {
   status: ReturnType<typeof selectVoiceStatus>;
@@ -95,7 +126,7 @@ function makeTurnId(): string {
 export function useXaiVoiceSession(
   opts: UseXaiVoiceSessionOpts,
 ): VoiceSessionApi {
-  const { instanceId, devTokenTtlSeconds } = opts;
+  const { instanceId, devTokenTtlSeconds, agentId, surface, sessionId } = opts;
   const dispatch = useAppDispatch();
   // Read store directly inside the reveal rAF so we don't subscribe / re-render
   // every time a transcript delta lands.
@@ -127,6 +158,20 @@ export function useXaiVoiceSession(
   const playbackRef = useRef<ReturnType<typeof createAudioPlayback> | null>(
     null,
   );
+
+  // Tool-loop config, kept in refs so the lazily-built ToolLoopContext sees
+  // fresh values without re-subscribing the event handler.
+  const agentIdRef = useRef(agentId);
+  const surfaceRef = useRef(surface ?? DEFAULT_VOICE_SURFACE);
+  const sessionIdRef = useRef(sessionId ?? null);
+  agentIdRef.current = agentId;
+  surfaceRef.current = surface ?? DEFAULT_VOICE_SURFACE;
+  sessionIdRef.current = sessionId ?? null;
+
+  // Buffered tool calls from `response.function_call_arguments.done`, flushed
+  // on `response.done` so parallel calls land in one batch with ONE
+  // `response.create`.
+  const pendingCallsRef = useRef<PendingCall[]>([]);
 
   // Per-turn refs — managed across the event stream, not via React state.
   const pendingUserTurnIdRef = useRef<string | null>(null);
@@ -244,6 +289,40 @@ export function useXaiVoiceSession(
     }
     sessionUnsubsRef.current = [];
   }
+
+  // ─── Tool-loop context (built lazily on first tool call) ───────────────
+  // Kept out of the hot event path: only constructed when the model actually
+  // calls a tool, so a tool-less session pays nothing.
+  const buildToolLoopContext = useCallback((): ToolLoopContext => {
+    const state = store.getState();
+    const userId = (state as RootState).userAuth?.id ?? null;
+    const conversationId = selectVoiceConversationId(state, instanceId) ?? null;
+    const resolvedTools = buildResolvedToolMap(
+      selectVoiceTools(state, instanceId),
+    );
+    return {
+      agentId: agentIdRef.current ?? "",
+      conversationId,
+      surface: surfaceRef.current,
+      resolvedTools,
+      contextEnvelope: null,
+      service: realtimeToolService,
+      sendFunctionCallOutput: (callId, output) => {
+        xaiClientRef.current?.sendRaw(buildFunctionCallOutput(callId, output));
+      },
+      sendResponseCreate: () => {
+        xaiClientRef.current?.sendRaw(buildResponseCreate());
+      },
+      clientToolContext: {
+        instanceId,
+        conversationId,
+        userId,
+        sessionId: sessionIdRef.current,
+        dispatch,
+        getState: store.getState as () => RootState,
+      },
+    };
+  }, [dispatch, instanceId, store]);
 
   // ─── Module construction (idempotent) ──────────────────────────────────
   const ensureModules = useCallback(() => {
@@ -491,16 +570,57 @@ export function useXaiVoiceSession(
           break;
         }
 
-        case "response.function_call.created":
-        case "response.function_call_arguments.done":
+        case "response.function_call.created": {
+          // The model announced a function call; args stream next. Nothing to
+          // buffer until `*_arguments.done` carries the final args string.
+          break;
+        }
+
+        case "response.function_call_arguments.done": {
+          // Buffer the completed call; flushed as a batch on `response.done`.
+          pendingCallsRef.current.push({
+            call_id: event.call_id,
+            name: event.name,
+            arguments: event.arguments,
+          });
+          voiceDebugLog(
+            instanceId,
+            "info",
+            "tool.buffered",
+            `${event.name} (call ${event.call_id})`,
+          );
+          break;
+        }
+
         case "response.function_call.done": {
-          // Built-in tools (web_search, x_search) execute server-side — no
-          // client work needed. Custom function tools will route through here
-          // in v1.1: receive args → execute locally → send function_call_output.
+          // Per-call terminator; the buffered entry already holds the args.
           break;
         }
 
         case "response.done": {
+          // ── Flush any buffered tool calls FIRST ──────────────────────────
+          // A tool-call turn often carries no audio, so this must run
+          // regardless of whether an assistant turn is pending. Draining +
+          // flushing here (before turn bookkeeping) is what lets xAI emit a
+          // fresh response with the tool outputs as grounding. flushToolCalls
+          // sends one function_call_output per call_id, then exactly one
+          // response.create — never throws.
+          if (pendingCallsRef.current.length > 0) {
+            const pending = pendingCallsRef.current;
+            pendingCallsRef.current = [];
+            const loopCtx = buildToolLoopContext();
+            void flushToolCalls(pending, loopCtx).catch((err) => {
+              // flushToolCalls swallows per-call failures into strings; a throw
+              // here would only be a programming error in the loop itself.
+              voiceDebugLog(
+                instanceId,
+                "error",
+                "tool.flush-failed",
+                err instanceof Error ? err.message : String(err),
+              );
+            });
+          }
+
           if (!pendingAssistantTurnIdRef.current) break;
           const playedMs = playbackRef.current?.markTurnEnded() ?? 0;
           const speechTtfb =
@@ -581,7 +701,14 @@ export function useXaiVoiceSession(
         }
       }
     },
-    [dispatch, instanceId, mirrorFlags, startRevealLoop, stopRevealLoop],
+    [
+      dispatch,
+      instanceId,
+      mirrorFlags,
+      startRevealLoop,
+      stopRevealLoop,
+      buildToolLoopContext,
+    ],
   );
 
   const handleClientError = useCallback(
@@ -601,6 +728,7 @@ export function useXaiVoiceSession(
   const stop = useCallback(async (): Promise<void> => {
     voiceDebugLog(instanceId, "info", "stop", "tearing down session");
     stopRevealLoop();
+    pendingCallsRef.current = [];
     pendingUserTurnIdRef.current = null;
     pendingAssistantTurnIdRef.current = null;
     speechEndedAtMsRef.current = null;
