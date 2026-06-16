@@ -529,6 +529,23 @@ export async function removeSourceTag(
   if (error) throw error;
 }
 
+/** Assign one tag to many sources at once (batch tagging in the curation table). */
+export async function addTagToSources(
+  tagId: string,
+  sourceIds: string[],
+): Promise<void> {
+  if (sourceIds.length === 0) return;
+  const rows = sourceIds.map((source_id) => ({
+    source_id,
+    tag_id: tagId,
+    assigned_by: "manual" as const,
+  }));
+  const { error } = await supabase
+    .from("rs_source_tag")
+    .upsert(rows, { onConflict: "source_id,tag_id" });
+  if (error) throw error;
+}
+
 /**
  * Per-source importance for a topic, keyed by source_id. Both the total score
  * and the per-keyword ranks come from `rs_keyword_source.rank_for_keyword` (the

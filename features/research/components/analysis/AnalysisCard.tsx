@@ -175,6 +175,48 @@ export function AnalysisCard({
     );
   }
 
+  // Succeeded but EMPTY (a prior run produced nothing) — be honest instead of
+  // rendering an empty card that looks just like a real success.
+  if (!hasContent) {
+    return (
+      <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 overflow-hidden">
+        <div className="flex items-start justify-between gap-3 px-4 py-3">
+          <div className="flex items-start gap-2 min-w-0">
+            <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                  No content produced
+                </span>
+                <Badge variant="secondary" className="text-[10px]">
+                  {humanizeAgentType(analysis.agent_type)}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(analysis.created_at).toLocaleDateString()}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                The last analysis returned nothing — run it again (curate the
+                content first for a better result).
+              </p>
+            </div>
+          </div>
+          {topicId && sourceId && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAnalyzed}
+              className="gap-1.5 shrink-0 min-h-[44px] sm:min-h-0"
+            >
+              <Brain className="h-3.5 w-3.5" />
+              Analyze
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // Successful analysis
   const createdAt = new Date(analysis.created_at);
   const formattedDate = createdAt.toLocaleDateString(undefined, {

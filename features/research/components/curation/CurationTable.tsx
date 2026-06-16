@@ -2,25 +2,24 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  TrendingUp,
-  Eye,
-  EyeOff,
-  ExternalLink,
-  Loader2,
-  ListChecks,
-} from "lucide-react";
+import { Eye, EyeOff, ExternalLink, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTopicContext } from "../../context/ResearchContext";
 import { useCurationData } from "../../hooks/useResearchState";
-import { bulkUpdateSources, updateSource } from "../../service";
+import {
+  bulkUpdateSources,
+  updateSource,
+  addTagToSources,
+  createTag,
+} from "../../service";
 import type { CurationRow, CurationAnalysisState } from "../../service";
 import { sourceTypeFromDb } from "../../types";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
-import { BulkActionBar } from "../sources/BulkActionBar";
+import { CurationBatchBar } from "./CurationBatchBar";
+import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 
@@ -79,6 +78,8 @@ export default function CurationTable() {
   const [includedFilter, setIncludedFilter] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const [createTagOpen, setCreateTagOpen] = useState(false);
+  const [creatingTag, setCreatingTag] = useState(false);
 
   const rows = data?.rows ?? [];
   const keywords = data?.keywords ?? [];
@@ -167,10 +168,24 @@ export default function CurationTable() {
     return set;
   }, [groups]);
 
-  const allSelected = visibleIds.size > 0 && selected.size === visibleIds.size;
+  // "Are all CURRENTLY-VISIBLE rows selected" — not size-equality (the
+  // selection can hold off-screen ids from other searches).
+  const allVisibleSelected =
+    visibleIds.size > 0 && [...visibleIds].every((id) => selected.has(id));
 
+  // Toggle ONLY the visible rows in/out of the existing selection — never
+  // discard off-screen selections. This is what makes the "select all → search
+  // junk → deselect visible → … → tag the remainder" workflow work.
   const toggleAll = () =>
-    setSelected(allSelected ? new Set() : new Set(visibleIds));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        for (const id of visibleIds) next.delete(id);
+      } else {
+        for (const id of visibleIds) next.add(id);
+      }
+      return next;
+    });
   const toggleOne = (id: string) =>
     setSelected((prev) => {
       const next = new Set(prev);
@@ -191,14 +206,48 @@ export default function CurationTable() {
         source_ids: [...selected],
       });
       toast.success(`${label} ${selected.size} source(s)`);
-      setSelected(new Set());
       refresh();
+      // Keep the selection so the user can chain actions (tag, then exclude…).
     } catch (err) {
       toast.error(
         `Bulk action failed: ${err instanceof Error ? err.message : "unknown"}`,
       );
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleAddTag = async (tagId: string) => {
+    if (selected.size === 0) return;
+    setBusy(true);
+    try {
+      await addTagToSources(tagId, [...selected]);
+      const name = tags.find((t) => t.id === tagId)?.name ?? "tag";
+      toast.success(`Tagged ${selected.size} source(s) with "${name}"`);
+      refresh();
+    } catch (err) {
+      toast.error(
+        `Tagging failed: ${err instanceof Error ? err.message : "unknown error"}`,
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCreateTag = async (name: string) => {
+    setCreatingTag(true);
+    try {
+      const tag = await createTag(topicId, { name });
+      await addTagToSources(tag.id, [...selected]);
+      toast.success(`Created "${tag.name}" · tagged ${selected.size} source(s)`);
+      setCreateTagOpen(false);
+      refresh();
+    } catch (err) {
+      toast.error(
+        `Couldn't create tag: ${err instanceof Error ? err.message : "unknown error"}`,
+      );
+    } finally {
+      setCreatingTag(false);
     }
   };
 
@@ -347,13 +396,13 @@ export default function CurationTable() {
                 <th className="py-1.5 pl-1 pr-1 w-8">
                   <input
                     type="checkbox"
-                    aria-label="Select all"
-                    checked={allSelected}
+                    aria-label="Select all visible"
+                    checked={allVisibleSelected}
                     onChange={toggleAll}
                     className="h-3.5 w-3.5 cursor-pointer accent-primary align-middle"
                   />
                 </th>
-                <th className="py-1.5 px-1 w-16 font-medium">Import.</th>
+                <th className="py-1.5 px-1 w-16 font-medium">Rank</th>
                 <th className="py-1.5 px-1 font-medium">Source</th>
                 <th className="py-1.5 px-2 font-medium whitespace-nowrap">
                   Scrape
@@ -386,22 +435,27 @@ export default function CurationTable() {
         )}
       </div>
 
-      {selected.size > 0 && (
-        <BulkActionBar
-          selectedCount={selected.size}
-          onInclude={() => runBulk("include", "Included")}
-          onExclude={() => runBulk("exclude", "Excluded")}
-          onMarkStale={() => runBulk("mark_stale", "Marked stale")}
-          onMarkComplete={() => runBulk("mark_complete", "Marked complete")}
-          onClear={() => setSelected(new Set())}
-        />
-      )}
+      <CurationBatchBar
+        selectedCount={selected.size}
+        tags={tags}
+        onInclude={() => runBulk("include", "Included")}
+        onExclude={() => runBulk("exclude", "Excluded")}
+        onAddTag={handleAddTag}
+        onCreateTag={() => setCreateTagOpen(true)}
+        onClear={() => setSelected(new Set())}
+        busy={busy}
+      />
 
-      {busy && (
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 inline-flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1.5 text-xs shadow">
-          <Loader2 className="h-3 w-3 animate-spin" /> Applying…
-        </div>
-      )}
+      <TextInputDialog
+        open={createTagOpen}
+        onOpenChange={(o) => !creatingTag && setCreateTagOpen(o)}
+        title="New tag dimension"
+        description={`Create a tag and assign the ${selected.size} selected source(s) to it.`}
+        placeholder="e.g. Economic Impact"
+        confirmLabel="Create & tag"
+        busy={creatingTag}
+        onConfirm={handleCreateTag}
+      />
     </div>
   );
 }
@@ -459,15 +513,27 @@ function GroupRows({
                 className="h-3.5 w-3.5 cursor-pointer accent-primary align-middle"
               />
             </td>
-            <td className="py-1.5 px-1 align-middle">
-              <div className="flex items-center gap-1 text-[11px] font-semibold tabular-nums text-primary">
-                <TrendingUp className="h-3 w-3 shrink-0 opacity-60" />
-                {r.importance?.score ?? 0}
-              </div>
-              {r.importance?.bestRank != null && (
-                <div className="text-[9px] text-muted-foreground tabular-nums">
-                  best #{r.importance.bestRank}
-                </div>
+            <td
+              className="py-1.5 px-1 align-middle"
+              title={
+                r.importance
+                  ? `Importance ${r.importance.score} — composite of search ranks across ${r.importance.keywordCount} keyword${r.importance.keywordCount === 1 ? "" : "s"} (rewards ranking well for many keywords)`
+                  : "Not ranked for any keyword"
+              }
+            >
+              {r.importance?.bestRank != null ? (
+                <>
+                  <div className="text-sm font-semibold tabular-nums leading-none">
+                    #{r.importance.bestRank}
+                  </div>
+                  {r.importance.keywordCount > 1 && (
+                    <div className="mt-0.5 text-[9px] text-muted-foreground tabular-nums">
+                      in {r.importance.keywordCount} kw
+                    </div>
+                  )}
+                </>
+              ) : (
+                <span className="text-[11px] text-muted-foreground">—</span>
               )}
             </td>
             <td className="py-1.5 px-1 align-middle">
