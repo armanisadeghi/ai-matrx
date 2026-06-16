@@ -16,13 +16,7 @@
  */
 
 import { useEffect, useState } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import {
   Dialog,
   DialogContent,
@@ -207,86 +201,84 @@ export function LibraryDocDetailSheet({
 
   const open = Boolean(processedDocumentId);
 
+  const panelTitle =
+    loading || !doc ? "Loading document…" : error ? "Error" : doc.name;
+
+  const panelDescription = error ? (
+    error
+  ) : doc && !loading ? (
+    <span className="inline-flex items-center gap-2">
+      <StatusBadge status={doc.status} />
+      <span>
+        {doc.derivationKind} · created{" "}
+        {new Date(doc.createdAt).toLocaleString()}
+      </span>
+    </span>
+  ) : undefined;
+
+  const panelHeaderActions =
+    doc && !error ? (
+      <div className="flex gap-2 shrink-0">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            navigator.clipboard.writeText(doc.id);
+            setCopiedId(true);
+            toast.success("Document ID copied");
+            setTimeout(() => setCopiedId(false), 1500);
+          }}
+        >
+          {copiedId ? (
+            <Check className="h-3.5 w-3.5 mr-1" />
+          ) : (
+            <Copy className="h-3.5 w-3.5 mr-1" />
+          )}
+          Copy ID
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            window.open(
+              `/rag/library/${doc.id}/preview`,
+              "_blank",
+              "noopener,noreferrer",
+            );
+          }}
+        >
+          <ExternalLink className="h-3.5 w-3.5 mr-1" />
+          Preview
+        </Button>
+      </div>
+    ) : undefined;
+
   return (
-    <Sheet
-      open={open}
-      onOpenChange={(o) => {
-        if (!o) onClose();
-      }}
-    >
-      <SheetContent
-        side="right"
-        className="w-[min(100vw,900px)] sm:max-w-none flex flex-col p-0"
+    <>
+      <MatrxDynamicPanelHost
+        open={open}
+        onOpenChange={(o) => {
+          if (!o) onClose();
+        }}
+        title={panelTitle}
+        description={panelDescription}
+        headerActions={panelHeaderActions}
+        position="right"
+        defaultSize={50}
+        maxSize={92}
+        contentClassName="flex min-h-0 flex-1 flex-col p-0"
       >
         {loading || !doc ? (
-          <div className="p-6 space-y-3">
-            <SheetHeader>
-              <SheetTitle>Loading document…</SheetTitle>
-            </SheetHeader>
+          <div className="space-y-3 p-6">
             <Skeleton className="h-6 w-3/4" />
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-32 w-full" />
           </div>
-        ) : error ? (
-          <div className="p-6">
-            <SheetHeader>
-              <SheetTitle>Error</SheetTitle>
-              <SheetDescription className="text-destructive">
-                {error}
-              </SheetDescription>
-            </SheetHeader>
-          </div>
-        ) : (
+        ) : error ? null : (
           <>
-            <SheetHeader className="p-6 pb-3 border-b">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <SheetTitle className="break-words">{doc.name}</SheetTitle>
-                  <SheetDescription className="flex items-center gap-2 mt-1.5">
-                    <StatusBadge status={doc.status} />
-                    <span className="text-xs text-muted-foreground">
-                      {doc.derivationKind} · created{" "}
-                      {new Date(doc.createdAt).toLocaleString()}
-                    </span>
-                  </SheetDescription>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      navigator.clipboard.writeText(doc.id);
-                      setCopiedId(true);
-                      toast.success("Document ID copied");
-                      setTimeout(() => setCopiedId(false), 1500);
-                    }}
-                  >
-                    {copiedId ? (
-                      <Check className="h-3.5 w-3.5 mr-1" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5 mr-1" />
-                    )}
-                    Copy ID
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      window.open(
-                        `/rag/library/${doc.id}/preview`,
-                        "_blank",
-                        "noopener,noreferrer",
-                      );
-                    }}
-                  >
-                    <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                    Preview
-                  </Button>
-                </div>
-              </div>
-
+            <div className="border-b px-6 pb-3 pt-1">
               {/* Action row */}
-              <div className="flex flex-wrap gap-2 mt-3">
+              <div className="flex flex-wrap gap-2">
                 {/* Primary CTA: "Process Document" (never run) or
                     "Finish Processing" (chunks exist but embeddings
                     missing) or "Re-process" (everything is there but
@@ -415,7 +407,7 @@ export function LibraryDocDetailSheet({
                   highlight={doc.dataStores.length === 0 ? "warning" : "ok"}
                 />
               </div>
-            </SheetHeader>
+            </div>
 
             <Tabs
               defaultValue="stages"
@@ -720,7 +712,7 @@ export function LibraryDocDetailSheet({
             </Tabs>
           </>
         )}
-      </SheetContent>
+      </MatrxDynamicPanelHost>
 
       {/* Rename dialog */}
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
@@ -815,7 +807,7 @@ export function LibraryDocDetailSheet({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Sheet>
+    </>
   );
 }
 

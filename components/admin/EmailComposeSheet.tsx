@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Mail, Send, Loader2, CheckCircle, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -44,7 +44,6 @@ export function EmailComposeSheet({
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; msg: string } | null>(null);
 
-  // Fetch email config on mount
   useEffect(() => {
     fetch("/api/admin/email")
       .then((res) => res.json())
@@ -73,7 +72,6 @@ export function EmailComposeSheet({
         sendAsUser,
       };
 
-      // Include custom from if provided (only when not sending as user)
       if (!sendAsUser && customFrom.trim()) {
         payload.from = customFrom.trim();
       }
@@ -88,7 +86,6 @@ export function EmailComposeSheet({
       setResult({ success: data.success, msg: data.msg });
 
       if (data.success) {
-        // Clear form and close after a delay
         setTimeout(() => {
           setSubject(defaultSubject);
           setMessage(defaultMessage);
@@ -98,7 +95,7 @@ export function EmailComposeSheet({
           onClose();
         }, 2000);
       }
-    } catch (error) {
+    } catch {
       setResult({ success: false, msg: "Failed to send email" });
     } finally {
       setLoading(false);
@@ -115,149 +112,138 @@ export function EmailComposeSheet({
   };
 
   return (
-    <Sheet open={isOpen} onOpenChange={handleClose}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-          <SheetDescription>
-            Compose and send email to selected recipients
-          </SheetDescription>
-        </SheetHeader>
-        
-        <div className="mt-6 space-y-4">
-          {/* Recipients */}
-          <div>
-            <label className="block text-sm font-medium mb-1.5">
-              To ({recipients.length} recipient{recipients.length !== 1 ? "s" : ""})
-            </label>
-            <div className="flex flex-wrap gap-2 p-2 bg-muted rounded-lg max-h-24 overflow-y-auto">
-              {recipients.slice(0, 10).map((r) => (
-                <span
-                  key={r.id}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-background border rounded-full text-xs"
-                >
-                  <Mail className="w-3 h-3 text-muted-foreground" />
-                  {r.name || r.email}
-                </span>
-              ))}
-              {recipients.length > 10 && (
-                <span className="inline-flex items-center px-2 py-1 text-xs text-muted-foreground">
-                  +{recipients.length - 10} more
-                </span>
-              )}
-            </div>
+    <MatrxDynamicPanelHost
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) handleClose();
+      }}
+      dismissDisabled={loading}
+      title={title}
+      description="Compose and send email to selected recipients"
+      position="right"
+      defaultSize={42}
+      contentClassName="overflow-y-auto"
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1.5">
+            To ({recipients.length} recipient{recipients.length !== 1 ? "s" : ""})
+          </label>
+          <div className="flex flex-wrap gap-2 p-2 bg-muted rounded-lg max-h-24 overflow-y-auto">
+            {recipients.slice(0, 10).map((r) => (
+              <span
+                key={r.id}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-background border rounded-full text-xs"
+              >
+                <Mail className="w-3 h-3 text-muted-foreground" />
+                {r.name || r.email}
+              </span>
+            ))}
+            {recipients.length > 10 && (
+              <span className="inline-flex items-center px-2 py-1 text-xs text-muted-foreground">
+                +{recipients.length - 10} more
+              </span>
+            )}
           </div>
+        </div>
 
-          {/* Subject */}
+        <div>
+          <label className="block text-sm font-medium mb-1.5">Subject</label>
+          <input
+            type="text"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="Enter email subject"
+            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1.5">Message</label>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Enter your message..."
+            rows={8}
+            className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          {showAdvanced ? (
+            <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          )}
+          {showAdvanced ? "Hide" : "Show"} advanced options
+        </button>
+
+        {showAdvanced && (
           <div>
             <label className="block text-sm font-medium mb-1.5">
-              Subject
+              From (optional)
             </label>
             <input
               type="text"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Enter email subject"
+              value={customFrom}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              placeholder={emailConfig?.defaultFrom || "Display Name <email@domain.com>"}
               className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              {emailConfig?.allowedDomains && emailConfig.allowedDomains.length > 0 ? (
+                <>Allowed domains: {emailConfig.allowedDomains.join(", ")}</>
+              ) : (
+                <>Leave blank to use default: {emailConfig?.defaultFrom || "loading..."}</>
+              )}
+            </p>
           </div>
+        )}
 
-          {/* Message */}
-          <div>
-            <label className="block text-sm font-medium mb-1.5">
-              Message
-            </label>
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Enter your message..."
-              rows={8}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-            />
-          </div>
-
-          {/* Advanced Options Toggle */}
-          <button
-            type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        {result && (
+          <div
+            className={`flex items-center gap-2 px-4 py-3 rounded-lg ${
+              result.success
+                ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300"
+                : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300"
+            }`}
           >
-            {showAdvanced ? (
-              <ChevronUp className="w-4 h-4" />
+            {result.success ? (
+              <CheckCircle className="w-4 h-4" />
             ) : (
-              <ChevronDown className="w-4 h-4" />
+              <XCircle className="w-4 h-4" />
             )}
-            {showAdvanced ? "Hide" : "Show"} advanced options
-          </button>
-
-          {/* From (Advanced) */}
-          {showAdvanced && (
-            <div>
-              <label className="block text-sm font-medium mb-1.5">
-                From (optional)
-              </label>
-              <input
-                type="text"
-                value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
-                placeholder={emailConfig?.defaultFrom || "Display Name <email@domain.com>"}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                {emailConfig?.allowedDomains && emailConfig.allowedDomains.length > 0 ? (
-                  <>Allowed domains: {emailConfig.allowedDomains.join(", ")}</>
-                ) : (
-                  <>Leave blank to use default: {emailConfig?.defaultFrom || "loading..."}</>
-                )}
-              </p>
-            </div>
-          )}
-
-          {/* Result */}
-          {result && (
-            <div
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg ${
-                result.success ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300" : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300"
-              }`}
-            >
-              {result.success ? (
-                <CheckCircle className="w-4 h-4" />
-              ) : (
-                <XCircle className="w-4 h-4" />
-              )}
-              <span className="text-sm">{result.msg}</span>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex gap-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={handleClose}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSend}
-              disabled={loading || !subject.trim() || !message.trim()}
-              className="flex-1"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4 mr-2" />
-                  Send Email
-                </>
-              )}
-            </Button>
+            <span className="text-sm">{result.msg}</span>
           </div>
+        )}
+
+        <div className="flex gap-2 pt-4">
+          <Button variant="outline" onClick={handleClose} className="flex-1">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSend}
+            disabled={loading || !subject.trim() || !message.trim()}
+            className="flex-1"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-2" />
+                Send Email
+              </>
+            )}
+          </Button>
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </MatrxDynamicPanelHost>
   );
 }

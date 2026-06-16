@@ -38,13 +38,7 @@ import {
   AlertCircle,
   History,
 } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
 import { EditableCell } from "@/features/data-tables/components/EditableCell";
 import { useTableRealtime } from "@/features/data-tables/hooks/useTableRealtime";
@@ -1996,24 +1990,19 @@ const UserTableViewer = ({
       />
 
       {/* Row version history (P1 audit log surface) */}
-      <Sheet
+      <MatrxDynamicPanelHost
         open={historyRowId !== null}
         onOpenChange={(open) => {
           if (!open) setHistoryRowId(null);
         }}
+        title="Row history"
+        description="Every change to this row, newest first."
+        position="right"
+        defaultSize={32}
+        contentClassName="overflow-y-auto"
       >
-        <SheetContent className="overflow-y-auto sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Row history</SheetTitle>
-            <SheetDescription>
-              Every change to this row, newest first.
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-4">
-            <VersionHistoryViewer rowId={historyRowId} />
-          </div>
-        </SheetContent>
-      </Sheet>
+        <VersionHistoryViewer rowId={historyRowId} />
+      </MatrxDynamicPanelHost>
     </div>
   );
 };

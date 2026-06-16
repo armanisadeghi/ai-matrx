@@ -9,7 +9,7 @@ import { DeleteTranscriptDialog } from "./DeleteTranscriptDialog";
 import { TranscriptsHeaderPortal } from "@/components/layout/new-layout/PageSpecificHeader";
 import { useTranscriptsContext } from "../context/TranscriptsContext";
 import { Loader2, Menu } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -78,19 +78,24 @@ export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile: Show menu button and title */}
           <div className="flex items-center border-b border-border bg-textured md:hidden h-9">
-            <Sheet
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 m-1"
+              onClick={() => setIsMobileSidebarOpen(true)}
+            >
+              <Menu className="h-3.5 w-3.5" />
+            </Button>
+            <MatrxDynamicPanelHost
               open={isMobileSidebarOpen}
               onOpenChange={setIsMobileSidebarOpen}
+              title="Transcripts"
+              position="left"
+              defaultSize={80}
+              contentClassName="flex min-h-0 flex-1 flex-col p-0 pb-safe"
             >
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 m-1">
-                  <Menu className="h-3.5 w-3.5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-[320px] pb-safe">
-                <TranscriptsSidebar onCreateTranscript={handleCreateNew} />
-              </SheetContent>
-            </Sheet>
+              <TranscriptsSidebar onCreateTranscript={handleCreateNew} />
+            </MatrxDynamicPanelHost>
 
             {/* Mobile - Show active transcript title */}
             {activeTranscript && (

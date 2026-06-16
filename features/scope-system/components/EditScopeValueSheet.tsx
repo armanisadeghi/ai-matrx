@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Loader2, Pencil, AlertTriangle, Info } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -110,7 +104,10 @@ export function EditScopeValueSheet({
 
     // Custom component: route whatever the Smart-Input emits via the shared mapper.
     if (hasCustom) {
-      Object.assign(payload, buildScopeValuePayload(customValue, row.value_type));
+      Object.assign(
+        payload,
+        buildScopeValuePayload(customValue, row.value_type),
+      );
       setBusy(true);
       try {
         await dispatch(setScopeContextValue(payload)).unwrap();
@@ -174,169 +171,167 @@ export function EditScopeValueSheet({
 
   return (
     <>
-      <Sheet open={open} onOpenChange={(o) => (!busy ? onOpenChange(o) : null)}>
-        <SheetContent
-          side="right"
-          className="w-full sm:max-w-2xl overflow-y-auto"
-        >
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              {row.display_name}
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setEditingItemDef(true)}
-                title="Edit context item definition"
-                aria-label="Edit context item definition"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            </SheetTitle>
-            <SheetDescription>
-              Advanced value editor. Changes create a new version; previous
-              versions are kept in history.
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="mt-6 space-y-5">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Badge variant="secondary" className="text-[10px] capitalize">
-                {row.value_type}
+      <MatrxDynamicPanelHost
+        open={open}
+        onOpenChange={onOpenChange}
+        title={row.display_name}
+        description="Advanced value editor. Changes create a new version; previous versions are kept in history."
+        expandButtonLabel="Scope value"
+        dismissDisabled={busy}
+        position="right"
+        defaultSize={42}
+        maxSize={92}
+        headerActions={
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setEditingItemDef(true)}
+            title="Edit context item definition"
+            aria-label="Edit context item definition"
+            className="h-6 w-6 shrink-0"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+        }
+      >
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary" className="text-[10px] capitalize">
+              {row.value_type}
+            </Badge>
+            {row.version != null && (
+              <Badge variant="outline" className="text-[10px]">
+                v{row.version}
               </Badge>
-              {row.version != null && (
-                <Badge variant="outline" className="text-[10px]">
-                  v{row.version}
-                </Badge>
-              )}
-              {row.fetch_hint && (
-                <Badge variant="outline" className="text-[10px] capitalize">
-                  fetch: {row.fetch_hint.replace(/_/g, " ")}
-                </Badge>
-              )}
-              {row.sensitivity && (
-                <Badge variant="outline" className="text-[10px] capitalize">
-                  {row.sensitivity}
-                </Badge>
-              )}
+            )}
+            {row.fetch_hint && (
+              <Badge variant="outline" className="text-[10px] capitalize">
+                fetch: {row.fetch_hint.replace(/_/g, " ")}
+              </Badge>
+            )}
+            {row.sensitivity && (
+              <Badge variant="outline" className="text-[10px] capitalize">
+                {row.sensitivity}
+              </Badge>
+            )}
+          </div>
+
+          {row.description && (
+            <div className="rounded-md bg-muted/50 border border-border px-3 py-2 text-xs text-muted-foreground inline-flex items-start gap-2 w-full">
+              <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+              <span>{row.description}</span>
             </div>
+          )}
 
-            {row.description && (
-              <div className="rounded-md bg-muted/50 border border-border px-3 py-2 text-xs text-muted-foreground inline-flex items-start gap-2 w-full">
-                <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                <span>{row.description}</span>
-              </div>
-            )}
-
-            {hasCustom ? (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Value</Label>
-                <VariableInputComponent
-                  value={customValue}
-                  onChange={setCustomValue}
-                  variableName={row.display_name}
-                  customComponent={row.custom_component ?? undefined}
-                  hideLabel
-                />
-              </div>
-            ) : row.value_type === "boolean" ? (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Value</Label>
-                <Select
-                  value={booleanValue}
-                  onValueChange={setBooleanValue}
-                  disabled={busy}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="—" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Yes / True</SelectItem>
-                    <SelectItem value="false">No / False</SelectItem>
-                    <SelectItem value="">— (empty)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : row.value_type === "date" ? (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Value</Label>
-                <Input
-                  type="date"
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                  style={{ fontSize: "16px" }}
-                  disabled={busy}
-                />
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                <Label className="text-xs">
-                  Value
-                  {(row.value_type === "object" ||
-                    row.value_type === "array") && (
-                    <span className="ml-1.5 text-muted-foreground font-normal">
-                      (parsed as JSON)
-                    </span>
-                  )}
-                </Label>
-                <ProTextarea
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                  minHeight={200}
-                  autoGrow
-                  className={
-                    row.value_type === "object" || row.value_type === "array"
-                      ? "font-mono text-sm"
-                      : undefined
-                  }
-                  placeholder={
-                    row.value_type === "object" || row.value_type === "array"
-                      ? "{ }"
-                      : row.value_type === "document"
-                        ? "https://..."
-                        : "Enter the value"
-                  }
-                  disabled={busy}
-                />
-                {jsonError && (
-                  <p className="text-xs text-rose-600 dark:text-rose-400 inline-flex items-start gap-1">
-                    <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                    {jsonError}
-                  </p>
-                )}
-              </div>
-            )}
-
+          {hasCustom ? (
             <div className="space-y-1.5">
-              <Label className="text-xs">Change summary (optional)</Label>
+              <Label className="text-xs">Value</Label>
+              <VariableInputComponent
+                value={customValue}
+                onChange={setCustomValue}
+                variableName={row.display_name}
+                customComponent={row.custom_component ?? undefined}
+                hideLabel
+              />
+            </div>
+          ) : row.value_type === "boolean" ? (
+            <div className="space-y-1.5">
+              <Label className="text-xs">Value</Label>
+              <Select
+                value={booleanValue}
+                onValueChange={setBooleanValue}
+                disabled={busy}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="—" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Yes / True</SelectItem>
+                  <SelectItem value="false">No / False</SelectItem>
+                  <SelectItem value="">— (empty)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : row.value_type === "date" ? (
+            <div className="space-y-1.5">
+              <Label className="text-xs">Value</Label>
               <Input
-                value={changeSummary}
-                onChange={(e) => setChangeSummary(e.target.value)}
-                placeholder="What changed and why?"
+                type="date"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
                 style={{ fontSize: "16px" }}
                 disabled={busy}
               />
-              <p className="text-[10px] text-muted-foreground">
-                Logged with this version in the history.
-              </p>
             </div>
-
-            <div className="flex gap-2 pt-4 border-t border-border">
-              <div className="flex-1" />
-              <Button
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
+          ) : (
+            <div className="space-y-1.5">
+              <Label className="text-xs">
+                Value
+                {(row.value_type === "object" ||
+                  row.value_type === "array") && (
+                  <span className="ml-1.5 text-muted-foreground font-normal">
+                    (parsed as JSON)
+                  </span>
+                )}
+              </Label>
+              <ProTextarea
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                minHeight={200}
+                autoGrow
+                className={
+                  row.value_type === "object" || row.value_type === "array"
+                    ? "font-mono text-sm"
+                    : undefined
+                }
+                placeholder={
+                  row.value_type === "object" || row.value_type === "array"
+                    ? "{ }"
+                    : row.value_type === "document"
+                      ? "https://..."
+                      : "Enter the value"
+                }
                 disabled={busy}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={busy}>
-                {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Save value
-              </Button>
+              />
+              {jsonError && (
+                <p className="text-xs text-rose-600 dark:text-rose-400 inline-flex items-start gap-1">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                  {jsonError}
+                </p>
+              )}
             </div>
+          )}
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Change summary (optional)</Label>
+            <Input
+              value={changeSummary}
+              onChange={(e) => setChangeSummary(e.target.value)}
+              placeholder="What changed and why?"
+              style={{ fontSize: "16px" }}
+              disabled={busy}
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Logged with this version in the history.
+            </p>
           </div>
-        </SheetContent>
-      </Sheet>
+
+          <div className="flex gap-2 pt-4 border-t border-border">
+            <div className="flex-1" />
+            <Button
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              disabled={busy}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={busy}>
+              {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save value
+            </Button>
+          </div>
+        </div>
+      </MatrxDynamicPanelHost>
 
       <EditContextItemSheet
         open={editingItemDef}

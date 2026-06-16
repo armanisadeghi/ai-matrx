@@ -1,14 +1,9 @@
 // features/administration/schema-visualizer/SchemaDetails.tsx
-// Standalone details sheet — reads schema overview via React Query.
+// Standalone details panel — reads schema overview via React Query.
 
 "use client";
 
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useSchemaVisualizerStore } from "./store";
 import { useSchemaQuery } from "./hooks/useSchemaQuery";
 import { TableDetails } from "./Details/TableDetails";
@@ -23,6 +18,13 @@ export function SchemaDetails() {
     if (!selectedElement) return null;
 
     const table = overview?.tables?.[selectedElement.tableName];
+
+    const panelTitle =
+        selectedElement.type === "table"
+            ? "Table Details"
+            : selectedElement.type === "field"
+              ? "Field Details"
+              : "Relationship Details";
 
     const renderContent = () => {
         if (!selectedElement.tableName || !table) return null;
@@ -50,20 +52,15 @@ export function SchemaDetails() {
     };
 
     return (
-        <Sheet open={isDetailsOpen} onOpenChange={setDetailsOpen}>
-            <SheetContent>
-                <SheetHeader>
-                    <div className="flex items-center justify-between">
-                        <SheetTitle>
-                            {selectedElement.type === "table" && "Table Details"}
-                            {selectedElement.type === "field" && "Field Details"}
-                            {selectedElement.type === "relationship" &&
-                                "Relationship Details"}
-                        </SheetTitle>
-                    </div>
-                </SheetHeader>
-                {renderContent()}
-            </SheetContent>
-        </Sheet>
+        <MatrxDynamicPanelHost
+            open={isDetailsOpen}
+            onOpenChange={setDetailsOpen}
+            title={panelTitle}
+            position="right"
+            defaultSize={36}
+            contentClassName="overflow-y-auto"
+        >
+            {renderContent()}
+        </MatrxDynamicPanelHost>
     );
 }

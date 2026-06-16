@@ -4,13 +4,7 @@ import { useState, useEffect } from "react";
 import { X, SlidersHorizontal, Check, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import type { PromptSortOption, FavFilter, ArchFilter } from "../../hooks/usePromptFilters";
@@ -168,22 +162,23 @@ export function FilterModal({
         !localFavFirst;
 
     return (
-        <Sheet open={isOpen} onOpenChange={onClose}>
-            <SheetContent
-                side={isMobile ? "left" : "right"}
-                className={cn("w-[85%] sm:w-[400px] flex flex-col p-0", "h-dvh max-h-dvh")}
-            >
-                <SheetHeader className="px-6 py-4 border-b border-border/50">
-                    <SheetTitle className="text-lg font-bold flex items-center gap-2">
-                        <SlidersHorizontal className="h-5 w-5 text-primary" />
-                        Filters & Sorting
-                    </SheetTitle>
-                    <SheetDescription className="text-sm text-muted-foreground">
-                        Select to filter. None selected = show all.
-                    </SheetDescription>
-                </SheetHeader>
-
-                <div className="flex-1 overflow-y-auto px-6 py-5">
+        <MatrxDynamicPanelHost
+            open={isOpen}
+            onOpenChange={(open) => {
+                if (!open) onClose();
+            }}
+            title={
+                <span className="flex items-center gap-2">
+                    <SlidersHorizontal className="h-5 w-5 text-primary" />
+                    Filters & Sorting
+                </span>
+            }
+            description="Select to filter. None selected = show all."
+            position={isMobile ? "left" : "right"}
+            defaultSize={isMobile ? 85 : 32}
+            contentClassName="flex min-h-0 flex-1 flex-col p-0"
+        >
+                <div className="flex-1 overflow-y-auto px-3 py-4">
                     <div className="space-y-6">
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-foreground block">Sort By</label>
@@ -311,7 +306,7 @@ export function FilterModal({
                     </div>
                 </div>
 
-                <div className="flex-shrink-0 bg-background border-t border-border/50 px-6 py-4 pb-safe space-y-2">
+                <div className="flex-shrink-0 border-t border-border/50 px-3 py-4 pb-safe space-y-2">
                     {hasActiveFilters && (
                         <Button variant="outline" onClick={handleClearAll} className="w-full h-11 text-base">
                             <X className="h-4 w-4 mr-2" />
@@ -322,7 +317,6 @@ export function FilterModal({
                         Apply Filters
                     </Button>
                 </div>
-            </SheetContent>
-        </Sheet>
+        </MatrxDynamicPanelHost>
     );
 }

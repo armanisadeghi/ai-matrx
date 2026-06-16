@@ -11,7 +11,7 @@ import {
 } from "react-resizable-panels";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { selectActiveSession, selectFetchStatus } from "../redux/selectors";
@@ -67,26 +67,30 @@ export function StudioLayout({
     <main className="flex h-full flex-1 min-w-0 flex-col">
       {showSidebar && (
         <div className="flex shrink-0 items-center border-b border-border bg-textured h-9 md:hidden">
-          <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="m-1 h-7 w-7"
-                aria-label="Open studio sidebar"
-              >
-                <Menu className="h-3.5 w-3.5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80 p-0 pb-safe">
-              <StudioSidebar
-                className="h-full"
-                onPickSession={closeMobileSidebar}
-                onCreateSession={closeMobileSidebar}
-                navigateToSession={navigateToSession}
-              />
-            </SheetContent>
-          </Sheet>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="m-1 h-7 w-7"
+            aria-label="Open studio sidebar"
+            onClick={() => setMobileSidebarOpen(true)}
+          >
+            <Menu className="h-3.5 w-3.5" />
+          </Button>
+          <MatrxDynamicPanelHost
+            open={mobileSidebarOpen}
+            onOpenChange={setMobileSidebarOpen}
+            title="Transcript Studio"
+            position="left"
+            defaultSize={80}
+            contentClassName="flex min-h-0 flex-1 flex-col p-0 pb-safe"
+          >
+            <StudioSidebar
+              className="h-full"
+              onPickSession={closeMobileSidebar}
+              onCreateSession={closeMobileSidebar}
+              navigateToSession={navigateToSession}
+            />
+          </MatrxDynamicPanelHost>
           {isHydrated && activeSession && (
             <div className="flex-1 truncate px-2 text-xs font-medium text-foreground">
               {activeSession.title}

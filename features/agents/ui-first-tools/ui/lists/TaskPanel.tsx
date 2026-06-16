@@ -21,13 +21,7 @@ import {
   Plus,
   ChevronRight,
 } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -113,25 +107,21 @@ export function TaskPanel({
   }, [open, conversationId, dispatch]);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="sm:max-w-md w-[420px] flex flex-col p-0"
-      >
-        <SheetHeader className="px-4 py-3 border-b border-border">
-          <SheetTitle>Agent lists</SheetTitle>
-          <SheetDescription>
-            Plan, agent tasks, and items the agent assigned to you for this
-            conversation.
-          </SheetDescription>
-        </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-5">
-          <PlanSection conversationId={conversationId} />
-          <TasksSection conversationId={conversationId} />
-          <TodosSection conversationId={conversationId} />
-        </div>
-      </SheetContent>
-    </Sheet>
+    <MatrxDynamicPanelHost
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Agent lists"
+      description="Plan, agent tasks, and items the agent assigned to you for this conversation."
+      position="right"
+      defaultSize={32}
+      contentClassName="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3"
+    >
+      <div className="flex flex-col gap-5">
+        <PlanSection conversationId={conversationId} />
+        <TasksSection conversationId={conversationId} />
+        <TodosSection conversationId={conversationId} />
+      </div>
+    </MatrxDynamicPanelHost>
   );
 }
 

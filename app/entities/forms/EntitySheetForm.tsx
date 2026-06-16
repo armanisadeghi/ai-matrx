@@ -10,12 +10,7 @@ import { useCreateRecord } from "../hooks/unsaved-records/useCreateRecord";
 import { useUpdateRecord } from "../hooks/crud/useUpdateRecord";
 import { getUnifiedLayoutProps } from "../layout/configs";
 import { generateTemporaryRecordId } from "@/lib/redux/entity/utils/stateHelpUtils";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import EntityFormMinimalAnyRecord from "./EntityFormMinimalAnyRecord";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useDispatch } from "react-redux";
@@ -100,33 +95,35 @@ const EntitySheetForm = ({
     }
   };
 
+  const panelSize =
+    size === "lg" ? 38 : size === "xl" ? 42 : size === "full" ? 88 : 32;
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side={position}
-        className={`w-full ${size === "lg" ? "sm:max-w-lg" : size === "xl" ? "sm:max-w-xl" : size === "full" ? "sm:max-w-[100vw]" : "sm:max-w-md"}`}
-      >
-        <SheetHeader>
-          <SheetTitle>{getTitle()}</SheetTitle>
-        </SheetHeader>
-        <ScrollArea className="h-[calc(100%-4rem)]">
-          <EntityFormMinimalAnyRecord
-            recordId={mode === "create" ? tempRecordId : recordId}
-            unifiedLayoutProps={unifiedLayoutProps}
-          />
-        </ScrollArea>
-        <div className="flex justify-end space-x-2 mt-4">
-          <Button variant="outline" onClick={handleClose}>
-            Cancel
+    <MatrxDynamicPanelHost
+      open={open}
+      onOpenChange={onOpenChange}
+      title={getTitle()}
+      position={position}
+      defaultSize={panelSize}
+      contentClassName="flex min-h-0 flex-1 flex-col"
+    >
+      <ScrollArea className="min-h-0 flex-1">
+        <EntityFormMinimalAnyRecord
+          recordId={mode === "create" ? tempRecordId : recordId}
+          unifiedLayoutProps={unifiedLayoutProps}
+        />
+      </ScrollArea>
+      <div className="flex justify-end space-x-2 mt-4 shrink-0">
+        <Button variant="outline" onClick={handleClose}>
+          Cancel
+        </Button>
+        {(mode === "create" || mode === "edit") && (
+          <Button onClick={handleSave}>
+            {mode === "create" ? "Create" : "Save"}
           </Button>
-          {(mode === "create" || mode === "edit") && (
-            <Button onClick={handleSave}>
-              {mode === "create" ? "Create" : "Save"}
-            </Button>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+        )}
+      </div>
+    </MatrxDynamicPanelHost>
   );
 };
 

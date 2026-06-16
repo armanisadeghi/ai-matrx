@@ -35,22 +35,13 @@ import "@univerjs/preset-sheets-core/lib/index.css";
 
 import { supabase } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { toast } from "@/components/ui/use-toast";
 
 import { useWorkbookRealtime } from "../hooks/useWorkbookRealtime";
 import { RemoteCursorsLayer } from "./RemoteCursorsLayer";
 import { WorkbookCursorOverlay } from "./WorkbookCursorOverlay";
-import {
-  getLatestSnapshot,
-  saveSnapshot,
-} from "../workbook-service";
+import { getLatestSnapshot, saveSnapshot } from "../workbook-service";
 import { isServiceFailure } from "../types";
 import { downloadUniverAsXlsx } from "../univer-to-xlsx";
 import { WorkbookHistoryViewer } from "./WorkbookHistoryViewer";
@@ -103,10 +94,14 @@ export default function WorkbookEditor({
   // V2 collab session — null until `collab=true` AND Univer has booted.
   // See `../collab/FEATURE.md` for the full architecture; this ref is the
   // sole live connection between Univer's command service and Yjs.
-  const collabSessionRef = useRef<import("../collab/WorkbookCollabSession").WorkbookCollabSession | null>(null);
+  const collabSessionRef = useRef<
+    import("../collab/WorkbookCollabSession").WorkbookCollabSession | null
+  >(null);
   // Univer selection-listener disposer, kept ref-side so the unmount path can
   // reach it regardless of which render registered it.
-  const collabSelectionDisposerRef = useRef<{ dispose: () => void } | null>(null);
+  const collabSelectionDisposerRef = useRef<{ dispose: () => void } | null>(
+    null,
+  );
   const [remoteAwareness, setRemoteAwareness] = useState<
     Map<number, import("../collab/types").AwarenessState>
   >(new Map());
@@ -292,11 +287,13 @@ export default function WorkbookEditor({
       | import("../collab/WorkbookCollabSession").CommandServiceLike
       | null = null;
     try {
-      const injector = (univerRef.current as unknown as {
-        __getInjector?: () => {
-          get: <T>(token: unknown) => T | undefined;
-        };
-      }).__getInjector?.();
+      const injector = (
+        univerRef.current as unknown as {
+          __getInjector?: () => {
+            get: <T>(token: unknown) => T | undefined;
+          };
+        }
+      ).__getInjector?.();
       if (!injector) {
         console.warn("[workbook] collab: Univer injector unavailable");
         return;
@@ -305,7 +302,10 @@ export default function WorkbookEditor({
       const resolved = injector.get<
         import("../collab/WorkbookCollabSession").CommandServiceLike
       >(ICommandService as unknown);
-      if (!resolved || typeof resolved.onMutationExecutedForCollab !== "function") {
+      if (
+        !resolved ||
+        typeof resolved.onMutationExecutedForCollab !== "function"
+      ) {
         console.warn(
           "[workbook] collab: ICommandService missing the onMutationExecutedForCollab hook",
         );
@@ -336,10 +336,12 @@ export default function WorkbookEditor({
         }),
       onAwarenessChange: (aw) => {
         setRemoteAwareness(
-          new Map(aw.getStates() as Map<
-            number,
-            import("../collab/types").AwarenessState
-          >),
+          new Map(
+            aw.getStates() as Map<
+              number,
+              import("../collab/types").AwarenessState
+            >,
+          ),
         );
         const election = session.electHost();
         setCollabIsHost(election.isHost);
@@ -355,16 +357,23 @@ export default function WorkbookEditor({
     // is missing we just skip cursor broadcasting — sessions still sync
     // mutations + presence (uid + color) without cell coords.
     try {
-      const fb = (apiRef.current as unknown as {
-        getActiveWorkbook?: () => {
-          getActiveSheet?: () => { getSheetId: () => string } | null;
-          onSelectionChange?: (
-            cb: (
-              selections: Array<{ startRow: number; startColumn: number }>,
-            ) => void,
-          ) => { dispose: () => void };
-        } | undefined;
-      } | null)?.getActiveWorkbook?.();
+      const fb = (
+        apiRef.current as unknown as {
+          getActiveWorkbook?: () =>
+            | {
+                getActiveSheet?: () => { getSheetId: () => string } | null;
+                onSelectionChange?: (
+                  cb: (
+                    selections: Array<{
+                      startRow: number;
+                      startColumn: number;
+                    }>,
+                  ) => void,
+                ) => { dispose: () => void };
+              }
+            | undefined;
+        } | null
+      )?.getActiveWorkbook?.();
       if (fb?.onSelectionChange) {
         const disposer = fb.onSelectionChange((selections) => {
           if (!collabSessionRef.current) return;
@@ -412,7 +421,10 @@ export default function WorkbookEditor({
         toast({ title: "Snapshot saved", variant: "success" });
       }
       // Drop the "saved" indicator after a moment to reduce visual noise.
-      setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 1500);
+      setTimeout(
+        () => setSaveStatus((s) => (s === "saved" ? "idle" : s)),
+        1500,
+      );
     },
     [workbookId],
   );
@@ -492,7 +504,9 @@ export default function WorkbookEditor({
           )}
           {/* Compact status pill (icon only on phones, full text on sm+). */}
           {bootState === "ready" && saveStatus !== "idle" && (
-            <div className={`hidden sm:flex items-center gap-1 ${statusPill.className}`}>
+            <div
+              className={`hidden sm:flex items-center gap-1 ${statusPill.className}`}
+            >
               {statusPill.icon}
               <span>{statusPill.text}</span>
             </div>
@@ -550,27 +564,17 @@ export default function WorkbookEditor({
         )}
       </div>
 
-      <Sheet
+      <MatrxDynamicPanelHost
         open={historyOpen}
-        onOpenChange={(open) => setHistoryOpen(open)}
+        onOpenChange={setHistoryOpen}
+        title="Workbook history"
+        description="Every saved snapshot, newest first. Restore brings an older snapshot back as the new current state (the previous one stays in history)."
+        position="right"
+        defaultSize={32}
+        contentClassName="overflow-y-auto"
       >
-        <SheetContent className="overflow-y-auto sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Workbook history</SheetTitle>
-            <SheetDescription>
-              Every saved snapshot, newest first. Restore brings an older
-              snapshot back as the new current state (the previous one stays
-              in history).
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-4">
-            <WorkbookHistoryViewer
-              workbookId={workbookId}
-              editable={editable}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
+        <WorkbookHistoryViewer workbookId={workbookId} editable={editable} />
+      </MatrxDynamicPanelHost>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { MoreHorizontal, LucideIcon } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import IconButton from '@/components/official/IconButton';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { MatrxDynamicPanelHost } from '@/components/matrx/resizable/MatrxDynamicPanelHost';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -115,7 +115,7 @@ export function ResponsiveIconButtonGroup({
 
     // Mobile mode: render "..." button that opens a sheet menu
     return (
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <>
             {mobileTrigger || (
                 <IconButton
                     icon={MoreHorizontal}
@@ -127,12 +127,15 @@ export function ResponsiveIconButtonGroup({
                 />
             )}
 
-            <SheetContent side="bottom" className="rounded-t-[20px] pb-8">
-                    <SheetHeader className="sr-only">
-                        <SheetTitle>{sheetTitle}</SheetTitle>
-                    </SheetHeader>
-
-                    <div className="mt-4 space-y-2 max-h-[60dvh] overflow-y-auto">
+            <MatrxDynamicPanelHost
+                open={sheetOpen}
+                onOpenChange={setSheetOpen}
+                title={sheetTitle}
+                position="bottom"
+                defaultSize={50}
+                contentClassName="pb-8"
+            >
+                <div className="space-y-2 max-h-[60dvh] overflow-y-auto">
                         {visibleButtons.map((button) => {
                             // Custom render function for mobile
                             if (button.render) {
@@ -180,9 +183,9 @@ export function ResponsiveIconButtonGroup({
                                 </Button>
                             );
                         })}
-                    </div>
-                </SheetContent>
-        </Sheet>
+                </div>
+            </MatrxDynamicPanelHost>
+        </>
     );
 }
 

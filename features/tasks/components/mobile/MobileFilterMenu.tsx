@@ -42,13 +42,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { MatrxDynamicPanelHost } from '@/components/matrx/resizable/MatrxDynamicPanelHost';
 import MobileProjectSelector from './MobileProjectSelector';
 import TaskScopeFilter from '../TaskScopeFilter';
 import { useAppSelector } from '@/lib/redux/hooks';
@@ -212,39 +206,38 @@ export default function MobileFilterMenu() {
       </DropdownMenu>
 
       {/* Project Selector Sheet */}
-      <Sheet open={showProjectSheet} onOpenChange={setShowProjectSheet}>
-        <SheetContent side="bottom" className="h-[60dvh]">
-          <SheetHeader className="sr-only">
-            <SheetTitle>Select Project</SheetTitle>
-            <SheetDescription>Choose a project to view its tasks</SheetDescription>
-          </SheetHeader>
-          <MobileProjectSelector
-            selectedProjectId={activeProject}
-            onSelectProject={(projectId) => {
-              if (projectId) {
-                dispatch(setActiveProject(projectId));
-                dispatch(setShowAllProjects(false));
-              }
-              setShowProjectSheet(false);
-            }}
-          />
-        </SheetContent>
-      </Sheet>
+      <MatrxDynamicPanelHost
+        open={showProjectSheet}
+        onOpenChange={setShowProjectSheet}
+        title="Select Project"
+        description="Choose a project to view its tasks"
+        position="bottom"
+        defaultSize={60}
+        contentClassName="overflow-y-auto"
+      >
+        <MobileProjectSelector
+          selectedProjectId={activeProject}
+          onSelectProject={(projectId) => {
+            if (projectId) {
+              dispatch(setActiveProject(projectId));
+              dispatch(setShowAllProjects(false));
+            }
+            setShowProjectSheet(false);
+          }}
+        />
+      </MatrxDynamicPanelHost>
 
-      {/* Scope Filter Sheet */}
-      <Sheet open={showScopeSheet} onOpenChange={setShowScopeSheet}>
-        <SheetContent side="bottom" className="h-[70dvh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Filter by Scope</SheetTitle>
-            <SheetDescription>
-              Narrow tasks by the scope values assigned to them.
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-4">
-            <TaskScopeFilter variant="sidebar" />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <MatrxDynamicPanelHost
+        open={showScopeSheet}
+        onOpenChange={setShowScopeSheet}
+        title="Filter by Scope"
+        description="Narrow tasks by the scope values assigned to them."
+        position="bottom"
+        defaultSize={70}
+        contentClassName="overflow-y-auto"
+      >
+        <TaskScopeFilter variant="sidebar" />
+      </MatrxDynamicPanelHost>
     </>
   );
 }

@@ -1,6 +1,6 @@
 // containers/base/BaseContainer.tsx
 import React from 'react';
-import {Sheet, SheetContent, SheetHeader, SheetTitle} from '@/components/ui/sheet';
+import {MatrxDynamicPanelHost} from '@/components/matrx/resizable/MatrxDynamicPanelHost';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {motion, AnimatePresence} from 'motion/react';
 import {Popover, PopoverContent} from '@/components/ui/popover';
@@ -90,16 +90,19 @@ export const SheetContainer: React.FC<BaseContainerProps> = (
     }) => {
     return (
         <BaseContainer {...props}>
-            <Sheet onOpenChange={onClose}>
-                <SheetContent side={side} className={className}>
-                    {title && (
-                        <SheetHeader>
-                            <SheetTitle>{title}</SheetTitle>
-                        </SheetHeader>
-                    )}
-                    {children}
-                </SheetContent>
-            </Sheet>
+            <MatrxDynamicPanelHost
+                open
+                onOpenChange={(next) => {
+                    if (!next) onClose?.();
+                }}
+                title={title ?? "Details"}
+                position={side === "top" || side === "bottom" ? side : side ?? "right"}
+                defaultSize={32}
+                className={className}
+                contentClassName="overflow-y-auto"
+            >
+                {children}
+            </MatrxDynamicPanelHost>
         </BaseContainer>
     );
 };

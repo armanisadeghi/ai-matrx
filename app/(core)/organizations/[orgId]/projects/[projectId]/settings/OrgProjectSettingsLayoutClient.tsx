@@ -5,13 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Menu, Puzzle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { useProject } from "@/features/projects/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
@@ -84,28 +78,31 @@ export function OrgProjectSettingsLayoutClient({
           </div>
 
           {isMobile && resolvedOrgId && (
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 rounded-full"
-                >
-                  <Menu className="h-4 w-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-72">
-                <SheetHeader>
-                  <SheetTitle>Projects</SheetTitle>
-                </SheetHeader>
-                <div className="mt-4" onClick={() => setMobileMenuOpen(false)}>
-                  <ProjectSidebar
-                    organizationId={resolvedOrgId}
-                    orgSlug={orgParam}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
+            <>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-full"
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+            <MatrxDynamicPanelHost
+              open={mobileMenuOpen}
+              onOpenChange={setMobileMenuOpen}
+              title="Projects"
+              position="left"
+              defaultSize={72}
+              contentClassName="overflow-y-auto"
+            >
+              <div onClick={() => setMobileMenuOpen(false)}>
+                <ProjectSidebar
+                  organizationId={resolvedOrgId}
+                  orgSlug={orgParam}
+                />
+              </div>
+            </MatrxDynamicPanelHost>
+            </>
           )}
         </div>
       </div>

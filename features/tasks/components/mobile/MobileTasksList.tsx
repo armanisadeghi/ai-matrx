@@ -38,14 +38,7 @@ import MobileFilterMenu from "./MobileFilterMenu";
 import MobileProjectSelector from "./MobileProjectSelector";
 import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsDisplay";
 import { ActiveScopeFilterChips } from "../TaskScopeFilter";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 
 interface MobileTasksListProps {
   onTaskSelect: (taskId: string) => void;
@@ -174,41 +167,37 @@ export default function MobileTasksList({
                 style={{ fontSize: "16px" }}
               />
               <div className="flex items-center gap-2">
-                <Sheet
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 justify-start"
+                  onClick={() => setShowProjectSelector(true)}
+                >
+                  <span className="truncate">
+                    {selectedProjectForTask
+                      ? projects.find(
+                          (p) => p.id === selectedProjectForTask,
+                        )?.name
+                      : "Select Project"}
+                  </span>
+                </Button>
+                <MatrxDynamicPanelHost
                   open={showProjectSelector}
                   onOpenChange={setShowProjectSelector}
+                  title="Select Project"
+                  description="Choose a project for this task"
+                  position="bottom"
+                  defaultSize={50}
+                  contentClassName="overflow-y-auto"
                 >
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 justify-start"
-                    >
-                      <span className="truncate">
-                        {selectedProjectForTask
-                          ? projects.find(
-                              (p) => p.id === selectedProjectForTask,
-                            )?.name
-                          : "Select Project"}
-                      </span>
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="bottom" className="h-[50dvh]">
-                    <SheetHeader className="sr-only">
-                      <SheetTitle>Select Project</SheetTitle>
-                      <SheetDescription>
-                        Choose a project for this task
-                      </SheetDescription>
-                    </SheetHeader>
-                    <MobileProjectSelector
-                      selectedProjectId={selectedProjectForTask}
-                      onSelectProject={(projectId) => {
-                        setSelectedProjectForTask(projectId);
-                        setShowProjectSelector(false);
-                      }}
-                    />
-                  </SheetContent>
-                </Sheet>
+                  <MobileProjectSelector
+                    selectedProjectId={selectedProjectForTask}
+                    onSelectProject={(projectId) => {
+                      setSelectedProjectForTask(projectId);
+                      setShowProjectSelector(false);
+                    }}
+                  />
+                </MatrxDynamicPanelHost>
                 <Button
                   type="submit"
                   disabled={

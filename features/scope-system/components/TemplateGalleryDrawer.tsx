@@ -11,13 +11,7 @@ import {
   List,
   CornerDownRight,
 } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -171,7 +165,9 @@ export function TemplateGalleryDrawer({
         (t) =>
           t.name.toLowerCase().includes(q) ||
           t.description.toLowerCase().includes(q) ||
-          t.scope_types.some((st) => st.label_plural.toLowerCase().includes(q)) ||
+          t.scope_types.some((st) =>
+            st.label_plural.toLowerCase().includes(q),
+          ) ||
           idMatchesQuery(t, q),
       );
     }
@@ -279,135 +275,132 @@ export function TemplateGalleryDrawer({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-2xl overflow-y-auto"
-      >
-        <SheetHeader>
-          <SheetTitle>Templates</SheetTitle>
-          <SheetDescription>
-            Pick a whole template or borrow individual scopes. Everything is
-            editable after.
-          </SheetDescription>
-        </SheetHeader>
+    <MatrxDynamicPanelHost
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Templates"
+      description="Pick a whole template or borrow individual scopes. Everything is editable after."
+      expandButtonLabel="Templates"
+      dismissDisabled={!!applyingIndividualKey || applying}
+      position="right"
+      defaultSize={44}
+      maxSize={92}
+    >
+      <div className="space-y-4">
+        {/* Mode toggle */}
+        <div className="inline-flex items-center gap-1 rounded-md border bg-card p-0.5">
+          <ModeButton
+            active={mode === "templates"}
+            onClick={() => setMode("templates")}
+            icon={<LayoutGrid className="h-3.5 w-3.5" />}
+            label="By template"
+          />
+          <ModeButton
+            active={mode === "individual"}
+            onClick={() => setMode("individual")}
+            icon={<List className="h-3.5 w-3.5" />}
+            label="Individual scopes"
+          />
+        </div>
 
-        <div className="mt-5 space-y-4">
-          {/* Mode toggle */}
-          <div className="inline-flex items-center gap-1 rounded-md border bg-card p-0.5">
-            <ModeButton
-              active={mode === "templates"}
-              onClick={() => setMode("templates")}
-              icon={<LayoutGrid className="h-3.5 w-3.5" />}
-              label="By template"
-            />
-            <ModeButton
-              active={mode === "individual"}
-              onClick={() => setMode("individual")}
-              icon={<List className="h-3.5 w-3.5" />}
-              label="Individual scopes"
+        {/* Search + categories */}
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={
+                mode === "templates"
+                  ? "Search templates"
+                  : "Search scopes, source templates, fields"
+              }
+              className="pl-9"
+              style={{ fontSize: "16px" }}
             />
           </div>
-
-          {/* Search + categories */}
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={
-                  mode === "templates"
-                    ? "Search templates"
-                    : "Search scopes, source templates, fields"
-                }
-                className="pl-9"
-                style={{ fontSize: "16px" }}
-              />
-            </div>
-            <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
+            <CategoryChip
+              label="All"
+              active={category === ALL}
+              onClick={() => setCategory(ALL)}
+            />
+            {categories.map((c) => (
               <CategoryChip
-                label="All"
-                active={category === ALL}
-                onClick={() => setCategory(ALL)}
+                key={c}
+                label={humanizeCategory(c)}
+                active={category === c}
+                onClick={() => setCategory(c)}
               />
-              {categories.map((c) => (
-                <CategoryChip
-                  key={c}
-                  label={humanizeCategory(c)}
-                  active={category === c}
-                  onClick={() => setCategory(c)}
+            ))}
+          </div>
+        </div>
+
+        {/* Body */}
+        {loading && allTemplates.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : mode === "templates" && selected ? (
+          <TemplateDetail
+            template={selected}
+            onBack={() => setSelectedId(null)}
+            onApplyWhole={() => handleApplyWhole(selected)}
+            onApplyOne={(st, key) =>
+              handleApplyIndividual(
+                {
+                  ...st,
+                  template_id: selected.id,
+                  template_name: selected.name,
+                },
+                key,
+              )
+            }
+            wholeApplying={applying}
+            individualApplyingKey={applyingIndividualKey}
+          />
+        ) : mode === "templates" ? (
+          visibleTemplates.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-12">
+              No templates match.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {visibleTemplates.map((t) => (
+                <TemplateCard
+                  key={t.id}
+                  template={t}
+                  onClick={() => setSelectedId(t.id)}
                 />
               ))}
             </div>
-          </div>
-
-          {/* Body */}
-          {loading && allTemplates.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : mode === "templates" && selected ? (
-            <TemplateDetail
-              template={selected}
-              onBack={() => setSelectedId(null)}
-              onApplyWhole={() => handleApplyWhole(selected)}
-              onApplyOne={(st, key) =>
-                handleApplyIndividual(
-                  {
-                    ...st,
-                    template_id: selected.id,
-                    template_name: selected.name,
-                  },
-                  key,
-                )
-              }
-              wholeApplying={applying}
-              individualApplyingKey={applyingIndividualKey}
-            />
-          ) : mode === "templates" ? (
-            visibleTemplates.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-12">
-                No templates match.
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {visibleTemplates.map((t) => (
-                  <TemplateCard
-                    key={t.id}
-                    template={t}
-                    onClick={() => setSelectedId(t.id)}
-                  />
-                ))}
-              </div>
-            )
-          ) : visibleFlat.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-12">
-              No scopes match.
+          )
+        ) : visibleFlat.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-12">
+            No scopes match.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Add a single scope to start. {visibleFlat.length} common{" "}
+              {visibleFlat.length === 1 ? "scope" : "scopes"} — the most
+              widely-used first.
             </p>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                Add a single scope to start. {visibleFlat.length} common{" "}
-                {visibleFlat.length === 1 ? "scope" : "scopes"} — the most
-                widely-used first.
-              </p>
-              {visibleFlat.map((item, idx) => {
-                const rowKey = `${item.template_id}:${item.label_plural}:${idx}`;
-                return (
-                  <FlatScopeRow
-                    key={rowKey}
-                    item={item}
-                    busy={applyingIndividualKey === rowKey}
-                    onApply={() => handleApplyIndividual(item, rowKey)}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+            {visibleFlat.map((item, idx) => {
+              const rowKey = `${item.template_id}:${item.label_plural}:${idx}`;
+              return (
+                <FlatScopeRow
+                  key={rowKey}
+                  item={item}
+                  busy={applyingIndividualKey === rowKey}
+                  onApply={() => handleApplyIndividual(item, rowKey)}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </MatrxDynamicPanelHost>
   );
 }
 

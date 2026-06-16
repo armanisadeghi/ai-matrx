@@ -23,13 +23,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -220,87 +214,87 @@ export function CloudFileEditor({
 
   return (
     <>
-      <Sheet open={open} onOpenChange={tryClose}>
-        <SheetContent
-          side="right"
-          className="flex w-full flex-col gap-0 p-0 sm:max-w-[min(900px,90vw)]"
-        >
-          <SheetHeader className="flex flex-row items-center justify-between gap-3 border-b px-4 py-3">
-            <div className="min-w-0">
-              <SheetTitle className="truncate text-base">
-                {fileName || "Loading…"}
-              </SheetTitle>
-              <SheetDescription className="text-xs">
-                Edits save as a new version.{" "}
-                {isDirty ? (
-                  <span className="font-medium text-amber-600 dark:text-amber-400">
-                    Unsaved changes
-                  </span>
-                ) : null}
-              </SheetDescription>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={() => tryClose(false)}
-                className="rounded-md border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
-                disabled={saving}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleSave()}
-                disabled={saveDisabled}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-xs font-medium",
-                  saveDisabled
-                    ? "bg-muted text-muted-foreground cursor-not-allowed"
-                    : "bg-primary text-primary-foreground hover:bg-primary/90",
-                )}
-                title="Save (⌘S / Ctrl+S)"
-              >
-                {saving ? "Saving…" : "Save"}
-              </button>
-            </div>
-          </SheetHeader>
-
-          {saveError ? (
-            <p className="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-xs text-destructive">
-              {saveError}
-            </p>
-          ) : null}
-
-          <div ref={editorRef} className="min-h-0 flex-1 overflow-hidden">
-            {loadError ? (
-              <div className="flex h-full w-full items-center justify-center p-6 text-sm text-destructive">
-                Failed to load file: {loadError}
-              </div>
-            ) : loading || text === null ? (
-              <div className="flex h-full w-full items-center justify-center bg-muted/20">
-                <div className="h-6 w-40 animate-pulse rounded bg-muted" />
-              </div>
-            ) : (
-              <MonacoEditor
-                height="100%"
-                language={language}
-                value={text}
-                onChange={(value) => setText(value ?? "")}
-                theme={isDark ? "vs-dark" : "vs"}
-                onMount={handleEditorMount}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 13,
-                  wordWrap: "on",
-                  scrollBeyondLastLine: false,
-                  tabSize: 2,
-                  automaticLayout: true,
-                }}
-              />
-            )}
+      <MatrxDynamicPanelHost
+        open={open}
+        onOpenChange={tryClose}
+        dismissDisabled={saving}
+        title={fileName || "Loading…"}
+        description={
+          <>
+            Edits save as a new version.{" "}
+            {isDirty ? (
+              <span className="font-medium text-amber-600 dark:text-amber-400">
+                Unsaved changes
+              </span>
+            ) : null}
+          </>
+        }
+        headerActions={
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => tryClose(false)}
+              className="rounded-md border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent"
+              disabled={saving}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={saveDisabled}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-xs font-medium",
+                saveDisabled
+                  ? "bg-muted text-muted-foreground cursor-not-allowed"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90",
+              )}
+              title="Save (⌘S / Ctrl+S)"
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
           </div>
-        </SheetContent>
-      </Sheet>
+        }
+        position="right"
+        defaultSize={50}
+        maxSize={92}
+        contentClassName="flex min-h-0 flex-1 flex-col p-0"
+      >
+        {saveError ? (
+          <p className="border-b border-destructive/30 bg-destructive/10 px-4 py-2 text-xs text-destructive">
+            {saveError}
+          </p>
+        ) : null}
+
+        <div ref={editorRef} className="min-h-0 flex-1 overflow-hidden">
+          {loadError ? (
+            <div className="flex h-full w-full items-center justify-center p-6 text-sm text-destructive">
+              Failed to load file: {loadError}
+            </div>
+          ) : loading || text === null ? (
+            <div className="flex h-full w-full items-center justify-center bg-muted/20">
+              <div className="h-6 w-40 animate-pulse rounded bg-muted" />
+            </div>
+          ) : (
+            <MonacoEditor
+              height="100%"
+              language={language}
+              value={text}
+              onChange={(value) => setText(value ?? "")}
+              theme={isDark ? "vs-dark" : "vs"}
+              onMount={handleEditorMount}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 13,
+                wordWrap: "on",
+                scrollBeyondLastLine: false,
+                tabSize: 2,
+                automaticLayout: true,
+              }}
+            />
+          )}
+        </div>
+      </MatrxDynamicPanelHost>
 
       <AlertDialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
         <AlertDialogContent>

@@ -9,13 +9,7 @@
 
 import React from "react";
 import { Loader2, Search, ExternalLink, Eye } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Input } from "@/components/ui/input";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { supabase } from "@/utils/supabase/client";
@@ -64,7 +58,8 @@ export function ContainerResourceSheet({
           .select(`id, ${titleCol}`)
           .eq(column as never, value)
           .limit(300);
-        if (entry.archivedColumn) q = q.eq(entry.archivedColumn as never, false);
+        if (entry.archivedColumn)
+          q = q.eq(entry.archivedColumn as never, false);
         const { data, error } = await q;
         if (error) throw error;
         if (cancelled) return;
@@ -92,26 +87,34 @@ export function ContainerResourceSheet({
   if (!entry) return null;
   const Icon = entry.icon;
   const peekable = hasPeek(entry.key);
-  const shareable = entry.shareKey ? getShareableResource(entry.shareKey) : undefined;
+  const shareable = entry.shareKey
+    ? getShareableResource(entry.shareKey)
+    : undefined;
   const hrefFor = (id: string): string | null =>
     shareable ? shareable.urlPathTemplate.replace("{id}", id) : null;
-  const filtered = items.filter((it) =>
-    it.title.toLowerCase().includes(query.toLowerCase()) || idMatchesQuery(it, query),
+  const filtered = items.filter(
+    (it) =>
+      it.title.toLowerCase().includes(query.toLowerCase()) ||
+      idMatchesQuery(it, query),
   );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0">
-        <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
-          <SheetTitle className="flex items-center gap-2">
+    <>
+      <MatrxDynamicPanelHost
+        open={open}
+        onOpenChange={onOpenChange}
+        title={
+          <span className="inline-flex items-center gap-2">
             <Icon className="h-4 w-4 text-muted-foreground" />
             {entry.labelPlural}
-          </SheetTitle>
-          <SheetDescription>
-            {entry.labelPlural} associated with this {column === "project_id" ? "project" : "task"}.
-          </SheetDescription>
-        </SheetHeader>
-
+          </span>
+        }
+        description={`${entry.labelPlural} associated with this ${column === "project_id" ? "project" : "task"}.`}
+        expandButtonLabel={entry.labelPlural}
+        position="right"
+        defaultSize={34}
+        contentClassName="flex min-h-0 flex-1 flex-col p-0"
+      >
         <div className="px-5 py-3 border-b border-border">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -133,7 +136,9 @@ export function ContainerResourceSheet({
             <div className="text-center py-12">
               <Icon className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
-                {items.length === 0 ? `No ${entry.labelPlural.toLowerCase()} yet.` : "No matches."}
+                {items.length === 0
+                  ? `No ${entry.labelPlural.toLowerCase()} yet.`
+                  : "No matches."}
               </p>
             </div>
           ) : (
@@ -148,7 +153,10 @@ export function ContainerResourceSheet({
                     {!entry.hideRowIcon && (
                       <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                     )}
-                    <span className="flex-1 min-w-0 text-sm truncate" title={item.title}>
+                    <span
+                      className="flex-1 min-w-0 text-sm truncate"
+                      title={item.title}
+                    >
                       {item.title}
                     </span>
                     {peekable && (
@@ -162,7 +170,9 @@ export function ContainerResourceSheet({
                     )}
                     {href && (
                       <button
-                        onClick={() => window.open(href, "_blank", "noopener,noreferrer")}
+                        onClick={() =>
+                          window.open(href, "_blank", "noopener,noreferrer")
+                        }
                         className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                         title="Open in new tab"
                       >
@@ -176,8 +186,12 @@ export function ContainerResourceSheet({
           )}
         </div>
 
-        <ResourcePeekHost kind={entry.key} id={peekId} onClose={() => setPeekId(null)} />
-      </SheetContent>
-    </Sheet>
+        <ResourcePeekHost
+          kind={entry.key}
+          id={peekId}
+          onClose={() => setPeekId(null)}
+        />
+      </MatrxDynamicPanelHost>
+    </>
   );
 }

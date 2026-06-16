@@ -1,13 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -154,169 +148,167 @@ export function UndoHistoryOverlay({
   );
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
-        side="right"
-        className="w-[400px] sm:w-[440px] flex flex-col p-0"
-      >
-        <SheetHeader className="px-4 pt-4 pb-2">
-          <SheetTitle className="flex items-center gap-2 text-sm">
-            <History className="h-4 w-4" />
-            Edit History
-          </SheetTitle>
-          <SheetDescription className="text-xs">
-            {agentName ?? "Agent"} — {past.length} undo / {future.length} redo (
-            {formatBytes(totalBytes)})
-          </SheetDescription>
-        </SheetHeader>
+    <MatrxDynamicPanelHost
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      title={
+        <span className="inline-flex items-center gap-2">
+          <History className="h-4 w-4" />
+          Edit History
+        </span>
+      }
+      description={`${agentName ?? "Agent"} — ${past.length} undo / ${future.length} redo (${formatBytes(totalBytes)})`}
+      expandButtonLabel="Edit history"
+      position="right"
+      defaultSize={32}
+      contentClassName="flex min-h-0 flex-1 flex-col p-0"
+    >
+      <div className="flex items-center gap-2 px-4 pb-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleUndo}
+          disabled={!canUndo}
+          className="h-7 text-xs gap-1.5"
+        >
+          <Undo2 className="h-3 w-3" />
+          Undo
+          <kbd className="ml-1 text-[10px] text-muted-foreground">
+            {getUndoShortcutHint()}
+          </kbd>
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleRedo}
+          disabled={!canRedo}
+          className="h-7 text-xs gap-1.5"
+        >
+          <Redo2 className="h-3 w-3" />
+          Redo
+          <kbd className="ml-1 text-[10px] text-muted-foreground">
+            {getRedoShortcutHint()}
+          </kbd>
+        </Button>
+        <div className="flex-1" />
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={handleClear}
+          disabled={past.length === 0 && future.length === 0}
+          className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive"
+        >
+          <Trash2 className="h-3 w-3" />
+          Clear
+        </Button>
+      </div>
 
-        <div className="flex items-center gap-2 px-4 pb-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleUndo}
-            disabled={!canUndo}
-            className="h-7 text-xs gap-1.5"
-          >
-            <Undo2 className="h-3 w-3" />
-            Undo
-            <kbd className="ml-1 text-[10px] text-muted-foreground">
-              {getUndoShortcutHint()}
-            </kbd>
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleRedo}
-            disabled={!canRedo}
-            className="h-7 text-xs gap-1.5"
-          >
-            <Redo2 className="h-3 w-3" />
-            Redo
-            <kbd className="ml-1 text-[10px] text-muted-foreground">
-              {getRedoShortcutHint()}
-            </kbd>
-          </Button>
-          <div className="flex-1" />
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleClear}
-            disabled={past.length === 0 && future.length === 0}
-            className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-3 w-3" />
-            Clear
-          </Button>
-        </div>
+      <Separator />
 
-        <Separator />
-
-        <ScrollArea className="flex-1 min-h-0">
-          <div className="px-4 py-2 space-y-1">
-            {/* Redo stack (future) — shown at the top, most recent first */}
-            {future.length > 0 && (
-              <>
-                <div className="flex items-center gap-1.5 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                  <ArrowDown className="h-3 w-3" />
-                  Redo ({future.length})
-                </div>
-                {[...future].reverse().map((entry, visualIdx) => {
-                  const stackIdx = future.length - 1 - visualIdx;
-                  return (
-                    <button
-                      key={`redo-${stackIdx}`}
-                      onClick={() => handleRedoToEntry(stackIdx)}
-                      className="w-full text-left px-2 py-1.5 rounded-md text-xs hover:bg-accent/50 transition-colors group flex items-start gap-2"
-                    >
-                      <Redo2 className="h-3 w-3 mt-0.5 text-blue-500 flex-shrink-0 opacity-60 group-hover:opacity-100" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] px-1 py-0 h-4"
-                          >
-                            {formatField(entry.field)}
-                          </Badge>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                            <Clock className="h-2.5 w-2.5" />
-                            {formatTimestamp(entry.timestamp)}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                          {previewValue(entry)}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-                <Separator className="my-1" />
-              </>
-            )}
-
-            {/* Current state indicator */}
-            <div className="flex items-center gap-2 py-1.5 px-2">
-              <div className="h-2 w-2 rounded-full bg-green-500 flex-shrink-0" />
-              <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                Current State
-              </span>
-            </div>
-
-            {past.length > 0 && <Separator className="my-1" />}
-
-            {/* Undo stack (past) — most recent at the top */}
-            {past.length > 0 && (
-              <>
-                <div className="flex items-center gap-1.5 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                  <ArrowUp className="h-3 w-3" />
-                  Undo ({past.length})
-                </div>
-                {[...past].reverse().map((entry, visualIdx) => {
-                  const stackIdx = past.length - 1 - visualIdx;
-                  return (
-                    <button
-                      key={`undo-${stackIdx}`}
-                      onClick={() => handleUndoToEntry(stackIdx)}
-                      className="w-full text-left px-2 py-1.5 rounded-md text-xs hover:bg-accent/50 transition-colors group flex items-start gap-2"
-                    >
-                      <Undo2 className="h-3 w-3 mt-0.5 text-orange-500 flex-shrink-0 opacity-60 group-hover:opacity-100" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] px-1 py-0 h-4"
-                          >
-                            {formatField(entry.field)}
-                          </Badge>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                            <Clock className="h-2.5 w-2.5" />
-                            {formatTimestamp(entry.timestamp)}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                          {previewValue(entry)}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </>
-            )}
-
-            {past.length === 0 && future.length === 0 && (
-              <div className="py-8 text-center">
-                <History className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground">
-                  No edit history yet
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Changes will appear here as you edit
-                </p>
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="px-4 py-2 space-y-1">
+          {/* Redo stack (future) — shown at the top, most recent first */}
+          {future.length > 0 && (
+            <>
+              <div className="flex items-center gap-1.5 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <ArrowDown className="h-3 w-3" />
+                Redo ({future.length})
               </div>
-            )}
+              {[...future].reverse().map((entry, visualIdx) => {
+                const stackIdx = future.length - 1 - visualIdx;
+                return (
+                  <button
+                    key={`redo-${stackIdx}`}
+                    onClick={() => handleRedoToEntry(stackIdx)}
+                    className="w-full text-left px-2 py-1.5 rounded-md text-xs hover:bg-accent/50 transition-colors group flex items-start gap-2"
+                  >
+                    <Redo2 className="h-3 w-3 mt-0.5 text-blue-500 flex-shrink-0 opacity-60 group-hover:opacity-100" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-1 py-0 h-4"
+                        >
+                          {formatField(entry.field)}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                          <Clock className="h-2.5 w-2.5" />
+                          {formatTimestamp(entry.timestamp)}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                        {previewValue(entry)}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+              <Separator className="my-1" />
+            </>
+          )}
+
+          {/* Current state indicator */}
+          <div className="flex items-center gap-2 py-1.5 px-2">
+            <div className="h-2 w-2 rounded-full bg-green-500 flex-shrink-0" />
+            <span className="text-xs font-medium text-green-600 dark:text-green-400">
+              Current State
+            </span>
           </div>
-        </ScrollArea>
-      </SheetContent>
-    </Sheet>
+
+          {past.length > 0 && <Separator className="my-1" />}
+
+          {/* Undo stack (past) — most recent at the top */}
+          {past.length > 0 && (
+            <>
+              <div className="flex items-center gap-1.5 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <ArrowUp className="h-3 w-3" />
+                Undo ({past.length})
+              </div>
+              {[...past].reverse().map((entry, visualIdx) => {
+                const stackIdx = past.length - 1 - visualIdx;
+                return (
+                  <button
+                    key={`undo-${stackIdx}`}
+                    onClick={() => handleUndoToEntry(stackIdx)}
+                    className="w-full text-left px-2 py-1.5 rounded-md text-xs hover:bg-accent/50 transition-colors group flex items-start gap-2"
+                  >
+                    <Undo2 className="h-3 w-3 mt-0.5 text-orange-500 flex-shrink-0 opacity-60 group-hover:opacity-100" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-1 py-0 h-4"
+                        >
+                          {formatField(entry.field)}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                          <Clock className="h-2.5 w-2.5" />
+                          {formatTimestamp(entry.timestamp)}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                        {previewValue(entry)}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </>
+          )}
+
+          {past.length === 0 && future.length === 0 && (
+            <div className="py-8 text-center">
+              <History className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">
+                No edit history yet
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Changes will appear here as you edit
+              </p>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+    </MatrxDynamicPanelHost>
   );
 }

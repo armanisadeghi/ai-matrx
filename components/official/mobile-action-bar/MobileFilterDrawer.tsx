@@ -4,13 +4,7 @@ import { useState, useEffect } from "react";
 import { X, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { MobileFilterDrawerProps, FilterState } from "./types";
@@ -120,28 +114,24 @@ export function MobileFilterDrawer({
     const displayLabel = filteredCount === 1 ? entityLabelSingular : entityLabel;
 
     return (
-        <Sheet open={isOpen} onOpenChange={onClose}>
-            <SheetContent 
-                side={isMobile ? "left" : "right"}
-                className={cn(
-                    "w-[85%] sm:w-[400px] flex flex-col p-0",
-                    "h-dvh max-h-dvh",
-                    className
-                )}
-            >
-                {/* Header */}
-                <SheetHeader className="px-6 py-4 border-b border-border/50">
-                    <SheetTitle className="text-lg font-bold flex items-center gap-2">
-                        <SlidersHorizontal className="h-5 w-5 text-primary" />
-                        Filters & Sorting
-                    </SheetTitle>
-                    <SheetDescription className="text-sm text-muted-foreground">
-                        Customize how your {entityLabel} are organized
-                    </SheetDescription>
-                </SheetHeader>
-
-                {/* Content - Scrollable */}
-                <div className="flex-1 overflow-y-auto px-6 py-6">
+        <MatrxDynamicPanelHost
+            open={isOpen}
+            onOpenChange={(open) => {
+                if (!open) onClose();
+            }}
+            title={
+                <span className="flex items-center gap-2">
+                    <SlidersHorizontal className="h-5 w-5 text-primary" />
+                    Filters & Sorting
+                </span>
+            }
+            description={`Customize how your ${entityLabel} are organized`}
+            position={isMobile ? "left" : "right"}
+            defaultSize={isMobile ? 85 : 32}
+            className={className}
+            contentClassName="flex min-h-0 flex-1 flex-col p-0"
+        >
+                <div className="flex-1 overflow-y-auto px-3 py-4">
                     <div className="space-y-6">
                         {filterConfig.fields.map(field => (
                             <div key={field.id} className="space-y-3">
@@ -155,7 +145,6 @@ export function MobileFilterDrawer({
                                     </p>
                                 )}
 
-                                {/* Select field */}
                                 {field.type === "select" && field.options && (
                                     <Select 
                                         value={localFilters[field.id] as string || field.options[0]?.value}
@@ -173,13 +162,9 @@ export function MobileFilterDrawer({
                                         </SelectContent>
                                     </Select>
                                 )}
-
-                                {/* Additional filter types can be implemented here */}
-                                {/* multiselect, toggle, radio, etc. */}
                             </div>
                         ))}
 
-                        {/* Future filter options placeholder */}
                         {filterConfig.fields.length === 0 && (
                             <div className="pt-4 space-y-2">
                                 <p className="text-xs text-muted-foreground text-center">
@@ -190,16 +175,13 @@ export function MobileFilterDrawer({
                     </div>
                 </div>
 
-                {/* Footer Actions with Live Count */}
-                <div className="flex-shrink-0 bg-background border-t border-border/50 px-6 py-4 pb-safe space-y-3">
-                    {/* Live Results Count */}
+                <div className="flex-shrink-0 border-t border-border/50 px-3 py-4 pb-safe space-y-3">
                     <div className="text-center py-2 px-4 bg-muted/30 rounded-lg">
                         <p className="text-sm font-medium text-foreground">
                             Showing <span className="font-bold text-primary">{filteredCount}</span> of {totalCount} {displayLabel}
                         </p>
                     </div>
 
-                    {/* Clear All Filters Button */}
                     {hasActiveFilters && (
                         <Button
                             variant="outline"
@@ -211,7 +193,6 @@ export function MobileFilterDrawer({
                         </Button>
                     )}
 
-                    {/* Apply Filters Button */}
                     <Button
                         onClick={handleApply}
                         className="w-full h-12 text-base"
@@ -219,8 +200,7 @@ export function MobileFilterDrawer({
                         Apply Filters
                     </Button>
                 </div>
-            </SheetContent>
-        </Sheet>
+        </MatrxDynamicPanelHost>
     );
 }
 

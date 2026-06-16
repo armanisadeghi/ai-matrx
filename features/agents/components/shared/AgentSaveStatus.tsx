@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { Save, Loader2, AlertTriangle, Eye } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { UnsavedChangesDiff } from "@/features/agents/components/diff/UnsavedChangesDiff";
 import { cn } from "@/lib/utils";
 import {
@@ -125,19 +120,16 @@ export function AgentSaveStatus({ agentId }: { agentId: string }) {
         onOpenChange={setSettingsOpen}
       />
 
-      <Sheet open={showDiff} onOpenChange={setShowDiff}>
-        <SheetContent
-          side="right"
-          className="w-[700px] sm:max-w-[700px] p-0 flex flex-col"
-        >
-          <SheetHeader className="px-4 py-3 border-b border-border shrink-0">
-            <SheetTitle className="text-sm">Unsaved Changes</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 overflow-hidden">
-            {showDiff && <UnsavedChangesDiff agentId={agentId} />}
-          </div>
-        </SheetContent>
-      </Sheet>
+      <MatrxDynamicPanelHost
+        open={showDiff}
+        onOpenChange={setShowDiff}
+        title="Unsaved Changes"
+        position="right"
+        defaultSize={38}
+        contentClassName="flex min-h-0 flex-1 flex-col p-0"
+      >
+        {showDiff && <UnsavedChangesDiff agentId={agentId} />}
+      </MatrxDynamicPanelHost>
     </>
   );
 }

@@ -16,12 +16,7 @@
 import Link from "next/link";
 import { ArrowRight, Lightbulb, Network } from "lucide-react";
 import { isLowConfidence } from "@/features/kg-suggestions/constants";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import {
   Drawer,
   DrawerContent,
@@ -234,38 +229,34 @@ export function GlobalSuggestionsDrawer({
       </DrawerContent>
     </Drawer>
   ) : (
-    <Sheet open={isOpen} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col gap-0 p-0 sm:max-w-xl"
-        onInteractOutside={keepOpenWhilePreviewing}
-        onPointerDownOutside={keepOpenWhilePreviewing}
-        onEscapeKeyDown={keepOpenWhilePreviewing}
-      >
-        <SheetHeader className="border-b border-border px-4 py-3 space-y-0.5">
-          <div className="flex items-center justify-between gap-2 pr-8">
-            <SheetTitle className="flex items-center gap-2 text-base">
-              <Lightbulb className="h-4 w-4 text-primary" />
-              Suggestions {shownCount > 0 ? `(${shownCount})` : ""}
-            </SheetTitle>
-            <Link
-              href="/suggestions"
-              onClick={onClose}
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              Open full manager
-              <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Proposed fills from your notes, tasks, and files. Preview the source
-            or open the scope before deciding — nothing changes until you
-            accept.
-          </p>
-        </SheetHeader>
-        {body}
-      </SheetContent>
-    </Sheet>
+    <MatrxDynamicPanelHost
+      open={isOpen}
+      onOpenChange={(o) => !o && onClose()}
+      title={
+        <span className="inline-flex items-center gap-2">
+          <Lightbulb className="h-4 w-4 text-primary" />
+          Suggestions {shownCount > 0 ? `(${shownCount})` : ""}
+        </span>
+      }
+      description="Proposed fills from your notes, tasks, and files. Preview the source or open the scope before deciding — nothing changes until you accept."
+      expandButtonLabel="Suggestions"
+      dismissDisabled={isPreviewing}
+      position="right"
+      defaultSize={36}
+      contentClassName="flex min-h-0 flex-1 flex-col p-0"
+      headerActions={
+        <Link
+          href="/suggestions"
+          onClick={onClose}
+          className="inline-flex shrink-0 items-center gap-1 text-xs text-primary hover:underline"
+        >
+          Open full manager
+          <ArrowRight className="h-3 w-3" />
+        </Link>
+      }
+    >
+      {body}
+    </MatrxDynamicPanelHost>
   );
 
   return (

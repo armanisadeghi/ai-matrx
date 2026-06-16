@@ -38,13 +38,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectFileById,
@@ -219,45 +213,35 @@ export function SingleFileTopBar({ fileId, className }: SingleFileTopBarProps) {
         )}
         {/* Show files — opens NavSidebar in a slide-out Sheet so the user
          * can hop between files without leaving the single-file shell. */}
-        <Sheet open={showFiles} onOpenChange={setShowFiles}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <SheetTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Show all files"
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-foreground transition-colors hover:bg-accent"
-                >
-                  <FolderTree className="h-3.5 w-3.5" />
-                </button>
-              </SheetTrigger>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" sideOffset={6}>
-              Show all files
-            </TooltipContent>
-          </Tooltip>
-          <SheetContent
-            side="left"
-            className="w-72 p-0 sm:w-80"
-            onOpenAutoFocus={(e) => e.preventDefault()}
-          >
-            <SheetHeader className="border-b border-border px-3 py-2">
-              <SheetTitle className="text-sm">All files</SheetTitle>
-            </SheetHeader>
-            <div
-              className="h-[calc(100%-3rem)] overflow-hidden"
-              onClick={() => {
-                // Closing on link clicks inside NavSidebar is implicit —
-                // navigation away from this route unmounts the Sheet's
-                // host page. We still close on internal selection though,
-                // because tree-only selections (`setActiveFolderId`) don't
-                // change the URL and the user shouldn't be trapped.
-              }}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label="Show all files"
+              onClick={() => setShowFiles(true)}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-foreground transition-colors hover:bg-accent"
             >
-              <NavSidebar section="all" />
-            </div>
-          </SheetContent>
-        </Sheet>
+              <FolderTree className="h-3.5 w-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={6}>
+            Show all files
+          </TooltipContent>
+        </Tooltip>
+        <MatrxDynamicPanelHost
+          open={showFiles}
+          onOpenChange={setShowFiles}
+          title="All files"
+          expandButtonLabel="All files"
+          position="left"
+          defaultSize={22}
+          maxSize={40}
+          contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+        >
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <NavSidebar section="all" />
+          </div>
+        </MatrxDynamicPanelHost>
 
         <ActionButton
           onClick={handleCopyLink}

@@ -34,12 +34,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -938,19 +933,18 @@ function ServerToolsTab({
       </div>
 
       {/* Mobile category sheet */}
-      <Sheet
+      <MatrxDynamicPanelHost
         open={mobileCategorySheetOpen}
         onOpenChange={setMobileCategorySheetOpen}
+        title="Categories"
+        position="left"
+        defaultSize={28}
+        contentClassName="flex min-h-0 flex-1 flex-col p-0"
       >
-        <SheetContent side="left" className="w-64 p-0 flex flex-col">
-          <SheetHeader className="px-4 pt-4 pb-2 border-b border-border shrink-0">
-            <SheetTitle className="text-sm">Categories</SheetTitle>
-          </SheetHeader>
-          <div className="flex-1 overflow-hidden">
-            {categoryListContent(true)}
-          </div>
-        </SheetContent>
-      </Sheet>
+        <div className="flex-1 overflow-hidden">
+          {categoryListContent(true)}
+        </div>
+      </MatrxDynamicPanelHost>
 
       {/* Right panel: tools */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">

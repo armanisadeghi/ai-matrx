@@ -16,13 +16,7 @@
 
 import React from "react";
 import { Copy } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { MediaThumbnail } from "@/features/files";
 import {
@@ -45,54 +39,48 @@ export function CloudFileMetadataSheet({
   const open = file !== null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-sm overflow-y-auto">
-        {file ? (
-          <>
-            <SheetHeader>
-              <SheetTitle className="truncate" title={file.fileName}>
-                {file.fileName}
-              </SheetTitle>
-              <SheetDescription className="text-xs">
-                Read-only file details — editing comes in a follow-up.
-              </SheetDescription>
-            </SheetHeader>
+    <MatrxDynamicPanelHost
+      open={open}
+      onOpenChange={onOpenChange}
+      title={file?.fileName ?? "File details"}
+      description="Read-only file details — editing comes in a follow-up."
+      expandButtonLabel="File details"
+      position="right"
+      defaultSize={28}
+    >
+      {file ? (
+        <>
+          <div className="mt-4 aspect-square w-full overflow-hidden rounded-md bg-muted">
+            <MediaThumbnail
+              file={file}
+              iconSize={48}
+              className="h-full w-full"
+            />
+          </div>
 
-            <div className="mt-4 aspect-square w-full overflow-hidden rounded-md bg-muted">
-              <MediaThumbnail
-                file={file}
-                iconSize={48}
-                className="h-full w-full"
-              />
-            </div>
-
-            <dl className="mt-4 space-y-3 text-sm">
-              <Row label="Size" value={formatFileSize(file.fileSize)} />
-              <Row label="Type" value={file.mimeType || "—"} mono />
-              <Row
-                label="Visibility"
-                value={visibilityLabel(file.visibility)}
-              />
-              <Row label="Version" value={`v${file.currentVersion}`} />
-              <Row label="Path" value={file.filePath || "/"} mono />
-              <Row
-                label="Updated"
-                value={`${formatRelativeTime(file.updatedAt)} (${formatAbsoluteDate(file.updatedAt)})`}
-              />
-              <Row
-                label="Created"
-                value={`${formatRelativeTime(file.createdAt)} (${formatAbsoluteDate(file.createdAt)})`}
-              />
-              <Row label="File id" value={file.id} mono copyable />
-              {file.checksum ? (
-                <Row label="Checksum" value={file.checksum} mono copyable />
-              ) : null}
-              <ExtendedMetadata metadata={file.metadata} />
-            </dl>
-          </>
-        ) : null}
-      </SheetContent>
-    </Sheet>
+          <dl className="mt-4 space-y-3 text-sm">
+            <Row label="Size" value={formatFileSize(file.fileSize)} />
+            <Row label="Type" value={file.mimeType || "—"} mono />
+            <Row label="Visibility" value={visibilityLabel(file.visibility)} />
+            <Row label="Version" value={`v${file.currentVersion}`} />
+            <Row label="Path" value={file.filePath || "/"} mono />
+            <Row
+              label="Updated"
+              value={`${formatRelativeTime(file.updatedAt)} (${formatAbsoluteDate(file.updatedAt)})`}
+            />
+            <Row
+              label="Created"
+              value={`${formatRelativeTime(file.createdAt)} (${formatAbsoluteDate(file.createdAt)})`}
+            />
+            <Row label="File id" value={file.id} mono copyable />
+            {file.checksum ? (
+              <Row label="Checksum" value={file.checksum} mono copyable />
+            ) : null}
+            <ExtendedMetadata metadata={file.metadata} />
+          </dl>
+        </>
+      ) : null}
+    </MatrxDynamicPanelHost>
   );
 }
 

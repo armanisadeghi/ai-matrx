@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, type ReactNode } from "react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,10 @@ export interface MatrxDynamicPanelHostProps {
   dismissDisabled?: boolean;
   className?: string;
   expandButtonLabel?: string;
+  /** Rendered between the title block and the close button (e.g. toolbar actions). */
+  headerActions?: ReactNode;
+  /** Wrapper around panel body. Default adds horizontal padding. */
+  contentClassName?: string;
 }
 
 export function MatrxDynamicPanelHost({
@@ -41,6 +46,8 @@ export function MatrxDynamicPanelHost({
   dismissDisabled = false,
   className,
   expandButtonLabel,
+  headerActions,
+  contentClassName = "px-3 pb-4",
 }: MatrxDynamicPanelHostProps) {
   useEffect(() => {
     if (!open || dismissDisabled) return;
@@ -88,10 +95,32 @@ export function MatrxDynamicPanelHost({
               </p>
             ) : null}
           </div>
+          {headerActions}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={requestClose}
+            disabled={dismissDisabled}
+            className="h-6 shrink-0 px-2"
+            aria-label="Close panel"
+          >
+            <X className="h-3 w-3" />
+          </Button>
         </div>
       }
     >
-      <div className="px-3 pb-4">{children}</div>
+      <div className={cn(contentClassName)}>{children}</div>
     </MatrxDynamicPanel>
   );
+}
+
+/** Map a pixel width target to a viewport percentage for MatrxDynamicPanel sizing. */
+export function sidePanelWidthToPercent(
+  px: number,
+  viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1440,
+  minPct = 22,
+  maxPct = 88,
+): number {
+  const pct = Math.round((px / Math.max(viewportWidth, 1)) * 100);
+  return Math.min(maxPct, Math.max(minPct, pct));
 }

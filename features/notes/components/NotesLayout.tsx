@@ -14,7 +14,7 @@ import { PHANTOM_NOTE_ID, createPhantomNote } from '../utils/phantomNote';
 import type { Note } from '../types';
 import { cn } from '@/lib/utils';
 import { Loader2, Menu } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { MatrxDynamicPanelHost } from '@/components/matrx/resizable/MatrxDynamicPanelHost';
 import { Button } from '@/components/ui/button';
 import { useToastManager } from '@/hooks/useToastManager';
 
@@ -324,27 +324,38 @@ export function NotesLayout({ className }: NotesLayoutProps) {
                 <div className="flex-1 flex flex-col min-w-0">
                     {/* Mobile: Show menu button */}
                     <div className="flex items-center border-b border-border bg-textured md:hidden h-9">
-                        <Sheet open={isMobileSidebarOpen} onOpenChange={setIsMobileSidebarOpen}>
-                            <SheetTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 m-1">
-                                    <Menu className="h-3.5 w-3.5" />
-                                </Button>
-                            </SheetTrigger>
-                            <SheetContent side="left" className="p-0 w-[280px]">
-                                <NotesSidebar
-                                    notes={notes}
-                                    activeNote={activeNote}
-                                    onSelectNote={handleSelectNote}
-                                    onCreateNote={handleCreateNote}
-                                    onDeleteNote={handleDeleteNote}
-                                    onCreateFolder={handleCreateFolder}
-                                    onMoveNote={handleMoveNote}
-                                    onRenameFolder={handleRenameFolder}
-                                    onDeleteFolderNotes={handleDeleteFolderNotes}
-                                    onCopyNote={handleCopyNote}
-                                />
-                            </SheetContent>
-                        </Sheet>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 m-1"
+                            onClick={() => setIsMobileSidebarOpen(true)}
+                        >
+                            <Menu className="h-3.5 w-3.5" />
+                        </Button>
+                        <MatrxDynamicPanelHost
+                            open={isMobileSidebarOpen}
+                            onOpenChange={setIsMobileSidebarOpen}
+                            title="Notes"
+                            position="left"
+                            defaultSize={78}
+                            contentClassName="flex min-h-0 flex-1 flex-col p-0"
+                        >
+                            <NotesSidebar
+                                notes={notes}
+                                activeNote={activeNote}
+                                onSelectNote={(note) => {
+                                    handleSelectNote(note);
+                                    setIsMobileSidebarOpen(false);
+                                }}
+                                onCreateNote={handleCreateNote}
+                                onDeleteNote={handleDeleteNote}
+                                onCreateFolder={handleCreateFolder}
+                                onMoveNote={handleMoveNote}
+                                onRenameFolder={handleRenameFolder}
+                                onDeleteFolderNotes={handleDeleteFolderNotes}
+                                onCopyNote={handleCopyNote}
+                            />
+                        </MatrxDynamicPanelHost>
 
                         {/* Mobile - Show active note title */}
                         {activeNote && (

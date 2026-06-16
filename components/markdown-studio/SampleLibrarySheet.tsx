@@ -20,14 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { toast } from "sonner";
@@ -118,36 +111,37 @@ export function SampleLibrarySheet({
 
   return (
     <>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 gap-1.5 text-xs font-medium"
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-8 gap-1.5 text-xs font-medium"
+        onClick={() => setOpen(true)}
+      >
+        <BookOpen className="h-3.5 w-3.5" />
+        Library
+        {samples.length > 0 && (
+          <Badge
+            variant="secondary"
+            className="ml-0.5 h-4 px-1 text-[10px]"
           >
-            <BookOpen className="h-3.5 w-3.5" />
-            Library
-            {samples.length > 0 && (
-              <Badge
-                variant="secondary"
-                className="ml-0.5 h-4 px-1 text-[10px]"
-              >
-                {samples.length}
-              </Badge>
-            )}
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-[400px] sm:w-[440px] p-0 flex flex-col">
-          <SheetHeader className="px-4 py-3 border-b border-border">
-            <SheetTitle className="flex items-center gap-2 text-base">
-              <BookOpen className="h-4 w-4 text-primary" />
-              Your sample library
-            </SheetTitle>
-            <SheetDescription className="text-xs">
-              Saved markdown samples — pick one to load into the editor.
-            </SheetDescription>
-          </SheetHeader>
-
+            {samples.length}
+          </Badge>
+        )}
+      </Button>
+      <MatrxDynamicPanelHost
+        open={open}
+        onOpenChange={setOpen}
+        title={
+          <span className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-primary" />
+            Your sample library
+          </span>
+        }
+        description="Saved markdown samples — pick one to load into the editor."
+        position="left"
+        defaultSize={38}
+        contentClassName="flex min-h-0 flex-1 flex-col p-0"
+      >
           <div className="px-4 py-3 border-b border-border">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -289,8 +283,7 @@ export function SampleLibrarySheet({
               </div>
             )}
           </ScrollArea>
-        </SheetContent>
-      </Sheet>
+      </MatrxDynamicPanelHost>
 
       <TextInputDialog
         open={!!renaming}

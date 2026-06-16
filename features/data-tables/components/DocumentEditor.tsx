@@ -32,13 +32,7 @@ import "@univerjs/preset-docs-core/lib/index.css";
 
 import { supabase } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { toast } from "@/components/ui/use-toast";
 
 import { useDocumentRealtime } from "../hooks/useDocumentRealtime";
@@ -244,11 +238,13 @@ export default function DocumentEditor({
       | import("../collab/WorkbookCollabSession").CommandServiceLike
       | null = null;
     try {
-      const injector = (univerRef.current as unknown as {
-        __getInjector?: () => {
-          get: <T>(token: unknown) => T | undefined;
-        };
-      }).__getInjector?.();
+      const injector = (
+        univerRef.current as unknown as {
+          __getInjector?: () => {
+            get: <T>(token: unknown) => T | undefined;
+          };
+        }
+      ).__getInjector?.();
       if (!injector) {
         console.warn("[document] collab: Univer injector unavailable");
         return;
@@ -268,10 +264,7 @@ export default function DocumentEditor({
       }
       commandService = resolved;
     } catch (err) {
-      console.warn(
-        "[document] collab: command-service resolution threw",
-        err,
-      );
+      console.warn("[document] collab: command-service resolution threw", err);
       return;
     }
 
@@ -406,7 +399,9 @@ export default function DocumentEditor({
             />
           )}
           {bootState === "ready" && saveStatus !== "idle" && (
-            <div className={`hidden sm:flex items-center gap-1 ${statusPill.className}`}>
+            <div
+              className={`hidden sm:flex items-center gap-1 ${statusPill.className}`}
+            >
               {statusPill.icon}
               <span>{statusPill.text}</span>
             </div>
@@ -441,27 +436,17 @@ export default function DocumentEditor({
         <div ref={containerRef} className="absolute inset-0" />
       </div>
 
-      <Sheet
+      <MatrxDynamicPanelHost
         open={historyOpen}
-        onOpenChange={(open) => setHistoryOpen(open)}
+        onOpenChange={setHistoryOpen}
+        title="Document history"
+        description="Every saved snapshot, newest first. Restore brings an older snapshot back as the new current state (the previous one stays in history)."
+        position="right"
+        defaultSize={32}
+        contentClassName="overflow-y-auto"
       >
-        <SheetContent className="overflow-y-auto sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Document history</SheetTitle>
-            <SheetDescription>
-              Every saved snapshot, newest first. Restore brings an older
-              snapshot back as the new current state (the previous one stays
-              in history).
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-4">
-            <DocumentHistoryViewer
-              documentId={documentId}
-              editable={editable}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
+        <DocumentHistoryViewer documentId={documentId} editable={editable} />
+      </MatrxDynamicPanelHost>
       {/* Hidden — documentName is reserved for the parent shell label. */}
       <span className="hidden">{documentName}</span>
     </div>

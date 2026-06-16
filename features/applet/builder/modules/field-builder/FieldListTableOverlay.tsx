@@ -9,14 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { X, List, Eye, ArrowLeft, Plus, Edit } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -384,21 +377,29 @@ export default function FieldListTableOverlay({
 
   if (overlayType === "sheet") {
     return (
-      <Sheet open={isOpen} onOpenChange={onOpenChange}>
-        {trigger && <SheetTrigger asChild>{trigger}</SheetTrigger>}
-        <SheetContent 
-          side={sheetSide}
-          className={`w-[95vw] sm:w-[50vw] sm:min-w-[800px] max-w-[90vw] ${overlaySize === "full" ? "max-w-none w-[95vw]" : ""}`}
+      <>
+        {trigger && (
+          <span
+            role="presentation"
+            onClick={() => onOpenChange(true)}
+            className="contents"
+          >
+            {trigger}
+          </span>
+        )}
+        <MatrxDynamicPanelHost
+          open={isOpen}
+          onOpenChange={onOpenChange}
+          title={getDynamicTitle()}
+          description={getDynamicDescription() ?? undefined}
+          position={sheetSide === "left" || sheetSide === "right" ? sheetSide : "right"}
+          defaultSize={overlaySize === "full" ? 88 : 55}
+          maxSize={92}
+          contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
         >
-          <SheetHeader className="mb-0">
-            <SheetTitle>{getDynamicTitle()}</SheetTitle>
-            {getDynamicDescription() && (
-              <SheetDescription>{getDynamicDescription()}</SheetDescription>
-            )}
-          </SheetHeader>
           {renderContent()}
-        </SheetContent>
-      </Sheet>
+        </MatrxDynamicPanelHost>
+      </>
     );
   }
 

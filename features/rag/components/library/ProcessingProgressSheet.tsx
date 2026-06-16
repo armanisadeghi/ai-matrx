@@ -29,15 +29,9 @@ import {
   Zap,
   Trash2,
   X as XIcon,
-  XCircle
+  XCircle,
 } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -100,112 +94,115 @@ export function ProcessingProgressSheet({
   const terminalCount = jobs.length - runningCount;
   const singleJob = jobs.length === 1 ? jobs[0] : null;
 
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-[min(100vw,900px)] sm:max-w-none flex flex-col p-0 gap-0"
-      >
-        <SheetHeader className="border-b px-6 py-4 space-y-1.5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <SheetTitle className="flex items-center gap-2">
-                <span className="relative inline-flex h-2 w-2">
-                  {runningCount > 0 ? (
-                    <>
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                    </>
-                  ) : (
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                  )}
-                </span>
-                {singleJob ? singleJob.title : "Processing"}
-              </SheetTitle>
-              <SheetDescription>
-                {singleJob
-                  ? (singleJob.subtitle ??
-                    (singleJob.status === "running"
-                      ? (singleJob.frame?.message ?? "Working…")
-                      : statusLabel(singleJob.status)))
-                  : jobs.length === 0
-                    ? "No active jobs."
-                    : runningCount > 0
-                      ? `${runningCount} running · ${terminalCount} finished`
-                      : `${jobs.length} finished`}
-              </SheetDescription>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              {runningCount > 0 && onCancelAll && jobs.length > 1 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onCancelAll}
-                  className="h-7 text-xs"
-                >
-                  <XIcon className="h-3 w-3 mr-1" />
-                  Stop all
-                </Button>
-              )}
-              {terminalCount > 0 && onDismissAll && jobs.length > 1 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onDismissAll}
-                  className="h-7 text-xs"
-                >
-                  <Trash2 className="h-3 w-3 mr-1" />
-                  Clear finished
-                </Button>
-              )}
-            </div>
-          </div>
-        </SheetHeader>
+  const sheetTitle = (
+    <span className="flex items-center gap-2">
+      <span className="relative inline-flex h-2 w-2">
+        {runningCount > 0 ? (
+          <>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+          </>
+        ) : (
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+        )}
+      </span>
+      {singleJob ? singleJob.title : "Processing"}
+    </span>
+  );
 
-        <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto">
-          {jobs.length === 0 ? (
-            <EmptyState />
-          ) : singleJob ? (
-            // Single-job mode → no card-stack chrome, full bleed.
-            <div className="p-5">
-              <ProcessingJobView
-                job={singleJob}
-                onCancel={() => onCancel(singleJob.jobId)}
-                onDismiss={() => onDismiss(singleJob.jobId)}
-              />
-            </div>
-          ) : (
-            <ol className="p-4 space-y-4">
-              <AnimatePresence initial={false}>
-                {jobs.map((job) => (
-                  <motion.li
-                    key={job.jobId}
-                    data-job-id={job.jobId}
-                    layout
-                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <JobCard
-                      job={job}
-                      expanded={expandedId === job.jobId}
-                      onToggle={() =>
-                        setExpandedId((id) =>
-                          id === job.jobId ? null : job.jobId,
-                        )
-                      }
-                      onCancel={() => onCancel(job.jobId)}
-                      onDismiss={() => onDismiss(job.jobId)}
-                    />
-                  </motion.li>
-                ))}
-              </AnimatePresence>
-            </ol>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
+  const sheetDescription = singleJob
+    ? (singleJob.subtitle ??
+      (singleJob.status === "running"
+        ? (singleJob.frame?.message ?? "Working…")
+        : statusLabel(singleJob.status)))
+    : jobs.length === 0
+      ? "No active jobs."
+      : runningCount > 0
+        ? `${runningCount} running · ${terminalCount} finished`
+        : `${jobs.length} finished`;
+
+  const headerActions =
+    jobs.length > 1 ? (
+      <div className="flex items-center gap-1.5 shrink-0">
+        {runningCount > 0 && onCancelAll && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onCancelAll}
+            className="h-7 text-xs"
+          >
+            <XIcon className="h-3 w-3 mr-1" />
+            Stop all
+          </Button>
+        )}
+        {terminalCount > 0 && onDismissAll && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onDismissAll}
+            className="h-7 text-xs"
+          >
+            <Trash2 className="h-3 w-3 mr-1" />
+            Clear finished
+          </Button>
+        )}
+      </div>
+    ) : null;
+
+  return (
+    <MatrxDynamicPanelHost
+      open={open}
+      onOpenChange={onOpenChange}
+      title={sheetTitle}
+      description={sheetDescription}
+      headerActions={headerActions}
+      position="right"
+      defaultSize={50}
+      maxSize={92}
+      contentClassName="flex min-h-0 flex-1 flex-col p-0"
+    >
+      <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto">
+        {jobs.length === 0 ? (
+          <EmptyState />
+        ) : singleJob ? (
+          <div className="p-5">
+            <ProcessingJobView
+              job={singleJob}
+              onCancel={() => onCancel(singleJob.jobId)}
+              onDismiss={() => onDismiss(singleJob.jobId)}
+            />
+          </div>
+        ) : (
+          <ol className="p-4 space-y-4">
+            <AnimatePresence initial={false}>
+              {jobs.map((job) => (
+                <motion.li
+                  key={job.jobId}
+                  data-job-id={job.jobId}
+                  layout
+                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <JobCard
+                    job={job}
+                    expanded={expandedId === job.jobId}
+                    onToggle={() =>
+                      setExpandedId((id) =>
+                        id === job.jobId ? null : job.jobId,
+                      )
+                    }
+                    onCancel={() => onCancel(job.jobId)}
+                    onDismiss={() => onDismiss(job.jobId)}
+                  />
+                </motion.li>
+              ))}
+            </AnimatePresence>
+          </ol>
+        )}
+      </div>
+    </MatrxDynamicPanelHost>
   );
 }
 
