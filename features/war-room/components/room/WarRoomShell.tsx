@@ -18,10 +18,12 @@
 // (loadWarRoomSession) with real loading / empty / not-found states; all data
 // flows through the warRoom thunks + selectors.
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  Bot,
   Gauge,
   LayoutGrid,
   LayoutPanelLeft,
@@ -42,6 +44,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { closeAllWatches } from "@/features/war-room/redux/watchSlice";
 import { cn } from "@/lib/utils";
 import {
   selectHiddenTiles,
@@ -69,6 +73,34 @@ import {
 } from "./roomViewContext";
 import { TILE_KIND_ORDER, tileKindOf } from "./tileKind";
 
+// The TIER-2 ROOM agent panel pulls the whole agent execution graph (via
+// AgentConversationColumn). Lazy-load it so that heavy chunk never ships in the
+// /war-room/[id] bundle — it only loads the first time the user opens the panel.
+const RoomAgentPanel = dynamic(
+  () => import("./RoomAgentPanel"),
+  { ssr: false, loading: () => null },
+);
+
+// The live-watch layer renders thread-agent conversations the room agent is
+// messaging (one WindowPanel per open id, driven by the shared warRoomWatch
+// slice). It pulls the agent column graph too, so it's lazy-loaded the same way.
+// It self-hides when nothing is being watched — but must always be MOUNTED so a
+// tool/toast `openWatch` can pop a window even when the Room Agent panel is
+// closed. Reused as-is from the master surface (the slice is shared; the layer
+// is just a renderer).
+const MasterWatchLayer = dynamic(
+  () =>
+    import("@/features/war-room/components/master/MasterWatchLayer").then(
+      (m) => m.MasterWatchLayer,
+    ),
+  { ssr: false, loading: () => null },
+);
+
+// Room Agent window size. Docked bottom-right on open (computed from the
+// viewport in `initialRect` below).
+const ROOM_AGENT_W = 460;
+const ROOM_AGENT_H = 620;
+
 export function WarRoomShell({ sessionId }: { sessionId: string }) {
   return (
     <RoomViewProvider>
@@ -84,12 +116,27 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   const tilesStatus = useAppSelector(selectTilesStatusForSession(sessionId));
   const { mode } = useRoomView();
 
+  // Room Agent panel — local state owns open/closed. Non-modal so the cockpit
+  // stays visible and interactive while the user chats with the room agent.
+  const [roomAgentOpen, setRoomAgentOpen] = useState(false);
+
   useEffect(() => {
     dispatch(loadWarRoomSession(sessionId));
     return () => {
       dispatch(leaveWarRoomSession(sessionId));
     };
   }, [sessionId, dispatch]);
+
+  // Live-watch windows are ephemeral "this is happening right now" UI tied to
+  // this room. Leaving the room unmounts MasterWatchLayer (windows vanish);
+  // clear the shared slice too so returning doesn't re-pop every prior watch
+  // window. (The /all view does the same on leave — only one room surface is
+  // mounted at a time, so they never contend.)
+  useEffect(() => {
+    return () => {
+      dispatch(closeAllWatches());
+    };
+  }, [dispatch]);
 
   const loading = tilesStatus === "loading" || tilesStatus === "idle";
   const notFound = tilesStatus === "error" && !session;
@@ -134,6 +181,22 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
             {ready ? <DensityDial /> : null}
             <RoomProjectButton sessionId={sessionId} />
             <SessionContextButton sessionId={sessionId} />
+            <button
+              type="button"
+              onClick={() => setRoomAgentOpen((v) => !v)}
+              aria-pressed={roomAgentOpen}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-lg border px-2.5 h-7 text-xs font-medium transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                roomAgentOpen
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:text-foreground hover:bg-accent",
+              )}
+              title="Chat with an agent that sees every thread in this room"
+            >
+              <Bot className="size-3.5 shrink-0" />
+              <span className="@max-xl:hidden">Room Agent</span>
+            </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -183,6 +246,42 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
           )
         ) : null}
       </div>
+
+      {/* ── Room Agent — inline, draggable, NON-MODAL WindowPanel. Mounted only
+          while open (closing unmounts the heavy agent column). Docked bottom-
+          right on first open; the user can drag/resize from there. Inline-
+          managed: `onClose` is the required close binding (no overlayId). ── */}
+      {roomAgentOpen && (
+        <WindowPanel
+          id={`war-room-room-agent-${sessionId}`}
+          title="Room Agent"
+          titleNode={
+            <span className="flex items-center gap-1.5 min-w-0">
+              <Bot className="size-3.5 shrink-0 text-primary" />
+              <span className="truncate">Room Agent</span>
+            </span>
+          }
+          onClose={() => setRoomAgentOpen(false)}
+          width={ROOM_AGENT_W}
+          height={ROOM_AGENT_H}
+          minWidth={360}
+          minHeight={420}
+          initialRect={{
+            x: Math.max(16, window.innerWidth - ROOM_AGENT_W - 24),
+            y: Math.max(16, window.innerHeight - ROOM_AGENT_H - 24),
+          }}
+          bodyClassName="p-0"
+        >
+          <RoomAgentPanel sessionId={sessionId} />
+        </WindowPanel>
+      )}
+
+      {/* Live-watch layer — always mounted so a room-agent tool / toast can open
+          a watch window for a thread agent even when the Room Agent panel is
+          closed. Renders nothing until a conversation is being watched. Shares
+          the warRoomWatch slice with the /all master surface (only one room
+          surface is mounted at a time, so they never contend). */}
+      <MasterWatchLayer />
     </div>
   );
 }

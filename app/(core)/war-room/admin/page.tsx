@@ -37,7 +37,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       url: "/war-room/[id]",
       label: "The room (cockpit)",
       description:
-        "Mission-control header (title + live meter + Stage⇄Grid + instrument projector + density dial + session context) over Stage view (rail + driven thread) or Grid view (bento gallery). Hydrates the session, tiles, audio links, and linked tasks.",
+        "Mission-control header (title + live meter + Stage⇄Grid + instrument projector + density dial + session context + Room Agent button) over Stage view (rail + driven thread) or Grid view (bento gallery). Hydrates the session, tiles, audio links, and linked tasks. The 'Room Agent' button opens the TIER-2 per-room agent (RoomAgentPanel) in an inline non-modal WindowPanel; the shared MasterWatchLayer is mounted here too so messaging a thread pops a live-watch window in the room.",
       filePath: "features/war-room/components/room/WarRoomShell.tsx",
       status: "Live",
     },
@@ -129,6 +129,20 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       tier: "candidate",
     },
     {
+      name: "RoomAgentPanel + useRoomAgent (room agent — TIER 2, one room)",
+      filePath: "features/war-room/components/room/RoomAgentPanel.tsx",
+      description:
+        "The TIER-2 room agent: the master agent NARROWED to a single room. The room header's 'Room Agent' button (Bot icon) opens this lazy (next/dynamic ssr:false) panel inside an inline, NON-MODAL, draggable WindowPanel (docked bottom-right) so the cockpit stays interactive. REUSES the canonical AgentConversationColumn unchanged on surfaceKey 'war-room-room-agent'. useRoomAgent owns ONE durable conversation PER ROOM — the id is persisted in localStorage ('war-room:room-agent:<sessionId>', per room not per user), so each room has its own agent and switching rooms switches agents; resolve recipe identical to useMasterAgent (reuse in-memory instance, else createManualInstance({ conversationId }) + loadConversation, else mint + persist; AUDIO_ASSISTANT_AGENT_ID for v1). It pushes READ-ONLY single-room context (buildRoomAgentContext(sessionId)) with the same no-empty-push guard, re-pushing when THIS room's tile set changes. It ARMS the master tools MINUS war_room_create_room (read_thread + message_thread + rename_room — a room agent reads/messages its own threads and renames its room, but does not create rooms), cleared on unmount/room-switch.",
+      tier: "candidate",
+    },
+    {
+      name: "buildRoomAgentContext (room roster service — TIER 2)",
+      filePath: "features/war-room/service/roomAgentContext.ts",
+      description:
+        "Async, READ-ONLY single-room context builder — masterAgentContext.ts narrowed to ONE session. Returns room_agent_role (framing: you oversee THIS one room) + war_room_threads (a compact ROSTER of just this room's threads, the SAME per-thread shape MasterThreadEntry { threadTitle, conversationId|null, status?, taskTitle?, noteSnippet?, hasAudio, fileCount } the master uses, so the shared war-room-master-tools resolve a thread identically). Reuses the master builder's exact read path scoped by sessionId: getSession + listTiles + list*ForTiles + targeted reads of ctx_tasks (titles), notes (snippets), studio_sessions.assistant_conversation_id. Owner-scoped via RLS; values carry no mutable/source ⇒ ctx_get only. The single-room roster (not the cross-room one) is what keeps the agent acting within its room.",
+      tier: "candidate",
+    },
+    {
       name: "War Room agent tools (war-room-tools)",
       filePath: "features/agents/war-room-tools/tools/names.ts",
       description:
@@ -139,21 +153,21 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "War Room MASTER agent tools (war-room-master-tools)",
       filePath: "features/agents/war-room-master-tools/tools/names.ts",
       description:
-        "Cross-room tool family for the /war-room/all master agent (cloned from war-room-tools): war_room_read_thread, war_room_message_thread (mode 'fresh' = new conversation seeded with the thread's buildTileAgentContextEntries; 'fork' = forkConversationServer the thread's chain), war_room_create_room, war_room_rename_room. NOTIFY-AND-WATCH, NOT HITL (deliberately the opposite of war-room-tools): each runs immediately; messaging opens a live-watch window + toast. service/threadResolver.ts resolves a thread_id (= tile id) → the thread agent's conversationId (active audio session → studio_sessions.assistant_conversation_id; backed by the war-room service getTile reader). Offered as INLINE specs (build-tool-injection isWarRoomMasterToolName branch); routed via an isWarRoomMasterToolName branch in surface-delegated-tool-call.thunk → dispatchWarRoomMasterTool (runs immediately, validates args, resolves target, refuses unknown). Armed on the master conversation by useMasterAgent. NO DB / NO server change.",
+        "Cross-room tool family for the /war-room/all master agent (cloned from war-room-tools): war_room_read_thread, war_room_message_thread (mode 'fresh' = new conversation seeded with the thread's buildTileAgentContextEntries; 'fork' = forkConversationServer the thread's chain), war_room_create_room, war_room_rename_room. NOTIFY-AND-WATCH, NOT HITL (deliberately the opposite of war-room-tools): each runs immediately; messaging opens a live-watch window + toast. service/threadResolver.ts resolves a thread_id (= tile id) → the thread agent's conversationId (active audio session → studio_sessions.assistant_conversation_id; backed by the war-room service getTile reader). Offered as INLINE specs (build-tool-injection isWarRoomMasterToolName branch); routed via an isWarRoomMasterToolName branch in surface-delegated-tool-call.thunk → dispatchWarRoomMasterTool (runs immediately, validates args, resolves target, refuses unknown). Armed on the master conversation by useMasterAgent — and REUSED by the TIER-2 room agent (useRoomAgent) MINUS war_room_create_room. The dispatcher + threadResolver are room-agnostic; the room agent's single-room roster (buildRoomAgentContext) is what scopes it to its room. NO DB / NO server change.",
       tier: "internal",
     },
     {
       name: "MasterWatchLayer (live-watch windows)",
       filePath: "features/war-room/components/master/MasterWatchLayer.tsx",
       description:
-        "Renders one inline, non-modal, draggable WindowPanel per conversation the master is messaging (driven by the warRoomWatch slice's openConversationIds), body = AgentConversationColumn (hideInput) so the user watches the thread agent stream in real time and can step in. Mounted (lazy, ssr:false) in WarRoomAllView, always present so a tool/toast openWatch can pop a window even when the Master panel is closed; guard-hydrates cold conversations via loadConversation (skips a convo already in Redux/streaming so it never clobbers a live stream). Closing a window dispatches closeWatch. Mirrors SubtaskWindow's inline-WindowPanel pattern.",
+        "Renders one inline, non-modal, draggable WindowPanel per conversation the master OR room agent is messaging (driven by the shared warRoomWatch slice's openConversationIds), body = AgentConversationColumn (hideInput) so the user watches the thread agent stream in real time and can step in. Mounted (lazy, ssr:false) in BOTH WarRoomAllView (master) and WarRoomShell (room agent) — only one is mounted at a time so they never contend; always present so a tool/toast openWatch can pop a window even when the agent panel is closed; guard-hydrates cold conversations via loadConversation (skips a convo already in Redux/streaming so it never clobbers a live stream). Closing a window dispatches closeWatch; leaving the surface dispatches closeAllWatches. Mirrors SubtaskWindow's inline-WindowPanel pattern.",
       tier: "internal",
     },
     {
       name: "Tile flavors + project association",
       filePath: "features/war-room/components/shared/WarRoomProjectPicker.tsx",
       description:
-        "A tile's flavor (thread | task | project) + project_id FK. PROJECT flavor binds a tile to a ctx_projects row; its Task tab is the project's task list (TileProjectTaskList). Surfaces: QuickAddThread (flavor segmented picker + WarRoomProjectPicker), TileFlavorBadge (header marker for task/project tiles), RoomProjectButton (header: tie the WHOLE room to a project / clear), NewRoomFromProjectButton (/all: 'From project' → createRoomFromProject seeds a project room + tile), ProjectConflictDialog (the per-thread vs keep-room prompt). WarRoomProjectPicker is a flat cross-org project picker (useUserProjects) — the canonical EntityTargetPicker kind='project' is org-gated and can't express 'any of my projects'. INVARIANT (see invariant 8): a room and its threads never hold conflicting projects; tasks auto-associate via the app-wide ctx_tasks.project_id (createTileTask stamps selectEffectiveTileProjectId). Foundation: redux/thunks (checkTileProjectConflict, convertRoomToPerThreadThunk, setTileProjectThunk, absorbRoomIntoProjectThunk, createRoomFromProject) + selectors (selectTileFlavor / selectEffectiveTileProjectId / selectSessionProjectMode). DB: migrations/ctx_war_room_tiles_flavor_project.sql.",
+        "A tile's flavor (thread | task | project) + project_id FK. PROJECT flavor binds a tile to a ctx_projects row; its Task tab is the project's task list (TileProjectTaskList). Surfaces: QuickAddThread (flavor segmented picker + WarRoomProjectPicker), TileFlavorBadge (header marker for task/project tiles), RoomProjectButton (header: tie the WHOLE room to a project / clear), NewRoomFromProjectButton (/all: 'From project' → createRoomFromProject seeds a project room + tile), ProjectConflictDialog (the per-thread vs keep-room prompt). WarRoomProjectPicker is a flat cross-org project picker (useUserProjects) — the canonical EntityTargetPicker kind='project' is org-gated and can't express 'any of my projects'. INVARIANT (see invariant 9): a room and its threads never hold conflicting projects; tasks auto-associate via the app-wide ctx_tasks.project_id (createTileTask stamps selectEffectiveTileProjectId). Foundation: redux/thunks (checkTileProjectConflict, convertRoomToPerThreadThunk, setTileProjectThunk, absorbRoomIntoProjectThunk, createRoomFromProject) + selectors (selectTileFlavor / selectEffectiveTileProjectId / selectSessionProjectMode). DB: migrations/ctx_war_room_tiles_flavor_project.sql.",
       tier: "candidate",
     },
     {
