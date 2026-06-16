@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   Check,
@@ -16,6 +17,8 @@ import {
   ShieldCheck,
   Trash2,
   XCircle,
+  CopyPlus,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -33,6 +36,7 @@ import {
 } from "@/lib/redux/hooks";
 import {
   fetchAgentExecutionMinimal,
+  duplicateAgent,
 } from "@/features/agents/redux/agent-definition/thunks";
 import {
   selectAgentById,
@@ -172,6 +176,7 @@ export function AgentRoleCard({
 }: AgentRoleCardProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+  const router = useRouter();
   const Icon = role.icon;
 
   const systemPayload = useAppSelector((s: RootState) =>
@@ -197,6 +202,7 @@ export function AgentRoleCard({
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [removeOpen, setRemoveOpen] = useState(false);
   const [extrasOpen, setExtrasOpen] = useState(false);
+  const [copying, setCopying] = useState(false);
 
   const trimmed = draft.trim();
   const hasDraft = trimmed.length > 0;
@@ -299,11 +305,53 @@ export function AgentRoleCard({
     setExtrasOpen(false);
   };
 
+  // Copy & Update: duplicate the role's current agent (override or system) into
+  // a personal, editable copy via agx_duplicate_agent, connect it as the
+  // override, then open it in the builder so the user can tweak it.
+  const handleCopyUpdate = async () => {
+    const sourceAgentId = currentOverrideId ?? role.systemAgentId;
+    setCopying(true);
+    try {
+      const newId = await dispatch(
+        duplicateAgent({ agentId: sourceAgentId, asSystem: false }),
+      ).unwrap();
+      // The copy is the critical step — once it exists, open it for editing no
+      // matter what. Connecting it as this role's override is best-effort; a
+      // failed connect must not masquerade as a failed copy.
+      try {
+        await onApply(newId);
+        toast.success("Copied — opening your editable version to update");
+      } catch {
+        toast.info(
+          "Copied your editable version — connect it to this role later",
+        );
+      }
+      router.push(`/agents/${newId}/build`);
+    } catch (err) {
+      toast.error(
+        `Couldn't copy agent: ${
+          err instanceof Error ? err.message : "unknown error"
+        }`,
+      );
+    } finally {
+      setCopying(false);
+    }
+  };
+
   const handleApply = async () => {
     if (phase.kind !== "result" || !phase.comparison.passing) return;
-    await onApply(phase.candidateId);
-    setDraft("");
-    setPhase({ kind: "idle" });
+    try {
+      await onApply(phase.candidateId);
+      toast.success("Override applied.");
+      setDraft("");
+      setPhase({ kind: "idle" });
+    } catch (err) {
+      toast.error(
+        `Couldn't apply override: ${
+          err instanceof Error ? err.message : "unknown error"
+        }`,
+      );
+    }
   };
 
   const copyId = (id: string) => {
@@ -460,6 +508,29 @@ export function AgentRoleCard({
             <SystemOnlyPanel agentId={role.systemAgentId} />
           ) : (
             <>
+              <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/[0.04] px-3 py-2">
+                <div className="min-w-0">
+                  <div className="text-[11px] font-medium">Make it your own</div>
+                  <div className="text-[10px] text-muted-foreground">
+                    Copy this agent to an editable version, tweak it, and we
+                    connect it here for you.
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleCopyUpdate}
+                  disabled={copying || isApplying}
+                  className="gap-1.5 shrink-0"
+                >
+                  {copying ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <CopyPlus className="h-3.5 w-3.5" />
+                  )}
+                  Copy &amp; Update
+                </Button>
+              </div>
+
               {overrideActive ? (
                 <CurrentOverridePanel
                   agentId={currentOverrideId!}

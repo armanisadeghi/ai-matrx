@@ -59,6 +59,9 @@ export default function TopicAgentsPage() {
   const overrideCount = Object.values(overrides).filter(Boolean).length;
   const overridableCount = AGENT_CONFIG_KEYS.length;
 
+  // Pure data op: applies the override and rethrows on failure so callers own
+  // their success/error messaging. This lets the Copy & Update flow tell a
+  // failed *connect* apart from a failed *copy*, and avoids double-toasts.
   const handleApply = async (key: AgentConfigKey, candidateId: string) => {
     if (!topic) return;
     setSavingKey(key);
@@ -69,10 +72,7 @@ export default function TopicAgentsPage() {
           : {};
       const next: Record<string, string> = { ...current, [key]: candidateId };
       await updateTopic(topic.id, { agent_config: next });
-      toast.success("Override applied.");
       await refresh();
-    } catch (err) {
-      toast.error((err as Error).message ?? "Failed to apply override.");
     } finally {
       setSavingKey(null);
     }
