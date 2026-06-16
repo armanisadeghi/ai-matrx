@@ -760,6 +760,35 @@ export const duplicateAgent = createAsyncThunk<
 });
 
 /**
+ * Duplicates the EXACT pinned `agx_version` snapshot a server uses — not the
+ * (possibly drifted/corrupted) master row — into a new editable agent.
+ *
+ * Use this wherever a "fork the agent the server actually runs" is needed:
+ * the research pipeline pins specific versions per role (`research/agents.py`),
+ * so forking the master via `duplicateAgent` would hand the user a different
+ * agent. Calls the `agx_duplicate_version` RPC and loads the copy into state.
+ */
+export const duplicateAgentVersion = createAsyncThunk<
+  string,
+  { versionId: string; asSystem?: boolean },
+  ThunkApi
+>(
+  "agentDefinition/duplicateVersion",
+  async ({ versionId, asSystem }, { dispatch }) => {
+    const { data, error } = await supabase.rpc("agx_duplicate_version", {
+      p_version_id: versionId,
+      p_as_system: Boolean(asSystem),
+    });
+
+    if (error) throw pgErrorToError(error);
+
+    const newAgentId = data as string;
+    await dispatch(fetchFullAgent(newAgentId));
+    return newAgentId;
+  },
+);
+
+/**
  * Promotes a past version to be the live agent via `agx_promote_version`.
  * Reloads the live agents row after promotion so state reflects the promoted data.
  */

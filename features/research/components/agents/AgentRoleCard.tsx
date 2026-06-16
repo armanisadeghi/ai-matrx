@@ -37,6 +37,7 @@ import {
 import {
   fetchAgentExecutionMinimal,
   duplicateAgent,
+  duplicateAgentVersion,
 } from "@/features/agents/redux/agent-definition/thunks";
 import {
   selectAgentById,
@@ -309,11 +310,19 @@ export function AgentRoleCard({
   // a personal, editable copy via agx_duplicate_agent, connect it as the
   // override, then open it in the builder so the user can tweak it.
   const handleCopyUpdate = async () => {
-    const sourceAgentId = currentOverrideId ?? role.systemAgentId;
     setCopying(true);
     try {
+      // Fork the EXACT agent the server runs. With no override, the server runs
+      // the pinned `agx_version` (not the master) — so duplicate the VERSION, or
+      // the user edits a different/corrupted agent. With an override, that's the
+      // user's own master row, so a plain master duplicate is correct.
       const newId = await dispatch(
-        duplicateAgent({ agentId: sourceAgentId, asSystem: false }),
+        currentOverrideId
+          ? duplicateAgent({ agentId: currentOverrideId, asSystem: false })
+          : duplicateAgentVersion({
+              versionId: role.systemVersionId,
+              asSystem: false,
+            }),
       ).unwrap();
       // The copy is the critical step — once it exists, open it for editing no
       // matter what. Connecting it as this role's override is best-effort; a
@@ -328,11 +337,12 @@ export function AgentRoleCard({
       }
       router.push(`/agents/${newId}/build`);
     } catch (err) {
-      toast.error(
-        `Couldn't copy agent: ${
-          err instanceof Error ? err.message : "unknown error"
-        }`,
-      );
+      // `.unwrap()` re-throws a Redux SerializedError (a plain object with a
+      // `.message`), NOT an Error instance — so `instanceof Error` would hide
+      // the real cause behind "unknown error". Read `.message` off either shape.
+      const message =
+        (err as { message?: string } | null)?.message ?? "unknown error";
+      toast.error(`Couldn't copy agent: ${message}`);
     } finally {
       setCopying(false);
     }

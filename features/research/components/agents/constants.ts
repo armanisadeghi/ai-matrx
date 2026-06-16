@@ -36,13 +36,44 @@ export const SYSTEM_AGENT_UUIDS: Record<AgentConfigKey, string> = {
 
 export const SUGGEST_AGENT_UUID = "4f802fd1-2132-4347-a598-ef01febbcf2c";
 
+/**
+ * The PINNED `agx_version` the server actually runs for each role.
+ *
+ * CRITICAL: aidream `research/agents.py` pins these via
+ * `declare_pinned_agent(version_id=…)` → `AgentRecordSource(is_version=True)`.
+ * The server runs the VERSION SNAPSHOT, not the live master row above — and for
+ * Tag Consolidation + Auto-Tagger the pinned version is deliberately NOT the
+ * master (later master versions were corrupted by a 2026-03-31 batch migration).
+ * "Copy & Update" must therefore fork the VERSION (via `agx_duplicate_version`),
+ * or the user gets a different/corrupted agent than the one that runs.
+ *
+ * Keep in lockstep with aidream `research/agents.py`. If a pin changes there,
+ * update it here. (Durable follow-up: expose the pin map from the backend so
+ * this can't drift.)
+ */
+export const SYSTEM_AGENT_VERSION_UUIDS: Record<AgentConfigKey, string> = {
+  page_summary_agent_id: "17bceb8d-b3dc-4b3b-b860-319d981bb9a0", // v6
+  keyword_synthesis_agent_id: "fd13758e-b5e5-4840-8059-b48fe5ff4a2d", // v5
+  research_report_agent_id: "faf63fa3-e9de-4ef6-86ab-3315b558e58d", // v2
+  updater_agent_id: "bf9c2101-51e6-4d32-a8c9-3ba12ad769d9", // v2
+  consolidation_agent_id: "dbe2f6d1-f7d6-4437-a113-815469c2ca36", // v1 (master v2/v3 corrupted)
+  auto_tagger_agent_id: "550b8d0e-7d3f-426b-b873-b8d103e7266b", // v4 (master v2/v3 corrupted)
+  document_assembly_agent_id: "92cdbe93-3da2-4647-84cf-3bb8f892c4f3", // v5
+};
+
+export const SUGGEST_AGENT_VERSION_UUID =
+  "f7555ac0-8bb1-4934-a90c-1a59b813c6bf"; // v14
+
 export interface AgentRoleDefinition {
   /** JSONB key in `rs_topic.agent_config`. `null` for system-only roles. */
   configKey: AgentConfigKey | null;
   label: string;
   description: string;
   usedBy: string;
+  /** Master agx_agent row — the role's "current" record (may have drifted). */
   systemAgentId: string;
+  /** The PINNED agx_version the server runs — what "Copy & Update" must fork. */
+  systemVersionId: string;
   icon: LucideIcon;
   /** True when the role can't be overridden via `rs_topic.agent_config`. */
   systemOnly: boolean;
@@ -66,6 +97,7 @@ export const AGENT_ROLES: AgentRoleDefinition[] = AGENT_CONFIG_KEYS.map(
     description: AGENT_CONFIG_META[key].description,
     usedBy: AGENT_CONFIG_META[key].usedBy,
     systemAgentId: SYSTEM_AGENT_UUIDS[key],
+    systemVersionId: SYSTEM_AGENT_VERSION_UUIDS[key],
     icon: ICONS[key],
     systemOnly: false,
   }),
@@ -77,6 +109,7 @@ export const AGENT_ROLES: AgentRoleDefinition[] = AGENT_CONFIG_KEYS.map(
       "Suggests a topic title, description, keywords, and initial insights from a free-form subject input.",
     usedBy: "analysis.py → suggest_research_setup()",
     systemAgentId: SUGGEST_AGENT_UUID,
+    systemVersionId: SUGGEST_AGENT_VERSION_UUID,
     icon: Compass,
     systemOnly: true,
   },

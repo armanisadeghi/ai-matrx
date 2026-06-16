@@ -26817,6 +26817,10 @@ export type Database = {
         Args: { p_shortcut_id: string }
         Returns: string
       }
+      agx_duplicate_version: {
+        Args: { p_as_system?: boolean; p_version_id: string }
+        Returns: string
+      }
       agx_get_access_level: {
         Args: { p_agent_id: string }
         Returns: {
