@@ -133,7 +133,7 @@ export function UtilitiesOverlay({
       ) as any,
       content: (
         <div className="h-full">
-          <ChatHistoryWorkspace />
+          <ChatHistoryWorkspace enableInput />
         </div>
       ),
     },

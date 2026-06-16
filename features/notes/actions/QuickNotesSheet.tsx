@@ -1,7 +1,7 @@
 // features/notes/actions/QuickNotesSheet.tsx
 "use client";
 
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NoteEditor } from "../components/NoteEditor";
 import { useNotesRedux } from "../hooks/useNotesRedux";
 import { useAllFolders } from "../utils/folderUtils";
@@ -62,6 +62,21 @@ export function QuickNotesSheet({ onClose, className }: QuickNotesSheetProps) {
   // During the list load, pass null so the editor shows its spinner rather than
   // flashing the phantom; otherwise the phantom is the editable fallback.
   const editorNote = activeNote ?? (isLoading ? null : phantomNote);
+
+  // Drop the cursor into the note body as soon as one is ready — "Quick Note"
+  // means start typing, not "find the editor". The NoteEditor's plain-mode
+  // textarea is the capture surface; focus it once the editor mounts.
+  const editorWrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!editorNote) return;
+    const t = window.setTimeout(() => {
+      const el = editorWrapRef.current?.querySelector<
+        HTMLTextAreaElement | HTMLElement
+      >('textarea, [contenteditable="true"]');
+      el?.focus();
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [editorNote?.id]);
 
   // Get all folders - optimized to only recalculate when folder names change
   const allFolders = useAllFolders(notes);
@@ -307,7 +322,7 @@ export function QuickNotesSheet({ onClose, className }: QuickNotesSheetProps) {
       </div>
 
       {/* Editor - Takes full remaining space */}
-      <div className="flex-1 overflow-hidden">
+      <div ref={editorWrapRef} className="flex-1 overflow-hidden">
         <NoteEditor
           note={editorNote}
           onUpdate={handleUpdateNote}

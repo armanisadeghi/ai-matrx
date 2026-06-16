@@ -60,7 +60,9 @@ import {
   selectAgentById,
   selectAllAgentsArray,
 } from "@/features/agents/redux/agent-definition/selectors";
+import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import { AgentConversationDisplay } from "@/features/agents/components/messages-display/AgentConversationDisplay";
+import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { ItemRow } from "@/components/official/item/ItemRow";
@@ -677,25 +679,31 @@ function useChatHistoryBrowser(opts: {
     async (conversationId: string) => {
       setSelectedId(conversationId);
 
-      const exists = !!(store.getState() as RootState).conversations
-        ?.byConversationId?.[conversationId];
+      const state = store.getState() as RootState;
+      const exists = !!state.conversations?.byConversationId?.[conversationId];
+      const item = state.conversationList?.byConversationId?.[conversationId];
+      const agentId = item?.agentId;
 
-      if (!exists) {
-        const list = (store.getState() as RootState).conversationList;
-        const item = list?.byConversationId?.[conversationId];
-        const agentId = item?.agentId;
-        if (agentId) {
+      // Mirror the /chat load sequence: warm the agent's execution payload and
+      // create the instance BEFORE hydrating, so the transcript renderer has
+      // everything it needs (this is what /chat does and the window didn't —
+      // the cause of assistant turns rendering blank here). Fire the agent
+      // fetch in parallel; only the instance create must precede the load.
+      if (agentId) {
+        void dispatch(fetchAgentExecutionMinimal(agentId));
+        if (!exists) {
           await dispatch(
             createManualInstance({
               agentId,
               conversationId,
               apiEndpointMode: "agent",
+              responseDensity: "compact",
             }),
           );
         }
       }
 
-      dispatch(
+      await dispatch(
         loadConversation({
           conversationId,
           surfaceKey: SURFACE_KEY,
@@ -755,8 +763,38 @@ function ChatHistoryListSidebarBound({ b }: { b: ChatHistoryBrowser }) {
   );
 }
 
-/** Read-only main pane: the selected conversation, or the empty prompt. */
-function ChatHistoryMain({ selectedId }: { selectedId: string | null }) {
+const WORKSPACE_INPUT_SURFACE_KEY = "ai-results-workspace";
+
+/**
+ * Main pane: the selected conversation, or the empty prompt.
+ *
+ * `enableInput` swaps the read-only transcript for the full
+ * `AgentConversationColumn` — same centered transcript PLUS a SmartAgentInput —
+ * so the Utilities Hub "AI Results" tab lets you keep chatting in the
+ * conversation you picked. The floating window stays read-only.
+ */
+function ChatHistoryMain({
+  selectedId,
+  enableInput,
+}: {
+  selectedId: string | null;
+  enableInput?: boolean;
+}) {
+  if (selectedId && enableInput) {
+    return (
+      <AgentConversationColumn
+        key={selectedId}
+        conversationId={selectedId}
+        surfaceKey={WORKSPACE_INPUT_SURFACE_KEY}
+        constrainWidth
+        edgeToEdgeScroll
+        smartInputProps={{
+          sendButtonVariant: "blue",
+          showSubmitOnEnterToggle: false,
+        }}
+      />
+    );
+  }
   return (
     <div className="h-full min-h-0 overflow-hidden">
       {selectedId ? (
@@ -790,9 +828,12 @@ function ChatHistoryMain({ selectedId }: { selectedId: string | null }) {
 export function ChatHistoryWorkspace({
   initialSelectedConversationId = null,
   initialGroupBy = "date",
+  enableInput = false,
 }: {
   initialSelectedConversationId?: string | null;
   initialGroupBy?: GroupBy;
+  /** When true, a selected conversation gets a SmartAgentInput to keep chatting. */
+  enableInput?: boolean;
 }) {
   const b = useChatHistoryBrowser({
     initialSelectedConversationId,
@@ -804,7 +845,7 @@ export function ChatHistoryWorkspace({
         <ChatHistoryListSidebarBound b={b} />
       </div>
       <div className="min-w-0 flex-1">
-        <ChatHistoryMain selectedId={b.selectedId} />
+        <ChatHistoryMain selectedId={b.selectedId} enableInput={enableInput} />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 // features/quick-actions/components/QuickChatSheet.tsx
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageSquarePlus, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useSidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatHistorySidebar } from "@/features/agents/components/chat/ChatHistorySidebar";
@@ -61,6 +62,16 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
 
   const agentName = useAppSelector((state) => selectAgentName(state, agentId));
 
+  // Opening the history sidebar should GROW the panel (push its left edge into
+  // the page) rather than eat the chat's width — when there's room. The width
+  // boost is released when the sidebar closes or the panel unmounts.
+  const surface = useSidePanelSurface();
+  const HISTORY_WIDTH = 256;
+  useEffect(() => {
+    surface?.requestWidthBoost(showHistory ? HISTORY_WIDTH : 0);
+    return () => surface?.requestWidthBoost(0);
+  }, [showHistory, surface]);
+
   // Live launcher — gated off while viewing a loaded (history) conversation.
   // The surface key carries `session` so "New chat" / agent-switch always mints
   // a fresh conversation rather than reviving the previous one.
@@ -75,6 +86,26 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
   const isLoaded = !!loadedConversationId;
   const conversationId = loadedConversationId ?? liveConversationId ?? null;
   const surfaceKey = isLoaded ? LOADED_SURFACE_KEY : liveSurfaceKey;
+
+  // Drop the cursor straight into the message box once the conversation is
+  // ready — the user came here to type, not to click. The input renders a beat
+  // after the conversation id resolves (the column shows a skeleton first), so
+  // poll briefly for the textarea instead of focusing once and missing it.
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!conversationId) return;
+    let tries = 0;
+    const id = window.setInterval(() => {
+      const ta = bodyRef.current?.querySelector<HTMLTextAreaElement>("textarea");
+      if (ta) {
+        ta.focus();
+        window.clearInterval(id);
+      } else if (++tries > 25) {
+        window.clearInterval(id);
+      }
+    }, 100);
+    return () => window.clearInterval(id);
+  }, [conversationId]);
 
   const handleNewChat = useCallback(() => {
     setLoadedConversationId(null);
@@ -172,9 +203,9 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
       </div>
 
       {/* Body: optional history sidebar + centered conversation column. */}
-      <div className="flex min-h-0 flex-1">
+      <div ref={bodyRef} className="flex min-h-0 flex-1">
         {showHistory && (
-          <div className="w-60 shrink-0 border-r border-border">
+          <div className="w-64 shrink-0 border-r border-border">
             <ChatHistorySidebar
               scopeId={HISTORY_SCOPE}
               activeConversationId={conversationId}
@@ -191,10 +222,10 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
               conversationId={conversationId}
               surfaceKey={surfaceKey}
               constrainWidth
+              edgeToEdgeScroll
               smartInputProps={{
                 sendButtonVariant: "blue",
                 showSubmitOnEnterToggle: false,
-                compact: true,
               }}
             />
           ) : (

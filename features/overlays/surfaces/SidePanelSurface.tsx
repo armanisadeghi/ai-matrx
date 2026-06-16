@@ -39,6 +39,25 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
+/**
+ * Lets panel CONTENT ask the surrounding panel to grow — e.g. Quick Chat
+ * opening its history sidebar widens the panel by the sidebar's width (pushing
+ * its left edge into the page) instead of eating the chat's width.
+ * `requestWidthBoost(0)` releases it back to the user's dragged width. The
+ * boost is added on top of the drag width and capped only by the viewport, so
+ * it can exceed the normal drag ceiling when there's room. No-op on mobile.
+ */
+interface SidePanelSurfaceContextValue {
+  requestWidthBoost: (px: number) => void;
+}
+
+const SidePanelSurfaceContext =
+  React.createContext<SidePanelSurfaceContextValue | null>(null);
+
+export function useSidePanelSurface(): SidePanelSurfaceContextValue | null {
+  return React.useContext(SidePanelSurfaceContext);
+}
+
 export interface SidePanelSurfaceProps {
   /** Visible panel title (also the accessible dialog name). */
   title: string;
@@ -168,6 +187,30 @@ export function SidePanelSurface({
     return Number.isFinite(parsed) ? Math.min(Math.max(parsed, minWidth), maxWidth) : defaultWidth;
   });
 
+  // Content-requested width boost (e.g. Quick Chat's history sidebar). Added on
+  // top of the drag width and capped only by the viewport — so opening an
+  // in-panel sidebar grows the panel beyond the normal drag ceiling when
+  // there's room. Released to 0 when the content collapses.
+  const [widthBoost, setWidthBoost] = React.useState(0);
+  const ctx = React.useMemo<SidePanelSurfaceContextValue>(
+    () => ({ requestWidthBoost: (px) => setWidthBoost(Math.max(0, px)) }),
+    [],
+  );
+
+  const [viewportWidth, setViewportWidth] = React.useState<number>(() =>
+    typeof window === "undefined" ? 1920 : window.innerWidth,
+  );
+  React.useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Effective width: the user's dragged width plus any content boost, capped so
+  // a sliver of the page always stays visible (never wider than the viewport).
+  const viewportCap = Math.max(minWidth, viewportWidth - 56);
+  const effectiveWidth = Math.min(width + widthBoost, viewportCap);
+
   const handleResizeStart = React.useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -208,26 +251,29 @@ export function SidePanelSurface({
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={handleDrawerOpenChange}>
-        <DrawerContent className="h-[88dvh] gap-0 p-0">
-          <DrawerTitle className="sr-only">{title}</DrawerTitle>
-          {description ? (
-            <DrawerDescription className="sr-only">
-              {description}
-            </DrawerDescription>
-          ) : null}
-          <PanelHeader
-            title={title}
-            headerActions={headerActions}
-            onRequestClose={requestClose}
-          />
-          <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
-        </DrawerContent>
-      </Drawer>
+      <SidePanelSurfaceContext.Provider value={ctx}>
+        <Drawer open={open} onOpenChange={handleDrawerOpenChange}>
+          <DrawerContent className="h-[88dvh] gap-0 p-0">
+            <DrawerTitle className="sr-only">{title}</DrawerTitle>
+            {description ? (
+              <DrawerDescription className="sr-only">
+                {description}
+              </DrawerDescription>
+            ) : null}
+            <PanelHeader
+              title={title}
+              headerActions={headerActions}
+              onRequestClose={requestClose}
+            />
+            <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+          </DrawerContent>
+        </Drawer>
+      </SidePanelSurfaceContext.Provider>
     );
   }
 
   return (
+    <SidePanelSurfaceContext.Provider value={ctx}>
     <div
       role="dialog"
       aria-label={title}
@@ -235,10 +281,10 @@ export function SidePanelSurface({
         "fixed right-0 z-40 flex flex-col overflow-hidden",
         "top-[var(--header-height)] bottom-0",
         "border-l border-border bg-background shadow-2xl",
-        "transition-transform duration-200 ease-out will-change-transform",
+        "transition-[transform,width] duration-200 ease-out will-change-transform",
         open && entered ? "translate-x-0" : "translate-x-full",
       )}
-      style={{ width }}
+      style={{ width: effectiveWidth }}
     >
       {/* Drag handle — left edge. Widens the panel as you pull it inward. */}
       <div
@@ -258,5 +304,6 @@ export function SidePanelSurface({
       />
       <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
     </div>
+    </SidePanelSurfaceContext.Provider>
   );
 }

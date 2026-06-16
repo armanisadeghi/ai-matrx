@@ -1,7 +1,7 @@
 // features/tasks/components/QuickTasksSheet.tsx
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectProjects,
@@ -146,7 +146,11 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
       selectOverlayData(state, "quickTasks") as QuickTasksOverlayData | null,
   );
 
-  // Pre-populate task fields from overlay data (one-time only)
+  // Pre-populate task fields from overlay data (one-time only). Seeding local
+  // form state from the Redux overlay payload the first time it's available is
+  // a legitimate external-store sync — guarded by `hasPrePopulated` so it runs
+  // once — not a render cascade.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (overlayData?.prePopulate && !hasPrePopulated) {
       const { title, description, metadataInfo } = overlayData.prePopulate;
@@ -164,11 +168,26 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
       setHasPrePopulated(true);
     }
   }, [overlayData, hasPrePopulated, dispatch]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // The project a new task lands in: the active project, else the first
   // available. Purely derived — never user-set — so no state/effect needed.
   const selectedProjectForTask =
     activeProject ?? (projects.length > 0 ? projects[0].id : null);
+
+  // Drop the cursor into the capture box the moment it becomes usable — the
+  // user opened "Quick Task" to type, not to hunt for the field. Fires once,
+  // when a target project first exists (the input is disabled until then), and
+  // only on the list view (not while a task's details are open).
+  const newTaskInputRef = useRef<HTMLInputElement>(null);
+  const hasAutoFocusedRef = useRef(false);
+  useEffect(() => {
+    if (hasAutoFocusedRef.current) return;
+    if (!selectedProjectForTask || selectedTaskId) return;
+    hasAutoFocusedRef.current = true;
+    const t = window.setTimeout(() => newTaskInputRef.current?.focus(), 60);
+    return () => window.clearTimeout(t);
+  }, [selectedProjectForTask, selectedTaskId]);
 
   // filteredTasks is sourced from Redux above
 
@@ -442,6 +461,7 @@ function QuickTasksSheetContent({ className }: { className?: string }) {
                 <form onSubmit={handleAddTask} className="space-y-2">
                   <div className="flex gap-2">
                     <Input
+                      ref={newTaskInputRef}
                       value={newTaskTitle}
                       onChange={(e) => handleTitleChange(e.target.value)}
                       placeholder="Add new task..."
