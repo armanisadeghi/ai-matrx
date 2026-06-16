@@ -48,9 +48,22 @@ interface VoiceAgentSurfaceProps {
    * to preserve constants-based ad-hoc config.
    */
   agentId?: string;
+  /**
+   * Per-conversation tool additions (tool UUIDs). Passed to BOTH the resolve
+   * hook and the session hook from the SAME source so resolve and execute
+   * agree on the allowed set (a divergence 403s an added tool at execute time).
+   */
+  addedToolIds?: string[];
+  /** Resolve/execute against an agent VERSION row rather than the live agent. */
+  isVersion?: boolean;
 }
 
-export function VoiceAgentSurface({ preset, agentId }: VoiceAgentSurfaceProps) {
+export function VoiceAgentSurface({
+  preset,
+  agentId,
+  addedToolIds,
+  isVersion,
+}: VoiceAgentSurfaceProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
@@ -58,15 +71,22 @@ export function VoiceAgentSurface({ preset, agentId }: VoiceAgentSurfaceProps) {
   // Resolve the authoritative realtime tool set (server/client/builtin) from the
   // backend and write it into the slice. Non-fatal on error — the slice keeps
   // its seeded builtin tools and the mic still works.
+  // addedToolIds / isVersion flow to BOTH hooks from this ONE source so the
+  // resolve path (declares the allowed set) and the execute path (re-resolves
+  // it server-side) can never disagree (C1).
   useRealtimeAgentConfig({
     instanceId,
     agentId,
     surface: VOICE_CHAT_SURFACE,
+    addedToolIds,
+    isVersion,
   });
   const { status, error, toggle } = useXaiVoiceSession({
     instanceId,
     agentId,
     surface: VOICE_CHAT_SURFACE,
+    addedToolIds,
+    isVersion,
   });
   usePersistVoiceTranscript({ instanceId });
 

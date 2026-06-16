@@ -45,6 +45,16 @@ export interface RealtimeToolExecuteRequest {
   call_id: string | null;
   /** Surface name for allowed-set resolution (e.g. "matrx-user/chat-voice"). */
   surface: string;
+  /**
+   * Per-conversation tool additions (tool UUIDs). MUST mirror exactly what the
+   * resolve hook (`useRealtimeAgentConfig`) declared at session start — the
+   * Python endpoint re-resolves the allowed set from `added_tool_ids` +
+   * `is_version`, so a mismatch 403s a legitimately-added tool. Threaded from
+   * the SAME opts the surface passes to the resolve hook.
+   */
+  added_tool_ids: string[];
+  /** Resolve against an agent VERSION row rather than the live agent. Mirrors resolve. */
+  is_version: boolean;
   context?: RealtimeToolContextEnvelope | null;
 }
 
@@ -57,6 +67,10 @@ interface RealtimeToolExecuteWireBody {
   arguments: Record<string, unknown>;
   call_id: string | null;
   surface: string;
+  // Mirror the resolve request so the server's re-resolution of the allowed
+  // set matches the set the session declared — top-level, like the scope fields.
+  added_tool_ids: string[];
+  is_version: boolean;
   organization_id?: string;
   project_id?: string;
   task_id?: string;

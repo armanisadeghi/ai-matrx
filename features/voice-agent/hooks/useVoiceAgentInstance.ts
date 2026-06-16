@@ -43,7 +43,6 @@ import {
   initInstance,
 } from "../state/voiceAgentSlice";
 import type {
-  BuiltinToolName,
   RealtimeToolSet,
   VoiceAgentPreset,
   VoiceId,
@@ -106,39 +105,12 @@ function readVoiceIdFromAgent(settings: unknown): VoiceId {
   return DEFAULT_INTRO_VOICE;
 }
 
-const BUILTIN_TOOL_NAMES: ReadonlySet<BuiltinToolName> = new Set([
-  "web_search",
-  "x_search",
-]);
-
-/**
- * Reads the agent row's `settings.realtime_tools` (a list of xAI builtin
- * names) into a `RealtimeToolSet` SEED. This is only the synchronous
- * fallback shown before `useRealtimeAgentConfig` resolves the real set
- * (server/client/builtin) from the backend — so it intentionally covers
- * only the builtins, which need no schema. Anything else resolves later.
- */
-function readToolsFromAgent(settings: unknown): RealtimeToolSet {
-  if (settings && typeof settings === "object") {
-    const t = (settings as Record<string, unknown>).realtime_tools;
-    if (Array.isArray(t)) {
-      const valid = t.filter(
-        (x): x is BuiltinToolName =>
-          typeof x === "string" && BUILTIN_TOOL_NAMES.has(x as BuiltinToolName),
-      );
-      if (valid.length > 0) {
-        return valid.map((name) => ({
-          name,
-          description:
-            name === "web_search" ? "Search the web." : "Search X (Twitter).",
-          parameters: {},
-          execution: "builtin" as const,
-        }));
-      }
-    }
-  }
-  return [...DEFAULT_INTRO_TOOLS];
-}
+// NOTE: the agent's tool set is resolved authoritatively by
+// `useRealtimeAgentConfig` (POST /ai/agents/{id}/realtime-tools), which OWNS the
+// slice `tools` field. This hook no longer derives tools from the agent row —
+// doing so in the late agent-fetch raced and clobbered the resolved set (M1).
+// The only tool write from here is the SYNCHRONOUS builtin seed in initInstance
+// (DEFAULT_INTRO_TOOLS), a pre-resolve fallback so the mic never bricks.
 
 export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
   const dispatch = useAppDispatch();
@@ -193,6 +165,11 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
         const state1 = store.getState() as RootState;
         const agent = state1.agentDefinition.agents?.[o.agentId!];
         if (!agent) return;
+        // Write ONLY voice + instructions here. `tools` is owned by
+        // useRealtimeAgentConfig (the authoritative backend resolve); writing
+        // tools from this late agent-fetch would clobber the resolved set in a
+        // resolve/seed race (M1). The synchronous builtin seed lives in
+        // initInstance only — useRealtimeAgentConfig overwrites it once.
         dispatch(
           applyAgentConfig({
             instanceId,
@@ -201,7 +178,6 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
               agent.messages,
               INTRO_INSTRUCTIONS,
             ),
-            tools: readToolsFromAgent(agent.settings),
           }),
         );
       })();

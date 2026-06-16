@@ -57,6 +57,8 @@ function makeHarness(opts: {
     agentId: "agent-1",
     conversationId: "conv-1",
     surface: "matrx-user/chat-voice",
+    addedToolIds: [],
+    isVersion: false,
     resolvedTools: buildResolvedToolMap(opts.tools),
     contextEnvelope: null,
     service,
@@ -191,8 +193,118 @@ describe("flushToolCalls", () => {
 
   it("is a no-op on an empty batch (no response.create)", async () => {
     const h = makeHarness({ tools: [] });
-    await flushToolCalls([], h.ctx);
+    const sent = await flushToolCalls([], h.ctx);
+    expect(sent).toBe(false);
     expect(h.outputs).toHaveLength(0);
     expect(h.responseCreateCount()).toBe(0);
+  });
+
+  it("forwards added_tool_ids + is_version to the server execute (C1: resolve/execute parity)", async () => {
+    const captured: Array<{ added_tool_ids: string[]; is_version: boolean }> =
+      [];
+    const h = makeHarness({
+      tools: [tool("search_notes", "server")],
+      service: {
+        execute: async (req) => {
+          captured.push({
+            added_tool_ids: req.added_tool_ids,
+            is_version: req.is_version,
+          });
+          return { ok: true, output: "ok" };
+        },
+      },
+    });
+    h.ctx.addedToolIds = ["tool-uuid-1", "tool-uuid-2"];
+    h.ctx.isVersion = true;
+
+    await flushToolCalls(
+      [{ call_id: "c1", name: "search_notes", arguments: "{}" }],
+      h.ctx,
+    );
+
+    expect(captured).toEqual([
+      { added_tool_ids: ["tool-uuid-1", "tool-uuid-2"], is_version: true },
+    ]);
+  });
+
+  it("L4: answers a server tool with an explanatory string when agentId is empty (no round-trip)", async () => {
+    const h = makeHarness({ tools: [tool("search_notes", "server")] });
+    h.ctx.agentId = "";
+
+    await flushToolCalls(
+      [{ call_id: "c1", name: "search_notes", arguments: "{}" }],
+      h.ctx,
+    );
+
+    expect(h.serviceCalls).toHaveLength(0);
+    expect(h.outputs[0].output).toMatch(/no agent bound/);
+    expect(h.responseCreateCount()).toBe(1);
+  });
+
+  it("H1/M5: an already-aborted flush sends nothing (no output, no response.create)", async () => {
+    const h = makeHarness({ tools: [tool("search_notes", "server")] });
+    const ac = new AbortController();
+    ac.abort();
+
+    const sent = await flushToolCalls(
+      [{ call_id: "c1", name: "search_notes", arguments: "{}" }],
+      h.ctx,
+      { signal: ac.signal },
+    );
+
+    expect(sent).toBe(false);
+    expect(h.outputs).toHaveLength(0);
+    expect(h.responseCreateCount()).toBe(0);
+    // The tool must not have run either.
+    expect(h.serviceCalls).toHaveLength(0);
+  });
+
+  it("H2/M5: a flush aborted DURING tool execution emits no response.create", async () => {
+    const ac = new AbortController();
+    const h = makeHarness({
+      tools: [tool("search_notes", "server")],
+      service: {
+        execute: async () => {
+          // Abort lands while the tool is in flight (barge-in / stop).
+          ac.abort();
+          return { ok: true, output: "late" };
+        },
+      },
+    });
+
+    const sent = await flushToolCalls(
+      [{ call_id: "c1", name: "search_notes", arguments: "{}" }],
+      h.ctx,
+      { signal: ac.signal },
+    );
+
+    expect(sent).toBe(false);
+    expect(h.outputs).toHaveLength(0);
+    expect(h.responseCreateCount()).toBe(0);
+  });
+
+  it("M5: a closed socket (canSend=false) blocks both the output and response.create", async () => {
+    const h = makeHarness({ tools: [tool("search_notes", "server")] });
+
+    const sent = await flushToolCalls(
+      [{ call_id: "c1", name: "search_notes", arguments: "{}" }],
+      h.ctx,
+      { canSend: () => false },
+    );
+
+    expect(sent).toBe(false);
+    expect(h.outputs).toHaveLength(0);
+    expect(h.responseCreateCount()).toBe(0);
+  });
+
+  it("returns true and sends exactly one response.create on a normal flush", async () => {
+    const h = makeHarness({ tools: [tool("search_notes", "server")] });
+    const sent = await flushToolCalls(
+      [{ call_id: "c1", name: "search_notes", arguments: "{}" }],
+      h.ctx,
+      { canSend: () => true },
+    );
+    expect(sent).toBe(true);
+    expect(h.responseCreateCount()).toBe(1);
   });
 });

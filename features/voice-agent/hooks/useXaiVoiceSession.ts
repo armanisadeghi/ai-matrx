@@ -51,7 +51,16 @@ import {
 import {
   buildFunctionCallOutput,
   buildResponseCreate,
+  buildSessionUpdate,
 } from "../transport/clientEvents";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectActiveOrganizationId,
+  selectActiveProjectId,
+  selectActiveTaskId,
+  selectActiveScopeIds,
+} from "@/features/scopes/redux/selectors/active-context";
+import type { RealtimeToolContextEnvelope } from "../services/realtimeToolService";
 import {
   buildResolvedToolMap,
   flushToolCalls,
@@ -99,6 +108,15 @@ interface UseXaiVoiceSessionOpts {
   surface?: string;
   /** Studio session id, when the surface is Scribe Live (for working-doc tools). */
   sessionId?: string | null;
+  /**
+   * Per-conversation tool additions (tool UUIDs). MUST be the SAME value the
+   * surface passes to `useRealtimeAgentConfig` — both the resolve and the
+   * execute path re-resolve the allowed set from this, so a divergence 403s an
+   * added tool at execute time (the resolve hook accepted it, execute rejects).
+   */
+  addedToolIds?: string[];
+  /** Resolve/execute against an agent VERSION row. Mirrors the resolve hook. */
+  isVersion?: boolean;
 }
 
 /** Default DB surface for the live `/chat/voice` route. */
@@ -126,7 +144,15 @@ function makeTurnId(): string {
 export function useXaiVoiceSession(
   opts: UseXaiVoiceSessionOpts,
 ): VoiceSessionApi {
-  const { instanceId, devTokenTtlSeconds, agentId, surface, sessionId } = opts;
+  const {
+    instanceId,
+    devTokenTtlSeconds,
+    agentId,
+    surface,
+    sessionId,
+    addedToolIds,
+    isVersion,
+  } = opts;
   const dispatch = useAppDispatch();
   // Read store directly inside the reveal rAF so we don't subscribe / re-render
   // every time a transcript delta lands.
@@ -164,14 +190,36 @@ export function useXaiVoiceSession(
   const agentIdRef = useRef(agentId);
   const surfaceRef = useRef(surface ?? DEFAULT_VOICE_SURFACE);
   const sessionIdRef = useRef(sessionId ?? null);
+  // added_tool_ids / is_version MUST mirror what useRealtimeAgentConfig sent at
+  // resolve time — kept in refs so the lazily-built ToolLoopContext reads the
+  // current value without re-subscribing the event handler.
+  const addedToolIdsRef = useRef<string[]>(addedToolIds ?? []);
+  const isVersionRef = useRef<boolean>(isVersion ?? false);
   agentIdRef.current = agentId;
   surfaceRef.current = surface ?? DEFAULT_VOICE_SURFACE;
   sessionIdRef.current = sessionId ?? null;
+  addedToolIdsRef.current = addedToolIds ?? [];
+  isVersionRef.current = isVersion ?? false;
 
   // Buffered tool calls from `response.function_call_arguments.done`, flushed
   // on `response.done` so parallel calls land in one batch with ONE
   // `response.create`.
   const pendingCallsRef = useRef<PendingCall[]>([]);
+
+  // ── Flush re-entrancy / interrupt guard (the "exactly one response.create
+  // per batch" invariant) ───────────────────────────────────────────────────
+  // `response.done` can fire again while a previous flush is still awaiting
+  // tool execution; barge-in / stop / response.cancelled can also land mid-
+  // flush. Without a guard two overlapping flushes would each emit a
+  // `response.create` for one logical turn — breaking xAI's response flow.
+  //
+  //   flushInFlightRef — true while a flush is awaiting; a second response.done
+  //     does NOT start an overlapping flush (its calls were already drained, or
+  //     are queued for the next idle flush).
+  //   flushAbortRef    — aborted by barge-in / stop / response.cancelled so the
+  //     in-flight flush sends nothing into a cancelled/superseded turn.
+  const flushInFlightRef = useRef(false);
+  const flushAbortRef = useRef<AbortController | null>(null);
 
   // Per-turn refs — managed across the event stream, not via React state.
   const pendingUserTurnIdRef = useRef<string | null>(null);
@@ -294,18 +342,37 @@ export function useXaiVoiceSession(
   // Kept out of the hot event path: only constructed when the model actually
   // calls a tool, so a tool-less session pays nothing.
   const buildToolLoopContext = useCallback((): ToolLoopContext => {
-    const state = store.getState();
-    const userId = (state as RootState).userAuth?.id ?? null;
+    const state = store.getState() as RootState;
+    // Canonical memoized user-id selector — NOT a hand-read of state.userAuth.id.
+    // If the slice mount key ever moves, the selector follows; a hand-read would
+    // silently yield null and every auth-needing client tool would throw.
+    const userId = selectUserId(state);
     const conversationId = selectVoiceConversationId(state, instanceId) ?? null;
     const resolvedTools = buildResolvedToolMap(
       selectVoiceTools(state, instanceId),
     );
+    // Active GLOBAL working context (canonical appContextSlice selectors) — the
+    // org/project/task/scope every server tool must run under for parity with
+    // the turn-based path. Hardcoding null here broke parity and risked fail-
+    // closed hidden writes (a NULL org is "hidden", never "global").
+    const organizationId = selectActiveOrganizationId(state);
+    const projectId = selectActiveProjectId(state);
+    const taskId = selectActiveTaskId(state);
+    const scopeIds = selectActiveScopeIds(state);
+    const contextEnvelope: RealtimeToolContextEnvelope = {
+      ...(organizationId ? { organization_id: organizationId } : {}),
+      ...(projectId ? { project_id: projectId } : {}),
+      ...(taskId ? { task_id: taskId } : {}),
+      ...(scopeIds.length > 0 ? { scope_ids: scopeIds } : {}),
+    };
     return {
       agentId: agentIdRef.current ?? "",
       conversationId,
       surface: surfaceRef.current,
+      addedToolIds: addedToolIdsRef.current,
+      isVersion: isVersionRef.current,
       resolvedTools,
-      contextEnvelope: null,
+      contextEnvelope,
       service: realtimeToolService,
       sendFunctionCallOutput: (callId, output) => {
         xaiClientRef.current?.sendRaw(buildFunctionCallOutput(callId, output));
@@ -323,6 +390,54 @@ export function useXaiVoiceSession(
       },
     };
   }, [dispatch, instanceId, store]);
+
+  // ─── Serialized tool-call flush ────────────────────────────────────────
+  // Drains `pendingCallsRef` as ONE batch and guarantees the "exactly one
+  // response.create per logical batch" invariant under re-entrancy / interrupt:
+  //   • Only one flush runs at a time (flushInFlightRef). A `response.done`
+  //     arriving mid-flush does NOT start an overlapping flush.
+  //   • A flush carries an AbortController (flushAbortRef) so barge-in / stop /
+  //     response.cancelled can abort it; an aborted/closed-socket flush sends
+  //     nothing (no function_call_output, no response.create).
+  //   • On completion it re-checks for calls buffered DURING the flush (the next
+  //     turn's calls) and drains them too, so nothing is stranded.
+  const runFlush = useCallback((): void => {
+    if (flushInFlightRef.current) return;
+    if (pendingCallsRef.current.length === 0) return;
+
+    const pending = pendingCallsRef.current;
+    pendingCallsRef.current = [];
+    const loopCtx = buildToolLoopContext();
+    const abort = new AbortController();
+    flushAbortRef.current = abort;
+    flushInFlightRef.current = true;
+    // canSend gate: socket open AND this flush not aborted — re-checked before
+    // every send so a mid-flush disconnect/abort can't emit a stray send.
+    const canSend = (): boolean =>
+      (xaiClientRef.current?.isOpen() ?? false) && !abort.signal.aborted;
+
+    void flushToolCalls(pending, loopCtx, { signal: abort.signal, canSend })
+      .catch((err) => {
+        // flushToolCalls swallows per-call failures into strings; a throw here
+        // would only be a programming error in the loop itself.
+        voiceDebugLog(
+          instanceId,
+          "error",
+          "tool.flush-failed",
+          err instanceof Error ? err.message : String(err),
+        );
+        return false;
+      })
+      .finally(() => {
+        flushInFlightRef.current = false;
+        if (flushAbortRef.current === abort) flushAbortRef.current = null;
+        // Calls buffered while this flush ran (a subsequent turn) — drain them,
+        // unless an abort cleared the buffer. Never strand a buffered call.
+        if (!abort.signal.aborted && pendingCallsRef.current.length > 0) {
+          runFlush();
+        }
+      });
+  }, [buildToolLoopContext, instanceId]);
 
   // ─── Module construction (idempotent) ──────────────────────────────────
   const ensureModules = useCallback(() => {
@@ -424,6 +539,11 @@ export function useXaiVoiceSession(
 
         case "input_audio_buffer.speech_started": {
           const now = Date.now();
+          // Barge-in cancels the current turn: abort any in-flight flush and
+          // drop stale buffered calls so a cancelled turn's tool results never
+          // get flushed into the new turn (H2/M5).
+          flushAbortRef.current?.abort();
+          pendingCallsRef.current = [];
           // If the assistant is mid-utterance, interrupt synchronously.
           if (pendingAssistantTurnIdRef.current && playbackRef.current) {
             const playedMs = playbackRef.current.interrupt();
@@ -605,21 +725,9 @@ export function useXaiVoiceSession(
           // fresh response with the tool outputs as grounding. flushToolCalls
           // sends one function_call_output per call_id, then exactly one
           // response.create — never throws.
-          if (pendingCallsRef.current.length > 0) {
-            const pending = pendingCallsRef.current;
-            pendingCallsRef.current = [];
-            const loopCtx = buildToolLoopContext();
-            void flushToolCalls(pending, loopCtx).catch((err) => {
-              // flushToolCalls swallows per-call failures into strings; a throw
-              // here would only be a programming error in the loop itself.
-              voiceDebugLog(
-                instanceId,
-                "error",
-                "tool.flush-failed",
-                err instanceof Error ? err.message : String(err),
-              );
-            });
-          }
+          // Serialized + abortable; emits at most one response.create per
+          // logical batch even under re-entrancy / interrupt (H1/H2/M5).
+          runFlush();
 
           if (!pendingAssistantTurnIdRef.current) break;
           const playedMs = playbackRef.current?.markTurnEnded() ?? 0;
@@ -658,7 +766,12 @@ export function useXaiVoiceSession(
 
         case "response.cancelled": {
           // Server confirmed our response.cancel. The turn was already marked
-          // interrupted in the speech_started handler.
+          // interrupted in the speech_started handler. Abort any in-flight flush
+          // and drop stale buffered calls so the cancelled turn's tool results
+          // are never flushed (H2/M5) — defense in depth alongside speech_started
+          // (a programmatic cancel can arrive without a speech_started).
+          flushAbortRef.current?.abort();
+          pendingCallsRef.current = [];
           break;
         }
 
@@ -707,7 +820,7 @@ export function useXaiVoiceSession(
       mirrorFlags,
       startRevealLoop,
       stopRevealLoop,
-      buildToolLoopContext,
+      runFlush,
     ],
   );
 
@@ -728,6 +841,11 @@ export function useXaiVoiceSession(
   const stop = useCallback(async (): Promise<void> => {
     voiceDebugLog(instanceId, "info", "stop", "tearing down session");
     stopRevealLoop();
+    // Abort any in-flight flush + drop buffered calls — a stop must never let a
+    // late flush send a function_call_output / response.create on the socket
+    // we're tearing down (H2/M5).
+    flushAbortRef.current?.abort();
+    flushAbortRef.current = null;
     pendingCallsRef.current = [];
     pendingUserTurnIdRef.current = null;
     pendingAssistantTurnIdRef.current = null;
@@ -915,6 +1033,59 @@ export function useXaiVoiceSession(
       void stop();
     }
   }, [status, start, stop]);
+
+  // ─── Re-push session.update when the resolved tool set lands late ──────
+  //
+  // M1/M2/M3 chose RE-PUSH over gating session start. Rationale: gating would
+  // delay the mic-click handshake (fighting the latency invariants this hook
+  // exists to protect) and need a timeout fallback. Re-push is simpler and
+  // strictly correct: the session starts immediately declaring whatever tools
+  // are seeded; when `useRealtimeAgentConfig` resolves the authoritative set
+  // and writes it into the slice, this effect detects the change and sends a
+  // fresh `session.update` so xAI's declared toolset always matches the
+  // resolved set — for the FULL set, including server/client function tools.
+  //
+  // Guard: only re-push once the handshake is live (isStreamingReady) and only
+  // when the declared tools actually differ from what we last sent, so the
+  // normal mic-click path (which already sends session.update inside connect)
+  // doesn't double-send. A no-session / pre-handshake change is a no-op — the
+  // mic-click path will declare the then-current set.
+  const lastSentToolsRef = useRef<string | null>(null);
+  useEffect(() => {
+    const client = xaiClientRef.current;
+    if (!client || !client.isOpen() || !client.isStreamingReady()) return;
+    const signature = JSON.stringify(tools);
+    if (signature === lastSentToolsRef.current) return;
+    // Skip the very first settle if the session isn't live yet — handled above.
+    if (lastSentToolsRef.current === null) {
+      // Record the baseline the connect() path declared; only re-push on a
+      // SUBSEQUENT change. (connect already declared tools at mic-click.)
+      lastSentToolsRef.current = signature;
+      return;
+    }
+    lastSentToolsRef.current = signature;
+    voiceDebugLog(
+      instanceId,
+      "info",
+      "tool.session-repush",
+      "resolved tool set changed while live — re-pushing session.update",
+    );
+    client.sendRaw(
+      buildSessionUpdate({
+        voiceId: voiceIdRef.current,
+        instructions: instructionsRef.current,
+        tools: [...tools],
+      }),
+    );
+  }, [instanceId, tools]);
+
+  // Reset the re-push baseline whenever a session ends so the next session's
+  // connect()-declared set becomes the new baseline (not a stale prior one).
+  useEffect(() => {
+    if (status === "idle" || status === "error") {
+      lastSentToolsRef.current = null;
+    }
+  }, [status]);
 
   // ─── Mic permission probe (non-prompting) ─────────────────────────────
   // Reads the browser's stored mic permission so the debug panel can show

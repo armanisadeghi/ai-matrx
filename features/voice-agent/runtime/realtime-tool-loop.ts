@@ -48,6 +48,14 @@ export interface ToolLoopContext {
   conversationId: string | null;
   /** DB surface name for allowed-set resolution (e.g. "matrx-user/chat-voice"). */
   surface: string;
+  /**
+   * Per-conversation tool additions (tool UUIDs) — MUST mirror exactly what the
+   * resolve hook declared at session start, or the server's re-resolution at
+   * execute time excludes an added tool and 403s it. Same source as resolve.
+   */
+  addedToolIds: string[];
+  /** Resolve against an agent VERSION row rather than the live agent. Mirrors resolve. */
+  isVersion: boolean;
   /** Resolved tools keyed by name — the classification source. */
   resolvedTools: Map<string, ResolvedRealtimeTool>;
   /** org/project/task/scope envelope for the execute call. */
@@ -148,6 +156,17 @@ async function executeOne(
     }
 
     // execution === "server"
+    // A server tool needs a real agent_id — the /execute endpoint resolves the
+    // allowed set for THAT agent. Round-tripping agent_id:"" 403s/500s with no
+    // useful signal, so answer the call with the documented explanatory string
+    // instead. (A server session that reached here without an agentId is itself
+    // a wiring bug; this is the LOUD-but-recoverable fallback.)
+    if (!ctx.agentId) {
+      return {
+        call_id: call.call_id,
+        output: `Tool ${call.name} could not run: this voice session has no agent bound, so server tools are unavailable.`,
+      };
+    }
     const res = await ctx.service.execute({
       agent_id: ctx.agentId,
       conversation_id: ctx.conversationId,
@@ -155,6 +174,8 @@ async function executeOne(
       arguments: args,
       call_id: call.call_id,
       surface: ctx.surface,
+      added_tool_ids: ctx.addedToolIds,
+      is_version: ctx.isVersion,
       context: ctx.contextEnvelope ?? null,
     });
     // The server returns a string output for BOTH ok and !ok — the failure
@@ -166,26 +187,69 @@ async function executeOne(
   }
 }
 
+/** Options that let the caller abort a flush mid-flight (barge-in / stop). */
+export interface FlushOptions {
+  /**
+   * Aborted by the orchestrator on barge-in / stop / a superseding flush. When
+   * already aborted, NO `function_call_output` and NO `response.create` are
+   * sent — the turn that owned these calls is gone, so emitting outputs would
+   * either hit a closed socket or inject a stale `response.create` into a new
+   * turn (the double-`response.create` class of bug this guards against).
+   */
+  signal?: AbortSignal;
+  /**
+   * Last-line guard: returns true only when it is still safe to send on the
+   * socket (open + not superseded). Checked immediately before EACH send so a
+   * disconnect or abort that lands during tool execution can't produce a stray
+   * `response.create`. Defaults to "always safe" for unit tests.
+   */
+  canSend?: () => boolean;
+}
+
 /**
  * Flush a batch of buffered tool calls: execute all in parallel, send one
  * `function_call_output` per call_id, then EXACTLY ONE `response.create`.
  *
  * Sending more than one `response.create` breaks xAI's response flow — the
- * single trailing send is the critical invariant. It always fires (even on an
- * empty batch is a no-op caller-side; callers only invoke this with ≥1 call).
+ * single trailing send is the critical invariant. It fires AT MOST once: the
+ * caller serializes flushes (one outstanding logical batch at a time) and an
+ * aborted/superseded flush sends nothing at all, so two `response.create`s can
+ * never be emitted for one logical batch even across re-entrancy / interrupt.
+ *
+ * Returns true if the trailing `response.create` was sent, false if the flush
+ * was aborted/blocked before it could send (so the caller can keep bookkeeping
+ * accurate).
  */
 export async function flushToolCalls(
   pending: PendingCall[],
   ctx: ToolLoopContext,
-): Promise<void> {
-  if (pending.length === 0) return;
+  options?: FlushOptions,
+): Promise<boolean> {
+  if (pending.length === 0) return false;
+
+  const aborted = (): boolean => options?.signal?.aborted ?? false;
+  const canSend = (): boolean =>
+    !aborted() && (options?.canSend ? options.canSend() : true);
+
+  // If the turn was interrupted before we even started running, do nothing.
+  if (aborted()) return false;
 
   const results = await Promise.all(
     pending.map((call) => executeOne(call, ctx)),
   );
 
+  // The turn may have been interrupted (barge-in / stop) or the socket closed
+  // WHILE the tools ran. Sending now would emit a stale response.create into a
+  // cancelled/new turn — exactly the invariant violation we guard. Bail loudly-
+  // recoverable: the discarded outputs belong to a turn that no longer exists.
+  if (!canSend()) return false;
+
   for (const r of results) {
+    // Re-check before every send — a disconnect/abort mid-loop must stop us.
+    if (!canSend()) return false;
     ctx.sendFunctionCallOutput(r.call_id, r.output);
   }
+  if (!canSend()) return false;
   ctx.sendResponseCreate();
+  return true;
 }
