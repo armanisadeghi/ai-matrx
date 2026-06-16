@@ -15,6 +15,7 @@ import {
   Settings2,
   Brain,
   ListChecks,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { RESEARCH_NAV_ITEMS } from "../../constants";
@@ -34,6 +35,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Settings2,
   Brain,
   ListChecks,
+  Sparkles,
 };
 
 interface ResearchMobileNavProps {

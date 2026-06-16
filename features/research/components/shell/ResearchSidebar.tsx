@@ -18,6 +18,7 @@ import {
   Settings2,
   Brain,
   ListChecks,
+  Sparkles,
   Info,
   ChevronDown,
 } from "lucide-react";
@@ -44,6 +45,7 @@ const ICON_MAP: Record<string, typeof LayoutDashboard> = {
   Settings2,
   Brain,
   ListChecks,
+  Sparkles,
 };
 
 interface ResearchSidebarProps {

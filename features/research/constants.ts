@@ -223,6 +223,14 @@ export const RESEARCH_NAV_ITEMS: ResearchNavItem[] = [
     group: "primary",
     mobileVisible: false,
   },
+  {
+    key: "outputs",
+    label: "Outputs",
+    icon: "Sparkles",
+    href: (id) => `/research/topics/${id}/outputs`,
+    group: "primary",
+    mobileVisible: true,
+  },
   // ── Secondary utility tabs ───────────────────────────────────────────────
   {
     key: "tasks",
