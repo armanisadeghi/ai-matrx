@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Search, Layers, ArrowUpRight } from "lucide-react";
+import { ChevronLeft, Search, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -11,13 +11,8 @@ import {
   useResearchSynthesis,
   useSourceImportance,
 } from "../../hooks/useResearchState";
-import { StatusBadge } from "../shared/StatusBadge";
-import { SourceTypeIcon } from "../shared/SourceTypeIcon";
-import {
-  sourceTypeFromDb,
-  type ResearchSource,
-  type ResearchSynthesis,
-} from "../../types";
+import { SourceResultsTable } from "../sources/SourceResultsTable";
+import type { ResearchSource, ResearchSynthesis } from "../../types";
 
 /**
  * The home for a single keyword: its synthesis, plus its search results
@@ -151,80 +146,11 @@ export function KeywordDetailView({
               No sources found for this keyword yet.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-border/50">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-border/40 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <th className="py-1.5 pl-2 pr-1 w-10 font-medium">#</th>
-                    <th className="py-1.5 px-1 font-medium">Source</th>
-                    <th className="py-1.5 px-2 font-medium whitespace-nowrap">
-                      Search
-                    </th>
-                    <th className="py-1.5 px-2 font-medium whitespace-nowrap">
-                      Scrape
-                    </th>
-                    <th className="w-7" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {srcList.map((src) => {
-                    const rank = rankFor(src.id);
-                    const go = () =>
-                      router.push(
-                        `/research/topics/${topicId}/sources/${src.id}`,
-                      );
-                    return (
-                      <tr
-                        key={src.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={go}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            go();
-                          }
-                        }}
-                        className="group border-b border-border/20 last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
-                      >
-                        <td className="py-2 pl-2 pr-1 align-top font-mono text-[11px] tabular-nums text-muted-foreground">
-                          {rank != null ? `#${rank}` : "—"}
-                        </td>
-                        <td className="py-2 px-1 align-top">
-                          <div className="flex items-start gap-1.5 min-w-0">
-                            <SourceTypeIcon
-                              type={sourceTypeFromDb(src.source_type)}
-                            />
-                            <div className="min-w-0">
-                              <div className="text-xs font-medium truncate max-w-[20rem]">
-                                {src.title || src.hostname || src.url}
-                              </div>
-                              {src.hostname && (
-                                <div className="text-[10px] text-muted-foreground truncate max-w-[20rem]">
-                                  {src.hostname}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-2 px-2 align-top">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-1.5 py-px text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400 whitespace-nowrap">
-                            <span className="h-1 w-1 rounded-full bg-green-500" />
-                            Found
-                          </span>
-                        </td>
-                        <td className="py-2 px-2 align-top">
-                          <StatusBadge status={src.scrape_status} />
-                        </td>
-                        <td className="py-2 pr-2 align-top">
-                          <ArrowUpRight className="h-3 w-3 text-muted-foreground/40 group-hover:text-foreground" />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <SourceResultsTable
+              sources={srcList}
+              topicId={topicId}
+              rankFor={(s) => rankFor(s.id)}
+            />
           )}
         </section>
       </div>

@@ -1,18 +1,19 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { FileText, ChevronRight, CheckCircle, XCircle } from "lucide-react";
-import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 import { useTopicContext } from "../../context/ResearchContext";
-import { useResearchSources } from "../../hooks/useResearchState";
+import {
+  useResearchSources,
+  useSourceImportance,
+} from "../../hooks/useResearchState";
 import { SCRAPE_STATUS_CONFIG, SOURCE_TYPE_CONFIG } from "../../constants";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchSource } from "../../types";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { SourceResultsTable } from "../sources/SourceResultsTable";
 
 export default function ContentList() {
   const { topicId } = useTopicContext();
@@ -25,6 +26,7 @@ export default function ContentList() {
   const { data: sources, isLoading } = useResearchSources(topicId, {
     limit: 200,
   });
+  const { data: importanceMap } = useSourceImportance(topicId);
 
   const scraped = useMemo(
     () =>
@@ -186,53 +188,11 @@ export default function ContentList() {
             </div>
           </div>
         ) : (
-          <div className="space-y-1.5">
-            {filtered.map((source) => (
-              <Link
-                key={source.id}
-                href={`/research/topics/${topicId}/sources/${source.id}`}
-                className="group flex items-center gap-2.5 rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-2.5 hover:border-primary/30 transition-colors min-h-[44px]"
-              >
-                <div className="shrink-0">
-                  {source.scrape_status === "success" ? (
-                    <CheckCircle className="h-3.5 w-3.5 text-green-500/70" />
-                  ) : (
-                    <XCircle className="h-3.5 w-3.5 text-yellow-500/70" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={cn(
-                      "text-xs font-medium truncate",
-                      source.title
-                        ? "text-foreground"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {source.title ?? source.url}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground truncate mt-px">
-                    {source.hostname}
-                  </p>
-                </div>
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    "text-[9px] h-4 px-1.5 shrink-0",
-                    source.scrape_status === "success" &&
-                      "bg-green-500/10 text-green-600 dark:text-green-400",
-                    source.scrape_status === "thin" &&
-                      "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
-                    source.scrape_status === "complete" &&
-                      "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-                  )}
-                >
-                  {source.scrape_status}
-                </Badge>
-                <ChevronRight className="h-3 w-3 text-muted-foreground/30 shrink-0 group-hover:text-muted-foreground transition-colors" />
-              </Link>
-            ))}
-          </div>
+          <SourceResultsTable
+            sources={filtered}
+            topicId={topicId}
+            rankFor={(s) => importanceMap?.get(s.id)?.bestRank ?? null}
+          />
         )}
       </div>
     </div>
