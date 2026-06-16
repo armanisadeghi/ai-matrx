@@ -141,6 +141,7 @@ become 5 linked datasets under one workbook.
 - `utils/user-table-utls/type-inference.ts` — `inferDataType()`, `analyzeData()` (used by import)
 - `utils/user-table-utls/field-name-sanitizer.ts`, `template-utils.ts`, `sample-data.ts`
 - `features/resource-manager/resource-picker/TablesResourcePicker.tsx` — pick a dataset as a resource
+- `features/resource-manager/resource-picker/{Workbooks,Documents}ResourcePicker.tsx` — attach a workbook/document to a chat (emits `{type:"workbook"|"document"}` resources → `input_workbook`/`input_document` blocks; the agent reads/edits them via the backend content tools)
 - `app/api/export/email-table/route.ts` — email-export (Next API; admin/email concern)
 
 **Redux slice(s)**
@@ -236,6 +237,16 @@ the `shareable_resource_registry` (both `udt_datasets` and `udt_workbooks` are r
   4. Everything commits in ONE `udt_bulk_write` transaction.
 - Exit: `{ inserted, updated, skipped, failed, columnsAdded }` → success toast with real counts,
   then opens `quickDataWindow` on the target table.
+
+**6. Agent reads/edits WORKBOOK or DOCUMENT content (Univer snapshots, not datasets)**
+- Trigger: user attaches a workbook/document (resource picker → `input_workbook`/`input_document`
+  block) or names one in chat.
+- Path: the **aidream** backend tools `workbook_read`/`workbook_edit` + `document_read`/`document_edit`
+  (RLS-enforced, as the user) read the latest `udt_*_snapshots` row, mutate the Univer JSON, and
+  write a NEW `origin='agent'` snapshot. The editor's realtime subscription reflects it live.
+- **Distinct from flow 1:** flow 1 writes `udt_datasets` cells (relational rows via `udt_upsert_cell`).
+  This flow writes the *visual* workbook/document a user edits in Univer. They are not auto-synced.
+- Contract lives backend-side: [`aidream/services/udt_content/FEATURE.md`].
 
 ---
 
@@ -407,6 +418,12 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-06-16` — claude: **Agents can attach + edit workbooks/documents.** New
+  `{Workbooks,Documents}ResourcePicker.tsx` + entries in `ResourcePickerMenu.tsx` let users attach
+  a workbook/document to a chat (emitting the `input_workbook`/`input_document` resource blocks that
+  were already type-wired). The agent reads/edits the actual Univer content through new **backend**
+  tools (`workbook_read`/`workbook_edit`/`document_read`/`document_edit` in
+  `aidream/services/udt_content/`). See Key flow 6. FE: pickers only (no migration, no slice).
 - `2026-06-16` — claude: **Save Table → existing dataset (append / replace + smart column
   reconciliation)**. New shared, Supabase-free `features/data-tables/reconcile.ts`
   (`reconcileColumns`, `autoMapColumns` moved out of the JSON dialog, `mapRowsToFields`,
