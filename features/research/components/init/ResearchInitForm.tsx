@@ -59,6 +59,7 @@ import {
   updateKeywordText,
   updateTopicMeta,
   reorderKeywords,
+  createTag,
 } from "../../service";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -1148,6 +1149,25 @@ export default function ResearchInitForm() {
 
         if (selectedKeywords.length > 0) {
           await api.addKeywords(topic.id, { keywords: selectedKeywords });
+        }
+
+        // Seed the template's default tags. Each insert is isolated so a
+        // tag-seeding failure NEVER blocks topic creation or navigation.
+        if (selectedTemplate) {
+          const raw = selectedTemplate.default_tags;
+          const tagNames = Array.isArray(raw)
+            ? raw.filter(
+                (t): t is string =>
+                  typeof t === "string" && t.trim().length > 0,
+              )
+            : [];
+          for (const name of tagNames) {
+            try {
+              await createTag(topic.id, { name });
+            } catch (tagErr) {
+              console.warn("[research] template tag seed failed", name, tagErr);
+            }
+          }
         }
 
         router.push(`/research/topics/${topic.id}`);
