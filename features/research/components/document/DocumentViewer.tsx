@@ -30,6 +30,7 @@ import type { ResearchDocument } from "../../types";
 import { tokenUsageFromJson } from "../../types";
 import MarkdownStream from "@/components/MarkdownStream";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
+import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 
 export default function DocumentViewer() {
   const { topicId, progress, refresh } = useTopicContext();
@@ -228,7 +229,10 @@ export default function DocumentViewer() {
     );
   }
 
-  if (document.status === "failed") {
+  const docHasContent = !!document.content && document.content.trim().length > 0;
+  // A failed/stopped doc that still produced content falls through to render
+  // that content (with a note). Only a content-less failure shows this state.
+  if (document.status === "failed" && !docHasContent) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[320px] gap-3 p-6 text-center">
         <div className="h-12 w-12 rounded-2xl bg-destructive/10 flex items-center justify-center">
@@ -367,6 +371,15 @@ export default function DocumentViewer() {
               <span>Cost: ${docTokenUsage.estimated_cost.toFixed(4)}</span>
             )}
           </div>
+        )}
+
+        {/* Stopped early but content was produced — annotate, don't hide it.
+            Gated on the failed status (not a stale error field) so a clean
+            success never shows a false "stopped early" note. */}
+        {!stream.isStreaming && document.status === "failed" && (
+          <StoppedEarlyNote
+            reason={document.error || "Generation stopped early."}
+          />
         )}
 
         {/* Markdown Content — uses live streaming text while generating, DB content after */}

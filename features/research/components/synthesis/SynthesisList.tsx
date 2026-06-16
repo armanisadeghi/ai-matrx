@@ -20,6 +20,7 @@ import {
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
+import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchSynthesis, ResearchDataEvent } from "../../types";
 import { idMatchesQuery } from "@/utils/search-scoring";
@@ -103,13 +104,13 @@ function SynthesisCard({
 
       {expanded && (
         <div className="border-t border-border/50 px-3 py-3">
-          {synthesis.error ? (
-            <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 text-xs text-destructive">
-              <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-              {synthesis.error}
-            </div>
-          ) : hasText(synthesis.result) ? (
+          {hasText(synthesis.result) ? (
             <div className="space-y-2">
+              {synthesis.status === "failed" && (
+                <StoppedEarlyNote
+                  reason={synthesis.error || "Synthesis stopped early."}
+                />
+              )}
               <MarkdownStream content={synthesis.result!} />
               <div className="flex justify-end">
                 <ContentActionBar
@@ -129,9 +130,22 @@ function SynthesisCard({
           ) : synthesis.result_structured ? (
             // Completed with structured-only output — surface it honestly
             // rather than showing nothing for a paid-for call.
-            <MarkdownStream
-              content={structuredToMarkdown(synthesis.result_structured)}
-            />
+            <div>
+              {synthesis.status === "failed" && (
+                <StoppedEarlyNote
+                  reason={synthesis.error || "Synthesis stopped early."}
+                />
+              )}
+              <MarkdownStream
+                content={structuredToMarkdown(synthesis.result_structured)}
+              />
+            </div>
+          ) : synthesis.error ? (
+            // No content at all + an error → a real failure.
+            <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 text-xs text-destructive">
+              <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              {synthesis.error}
+            </div>
           ) : isTerminalStatus(synthesis.status) ? (
             // Terminal but empty — be explicit instead of an endless spinner.
             <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-2 text-xs text-amber-700 dark:text-amber-400">

@@ -33,6 +33,7 @@ import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
 import { useStreamDebug } from "../../context/ResearchContext";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
+import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import {
   type ResearchAnalysis,
@@ -358,7 +359,16 @@ function DetailPanel({
 
       {/* Main content — the analysis result */}
       <div className="flex-1 overflow-y-auto">
-        {isFailed ? (
+        {hasText(analysis.result) ? (
+          <article className="px-5 py-5 sm:px-8 sm:py-6 max-w-3xl">
+            {isFailed && (
+              <StoppedEarlyNote
+                reason={analysis.error || "Analysis stopped early."}
+              />
+            )}
+            <MarkdownStream content={analysis.result!} />
+          </article>
+        ) : isFailed ? (
           <div className="p-6 flex flex-col items-center justify-center min-h-[300px] gap-4 text-center">
             <div className="h-14 w-14 rounded-2xl bg-destructive/10 flex items-center justify-center">
               <XCircle className="h-7 w-7 text-destructive/60" />
@@ -374,12 +384,6 @@ function DetailPanel({
               )}
             </div>
           </div>
-        ) : hasText(analysis.result) ? (
-          <article className="px-5 py-5 sm:px-8 sm:py-6 max-w-3xl">
-            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-[13.5px] prose-p:leading-[1.75] prose-headings:text-sm prose-headings:font-semibold prose-headings:tracking-tight prose-h2:text-base prose-h2:mt-6 prose-h2:mb-2 prose-h3:mt-4 prose-h3:mb-1.5 prose-ul:text-[13.5px] prose-ol:text-[13.5px] prose-li:text-[13.5px] prose-li:leading-[1.75] prose-blockquote:text-[13px] prose-blockquote:border-primary/30 prose-strong:font-semibold prose-code:text-[12px] prose-code:bg-muted/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-a:text-primary prose-a:no-underline hover:prose-a:underline">
-              <MarkdownStream content={analysis.result!} />
-            </div>
-          </article>
         ) : (
           // Terminal success but no text — be honest rather than blank.
           <div className="px-6 py-10 flex flex-col items-center justify-center gap-2 text-center">

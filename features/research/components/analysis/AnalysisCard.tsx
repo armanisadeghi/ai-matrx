@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import MarkdownStream from "@/components/markdown";
 import { useResearchApi } from "../../hooks/useResearchApi";
+import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
 import { type ResearchAnalysis, tokenUsageFromJson } from "../../types";
 
 interface AnalysisCardProps {
@@ -82,9 +83,7 @@ export function AnalysisCard({
           </span>
         </div>
         <div className="px-4 py-3">
-          <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
-            <MarkdownStream content={streamingText} isStreamActive />
-          </div>
+          <MarkdownStream content={streamingText} isStreamActive />
           {/* Blinking cursor */}
           <span className="inline-block w-0.5 h-3.5 bg-primary animate-pulse ml-0.5 align-middle" />
         </div>
@@ -124,10 +123,12 @@ export function AnalysisCard({
   }
 
   const isFailed = analysis.status === "failed";
+  const hasContent = !!analysis.result && analysis.result.trim().length > 0;
   const tokenUsage = tokenUsageFromJson(analysis.token_usage);
 
-  // Failed analysis — show error state with retry
-  if (isFailed) {
+  // Failed with NO content — error state + retry. A failed/stopped analysis
+  // that still produced text falls through to render that text (with a note).
+  if (isFailed && !hasContent) {
     return (
       <div className="rounded-xl border border-destructive/40 bg-destructive/5 overflow-hidden">
         <div className="flex items-start justify-between gap-3 px-4 py-3">
@@ -192,7 +193,11 @@ export function AnalysisCard({
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <Brain className="h-4 w-4 text-primary shrink-0" />
+          {isFailed ? (
+            <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+          ) : (
+            <Brain className="h-4 w-4 text-primary shrink-0" />
+          )}
           <Badge variant="secondary" className="text-[10px]">
             {analysis.agent_type}
           </Badge>
@@ -226,9 +231,12 @@ export function AnalysisCard({
 
       {expanded && (
         <div className="border-t border-border px-4 py-3 space-y-3">
-          <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
-            <MarkdownStream content={analysis.result ?? ""} />
-          </div>
+          {isFailed && (
+            <StoppedEarlyNote
+              reason={analysis.error || "Analysis stopped early."}
+            />
+          )}
+          <MarkdownStream content={analysis.result ?? ""} />
 
           {tokenUsage && (
             <div className="flex items-center gap-4 text-[10px] text-muted-foreground border-t border-border pt-2">
