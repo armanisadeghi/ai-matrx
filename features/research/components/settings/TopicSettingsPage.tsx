@@ -50,6 +50,7 @@ export default function TopicSettingsPage() {
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [toneProfile, setToneProfile] = useState("");
   const [autonomyLevel, setAutonomyLevel] = useState<AutonomyLevel>("manual");
   const [searchProvider, setSearchProvider] = useState<SearchProvider>("brave");
   const [status, setStatus] = useState<TopicStatus>("draft");
@@ -64,6 +65,7 @@ export default function TopicSettingsPage() {
     if (!topic) return;
     setName(topic.name);
     setDescription(topic.description ?? "");
+    setToneProfile(topic.tone_profile ?? "");
     setAutonomyLevel(autonomyLevelFromDb(topic.autonomy_level));
     setSearchProvider(searchProviderFromDb(topic.default_search_provider));
     setStatus(topicStatusFromDb(topic.status));
@@ -86,6 +88,7 @@ export default function TopicSettingsPage() {
       await updateTopic(topic!.id, {
         name: name.trim(),
         description: description.trim() || null,
+        tone_profile: toneProfile.trim() || null,
         autonomy_level: autonomyLevel,
         default_search_provider: searchProvider,
         status,
@@ -208,6 +211,35 @@ export default function TopicSettingsPage() {
             </Select>
             <StatusBadge status={status} />
           </div>
+        </div>
+      </section>
+
+      {/* Voice & Lens */}
+      <section className="space-y-4">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-2">
+          Voice &amp; Lens
+        </h2>
+        <div className="space-y-2">
+          <Label htmlFor="topic-tone">Tone profile</Label>
+          <p className="text-xs text-muted-foreground">
+            The brand voice, audience, and framing for everything this topic
+            produces — injected into every output (report, podcast, blog, slides,
+            SEO) so the whole bundle reads as one author. e.g.{" "}
+            <span className="italic">
+              &ldquo;Skeptical, data-driven, for senior engineers. Plain English,
+              no hype. Always lead with the evidence.&rdquo;
+            </span>
+          </p>
+          <Textarea
+            id="topic-tone"
+            value={toneProfile}
+            onChange={(e) => setToneProfile(e.target.value)}
+            placeholder="Describe the voice, audience, and framing for this topic's outputs…"
+            rows={4}
+            className="resize-none"
+            style={{ fontSize: "16px" }}
+            disabled={saving}
+          />
         </div>
       </section>
 

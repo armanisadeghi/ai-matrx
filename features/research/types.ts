@@ -34,6 +34,12 @@ export type TopicUpdate = {
   // Per-topic agent overrides — JSONB map of role_key → user agent UUID.
   // See features/research/admin/types.ts:AGENT_CONFIG_KEYS for valid keys.
   agent_config?: Record<string, string> | null;
+  // Voice & Lens — free-text brand-voice/style profile injected into every
+  // downstream generator so a topic's outputs share one voice (migration 0014).
+  tone_profile?: string | null;
+  // Output config — which downstream outputs are enabled + per-output overrides
+  // (e.g. {podcast,blog,slides,seo} booleans + overrides). JSONB (migration 0014).
+  outputs?: Record<string, unknown> | null;
 };
 
 export type KeywordCreate = components["schemas"]["KeywordCreate"];

@@ -16298,10 +16298,12 @@ export type Database = {
           max_tag_consolidations: number
           metadata: Json
           name: string
+          outputs: Json
           project_id: string
           scrapes_per_keyword: number
           status: string
           template_id: string | null
+          tone_profile: string | null
           updated_at: string | null
         }
         Insert: {
@@ -16323,10 +16325,12 @@ export type Database = {
           max_tag_consolidations?: number
           metadata?: Json
           name?: string
+          outputs?: Json
           project_id: string
           scrapes_per_keyword?: number
           status?: string
           template_id?: string | null
+          tone_profile?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -16348,10 +16352,12 @@ export type Database = {
           max_tag_consolidations?: number
           metadata?: Json
           name?: string
+          outputs?: Json
           project_id?: string
           scrapes_per_keyword?: number
           status?: string
           template_id?: string | null
+          tone_profile?: string | null
           updated_at?: string | null
         }
         Relationships: [
