@@ -350,6 +350,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  itemDetailWindow: {
+    label: "Item Details",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   jsonTruncator: {
     label: "Json Truncator",
     instanceMode: "singleton",

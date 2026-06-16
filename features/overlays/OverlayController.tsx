@@ -387,6 +387,10 @@ const FilePreviewWindow = dynamic(
     import("@/features/window-panels/windows/cloud-files/FilePreviewWindow"),
   { ssr: false },
 );
+const ItemDetailWindow = dynamic(
+  () => import("@/features/window-panels/windows/item-detail/ItemDetailWindow"),
+  { ssr: false },
+);
 const NoteInfoWindow = dynamic(
   () => import("@/features/window-panels/windows/notes/NoteInfoWindow"),
   { ssr: false },
@@ -822,6 +826,9 @@ export default function OverlayController() {
     filePreviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "filePreviewWindow"),
     ),
+    itemDetailWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "itemDetailWindow"),
+    ),
     noteInfoWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "noteInfoWindow"),
     ),
@@ -1048,6 +1055,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     filePreviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "filePreviewWindow"),
+    ) as Record<string, unknown> | null,
+    itemDetailWindow: useAppSelector((s) =>
+      selectOverlayData(s, "itemDetailWindow"),
     ) as Record<string, unknown> | null,
     noteInfoWindow: useAppSelector((s) =>
       selectOverlayData(s, "noteInfoWindow"),
@@ -2668,6 +2678,34 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "filePreviewWindow" }))
             }
             fileId={typeof data?.fileId === "string" ? data.fileId : null}
+          />
+        );
+      })()}
+
+      {/* itemDetailWindow */}
+      {(() => {
+        const isOpen = isOpenById.itemDetailWindow;
+        const data = dataById.itemDetailWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <ItemDetailWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "itemDetailWindow" }))
+            }
+            itemType={
+              typeof data?.itemType === "string" ? data.itemType : null
+            }
+            itemId={typeof data?.itemId === "string" ? data.itemId : null}
+            initialName={
+              typeof data?.initialName === "string" ? data.initialName : null
+            }
+            initialAbout={
+              typeof data?.initialAbout === "string" ? data.initialAbout : null
+            }
           />
         );
       })()}

@@ -71,7 +71,7 @@ const ItemPresentationBlock: React.FC<ItemPresentationBlockProps> = ({
   const awaitingType = !payload.type && isStreamActive;
 
   const handleClick = () => {
-    if (canOpen) open(payload.type, payload.id);
+    if (canOpen) open(payload.type, payload.id, { name, about });
   };
 
   const handleKey = (e: React.KeyboardEvent) => {
