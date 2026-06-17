@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-06-10`
+**Last updated:** `2026-06-17`
 
 ---
 
@@ -114,6 +114,7 @@ The whole transcription ecosystem is catalogued at **`/transcripts/admin`** (`ap
 
 ## Change log
 
+- `2026-06-17` — **Hub session/cleanup cards show recording + character counts.** New `migrations/studio_session_metrics_rpc.sql` adds `studio_session_metrics(p_session_ids uuid[])` — `SECURITY INVOKER` (RLS-respecting), returning per-session `recording_count` (non-detached recordings) + `char_count` (active cleaned text length, raw fallback). `transcriptsHubService.enrichSessionMetrics` calls it ONCE per page after the PostgREST page lands (no N+1; best-effort — a failure leaves counts null, cards just omit the line). `SessionHubItem`/`CleanupHubItem` gained `recordingCount`/`charCount`; `TranscriptsHubCard` renders "N recordings · M chars" in the metadata row (each omitted when zero). Applied live + ledgered + `db-types` regenerated.
 - `2026-06-15` — **Imported audio stays visible; only mic recordings are hidden.** `saveAudioToStorage` now takes a `{ source: "recording" | "import" }` option. `recording` (default) is unchanged — tagged `origin: "transcripts"`, relocated/hidden by the backend under `system-files/transcripts/...`. `import` (only `AudioImportDialog`) is treated as an ordinary VISIBLE user file: no `origin` tag (backend leaves it in place), original filename preserved, stored under `Transcripts/Imports`. Rationale: a file the user deliberately chose is theirs to see; hiding it (the prior behavior — everything went through `origin: "transcripts"`) was wrong. No backend change needed — anything not in the origin→system-folder map is untouched.
 - `2026-06-15` — Processor UX: `?focus=` deep-link selects the target recording; header + per-segment copy icons always visible; sidebar inline rename; inline transcript text editor.
 - `2026-06-10` — claude: Created as the canonical core-storage contract for all `/transcripts` routes (two record stores + `cld_files` audio, bridge-only conversion). Corrected README's stale Supabase-Storage-bucket claims; fixed stale `types.ts` comments.

@@ -9223,6 +9223,54 @@ export type Database = {
           },
         ]
       }
+      dict_provider_publication: {
+        Row: {
+          created_at: string
+          error: Json | null
+          external_id: string | null
+          id: string
+          level: string
+          owner_id: string | null
+          provider: string
+          rule_count: number
+          rule_strings: string[]
+          rules_hash: string | null
+          synced_at: string | null
+          updated_at: string
+          version_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: Json | null
+          external_id?: string | null
+          id?: string
+          level: string
+          owner_id?: string | null
+          provider?: string
+          rule_count?: number
+          rule_strings?: string[]
+          rules_hash?: string | null
+          synced_at?: string | null
+          updated_at?: string
+          version_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: Json | null
+          external_id?: string | null
+          id?: string
+          level?: string
+          owner_id?: string | null
+          provider?: string
+          rule_count?: number
+          rule_strings?: string[]
+          rules_hash?: string | null
+          synced_at?: string | null
+          updated_at?: string
+          version_id?: string | null
+        }
+        Relationships: []
+      }
       dict_settings: {
         Row: {
           created_at: string
@@ -23309,6 +23357,108 @@ export type Database = {
         }
         Relationships: []
       }
+      voices: {
+        Row: {
+          accent: string | null
+          age: string | null
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          enabled: boolean
+          gender: string
+          id: string
+          is_verified: boolean
+          language: string | null
+          languages: string[]
+          metadata: Json
+          name: string
+          organization_id: string | null
+          owner_id: string | null
+          preview_url: string | null
+          provider: string
+          provider_voice_id: string
+          quality_score: number | null
+          sample_file_id: string | null
+          sample_url: string | null
+          sort_order: number
+          style: string | null
+          tags: string[]
+          updated_at: string
+          voice_type: string
+        }
+        Insert: {
+          accent?: string | null
+          age?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          gender?: string
+          id?: string
+          is_verified?: boolean
+          language?: string | null
+          languages?: string[]
+          metadata?: Json
+          name: string
+          organization_id?: string | null
+          owner_id?: string | null
+          preview_url?: string | null
+          provider: string
+          provider_voice_id: string
+          quality_score?: number | null
+          sample_file_id?: string | null
+          sample_url?: string | null
+          sort_order?: number
+          style?: string | null
+          tags?: string[]
+          updated_at?: string
+          voice_type?: string
+        }
+        Update: {
+          accent?: string | null
+          age?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          gender?: string
+          id?: string
+          is_verified?: boolean
+          language?: string | null
+          languages?: string[]
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          owner_id?: string | null
+          preview_url?: string | null
+          provider?: string
+          provider_voice_id?: string
+          quality_score?: number | null
+          sample_file_id?: string | null
+          sample_url?: string | null
+          sort_order?: number
+          style?: string | null
+          tags?: string[]
+          updated_at?: string
+          voice_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voices_sample_file_id_fkey"
+            columns: ["sample_file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voices_sample_file_id_fkey"
+            columns: ["sample_file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+        ]
+      }
       wbx_capture: {
         Row: {
           captured_at: string
@@ -28624,6 +28774,10 @@ export type Database = {
         }
         Returns: Json
       }
+      dict_rollup_for: {
+        Args: { p_level: string; p_owner_id: string }
+        Returns: Json
+      }
       dict_set_settings: {
         Args: {
           p_level: string
@@ -31286,6 +31440,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      studio_session_metrics: {
+        Args: { p_session_ids: string[] }
+        Returns: {
+          char_count: number
+          recording_count: number
+          session_id: string
+        }[]
       }
       to_snake_case: { Args: { input_text: string }; Returns: string }
       tool_executor_walk_parents: {

@@ -32,6 +32,10 @@ export interface SessionHubItem extends TranscriptHubItemBase {
   status: string;
   durationMs: number;
   transcriptId: string | null;
+  /** Active (non-detached) recordings in the session. Null until metrics load. */
+  recordingCount: number | null;
+  /** Characters of the cleaned transcript (raw fallback). Null until metrics load. */
+  charCount: number | null;
 }
 
 /** `studio_sessions` where source = cleanup. */
@@ -40,6 +44,10 @@ export interface CleanupHubItem extends TranscriptHubItemBase {
   status: string;
   durationMs: number;
   transcriptId: string | null;
+  /** Active (non-detached) recordings in the session. Null until metrics load. */
+  recordingCount: number | null;
+  /** Characters of the cleaned transcript (raw fallback). Null until metrics load. */
+  charCount: number | null;
 }
 
 /** Detached `studio_recording_segments` (Scribe unsorted pool). */

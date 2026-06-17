@@ -126,6 +126,12 @@ export function TranscriptsHubCard({ item }: { item: TranscriptHubItem }) {
         : [
             item.status,
             formatDuration(item.durationMs / 1000),
+            item.recordingCount
+              ? `${item.recordingCount} recording${item.recordingCount === 1 ? "" : "s"}`
+              : null,
+            item.charCount
+              ? `${item.charCount.toLocaleString()} chars`
+              : null,
             item.transcriptId ? "linked" : null,
           ]
             .filter(Boolean)

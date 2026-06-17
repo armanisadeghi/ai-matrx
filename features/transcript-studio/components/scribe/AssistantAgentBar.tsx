@@ -12,7 +12,8 @@
 // conversation is kept, so the History control flips between them.
 
 import { useState } from "react";
-import { Webhook, History } from "lucide-react";
+import { Webhook, History, Plus } from "lucide-react";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentById,
@@ -80,6 +81,29 @@ export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
       switchAssistantAgentThunk({ sessionId, agentId: pendingAgentId, mode }),
     );
     setPendingAgentId(null);
+  };
+
+  // Save the current chat and start a clean one with the SAME agent. The old
+  // conversation is never deleted — it stays in the roster (History) — and the
+  // new one is minted fresh, so no prior history is injected. (Switching to a
+  // DIFFERENT agent is handled by the dropdown above.)
+  const handleNewConversation = async () => {
+    if (!activeAgentId) return;
+    const ok = await confirm({
+      title: "Start a fresh conversation?",
+      description:
+        "Your current chat is saved and stays available under History. The new conversation starts with a clean slate — no past messages are carried over.",
+      confirmLabel: "Start fresh",
+    });
+    if (ok) {
+      void dispatch(
+        switchAssistantAgentThunk({
+          sessionId,
+          agentId: activeAgentId,
+          mode: "fresh",
+        }),
+      );
+    }
   };
 
   const pendingAgentName = pendingAgentId
@@ -164,6 +188,18 @@ export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
         align="end"
         triggerClassName="max-w-[280px]"
       />
+
+      <button
+        type="button"
+        onClick={handleNewConversation}
+        disabled={!activeAgentId}
+        className="flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-muted-foreground transition-colors active:bg-accent disabled:opacity-40"
+        aria-label="Start a fresh conversation"
+        title="Save this conversation and start a clean one"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        New
+      </button>
 
       {conversations.length > 1 && (
         <button

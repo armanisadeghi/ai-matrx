@@ -43,10 +43,51 @@ function sessionToHubItem(
     status: session.status,
     durationMs: session.totalDurationMs,
     transcriptId: session.transcriptId,
+    // Filled by enrichSessionMetrics after the page lands; null = not yet loaded.
+    recordingCount: null,
+    charCount: null,
   };
   return kind === "cleanup"
     ? { kind: "cleanup", ...base }
     : { kind: "session", ...base };
+}
+
+/**
+ * Enrich a page of session/cleanup items with per-session metrics (recording
+ * count + transcript char count) in ONE batched RPC call — no N+1. Best-effort:
+ * a metrics failure leaves the counts null (cards just omit the metadata line)
+ * rather than failing the whole page. Mutates + returns the same items.
+ */
+async function enrichSessionMetrics<T extends SessionHubItem | CleanupHubItem>(
+  items: T[],
+): Promise<T[]> {
+  const ids = items.map((i) => i.id);
+  if (ids.length === 0) return items;
+  const { data, error } = await supabase.rpc("studio_session_metrics", {
+    p_session_ids: ids,
+  });
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error(`[transcripts-hub] session metrics failed: ${error.message}`);
+    return items;
+  }
+  const byId = new Map(
+    (data ?? []).map((r) => [
+      r.session_id,
+      {
+        recordingCount: r.recording_count ?? 0,
+        charCount: Number(r.char_count ?? 0),
+      },
+    ]),
+  );
+  for (const item of items) {
+    const m = byId.get(item.id);
+    if (m) {
+      item.recordingCount = m.recordingCount;
+      item.charCount = m.charCount;
+    }
+  }
+  return items;
 }
 
 function recordingDurationMs(
@@ -125,6 +166,7 @@ export async function fetchSessionHubPage(
   const items = ((data ?? []) as SessionRow[]).map((row) =>
     sessionToHubItem(row, "session"),
   ) as SessionHubItem[];
+  await enrichSessionMetrics(items);
 
   const total = count ?? items.length;
   return { items, hasMore: from + items.length < total };
@@ -152,6 +194,7 @@ export async function fetchCleanupHubPage(
   const items = ((data ?? []) as SessionRow[]).map((row) =>
     sessionToHubItem(row, "cleanup"),
   ) as CleanupHubItem[];
+  await enrichSessionMetrics(items);
 
   const total = count ?? items.length;
   return { items, hasMore: from + items.length < total };
