@@ -86,6 +86,25 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+- 2026-06-17 — **Live voice catalog (Supabase `public.voices`) + Run Truth inspector.**
+  Voices now come from one Supabase table (read directly, RLS-scoped) with public
+  CDN `sample_url`s — `generator/voiceCatalog.ts` (`fetchVoices` + cache) +
+  `generator/useVoices.ts`. Deleted the hardcoded rosters, `VOICE_SAMPLE_URLS`,
+  `voiceSamplesManifest.ts`, the generated `public/voice-samples/` mp3s, and
+  `scripts/generate-voice-samples.mjs` — the old ElevenLabs IDs were stale (wrong
+  genders / dead voices); the table is the single source of truth. `voices.ts`
+  keeps the cast helpers (`buildCast`/`resolveSpeaker`/`defaultVoiceFor`) but
+  data-driven off the live `Voice[]`; the picker groups by real gender, plays the
+  CDN sample, and shows loading/error/retry. (`fetchVoices` casts to an untyped
+  client until `voices` lands in the generated `database.types.ts` — re-run
+  `pnpm db-types`.) **Run Truth inspector** (`studio/components/RunTruthInspector.tsx`,
+  on the run page): an advanced, read-only panel showing the ABSOLUTE durable
+  truth of a run — the exact `request` sent (incl. the speaker cast), the `result`
+  (resolved cast / URLs / official video / `official_video_error`), the run
+  `error`, and EVERY `agent_run_stage` with its real per-agent output / error /
+  cost / timing, plus the `pc_studio_runs` + `pc_episodes` rows. Lazy-loads from
+  Supabase, per-stage expand (failed stages auto-open), "Copy all for AI". Makes
+  "was it the script or something else?" answerable at a glance.
 - 2026-06-17 — **Speaker cast editor — name + gender + voice (with samples), up to 20.**
   Replaced the optional name/voice grid with `generator/components/SpeakerCastEditor.tsx`:
   one card per host (always synced to host count), each with a name input, a

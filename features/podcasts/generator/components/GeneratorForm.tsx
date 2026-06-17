@@ -82,7 +82,13 @@ import {
   PRE_SCRIPT_PROCESSING_OPTIONS,
   POST_SCRIPT_PROCESSING_OPTIONS,
 } from "../constants";
-import { buildCast, type SpeakerDraft } from "../voices";
+import {
+  buildCast,
+  providerForHostCount,
+  voicesForBand,
+  type SpeakerDraft,
+} from "../voices";
+import { useVoices } from "../useVoices";
 import { SpeakerCastEditor } from "./SpeakerCastEditor";
 import type {
   PodcastGenerateRequest,
@@ -197,6 +203,10 @@ export function GeneratorForm({
   const [speakerDrafts, setSpeakerDrafts] = useState<
     Record<number, SpeakerDraft>
   >({});
+  // Live voice catalog (Supabase public.voices) — shared one fetch, filtered to
+  // the current host count's provider band for the cast editor + buildCast.
+  const { voices, loading: voicesLoading, error: voicesError, reload: reloadVoices } =
+    useVoices();
   const [showId, setShowId] = useState<string | null>(null);
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -242,7 +252,7 @@ export function GeneratorForm({
     // for every host — filled from the user's choices or the matching
     // server-mirrored defaults. The server honors pinned voices/genders and
     // fills any gaps from its own palette.
-    body.speakers = buildCast(hostCount, speakerDrafts);
+    body.speakers = buildCast(hostCount, speakerDrafts, voices);
     if (activeSource.control === "urls") {
       body.file_urls = cleanUrls;
     } else if (activeSource.control === "resolve") {
@@ -607,6 +617,11 @@ export function GeneratorForm({
               onChange={(i, patch) =>
                 setSpeakerDrafts((d) => ({ ...d, [i]: { ...d[i], ...patch } }))
               }
+              voices={voicesForBand(voices, hostCount)}
+              provider={providerForHostCount(hostCount)}
+              loading={voicesLoading}
+              error={voicesError}
+              onReload={reloadVoices}
             />
           </CollapsibleContent>
         </Collapsible>

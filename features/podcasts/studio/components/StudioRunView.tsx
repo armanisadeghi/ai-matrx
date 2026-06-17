@@ -35,6 +35,7 @@ import { TranscriptPanel } from "@/features/podcasts/generator/components/Transc
 import { episodeHref } from "@/features/podcasts/generator/constants";
 import { useStudioRun } from "@/features/podcasts/studio/runs/useStudioRun";
 import { RunRecoveryBanner } from "@/features/podcasts/studio/components/RunRecoveryBanner";
+import { RunTruthInspector } from "@/features/podcasts/studio/components/RunTruthInspector";
 import { SourceSummaryPanel } from "@/features/podcasts/studio/components/SourceSummaryPanel";
 
 export function StudioRunView({ runId }: { runId: string }) {
@@ -316,6 +317,17 @@ export function StudioRunView({ runId }: { runId: string }) {
             </details>
           )}
         </div>
+      </div>
+
+      {/* Full run truth — advanced inspector over the durable record (request,
+          every agent stage's output/error/cost, the studio + episode rows).
+          Always available so nothing about a run is ever hidden. */}
+      <div className="mt-6">
+        <RunTruthInspector
+          agentRunId={detail?.run_id ?? null}
+          studioRunId={runId}
+          episodeId={state.episodeId}
+        />
       </div>
     </div>
   );
