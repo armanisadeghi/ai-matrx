@@ -6,6 +6,7 @@ import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectCanvasIsAvailable } from "@/features/canvas/redux/canvasSlice";
 import type { CanvasContentType } from "@/features/canvas/redux/canvasSlice";
+import { resolveCanvasType } from "@/features/canvas/artifact-types/artifact-type-registry";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import BasicMarkdownContent from "../../chat-markdown/BasicMarkdownContent";
 import { safeJsonParse } from "../../chat-markdown/block-registry/json-parse-utils";
@@ -41,31 +42,6 @@ interface ArtifactBlockProps {
     taskId?: string;
 }
 
-/** Maps artifact type string to CanvasContentType. */
-const ARTIFACT_TO_CANVAS_TYPE: Record<string, CanvasContentType> = {
-    iframe: "iframe",
-    html: "html",
-    code: "code",
-    diagram: "diagram",
-    flashcards: "flashcards",
-    quiz: "quiz",
-    presentation: "presentation",
-    timeline: "timeline",
-    research: "research",
-    comparison: "comparison",
-    image: "image",
-    troubleshooting: "troubleshooting",
-    "decision-tree": "decision-tree",
-    decision_tree: "decision-tree",
-    recipe: "recipe",
-    cooking_recipe: "recipe",
-    resources: "resources",
-    progress: "progress",
-    progress_tracker: "progress",
-    math_problem: "math_problem",
-    mermaid: "mermaid",
-};
-
 /**
  * ArtifactBlock — renders model-produced `<artifact>` blocks.
  *
@@ -94,7 +70,8 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
     const artifactId = serverData?.artifactId || metadata?.artifactId || `artifact-${artifactIndex}`;
     const isComplete = metadata?.isComplete !== false;
 
-    const canvasType = ARTIFACT_TO_CANVAS_TYPE[artifactType] || "html";
+    const canvasType: CanvasContentType =
+        resolveCanvasType("artifact", artifactType) || "html";
     const dedupKey = taskId || `artifact:${artifactId}`;
 
     /** Build the canvas data shape. JSON types get parsed, strings pass through. */

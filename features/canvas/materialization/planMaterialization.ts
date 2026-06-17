@@ -28,7 +28,7 @@ import {
   detectDiagramType,
   extractMermaidTitle,
 } from "@/components/mermaid/diagram-type";
-import { resolveCanvasType } from "./materializable-types";
+import { resolveCanvasType } from "@/features/canvas/artifact-types/artifact-type-registry";
 
 export interface PlannedArtifact {
   /** Stable 1-based order within the message (= canvas_items.artifact_index). */
