@@ -86,6 +86,20 @@ Much of the above is scaffolded in the UI as **"Coming soon"** (reusable
 is easy to fill in.
 
 ## Change log
+- 2026-06-17 — **Speaker cast editor — name + gender + voice (with samples), up to 20.**
+  Replaced the optional name/voice grid with `generator/components/SpeakerCastEditor.tsx`:
+  one card per host (always synced to host count), each with a name input, a
+  gender select, and a searchable voice picker grouped by gender with a play-
+  sample button per voice (`useVoiceSamplePlayer.ts`, one-at-a-time playback).
+  Provider band follows host count (≤2 Google Gemini, ≥3 ElevenLabs). The
+  catalog (`generator/voices.ts`) gained `gender` (ElevenLabs genders are
+  authoritative from the server pool; Gemini from Google AI Studio grouping) +
+  `VOICE_SAMPLE_URLS` (seeded with the 4 resolvable ElevenLabs previews; the
+  rest populated by aidream `scripts/generate_voice_samples.py`). The form now
+  ALWAYS sends a complete explicit cast via `buildCast` — `PodcastSpeaker` gained
+  `gender`; the server already honors pinned voices + genders and logs the
+  received cast loudly. Voices with no sample yet show a disabled "preview
+  unavailable" button (never a broken player).
 - 2026-06-12 — **ElevenLabs dialogue agent live → 1–20 hosts proven end-to-end.**
   Created `podcast_audio_dialogue` (master `88f05360`, version `293425be`,
   pinned to `eleven_v3`/`elevenlabs_dialogue`) and wired `_AUDIO_DIALOGUE_VERSION_ID`

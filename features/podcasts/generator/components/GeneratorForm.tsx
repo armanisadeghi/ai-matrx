@@ -82,16 +82,13 @@ import {
   PRE_SCRIPT_PROCESSING_OPTIONS,
   POST_SCRIPT_PROCESSING_OPTIONS,
 } from "../constants";
-import {
-  voicesForHostCount,
-  DEFAULT_SPEAKER_NAMES,
-} from "../voices";
+import { buildCast, type SpeakerDraft } from "../voices";
+import { SpeakerCastEditor } from "./SpeakerCastEditor";
 import type {
   PodcastGenerateRequest,
   PodcastSourceKind,
   PodcastLanguageCode,
   PodcastFormat,
-  PodcastSpeaker,
 } from "../types";
 import type { PcShow } from "@/features/podcasts/types";
 import { DictionaryIndicatorButton } from "@/features/dictionary/components/DictionaryIndicatorButton";
@@ -195,9 +192,10 @@ export function GeneratorForm({
   const [format, setFormat] = useState<PodcastFormat>("educational");
   const [theme, setTheme] = useState("");
   const [hostCount, setHostCount] = useState(HOST_COUNT_DEFAULT);
-  /** Sparse per-host drafts (name/voice). Untouched hosts stay on auto. */
+  /** Per-host drafts (name / gender / voice). Untouched fields fall back to the
+   *  matching default cast — the request ALWAYS sends a complete, explicit cast. */
   const [speakerDrafts, setSpeakerDrafts] = useState<
-    Record<number, Partial<PodcastSpeaker>>
+    Record<number, SpeakerDraft>
   >({});
   const [showId, setShowId] = useState<string | null>(null);
 
@@ -240,19 +238,11 @@ export function GeneratorForm({
       show_id: showId,
     };
     if (theme.trim()) body.theme = theme.trim();
-    // Speakers ride along only when the user customized at least one host —
-    // otherwise the server's defaults (names + voice palette) stay in charge.
-    const anyCustom = Array.from({ length: hostCount }, (_, i) => speakerDrafts[i]).some(
-      (d) => d?.name?.trim() || d?.voice,
-    );
-    if (anyCustom) {
-      body.speakers = Array.from({ length: hostCount }, (_, i) => ({
-        name:
-          speakerDrafts[i]?.name?.trim() ||
-          DEFAULT_SPEAKER_NAMES[i % DEFAULT_SPEAKER_NAMES.length],
-        voice: speakerDrafts[i]?.voice ?? "",
-      }));
-    }
+    // The studio ALWAYS sends a complete, explicit cast — name + gender + voice
+    // for every host — filled from the user's choices or the matching
+    // server-mirrored defaults. The server honors pinned voices/genders and
+    // fills any gaps from its own palette.
+    body.speakers = buildCast(hostCount, speakerDrafts);
     if (activeSource.control === "urls") {
       body.file_urls = cleanUrls;
     } else if (activeSource.control === "resolve") {
@@ -598,7 +588,7 @@ export function GeneratorForm({
           <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-1 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
             <span className="flex items-center gap-1.5">
               <UserCog className="h-3.5 w-3.5" />
-              Host names &amp; voices
+              Host names, genders &amp; voices
               <span className="text-[11px] font-normal text-muted-foreground">
                 optional
               </span>
@@ -610,67 +600,14 @@ export function GeneratorForm({
               )}
             />
           </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-2.5 pt-3">
-            {Array.from({ length: hostCount }, (_, i) => {
-              const draft = speakerDrafts[i] ?? {};
-              const voices = voicesForHostCount(hostCount);
-              return (
-                <div
-                  key={i}
-                  className="grid gap-2.5 rounded-xl border border-border bg-card p-3 sm:grid-cols-2"
-                >
-                  <div className="space-y-1">
-                    <Label className="text-[11px] text-muted-foreground">
-                      Host {i + 1} name
-                    </Label>
-                    <Input
-                      value={draft.name ?? ""}
-                      onChange={(e) =>
-                        setSpeakerDrafts((d) => ({
-                          ...d,
-                          [i]: { ...d[i], name: e.target.value },
-                        }))
-                      }
-                      placeholder={`e.g. ${DEFAULT_SPEAKER_NAMES[i % DEFAULT_SPEAKER_NAMES.length]}`}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-[11px] text-muted-foreground">
-                      Voice
-                    </Label>
-                    <Select
-                      value={draft.voice || "auto"}
-                      onValueChange={(v) =>
-                        setSpeakerDrafts((d) => ({
-                          ...d,
-                          [i]: { ...d[i], voice: v === "auto" ? "" : v },
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Auto" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="auto">Auto</SelectItem>
-                        {voices.map((v) => (
-                          <SelectItem key={v.value} value={v.value}>
-                            {v.label}
-                            <span className="ml-1.5 text-xs text-muted-foreground">
-                              {v.style}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              );
-            })}
-            <p className="px-1 text-[11px] text-muted-foreground">
-              {hostCount <= 2
-                ? "Voices are Google Gemini studio voices."
-                : "Casts of 3+ use ElevenLabs voices."}
-            </p>
+          <CollapsibleContent className="pt-3">
+            <SpeakerCastEditor
+              hostCount={hostCount}
+              drafts={speakerDrafts}
+              onChange={(i, patch) =>
+                setSpeakerDrafts((d) => ({ ...d, [i]: { ...d[i], ...patch } }))
+              }
+            />
           </CollapsibleContent>
         </Collapsible>
       </section>
