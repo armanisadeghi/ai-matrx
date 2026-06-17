@@ -178,6 +178,11 @@ export interface MediaBuckets {
   unknownAspect: ResearchMedia[];
   graphics: ResearchMedia[];
   icons: ResearchMedia[];
+  // Non-image resources — no pixel size, so they get their own groups instead
+  // of the image size/aspect tiers (PDFs/videos used to land in "unknown").
+  videos: ResearchMedia[];
+  documents: ResearchMedia[];
+  audio: ResearchMedia[];
 }
 
 export function bucketMedia(items: ResearchMedia[]): MediaBuckets {
@@ -188,9 +193,28 @@ export function bucketMedia(items: ResearchMedia[]): MediaBuckets {
     unknownAspect: [],
     graphics: [],
     icons: [],
+    videos: [],
+    documents: [],
+    audio: [],
   };
 
   for (const item of items) {
+    // Non-image resources (PDFs, videos incl. YouTube links, audio) carry no
+    // intrinsic dimensions — route them to dedicated buckets, never the
+    // image size/aspect tiers.
+    if (item.media_type === "video") {
+      buckets.videos.push(item);
+      continue;
+    }
+    if (item.media_type === "document") {
+      buckets.documents.push(item);
+      continue;
+    }
+    if (item.media_type === "audio") {
+      buckets.audio.push(item);
+      continue;
+    }
+
     const tier = categorizeSizeTier(item);
     if (tier === "graphic") {
       buckets.graphics.push(item);

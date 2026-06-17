@@ -16,6 +16,10 @@ import {
   HelpCircle,
   LayoutGrid,
   Bug,
+  Video,
+  FileText,
+  Music,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +42,7 @@ const TYPE_ICONS = {
   image: ImageIcon,
   video: Play,
   document: File,
+  audio: Music,
 };
 
 type GalleryView = "gallery" | "debug";
@@ -168,6 +173,9 @@ export default function MediaGallery() {
             <SelectItem value="document" className="text-[11px]">
               Docs
             </SelectItem>
+            <SelectItem value="audio" className="text-[11px]">
+              Audio
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -197,6 +205,33 @@ export default function MediaGallery() {
         </div>
       ) : (
         <div className="space-y-5">
+          {buckets.documents.length > 0 && (
+            <ResourceSection
+              icon={FileText}
+              title="Documents"
+              description="PDFs, slides, spreadsheets, and other files"
+              items={buckets.documents}
+              onToggleRelevance={handleToggleRelevance}
+            />
+          )}
+          {buckets.videos.length > 0 && (
+            <ResourceSection
+              icon={Video}
+              title="Videos"
+              description="Video files and YouTube/Vimeo links"
+              items={buckets.videos}
+              onToggleRelevance={handleToggleRelevance}
+            />
+          )}
+          {buckets.audio.length > 0 && (
+            <ResourceSection
+              icon={Music}
+              title="Audio"
+              description="Audio files and podcasts"
+              items={buckets.audio}
+              onToggleRelevance={handleToggleRelevance}
+            />
+          )}
           {buckets.landscape.length > 0 && (
             <PhotoAspectSection
               icon={RectangleHorizontal}
@@ -234,7 +269,7 @@ export default function MediaGallery() {
             <PhotoAspectSection
               icon={HelpCircle}
               title="Unknown Dimensions"
-              description="Videos, documents, or images without width/height"
+              description="Images without width/height"
               items={buckets.unknownAspect}
               aspectClass="aspect-video"
               gridClass="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2"
@@ -243,7 +278,10 @@ export default function MediaGallery() {
           )}
           {!hasPhotoSections &&
             buckets.graphics.length === 0 &&
-            buckets.icons.length === 0 && (
+            buckets.icons.length === 0 &&
+            buckets.videos.length === 0 &&
+            buckets.documents.length === 0 &&
+            buckets.audio.length === 0 && (
               <div className="text-[10px] text-muted-foreground px-1">
                 No items matched the current filters.
               </div>
@@ -539,5 +577,126 @@ function IconTile({
         </div>
       )}
     </div>
+  );
+}
+
+/** Reads the `kind` hint (pdf, youtube, csv, …) the server stores in metadata. */
+function resourceKind(item: ResearchMedia): string | null {
+  const m = item.metadata;
+  if (m && typeof m === "object" && !Array.isArray(m)) {
+    const kind = (m as Record<string, unknown>).kind;
+    if (typeof kind === "string" && kind) return kind;
+  }
+  return null;
+}
+
+/**
+ * A non-image research resource (PDF / video / audio). Opens the URL in a new
+ * tab; shows a poster thumbnail when one exists (e.g. YouTube), otherwise the
+ * type icon. The relevance toggle sits OUTSIDE the anchor so it doesn't open.
+ */
+function ResourceCard({
+  item,
+  onToggleRelevance,
+}: {
+  item: ResearchMedia;
+  onToggleRelevance: (item: ResearchMedia) => void;
+}) {
+  const Icon = TYPE_ICONS[item.media_type as keyof typeof TYPE_ICONS] ?? File;
+  const kind = resourceKind(item);
+  const label = item.alt_text || item.caption || item.url;
+
+  return (
+    <div
+      className={cn(
+        "group relative rounded-xl border bg-card/60 backdrop-blur-sm overflow-hidden transition-all",
+        item.is_relevant ? "border-primary/20" : "border-border/50 opacity-60",
+      )}
+    >
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block"
+        title={label}
+      >
+        <div className="relative aspect-video bg-muted/50 flex items-center justify-center overflow-hidden">
+          {item.thumbnail_url ? (
+            <img
+              src={item.thumbnail_url}
+              alt={item.alt_text || ""}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <Icon className="h-7 w-7 text-muted-foreground/40" />
+          )}
+          {item.media_type === "video" && (
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-background/70 backdrop-blur-sm">
+                <Play className="h-3.5 w-3.5 text-foreground/80" />
+              </span>
+            </span>
+          )}
+          <span className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <ExternalLink className="h-3 w-3 text-foreground/60" />
+          </span>
+        </div>
+        <div className="p-1.5">
+          <p className="text-[10px] truncate text-foreground/80">{label}</p>
+          {kind && (
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60">
+              {kind}
+            </p>
+          )}
+        </div>
+      </a>
+      <Button
+        variant={item.is_relevant ? "default" : "outline"}
+        size="icon"
+        className="absolute top-1.5 right-1.5 h-6 w-6 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity"
+        onClick={() => onToggleRelevance(item)}
+      >
+        {item.is_relevant ? (
+          <Check className="h-3 w-3" />
+        ) : (
+          <X className="h-3 w-3" />
+        )}
+      </Button>
+    </div>
+  );
+}
+
+interface ResourceSectionProps extends SectionProps {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+}
+
+function ResourceSection({
+  icon,
+  title,
+  description,
+  items,
+  onToggleRelevance,
+}: ResourceSectionProps) {
+  return (
+    <section className="space-y-2">
+      <SectionHeader
+        icon={icon}
+        title={title}
+        count={items.length}
+        description={description}
+      />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+        {items.map((item) => (
+          <ResourceCard
+            key={item.id}
+            item={item}
+            onToggleRelevance={onToggleRelevance}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
