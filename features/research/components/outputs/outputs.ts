@@ -84,3 +84,10 @@ export function appendAsset(
     [kind]: { assets: [asset, ...existing] },
   };
 }
+
+/** Serialize the typed bundle for `rs_topic.outputs` (JSONB). */
+export function serializeOutputs(
+  outputs: ResearchOutputs,
+): Record<string, unknown> {
+  return outputs as unknown as Record<string, unknown>;
+}

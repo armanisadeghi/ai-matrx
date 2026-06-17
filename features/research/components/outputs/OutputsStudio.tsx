@@ -38,6 +38,7 @@ import {
   parseOutputs,
   appendAsset,
   assetsFor,
+  serializeOutputs,
   type OutputAsset,
   type OutputKind,
 } from "./outputs";
@@ -155,9 +156,7 @@ export default function OutputsStudio() {
   // a JSONB column (Record<string, unknown>); ResearchOutputs is its typed view.
   const persistOutput = async (kind: OutputKind, asset: OutputAsset) => {
     const next = appendAsset(parseOutputs(topic?.outputs), kind, asset);
-    await updateTopic(topicId, {
-      outputs: next as unknown as Record<string, unknown>,
-    });
+    await updateTopic(topicId, { outputs: serializeOutputs(next) });
     refresh();
   };
 
@@ -219,11 +218,7 @@ export default function OutputsStudio() {
           toneProfile={topic?.tone_profile ?? ""}
           defaultTitle={topic?.name ?? "Research"}
           existing={assetsFor(outputs, "blog")}
-          onPersisted={async (asset) => {
-            const next = appendAsset(parseOutputs(topic?.outputs), "blog", asset);
-            await updateTopic(topicId, { outputs: next });
-            refresh();
-          }}
+          onPersisted={(asset) => persistOutput("blog", asset)}
         />
         <SlidesOutputCard
           reportMarkdown={reportMarkdown}
@@ -231,11 +226,7 @@ export default function OutputsStudio() {
           toneProfile={topic?.tone_profile ?? ""}
           defaultTitle={topic?.name ?? "Research"}
           existing={assetsFor(outputs, "slides")}
-          onPersisted={async (asset) => {
-            const next = appendAsset(parseOutputs(topic?.outputs), "slides", asset);
-            await updateTopic(topicId, { outputs: next });
-            refresh();
-          }}
+          onPersisted={(asset) => persistOutput("slides", asset)}
         />
 
         <SeoOutputCard
@@ -244,11 +235,7 @@ export default function OutputsStudio() {
           toneProfile={topic?.tone_profile ?? ""}
           defaultTitle={topic?.name ?? "Research"}
           existing={assetsFor(outputs, "seo")}
-          onPersisted={async (asset) => {
-            const next = appendAsset(parseOutputs(topic?.outputs), "seo", asset);
-            await updateTopic(topicId, { outputs: next });
-            refresh();
-          }}
+          onPersisted={(asset) => persistOutput("seo", asset)}
         />
       </div>
     </div>
