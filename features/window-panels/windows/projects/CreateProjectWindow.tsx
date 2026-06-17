@@ -17,7 +17,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { ProjectFormCore } from "@/features/projects/components/ProjectFormCore";
+import { ProjectCreatePanel } from "@/features/projects/components/ProjectCreatePanel";
 import type { Project } from "@/features/projects/types";
 import {
   emitCreateProjectEvent,
@@ -94,8 +94,8 @@ export default function CreateProjectWindow({
       position="center"
       onClose={onClose}
     >
-      <div className="h-full min-h-0 overflow-y-auto p-4">
-        <ProjectFormCore
+      <div className="h-full min-h-0 p-4">
+        <ProjectCreatePanel
           initialOrgId={initialOrgId ?? null}
           initialOrgSlug={initialOrgSlug ?? null}
           orgLocked={orgLocked ?? false}

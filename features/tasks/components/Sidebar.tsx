@@ -123,20 +123,22 @@ export default function Sidebar(): JSX.Element {
             Filters
           </h2>
           <div className="space-y-0.5">
-            {(["incomplete", "overdue"] as TaskFilterType[]).map((filterType) => (
-              <button
-                key={filterType}
-                onClick={() => handleFilterClick(filterType)}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-                  filter === filterType
-                    ? "bg-primary/10 text-primary"
-                    : "text-foreground hover:bg-accent"
-                }`}
-              >
-                {getFilterIcon(filterType)}
-                <span className="capitalize">{filterType}</span>
-              </button>
-            ))}
+            {(["incomplete", "overdue"] as TaskFilterType[]).map(
+              (filterType) => (
+                <button
+                  key={filterType}
+                  onClick={() => handleFilterClick(filterType)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                    filter === filterType
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground hover:bg-accent"
+                  }`}
+                >
+                  {getFilterIcon(filterType)}
+                  <span className="capitalize">{filterType}</span>
+                </button>
+              ),
+            )}
           </div>
         </div>
 
@@ -199,8 +201,7 @@ export default function Sidebar(): JSX.Element {
           <div className="space-y-0.5">
             {projects.map((project) => {
               const isOperating = operatingProjectId === project.id;
-              const isActive =
-                activeProject === project.id && !showAllProjects;
+              const isActive = activeProject === project.id && !showAllProjects;
 
               return (
                 <div key={project.id} className="relative">
@@ -270,7 +271,7 @@ export default function Sidebar(): JSX.Element {
         </div>
 
         <div className="-mx-3">
-          <TaskScopeFilter variant="sidebar" />
+          <TaskScopeFilter />
         </div>
       </div>
     </div>

@@ -246,6 +246,7 @@ export function ContextItemSettingsForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           minHeight={80}
+          maxHeight={600}
           autoGrow
           placeholder="What is this context item for? When should an agent use it?"
           disabled={busy}
@@ -439,6 +440,7 @@ export function ContextItemSettingsForm({
           value={statusNote}
           onChange={(e) => setStatusNote(e.target.value)}
           minHeight={64}
+          maxHeight={600}
           autoGrow
           placeholder="Notes about the current state of this item"
           disabled={busy}

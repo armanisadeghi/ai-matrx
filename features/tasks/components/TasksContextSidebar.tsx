@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Search,
   X,
@@ -16,6 +16,8 @@ import {
   Flag,
   CalendarClock,
   CircleDashed,
+  ChevronDown,
+  SlidersHorizontal,
 } from "lucide-react";
 import * as icons from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -23,6 +25,7 @@ import {
   selectProjects,
   selectValidProjectIds,
 } from "@/features/tasks/redux/selectors";
+import { TASK_GROUP_BY_LABELS } from "@/features/tasks/constants/groupBy";
 import {
   selectSearchQuery,
   selectTaskFilter,
@@ -47,7 +50,6 @@ import type { TaskSortField } from "@/features/tasks/types/sort";
 import { TASK_SORT_OPTIONS } from "@/features/tasks/types/sort";
 import {
   selectOrganizationId,
-  selectOrganizationName,
   selectScopeSelectionsContext,
   setOrganization,
   setScopeSelections,
@@ -76,12 +78,12 @@ function resolveIcon(name: string | undefined): LucideIcon {
 }
 
 const GROUP_MODES: { mode: TaskGroupBy; label: string; icon: LucideIcon }[] = [
-  { mode: "project", label: "Project", icon: FolderKanban },
-  { mode: "scope", label: "Scope", icon: Layers },
-  { mode: "priority", label: "Priority", icon: Flag },
-  { mode: "status", label: "Status", icon: ListChecks },
-  { mode: "dueDate", label: "Due", icon: CalendarClock },
-  { mode: "none", label: "Flat", icon: Inbox },
+  { mode: "project", label: TASK_GROUP_BY_LABELS.project, icon: FolderKanban },
+  { mode: "scope", label: TASK_GROUP_BY_LABELS.scope, icon: Layers },
+  { mode: "priority", label: TASK_GROUP_BY_LABELS.priority, icon: Flag },
+  { mode: "status", label: TASK_GROUP_BY_LABELS.status, icon: ListChecks },
+  { mode: "dueDate", label: TASK_GROUP_BY_LABELS.dueDate, icon: CalendarClock },
+  { mode: "none", label: TASK_GROUP_BY_LABELS.none, icon: Inbox },
 ];
 
 const Circle = ({ size = 14 }: { size?: number }) => (
@@ -179,6 +181,18 @@ export default function TasksContextSidebar() {
     dispatch(setOrganization({ id, name: org?.name ?? null }));
   };
 
+  const activeGroupLabel =
+    TASK_GROUP_BY_LABELS[groupBy] ?? TASK_GROUP_BY_LABELS.none;
+  const activeSortLabel =
+    TASK_SORT_OPTIONS.find((o) => o.field === sortBy)?.label ?? "Last Updated";
+  const activeOrgName = orgId
+    ? ((orgs ?? []).find((o) => o.id === orgId)?.name ?? "Organization")
+    : "All Organizations";
+  const activeProjectName = showAllProjects
+    ? "All Projects"
+    : (derivedProjects.find((p) => p.id === activeProject)?.name ??
+      "All Projects");
+
   return (
     <div className="flex flex-col h-full min-h-0 bg-card">
       {/* Search — page title lives in the shell header (PageHeader) */}
@@ -206,8 +220,96 @@ export default function TasksContextSidebar() {
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto min-h-0">
+        {/* View — group, sort, show completed (pinned to top) */}
+        <CollapsibleSidebarSection
+          icon={SlidersHorizontal}
+          title="View"
+          defaultOpen
+          summary={`${activeGroupLabel} · ${activeSortLabel} ${sortOrder === "desc" ? "↓" : "↑"}${showCompleted ? " · +done" : ""}`}
+        >
+          <div className="flex items-center gap-1 flex-wrap">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              Group
+            </span>
+            {GROUP_MODES.map((m) => {
+              const Icon = m.icon;
+              return (
+                <button
+                  key={m.mode}
+                  onClick={() => dispatch(setGroupBy(m.mode))}
+                  className={cn(
+                    "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors",
+                    groupBy === m.mode
+                      ? "text-primary font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                  )}
+                  title={`Group by ${m.label}`}
+                >
+                  <Icon className="w-3 h-3" />
+                  <span>{m.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              Sort
+            </span>
+            {TASK_SORT_OPTIONS.map((opt) => {
+              const isActive = sortBy === opt.field;
+              const Icon = opt.icon;
+              return (
+                <button
+                  key={opt.field}
+                  onClick={() =>
+                    dispatch(setSortBy(opt.field as TaskSortField))
+                  }
+                  className={cn(
+                    "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors",
+                    isActive
+                      ? "text-primary font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                  )}
+                >
+                  <Icon className="w-3 h-3" />
+                  <span>{opt.label}</span>
+                </button>
+              );
+            })}
+            <button
+              onClick={() => dispatch(toggleSortOrder())}
+              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              title={sortOrder === "desc" ? "Descending" : "Ascending"}
+            >
+              <ArrowUpDown className="w-3 h-3" />
+              <span>{sortOrder === "desc" ? "↓" : "↑"}</span>
+            </button>
+          </div>
+
+          <div className="mt-1.5 flex items-center justify-between px-1.5 py-1 rounded bg-muted/30">
+            <span className="flex items-center gap-1.5 text-[11px] text-foreground">
+              {showCompleted ? (
+                <Eye className="w-3 h-3 text-muted-foreground" />
+              ) : (
+                <EyeOff className="w-3 h-3 text-muted-foreground" />
+              )}
+              Show completed
+            </span>
+            <Switch
+              checked={showCompleted}
+              onCheckedChange={(v) => dispatch(setShowCompleted(!!v))}
+              className="data-[state=checked]:bg-primary h-4 w-7 [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-3"
+            />
+          </div>
+        </CollapsibleSidebarSection>
+
         {/* Quick filters */}
-        <section className="px-2 py-1.5">
+        <CollapsibleSidebarSection
+          icon={Inbox}
+          title="Filter"
+          summary={<span className="capitalize">{filter}</span>}
+        >
           <div className="flex gap-1">
             {(["all", "incomplete", "overdue"] as TaskFilterType[]).map((f) => (
               <button
@@ -220,7 +322,7 @@ export default function TasksContextSidebar() {
                 className={cn(
                   "flex-1 flex items-center justify-center gap-1 px-1.5 py-1 rounded text-[11px] capitalize transition-colors",
                   filter === f
-                    ? "bg-primary/10 text-primary"
+                    ? "text-primary font-medium"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent",
                 )}
               >
@@ -229,23 +331,27 @@ export default function TasksContextSidebar() {
               </button>
             ))}
           </div>
-        </section>
+        </CollapsibleSidebarSection>
 
         {/* Context: Organizations */}
-        <section className="px-2 py-1.5 border-t border-border/30">
-          <div className="flex items-center gap-1.5 px-1 py-0.5 text-[10px] text-muted-foreground uppercase tracking-wide">
-            <Building className="w-3 h-3 text-violet-500" />
-            <span>Organization</span>
-            {orgId && (
+        <CollapsibleSidebarSection
+          icon={Building}
+          iconClassName="text-violet-500"
+          title="Organization"
+          summary={activeOrgName}
+          headerAction={
+            orgId ? (
               <button
+                type="button"
                 onClick={() => handleSelectOrg(null)}
-                className="ml-auto opacity-50 hover:opacity-100"
+                className="shrink-0 p-0.5 opacity-50 hover:opacity-100"
                 title="Show all organizations"
               >
                 <X className="w-2.5 h-2.5" />
               </button>
-            )}
-          </div>
+            ) : undefined
+          }
+        >
           <div className="space-y-0.5">
             <AllRow
               label="All Organizations"
@@ -267,7 +373,7 @@ export default function TasksContextSidebar() {
               />
             ))}
           </div>
-        </section>
+        </CollapsibleSidebarSection>
 
         {/* Context: each scope type with explicit clickable scopes */}
         {scopeTypesOrdered.map((type) => {
@@ -277,29 +383,33 @@ export default function TasksContextSidebar() {
           const typeBelongsToActiveOrg =
             !orgId || type.organization_id === orgId;
 
+          const selectedScopeName = selectedId
+            ? (opts.find((s) => s.id === selectedId)?.name ??
+              `All ${type.label_plural}`)
+            : `All ${type.label_plural}`;
+
           return (
-            <section
+            <CollapsibleSidebarSection
               key={type.id}
-              className="px-2 py-1.5 border-t border-border/30"
-            >
-              <div className="flex items-center gap-1.5 px-1 py-0.5 text-[10px] text-muted-foreground uppercase tracking-wide">
-                <Icon
-                  className="w-3 h-3"
-                  style={type.color ? { color: type.color } : undefined}
-                />
-                <span className={cn(!typeBelongsToActiveOrg && "opacity-40")}>
-                  {type.label_plural}
-                </span>
-                {selectedId && (
+              icon={Icon}
+              iconStyle={type.color ? { color: type.color } : undefined}
+              title={type.label_plural}
+              titleStyle={type.color ? { color: type.color } : undefined}
+              titleMuted={!typeBelongsToActiveOrg}
+              summary={selectedScopeName}
+              headerAction={
+                selectedId ? (
                   <button
+                    type="button"
                     onClick={() => handleSelectScope(type.id, null)}
-                    className="ml-auto opacity-50 hover:opacity-100"
+                    className="shrink-0 p-0.5 opacity-50 hover:opacity-100"
                     title={`Show all ${type.label_plural.toLowerCase()}`}
                   >
                     <X className="w-2.5 h-2.5" />
                   </button>
-                )}
-              </div>
+                ) : undefined
+              }
+            >
               <div className="space-y-0.5">
                 <AllRow
                   label={`All ${type.label_plural}`}
@@ -333,16 +443,17 @@ export default function TasksContextSidebar() {
                   );
                 })}
               </div>
-            </section>
+            </CollapsibleSidebarSection>
           );
         })}
 
         {/* Projects — always show all, dim those that don't match */}
-        <section className="px-2 py-1.5 border-t border-border/30">
-          <div className="flex items-center gap-1.5 px-1 py-0.5 text-[10px] text-muted-foreground uppercase tracking-wide">
-            <FolderKanban className="w-3 h-3 text-amber-500" />
-            <span>Projects</span>
-          </div>
+        <CollapsibleSidebarSection
+          icon={FolderKanban}
+          iconClassName="text-amber-500"
+          title="Projects"
+          summary={activeProjectName}
+        >
           <div className="space-y-0.5">
             <AllRow
               label="All Projects"
@@ -379,96 +490,83 @@ export default function TasksContextSidebar() {
               );
             })}
           </div>
-        </section>
-
-        {/* Group + Sort */}
-        <section className="px-2 py-1.5 border-t border-border/30">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-1">
-            View
-          </div>
-
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              Group
-            </span>
-            {GROUP_MODES.map((m) => {
-              const Icon = m.icon;
-              return (
-                <button
-                  key={m.mode}
-                  onClick={() => dispatch(setGroupBy(m.mode))}
-                  className={cn(
-                    "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors",
-                    groupBy === m.mode
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                  )}
-                  title={`Group by ${m.label}`}
-                >
-                  <Icon className="w-3 h-3" />
-                  <span>{m.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-1.5 flex items-center gap-1 flex-wrap">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              Sort
-            </span>
-            {TASK_SORT_OPTIONS.map((opt) => {
-              const isActive = sortBy === opt.field;
-              const Icon = opt.icon;
-              return (
-                <button
-                  key={opt.field}
-                  onClick={() =>
-                    dispatch(setSortBy(opt.field as TaskSortField))
-                  }
-                  className={cn(
-                    "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                  )}
-                >
-                  <Icon className="w-3 h-3" />
-                  <span>{opt.label}</span>
-                </button>
-              );
-            })}
-            <button
-              onClick={() => dispatch(toggleSortOrder())}
-              className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              title={sortOrder === "desc" ? "Descending" : "Ascending"}
-            >
-              <ArrowUpDown className="w-3 h-3" />
-              <span>{sortOrder === "desc" ? "↓" : "↑"}</span>
-            </button>
-          </div>
-
-          <div className="mt-1.5 flex items-center justify-between px-1.5 py-1 rounded bg-muted/30">
-            <span className="flex items-center gap-1.5 text-[11px] text-foreground">
-              {showCompleted ? (
-                <Eye className="w-3 h-3 text-muted-foreground" />
-              ) : (
-                <EyeOff className="w-3 h-3 text-muted-foreground" />
-              )}
-              Show completed
-            </span>
-            <Switch
-              checked={showCompleted}
-              onCheckedChange={(v) => dispatch(setShowCompleted(!!v))}
-              className="data-[state=checked]:bg-primary h-4 w-7 [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-3"
-            />
-          </div>
-        </section>
+        </CollapsibleSidebarSection>
       </div>
     </div>
   );
 }
 
 /* ────────────────────────────────────────────────────────────────────── */
+
+function CollapsibleSidebarSection({
+  icon: Icon,
+  iconClassName,
+  iconStyle,
+  title,
+  titleStyle,
+  titleMuted,
+  summary,
+  headerAction,
+  defaultOpen = false,
+  children,
+}: {
+  icon: LucideIcon;
+  iconClassName?: string;
+  iconStyle?: React.CSSProperties;
+  title: string;
+  titleStyle?: React.CSSProperties;
+  titleMuted?: boolean;
+  summary: React.ReactNode;
+  headerAction?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <section className="px-2 py-1 border-t border-border/30 first:border-t-0">
+      <div className="flex items-center gap-0.5 min-h-[28px]">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex-1 flex items-center gap-1.5 px-1 py-0.5 min-w-0 text-left rounded hover:bg-accent/50 transition-colors"
+        >
+          <Icon
+            className={cn(
+              "w-3.5 h-3.5 shrink-0",
+              iconClassName,
+              titleMuted && "opacity-40",
+            )}
+            style={iconStyle}
+          />
+          <span
+            className={cn(
+              "text-xs font-semibold uppercase tracking-wide shrink-0",
+              !titleStyle && "text-muted-foreground",
+              titleMuted && "opacity-40",
+            )}
+            style={titleStyle}
+          >
+            {title}
+          </span>
+          {!open && (
+            <span className="flex-1 min-w-0 text-xs text-foreground truncate text-right">
+              {summary}
+            </span>
+          )}
+          <ChevronDown
+            className={cn(
+              "w-3.5 h-3.5 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-180",
+            )}
+          />
+        </button>
+        {headerAction}
+      </div>
+      {open && <div className="pb-0.5">{children}</div>}
+    </section>
+  );
+}
 
 function AllRow({
   label,

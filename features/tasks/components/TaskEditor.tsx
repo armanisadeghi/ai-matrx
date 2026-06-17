@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Calendar,
   Flag,
-  Folder,
   User as UserIcon,
   MessageSquare,
   CheckSquare,
@@ -25,7 +24,6 @@ import {
   Clock,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectProjects } from "@/features/tasks/redux/selectors";
 import {
   selectSelectedTaskId,
   selectTaskEdit,
@@ -49,7 +47,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import * as taskService from "@/features/tasks/services/taskService";
 import { TASK_LABEL_OPTIONS } from "@/features/tasks/services/taskService";
 import type { TaskLabel } from "@/features/tasks/services/taskService";
-import TaskScopeTags from "./TaskScopeTags";
+import { TaskContextPicker } from "./TaskContextSection";
 import TaskAssigneePicker from "./TaskAssigneePicker";
 import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
 import { TaskAssociatedResources } from "./TaskAssociatedResources";
@@ -111,7 +109,6 @@ function TaskEditorInner({
   const draft = useAppSelector(selectTaskEdit(taskId));
   const isDirty = useAppSelector(selectTaskIsDirty(taskId));
   const operatingTaskId = useAppSelector(selectOperatingTaskId);
-  const projects = useAppSelector(selectProjects);
   const orgId = useAppSelector(selectOrganizationId);
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -387,7 +384,11 @@ function TaskEditorInner({
               className="h-7 w-7 p-0"
               title="Open in full page"
             >
-              <Link href={`/tasks/${taskId}`} target="_blank" rel="noopener noreferrer">
+              <Link
+                href={`/tasks/${taskId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <ExternalLink className="w-3.5 h-3.5" />
               </Link>
             </Button>
@@ -448,14 +449,6 @@ function TaskEditorInner({
               )}
             </div>
           )}
-          {/* Scope tags — prominent, directly under header */}
-          {orgId && (
-            <section>
-              <SectionHeader icon={Tag} label="Tags" />
-              <TaskScopeTags taskId={taskId} orgId={orgId} />
-            </section>
-          )}
-
           {/* Core properties — iOS-style grouped card */}
           <section className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
             <PropertyRow icon={UserIcon} label="Assignee" first>
@@ -465,14 +458,8 @@ function TaskEditorInner({
               />
             </PropertyRow>
 
-            <PropertyRow icon={Folder} label="Project">
-              <ProjectSelect
-                value={effective.projectId ?? null}
-                onChange={(v) => patch("project_id", v)}
-                options={projects
-                  .filter((p) => p.id !== "__unassigned__")
-                  .map((p) => ({ id: p.id, name: p.name }))}
-              />
+            <PropertyRow icon={Tag} label="Context">
+              <TaskContextPicker taskId={taskId} />
             </PropertyRow>
 
             <PropertyRow icon={Flag} label="Priority">
@@ -845,34 +832,5 @@ function PropertyRow({
       </div>
       <div className="flex-1 min-w-0">{children}</div>
     </div>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────── */
-
-function ProjectSelect({
-  value,
-  onChange,
-  options,
-}: {
-  value: string | null;
-  onChange: (v: string | null) => void;
-  options: { id: string; name: string }[];
-}) {
-  return (
-    <select
-      value={value ?? "__none__"}
-      onChange={(e) =>
-        onChange(e.target.value === "__none__" ? null : e.target.value)
-      }
-      className="h-8 w-full bg-card border border-border rounded-md px-2 text-xs outline-none hover:border-foreground/30 focus:border-primary/60 transition-colors"
-    >
-      <option value="__none__">Unassigned</option>
-      {options.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name}
-        </option>
-      ))}
-    </select>
   );
 }

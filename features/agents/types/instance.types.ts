@@ -98,7 +98,9 @@ export type SourceFeature =
   /** Right-click context menu on rendered assistant markdown (MarkdownStream). */
   | "assistant-message"
   /** "Edit with AI" inside the Mermaid Workbench (canvas diagram editor). */
-  | "mermaid-workbench";
+  | "mermaid-workbench"
+  /** "Use AI" tab of the create-project panel (`ProjectCreatePanel`). */
+  | "project-create";
 
 export const SOURCE_APP = "matrx-admin" as const;
 

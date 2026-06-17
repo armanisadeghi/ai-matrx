@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -22,9 +22,11 @@ import {
   selectNewTaskTitle,
   selectActiveProject,
   selectTasksLoading,
+  selectGroupBy,
   setSelectedTaskId,
   setNewTaskTitle,
 } from "@/features/tasks/redux/taskUiSlice";
+import { getTaskGroupByBanner } from "@/features/tasks/constants/groupBy";
 import { makeSelectScopeNameMapForOrg } from "@/features/scopes/redux/selectors/tree";
 import {
   createTaskThunk,
@@ -48,6 +50,9 @@ export default function TaskListPane() {
   const activeProject = useAppSelector(selectActiveProject);
   const projects = useAppSelector(selectProjects);
   const loading = useAppSelector(selectTasksLoading);
+  const groupBy = useAppSelector(selectGroupBy);
+  const groupByBanner = getTaskGroupByBanner(groupBy);
+  const isGrouped = groupBy !== "none";
   const orgId = useAppSelector(selectOrganizationId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
   const selectScopeNameMapForOrg = useMemo(
@@ -58,7 +63,29 @@ export default function TaskListPane() {
     selectScopeNameMapForOrg(state, orgId),
   );
 
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const activeGroupKey = useMemo(() => {
+    if (!selectedTaskId) return null;
+    for (const group of groups) {
+      if (group.tasks.some((task) => task.id === selectedTaskId)) {
+        return group.key;
+      }
+    }
+    return null;
+  }, [groups, selectedTaskId]);
+
+  const defaultCollapsed = useMemo(() => {
+    const next = new Set(groups.map((group) => group.key));
+    if (activeGroupKey) next.delete(activeGroupKey);
+    return next;
+  }, [groups, activeGroupKey]);
+
+  const [collapsedOverride, setCollapsedOverride] = useState<Set<string>>();
+
+  useEffect(() => {
+    setCollapsedOverride(undefined);
+  }, [selectedTaskId, groupBy]);
+
+  const collapsed = collapsedOverride ?? defaultCollapsed;
 
   const totalCount = groups.reduce((sum, g) => sum + g.tasks.length, 0);
 
@@ -88,8 +115,9 @@ export default function TaskListPane() {
   };
 
   const toggleGroup = (key: string) => {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
+    setCollapsedOverride((prev) => {
+      const base = prev ?? defaultCollapsed;
+      const next = new Set(base);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
@@ -131,6 +159,14 @@ export default function TaskListPane() {
         </form>
       </div>
 
+      {groupByBanner && (
+        <div className="shrink-0 px-3 py-1.5 border-b border-border/50 bg-muted/40">
+          <span className="text-xs font-semibold uppercase tracking-wider text-foreground/90">
+            {groupByBanner}
+          </span>
+        </div>
+      )}
+
       {/* List */}
       <div className="flex-1 overflow-y-auto min-h-0">
         {loading && totalCount === 0 ? (
@@ -148,50 +184,65 @@ export default function TaskListPane() {
             </p>
           </div>
         ) : (
-          groups.map((group) => {
-            const isCollapsed = collapsed.has(group.key);
-            // Resolve scope ids to names where needed
-            const displayLabel =
-              group.label && group.label !== group.key
-                ? group.label
-                : (scopeNameMap[group.key] ?? group.label);
-            return (
-              <div key={group.key}>
-                <button
-                  onClick={() => toggleGroup(group.key)}
-                  className="group sticky top-0 z-10 flex items-center gap-1 w-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground bg-background/80 backdrop-blur-sm hover:text-foreground transition-colors border-b border-border/30"
-                >
-                  {isCollapsed ? (
-                    <ChevronRight className="w-3 h-3 opacity-60" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3 opacity-60" />
+          <div className={cn(isGrouped && "p-2 space-y-2")}>
+            {groups.map((group) => {
+              const isCollapsed = collapsed.has(group.key);
+              // Resolve scope ids to names where needed
+              const displayLabel =
+                group.label && group.label !== group.key
+                  ? group.label
+                  : (scopeNameMap[group.key] ?? group.label);
+              return (
+                <div
+                  key={group.key}
+                  className={cn(
+                    isGrouped &&
+                      "rounded-lg border border-border bg-card shadow-[var(--elevation-1)] overflow-hidden",
                   )}
-                  <span className="flex-1 text-left truncate">
-                    {displayLabel}
-                  </span>
-                  <span className="text-[10px] font-normal opacity-50 tabular-nums">
-                    {group.tasks.length}
-                  </span>
-                </button>
+                >
+                  <button
+                    onClick={() => toggleGroup(group.key)}
+                    className={cn(
+                      "group sticky top-0 z-10 flex items-center gap-1.5 w-full px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors",
+                      isGrouped
+                        ? "bg-muted/50 border-b border-border/60"
+                        : "bg-background/80 backdrop-blur-sm border-b border-border/30",
+                    )}
+                  >
+                    {isCollapsed ? (
+                      <ChevronRight className="w-3.5 h-3.5 opacity-60 shrink-0" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
+                    )}
+                    <span className="flex-1 text-left truncate">
+                      {displayLabel}
+                    </span>
+                    <span className="text-[11px] font-normal opacity-60 tabular-nums shrink-0">
+                      {group.tasks.length}
+                    </span>
+                  </button>
 
-                {!isCollapsed && (
-                  <div className="space-y-0">
-                    {group.tasks.map((task) => (
-                      <TaskRow
-                        key={`${group.key}:${task.id}`}
-                        task={task}
-                        isSelected={selectedTaskId === task.id}
-                        onSelect={() => handleSelectTask(task.id)}
-                        onToggle={() =>
-                          dispatch(toggleTaskCompleteThunk({ taskId: task.id }))
-                        }
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })
+                  {!isCollapsed && (
+                    <div className="divide-y divide-border/30">
+                      {group.tasks.map((task) => (
+                        <TaskRow
+                          key={`${group.key}:${task.id}`}
+                          task={task}
+                          isSelected={selectedTaskId === task.id}
+                          onSelect={() => handleSelectTask(task.id)}
+                          onToggle={() =>
+                            dispatch(
+                              toggleTaskCompleteThunk({ taskId: task.id }),
+                            )
+                          }
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

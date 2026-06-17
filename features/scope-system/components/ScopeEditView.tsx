@@ -251,6 +251,7 @@ export function ScopeEditView({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 minHeight={80}
+                maxHeight={600}
                 autoGrow
                 placeholder="Describe this scope (optional)"
                 disabled={savingBasics}

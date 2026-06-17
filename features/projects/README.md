@@ -83,7 +83,10 @@ features/projects/
 └── components/
     ├── ProjectList.tsx
     ├── ProjectCard.tsx
-    ├── CreateProjectModal.tsx
+    ├── CreateProjectModal.tsx — Legacy standalone modal (ProTextarea design); still used by ResearchInitForm/ProjectsHub/ProjectList
+    ├── ProjectFormCore.tsx    — Canonical chrome-less create form (name/slug/desc/owner). Single source of truth — don't fork
+    ├── ProjectCreatePanel.tsx — Two-mode wrapper around the core: "Manual" (ProjectFormCore) + "Use AI" (AgentRunWrapper, agent 917074a0…). The body every create surface wraps
+    ├── ProjectFormSheet.tsx   — Dialog (desktop) / Drawer (mobile) chrome over ProjectCreatePanel
     ├── ProjectSettings.tsx    — Tabbed settings (General, Members, Invites, Danger)
     ├── ProjectSidebar.tsx
     ├── GeneralSettings.tsx
@@ -124,7 +127,11 @@ Every project write path dispatches `invalidateAndRefetchFullContext()` from `fe
 |------------|-------|-------|
 | Create (canonical) | `features/projects/service.ts createProject` | Always writes `ctx_projects` row + `ctx_project_members` owner row (no `is_personal` — personal-ness is org-derived) |
 | Create modal | `CreateProjectModal` | Dispatches invalidation. New `redirectOnSuccess` prop (default `true`) — set to `false` when embedded in a wizard so the user stays in place; the modal hands the new project to `onSuccess(project)` for inline auto-selection |
-| Create sheet | `ProjectFormSheet` | Dispatches invalidation; redirects personal projects to `/projects/...` (no `/org/personal/...` route exists) |
+| Create core | `ProjectFormCore` | Canonical chrome-less form. Every surface (sheet, window, route) wraps this — never fork it |
+| Create panel | `ProjectCreatePanel` | Two-mode body: "Manual" → `ProjectFormCore`; "Use AI" → `AgentRunWrapper` (agent `917074a0-fc06-4ff4-9805-4a517e04d08b`, sourceFeature `project-create`). Pass `enableAi={false}` for manual-only |
+| Create sheet | `ProjectFormSheet` | Dialog/Drawer over `ProjectCreatePanel` (AI on by default; `enableAi` prop). Dispatches invalidation; redirects personal projects to `/projects/...` |
+| Create window | `CreateProjectWindow` | WindowPanel over `ProjectCreatePanel` (overlay system; open via `useOpenCreateProjectWindow`) |
+| Create route | `/projects/new` (`app/(core)/projects/new/page.tsx`) | Full-page `ProjectCreatePanel`; routes to `/projects/{id}/settings` on success |
 | Update settings | `GeneralSettings` | Dispatches invalidation on save |
 | Delete | `DangerZone` | Dispatches invalidation before navigating away |
 | Hierarchy service create | `hierarchyService.createProject` | Delegates to canonical `createProject` — single owner of the write |

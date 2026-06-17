@@ -268,7 +268,7 @@ export default function MobileFilterMenu() {
         defaultSize={70}
         contentClassName="overflow-y-auto"
       >
-        <TaskScopeFilter variant="sidebar" />
+        <TaskScopeFilter />
       </MatrxDynamicPanelHost>
     </>
   );

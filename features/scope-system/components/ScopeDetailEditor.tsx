@@ -333,6 +333,7 @@ export function ScopeDetailEditor({
                 <ProTextarea
                   autoFocus
                   minHeight={80}
+                  maxHeight={600}
                   autoGrow
                   value={descriptionDraft}
                   onChange={(e) => setDescriptionDraft(e.target.value)}

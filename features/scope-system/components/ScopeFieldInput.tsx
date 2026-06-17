@@ -250,6 +250,7 @@ export function ScopeFieldInput({
             }}
             placeholder={placeholderForType(row.value_type)}
             minHeight={80}
+            maxHeight={600}
             className={isJsonType ? "font-mono text-sm" : undefined}
             autoGrow
           />

@@ -70,7 +70,8 @@ export function ContextItemAddForm({
   const nameRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
-  const [valueType, setValueType] = useState<ContextValueType>(defaultValueType);
+  const [valueType, setValueType] =
+    useState<ContextValueType>(defaultValueType);
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -79,7 +80,8 @@ export function ContextItemAddForm({
 
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [fetchHint, setFetchHint] = useState<ContextFetchHint>("on_demand");
-  const [sensitivity, setSensitivity] = useState<ContextSensitivity>("internal");
+  const [sensitivity, setSensitivity] =
+    useState<ContextSensitivity>("internal");
   const [sortOrder, setSortOrder] = useState("");
 
   const [busy, setBusy] = useState(false);
@@ -197,11 +199,13 @@ export function ContextItemAddForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {(Object.keys(VALUE_TYPE_CONFIG) as ContextValueType[]).map((k) => (
-                <SelectItem key={k} value={k}>
-                  {VALUE_TYPE_CONFIG[k].label}
-                </SelectItem>
-              ))}
+              {(Object.keys(VALUE_TYPE_CONFIG) as ContextValueType[]).map(
+                (k) => (
+                  <SelectItem key={k} value={k}>
+                    {VALUE_TYPE_CONFIG[k].label}
+                  </SelectItem>
+                ),
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -293,6 +297,7 @@ export function ContextItemAddForm({
             onChange={(e) => setValue(e.target.value)}
             disabled={busy}
             minHeight={56}
+            maxHeight={600}
             autoGrow
             className="mt-0.5"
           />

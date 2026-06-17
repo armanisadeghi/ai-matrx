@@ -182,6 +182,7 @@ export function ScopeTypeSettingsForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           minHeight={80}
+          maxHeight={600}
           autoGrow
           placeholder="What does this scope type represent?"
           disabled={busy}
@@ -201,7 +202,9 @@ export function ScopeTypeSettingsForm({
             <ChevronRight className="h-4 w-4" />
           )}
           Advanced
-          <span className="text-xs font-normal">sort order, max assignments</span>
+          <span className="text-xs font-normal">
+            sort order, max assignments
+          </span>
         </button>
       </div>
 
@@ -217,7 +220,9 @@ export function ScopeTypeSettingsForm({
               style={{ fontSize: "16px" }}
               disabled={busy}
             />
-            <p className="text-[10px] text-muted-foreground">Lower shows first</p>
+            <p className="text-[10px] text-muted-foreground">
+              Lower shows first
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Max assignments</Label>

@@ -282,6 +282,7 @@ export function AddScopeModal({
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What goes here?"
             minHeight={64}
+            maxHeight={600}
             autoGrow
             disabled={busy}
           />

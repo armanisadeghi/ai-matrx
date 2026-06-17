@@ -55,9 +55,7 @@ export function parseOutputs(raw: unknown): ResearchOutputs {
     const slot = o[kind];
     if (slot && typeof slot === "object") {
       const assetsRaw = (slot as Record<string, unknown>).assets;
-      const assets = Array.isArray(assetsRaw)
-        ? assetsRaw.filter(isAsset)
-        : [];
+      const assets = Array.isArray(assetsRaw) ? assetsRaw.filter(isAsset) : [];
       out[kind] = { assets };
     }
   }

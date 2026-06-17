@@ -37,18 +37,23 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 import {
   parseLogLines,
   applyFilters,
   extractModules,
   extractEndpoints,
+  filterEndpointsForDisplay,
   defaultFilters,
   ALL_LEVELS,
   ALL_CATEGORIES,
   ALL_URGENCIES,
   MODULE_NONE,
+  NOISE_EXCLUDE_PRESETS,
+  DEFAULT_NOISE_EXCLUDES,
   type ParsedLogLine,
   type LogFilters,
+  type LogNoiseExcludes,
   type LogLevel,
   type LogCategory,
   type LogUrgency,
@@ -119,6 +124,44 @@ function logsApiUrl(appKey: AppKey, lines: number): string {
 }
 
 const LINE_OPTIONS = [50, 100, 200, 500, 1000, 2000, 5000, 10000];
+const NOISE_EXCLUDES_STORAGE_KEY = "matrx:server-log-noise-excludes";
+
+function loadNoiseExcludes(): LogNoiseExcludes {
+  if (typeof window === "undefined") return { ...DEFAULT_NOISE_EXCLUDES };
+  try {
+    const raw = window.localStorage.getItem(NOISE_EXCLUDES_STORAGE_KEY);
+    if (!raw) return { ...DEFAULT_NOISE_EXCLUDES };
+    const parsed = JSON.parse(raw) as Partial<LogNoiseExcludes> & {
+      adminDb?: boolean;
+    };
+    return {
+      cloudFiles: parsed.cloudFiles ?? DEFAULT_NOISE_EXCLUDES.cloudFiles,
+      healthChecks: parsed.healthChecks ?? DEFAULT_NOISE_EXCLUDES.healthChecks,
+      admin: parsed.admin ?? parsed.adminDb ?? DEFAULT_NOISE_EXCLUDES.admin,
+      replaySweep: parsed.replaySweep ?? DEFAULT_NOISE_EXCLUDES.replaySweep,
+      wakeListener: parsed.wakeListener ?? DEFAULT_NOISE_EXCLUDES.wakeListener,
+      autoIngestListener:
+        parsed.autoIngestListener ?? DEFAULT_NOISE_EXCLUDES.autoIngestListener,
+    };
+  } catch {
+    return { ...DEFAULT_NOISE_EXCLUDES };
+  }
+}
+
+function persistNoiseExcludes(excludes: LogNoiseExcludes) {
+  try {
+    window.localStorage.setItem(
+      NOISE_EXCLUDES_STORAGE_KEY,
+      JSON.stringify(excludes),
+    );
+  } catch {
+    // localStorage full or disabled
+  }
+}
+
+function noiseExcludesActive(excludes: LogNoiseExcludes): boolean {
+  return NOISE_EXCLUDE_PRESETS.some((preset) => excludes[preset.key]);
+}
 const POLL_INTERVALS = [
   { value: 0, label: "Manual only" },
   { value: 5000, label: "Every 5s" },
@@ -147,12 +190,12 @@ type JsonTab = "explorer" | "truncator" | "plain";
 // ─── Level / Category display helpers ────────────────────────────────────────
 
 const LEVEL_COLORS: Record<LogLevel, string> = {
-  DEBUG: "bg-neutral-700 text-neutral-300",
-  INFO: "bg-blue-900/60 text-blue-300",
-  WARNING: "bg-amber-900/60 text-amber-300",
-  ERROR: "bg-red-900/60 text-red-300",
-  CRITICAL: "bg-rose-900/60 text-rose-200",
-  UNKNOWN: "bg-neutral-800 text-neutral-500",
+  DEBUG: "bg-muted text-muted-foreground",
+  INFO: "bg-info/15 text-info",
+  WARNING: "bg-warning/15 text-warning",
+  ERROR: "bg-destructive/15 text-destructive",
+  CRITICAL: "bg-destructive/20 text-destructive font-semibold",
+  UNKNOWN: "bg-muted text-muted-foreground",
 };
 
 const LEVEL_DISPLAY: Record<LogLevel, string> = {
@@ -189,17 +232,41 @@ const URGENCY_LABELS: Record<LogUrgency, string> = {
 };
 
 const URGENCY_COLORS: Record<LogUrgency, string> = {
-  low: "bg-neutral-800 text-neutral-400",
-  medium: "bg-amber-900/40 text-amber-300",
-  high: "bg-red-900/40 text-red-300",
-  critical: "bg-rose-900/60 text-rose-200",
-  unknown: "bg-neutral-800 text-neutral-500",
+  low: "bg-muted text-muted-foreground",
+  medium: "bg-warning/15 text-warning",
+  high: "bg-destructive/15 text-destructive",
+  critical: "bg-destructive/20 text-destructive font-semibold",
+  unknown: "bg-muted text-muted-foreground",
 };
 
 // ─── Log line renderer ────────────────────────────────────────────────────────
 
+function AgeGutter({
+  timestamp,
+  gutterColor,
+  alignTop = false,
+}: {
+  timestamp: string | null;
+  gutterColor: string;
+  alignTop?: boolean;
+}) {
+  const label = timestamp
+    ? formatRelativeTime(timestamp, { style: "long", fallback: "" })
+    : "";
+  return (
+    <span
+      title={timestamp ? formatAbsoluteDate(timestamp) : undefined}
+      className={`select-none shrink-0 w-[6.75rem] text-right pr-2 font-sans text-[10px] leading-5 border-r border-neutral-800 mr-2 text-neutral-500 whitespace-nowrap ${gutterColor} ${alignTop ? "pt-1.5" : ""}`}
+    >
+      {label || "—"}
+    </span>
+  );
+}
+
 interface LogLineProps {
   line: ParsedLogLine;
+  /** Bumps on a timer so relative age strings stay fresh. */
+  timeTick: number;
   /** 1-based display index among visible lines */
   displayIndex: number;
   selected: boolean;
@@ -214,6 +281,7 @@ interface LogLineProps {
 
 const LogLine = React.memo(function LogLine({
   line,
+  timeTick,
   displayIndex,
   selected,
   inSelection,
@@ -221,6 +289,7 @@ const LogLine = React.memo(function LogLine({
   onSelect,
   onRangeClick,
 }: LogLineProps) {
+  void timeTick;
   if (line.raw.trim() === "") {
     return <div className="h-1" />;
   }
@@ -250,7 +319,7 @@ const LogLine = React.memo(function LogLine({
       : "text-neutral-700";
 
   // Shared gutter style — fixed width so log text always starts at the same column
-  const gutter = (
+  const lineGutter = (
     <span
       className={`select-none shrink-0 w-12 text-right pr-2 font-mono text-[10px] tabular-nums leading-5 border-r border-neutral-800 mr-2 ${gutterColor}`}
     >
@@ -266,11 +335,8 @@ const LogLine = React.memo(function LogLine({
         className={`flex items-start cursor-pointer transition-colors opacity-75 ${line.bgColor} ${bgClass}`}
         onClick={handleClick}
       >
-        <span
-          className={`select-none shrink-0 w-12 text-right pr-2 font-mono text-[10px] tabular-nums leading-5 border-r border-neutral-800 mr-2 ${gutterColor}`}
-        >
-          {displayIndex}
-        </span>
+        <AgeGutter timestamp={line.timestamp} gutterColor={gutterColor} />
+        {lineGutter}
         <span
           className={`flex-1 font-mono text-xs leading-5 whitespace-pre-wrap break-all py-0 ${line.color}`}
         >
@@ -291,6 +357,11 @@ const LogLine = React.memo(function LogLine({
       className={`flex items-start cursor-pointer transition-colors ${line.bgColor} ${bgClass}`}
       onClick={handleClick}
     >
+      <AgeGutter
+        timestamp={line.timestamp}
+        gutterColor={gutterColor}
+        alignTop={hasMetadata}
+      />
       {/* Line number gutter — aligned to first row of content */}
       <span
         className={`select-none shrink-0 w-12 text-right pr-2 font-mono text-[10px] tabular-nums border-r border-neutral-800 mr-2 ${gutterColor} ${hasMetadata ? "pt-1.5" : "leading-5"}`}
@@ -421,6 +492,56 @@ function ToggleGroup<T extends string>({
   );
 }
 
+// ─── Noise exclude toggles ────────────────────────────────────────────────────
+
+interface NoiseExcludeTogglesProps {
+  excludes: LogNoiseExcludes;
+  onChange: (next: LogNoiseExcludes) => void;
+  compact?: boolean;
+}
+
+function NoiseExcludeToggles({
+  excludes,
+  onChange,
+  compact = false,
+}: NoiseExcludeTogglesProps) {
+  return (
+    <div
+      className={`flex items-center gap-1 ${compact ? "flex-wrap" : "flex-wrap gap-1.5"}`}
+    >
+      {!compact && (
+        <span className="text-neutral-500 shrink-0 mr-1">Hide noise:</span>
+      )}
+      {NOISE_EXCLUDE_PRESETS.map((preset) => {
+        const hidden = excludes[preset.key];
+        const showing = !hidden;
+        return (
+          <button
+            key={preset.key}
+            type="button"
+            title={
+              hidden
+                ? `${preset.description} — hidden, click to show`
+                : `${preset.description} — visible, click to hide`
+            }
+            onClick={() =>
+              onChange({ ...excludes, [preset.key]: !excludes[preset.key] })
+            }
+            className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all whitespace-nowrap
+              ${
+                showing
+                  ? "border-cyan-600 text-cyan-200 bg-cyan-950/50"
+                  : "border-neutral-600 text-neutral-300 bg-neutral-800/80 hover:border-neutral-500 hover:text-neutral-200"
+              }`}
+          >
+            {preset.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Filter panel ─────────────────────────────────────────────────────────────
 
 interface FilterPanelProps {
@@ -449,7 +570,8 @@ function FilterPanel({
     filters.endpointsCleared ||
     filters.endpoints.size > 0 ||
     filters.search.trim() !== "" ||
-    !filters.showJsonPayloads;
+    !filters.showJsonPayloads ||
+    noiseExcludesActive(filters.noiseExcludes);
 
   const setLevels = (s: Set<LogLevel>) => onChange({ ...filters, levels: s });
   const setCats = (s: Set<LogCategory>) =>
@@ -486,6 +608,11 @@ function FilterPanel({
           </Button>
         )}
       </div>
+
+      <NoiseExcludeToggles
+        excludes={filters.noiseExcludes}
+        onChange={(noiseExcludes) => onChange({ ...filters, noiseExcludes })}
+      />
 
       <ToggleGroup<LogLevel>
         label="Level"
@@ -787,7 +914,14 @@ export default function CoolifyLogViewer({
   const [viewMode, setViewMode] = useState<ViewMode>("log-only");
   const [showFilters, setShowFilters] = useState(false);
   const [showRange, setShowRange] = useState(false);
-  const [filters, setFilters] = useState<LogFilters>(defaultFilters());
+  const [filters, setFiltersState] = useState<LogFilters>(() => ({
+    ...defaultFilters(),
+    noiseExcludes: loadNoiseExcludes(),
+  }));
+  const setFilters = useCallback((next: LogFilters) => {
+    setFiltersState(next);
+    persistNoiseExcludes(next.noiseExcludes);
+  }, []);
   const [selectedLine, setSelectedLine] = useState<ParsedLogLine | null>(null);
 
   const [jsonTab, setJsonTab] = useState<JsonTab>("explorer");
@@ -805,6 +939,12 @@ export default function CoolifyLogViewer({
   const logRef = useRef<HTMLDivElement>(null);
   const rawRef = useRef<HTMLPreElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [timeTick, setTimeTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTimeTick((t) => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   const parsedLines = useMemo(() => parseLogLines(rawLogs), [rawLogs]);
 
@@ -813,8 +953,12 @@ export default function CoolifyLogViewer({
     [parsedLines],
   );
   const availableEndpoints = useMemo(
-    () => extractEndpoints(parsedLines),
-    [parsedLines],
+    () =>
+      filterEndpointsForDisplay(
+        extractEndpoints(parsedLines),
+        filters.noiseExcludes,
+      ),
+    [parsedLines, filters.noiseExcludes],
   );
 
   const rangedLines = useMemo(() => {
@@ -1084,6 +1228,16 @@ export default function CoolifyLogViewer({
 
         <div className="flex-1" />
 
+        {viewMode !== "raw" && (
+          <NoiseExcludeToggles
+            excludes={filters.noiseExcludes}
+            onChange={(noiseExcludes) =>
+              setFilters({ ...filters, noiseExcludes })
+            }
+            compact
+          />
+        )}
+
         {fetchedAt && (
           <span className="text-[10px] text-neutral-500">
             {new Date(fetchedAt).toLocaleTimeString()}
@@ -1303,6 +1457,7 @@ export default function CoolifyLogViewer({
                 <LogLine
                   key={line.lineIndex}
                   line={line}
+                  timeTick={timeTick}
                   displayIndex={i + 1}
                   selected={selectedLine?.lineIndex === line.lineIndex}
                   inSelection={selectionSet.has(line.lineIndex)}

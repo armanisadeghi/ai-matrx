@@ -56,7 +56,10 @@ function extractMarkdownTitle(md: string): string | null {
 }
 
 /** Build the generator input: prepend the Voice & Lens, then the report. */
-function buildGeneratorInput(reportMarkdown: string, toneProfile: string): string {
+function buildGeneratorInput(
+  reportMarkdown: string,
+  toneProfile: string,
+): string {
   return (
     (toneProfile.trim() ? `Voice & Lens: ${toneProfile.trim()}\n\n` : "") +
     `Research report:\n\n${reportMarkdown}`
@@ -147,10 +150,7 @@ export default function OutputsStudio() {
   }, [topicId]);
 
   const hasReport = reportMarkdown.trim().length > 0;
-  const outputs = useMemo(
-    () => parseOutputs(topic?.outputs),
-    [topic?.outputs],
-  );
+  const outputs = useMemo(() => parseOutputs(topic?.outputs), [topic?.outputs]);
 
   // Append a freshly generated asset to the topic's outputs index. `outputs` is
   // a JSONB column (Record<string, unknown>); ResearchOutputs is its typed view.
@@ -340,7 +340,8 @@ function PodcastOutputCard({
             </Badge>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            A two-voice episode from this research — audio, cover art, show notes.
+            A two-voice episode from this research — audio, cover art, show
+            notes.
           </p>
         </div>
         {existing.length > 0 && (
@@ -620,8 +621,8 @@ function BlogOutputCard({
             </Badge>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            An SEO-optimized, cited article from this research — copy or export to
-            WordPress.
+            An SEO-optimized, cited article from this research — copy or export
+            to WordPress.
           </p>
         </div>
         {existing.length > 0 && (
@@ -1034,7 +1035,13 @@ function SeoOutputCard({
   );
 }
 
-function SeoField({ label, children }: { label: string; children: React.ReactNode }) {
+function SeoField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-0.5">
       <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1113,7 +1120,10 @@ function SeoView({ seo }: { seo: SeoPackage }) {
         <SeoField label="FAQ">
           <div className="space-y-1.5 mt-0.5">
             {seo.faq.map((f, i) => (
-              <div key={i} className="rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5">
+              <div
+                key={i}
+                className="rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5"
+              >
                 <div className="flex items-start gap-1.5">
                   <HelpCircle className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
                   <span className="text-[11px] font-medium">{f.question}</span>

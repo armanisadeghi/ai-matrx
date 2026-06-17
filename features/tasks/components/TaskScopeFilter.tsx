@@ -1,13 +1,10 @@
 "use client";
 
-// TaskScopeFilter — Sidebar filter for scoping the task list to one or more
-// scope ids. This is a *filter* (not an assignment): it writes to
-// `taskUiSlice.filterScopeIds` only — never to `ctx_scope_assignments` and
-// never to `appContextSlice`. It uses `EntityScopeTagger` in **controlled
-// mode** so the picker chrome stays consistent with every other Surface B
-// surface in the app.
+// TaskScopeFilter — Sidebar filter for scoping the task list. Writes to
+// `taskUiSlice.filterScopeIds` only — never ctx_scope_assignments or
+// appContextSlice. Uses the canonical ContextAssignmentField in filter mode.
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Filter as FilterIcon, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
@@ -19,7 +16,7 @@ import {
   setFilterScopeMatchAll,
   toggleFilterScopeId,
 } from "@/features/tasks/redux/taskUiSlice";
-import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
+import { ContextAssignmentField } from "@/features/scopes/components/context-assignment/ContextAssignmentField";
 import { makeSelectScopeTypesForOrg } from "@/features/scopes/redux/selectors/tree";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { Badge } from "@/components/ui/badge";
@@ -29,24 +26,27 @@ import { cn } from "@/utils/cn";
 
 interface TaskScopeFilterProps {
   className?: string;
-  /** Display variant — "sidebar" (collapsible sections) or "compact" (flat chip row). */
-  variant?: "sidebar" | "compact";
 }
 
-export default function TaskScopeFilter({
-  className,
-  variant = "sidebar",
-}: TaskScopeFilterProps) {
+export default function TaskScopeFilter({ className }: TaskScopeFilterProps) {
   const dispatch = useAppDispatch();
   useScopeTree();
   const orgId = useAppSelector(selectActiveOrganizationId);
   const filterScopeIds = useAppSelector(selectFilterScopeIds);
   const matchAll = useAppSelector(selectFilterScopeMatchAll);
+  const [filterResetKey, setFilterResetKey] = useState(0);
 
-  const handleChange = useCallback(
-    (next: string[]) => dispatch(setFilterScopeIds(next)),
+  const handleSelectionChange = useCallback(
+    (selection: { scopeIds: string[] }) => {
+      dispatch(setFilterScopeIds(selection.scopeIds));
+    },
     [dispatch],
   );
+
+  const handleClear = useCallback(() => {
+    dispatch(clearFilterScopes());
+    setFilterResetKey((k) => k + 1);
+  }, [dispatch]);
 
   if (!orgId) return null;
 
@@ -62,7 +62,7 @@ export default function TaskScopeFilter({
             variant="ghost"
             size="sm"
             className="h-6 px-2 text-xs"
-            onClick={() => dispatch(clearFilterScopes())}
+            onClick={handleClear}
           >
             Clear
           </Button>
@@ -81,13 +81,17 @@ export default function TaskScopeFilter({
         </div>
       )}
 
-      <EntityScopeTagger
-        value={filterScopeIds}
-        onChange={handleChange}
-        organizationId={orgId}
-        variant={variant}
-        showHeader={false}
-        allowMultiPerType
+      <ContextAssignmentField
+        key={`${orgId}:${filterResetKey}`}
+        mode="filter"
+        writeMode="live"
+        dimensions={["scopes"]}
+        defaultOrganizationId={orgId}
+        initialSelection={{ scopeIds: filterScopeIds }}
+        onSelectionChange={handleSelectionChange}
+        hideSubject
+        sectionHeight={240}
+        className="mx-3 border-0 shadow-none"
       />
     </div>
   );
