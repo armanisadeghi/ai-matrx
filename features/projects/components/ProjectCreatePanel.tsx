@@ -21,9 +21,11 @@
  * sections of the same content, so it doesn't trip the "no tabs on mobile" rule.
  */
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { PencilLine, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { AgentRunWrapper } from "@/features/agents/components/smart/AgentRunWrapper";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { ProjectFormCore, type ProjectFormCoreProps } from "./ProjectFormCore";
@@ -40,6 +42,14 @@ export interface ProjectCreatePanelProps extends ProjectFormCoreProps {
   enableAi?: boolean;
   /** Which mode is selected on mount. Default "manual". */
   defaultMode?: ProjectCreateMode;
+  /**
+   * Fired when an AI run finishes (the agent created the project server-side).
+   * The panel ALWAYS dispatches the global hierarchy refetch on completion, so
+   * every nav-tree-derived project consumer refreshes automatically — this is
+   * only for surfaces that self-fetch their own list (e.g. the projects hub)
+   * and need a local refresh too. No `Project` object is available here.
+   */
+  onAiComplete?: () => void;
 }
 
 function ModeButton({
@@ -78,9 +88,24 @@ export function ProjectCreatePanel({
   enableAi = true,
   defaultMode = "manual",
   isMobile = false,
+  onAiComplete,
   ...coreProps
 }: ProjectCreatePanelProps) {
+  const dispatch = useAppDispatch();
   const [mode, setMode] = useState<ProjectCreateMode>(defaultMode);
+
+  const handleAiRunComplete = useCallback(() => {
+    // Refresh the global hierarchy so every nav-tree-derived project consumer
+    // (sidebars, pickers, ProjectList, research) picks up the agent-created
+    // project at once. Self-fetching surfaces wire `onAiComplete` for a local
+    // refresh on top of this.
+    dispatch(
+      invalidateAndRefetchFullContext() as unknown as Parameters<
+        typeof dispatch
+      >[0],
+    );
+    onAiComplete?.();
+  }, [dispatch, onAiComplete]);
 
   if (!enableAi) {
     return <ProjectFormCore isMobile={isMobile} {...coreProps} />;
@@ -122,6 +147,7 @@ export function ProjectCreatePanel({
             <AgentRunWrapper
               agentId={PROJECT_CREATE_AGENT_ID}
               sourceFeature={PROJECT_CREATE_SOURCE_FEATURE}
+              onRunComplete={handleAiRunComplete}
             />
           </div>
         )}

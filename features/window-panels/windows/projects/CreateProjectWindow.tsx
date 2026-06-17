@@ -82,6 +82,15 @@ export default function CreateProjectWindow({
     });
   };
 
+  const handleAiComplete = () => {
+    // The AI agent created the project server-side; we have no project object,
+    // so just tell consumers to refresh their list.
+    emitCreateProjectEvent(callbackGroupId, {
+      type: "ai-created",
+      windowInstanceId: instanceId,
+    });
+  };
+
   return (
     <WindowPanel
       title="Create Project"
@@ -103,6 +112,7 @@ export default function CreateProjectWindow({
           // default — the caller decides. War Room passes skipRedirect.
           skipRedirect={skipRedirect ?? true}
           onSuccess={handleSuccess}
+          onAiComplete={handleAiComplete}
           onClose={onClose}
         />
       </div>

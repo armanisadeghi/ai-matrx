@@ -23,21 +23,32 @@ import type { Project } from "@/features/projects/types";
 
 // ─── Event surface ───────────────────────────────────────────────────────────
 
-export type CreateProjectWindowEventType = "created" | "window-close";
+export type CreateProjectWindowEventType =
+  | "created"
+  | "ai-created"
+  | "window-close";
 
 export interface CreateProjectWindowEventBase {
   type: CreateProjectWindowEventType;
   windowInstanceId: string;
 }
 
-export interface CreateProjectCreatedEvent
-  extends CreateProjectWindowEventBase {
+export interface CreateProjectCreatedEvent extends CreateProjectWindowEventBase {
   type: "created";
   project: Project;
 }
 
-export interface CreateProjectWindowCloseEvent
-  extends CreateProjectWindowEventBase {
+/**
+ * Emitted when an AI run inside the window finishes. The agent creates the
+ * project directly server-side, so there's no `Project` object to hand back —
+ * this is purely a "the list changed, refresh it" signal for self-fetching
+ * consumers (nav-tree-derived consumers refresh globally on their own).
+ */
+export interface CreateProjectAiCreatedEvent extends CreateProjectWindowEventBase {
+  type: "ai-created";
+}
+
+export interface CreateProjectWindowCloseEvent extends CreateProjectWindowEventBase {
   type: "window-close";
   /** The last project created in this window, if any. */
   lastProject: Project | null;
@@ -45,6 +56,7 @@ export interface CreateProjectWindowCloseEvent
 
 export type CreateProjectWindowEvent =
   | CreateProjectCreatedEvent
+  | CreateProjectAiCreatedEvent
   | CreateProjectWindowCloseEvent;
 
 // ─── Caller-facing handler surface ───────────────────────────────────────────
@@ -52,6 +64,11 @@ export type CreateProjectWindowEvent =
 export interface CreateProjectWindowHandlers {
   /** Called with the newly created project right after creation succeeds. */
   onCreated?: (e: CreateProjectCreatedEvent) => void;
+  /**
+   * Called when an AI run created a project server-side. No project object is
+   * available — use it to refresh a self-fetched list.
+   */
+  onAiCreated?: (e: CreateProjectAiCreatedEvent) => void;
   /** Called when the window closes (user, close API, or anything else). */
   onWindowClose?: (e: CreateProjectWindowCloseEvent) => void;
   /** Catch-all for any emitted event. */
@@ -82,6 +99,9 @@ export function createCreateProjectCallbackGroup(
     switch (event.type) {
       case "created":
         handlers.onCreated?.(event);
+        break;
+      case "ai-created":
+        handlers.onAiCreated?.(event);
         break;
       case "window-close":
         handlers.onWindowClose?.(event);

@@ -346,11 +346,12 @@ const LogLine = React.memo(function LogLine({
     );
   }
 
-  const hasMetadata =
+  const hasMetadata = Boolean(
     line.level !== "UNKNOWN" ||
     line.module ||
     line.timestamp ||
-    line.httpStatus != null;
+    line.httpStatus != null
+  );
 
   return (
     <div

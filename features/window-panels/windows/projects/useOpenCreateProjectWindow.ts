@@ -27,8 +27,7 @@ import {
 
 const OVERLAY_ID = "createProjectWindow";
 
-export interface OpenCreateProjectWindowOptions
-  extends CreateProjectWindowHandlers {
+export interface OpenCreateProjectWindowOptions extends CreateProjectWindowHandlers {
   /** Optional stable instance id. Omit for a unique new window each call. */
   instanceId?: string;
   /** Pre-set the owner org. `null` forces a Personal project. Omit to let the
@@ -78,6 +77,7 @@ export function useOpenCreateProjectWindow() {
 
       const { callbackGroupId, dispose } = createCreateProjectCallbackGroup({
         onCreated: options.onCreated,
+        onAiCreated: options.onAiCreated,
         onWindowClose: options.onWindowClose,
         onEvent: options.onEvent,
       });

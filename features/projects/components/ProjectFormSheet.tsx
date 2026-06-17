@@ -32,6 +32,12 @@ export interface ProjectFormSheetProps {
   skipRedirect?: boolean;
   /** Show the "Use AI" mode alongside the manual form. Default true. */
   enableAi?: boolean;
+  /**
+   * Fired when an AI run created a project server-side (no project object).
+   * The panel already refreshes nav-tree consumers globally; wire this only if
+   * the caller self-fetches its own list.
+   */
+  onAiComplete?: () => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,6 +79,7 @@ export function ProjectFormSheet({
   orgSlug,
   skipRedirect,
   enableAi = true,
+  onAiComplete,
 }: ProjectFormSheetProps) {
   const isMobile = useIsMobile();
 
@@ -100,7 +107,12 @@ export function ProjectFormSheet({
             </p>
           </div>
           <div className="flex-1 min-h-0 px-1 pt-3">
-            <ProjectCreatePanel {...sharedProps} enableAi={enableAi} isMobile />
+            <ProjectCreatePanel
+              {...sharedProps}
+              enableAi={enableAi}
+              onAiComplete={onAiComplete}
+              isMobile
+            />
           </div>
         </DrawerContent>
       </Drawer>
@@ -118,7 +130,11 @@ export function ProjectFormSheet({
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0">
-          <ProjectCreatePanel {...sharedProps} enableAi={enableAi} />
+          <ProjectCreatePanel
+            {...sharedProps}
+            enableAi={enableAi}
+            onAiComplete={onAiComplete}
+          />
         </div>
       </DialogContent>
     </Dialog>

@@ -48,7 +48,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
-import { CreateProjectModal } from "@/features/projects/components/CreateProjectModal";
+import { useOpenCreateProjectWindow } from "@/features/window-panels/windows/projects/useOpenCreateProjectWindow";
 import type {
   ProjectWithRole,
   ProjectStatus,
@@ -76,7 +76,7 @@ export function ProjectsHub({
 }) {
   const { organizations } = useUserOrganizations();
   const router = useRouter();
-  const [createOpen, setCreateOpen] = React.useState(false);
+  const openCreateProject = useOpenCreateProjectWindow();
   const [view, setView] = React.useState<ViewMode>("cards");
   const [query, setQuery] = React.useState("");
 
@@ -109,6 +109,16 @@ export function ProjectsHub({
   const [loading, setLoading] = React.useState(true);
   const [reloadTick, setReloadTick] = React.useState(0);
   const refresh = React.useCallback(() => setReloadTick((t) => t + 1), []);
+
+  // Open the app-wide create-project window (Manual + Use AI). Refresh the
+  // self-fetched list both on a manual create and when the AI agent creates one
+  // server-side (the agent writes directly to the DB).
+  const handleCreate = React.useCallback(() => {
+    openCreateProject({
+      onCreated: refresh,
+      onAiCreated: refresh,
+    });
+  }, [openCreateProject, refresh]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -263,7 +273,10 @@ export function ProjectsHub({
       list = list.filter((p) => p.organizationId === orgFilterId);
     if (scopeProjectIds) list = list.filter((p) => scopeProjectIds.has(p.id));
     const q = query.trim().toLowerCase();
-    if (q) list = list.filter((p) => p.name.toLowerCase().includes(q) || idMatchesQuery(p, q));
+    if (q)
+      list = list.filter(
+        (p) => p.name.toLowerCase().includes(q) || idMatchesQuery(p, q),
+      );
     return list;
   }, [projects, orgFilterId, scopeProjectIds, query]);
 
@@ -290,9 +303,7 @@ export function ProjectsHub({
 
   return (
     <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured pt-3">
-      <div
-        className="max-w-7xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6"
-      >
+      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Projects</h1>
@@ -324,7 +335,7 @@ export function ProjectsHub({
                 <TableIcon className="h-4 w-4" />
               </button>
             </div>
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Button size="sm" onClick={handleCreate}>
               <Plus className="h-4 w-4 mr-1.5" />
               New project
             </Button>
@@ -403,7 +414,7 @@ export function ProjectsHub({
                   Show all projects
                 </Button>
               )}
-              <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Button size="sm" onClick={handleCreate}>
                 <Plus className="h-4 w-4 mr-1.5" />
                 New project
               </Button>
@@ -451,16 +462,6 @@ export function ProjectsHub({
           </>
         )}
       </div>
-
-      <CreateProjectModal
-        isOpen={createOpen}
-        onClose={() => setCreateOpen(false)}
-        redirectOnSuccess={false}
-        onSuccess={() => {
-          setCreateOpen(false);
-          refresh();
-        }}
-      />
     </div>
   );
 }

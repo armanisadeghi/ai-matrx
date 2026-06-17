@@ -83,7 +83,7 @@ features/projects/
 └── components/
     ├── ProjectList.tsx
     ├── ProjectCard.tsx
-    ├── CreateProjectModal.tsx — Legacy standalone modal (ProTextarea design); still used by ResearchInitForm/ProjectsHub/ProjectList
+    ├── CreateProjectModal.tsx — Thin compat wrapper over ProjectFormSheet (preserves old isOpen/onClose/onSuccess(CreatedProjectInfo) API); used by ResearchInitForm/ProjectList
     ├── ProjectFormCore.tsx    — Canonical chrome-less create form (name/slug/desc/owner). Single source of truth — don't fork
     ├── ProjectCreatePanel.tsx — Two-mode wrapper around the core: "Manual" (ProjectFormCore) + "Use AI" (AgentRunWrapper, agent 917074a0…). The body every create surface wraps
     ├── ProjectFormSheet.tsx   — Dialog (desktop) / Drawer (mobile) chrome over ProjectCreatePanel
@@ -126,11 +126,12 @@ Every project write path dispatches `invalidateAndRefetchFullContext()` from `fe
 | Write path | Where | Notes |
 |------------|-------|-------|
 | Create (canonical) | `features/projects/service.ts createProject` | Always writes `ctx_projects` row + `ctx_project_members` owner row (no `is_personal` — personal-ness is org-derived) |
-| Create modal | `CreateProjectModal` | Dispatches invalidation. New `redirectOnSuccess` prop (default `true`) — set to `false` when embedded in a wizard so the user stays in place; the modal hands the new project to `onSuccess(project)` for inline auto-selection |
+| Create modal (compat) | `CreateProjectModal` | Now a thin wrapper over `ProjectFormSheet` — every consumer (ResearchInitForm, ProjectList) gets the Manual + Use AI experience. Preserves the old `isOpen` / `onClose` / `onSuccess(CreatedProjectInfo)` / `redirectOnSuccess` contract (`redirectOnSuccess=false` → `skipRedirect`) |
+| AI create | `ProjectCreatePanel` "Use AI" tab → `AgentRunWrapper` (agent `917074a0-fc06-4ff4-9805-4a517e04d08b`, sourceFeature `project-create`) | The agent writes the project **directly to the DB server-side**. On the run's `running/streaming → complete` edge, `AgentRunWrapper.onRunComplete` fires; the panel dispatches `invalidateAndRefetchFullContext()` (refreshes every nav-tree-derived consumer) and calls `onAiComplete()` for self-fetching surfaces (`ProjectsHub` → its local `refresh()` via the window's `ai-created` event) |
 | Create core | `ProjectFormCore` | Canonical chrome-less form. Every surface (sheet, window, route) wraps this — never fork it |
 | Create panel | `ProjectCreatePanel` | Two-mode body: "Manual" → `ProjectFormCore`; "Use AI" → `AgentRunWrapper` (agent `917074a0-fc06-4ff4-9805-4a517e04d08b`, sourceFeature `project-create`). Pass `enableAi={false}` for manual-only |
 | Create sheet | `ProjectFormSheet` | Dialog/Drawer over `ProjectCreatePanel` (AI on by default; `enableAi` prop). Dispatches invalidation; redirects personal projects to `/projects/...` |
-| Create window | `CreateProjectWindow` | WindowPanel over `ProjectCreatePanel` (overlay system; open via `useOpenCreateProjectWindow`) |
+| Create window | `CreateProjectWindow` | WindowPanel over `ProjectCreatePanel` (overlay system; open via `useOpenCreateProjectWindow`). Consumers: War Room picker + the `/projects` hub "New project" button. Emits `created` (manual) and `ai-created` (AI) so self-fetching consumers refresh |
 | Create route | `/projects/new` (`app/(core)/projects/new/page.tsx`) | Full-page `ProjectCreatePanel`; routes to `/projects/{id}/settings` on success |
 | Update settings | `GeneralSettings` | Dispatches invalidation on save |
 | Delete | `DangerZone` | Dispatches invalidation before navigating away |
