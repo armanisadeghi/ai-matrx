@@ -397,7 +397,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-teal-500/20",
     },
     // No single canonical "session" table (war-room / studio / window / quiz
-    // all qualify) — opens seed-only until one is chosen. See KNOWN_DEFECTS D7.
+    // all qualify) — opens seed-only until one is chosen. See KNOWN_DEFECTS D8.
     open: { kind: "session" },
   },
   table: {
@@ -477,7 +477,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
       ring: "ring-purple-500/20",
     },
     // Multiple message tables exist (cx_message, messages, dm_messages, …) —
-    // opens seed-only until a canonical one is chosen. See KNOWN_DEFECTS D7.
+    // opens seed-only until a canonical one is chosen. See KNOWN_DEFECTS D8.
     open: { kind: "message" },
   },
   email: {

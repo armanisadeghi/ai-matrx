@@ -29,6 +29,48 @@ const DEFAULT_KEEPALIVE_MS = 180_000; // 3 minutes
 
 type Listener = (state: MicStreamState) => void;
 
+/**
+ * Why the mic stopped being usable mid-hold. `ended` = the OS killed the track
+ * (iOS interruption: lock screen, incoming call, app switch, device unplug) —
+ * the warm grant is gone and the next acquire WILL re-prompt. `muted` /
+ * `unmuted` = a transient interruption (iOS mutes during a call, unmutes after)
+ * — the grant survives, no re-prompt. `permission-revoked` = the user/OS pulled
+ * the permission. Every one of these used to be silent; they are now reported
+ * loudly so a recording surface can react instead of just dropping audio.
+ */
+export type MicInterruptionReason =
+  | "ended"
+  | "muted"
+  | "unmuted"
+  | "permission-revoked";
+
+type InterruptionListener = (reason: MicInterruptionReason) => void;
+const interruptionListeners = new Set<InterruptionListener>();
+
+function emitInterruption(reason: MicInterruptionReason): void {
+  for (const l of interruptionListeners) {
+    try {
+      l(reason);
+    } catch {
+      // never let a listener break the manager
+    }
+  }
+}
+
+/**
+ * Subscribe to mic interruptions (track end / mute / permission loss). Returns
+ * an unsubscribe fn. Surfaces are expected to make these LOUD — an interruption
+ * during a recording is a real event the user must see, not a silent drop.
+ */
+export function subscribeMicInterruption(
+  listener: InterruptionListener,
+): () => void {
+  interruptionListeners.add(listener);
+  return () => {
+    interruptionListeners.delete(listener);
+  };
+}
+
 export type MicStreamState =
   | "idle"
   | "acquiring"
@@ -72,6 +114,67 @@ function clearReleaseTimer(): void {
     clearTimeout(m.releaseTimer);
     m.releaseTimer = null;
   }
+}
+
+/**
+ * Watch the live tracks for OS-level interruptions. iOS fires these on lock,
+ * incoming calls, app switches, and device changes — previously unhandled, so
+ * the warm stream silently died and the next recording re-prompted with no
+ * explanation. We report each one loudly; on a hard `ended` we drop the dead
+ * warm stream so the next `acquireMicStream` re-acquires a live one.
+ */
+function attachTrackHealth(stream: MediaStream): void {
+  for (const track of stream.getAudioTracks()) {
+    track.onended = () => {
+      // eslint-disable-next-line no-console
+      console.error(
+        "[micStream] mic track ENDED (OS interruption / device change). The " +
+          "warm grant is gone; the next recording will re-prompt.",
+      );
+      if (m.stream === stream) {
+        m.stream = null;
+        setState("error");
+      }
+      emitInterruption("ended");
+    };
+    track.onmute = () => {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[micStream] mic track MUTED (transient interruption — e.g. a call). " +
+          "The grant survives; it should unmute when the interruption ends.",
+      );
+      emitInterruption("muted");
+    };
+    track.onunmute = () => {
+      emitInterruption("unmuted");
+    };
+  }
+}
+
+// Permission watcher — set up once. When the OS/user revokes mic permission
+// mid-session, scream so a recording surface can stop cleanly instead of
+// silently failing on the next acquire.
+let permissionWatched = false;
+function watchPermission(): void {
+  if (permissionWatched) return;
+  if (typeof navigator === "undefined" || !navigator.permissions) return;
+  permissionWatched = true;
+  navigator.permissions
+    .query({ name: "microphone" as PermissionName })
+    .then((status) => {
+      status.onchange = () => {
+        if (status.state === "denied") {
+          // eslint-disable-next-line no-console
+          console.error("[micStream] microphone permission REVOKED.");
+          hardStop();
+          emitInterruption("permission-revoked");
+        }
+      };
+    })
+    .catch(() => {
+      // Permissions API not supported for microphone (Firefox) — non-fatal.
+      permissionWatched = false;
+    });
 }
 
 /** True if the warm stream still has at least one live, unmuted-able audio track. */
@@ -118,6 +221,8 @@ export async function acquireMicStream(
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio });
       m.stream = stream;
+      attachTrackHealth(stream);
+      watchPermission();
       setState("active");
       return stream;
     } catch (err) {

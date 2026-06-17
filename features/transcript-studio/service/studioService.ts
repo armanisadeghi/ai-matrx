@@ -401,6 +401,7 @@ export interface RecordingSegmentRow {
   archived_at: string | null;
   detached_at: string | null;
   user_id: string | null;
+  safety_id: string | null;
 }
 
 export function rowToRecordingSegment(
@@ -423,6 +424,7 @@ export function rowToRecordingSegment(
     archivedAt: row.archived_at ?? null,
     detachedAt: row.detached_at ?? null,
     userId: row.user_id ?? null,
+    safetyId: row.safety_id ?? null,
   };
 }
 
@@ -503,6 +505,7 @@ export async function updateRecordingSegment(
   if (patch.audioPath !== undefined) update.audio_path = patch.audioPath;
   if (patch.tEnd !== undefined) update.t_end = patch.tEnd;
   if (patch.endedAt !== undefined) update.ended_at = patch.endedAt;
+  if (patch.safetyId !== undefined) update.safety_id = patch.safetyId;
   // maybeSingle (not single): a background finalize / audio-upload can land
   // after the recording was deleted or discarded. A gone row returns null
   // (callers no-op) rather than throwing PostgREST's "Cannot coerce the result

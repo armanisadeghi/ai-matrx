@@ -1513,6 +1513,15 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         />
       );
 
+    case "audiocite":
+      return (
+        <BlockComponents.AudioCitationBlock
+          key={index}
+          content={block.content}
+          metadata={block.metadata as Record<string, string> | undefined}
+        />
+      );
+
     case "tree":
       return (
         <BlockComponents.TreeBlock

@@ -514,6 +514,32 @@ export const finalizeRecordingSegmentThunk = createAsyncThunk<
 );
 
 /**
+ * Persist the crash-safe IndexedDB id onto the recording row as soon as it's
+ * known (the first chunk), so a recording stranded BEFORE finalize (reload /
+ * crash / bad network) still carries a pointer to its audio in IndexedDB. The
+ * session-load reconcile uses it to recover orphaned audio. Best-effort and
+ * silent — a failure here just means that one recovery path is unavailable; the
+ * audio is still safe in IndexedDB.
+ */
+export const persistRecordingSafetyIdThunk = createAsyncThunk<
+  void,
+  { sessionId: string; recordingSegmentId: string; safetyId: string }
+>(
+  "transcriptStudio/persistRecordingSafetyId",
+  async ({ sessionId, recordingSegmentId, safetyId }, { dispatch }) => {
+    try {
+      const segment = await updateRecordingSegment(recordingSegmentId, {
+        safetyId,
+      });
+      if (segment) dispatch(recordingSegmentUpserted({ sessionId, segment }));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("[studio] persist safety_id failed:", err);
+    }
+  },
+);
+
+/**
  * Upload a finished recording's audio in the background and patch `audioPath`
  * when it lands. Non-blocking: the row is already finalized, and the audio is
  * crash-safe in IndexedDB, so a failure here just leaves playback unavailable
@@ -618,7 +644,9 @@ export const reconcileStuckRecordingsThunk = createAsyncThunk<
       .map((id) => byId[id])
       .filter((seg): seg is RecordingSegment => Boolean(seg) && !seg!.endedAt);
 
-    if (stranded.length === 0) return 0;
+    // NB: do not early-return when nothing is stranded — a recording can be
+    // properly finalized (endedAt set) yet still have lost its background audio
+    // upload, which the audio-recovery pass below handles.
 
     let healed = 0;
     for (const seg of stranded) {
@@ -646,6 +674,47 @@ export const reconcileStuckRecordingsThunk = createAsyncThunk<
           err,
         );
       }
+    }
+
+    // Audio recovery: any segment with NO audio_path but a safety_id whose blob
+    // is still in this device's IndexedDB had its background upload lost (bad
+    // network, crash before finalize). Re-upload it now so the audio stops being
+    // orphaned (KNOWN_DEFECTS D7). Same-device only — IndexedDB is per-device.
+    // LOUD on recovery: a recovery firing means the proactive upload failed.
+    let audioRecovered = 0;
+    for (const id of ids) {
+      const seg = byId[id];
+      if (!seg || seg.audioPath || !seg.safetyId) continue;
+      try {
+        const blob = await audioSafetyStore.getAudioBlob(seg.safetyId);
+        if (!blob || blob.size === 0) continue; // not on this device — skip quietly
+        await dispatch(
+          uploadRecordingAudioThunk({
+            sessionId,
+            recordingSegmentId: seg.id,
+            audioBlob: blob,
+            safetyId: seg.safetyId,
+          }),
+        ).unwrap();
+        audioRecovered += 1;
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[studio] reconcile: recovered orphaned audio for recording ${seg.id} ` +
+            `from IndexedDB (safety_id ${seg.safetyId}). Its background upload had been lost.`,
+        );
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error(
+          "[studio] reconcile: failed to recover orphaned audio",
+          seg.id,
+          err,
+        );
+      }
+    }
+    if (audioRecovered > 0) {
+      toast.success(
+        `Recovered audio for ${audioRecovered} recording${audioRecovered === 1 ? "" : "s"}.`,
+      );
     }
 
     // Un-stick the session row if it's still flagged "recording" with nothing

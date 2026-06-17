@@ -24,6 +24,7 @@ import {
   deleteRecordingSegmentThunk,
   finalizeRecordingSegmentThunk,
   ingestRawChunkThunk,
+  persistRecordingSafetyIdThunk,
   startRecordingSegmentThunk,
   startSessionRecordingThunk,
   stopSessionRecordingThunk,
@@ -125,6 +126,22 @@ export function useStudioSession({
     const args: StartRecordingArgs = {
       context: { kind: "studio", sessionId },
       onChunkComplete: (info) => {
+        // Persist the crash-safe IndexedDB id onto the row the FIRST time we
+        // learn it, so a recording stranded before finalize (reload / crash /
+        // bad network) still points at its audio for recovery (KNOWN_DEFECTS D7).
+        if (
+          info.safetyId &&
+          info.safetyId !== safetyIdRef.current &&
+          recordingSegmentIdRef.current
+        ) {
+          void dispatch(
+            persistRecordingSafetyIdThunk({
+              sessionId,
+              recordingSegmentId: recordingSegmentIdRef.current,
+              safetyId: info.safetyId,
+            }),
+          );
+        }
         safetyIdRef.current = info.safetyId || safetyIdRef.current;
         if (info.tEnd > lastTEndRef.current) lastTEndRef.current = info.tEnd;
         if (!info.text.trim()) return;

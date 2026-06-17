@@ -29,7 +29,15 @@ import {
   uploadAndTranscribeFull,
   logClientError,
 } from "../services/audioFallbackUpload";
-import { acquireMicStream, releaseMicStream } from "../micStream";
+import {
+  acquireMicStream,
+  releaseMicStream,
+  subscribeMicInterruption,
+} from "../micStream";
+import {
+  getSharedAudioContext,
+  resumeSharedAudioContext,
+} from "../audioContext";
 import { toAudioFile } from "../utils/audio-mime";
 
 /**
@@ -105,8 +113,11 @@ export function useChunkedRecordAndTranscribe({
   const startTimeRef = useRef(0);
   const pausedAtRef = useRef(0);
   const pausedDurationRef = useRef(0);
+  // Points at the SHARED AudioContext (not owned/closed here) — the analyser is
+  // only the cosmetic level meter; capture runs off the MediaStream directly.
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const rafRef = useRef<number | null>(null);
   const safetyIdRef = useRef<string>("");
   const isPageHidingRef = useRef(false);
@@ -157,6 +168,21 @@ export function useChunkedRecordAndTranscribe({
     return Math.max(0, elapsed) / 1000;
   }, []);
 
+  // Tear down the analyser graph WITHOUT closing the shared AudioContext (it's
+  // reused by the next recording + other surfaces). Disconnect the source +
+  // analyser nodes so they're collected; the context stays warm.
+  const disconnectAnalyser = useCallback(() => {
+    try {
+      sourceNodeRef.current?.disconnect();
+    } catch {}
+    try {
+      analyserRef.current?.disconnect();
+    } catch {}
+    sourceNodeRef.current = null;
+    analyserRef.current = null;
+    audioCtxRef.current = null;
+  }, []);
+
   const cleanup = useCallback(() => {
     if (rotationTimerRef.current) {
       clearTimeout(rotationTimerRef.current as any);
@@ -170,11 +196,7 @@ export function useChunkedRecordAndTranscribe({
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
-    if (audioCtxRef.current?.state !== "closed") {
-      audioCtxRef.current?.close().catch(() => {});
-      audioCtxRef.current = null;
-    }
-    analyserRef.current = null;
+    disconnectAnalyser();
     streamRef.current = null;
     if (micHeldRef.current) {
       releaseMicStream();
@@ -189,7 +211,7 @@ export function useChunkedRecordAndTranscribe({
     pausedAtRef.current = 0;
     pausedDurationRef.current = 0;
     isStoppingRef.current = false;
-  }, []);
+  }, [disconnectAnalyser]);
 
   useEffect(
     () => () => {
@@ -682,15 +704,23 @@ export function useChunkedRecordAndTranscribe({
       micHeldRef.current = true;
       streamRef.current = stream;
 
-      audioCtxRef.current = new AudioContext();
-      analyserRef.current = audioCtxRef.current.createAnalyser();
-      analyserRef.current.fftSize = 256;
-      analyserRef.current.smoothingTimeConstant = 0.8;
-      audioCtxRef.current
-        .createMediaStreamSource(stream)
-        .connect(analyserRef.current);
-
-      startAudioAnalysis();
+      // Level meter taps the SHARED, resumable AudioContext (never per-instance
+      // `new AudioContext()` — that churned contexts and risked iOS exhaustion).
+      // resume() here rides the record-button gesture so iOS un-suspends it.
+      // Capture is independent of this; if Web Audio is unavailable the meter
+      // just stays flat and recording proceeds normally.
+      const sharedCtx = getSharedAudioContext();
+      if (sharedCtx) {
+        await resumeSharedAudioContext();
+        audioCtxRef.current = sharedCtx;
+        analyserRef.current = sharedCtx.createAnalyser();
+        analyserRef.current.fftSize = 256;
+        analyserRef.current.smoothingTimeConstant = 0.8;
+        const source = sharedCtx.createMediaStreamSource(stream);
+        source.connect(analyserRef.current);
+        sourceNodeRef.current = source;
+        startAudioAnalysis();
+      }
 
       mimeTypeRef.current = MediaRecorder.isTypeSupported(
         "audio/webm;codecs=opus",
@@ -753,11 +783,7 @@ export function useChunkedRecordAndTranscribe({
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
-    if (audioCtxRef.current?.state !== "closed") {
-      audioCtxRef.current?.close().catch(() => {});
-      audioCtxRef.current = null;
-    }
-    analyserRef.current = null;
+    disconnectAnalyser();
     streamRef.current = null;
     if (micHeldRef.current) {
       releaseMicStream();
@@ -788,7 +814,24 @@ export function useChunkedRecordAndTranscribe({
 
     mediaRecorderRef.current.stop();
     mediaRecorderRef.current = null;
-  }, [maybeFireFinal]);
+  }, [maybeFireFinal, disconnectAnalyser]);
+
+  // Surface OS-level mic interruptions LOUDLY while recording. A hard `ended`
+  // (iOS lock / call / app switch) or a permission revoke kills capture — the
+  // user must see it, not discover a silently dropped recording later. The
+  // chunks captured so far are already safe in IndexedDB; this just makes the
+  // failure visible. Transient mute/unmute is logged by the manager, not raised.
+  useEffect(() => {
+    return subscribeMicInterruption((reason) => {
+      if (reason !== "ended" && reason !== "permission-revoked") return;
+      if (!mediaRecorderRef.current && !isStoppingRef.current) return;
+      const message =
+        reason === "permission-revoked"
+          ? "Microphone permission was revoked mid-recording. Audio captured so far is saved; re-enable mic access to continue."
+          : "The microphone was interrupted (a call, screen lock, or app switch). Audio up to that point is saved; tap record to resume.";
+      onErrorRef.current?.(message, "MIC_INTERRUPTED");
+    });
+  }, []);
 
   const pauseRecording = useCallback(() => {
     if (
