@@ -40,8 +40,8 @@
 // the fix is to align it back to the shell's canonical `.shell-nav-item`
 // pattern — NOT to add a parallel styling system here.
 
-import { useCallback, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Mic, Plus, Search, Webhook } from "lucide-react";
 import {
@@ -53,7 +53,6 @@ import { cn } from "@/lib/utils";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { PinnedAgentsSection } from "./PinnedAgentsSection";
-import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 
 /** Sidebar history list scope. Stable, owned by ChatSidebarMenu. */
 const CHAT_HISTORY_SCOPE = "chat-route";
@@ -101,28 +100,10 @@ interface ChatSidebarMenuProps {
 }
 
 export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const { activeConversationId, activeAgentId } = parseChatPath(pathname);
   const isVoiceRoute = pathname.startsWith(VOICE_AGENT_HREF);
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
-
-  const openConversation = useCallback(
-    (conv: ConversationListItem) => router.push(`/chat/${conv.conversationId}`),
-    [router],
-  );
-  const selectPinnedAgent = useCallback(
-    (agentId: string) => router.push(`/chat/a/${encodeURIComponent(agentId)}`),
-    [router],
-  );
-  // `+` always lands on the canonical new-chat surface (`/chat/new`), which
-  // mounts the default agent + greeting. Routing unconditionally here means
-  // the button works from any chat URL — including `/chat/a/[agentId]`, where
-  // the old "reuse the active agent" branch produced a same-URL `router.push`
-  // no-op and the button looked dead.
-  const handleNewChat = useCallback(() => {
-    router.push("/chat/new");
-  }, [router]);
 
   return (
     // gap-0.5 (= 0.125rem) matches `.shell-sidebar-main-nav` / `route-nav`
@@ -132,10 +113,9 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
       {/* ── CHROME ROWS ── identical DOM in both states. Icons NEVER move
             on collapse/expand. Order is fixed; positions are stable. */}
 
-      {/* New chat */}
-      <button
-        type="button"
-        onClick={handleNewChat}
+      {/* New chat — Link so cmd/ctrl+click opens /chat/new in a new tab. */}
+      <Link
+        href="/chat/new"
         title="New chat"
         aria-label="New chat"
         className={NAV_ITEM_CLASS}
@@ -144,7 +124,7 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           <Plus size={ICON_SIZE} strokeWidth={ICON_STROKE} />
         </span>
         <span className="shell-nav-label">New chat</span>
-      </button>
+      </Link>
 
       {/* Search chats — popover (independent scope so it doesn't filter
           the sidebar list after close). */}
@@ -176,10 +156,7 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
               // transcription, voice — is reachable via the filter tree.
               surfaceId="chat"
               activeConversationId={activeConversationId}
-              onOpenConversation={(conv) => {
-                openConversation(conv);
-                setChatSearchOpen(false);
-              }}
+              onOpenConversation={() => setChatSearchOpen(false)}
               initialSearchOpen
               className="h-full"
             />
@@ -191,7 +168,7 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           triggerSlot. `contentSide="right"` opens the panel beside the
           rail (not over it). */}
       <AgentListDropdown
-        onSelect={selectPinnedAgent}
+        navigateTo="/chat/a/{id}"
         contentSide="right"
         triggerSlot={
           <button
@@ -230,14 +207,10 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
             either way; only what shows BELOW the chrome differs. */}
       {expanded && (
         <div className="flex flex-1 min-h-0 flex-col">
-          <PinnedAgentsSection
-            activeAgentId={activeAgentId}
-            onSelect={selectPinnedAgent}
-          />
+          <PinnedAgentsSection activeAgentId={activeAgentId} />
           <ChatHistorySidebar
             scopeId={CHAT_HISTORY_SCOPE}
             activeConversationId={activeConversationId}
-            onOpenConversation={openConversation}
             // ALLOW-list (surface default): "chat" shows only real chats
             // (source_feature = chat-route). System runs, transcription, and
             // voice transcripts (which can't be replayed here) are hidden by

@@ -317,6 +317,24 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
                 return <JsonFallback content={content} />;
             }
 
+            case "mermaid": {
+                // Render a materialized mermaid artifact (artifact_ref → here)
+                // through the SAME MermaidBlock used in chat, so a reloaded
+                // diagram looks identical and isn't lost.
+                const MermaidArtifact = React.lazy(
+                    () => import("../mermaid/MermaidBlock"),
+                );
+                return (
+                    <Suspense fallback={<MatrxMiniLoader />}>
+                        <MermaidArtifact
+                            content={content}
+                            taskId={dedupKey}
+                            artifactId={serverData?.artifactId ?? metadata?.artifactId}
+                        />
+                    </Suspense>
+                );
+            }
+
             case "diagram": {
                 const diagramData = safeJsonParse(content) as any;
                 if (diagramData?.diagram) {

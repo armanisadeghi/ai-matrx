@@ -241,7 +241,15 @@ function useConversationHistoryController(
     }
     void dispatch(fetchConversationHistory(fetchArgs));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, scopeId, agentIdsKey, pageSize, excludeKey, resolvedKey, surfaceId]);
+  }, [
+    dispatch,
+    scopeId,
+    agentIdsKey,
+    pageSize,
+    excludeKey,
+    resolvedKey,
+    surfaceId,
+  ]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   const onSearchChange = useCallback(
@@ -890,7 +898,8 @@ const Row: React.FC<RowProps> = ({
       label={title}
       size="sm"
       active={active}
-      onOpen={() => onOpen?.(conv)}
+      href={resolveHref(conv)}
+      onOpen={onOpen ? () => onOpen(conv) : undefined}
       leading={<StreamingDot conversationId={conv.conversationId} />}
       secondaryLabel={meta || undefined}
       trailing={trailing}
@@ -952,7 +961,8 @@ const ConsumerRow: React.FC<{
       className="mx-1"
       label={title}
       active={active}
-      onOpen={() => onOpen?.(conv)}
+      href={resolveHref(conv)}
+      onOpen={onOpen ? () => onOpen(conv) : undefined}
       menu={() =>
         buildConversationMenu({
           conversationId: conv.conversationId,

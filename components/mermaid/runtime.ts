@@ -15,6 +15,7 @@
 
 import type { MermaidConfig } from "mermaid";
 
+import { humanizeMermaidError } from "./sanitize";
 import { renderOptionsKey, type MermaidRenderOptions } from "./types";
 
 console.log(
@@ -95,10 +96,16 @@ export async function validateMermaid(
     const result = await mermaid.parse(source, { suppressErrors: true });
     return result === false ? { ok: false } : { ok: true };
   } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : String(err),
-    };
+    // suppressErrors covers grammar parse failures (which return false), but
+    // mermaid can still THROW a raw JS runtime error (e.g. the infamous
+    // "Converting circular structure to JSON" TypeError holding a DOM node).
+    // Scream with the raw error for debugging, surface a clean one upstream.
+    const raw = err instanceof Error ? err.message : String(err);
+    console.warn(
+      "[MermaidRuntime] mermaid.parse threw (not a clean parse failure):",
+      err,
+    );
+    return { ok: false, error: humanizeMermaidError(raw) };
   }
 }
 

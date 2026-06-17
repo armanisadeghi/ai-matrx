@@ -629,6 +629,27 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
   },
 
+  // ── Create Project ────────────────────────────────────────────────────────
+  // The canonical ProjectFormCore wrapped in WindowPanel chrome. Open via
+  // `useOpenCreateProjectWindow()` and listen for the `created` event to grab
+  // the new project (e.g. War Room auto-selects it for the new thread).
+  {
+    slug: "create-project-window",
+    overlayId: "createProjectWindow",
+    kind: "window",
+    label: "Create Project",
+    defaultData: {
+      callbackGroupId: null as string | null,
+      initialOrgId: null as string | null,
+      initialOrgSlug: null as string | null,
+      orgLocked: false,
+      skipRedirect: true,
+    },
+    mobilePresentation: "drawer",
+    instanceMode: "multi",
+    ephemeral: true,
+  },
+
   // ── Diff Viewer ───────────────────────────────────────────────────────────
   // Canonical diff core (components/diff/DiffViewer) in a movable window.
   // Multi-instance + ephemeral: spawn one per "Compare …" action; live

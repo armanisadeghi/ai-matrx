@@ -28,7 +28,11 @@ import { detectDiagramType, extractMermaidTitle } from "./diagram-type";
 import { getCatalogEntry } from "./catalog";
 import { MermaidViewport } from "./MermaidViewport";
 import { preloadMermaid, renderMermaid, validateMermaid } from "./runtime";
-import { parseWithLadder, type LadderResult } from "./sanitize";
+import {
+  humanizeMermaidError,
+  parseWithLadder,
+  type LadderResult,
+} from "./sanitize";
 import type { MermaidRenderOptions } from "./types";
 import { renderOptionsKey } from "./types";
 
@@ -105,11 +109,17 @@ export function MermaidRenderer({
           // for some grammars) — treat like a ladder failure on complete.
           if (epoch !== epochRef.current) return;
           if (!isStreamActive) {
+            console.warn(
+              "[MermaidRenderer] render threw after validation passed:",
+              err,
+            );
             setFailure({
               source: trimmed,
               valid: false,
               fixes: [],
-              error: err instanceof Error ? err.message : String(err),
+              error: humanizeMermaidError(
+                err instanceof Error ? err.message : String(err),
+              ),
             });
           }
         }
@@ -205,9 +215,9 @@ function MermaidErrorCard({
           <p className="font-medium text-foreground">
             This diagram could not be drawn
           </p>
-          {failure.error && (
+          {humanizeMermaidError(failure.error) && (
             <p className="break-words text-xs text-muted-foreground">
-              {failure.error}
+              {humanizeMermaidError(failure.error)}
             </p>
           )}
           {failure.fixes.length > 0 && (

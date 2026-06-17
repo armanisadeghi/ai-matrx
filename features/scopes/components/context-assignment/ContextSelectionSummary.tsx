@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { resolveColor } from "@/features/scope-system/constants/scope-colors";
 import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
 import type { AssignableProject, AssignableTask } from "./data";
+import type { ContextAssignmentDimension } from "./ContextAssignmentField";
 import { orgDisplayNameById } from "@/features/scopes/utils/formatOrgDisplayName";
 
 export interface ContextSelectionSummaryProps {
@@ -39,6 +40,8 @@ export interface ContextSelectionSummaryProps {
   onRemoveScope: (id: string) => void;
   onRemoveProject: (id: string) => void;
   onRemoveTask: (id: string) => void;
+  /** When set, hides Projects/Tasks rows that are omitted. Default: all three. */
+  dimensions?: ContextAssignmentDimension[];
   className?: string;
 }
 
@@ -150,8 +153,19 @@ export function ContextSelectionSummary({
   onRemoveScope,
   onRemoveProject,
   onRemoveTask,
+  dimensions,
   className,
 }: ContextSelectionSummaryProps) {
+  const dims = useMemo(() => {
+    const set = new Set(
+      dimensions ?? (["scopes", "projects", "tasks"] as const),
+    );
+    return {
+      scopes: set.has("scopes"),
+      projects: set.has("projects"),
+      tasks: set.has("tasks"),
+    };
+  }, [dimensions]);
   const allTypes = useMemo(
     () => organizations.flatMap((o) => o.scope_types),
     [organizations],
@@ -219,50 +233,55 @@ export function ContextSelectionSummary({
         )}
       </SummaryRow>
 
-      {scopesByType.map(({ type, scopeIds }) => {
-        const c = resolveColor(type);
-        return (
-          <SummaryRow key={type.id} label={typeRowLabel(type, organizations)}>
-            {scopeIds.map((id) => (
+      {dims.scopes &&
+        scopesByType.map(({ type, scopeIds }) => {
+          const c = resolveColor(type);
+          return (
+            <SummaryRow key={type.id} label={typeRowLabel(type, organizations)}>
+              {scopeIds.map((id) => (
+                <RemovableChip
+                  key={id}
+                  label={scopeName(id, organizations, addedScopes)}
+                  fg={c.fg}
+                  border={c.border}
+                  onRemove={() => onRemoveScope(id)}
+                />
+              ))}
+            </SummaryRow>
+          );
+        })}
+
+      {dims.projects && (
+        <SummaryRow label="Projects">
+          {selProjects.size === 0 ? (
+            <NoneValue />
+          ) : (
+            [...selProjects].map((id) => (
               <RemovableChip
                 key={id}
-                label={scopeName(id, organizations, addedScopes)}
-                fg={c.fg}
-                border={c.border}
-                onRemove={() => onRemoveScope(id)}
+                label={projectName(id)}
+                onRemove={() => onRemoveProject(id)}
               />
-            ))}
-          </SummaryRow>
-        );
-      })}
+            ))
+          )}
+        </SummaryRow>
+      )}
 
-      <SummaryRow label="Projects">
-        {selProjects.size === 0 ? (
-          <NoneValue />
-        ) : (
-          [...selProjects].map((id) => (
-            <RemovableChip
-              key={id}
-              label={projectName(id)}
-              onRemove={() => onRemoveProject(id)}
-            />
-          ))
-        )}
-      </SummaryRow>
-
-      <SummaryRow label="Tasks">
-        {selTasks.size === 0 ? (
-          <NoneValue />
-        ) : (
-          [...selTasks].map((id) => (
-            <RemovableChip
-              key={id}
-              label={taskName(id)}
-              onRemove={() => onRemoveTask(id)}
-            />
-          ))
-        )}
-      </SummaryRow>
+      {dims.tasks && (
+        <SummaryRow label="Tasks">
+          {selTasks.size === 0 ? (
+            <NoneValue />
+          ) : (
+            [...selTasks].map((id) => (
+              <RemovableChip
+                key={id}
+                label={taskName(id)}
+                onRemove={() => onRemoveTask(id)}
+              />
+            ))
+          )}
+        </SummaryRow>
+      )}
     </div>
   );
 }

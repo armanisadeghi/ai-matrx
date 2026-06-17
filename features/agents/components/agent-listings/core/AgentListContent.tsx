@@ -18,6 +18,8 @@ export interface AgentListContentProps {
   allTags: string[];
   inputRef: React.RefObject<HTMLInputElement | null>;
   onSelectAgent: (a: AgentDefinitionRecord) => void;
+  /** Per-row href for cmd/ctrl+click. Defaults to `/agents/[id]`. */
+  resolveAgentHref?: (agent: AgentDefinitionRecord) => string;
   onReset: () => void;
   activeFilterCount: number;
   isMobile: boolean;
@@ -39,6 +41,7 @@ export function AgentListContent({
   allTags,
   inputRef,
   onSelectAgent,
+  resolveAgentHref,
   onReset,
   activeFilterCount,
   isMobile,
@@ -109,6 +112,7 @@ export function AgentListContent({
                 isHovered={hoveredAgent?.id === agent.id}
                 isMobile={isMobile}
                 onClick={() => onSelectAgent(agent)}
+                href={resolveAgentHref?.(agent)}
                 onHover={() => onAgentHover(agent)}
                 onHoverEnd={() => onAgentHoverEnd(agent)}
                 onDetailPress={() => onDetailPress(agent)}

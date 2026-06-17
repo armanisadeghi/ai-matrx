@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -12,13 +13,15 @@ import { FavoriteAgentButton } from "@/features/agents/components/agent-listings
 interface PinnedAgentsSectionProps {
   /** Currently active agentId — used to highlight the row when present. */
   activeAgentId?: string;
-  /** Click handler — receives the selected agent's id. */
-  onSelect: (agentId: string) => void;
 }
 
 const CONSUMER_ID = "chat-sidebar-pinned";
 /** Collapsed pin list length before "Show all" appears. */
 const PINNED_COLLAPSED_LIMIT = 5;
+
+function pinnedAgentHref(agentId: string): string {
+  return `/chat/a/${encodeURIComponent(agentId)}`;
+}
 
 /**
  * Renders the user's pinned agents at the top of the chat sidebar.
@@ -40,7 +43,6 @@ const PINNED_COLLAPSED_LIMIT = 5;
  */
 export function PinnedAgentsSection({
   activeAgentId,
-  onSelect,
 }: PinnedAgentsSectionProps) {
   const dispatch = useAppDispatch();
 
@@ -108,33 +110,29 @@ export function PinnedAgentsSection({
           {visiblePins.map((agent) => {
             const isActive = activeAgentId === agent.id;
             return (
-              <li
-                key={agent.id}
-                className={cn(
-                  "group mx-1 flex h-8 items-center gap-1.5 rounded-lg px-2 text-sm cursor-pointer",
-                  "text-foreground/90 hover:bg-accent/60",
-                  isActive && "bg-accent/70",
-                )}
-                onClick={() => onSelect(agent.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onSelect(agent.id);
-                  }
-                }}
-                title={agent.description || agent.name}
-              >
-                <span className="min-w-0 flex-1 truncate">
-                  {agent.name || "Untitled agent"}
-                </span>
-                <span
-                  className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => e.stopPropagation()}
+              <li key={agent.id}>
+                <Link
+                  href={pinnedAgentHref(agent.id)}
+                  title={agent.description || agent.name}
+                  className={cn(
+                    "group mx-1 flex h-8 items-center gap-1.5 rounded-lg px-2 text-sm",
+                    "text-foreground/90 hover:bg-accent/60",
+                    isActive && "bg-accent/70",
+                  )}
                 >
-                  <FavoriteAgentButton id={agent.id} variant="list" />
-                </span>
+                  <span className="min-w-0 flex-1 truncate">
+                    {agent.name || "Untitled agent"}
+                  </span>
+                  <span
+                    className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  >
+                    <FavoriteAgentButton id={agent.id} variant="list" />
+                  </span>
+                </Link>
               </li>
             );
           })}

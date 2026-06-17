@@ -16,6 +16,7 @@ import {
   Focus,
   EyeOff,
   Trash2,
+  Building2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -32,11 +33,17 @@ export function TileOptionsMenu({
   onStage,
   isStaged,
   size = "sm",
+  onOpenContext,
+  contextActive,
 }: {
   actions: TileActions;
   onStage?: () => void;
   isStaged?: boolean;
   size?: "sm" | "md";
+  /** When supplied, adds a "Context" item that opens the tile context picker (Grid mode moves the control here to free header space). */
+  onOpenContext?: () => void;
+  /** Highlights the Context item + labels it "overridden" when this tile overrides the session context. */
+  contextActive?: boolean;
 }) {
   return (
     <DropdownMenu>
@@ -58,6 +65,14 @@ export function TileOptionsMenu({
           <DropdownMenuItem onClick={onStage}>
             <Focus className="size-3.5" />
             Bring to stage
+          </DropdownMenuItem>
+        ) : null}
+        {onOpenContext ? (
+          <DropdownMenuItem onClick={onOpenContext}>
+            <Building2
+              className={cn("size-3.5", contextActive && "text-primary")}
+            />
+            {contextActive ? "Context (overridden)" : "Context"}
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem onClick={actions.togglePin}>

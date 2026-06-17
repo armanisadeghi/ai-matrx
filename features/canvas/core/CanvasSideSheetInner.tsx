@@ -33,6 +33,7 @@ import {
   toggleCanvas,
   setCanvasWidth,
   setCanvasSplitRatio,
+  setCanvasAvailable,
 } from "@/features/canvas/redux/canvasSlice";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -64,6 +65,18 @@ export function CanvasSideSheetInner() {
 
   const handleClose = useCallback(() => {
     dispatch(closeCanvas());
+  }, [dispatch]);
+
+  // The global canvas surface is mounted (here, via DeferredIslands in (core)
+  // and directly in (public)) → canvas IS available on these routes. Mark it so
+  // that blocks which gate their "Open in canvas" affordance on availability
+  // (e.g. MermaidBlock) actually show it. Without this, only the legacy
+  // AdaptiveLayout ever set availability, so the modern chat hid the button.
+  useEffect(() => {
+    dispatch(setCanvasAvailable(true));
+    return () => {
+      dispatch(setCanvasAvailable(false));
+    };
   }, [dispatch]);
 
   useEffect(() => {

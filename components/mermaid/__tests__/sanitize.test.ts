@@ -18,9 +18,11 @@ const defectOracle: MermaidValidator = async (source) => {
     // // or # comment lines
     if (/^(\/\/|#)(?!#)/.test(s)) return { ok: false, error: "bad comment" };
     // unquoted parenthesis inside a [..] label
-    if (/[A-Za-z0-9_]+\[[^"\]]*[()][^\]]*\]/.test(s)) return { ok: false, error: "unquoted paren in label" };
+    if (/[A-Za-z0-9_]+\[[^"\]]*[()][^\]]*\]/.test(s))
+      return { ok: false, error: "unquoted paren in label" };
     // reserved lowercase `end` as a node (after a pipe/arrow), not a subgraph close
-    if (/(\||>)\s*end\s*$/.test(s)) return { ok: false, error: "reserved end node" };
+    if (/(\||>)\s*end\s*$/.test(s))
+      return { ok: false, error: "reserved end node" };
   }
   return { ok: true };
 };
@@ -33,7 +35,9 @@ const BROKEN = `flowchart TD
 
 describe("mermaid forgiving ladder", () => {
   it("recovers the canonical broken sample and reports every fix", async () => {
-    const result = await parseWithLadder(BROKEN, defectOracle, { streaming: false });
+    const result = await parseWithLadder(BROKEN, defectOracle, {
+      streaming: false,
+    });
     expect(result.valid).toBe(true);
     expect(result.source).not.toBe(BROKEN);
     // The four defects are addressed:
@@ -46,7 +50,9 @@ describe("mermaid forgiving ladder", () => {
 
   it("leaves already-valid source untouched (no fixes)", async () => {
     const valid = `flowchart TD\n  A["Start"] --> B["End"]`;
-    const result = await parseWithLadder(valid, defectOracle, { streaming: false });
+    const result = await parseWithLadder(valid, defectOracle, {
+      streaming: false,
+    });
     expect(result.valid).toBe(true);
     expect(result.fixes).toHaveLength(0);
     expect(result.source).toBe(valid);
@@ -57,7 +63,9 @@ describe("mermaid forgiving ladder", () => {
     const stageAOracle: MermaidValidator = async (s) =>
       /[“”]|--&gt;/.test(s) ? { ok: false } : { ok: true };
     const messy = `flowchart TD\n  A[“Hi”] --&gt; B`;
-    const result = await parseWithLadder(messy, stageAOracle, { streaming: false });
+    const result = await parseWithLadder(messy, stageAOracle, {
+      streaming: false,
+    });
     expect(result.valid).toBe(true);
     expect(result.source).toContain('"Hi"');
     expect(result.source).toContain("-->");
@@ -65,11 +73,15 @@ describe("mermaid forgiving ladder", () => {
 
   it("normalizes en/em-dash arrows but leaves dashes in labels alone (Stage A)", async () => {
     const dashOracle: MermaidValidator = async (s) =>
-      /[–—]>|<[–—]/.test(s) ? { ok: false, error: "unicode dash arrow" } : { ok: true };
+      /[–—]>|<[–—]/.test(s)
+        ? { ok: false, error: "unicode dash arrow" }
+        : { ok: true };
     // The normalizer only fixes the dash CHARACTER; arrow length (-> to -->) is
     // the job of the downstream fix-arrow-typos fixer.
     const messy = `flowchart LR\n  A[cost—benefit] —> B\n  B –-> C\n  D <—- A`;
-    const result = await parseWithLadder(messy, dashOracle, { streaming: false });
+    const result = await parseWithLadder(messy, dashOracle, {
+      streaming: false,
+    });
     expect(result.valid).toBe(true);
     expect(result.source).toContain("A[cost—benefit]"); // em-dash in label untouched
     expect(result.source).toContain("-> B"); // —> → ->
@@ -77,10 +89,54 @@ describe("mermaid forgiving ladder", () => {
     expect(result.source).toContain("<-- A"); // <—- → <--
   });
 
+  it("converts literal \\n line-break escapes to <br/> (Stage A)", async () => {
+    // The #1 LLM mistake: a literal backslash-n inside a label.
+    const newlineOracle: MermaidValidator = async (s) =>
+      /\\n/.test(s)
+        ? { ok: false, error: "literal newline escape" }
+        : { ok: true };
+    const messy = `flowchart TD\n  A[Case Record\\nClient · Claimant] --> B`;
+    const result = await parseWithLadder(messy, newlineOracle, {
+      streaming: false,
+    });
+    expect(result.valid).toBe(true);
+    expect(result.source).toContain("Case Record<br/>Client · Claimant");
+    expect(result.source).not.toContain("\\n");
+    // Real source newlines must survive untouched.
+    expect(result.source.split("\n").length).toBeGreaterThan(1);
+  });
+
+  it("quotes unsafe labels inside multi-bracket shapes (stadium/cylinder/hexagon)", async () => {
+    // Oracle rejects an unquoted & or () inside any shape.
+    const shapeOracle: MermaidValidator = async (s) => {
+      const bad = s
+        .split("\n")
+        .some((l) => /(\(\[|\[\(|\{\{)[^"]*[&()][^"]*(\]\)|\)\]|\}\})/.test(l));
+      return bad
+        ? { ok: false, error: "unquoted special in shape" }
+        : { ok: true };
+    };
+    const messy = [
+      "flowchart TD",
+      "  A([Client (Co) & Partners]) --> B",
+      "  B --> C[(Saved & Indexed)]",
+      "  C --> D{{Linked & Sourced}}",
+    ].join("\n");
+    const result = await parseWithLadder(messy, shapeOracle, {
+      streaming: false,
+    });
+    expect(result.valid).toBe(true);
+    expect(result.source).toContain('A(["Client (Co) & Partners"])');
+    expect(result.source).toContain('C[("Saved & Indexed")]');
+    expect(result.source).toContain('D{{"Linked & Sourced"}}');
+  });
+
   it("stays quiet during streaming when partial text can't validate", async () => {
     const partial = `flowchart TD\n  A[Start] -->`;
     const alwaysInvalid: MermaidValidator = async () => ({ ok: false });
-    const result = await parseWithLadder(partial, alwaysInvalid, { streaming: true });
+    const result = await parseWithLadder(partial, alwaysInvalid, {
+      streaming: true,
+    });
     // streaming + invalid → returns the (Stage-A-normalized) source, not valid,
     // and never runs the heavy Stage B fixers.
     expect(result.valid).toBe(false);

@@ -39,7 +39,12 @@ const SIZE: Record<
   ItemRowSize,
   { row: string; text: string; kebab: string; icon: string }
 > = {
-  sm: { row: "h-7", text: "text-[13px]", kebab: "h-5 w-5", icon: "h-3.5 w-3.5" },
+  sm: {
+    row: "h-7",
+    text: "text-[13px]",
+    kebab: "h-5 w-5",
+    icon: "h-3.5 w-3.5",
+  },
   md: { row: "h-8", text: "text-sm", kebab: "h-6 w-6", icon: "h-4 w-4" },
   lg: { row: "h-10", text: "text-sm", kebab: "h-7 w-7", icon: "h-4 w-4" },
 };
@@ -177,7 +182,13 @@ export function ItemRow({
         href={href}
         className={primaryClass}
         style={indentStyle}
-        onClick={onOpen}
+        onClick={(e) => {
+          // Modifier / middle-click: native <a> opens a new tab/window.
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+          onOpen?.();
+          // When `onOpen` is set it is for side effects only (close a popover,
+          // etc.) — navigation stays on the Link href.
+        }}
         onDoubleClick={
           allowDoubleClick
             ? (e) => {

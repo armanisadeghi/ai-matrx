@@ -11,6 +11,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
+  PopoverAnchor,
 } from "@/components/ui/popover";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectTileEffectiveContext } from "@/features/war-room/redux/selectors";
@@ -21,44 +22,60 @@ import {
 import { cn } from "@/lib/utils";
 import { WarRoomContextPicker } from "../shared/WarRoomContextPicker";
 
-export function TileContextOverride({ tileId }: { tileId: string }) {
+export function TileContextOverride({
+  tileId,
+  open,
+  onOpenChange,
+  hideTrigger = false,
+}: {
+  tileId: string;
+  /** Controlled open state — supply with `hideTrigger` to drive from elsewhere (e.g. the options menu). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Render only an invisible anchor instead of the button (the popover is opened externally). */
+  hideTrigger?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const ctx = useAppSelector((s) => selectTileEffectiveContext(tileId)(s));
 
   const hasContext = !!ctx.organizationId || ctx.scopeIds.length > 0;
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          onClick={(e) => e.stopPropagation()}
-          aria-label="Tile context"
-          title={
-            ctx.isOverridden
-              ? "Tile context (overridden)"
-              : hasContext
-                ? "Tile context (inherited from session)"
-                : "Set tile context"
-          }
-          className={cn(
-            "grid place-items-center size-6 rounded-md transition-colors relative",
-            ctx.isOverridden
-              ? "text-primary hover:bg-primary/10"
-              : "text-muted-foreground hover:bg-accent hover:text-foreground",
-          )}
-        >
-          <Building2 className="size-3.5" />
-          {ctx.scopeIds.length > 0 ? (
-            <span
-              className={cn(
-                "absolute -top-0.5 -right-0.5 size-1.5 rounded-full",
-                ctx.isOverridden ? "bg-primary" : "bg-muted-foreground/60",
-              )}
-            />
-          ) : null}
-        </button>
-      </PopoverTrigger>
+    <Popover open={open} onOpenChange={onOpenChange}>
+      {hideTrigger ? (
+        <PopoverAnchor />
+      ) : (
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Tile context"
+            title={
+              ctx.isOverridden
+                ? "Tile context (overridden)"
+                : hasContext
+                  ? "Tile context (inherited from session)"
+                  : "Set tile context"
+            }
+            className={cn(
+              "grid place-items-center size-6 rounded-md transition-colors relative",
+              ctx.isOverridden
+                ? "text-primary hover:bg-primary/10"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
+          >
+            <Building2 className="size-3.5" />
+            {ctx.scopeIds.length > 0 ? (
+              <span
+                className={cn(
+                  "absolute -top-0.5 -right-0.5 size-1.5 rounded-full",
+                  ctx.isOverridden ? "bg-primary" : "bg-muted-foreground/60",
+                )}
+              />
+            ) : null}
+          </button>
+        </PopoverTrigger>
+      )}
       <PopoverContent
         className="w-72"
         align="end"
