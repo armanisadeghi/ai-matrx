@@ -475,6 +475,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: false,
   },
+  quickScribe: {
+    label: "Quick Scribe",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   quickTasks: {
     label: "Quick Tasks",
     instanceMode: "singleton",

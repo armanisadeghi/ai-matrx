@@ -552,6 +552,13 @@ const QuickNotesSheet = dynamic(
     })),
   { ssr: false },
 );
+const QuickScribeSheet = dynamic(
+  () =>
+    import("@/features/transcript-studio/components/QuickScribeSheet").then(
+      (m) => ({ default: m.QuickScribeSheet }),
+    ),
+  { ssr: false },
+);
 const GlobalSuggestionsDrawer = dynamic(
   () =>
     import("@/features/kg-suggestions/components/GlobalSuggestionsDrawer").then(
@@ -907,6 +914,7 @@ export default function OverlayController() {
       selectIsOverlayOpen(s, "kgSuggestionsDrawer"),
     ),
     quickNotes: useAppSelector((s) => selectIsOverlayOpen(s, "quickNotes")),
+    quickScribe: useAppSelector((s) => selectIsOverlayOpen(s, "quickScribe")),
     quickTasks: useAppSelector((s) => selectIsOverlayOpen(s, "quickTasks")),
     quickTasksWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickTasksWindow"),
@@ -1141,6 +1149,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     quickNotes: useAppSelector((s) =>
       selectOverlayData(s, "quickNotes"),
+    ) as Record<string, unknown> | null,
+    quickScribe: useAppSelector((s) =>
+      selectOverlayData(s, "quickScribe"),
     ) as Record<string, unknown> | null,
     quickTasksWindow: useAppSelector((s) =>
       selectOverlayData(s, "quickTasksWindow"),
@@ -3689,6 +3700,31 @@ export default function OverlayController() {
             <QuickNotesSheet
               className={
                 typeof data?.className === "string" ? data.className : undefined
+              }
+            />
+          </SidePanelSurface>
+        );
+      })()}
+
+      {/* quickScribe */}
+      {(() => {
+        const isOpen = isOpenById.quickScribe;
+        const data = dataById.quickScribe as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <SidePanelSurface
+            title="Quick Scribe"
+            description="Capture voice from anywhere — transcribed and cleaned on the fly."
+            onClose={() => dispatch(closeOverlay({ overlayId: "quickScribe" }))}
+            storageKey="quick-scribe"
+            defaultWidth={560}
+          >
+            <QuickScribeSheet
+              sessionId={
+                typeof data?.sessionId === "string" ? data.sessionId : undefined
               }
             />
           </SidePanelSurface>

@@ -110,6 +110,7 @@ export const OVERLAY_IDS = [
   "quickDataWindow",
   "quickNoteSaveWindow",
   "quickNotes",
+  "quickScribe",
   "quickTasks",
   "quickTasksWindow",
   "quickUtilities",
