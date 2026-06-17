@@ -45,6 +45,8 @@ import { isWarRoomToolName } from "@/features/agents/war-room-tools/tools/names"
 import { dispatchWarRoomTool } from "@/features/agents/war-room-tools/dispatcher/dispatch-war-room-tool.thunk";
 import { isWarRoomMasterToolName } from "@/features/agents/war-room-master-tools/tools/names";
 import { dispatchWarRoomMasterTool } from "@/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk";
+import { isScribeToolName } from "@/features/agents/scribe-tools/tools/names";
+import { dispatchScribeTool } from "@/features/agents/scribe-tools/dispatcher/dispatch-scribe-tool.thunk";
 
 export interface SurfaceDelegatedToolCallArgs {
   conversationId: string;
@@ -153,6 +155,24 @@ export const surfaceDelegatedToolCall = (
       // through the same funnel so the suspended master loop resumes once.
       dispatch(
         dispatchWarRoomMasterTool({
+          conversationId,
+          requestId,
+          callId,
+          toolName,
+          args: (data?.arguments as Record<string, unknown>) ?? {},
+        }),
+      );
+      return;
+    }
+
+    if (isScribeToolName(toolName)) {
+      // Scribe tools (scribe_play_audio). Armed ONLY on a Scribe session's
+      // assistant conversation (ScribeScreen.addClientTool). Notify-and-play:
+      // the dispatcher validates args, resolves the bound session, triggers the
+      // session player to seek+play the clip, and POSTs the result immediately —
+      // no approval pause (playing the user's own recording is non-destructive).
+      dispatch(
+        dispatchScribeTool({
           conversationId,
           requestId,
           callId,

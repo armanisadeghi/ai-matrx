@@ -127,8 +127,12 @@ export async function buildToolInjection(
   const warRoomMasterClientTools = nonWidgetClientTools.filter(
     isWarRoomMasterToolName,
   );
+  const scribeClientTools = nonWidgetClientTools.filter(isScribeToolName);
   const registeredClientTools = nonWidgetClientTools.filter(
-    (name) => !isWarRoomToolName(name) && !isWarRoomMasterToolName(name),
+    (name) =>
+      !isWarRoomToolName(name) &&
+      !isWarRoomMasterToolName(name) &&
+      !isScribeToolName(name),
   );
 
   const widgetHandleId = selectWidgetHandleIdFor(state, conversationId);
@@ -156,6 +160,12 @@ export async function buildToolInjection(
     .map((name) => getWarRoomMasterInlineToolDef(name))
     .filter((def): def is NonNullable<typeof def> => def != null);
 
+  // Scribe tools as inline specs — same mechanism, armed only on a Scribe
+  // session's assistant conversation (ScribeScreen.addClientTool).
+  const scribeInlineSpecs: ToolSpec[] = scribeClientTools
+    .map((name) => getScribeInlineToolDef(name))
+    .filter((def): def is NonNullable<typeof def> => def != null);
+
   // Per-conversation tools the user added from the Smart Input tools menu
   // (registry UUIDs → server-executed registry specs). Explicit picks, so they
   // ride regardless of the disable-injection brake (which only gates the
@@ -169,6 +179,7 @@ export async function buildToolInjection(
     ...clientToolSpecs,
     ...warRoomInlineSpecs,
     ...warRoomMasterInlineSpecs,
+    ...scribeInlineSpecs,
     ...addedToolSpecs,
   ];
 

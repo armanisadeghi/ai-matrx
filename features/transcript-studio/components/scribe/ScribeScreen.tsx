@@ -48,6 +48,8 @@ import { WorkingDocumentHeader } from "./WorkingDocumentHeader";
 import { VoicePlaybackButton } from "./VoicePlaybackButton";
 import { DictionaryIndicatorButton } from "@/features/dictionary/components/DictionaryIndicatorButton";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
+import { addClientTool } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
+import { SCRIBE_TOOL_NAMES } from "@/features/agents/scribe-tools/tools/names";
 import { useStudioAutoLabel } from "../../hooks/useStudioAutoLabel";
 import { useStudioSession } from "../../hooks/useStudioSession";
 
@@ -93,7 +95,21 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   // completes BEFORE the user switches to the Agent tab still gets the
   // refreshed cleaned context on the next turn. We also use its `send` to fire
   // the post-recording review turn from the toast.
-  const { send } = useStudioAssistant(sessionId);
+  const { send, conversationId: assistantConversationId } =
+    useStudioAssistant(sessionId);
+
+  // Arm the Scribe client tool(s) on the session's assistant conversation —
+  // always on for Scribe so the agent can cue + play a clip of the recording on
+  // demand (scribe_play_audio). Additive; the conversation's tool array is
+  // initialized when the instance is minted, so addClientTool takes effect.
+  useEffect(() => {
+    if (!assistantConversationId) return;
+    for (const toolName of SCRIBE_TOOL_NAMES) {
+      dispatch(
+        addClientTool({ conversationId: assistantConversationId, toolName }),
+      );
+    }
+  }, [assistantConversationId, dispatch]);
 
   // Recording is a session-global concern (capturable from any mode), so the
   // control lives in the header and its state is read here. The capture
