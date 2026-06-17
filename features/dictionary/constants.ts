@@ -16,10 +16,11 @@ export const DICTIONARY_AGENT_IDS = {
   assistant: "ab1a868e-b866-4ade-9383-fd63b0928c7c",
 } as const;
 
-/** Human labels for the four owner levels. */
-export const DICT_LEVEL_LABELS: Record<DictLevel, string> = {
+/** Human labels for the four owner levels (+ the per-task "custom" source). */
+export const DICT_LEVEL_LABELS: Record<DictLevel | "custom", string> = {
   user: "Personal",
   organization: "Organization",
   scope_type: "Scope type",
   scope: "Scope",
+  custom: "This task",
 };

@@ -269,22 +269,37 @@ export function GeneratorForm({
     const maxVideos = mediaModeToCap(videoMode);
     if (maxVideos !== undefined) body.max_videos = maxVideos;
     // Attach the resolved dictionary so script + audio agents spell/pronounce
-    // terms correctly. Only when there's something to apply.
+    // terms correctly: `entries` is the persistent (global+user rollup) set,
+    // `custom_entries` is the per-task additions (override persistent). Send
+    // when either is present.
     const dictEntries = dictConsumption?.resolved.entries ?? [];
-    if (dictEntries.length > 0) {
+    const dictCustom = dictConsumption?.customEntries ?? [];
+    if (dictEntries.length > 0 || dictCustom.length > 0) {
+      const mapEntry = (e: {
+        term: string;
+        sounds_like?: string[] | null;
+        pronunciation?: string | null;
+        ipa?: string | null;
+        definition?: string | null;
+        category?: string | null;
+      }) => ({
+        term: e.term,
+        sounds_like: e.sounds_like ?? [],
+        pronunciation: e.pronunciation ?? null,
+        ipa: e.ipa ?? null,
+        definition: e.definition ?? null,
+        category: e.category ?? null,
+      });
       body.dictionary = {
-        entries: dictEntries.map((e) => ({
-          term: e.term,
-          sounds_like: e.sounds_like,
-          pronunciation: e.pronunciation,
-          ipa: e.ipa,
-          definition: e.definition,
-          category: e.category,
-        })),
+        entries: dictEntries.map(mapEntry),
+        custom_entries: dictCustom.map(mapEntry),
         max_inline_chars: dictConsumption?.resolved.effective_max_inline_chars ?? null,
         source_count: dictConsumption?.resolved.source_count ?? 0,
       };
     }
+    // Saved podcast audio is the high-quality use case → request the HQ model
+    // tier on every provider (the backend resolves the latest HQ model id).
+    body.tts_quality = "high_quality";
     onGenerate(body);
   };
 

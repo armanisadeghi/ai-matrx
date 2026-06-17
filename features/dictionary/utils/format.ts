@@ -9,6 +9,7 @@ import {
   DICT_DEFAULT_INLINE_CHARS,
   DICT_STT_PROMPT_CHAR_CAP,
   type DictConsumption,
+  type DictEntryDraft,
   type DictPronunciation,
   type ResolvedDictEntry,
   type ResolvedDictionary,
@@ -16,6 +17,27 @@ import {
 
 const byTerm = (a: ResolvedDictEntry, b: ResolvedDictEntry) =>
   a.term.toLowerCase().localeCompare(b.term.toLowerCase());
+
+/**
+ * Map per-task drafts into the resolved-entry shape so the renderers below can
+ * treat persistent + per-task uniformly. Tagged `source_level: "custom"` so a
+ * surface can badge them as "this task". Blank terms are dropped.
+ */
+function customDraftsToResolved(drafts: DictEntryDraft[]): ResolvedDictEntry[] {
+  return drafts
+    .filter((d) => (d.term ?? "").trim().length > 0)
+    .map((d, i) => ({
+      id: d.id ?? `custom:${i}`,
+      term: d.term.trim(),
+      sounds_like: (d.sounds_like ?? []).filter((s) => s.trim().length > 0),
+      pronunciation: d.pronunciation ?? null,
+      ipa: d.ipa ?? null,
+      definition: d.definition ?? null,
+      category: d.category ?? null,
+      source_level: "custom",
+      source_name: "This task",
+    }));
+}
 
 /**
  * Whisper `prompt` biasing string. Groq keeps the FINAL ~224 tokens, so the
@@ -99,13 +121,48 @@ export function buildContextBlock(resolved: ResolvedDictionary): string {
   return `Custom dictionary (preferred spellings & pronunciations):\n${lines.join("\n")}`;
 }
 
-/** The full consumption bundle for a resolved dictionary. */
-export function buildConsumption(resolved: ResolvedDictionary): DictConsumption {
+/**
+ * Merge the server-resolved persistent dictionary with per-task custom entries.
+ * Custom entries go FIRST and win on term collision (case-insensitive) — a
+ * task-specific respelling overrides the saved one. Returns a ResolvedDictionary
+ * the renderers can treat uniformly.
+ */
+function mergeWithCustom(
+  resolved: ResolvedDictionary,
+  customEntries: DictEntryDraft[],
+): ResolvedDictionary {
+  const custom = customDraftsToResolved(customEntries);
+  if (custom.length === 0) return resolved;
+  const seen = new Set<string>();
+  const entries: ResolvedDictEntry[] = [];
+  for (const e of [...custom, ...resolved.entries]) {
+    const k = e.term.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    entries.push(e);
+  }
+  return { ...resolved, entries };
+}
+
+/**
+ * The full consumption bundle for a resolved dictionary, with optional per-task
+ * custom entries folded into every output. The custom set is also surfaced
+ * verbatim so a TTS request can send it as `dictionary.custom_entries`.
+ */
+export function buildConsumption(
+  resolved: ResolvedDictionary,
+  customEntries: DictEntryDraft[] = [],
+): DictConsumption {
+  const merged = mergeWithCustom(resolved, customEntries);
   return {
+    // `resolved` stays persistent-only so a payload can keep `entries`
+    // (persistent) and `custom_entries` (per-task) separate. The per-task set is
+    // folded only into the DERIVED outputs below.
     resolved,
-    sttPrompt: buildSttPrompt(resolved),
-    ttsAliases: buildTtsAliases(resolved),
-    contextBlock: buildContextBlock(resolved),
+    sttPrompt: buildSttPrompt(merged),
+    ttsAliases: buildTtsAliases(merged),
+    contextBlock: buildContextBlock(merged),
+    customEntries,
   };
 }
 

@@ -213,7 +213,9 @@ export function ensureResolved(
           dictionaryActions.resolveReceived({
             surfaceKey,
             selectionKey,
-            consumption: buildConsumption(resolved),
+            // selectionKey (JSON of the whole selection) already includes
+            // customEntries, so a per-task change re-resolves + re-folds.
+            consumption: buildConsumption(resolved, selection.customEntries ?? []),
           }),
         );
       } catch (e) {

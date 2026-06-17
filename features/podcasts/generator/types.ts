@@ -5,6 +5,8 @@
 // that ride inside `event: "data"`, and the render-ready run state the UI binds
 // to. Mirrors aidream `api/routers/podcast_generator.py` event models.
 
+import type { DictEntryDraft } from "@/features/dictionary/types";
+
 // ── Request ────────────────────────────────────────────────────────────────
 
 export type PodcastInputDataType =
@@ -137,18 +139,19 @@ export interface PodcastGenerateRequest {
   // Resolved Custom Dictionary (terminology + pronunciation) for this run.
   // Shape matches aidream's DictionaryConfig; the script + audio agents use it
   // to spell terms right and pronounce them correctly. See features/dictionary.
+  // `entries` = persistent (global+user rollup); `custom_entries` = per-task
+  // additions that override the persistent set (the "situational" dictionary).
+  // Entries reuse the dictionary feature's draft shape; the backend ignores the
+  // optional id/is_active fields.
   dictionary?: {
-    entries: Array<{
-      term: string;
-      sounds_like?: string[];
-      pronunciation?: string | null;
-      ipa?: string | null;
-      definition?: string | null;
-      category?: string | null;
-    }>;
+    entries: DictEntryDraft[];
+    custom_entries?: DictEntryDraft[];
     max_inline_chars?: number | null;
     source_count?: number;
   };
+  /** TTS quality mode — saved audio uses "high_quality"; the backend resolves
+   *  the latest model for that tier on each provider. */
+  tts_quality?: "high_quality" | "fast";
 }
 
 // ── Podcast stream events (inside `event: "data"`) ──────────────────────────

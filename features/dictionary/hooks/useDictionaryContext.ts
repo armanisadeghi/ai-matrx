@@ -23,6 +23,7 @@ import {
 import {
   DEFAULT_DICT_SELECTION,
   type DictConsumption,
+  type DictEntryDraft,
   type DictSelection,
 } from "@/features/dictionary/types";
 
@@ -61,10 +62,50 @@ export function useDictionaryContext(surfaceKey: string) {
 
   const consumption: DictConsumption | null = cell?.data ?? null;
 
-  const activeCount = useMemo(
-    () => consumption?.resolved.entries.length ?? 0,
-    [consumption],
+  const customEntries = useMemo(
+    () => (selection as DictSelection).customEntries ?? [],
+    [selection],
   );
+
+  const activeCount = useMemo(
+    () => (consumption?.resolved.entries.length ?? 0) + customEntries.length,
+    [consumption, customEntries],
+  );
+
+  // ── per-task ("situational") custom entries ──────────────────────────────
+  const setCustomEntries = useCallback(
+    (next: DictEntryDraft[] | ((prev: DictEntryDraft[]) => DictEntryDraft[])) => {
+      setSelection((prev) => {
+        const prevCustom = prev.customEntries ?? [];
+        const resolved = typeof next === "function" ? next(prevCustom) : next;
+        return { ...prev, customEntries: resolved };
+      });
+    },
+    [setSelection],
+  );
+
+  const addCustomEntry = useCallback(
+    (draft: DictEntryDraft) => {
+      if (!draft.term?.trim()) return;
+      setCustomEntries((prev) => {
+        // Replace an existing per-task entry for the same term (case-insensitive).
+        const key = draft.term.trim().toLowerCase();
+        const rest = prev.filter((e) => e.term.trim().toLowerCase() !== key);
+        return [...rest, { ...draft, term: draft.term.trim() }];
+      });
+    },
+    [setCustomEntries],
+  );
+
+  const removeCustomEntry = useCallback(
+    (term: string) => {
+      const key = term.trim().toLowerCase();
+      setCustomEntries((prev) => prev.filter((e) => e.term.trim().toLowerCase() !== key));
+    },
+    [setCustomEntries],
+  );
+
+  const clearCustomEntries = useCallback(() => setCustomEntries([]), [setCustomEntries]);
 
   return {
     consumption,
@@ -74,5 +115,11 @@ export function useDictionaryContext(surfaceKey: string) {
     owners,
     status: cell?.status ?? "idle",
     error: cell?.error ?? null,
+    // Per-task custom dictionary (session-scoped, not saved to any tier).
+    customEntries,
+    setCustomEntries,
+    addCustomEntry,
+    removeCustomEntry,
+    clearCustomEntries,
   };
 }
