@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextareaWithCleanup } from "@/components/official/experimental/protextarea-cleanup/ProTextareaWithCleanup";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -266,14 +266,17 @@ export function CreateProjectModal({
 
           <div className="space-y-2">
             <Label htmlFor="project-description">Description</Label>
-            <Textarea
+            <ProTextareaWithCleanup
               id="project-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What is this project about?"
-              rows={3}
               maxLength={500}
               disabled={isSubmitting}
+              enableCleanup
+              autoGrow
+              minHeight={84}
+              maxHeight={240}
             />
             <p className="text-xs text-muted-foreground">
               {description.length}/500 characters

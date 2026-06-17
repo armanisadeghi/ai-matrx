@@ -19,8 +19,9 @@
  *
  * Everything persists through the canonical tasks primitives — no War Room
  * task store, no fakes:
- *   • list load → `loadProjectTopLevelTasks` (agent-context tasks slice)
- *   • list read → `selectTopLevelTasksByProjectId`
+ *   • list load → `loadProjectTasks` (parents + subtasks, agent-context slice)
+ *   • list read → `selectTopLevelTasksByProjectId` (parents) +
+ *                 `selectSubtasksByParent` (nested children per parent)
  *   • create    → `createTaskThunk({ title, projectId })`
  *   • toggle    → `toggleTaskCompleteThunk`
  *
@@ -31,6 +32,7 @@
 import { useEffect, useState } from "react";
 import {
   ChevronLeft,
+  CornerDownRight,
   Eye,
   EyeOff,
   ListTodo,
@@ -50,7 +52,8 @@ import {
 import TaskEditor from "@/features/tasks/components/TaskEditor";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  loadProjectTopLevelTasks,
+  loadProjectTasks,
+  selectSubtasksByParent,
   selectTaskById,
   selectTopLevelTasksByProjectId,
 } from "@/features/agent-context/redux/tasksSlice";
@@ -110,11 +113,12 @@ function ProjectTaskBody({ projectId }: { projectId: string }) {
   const [windowIds, setWindowIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load the project's top-level tasks into the slice on mount / project change.
+  // Load ALL of the project's tasks (parents + subtasks) into the slice on
+  // mount / project change so the list can render the nested subtask tree.
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    void dispatch(loadProjectTopLevelTasks({ projectId })).finally(() => {
+    void dispatch(loadProjectTasks({ projectId })).finally(() => {
       if (!cancelled) setLoading(false);
     });
     return () => {
@@ -208,8 +212,11 @@ function ProjectTaskBody({ projectId }: { projectId: string }) {
                     key={task.id}
                     taskId={task.id}
                     isOpen={openTaskId === task.id}
+                    openTaskId={openTaskId}
                     onOpen={() => setOpenTaskId(task.id)}
                     onOpenWindow={() => openWindow(task.id)}
+                    onOpenTask={(id) => setOpenTaskId(id)}
+                    onOpenTaskWindow={(id) => openWindow(id)}
                     showCompletedStyle={showCompleted}
                   />
                 ))}
@@ -320,11 +327,64 @@ const PRIORITY_DOT: Record<string, string> = {
 function ProjectTaskRow({
   taskId,
   isOpen,
+  openTaskId,
+  onOpen,
+  onOpenWindow,
+  onOpenTask,
+  onOpenTaskWindow,
+  showCompletedStyle,
+}: {
+  taskId: string;
+  isOpen: boolean;
+  openTaskId: string | null;
+  onOpen: () => void;
+  onOpenWindow: () => void;
+  onOpenTask: (id: string) => void;
+  onOpenTaskWindow: (id: string) => void;
+  showCompletedStyle: boolean;
+}) {
+  const task = useAppSelector((s) => selectTaskById(s, taskId));
+  const subtasks = useAppSelector((s) => selectSubtasksByParent(s, taskId));
+  if (!task) return null;
+
+  const visibleSubtasks = showCompletedStyle
+    ? subtasks
+    : subtasks.filter((t) => t.status !== "completed");
+
+  return (
+    <>
+      <TaskRowBody
+        taskId={taskId}
+        isOpen={isOpen}
+        onOpen={onOpen}
+        onOpenWindow={onOpenWindow}
+        showCompletedStyle={showCompletedStyle}
+      />
+      {visibleSubtasks.map((sub) => (
+        <TaskRowBody
+          key={sub.id}
+          taskId={sub.id}
+          isSub
+          isOpen={openTaskId === sub.id}
+          onOpen={() => onOpenTask(sub.id)}
+          onOpenWindow={() => onOpenTaskWindow(sub.id)}
+          showCompletedStyle={showCompletedStyle}
+        />
+      ))}
+    </>
+  );
+}
+
+function TaskRowBody({
+  taskId,
+  isSub = false,
+  isOpen,
   onOpen,
   onOpenWindow,
   showCompletedStyle,
 }: {
   taskId: string;
+  isSub?: boolean;
   isOpen: boolean;
   onOpen: () => void;
   onOpenWindow: () => void;
@@ -340,10 +400,17 @@ function ProjectTaskRow({
   return (
     <li
       className={cn(
-        "group flex items-center gap-2 border-b border-border/30 px-2.5 py-1.5 transition-colors hover:bg-accent/40",
+        "group flex items-center gap-2 border-b border-border/30 py-1.5 pr-2.5 transition-colors hover:bg-accent/40",
+        isSub ? "pl-7" : "pl-2.5",
         isOpen && "bg-accent/50",
       )}
     >
+      {isSub && (
+        <CornerDownRight
+          className="size-3.5 shrink-0 text-muted-foreground/40"
+          aria-hidden
+        />
+      )}
       <Checkbox
         checked={isDone}
         onCheckedChange={() =>
@@ -355,7 +422,8 @@ function ProjectTaskRow({
         type="button"
         onClick={onOpen}
         className={cn(
-          "flex min-w-0 flex-1 items-center gap-1.5 rounded-sm text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "flex min-w-0 flex-1 items-center gap-1.5 rounded-sm text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          isSub ? "text-[13px]" : "text-sm",
           isDone && showCompletedStyle
             ? "text-muted-foreground line-through"
             : "text-foreground hover:text-primary",

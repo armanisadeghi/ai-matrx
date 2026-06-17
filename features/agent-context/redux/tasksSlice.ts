@@ -9,7 +9,10 @@ import {
 } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
-import { getTopLevelProjectTasks } from "@/features/tasks/services/taskService";
+import {
+  getProjectTasks,
+  getTopLevelProjectTasks,
+} from "@/features/tasks/services/taskService";
 import type { NavTask } from "./hierarchySlice";
 import type { DataLevel, DataLevelMeta } from "./organizationsSlice";
 import { isStale } from "./organizationsSlice";
@@ -140,6 +143,34 @@ export const loadProjectTopLevelTasks = createAsyncThunk(
   "tasks/loadProjectTopLevel",
   async (params: { projectId: string; organizationId?: string | null }) => {
     const rows = await getTopLevelProjectTasks(params.projectId);
+    const tasks: TaskRecord[] = rows.map((t) => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      priority: t.priority,
+      due_date: t.due_date,
+      assignee_id: t.assignee_id,
+      project_id: t.project_id,
+      parent_task_id: t.parent_task_id,
+      organization_id: t.organization_id ?? params.organizationId ?? "",
+      created_at: t.created_at,
+      user_id: t.user_id,
+    }));
+    return tasks;
+  },
+);
+
+/**
+ * Load ALL of a project's tasks (parents AND subtasks) into the slice at
+ * "thin-list" level. Use this when a surface renders the project's task TREE
+ * (top-level rows with their nested subtasks), e.g. a War Room project tile.
+ * `loadProjectTopLevelTasks` is the parents-only variant for surfaces that
+ * defer subtasks to a task's own editor.
+ */
+export const loadProjectTasks = createAsyncThunk(
+  "tasks/loadProjectAll",
+  async (params: { projectId: string; organizationId?: string | null }) => {
+    const rows = await getProjectTasks(params.projectId);
     const tasks: TaskRecord[] = rows.map((t) => ({
       id: t.id,
       title: t.title,
@@ -333,7 +364,26 @@ const tasksSlice = createSlice({
         for (const t of action.payload) {
           const existing = state.meta[t.id];
           // Don't downgrade a fresh full-data row to thin-list.
-          if (!existing || existing.level === "thin-list" || isStale(existing)) {
+          if (
+            !existing ||
+            existing.level === "thin-list" ||
+            isStale(existing)
+          ) {
+            state.meta[t.id] = { level: "thin-list", fetchedAt: now };
+          }
+        }
+      })
+      .addCase(loadProjectTasks.fulfilled, (state, action) => {
+        const now = Date.now();
+        tasksAdapter.upsertMany(state, action.payload);
+        for (const t of action.payload) {
+          const existing = state.meta[t.id];
+          // Don't downgrade a fresh full-data row to thin-list.
+          if (
+            !existing ||
+            existing.level === "thin-list" ||
+            isStale(existing)
+          ) {
             state.meta[t.id] = { level: "thin-list", fetchedAt: now };
           }
         }
