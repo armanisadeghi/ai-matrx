@@ -102,7 +102,7 @@ Custom Dictionary — terminology + pronunciation entries attachable at four own
 
 Complete and live-verified on web (settings CRUD, cleanup card, selector window, DB RPCs, tool drift, seeded agents/skills). Compact indicator mounted on transcript studio; the same component drops onto scribe/podcast surfaces with a one-line addition. aidream auto-injection + podcast dictionary + the `dictionary` tool are committed; **re-verify after aidream prod deploy + a tool-routing cache-bust** (`POST /admin/tool-routing/cache-bust`).
 
-**Multi-provider TTS + per-task custom (2026-06-17):** FE typecheck-clean; backend substitution floor + quality tiers unit-verified live. **Deploy-pending re-verify:** the substitution floor on real audio per provider, the situational override end-to-end, and (decision flag) podcast 1–2-host Gemini now requesting the **pro** HQ model — higher quality, slower; revert via `tts_quality:"fast"` if the latency regresses. Google's fast tier should migrate to `gemini-3.1-flash-tts-preview` once registered in `ai_models`. Surface scope-value declarations for agent variable-binding are a future enhancement.
+**Multi-provider TTS + per-task custom (2026-06-17):** FE typecheck-clean; backend substitution floor + quality tiers unit-verified live. **Deploy-pending re-verify:** the substitution floor on real audio per provider + the situational override end-to-end. Google uses `gemini-3.1-flash-tts-preview` for **both** modes (latest + most capable; live in `ai_model`) — so podcast 1–2-host saved audio gets the new model at fast latency (no pro slowdown). ElevenLabs 3+ host stays `eleven_v3`. Surface scope-value declarations for agent variable-binding are a future enhancement.
 
 ---
 
