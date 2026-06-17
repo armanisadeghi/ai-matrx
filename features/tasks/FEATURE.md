@@ -106,6 +106,7 @@ Org-scoped project management. Projects group work within an organization; tasks
 
 ---
 
+- `2026-06-17` — claude: **`ProjectTaskList` quick-add is now rapid-fire.** Enter creates the task and immediately clears the title while keeping the row open and the cursor in the input — type → Enter → type → Enter, no re-clicking "Add task". The create fires in the background (input is never disabled, so no per-task wait) and the new row is appended optimistically via a new `onAdded(task)` callback (was `onAdded: () => void` → `reload`), which also fixes the latent bug where `reload()` flipped `loading` true and blanked the whole table — unmounting the quick-add row and stealing focus on every add. Priority + due stay **sticky** across entries (batch-add tasks sharing a due date); they reset only on Cancel/Escape. On failure the lost title is restored if the user hasn't started the next one.
 - `2026-06-16` — claude: **Task list grouping UX.** `TaskListPane` shows `BY {GROUP}` banner when grouped; each group is a bordered card with muted header. Shared labels in `constants/groupBy.ts`.
 - `2026-06-16` — claude: **Tasks context sidebar UX.** `TasksContextSidebar` — View (group/sort/show completed) moved to top; every section collapsible with active selection shown when collapsed.
 - `2026-06-16` — claude: **Compact task context picker.** `TaskContextPicker` — summary chips + popover (replaces bulky inline field on `/tasks`, mobile detail, `/tasks/[id]`). Full `TaskContextSection` kept for expanded surfaces.

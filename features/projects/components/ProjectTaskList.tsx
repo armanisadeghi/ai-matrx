@@ -265,11 +265,13 @@ export function ProjectTaskList({
               renderRows(open)
             )}
 
-            {/* Inline quick-add row — set name + priority + due before adding */}
+            {/* Inline quick-add row — set name + priority + due before adding.
+                Appends optimistically (newest-first) so rapid-fire entry never
+                blanks the table or steals focus from the title input. */}
             <QuickAddRow
               projectId={projectId}
               organizationId={organizationId}
-              onAdded={reload}
+              onAdded={(task) => setTasks((cur) => [task, ...cur])}
             />
           </TableBody>
         </Table>
@@ -479,7 +481,7 @@ function QuickAddRow({
 }: {
   projectId: string;
   organizationId: string | null;
-  onAdded: () => void;
+  onAdded: (task: DatabaseTask) => void;
 }) {
   const [active, setActive] = React.useState(false);
   const [title, setTitle] = React.useState("");
@@ -487,7 +489,8 @@ function QuickAddRow({
   const [due, setDue] = React.useState<string | null>(null);
   const [advanced, setAdvanced] = React.useState(false);
   const [description, setDescription] = React.useState("");
-  const [busy, setBusy] = React.useState(false);
+  const [inFlight, setInFlight] = React.useState(0);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   function resetAll() {
     setTitle("");
@@ -498,10 +501,24 @@ function QuickAddRow({
     setActive(false);
   }
 
-  async function submit() {
+  /**
+   * Fire-and-continue: create the task, then immediately clear the title and
+   * keep the row open + focused so the user can rapid-fire (type → Enter →
+   * type → Enter). The create runs in the background (no input disabling), so
+   * there's no per-task wait. Priority and due stay "sticky" across entries —
+   * handy for batch-adding tasks that share a due date — and only reset on
+   * Cancel / Escape. Description clears each time.
+   */
+  async function submitAndContinue() {
     const t = title.trim();
-    if (!t || busy) return;
-    setBusy(true);
+    if (!t) return;
+    const desc = description.trim() || null;
+    // Optimistically clear so the next title can be typed without waiting on
+    // the network, and keep the cursor in the title input.
+    setTitle("");
+    setDescription("");
+    inputRef.current?.focus();
+    setInFlight((n) => n + 1);
     const res = await createTask({
       title: t,
       project_id: projectId,
@@ -509,15 +526,18 @@ function QuickAddRow({
       status: "incomplete",
       priority,
       due_date: due,
-      description: description.trim() || null,
+      description: desc,
     });
-    setBusy(false);
+    setInFlight((n) => n - 1);
     if (res) {
-      resetAll();
-      onAdded();
+      onAdded(res);
     } else {
       toast.error("Couldn't add the task.");
+      // Restore the lost title only if the user hasn't started the next one.
+      setTitle((cur) => (cur.length === 0 ? t : cur));
     }
+    // Belt-and-suspenders: re-grab focus in case a re-render stole it.
+    inputRef.current?.focus();
   }
 
   if (!active) {
@@ -543,17 +563,20 @@ function QuickAddRow({
           <div className="flex items-center gap-2">
             <Circle className="h-4 w-4 text-muted-foreground/40 shrink-0" />
             <Input
+              ref={inputRef}
               autoFocus
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") submit();
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  submitAndContinue();
+                }
                 if (e.key === "Escape") resetAll();
               }}
-              placeholder="Task title, then Enter…"
+              placeholder="Task title, then Enter to add and keep going…"
               className="h-8 max-w-md"
               style={{ fontSize: "16px" }}
-              disabled={busy}
             />
           </div>
         </TableCell>
@@ -567,11 +590,11 @@ function QuickAddRow({
           <div className="flex items-center gap-1">
             <Button
               size="sm"
-              onClick={submit}
-              disabled={busy || !title.trim()}
+              onClick={submitAndContinue}
+              disabled={!title.trim()}
               className="h-7 px-2 text-[11px]"
             >
-              {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
+              {inFlight > 0 ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
             </Button>
           </div>
         </TableCell>
@@ -584,7 +607,6 @@ function QuickAddRow({
             <button
               onClick={() => setAdvanced((v) => !v)}
               className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-              disabled={busy}
             >
               {advanced ? (
                 <ChevronDown className="h-3.5 w-3.5" />
@@ -601,7 +623,6 @@ function QuickAddRow({
                 placeholder="Add a description…"
                 className="text-sm min-h-[72px] resize-y max-w-2xl"
                 style={{ fontSize: "16px" }}
-                disabled={busy}
               />
             )}
             <div className="flex items-center gap-2">
@@ -609,7 +630,6 @@ function QuickAddRow({
                 size="sm"
                 variant="ghost"
                 onClick={resetAll}
-                disabled={busy}
                 className="h-7 px-2 text-[11px]"
               >
                 Cancel
