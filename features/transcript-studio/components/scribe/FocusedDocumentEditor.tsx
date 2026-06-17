@@ -8,11 +8,14 @@
  */
 
 import { useRef } from "react";
-import { Check, Loader2, Minimize2 } from "lucide-react";
+import { Check, Loader2, Minimize2, Square } from "lucide-react";
 import {
   ProTextarea,
   type ProTextareaElement,
 } from "@/components/official/ProTextarea";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { useGlobalRecordingOptional } from "@/providers/GlobalRecordingProvider";
+import type { RootState } from "@/lib/redux/store";
 import { useWorkingDocumentDraft } from "../../hooks/useWorkingDocumentDraft";
 import type { StudioDocument } from "../../types";
 
@@ -32,6 +35,15 @@ export function FocusedDocumentEditor({
     sessionId,
     doc.id,
     doc.content,
+  );
+
+  // This editor is `fixed inset-0` and covers the Agent+ record bar, so its
+  // Stop button is the only reachable stop control while it's open (the global
+  // RecordingPill is now purely visual). Stopping here triggers the Agent+
+  // chooser via ExperimentalAgentScreen's active→inactive safety-net effect.
+  const recording = useGlobalRecordingOptional();
+  const isRecording = useAppSelector(
+    (state: RootState) => state.recordings.isRecording,
   );
 
   const handleCloseRequest = () => {
@@ -63,6 +75,17 @@ export function FocusedDocumentEditor({
               </>
             )}
           </span>
+          {isRecording && (
+            <button
+              type="button"
+              onClick={() => recording?.stop()}
+              aria-label="Stop recording"
+              className="flex items-center gap-1.5 rounded-full bg-red-500 px-3 py-1.5 text-sm font-medium text-white active:bg-red-600"
+            >
+              <Square className="h-3.5 w-3.5 fill-current" />
+              Stop
+            </button>
+          )}
           <button
             type="button"
             onClick={handleCloseRequest}

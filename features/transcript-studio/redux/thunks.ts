@@ -88,6 +88,8 @@ import {
   studioDocumentUpserted,
   studioDocumentsLoaded,
 } from "./slice";
+// Imported (not just re-exported) so ingestExternalRecordingThunk can compose it.
+import { cleanRecordingThunk } from "./cleanRecording.thunk";
 
 interface CreateSessionThunkArg extends CreateSessionInput {
   /** auth.users.id of the caller — passed in to avoid an extra fetch in the thunk. */
@@ -582,6 +584,108 @@ export const uploadRecordingAudioThunk = createAsyncThunk<
     } finally {
       dispatch(recordingAudioUploadFinished({ recordingSegmentId }));
     }
+  },
+);
+
+/**
+ * Persist a finished, externally-captured recording (the Agent+ "Save to
+ * transcripts" / "Both" choices) as a real studio recording — byte-for-byte the
+ * same shape as a Tab-1 (Record) recording, no forked storage path.
+ *
+ * The Agent+ tab records EPHEMERALLY (standalone context, no live chunk ingest),
+ * so by the time the user chooses to save we already hold the whole transcript
+ * plus the assembled audio blob in memory. This drops both through the exact same
+ * studio pipeline the live Record flow uses on stop:
+ *   recording-segment row → one raw segment (the full transcript) → finalize →
+ *   background audio upload → recording-aligned cleaning pass.
+ * The clip then appears in the Record tab's card list with raw + cleaned text and
+ * playable audio, indistinguishable from a clip captured there.
+ *
+ * Returns the new recordingSegmentId, or null when there's nothing to keep.
+ */
+export const ingestExternalRecordingThunk = createAsyncThunk<
+  string | null,
+  {
+    sessionId: string;
+    audioBlob: Blob | null;
+    text: string;
+    /** Recording length in seconds — becomes the segment's tEnd (0-based per recording). */
+    durationSec: number;
+  }
+>(
+  "transcriptStudio/ingestExternalRecording",
+  async (
+    { sessionId, audioBlob, text, durationSec },
+    { dispatch, getState },
+  ) => {
+    const trimmed = text.trim();
+    if (!trimmed) return null;
+    const tEnd = Math.max(0, durationSec);
+
+    // Open a recording cycle at the next index so it slots after existing cards.
+    const state = getState() as {
+      transcriptStudio: {
+        recordingSegmentIdsBySession: Record<string, string[]>;
+      };
+    };
+    const existing =
+      state.transcriptStudio.recordingSegmentIdsBySession[sessionId] ?? [];
+    let recordingSegmentId: string;
+    try {
+      const segment = await dispatch(
+        startRecordingSegmentThunk({
+          sessionId,
+          segmentIndex: existing.length,
+          tStart: 0,
+        }),
+      ).unwrap();
+      recordingSegmentId = segment.id;
+    } catch {
+      // startRecordingSegmentThunk already surfaced a toast.
+      return null;
+    }
+
+    // The whole transcript becomes this recording's single raw segment. Awaited so
+    // it's in Redux before the cleaning pass (which reads raw from state) fires.
+    await dispatch(
+      ingestRawChunkThunk({
+        sessionId,
+        recordingSegmentId,
+        info: {
+          chunkIndex: 0,
+          tStart: 0,
+          tEnd,
+          safetyId: "",
+          text: trimmed,
+          accumulatedText: trimmed,
+        },
+      }),
+    );
+
+    // Finalize the card immediately (leaves "processing"), then clean THIS
+    // recording into one cleaned segment — exactly the Tab-1 stop ordering. Audio
+    // uploads in the background so the chooser never blocks on the network.
+    void dispatch(
+      finalizeRecordingSegmentThunk({ sessionId, recordingSegmentId, tEnd }),
+    ).finally(() => {
+      void dispatch(
+        cleanRecordingThunk({
+          sessionId,
+          recordingSegmentId,
+          triggerCause: "session-stop",
+        }),
+      );
+    });
+    void dispatch(
+      uploadRecordingAudioThunk({
+        sessionId,
+        recordingSegmentId,
+        audioBlob,
+        safetyId: null,
+      }),
+    );
+
+    return recordingSegmentId;
   },
 );
 

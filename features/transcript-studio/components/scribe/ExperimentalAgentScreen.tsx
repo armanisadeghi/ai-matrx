@@ -18,16 +18,28 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Keyboard, Loader2, Mic, Square, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useAppStore,
+} from "@/lib/redux/hooks";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { useGlobalRecording } from "@/providers/GlobalRecordingProvider";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { useAutoVoiceResponse } from "../../hooks/useAutoVoiceResponse";
+import { ingestExternalRecordingThunk } from "../../redux/thunks";
 import { RecordActionSheet, type RecordActionKey } from "./RecordActionSheet";
 
 interface ExperimentalAgentScreenProps {
   sessionId: string;
+}
+
+/** The finished turn: transcript + assembled audio + length, carried to the chooser. */
+interface PendingRecordingResult {
+  text: string;
+  audioBlob: Blob | null;
+  durationSec: number;
 }
 
 const STANDALONE_LABEL_PREFIX = "scribe-agent:";
@@ -43,6 +55,7 @@ export function ExperimentalAgentScreen({
   sessionId,
 }: ExperimentalAgentScreenProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const assistant = useStudioAssistant(sessionId);
   const conversationId = assistant.conversationId;
   const recording = useGlobalRecording();
@@ -50,9 +63,11 @@ export function ExperimentalAgentScreen({
   const ownedRef = useRef(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   // Post-stop chooser state. The sheet opens the moment recording STOPS; the
-  // transcript ("pendingText") lands a couple seconds later. The user's choice
-  // can arrive before OR after the text — we reconcile the two below.
-  const [pendingText, setPendingText] = useState<string | null>(null);
+  // finished turn ("pendingResult" — transcript + audio + length) lands a couple
+  // seconds later. The user's choice can arrive before OR after it — we reconcile
+  // the two below.
+  const [pendingResult, setPendingResult] =
+    useState<PendingRecordingResult | null>(null);
   const chosenKeyRef = useRef<RecordActionKey | null>(null);
   // Agent+ is a voice-in / voice-out surface: no text field by default, and
   // responses are read back automatically. Both are toggleable from the bar.
@@ -77,32 +92,54 @@ export function ExperimentalAgentScreen({
   const isRecording = isRecordingGlobal && owned;
   const blockedByOther = isRecordingGlobal && !owned;
 
-  // Apply a chosen action to the finished transcript, then close the sheet.
+  // Apply a chosen action to the finished turn, then close the sheet.
+  //   save / both  → persist as a real studio recording (Tab-1 pipeline) so it
+  //                  lands as a card in the Record tab with audio + raw + cleaned.
+  //   agent / both → stage the transcript in the input AND open + focus it so the
+  //                  cursor is ready (the input is hidden by default on this tab).
+  //   now → fire it to the agent as a turn immediately (hands-free voice flow).
   const executeAction = useCallback(
-    (key: RecordActionKey, text: string) => {
+    (key: RecordActionKey, result: PendingRecordingResult) => {
+      const { text, audioBlob, durationSec } = result;
       if (text) {
-        if (key === "send") {
+        if (key === "save" || key === "both") {
+          void dispatch(
+            ingestExternalRecordingThunk({
+              sessionId,
+              audioBlob,
+              text,
+              durationSec,
+            }),
+          );
+          toast.success("Saved to transcripts");
+        }
+        if (key === "agent" || key === "both") {
+          if (conversationId) {
+            dispatch(setUserInputText({ conversationId, text }));
+            // Reveal the input — AgentTextarea auto-focuses on mount, so the
+            // cursor lands in the field ready to edit/send.
+            setInputOpen(true);
+          }
+        }
+        if (key === "now") {
           void assistant.send(text);
-        } else if (conversationId) {
-          dispatch(setUserInputText({ conversationId, text }));
-          if (key === "transcribe-send") void assistant.send(text);
         }
       }
       chosenKeyRef.current = null;
-      setPendingText(null);
+      setPendingResult(null);
       setSheetOpen(false);
     },
-    [assistant, conversationId, dispatch],
+    [assistant, conversationId, dispatch, sessionId],
   );
 
-  // The user tapped (or the timer auto-fired) a choice. Execute now if the
-  // transcript is already in; otherwise hold it and onComplete will pick it up.
+  // The user tapped (or the timer auto-fired) a choice. Execute now if the turn
+  // is already in; otherwise hold it and onComplete will pick it up.
   const handleChoose = useCallback(
     (key: RecordActionKey) => {
       chosenKeyRef.current = key;
-      if (pendingText !== null) executeAction(key, pendingText);
+      if (pendingResult !== null) executeAction(key, pendingResult);
     },
-    [pendingText, executeAction],
+    [pendingResult, executeAction],
   );
 
   const startRecording = async () => {
@@ -114,7 +151,7 @@ export function ExperimentalAgentScreen({
           kind: "standalone",
           label: `${STANDALONE_LABEL_PREFIX}${sessionId}`,
         },
-        onComplete: (result) => {
+        onComplete: (result, audioBlob) => {
           ownedRef.current = false;
           const text = (result.text ?? "").trim();
           if (!text) {
@@ -123,12 +160,20 @@ export function ExperimentalAgentScreen({
             toast("Nothing was transcribed.");
             return;
           }
-          // Text is ready. If a choice is already queued, run it; otherwise
-          // surface it so the sheet's countdown / buttons act on real text.
+          // Capture the length NOW: recordingFinalized (which resets durationSec)
+          // runs right after this callback, so read it fresh from the store.
+          const durationSec = store.getState().recordings.durationSec;
+          const finished: PendingRecordingResult = {
+            text,
+            audioBlob: audioBlob ?? null,
+            durationSec,
+          };
+          // The turn is ready. If a choice is already queued, run it; otherwise
+          // surface it so the sheet's countdown / buttons act on the real turn.
           if (chosenKeyRef.current) {
-            executeAction(chosenKeyRef.current, text);
+            executeAction(chosenKeyRef.current, finished);
           } else {
-            setPendingText(text);
+            setPendingResult(finished);
           }
         },
         onError: (message) => {
@@ -148,7 +193,7 @@ export function ExperimentalAgentScreen({
   // Stop opens the chooser immediately — we don't wait for transcription.
   const handleStop = useCallback(() => {
     chosenKeyRef.current = null;
-    setPendingText(null);
+    setPendingResult(null);
     setSheetOpen(true);
     void recording.stop();
   }, [recording]);
@@ -301,10 +346,10 @@ export function ExperimentalAgentScreen({
           setSheetOpen(o);
           if (!o) {
             chosenKeyRef.current = null;
-            setPendingText(null);
+            setPendingResult(null);
           }
         }}
-        preparing={pendingText === null}
+        preparing={pendingResult === null}
         onChoose={handleChoose}
       />
     </div>
