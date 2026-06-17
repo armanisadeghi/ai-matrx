@@ -1916,18 +1916,12 @@ export async function processStream({
             content: target.content,
           })
             .then((res) => {
-              if (res.rewrittenContent) {
-                dispatch(
-                  updateMessageRecord({
-                    conversationId,
-                    messageId: target.messageId,
-                    patch: {
-                      content:
-                        res.rewrittenContent as unknown as import("@/types/database.types").Json,
-                    },
-                  }),
-                );
-              }
+              // Intentionally do NOT mirror the rewrite into the in-memory
+              // messages slice. In-session the message renders from
+              // activeRequests (anchored by _streamRequestId), so swapping
+              // byId.content to an artifact_ref would only risk remounting the
+              // live artifact and wiping its in-session state. The DB is
+              // rewritten; the next fresh load hydrates the ref and renders by id.
               if (res.errors.length > 0) {
                 console.error(
                   `[stream:${requestId.slice(0, 8)}] artifact materialization issues for ${target.messageId}:`,
