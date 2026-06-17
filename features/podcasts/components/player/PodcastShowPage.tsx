@@ -103,7 +103,7 @@ export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
         {/* Info + share row — overlaid on the bottom of the hero */}
         <div className="absolute bottom-0 inset-x-0 z-30 px-4 pb-3 pt-8 flex items-end gap-3">
           <div className="min-w-0 flex-1">
-            <h1 className="text-white font-bold text-xl leading-tight line-clamp-1">
+            <h1 className="text-white font-bold text-lg sm:text-2xl leading-tight line-clamp-2 break-words">
               {show.title}
             </h1>
             <div className="flex items-center gap-2 mt-0.5">

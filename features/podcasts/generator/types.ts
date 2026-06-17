@@ -201,6 +201,17 @@ export interface PodcastAssetEvent {
   note?: string | null;
 }
 
+/** The composed "official" slideshow video landed — a single crossfaded video
+ *  stitched from every generated clip + still (square stills get blurred-fill
+ *  sides). This is the episode's primary, share-ready video. Emitted as the
+ *  final media step, the instant composition + public-CDN persist succeed. */
+export interface PodcastOfficialVideoEvent {
+  type: "podcast_official_video";
+  url: string;
+  success: boolean;
+  error?: string | null;
+}
+
 export interface PodcastCompleteEvent {
   type: "podcast_complete";
   show_id: string | null;
@@ -213,6 +224,11 @@ export interface PodcastCompleteEvent {
   description: string;
   image_urls: string[];
   video_urls: string[];
+  /** The composed crossfaded slideshow video (clips + stills) — the episode's
+   *  primary video. Empty when there wasn't enough media or composition failed. */
+  official_video_url?: string;
+  /** Why the official video wasn't produced (skip reason / failure), when empty. */
+  official_video_error?: string | null;
   /** Resolved cast (names + voices) — present on host-count-aware backends. */
   host_count?: number;
   speakers?: PodcastSpeaker[];
@@ -256,6 +272,7 @@ export type PodcastDataEvent =
   | PodcastStageEvent
   | PodcastMetadataEvent
   | PodcastAssetEvent
+  | PodcastOfficialVideoEvent
   | AudioStreamChunkEvent
   | AudioStreamEndEvent
   | PodcastCompleteEvent;
@@ -300,6 +317,11 @@ export interface PodcastRunState {
   description: string;
   images: MediaSlot[];
   videos: MediaSlot[];
+  /** The composed "official" slideshow video (all clips + stills stitched into
+   *  one crossfaded MP4) — the episode's primary, share-ready video. Set the
+   *  instant the backend's compose step lands (live) or rebuilt from the durable
+   *  run record. Null until composed (or when there wasn't enough media). */
+  officialVideoUrl: string | null;
   audioUrl: string | null;
   script: string;
   /** Real ~500-char sneak-peek of the script (from create_script stage_done). */
@@ -326,6 +348,7 @@ export const INITIAL_RUN_STATE: PodcastRunState = {
   description: "",
   images: [],
   videos: [],
+  officialVideoUrl: null,
   audioUrl: null,
   script: "",
   scriptPreview: "",

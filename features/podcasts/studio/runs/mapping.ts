@@ -186,6 +186,7 @@ export function detailToRunState(detail: RunDetail): PodcastRunState {
     script: detail.script ?? "",
     scriptPreview: detail.script ?? "",
     audioUrl: detail.audio_url ?? null,
+    officialVideoUrl: detail.official_video_url ?? null,
     images: slotsFromAssets(detail.assets, "image", detail.image_descriptions),
     videos: slotsFromAssets(detail.assets, "video", detail.video_descriptions),
     stages,

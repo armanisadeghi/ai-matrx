@@ -97,13 +97,13 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/95 pointer-events-none" />
 
-                <div className="relative z-10 h-full flex flex-col justify-end px-3 pb-6 w-full">
+                <div className="relative z-10 h-full flex flex-col justify-end px-4 sm:px-6 pb-6 w-full">
                     <div className="mb-3 flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                             {episode.show?.title && (
                                 <p className="text-white/50 text-xs font-medium uppercase tracking-widest mb-1 truncate">{episode.show.title}</p>
                             )}
-                            <h1 className="text-white font-bold text-xl leading-tight line-clamp-2">{episode.title}</h1>
+                            <h1 className="text-white font-bold text-lg sm:text-2xl leading-tight line-clamp-2 break-words">{episode.title}</h1>
                             {episode.description && (
                                 <p className="text-white/60 text-sm mt-1.5 leading-relaxed line-clamp-2">{episode.description}</p>
                             )}
@@ -165,7 +165,7 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
-                    <div className="px-3 pt-3 pb-4">
+                    <div className="px-4 sm:px-6 pt-3 pb-4 max-w-3xl mx-auto w-full">
                         {/* Title row + share */}
                         <div className="flex items-start justify-between gap-3 mb-3">
                             <div className="min-w-0 flex-1">
@@ -175,7 +175,7 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
                                 {episode.episode_number != null && (
                                     <p className="text-xs text-muted-foreground mb-0.5">Episode {episode.episode_number}</p>
                                 )}
-                                <h1 className="text-foreground font-bold text-xl leading-tight">{episode.title}</h1>
+                                <h1 className="text-foreground font-bold text-xl sm:text-3xl leading-tight break-words">{episode.title}</h1>
                                 {(episode.speakers?.length ?? 0) > 0 && (
                                     <p className="text-xs text-muted-foreground mt-1">
                                         Hosted by {episode.speakers!.map((s) => s.name).join(", ")}
@@ -242,14 +242,14 @@ export function PodcastEpisodePage({ episode, articles = [] }: PodcastEpisodePag
 
     // ── Audio only ─────────────────────────────────────────────────────────
     return (
-        <div className="h-full w-full flex flex-col justify-center overflow-hidden bg-background px-3">
-            <div className="flex flex-col items-center gap-4">
+        <div className="h-full w-full flex flex-col justify-center overflow-hidden bg-background px-4 sm:px-6">
+            <div className="flex flex-col items-center gap-4 w-full max-w-2xl mx-auto">
                 <div className="w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center shadow-lg">
                     <Music className="h-11 w-11 text-primary/50" />
                 </div>
                 {episode.title && (
                     <div className="flex items-center gap-2 w-full justify-center">
-                        <h1 className="text-foreground font-bold text-xl text-center leading-snug line-clamp-2 flex-1">{episode.title}</h1>
+                        <h1 className="min-w-0 text-foreground font-bold text-xl sm:text-2xl text-center leading-snug line-clamp-2 flex-1 break-words">{episode.title}</h1>
                         <ShareButtonLight />
                     </div>
                 )}

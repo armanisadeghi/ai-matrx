@@ -59,7 +59,11 @@ export function ResultActions({
 }: ResultActionsProps) {
   const [published, setPublished] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [displayMode, setDisplayMode] = useState<PcDisplayMode>("with_metadata");
+  // Mirror the backend's persisted default: a freshly-generated episode with a
+  // video (the merged "official" video) renders in video mode; otherwise cover.
+  const [displayMode, setDisplayMode] = useState<PcDisplayMode>(
+    hasVideo ? "with_video" : "with_metadata",
+  );
   const [savingMode, setSavingMode] = useState<PcDisplayMode | null>(null);
   const { share, fallbackDialog } = useShare();
 

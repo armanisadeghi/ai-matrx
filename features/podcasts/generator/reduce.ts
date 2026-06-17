@@ -249,6 +249,24 @@ export function reduce(
       };
     }
 
+    case "podcast_official_video": {
+      // The merged/stitched slideshow video landed (the final media step).
+      // Settle its stage row and adopt the URL as the episode's primary video.
+      // A failure is non-fatal (the individual assets + audio still exist) — it
+      // arrives as a podcast_stage(success=false) row, so here we only act on a
+      // successful compose.
+      const stages = settleStage(
+        state.stages,
+        "compose_official_video",
+        data.success ? "done" : "failed",
+        "Composing the episode video",
+      );
+      if (!data.success || !data.url) {
+        return { ...state, stages };
+      }
+      return { ...state, stages, officialVideoUrl: data.url };
+    }
+
     case "audio_stream_end": {
       // The TTS render finished and the canonical file is persisted — minutes
       // before podcast_complete (which also waits on images/videos). Swap the
@@ -284,6 +302,10 @@ export function reduce(
         title: data.title || state.title,
         description: data.description || state.description,
         audioUrl: data.audio_url,
+        // The merged video URL rides on the complete event too — prefer a value
+        // already captured from the live podcast_official_video event, then the
+        // complete payload. (Never downgrade a known URL back to empty.)
+        officialVideoUrl: state.officialVideoUrl || data.official_video_url || null,
         script: data.script,
         showId: data.show_id,
         episodeId: data.episode_id,

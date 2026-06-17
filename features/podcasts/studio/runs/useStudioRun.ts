@@ -313,6 +313,10 @@ export function useStudioRun(runId: string): UseStudioRun {
                 setState((s) => ({
                   ...s,
                   audioUrl: ep.audio_url || s.audioUrl,
+                  // The episode's persisted primary video IS the merged
+                  // "official" video — fall back to it if the run record's
+                  // compose stage output wasn't captured.
+                  officialVideoUrl: s.officialVideoUrl ?? ep.video_url ?? null,
                 }));
                 if (ep.image_url) setSelectedCoverUrl(ep.image_url);
               }
@@ -491,6 +495,7 @@ export function useStudioRun(runId: string): UseStudioRun {
           setState((s) => ({
             ...s,
             audioUrl: episode.audio_url || s.audioUrl,
+            officialVideoUrl: s.officialVideoUrl ?? episode.video_url ?? null,
           }));
           if (episode.image_url) setSelectedCoverUrl(episode.image_url);
         }
@@ -566,6 +571,7 @@ export function useStudioRun(runId: string): UseStudioRun {
             episodeId: s.episodeId ?? episode.id,
             episodeSlug: s.episodeSlug ?? episode.slug ?? null,
             audioUrl: episode.audio_url || s.audioUrl,
+            officialVideoUrl: s.officialVideoUrl ?? episode.video_url ?? null,
           }));
           if (episode.image_url) setSelectedCoverUrl(episode.image_url);
         }
