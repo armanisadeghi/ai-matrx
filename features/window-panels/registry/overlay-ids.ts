@@ -126,6 +126,7 @@ export const OVERLAY_IDS = [
   "socketAccordion",
   "streamDebug",
   "streamDebugHistoryWindow",
+  "taskEditorWindow",
   "taskQuickCreateWindow",
   "toolCallWindow",
   "transcriptStudioWindow",

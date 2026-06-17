@@ -78,7 +78,7 @@ export function WarRoomAllView() {
       {/* pr-14 clears the shell's fixed top-right avatar. */}
       <header className="shrink-0 border-b border-border px-4 sm:px-6 lg:px-8 pr-14 lg:pr-16 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="grid place-items-center size-8 rounded-lg bg-primary/10 text-primary shrink-0">
+          <span className="grid place-items-center size-8 shrink-0 text-primary">
             <LayoutGrid className="size-4.5" />
           </span>
           <div className="min-w-0">
@@ -99,7 +99,7 @@ export function WarRoomAllView() {
               "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors " +
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 " +
               (masterOpen
-                ? "border-primary/40 bg-primary/10 text-primary"
+                ? "text-primary border border-primary/70"
                 : "border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground")
             }
             title="Chat with an agent that sees all your rooms and threads"
@@ -173,7 +173,7 @@ export function WarRoomAllView() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center text-center py-20 px-4">
-      <span className="grid place-items-center size-14 rounded-2xl bg-primary/10 text-primary mb-4">
+      <span className="grid place-items-center size-14 mb-4 text-primary">
         <LayoutGrid className="size-7" />
       </span>
       <h2 className="text-lg font-semibold text-foreground">

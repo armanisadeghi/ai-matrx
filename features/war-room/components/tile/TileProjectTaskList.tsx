@@ -8,14 +8,9 @@
  * tile represents a whole project, so its Task tab is the project's task LIST:
  * browse, fast-create, and open any task in the REAL `TaskEditor`.
  *
- * Layout mirrors the subtask experience (`SubtaskRail` + `SubtaskDetailPane` +
- * `SubtaskWindow`) so the two surfaces feel identical:
  *   • A compact list (title + completion checkbox + priority dot) with a
  *     rapid-entry input that chains create-on-Enter.
- *   • Click a row → the canonical `TaskEditor` opens in a detail pane BESIDE
- *     the list on wide tiles (@[34rem]) / OVER it on narrow tiles.
- *   • "⋯ → Open in window" pops the same editor into a floating `SubtaskWindow`
- *     (a generic TaskEditor-in-a-window, not subtask-specific). Several coexist.
+ *   • Click a row → `useOpenTaskEditorWindow({ taskId })` via OverlayController.
  *
  * Everything persists through the canonical tasks primitives — no War Room
  * task store, no fakes:
@@ -29,18 +24,15 @@
  * `selectEffectiveTileProjectId` (the tile's own project_id ?? the room's).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  ChevronLeft,
   CornerDownRight,
   Eye,
   EyeOff,
   ListTodo,
   Loader2,
   MoreHorizontal,
-  PanelRightOpen,
   Plus,
-  X,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -49,7 +41,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import TaskEditor from "@/features/tasks/components/TaskEditor";
+import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   loadProjectTasks,
@@ -68,16 +60,32 @@ import {
 } from "@/features/tasks/redux/taskUiSlice";
 import { selectEffectiveTileProjectId } from "@/features/war-room/redux/selectors";
 import { cn } from "@/lib/utils";
-import { SubtaskWindow } from "./SubtaskWindow";
 
-export function TileProjectTaskList({ tileId }: { tileId: string }) {
+export function TileProjectTaskList({
+  tileId,
+  compact,
+  hideProjectHeader,
+  onOpenTask,
+}: {
+  tileId: string;
+  compact?: boolean;
+  /** When embedded in TileProjectTab, the overview owns project identity. */
+  hideProjectHeader?: boolean;
+  /** In-tile drill-down; falls back to taskEditorWindow when omitted. */
+  onOpenTask?: (taskId: string) => void;
+}) {
   const projectId = useAppSelector((s) =>
     selectEffectiveTileProjectId(tileId)(s),
   );
 
   if (!projectId) {
     return (
-      <div className="grid h-full place-items-center px-6 text-center">
+      <div
+        className={cn(
+          "grid h-full place-items-center text-center",
+          !compact && "px-6",
+        )}
+      >
         <div className="flex max-w-[18rem] flex-col items-center gap-2">
           <span className="grid size-10 place-items-center rounded-full bg-muted/60">
             <ListTodo className="size-5 text-muted-foreground" />
@@ -94,11 +102,29 @@ export function TileProjectTaskList({ tileId }: { tileId: string }) {
     );
   }
 
-  return <ProjectTaskBody projectId={projectId} />;
+  return (
+    <ProjectTaskBody
+      projectId={projectId}
+      compact={compact}
+      hideProjectHeader={hideProjectHeader}
+      onOpenTask={onOpenTask}
+    />
+  );
 }
 
-function ProjectTaskBody({ projectId }: { projectId: string }) {
+function ProjectTaskBody({
+  projectId,
+  compact,
+  hideProjectHeader,
+  onOpenTask,
+}: {
+  projectId: string;
+  compact?: boolean;
+  hideProjectHeader?: boolean;
+  onOpenTask?: (taskId: string) => void;
+}) {
   const dispatch = useAppDispatch();
+  const openTaskEditor = useOpenTaskEditorWindow();
   const tasks = useAppSelector((s) =>
     selectTopLevelTasksByProjectId(s, projectId),
   );
@@ -106,15 +132,13 @@ function ProjectTaskBody({ projectId }: { projectId: string }) {
     (s) => selectProjectById(s, projectId)?.name ?? null,
   );
   const showCompleted = useAppSelector(selectShowCompleted);
-
-  // The task selected for the in-tile detail pane (null → list only).
-  const [openTaskId, setOpenTaskId] = useState<string | null>(null);
-  // Floating task windows — multiple may coexist.
-  const [windowIds, setWindowIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load ALL of the project's tasks (parents + subtasks) into the slice on
-  // mount / project change so the list can render the nested subtask tree.
+  const openTask = (taskId: string) => {
+    if (onOpenTask) onOpenTask(taskId);
+    else openTaskEditor({ taskId });
+  };
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -126,14 +150,6 @@ function ProjectTaskBody({ projectId }: { projectId: string }) {
     };
   }, [dispatch, projectId]);
 
-  const openWindow = (taskId: string) => {
-    setWindowIds((ids) => (ids.includes(taskId) ? ids : [...ids, taskId]));
-    // Opening a window supersedes the in-tile pane for that task.
-    setOpenTaskId((cur) => (cur === taskId ? null : cur));
-  };
-  const closeWindow = (taskId: string) =>
-    setWindowIds((ids) => ids.filter((id) => id !== taskId));
-
   const completed = tasks.filter((t) => t.status === "completed").length;
   const visibleTasks = showCompleted
     ? tasks
@@ -141,20 +157,17 @@ function ProjectTaskBody({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col @container/proj">
-      <div className="flex min-h-0 flex-1 @[34rem]/proj:flex-row">
-        {/* List column. On narrow tiles it yields to the detail pane; on wide
-            tiles list + detail sit side-by-side. */}
-        <div
-          className={cn(
-            "flex min-h-0 min-w-0 flex-1 flex-col",
-            openTaskId !== null && "hidden @[34rem]/proj:flex",
-          )}
-        >
-          {/* Header — project name + completion count. */}
-          <div className="flex h-8 shrink-0 items-center gap-1.5 border-b border-border/60 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div
+            className={cn(
+              "flex h-8 shrink-0 items-center gap-1.5 border-b border-border/60 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground",
+              compact ? "px-0" : "px-2.5",
+            )}
+          >
             <ListTodo className="size-3.5 shrink-0 text-primary" />
             <span className="min-w-0 flex-1 truncate normal-case tracking-normal">
-              {projectName ?? "Project tasks"}
+              {hideProjectHeader ? "Tasks" : (projectName ?? "Project tasks")}
             </span>
             {tasks.length > 0 && (
               <span className="shrink-0 tabular-nums text-muted-foreground/60">
@@ -189,20 +202,29 @@ function ProjectTaskBody({ projectId }: { projectId: string }) {
             )}
           </div>
 
-          <ProjectTaskCreate projectId={projectId} />
+          <ProjectTaskCreate projectId={projectId} compact={compact} />
 
-          {/* List */}
           <div className="min-h-0 flex-1 overflow-y-auto">
             {loading && tasks.length === 0 ? (
               <div className="grid place-items-center py-6">
                 <Loader2 className="size-4 animate-spin text-muted-foreground" />
               </div>
             ) : tasks.length === 0 ? (
-              <p className="px-2.5 py-3 text-xs italic text-muted-foreground">
+              <p
+                className={cn(
+                  "py-3 text-xs italic text-muted-foreground",
+                  compact ? "px-0" : "px-2.5",
+                )}
+              >
                 No tasks in this project yet. Type above to add the first.
               </p>
             ) : visibleTasks.length === 0 ? (
-              <p className="px-2.5 py-3 text-xs italic text-muted-foreground">
+              <p
+                className={cn(
+                  "py-3 text-xs italic text-muted-foreground",
+                  compact ? "px-0" : "px-2.5",
+                )}
+              >
                 All tasks completed. Use the eye icon above to show them.
               </p>
             ) : (
@@ -211,12 +233,7 @@ function ProjectTaskBody({ projectId }: { projectId: string }) {
                   <ProjectTaskRow
                     key={task.id}
                     taskId={task.id}
-                    isOpen={openTaskId === task.id}
-                    openTaskId={openTaskId}
-                    onOpen={() => setOpenTaskId(task.id)}
-                    onOpenWindow={() => openWindow(task.id)}
-                    onOpenTask={(id) => setOpenTaskId(id)}
-                    onOpenTaskWindow={(id) => openWindow(id)}
+                    onOpen={openTask}
                     showCompletedStyle={showCompleted}
                   />
                 ))}
@@ -224,99 +241,80 @@ function ProjectTaskBody({ projectId }: { projectId: string }) {
             )}
           </div>
         </div>
-
-        {/* Detail pane — beside the list on wide tiles; full stacked area on
-            narrow tiles (list hidden). Mirrors SubtaskDetailPane chrome. */}
-        {openTaskId !== null && (
-          <div
-            className={cn(
-              "flex min-h-0 min-w-0 flex-1 flex-col border-t border-border/60",
-              "@[34rem]/proj:w-80 @[34rem]/proj:flex-none @[34rem]/proj:shrink-0 @[34rem]/proj:border-l @[34rem]/proj:border-t-0",
-            )}
-          >
-            <ProjectTaskDetailPane
-              taskId={openTaskId}
-              onClose={() => setOpenTaskId(null)}
-              onOpenInWindow={() => openWindow(openTaskId)}
-            />
-          </div>
-        )}
       </div>
-
-      {/* Floating, draggable task windows — independent of tile bounds. */}
-      {windowIds.map((id) => (
-        <SubtaskWindow
-          key={id}
-          subtaskId={id}
-          onClose={() => closeWindow(id)}
-        />
-      ))}
     </div>
   );
 }
 
-/* ────────────────────────────────────────────────────────────────────────
- * Rapid task creation — type + Enter chains; new task lands in the list.
- * ──────────────────────────────────────────────────────────────────────── */
-
-function ProjectTaskCreate({ projectId }: { projectId: string }) {
+function ProjectTaskCreate({
+  projectId,
+  compact,
+}: {
+  projectId: string;
+  compact?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const [draft, setDraft] = useState("");
-  const [adding, setAdding] = useState(false);
+  const [inFlight, setInFlight] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const add = async (): Promise<boolean> => {
+  const add = () => {
     const title = draft.trim();
-    if (!title || adding) return false;
-    setAdding(true);
-    try {
-      const newId = await dispatch(
-        createTaskThunk({ title, projectId }),
-      ).unwrap();
-      if (newId) {
-        setDraft("");
-        return true;
-      }
-      return false;
-    } finally {
-      setAdding(false);
-    }
+    if (!title || inFlight > 0) return;
+    setDraft("");
+    inputRef.current?.focus();
+    setInFlight((n) => n + 1);
+    void dispatch(createTaskThunk({ title, projectId }))
+      .unwrap()
+      .then((newId) => {
+        if (!newId) {
+          setDraft((cur) => (cur.length === 0 ? title : cur));
+        }
+      })
+      .catch(() => {
+        setDraft((cur) => (cur.length === 0 ? title : cur));
+      })
+      .finally(() => {
+        setInFlight((n) => n - 1);
+        inputRef.current?.focus();
+      });
   };
 
   return (
-    <div className="flex shrink-0 items-center gap-2 border-b border-border/40 bg-muted/20 px-2.5 py-1.5">
+    <div
+      className={cn(
+        "flex shrink-0 items-center gap-2 border-b border-border/40 bg-muted/20 py-1.5",
+        compact ? "px-0" : "px-2.5",
+      )}
+    >
       <Plus className="size-3.5 shrink-0 text-muted-foreground" />
       <input
+        ref={inputRef}
         type="text"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={async (e) => {
+        onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
-            await add();
+            add();
           } else if (e.key === "Escape") {
             setDraft("");
           }
         }}
         onBlur={() => {
-          if (draft.trim()) void add();
+          if (draft.trim()) add();
         }}
         placeholder="Add task, press Enter…"
         className="h-6 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
-        // 16px prevents the iOS focus-zoom on responsive web.
         style={{ fontSize: "16px" }}
-        disabled={adding}
         aria-label="Add task to project"
       />
-      {adding && (
+      {inFlight > 0 && (
         <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
       )}
     </div>
   );
 }
-
-/* ────────────────────────────────────────────────────────────────────────
- * A single list row — checkbox + priority dot + title + ⋯ menu.
- * ──────────────────────────────────────────────────────────────────────── */
 
 const PRIORITY_DOT: Record<string, string> = {
   high: "bg-red-500",
@@ -326,21 +324,11 @@ const PRIORITY_DOT: Record<string, string> = {
 
 function ProjectTaskRow({
   taskId,
-  isOpen,
-  openTaskId,
   onOpen,
-  onOpenWindow,
-  onOpenTask,
-  onOpenTaskWindow,
   showCompletedStyle,
 }: {
   taskId: string;
-  isOpen: boolean;
-  openTaskId: string | null;
-  onOpen: () => void;
-  onOpenWindow: () => void;
-  onOpenTask: (id: string) => void;
-  onOpenTaskWindow: (id: string) => void;
+  onOpen: (taskId: string) => void;
   showCompletedStyle: boolean;
 }) {
   const task = useAppSelector((s) => selectTaskById(s, taskId));
@@ -355,9 +343,7 @@ function ProjectTaskRow({
     <>
       <TaskRowBody
         taskId={taskId}
-        isOpen={isOpen}
-        onOpen={onOpen}
-        onOpenWindow={onOpenWindow}
+        onOpen={() => onOpen(taskId)}
         showCompletedStyle={showCompletedStyle}
       />
       {visibleSubtasks.map((sub) => (
@@ -365,9 +351,7 @@ function ProjectTaskRow({
           key={sub.id}
           taskId={sub.id}
           isSub
-          isOpen={openTaskId === sub.id}
-          onOpen={() => onOpenTask(sub.id)}
-          onOpenWindow={() => onOpenTaskWindow(sub.id)}
+          onOpen={() => onOpen(sub.id)}
           showCompletedStyle={showCompletedStyle}
         />
       ))}
@@ -378,16 +362,12 @@ function ProjectTaskRow({
 function TaskRowBody({
   taskId,
   isSub = false,
-  isOpen,
   onOpen,
-  onOpenWindow,
   showCompletedStyle,
 }: {
   taskId: string;
   isSub?: boolean;
-  isOpen: boolean;
   onOpen: () => void;
-  onOpenWindow: () => void;
   showCompletedStyle: boolean;
 }) {
   const dispatch = useAppDispatch();
@@ -402,7 +382,6 @@ function TaskRowBody({
       className={cn(
         "group flex items-center gap-2 border-b border-border/30 py-1.5 pr-2.5 transition-colors hover:bg-accent/40",
         isSub ? "pl-7" : "pl-2.5",
-        isOpen && "bg-accent/50",
       )}
     >
       {isSub && (
@@ -453,76 +432,10 @@ function TaskRowBody({
         <DropdownMenuContent align="end" className="w-44">
           <DropdownMenuItem onClick={onOpen}>
             <ListTodo className="size-3.5" />
-            Open detail
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={onOpenWindow}>
-            <PanelRightOpen className="size-3.5" />
-            Open in window
+            Open task
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </li>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────
- * In-tile detail pane — the REAL TaskEditor bound to the selected task.
- * Mirrors SubtaskDetailPane chrome (back / title / open-in-window / close).
- * ──────────────────────────────────────────────────────────────────────── */
-
-function ProjectTaskDetailPane({
-  taskId,
-  onClose,
-  onOpenInWindow,
-}: {
-  taskId: string;
-  onClose: () => void;
-  onOpenInWindow: () => void;
-}) {
-  const title = useAppSelector(
-    (s) => selectTaskById(s, taskId)?.title || "Task",
-  );
-
-  return (
-    <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex h-8 shrink-0 items-center gap-1 border-b border-border/60 bg-card/50 pl-1 pr-1.5">
-        <button
-          type="button"
-          onClick={onClose}
-          title="Back to tasks"
-          aria-label="Back to tasks"
-          className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <ChevronLeft className="size-4" />
-        </button>
-        <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-          <ListTodo className="size-3.5 shrink-0 text-primary" />
-          <span className="truncate">{title}</span>
-        </span>
-        <button
-          type="button"
-          onClick={onOpenInWindow}
-          title="Open in floating window"
-          aria-label="Open in floating window"
-          className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <PanelRightOpen className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          title="Close"
-          aria-label="Close task"
-          className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <X className="size-3.5" />
-        </button>
-      </div>
-
-      {/* The REAL editor, bound to this task. */}
-      <div className="min-h-0 flex-1">
-        <TaskEditor taskId={taskId} embedded key={taskId} />
-      </div>
-    </div>
   );
 }

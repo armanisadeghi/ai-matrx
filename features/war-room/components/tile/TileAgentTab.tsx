@@ -34,7 +34,13 @@ const TileAgentPanel = dynamic(() => import("./TileAgentPanel"), {
   ),
 });
 
-export function TileAgentTab({ tileId }: { tileId: string }) {
+export function TileAgentTab({
+  tileId,
+  compact,
+}: {
+  tileId: string;
+  compact?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const sessionId = useAppSelector(selectActiveAudioSessionId(tileId));
 
@@ -56,6 +62,11 @@ export function TileAgentTab({ tileId }: { tileId: string }) {
   // Pass the tileId through so the panel can expose the tile's task / notes /
   // files to the assistant as read-only context (TileAgentPanel builds those).
   return (
-    <TileAgentPanel key={sessionId} sessionId={sessionId} tileId={tileId} />
+    <TileAgentPanel
+      key={sessionId}
+      sessionId={sessionId}
+      tileId={tileId}
+      compact={compact}
+    />
   );
 }

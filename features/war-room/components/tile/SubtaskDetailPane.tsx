@@ -25,10 +25,12 @@ export function SubtaskDetailPane({
   subtaskId,
   onClose,
   onOpenInWindow,
+  compact,
 }: {
   subtaskId: string;
   onClose: () => void;
   onOpenInWindow: () => void;
+  compact?: boolean;
 }) {
   const title = useAppSelector(
     (s) => selectTaskById(s, subtaskId)?.title || "Subtask",
@@ -73,7 +75,12 @@ export function SubtaskDetailPane({
 
       {/* The REAL editor, bound to this subtask. */}
       <div className="min-h-0 flex-1">
-        <TaskEditor taskId={subtaskId} embedded key={subtaskId} />
+        <TaskEditor
+          taskId={subtaskId}
+          embedded
+          compact={compact}
+          key={subtaskId}
+        />
       </div>
     </div>
   );

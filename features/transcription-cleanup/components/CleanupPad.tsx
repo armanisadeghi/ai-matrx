@@ -164,7 +164,7 @@ function SectionHeading({
       <span
         className={cn(
           "inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md",
-          accent === "primary" ? "bg-primary/10" : "bg-muted",
+          accent === "primary" ? "text-primary" : "bg-muted",
         )}
       >
         <Icon
@@ -194,7 +194,7 @@ function StatusPill({
         "inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[10px] font-medium normal-case tracking-normal",
         tone === "success"
           ? "bg-green-500/10 text-green-600 dark:text-green-400"
-          : "bg-primary/10 text-primary",
+          : "text-primary border border-primary/70 bg-card",
       )}
     >
       {children}
@@ -402,6 +402,14 @@ interface CleanupPadProps {
    * (which owns session lifecycle) hides it.
    */
   showNewSession?: boolean;
+  /**
+   * Dense embedded toolbar for small hosts (e.g. War Room grid tiles): one row
+   * with optional host session chrome, icon-only Controls/Custom, and compact
+   * record / save-only buttons — no separate reveal bar or record band.
+   */
+  compact?: boolean;
+  /** Host-owned session switcher rendered at the start of the compact toolbar. */
+  embeddedHeaderSlot?: React.ReactNode;
 }
 
 /** A compact toggle chip for the embedded pad's reveal bar (Controls / Custom). */
@@ -411,13 +419,36 @@ function RevealChip({
   icon: Icon,
   label,
   title,
+  iconOnly = false,
 }: {
   active: boolean;
   onClick: () => void;
   icon: typeof SlidersHorizontal;
   label: string;
   title: string;
+  iconOnly?: boolean;
 }) {
+  if (iconOnly) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={active}
+        aria-label={label}
+        title={title}
+        className={cn(
+          "grid size-6 shrink-0 place-items-center rounded-md transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+          active
+            ? "text-primary border border-primary/70"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground",
+        )}
+      >
+        <Icon className="size-3.5" />
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -428,7 +459,7 @@ function RevealChip({
         "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         active
-          ? "bg-primary/10 text-primary"
+          ? "text-primary border border-primary/70"
           : "text-muted-foreground hover:bg-accent hover:text-foreground",
       )}
     >
@@ -446,6 +477,8 @@ export default function CleanupPad({
   variant = "page",
   sections,
   showNewSession = true,
+  compact = false,
+  embeddedHeaderSlot,
 }: CleanupPadProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
@@ -1459,9 +1492,7 @@ export default function CleanupPad({
       <span
         className={cn(
           "inline-flex items-center justify-center rounded-full p-1 transition-colors",
-          isRecordingActive
-            ? "bg-red-500/15 text-red-500"
-            : "bg-primary/10 text-primary",
+          isRecordingActive ? "bg-red-500/15 text-red-500" : "text-primary",
         )}
       >
         <MicrophoneIconButton
@@ -1504,6 +1535,51 @@ export default function CleanupPad({
     >
       <CircleStop className="h-3.5 w-3.5 shrink-0" />
       <span>Save only</span>
+    </button>
+  );
+
+  const compactRecordButton = (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center rounded-full p-0.5 transition-colors",
+        isRecordingActive
+          ? "bg-red-500/15 ring-2 ring-red-500/15"
+          : "text-primary",
+      )}
+      title={recordStatus}
+    >
+      <MicrophoneIconButton
+        ref={micRef}
+        id={micId}
+        onTranscriptionComplete={handleTranscriptionComplete}
+        onTranscriptOnlyComplete={handleTranscriptOnlyComplete}
+        onLiveTranscript={handleLiveTranscript}
+        onRecordingStateChange={handleRecordingStateChange}
+        variant="icon-only"
+        size="md"
+      />
+    </span>
+  );
+
+  const compactSoftStopButton = (
+    <button
+      type="button"
+      onClick={handleSoftStop}
+      disabled={!isMicRecording}
+      title={
+        isMicRecording
+          ? "Stop and save transcript without cleaning"
+          : "Available while recording"
+      }
+      aria-label="Stop and save transcript without cleaning"
+      className={cn(
+        "grid size-7 shrink-0 place-items-center rounded-full border transition-colors",
+        isMicRecording
+          ? "border-border/80 text-muted-foreground hover:bg-muted hover:text-foreground"
+          : "cursor-not-allowed border-border/50 text-muted-foreground/45 opacity-60",
+      )}
+    >
+      <CircleStop className="size-3.5" />
     </button>
   );
 
@@ -1709,6 +1785,11 @@ export default function CleanupPad({
     </div>
   );
 
+  const paneHeaderClass =
+    compact && isEmbedded
+      ? "flex h-7 shrink-0 items-center justify-between gap-1 border-b border-border bg-muted/30 px-2"
+      : PANE_HEADER;
+
   const transcriptHandlers = makeTextHandlers(
     transcriptTaRef,
     () => transcriptDisplayRef.current,
@@ -1716,7 +1797,7 @@ export default function CleanupPad({
   );
   const transcriptPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className={PANE_HEADER}>
+      <div className={paneHeaderClass}>
         <SectionHeading icon={AudioLines} label="Transcript">
           {isTranscriptLocked && (pendingPrefix || pendingSuffix) ? (
             <StatusPill tone="primary">Queued</StatusPill>
@@ -1799,7 +1880,7 @@ export default function CleanupPad({
   );
   const cleanPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className={PANE_HEADER}>
+      <div className={paneHeaderClass}>
         <SectionHeading icon={Stars} label="Clean" accent="primary">
           {cleanThinking && (
             <StatusPill tone="primary">
@@ -1919,7 +2000,7 @@ export default function CleanupPad({
                 className={cn(
                   "inline-flex max-w-36 items-center gap-1 truncate rounded-md border px-2 py-1 text-[11px] font-medium transition-colors",
                   active
-                    ? "border-primary/50 bg-primary/10 text-primary"
+                    ? "text-primary border border-primary/70"
                     : "border-border text-muted-foreground hover:bg-accent/60 hover:text-foreground",
                   slots.length > 1 && "pr-5",
                 )}
@@ -2109,28 +2190,54 @@ export default function CleanupPad({
       <>
         {transcriptInsertDialog}
         <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background">
-          {/* Reveal bar — the full pipeline stays one click away (never
-              stripped): "Controls" opens the session-scoped sidebar (clean agent
-              · context · dictionary · clean-up) as an in-place drawer; "Custom"
-              stacks the custom-agent output slots below the clean pane. */}
-          <div className="flex shrink-0 items-center gap-1 border-b border-border px-1.5 py-1">
-            <RevealChip
-              active={showSidebar}
-              onClick={() => toggleReveal("sidebar")}
-              icon={SlidersHorizontal}
-              label="Controls"
-              title="Clean agent, context, dictionary, clean-up"
-            />
-            <RevealChip
-              active={showCustom}
-              onClick={() => toggleReveal("custom")}
-              icon={Stars}
-              label="Custom"
-              title="Custom refine agents (raw or clean → output)"
-            />
-          </div>
-
-          {recordBand}
+          {compact ? (
+            <div className="flex shrink-0 items-center gap-1 border-b border-border px-1.5 py-0.5">
+              {embeddedHeaderSlot}
+              <RevealChip
+                active={showSidebar}
+                onClick={() => toggleReveal("sidebar")}
+                icon={SlidersHorizontal}
+                label="Controls"
+                title="Clean agent, context, dictionary, clean-up"
+                iconOnly
+              />
+              <RevealChip
+                active={showCustom}
+                onClick={() => toggleReveal("custom")}
+                icon={Stars}
+                label="Custom"
+                title="Custom refine agents (raw or clean → output)"
+                iconOnly
+              />
+              <span className="min-w-0 flex-1" />
+              {compactRecordButton}
+              {compactSoftStopButton}
+            </div>
+          ) : (
+            <>
+              {/* Reveal bar — the full pipeline stays one click away (never
+                  stripped): "Controls" opens the session-scoped sidebar (clean agent
+                  · context · dictionary · clean-up) as an in-place drawer; "Custom"
+                  stacks the custom-agent output slots below the clean pane. */}
+              <div className="flex shrink-0 items-center gap-1 border-b border-border px-1.5 py-1">
+                <RevealChip
+                  active={showSidebar}
+                  onClick={() => toggleReveal("sidebar")}
+                  icon={SlidersHorizontal}
+                  label="Controls"
+                  title="Clean agent, context, dictionary, clean-up"
+                />
+                <RevealChip
+                  active={showCustom}
+                  onClick={() => toggleReveal("custom")}
+                  icon={Stars}
+                  label="Custom"
+                  title="Custom refine agents (raw or clean → output)"
+                />
+              </div>
+              {recordBand}
+            </>
+          )}
           <div className="flex min-h-0 flex-1 flex-col">
             <div
               className={cn(

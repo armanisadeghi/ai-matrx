@@ -66,9 +66,11 @@ import {
 export default function TileAgentPanel({
   sessionId,
   tileId,
+  compact,
 }: {
   sessionId: string;
   tileId: string;
+  compact?: boolean;
 }) {
   const dispatch = useAppDispatch();
 
@@ -85,7 +87,8 @@ export default function TileAgentPanel({
   const subtasks = useAppSelector((s) =>
     taskId ? selectSubtasksByParent(s, taskId) : EMPTY_SUBTASKS,
   );
-  const noteId = useAppSelector(selectActiveNoteId(tileId)) ?? tile?.note_id ?? null;
+  const noteId =
+    useAppSelector(selectActiveNoteId(tileId)) ?? tile?.note_id ?? null;
   const note = useAppSelector((s) =>
     noteId ? selectNoteById(noteId)(s) : undefined,
   );
@@ -125,7 +128,9 @@ export default function TileAgentPanel({
   // de-duplicated by sessionId, so mounting it here costs nothing extra). We
   // merge in the tile's read-only context via buildExtraEntries (Scribe omits
   // this, so its context is untouched).
-  const { conversationId } = useStudioAssistant(sessionId, { buildExtraEntries });
+  const { conversationId } = useStudioAssistant(sessionId, {
+    buildExtraEntries,
+  });
 
   // ── Arm the War Room WRITE tools on THIS conversation only ───────────────
   // The war-room agent is the same studio-assistant agent used by Scribe; the
@@ -157,7 +162,9 @@ export default function TileAgentPanel({
   // Re-pull the working document the moment this session's agent turn finishes,
   // covering the non-active-tile realtime gap described above.
   const status = useAppSelector((s) =>
-    conversationId ? selectPrimaryRequest(conversationId)(s)?.status : undefined,
+    conversationId
+      ? selectPrimaryRequest(conversationId)(s)?.status
+      : undefined,
   );
   const prevStatusRef = useRef<string | undefined>(undefined);
   useEffect(() => {
@@ -172,12 +179,12 @@ export default function TileAgentPanel({
       {/* Agent picker + co-edited working document — shared header, exactly as
           ScribeScreen stacks them above the body. Both shrink-0; the working
           document expands in place when opened. */}
-      <AssistantAgentBar sessionId={sessionId} />
-      <WorkingDocumentHeader sessionId={sessionId} />
+      <AssistantAgentBar sessionId={sessionId} compact={compact} />
+      <WorkingDocumentHeader sessionId={sessionId} compact={compact} />
 
       {/* The Agent+ conversation + voice controls fill the rest. */}
-      <div className="min-h-0 flex-1">
-        <ExperimentalAgentScreen sessionId={sessionId} />
+      <div className="flex min-h-0 flex-1 flex-col">
+        <ExperimentalAgentScreen sessionId={sessionId} compact={compact} />
       </div>
     </div>
   );

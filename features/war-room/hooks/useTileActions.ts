@@ -19,7 +19,9 @@ import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindo
 import { useOpenTranscriptStudioWindow } from "@/features/overlays/openers/transcriptStudioWindow";
 import {
   selectActiveAudioSessionId,
+  selectEffectiveTileProjectId,
   selectTileById,
+  selectTileFlavor,
 } from "@/features/war-room/redux/selectors";
 import {
   deleteTile,
@@ -48,6 +50,10 @@ export function useTileActions(
   const dispatch = useAppDispatch();
   const router = useRouter();
   const tile = useAppSelector(selectTileById(tileId));
+  const flavor = useAppSelector(selectTileFlavor(tileId));
+  const effectiveProjectId = useAppSelector(
+    selectEffectiveTileProjectId(tileId),
+  );
   const audioSessionId = useAppSelector(selectActiveAudioSessionId(tileId));
   const openNoteInWindow = useOpenNoteInWindow();
   const openStudio = useOpenTranscriptStudioWindow();
@@ -61,7 +67,9 @@ export function useTileActions(
     (activeTab === "notes" && !!tile.note_id) ||
     ((activeTab === "audio" || activeTab === "agent") && !!audioSessionId) ||
     ((activeTab === "task" || activeTab === "combined") &&
-      (!!tile.task_id || !!tile.note_id));
+      (flavor === "project" && !!effectiveProjectId
+        ? true
+        : !!tile.task_id || !!tile.note_id));
 
   function expand() {
     if (!tile) return;
@@ -78,8 +86,13 @@ export function useTileActions(
         break;
       case "task":
       case "combined":
-        if (tile.task_id) router.push(`/tasks/${tile.task_id}`);
-        else if (tile.note_id) openNoteInWindow({ noteId: tile.note_id });
+        if (flavor === "project" && effectiveProjectId) {
+          router.push(`/projects/${effectiveProjectId}`);
+        } else if (tile.task_id) {
+          router.push(`/tasks/${tile.task_id}`);
+        } else if (tile.note_id) {
+          openNoteInWindow({ noteId: tile.note_id });
+        }
         break;
     }
   }

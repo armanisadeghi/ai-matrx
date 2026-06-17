@@ -31,9 +31,11 @@ import {
 } from "../../redux/thunks";
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
+import { cn } from "@/lib/utils";
 
 interface AssistantAgentBarProps {
   sessionId: string;
+  compact?: boolean;
 }
 
 function relativeTime(iso: string): string {
@@ -46,7 +48,10 @@ function relativeTime(iso: string): string {
   return `${Math.round(h / 24)}d ago`;
 }
 
-export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
+export function AssistantAgentBar({
+  sessionId,
+  compact,
+}: AssistantAgentBarProps) {
   const dispatch = useAppDispatch();
   const agents = useAppSelector(selectAllAgents);
   const activeAgentId = useAppSelector(selectActiveAssistantAgentId(sessionId));
@@ -155,57 +160,76 @@ export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
     });
 
   return (
-    <div className="flex shrink-0 items-center gap-2 border-b border-border px-2 py-1.5">
+    <div
+      className={cn(
+        "flex shrink-0 items-center gap-1.5 border-b border-border",
+        compact ? "px-1.5 py-1" : "gap-2 px-2 py-1.5",
+      )}
+    >
       <AgentListDropdown
         onSelect={handlePickAgent}
         compact
         triggerSlot={
           <button
             type="button"
-            className="flex min-w-0 items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-1 text-left transition-colors active:bg-accent"
+            className={cn(
+              "flex min-w-0 items-center gap-1 rounded-full bg-muted/60 text-left transition-colors active:bg-accent",
+              compact ? "px-2 py-0.5" : "gap-1.5 px-2.5 py-1",
+            )}
             title="Change the Scribe assistant agent"
           >
             <Webhook className="h-3.5 w-3.5 shrink-0 text-primary" />
-            <span className="max-w-[12rem] truncate text-xs font-medium text-foreground">
+            <span
+              className={cn(
+                "truncate text-xs font-medium text-foreground",
+                compact ? "max-w-[7rem]" : "max-w-[12rem]",
+              )}
+            >
               {activeAgentName ?? "Assistant agent"}
             </span>
           </button>
         }
       />
 
-      <span className="text-[11px] text-muted-foreground">
-        Scribe assistant
-      </span>
+      {!compact ? (
+        <span className="text-[11px] text-muted-foreground">
+          Scribe assistant
+        </span>
+      ) : null}
 
       <div className="flex-1" />
 
-      {/* Working context — DUAL ROLE: execute-instance stamps it onto every
-          assistant run (backend access), and it is the context the artifacts
-          this page saves (recordings, conversation, working doc) should
-          inherit. Save-side stamping lands with the ctx_associations work. */}
-      <ActiveContextButton
-        size="xs"
-        align="end"
-        triggerClassName="max-w-[280px]"
-      />
+      {!compact ? (
+        <ActiveContextButton
+          size="xs"
+          align="end"
+          triggerClassName="max-w-[280px]"
+        />
+      ) : null}
 
       <button
         type="button"
         onClick={handleNewConversation}
         disabled={!activeAgentId}
-        className="flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-muted-foreground transition-colors active:bg-accent disabled:opacity-40"
+        className={cn(
+          "flex items-center rounded-full text-muted-foreground transition-colors active:bg-accent disabled:opacity-40",
+          compact ? "gap-0.5 px-1.5 py-0.5" : "gap-1 px-2 py-1 text-[11px]",
+        )}
         aria-label="Start a fresh conversation"
         title="Save this conversation and start a clean one"
       >
         <Plus className="h-3.5 w-3.5" />
-        New
+        {!compact ? "New" : null}
       </button>
 
       {conversations.length > 1 && (
         <button
           type="button"
           onClick={() => setRosterOpen(true)}
-          className="flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-muted-foreground transition-colors active:bg-accent"
+          className={cn(
+            "flex items-center rounded-full text-muted-foreground transition-colors active:bg-accent",
+            compact ? "gap-0.5 px-1.5 py-0.5" : "gap-1 px-2 py-1 text-[11px]",
+          )}
           aria-label="Switch conversation"
           title="Switch between this session's agent conversations"
         >

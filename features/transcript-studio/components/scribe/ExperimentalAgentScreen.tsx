@@ -18,11 +18,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Keyboard, Loader2, Mic, Square, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useAppStore,
-} from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { useGlobalRecording } from "@/providers/GlobalRecordingProvider";
@@ -33,6 +29,8 @@ import { RecordActionSheet, type RecordActionKey } from "./RecordActionSheet";
 
 interface ExperimentalAgentScreenProps {
   sessionId: string;
+  /** War Room grid tiles — shrink the bottom voice control row. */
+  compact?: boolean;
 }
 
 /** The finished turn: transcript + assembled audio + length, carried to the chooser. */
@@ -53,6 +51,7 @@ function formatClock(totalSec: number): string {
 
 export function ExperimentalAgentScreen({
   sessionId,
+  compact,
 }: ExperimentalAgentScreenProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -237,33 +236,47 @@ export function ExperimentalAgentScreen({
       </div>
 
       {/* Single record control */}
-      <div className="shrink-0 border-t border-border bg-card/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+      <div
+        className={cn(
+          "shrink-0 border-t border-border bg-card/95 backdrop-blur",
+          compact
+            ? "px-2 pt-1.5 pb-1"
+            : "px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3",
+        )}
+      >
+        {!compact ? (
+          <div
+            className={cn(
+              "mb-2 flex items-center justify-center gap-2 text-xs transition-opacity",
+              isRecording ? "opacity-100" : "opacity-40",
+            )}
+          >
+            <span className="relative flex h-2 w-2">
+              {isRecording && !isPaused && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+              )}
+              <span
+                className={cn(
+                  "relative inline-flex h-2 w-2 rounded-full",
+                  isRecording ? "bg-red-500" : "bg-muted-foreground",
+                )}
+              />
+            </span>
+            <span className="font-mono tabular-nums text-foreground">
+              {formatClock(isRecording ? durationSec : 0)}
+            </span>
+            <span className="text-muted-foreground">
+              {isRecording ? "Recording" : "Tap to record a turn"}
+            </span>
+          </div>
+        ) : null}
+
         <div
           className={cn(
-            "mb-2 flex items-center justify-center gap-2 text-xs transition-opacity",
-            isRecording ? "opacity-100" : "opacity-40",
+            "flex items-center justify-center",
+            compact ? "gap-2" : "gap-4",
           )}
         >
-          <span className="relative flex h-2 w-2">
-            {isRecording && !isPaused && (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-            )}
-            <span
-              className={cn(
-                "relative inline-flex h-2 w-2 rounded-full",
-                isRecording ? "bg-red-500" : "bg-muted-foreground",
-              )}
-            />
-          </span>
-          <span className="font-mono tabular-nums text-foreground">
-            {formatClock(isRecording ? durationSec : 0)}
-          </span>
-          <span className="text-muted-foreground">
-            {isRecording ? "Recording" : "Tap to record a turn"}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-center gap-4">
           {/* Auto-voice toggle — read responses aloud. Dimmed when off. */}
           <button
             type="button"
@@ -276,18 +289,23 @@ export function ExperimentalAgentScreen({
               autoVoice ? "Turn off voice replies" : "Turn on voice replies"
             }
             className={cn(
-              "flex h-16 w-16 items-center justify-center rounded-full transition-transform active:scale-95",
+              "flex items-center justify-center rounded-full transition-transform active:scale-95",
+              compact ? "h-9 w-9" : "h-16 w-16",
               autoVoice
                 ? "bg-secondary text-secondary-foreground"
                 : "bg-muted text-muted-foreground/60",
             )}
           >
             {speaking ? (
-              <Volume2 className="h-6 w-6 animate-pulse" />
+              <Volume2
+                className={
+                  compact ? "h-4 w-4 animate-pulse" : "h-6 w-6 animate-pulse"
+                }
+              />
             ) : autoVoice ? (
-              <Volume2 className="h-6 w-6" />
+              <Volume2 className={compact ? "h-4 w-4" : "h-6 w-6"} />
             ) : (
-              <VolumeX className="h-6 w-6" />
+              <VolumeX className={compact ? "h-4 w-4" : "h-6 w-6"} />
             )}
           </button>
 
@@ -299,7 +317,8 @@ export function ExperimentalAgentScreen({
             }
             aria-label={isRecording ? "Stop recording" : "Start recording"}
             className={cn(
-              "flex h-16 w-16 items-center justify-center rounded-full transition-transform active:scale-95",
+              "flex items-center justify-center rounded-full transition-transform active:scale-95",
+              compact ? "h-9 w-9" : "h-16 w-16",
               isRecording
                 ? "bg-red-500 text-white"
                 : blockedByOther || recording.isFinalizing
@@ -308,11 +327,19 @@ export function ExperimentalAgentScreen({
             )}
           >
             {isRecording ? (
-              <Square className="h-6 w-6 fill-current" />
+              <Square
+                className={
+                  compact ? "h-4 w-4 fill-current" : "h-6 w-6 fill-current"
+                }
+              />
             ) : recording.isFinalizing ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
+              <Loader2
+                className={
+                  compact ? "h-4 w-4 animate-spin" : "h-6 w-6 animate-spin"
+                }
+              />
             ) : (
-              <Mic className="h-7 w-7" />
+              <Mic className={compact ? "h-5 w-5" : "h-7 w-7"} />
             )}
           </button>
 
@@ -324,17 +351,23 @@ export function ExperimentalAgentScreen({
             aria-pressed={inputOpen}
             aria-label={inputOpen ? "Hide text input" : "Show text input"}
             className={cn(
-              "flex h-16 w-16 items-center justify-center rounded-full transition-transform active:scale-95",
+              "flex items-center justify-center rounded-full transition-transform active:scale-95",
+              compact ? "h-9 w-9" : "h-16 w-16",
               inputOpen
                 ? "bg-primary/15 text-primary"
                 : "bg-muted text-muted-foreground/60",
             )}
           >
-            <Keyboard className="h-6 w-6" />
+            <Keyboard className={compact ? "h-4 w-4" : "h-6 w-6"} />
           </button>
         </div>
         {blockedByOther && (
-          <p className="mt-2 text-center text-xs text-muted-foreground">
+          <p
+            className={cn(
+              "text-center text-muted-foreground",
+              compact ? "mt-1 text-[10px]" : "mt-2 text-xs",
+            )}
+          >
             Another recording is active. Stop it first.
           </p>
         )}

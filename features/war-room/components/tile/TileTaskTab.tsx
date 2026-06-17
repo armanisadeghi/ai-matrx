@@ -12,20 +12,18 @@
 //     saved until the user types — create fires on Enter or on blur-with-
 //     content, then the typed label is written to the freshly-created task.
 //
-//   • Subtask experience (Feature 4): an enhanced `SubtaskRail` (rapid entry
-//     with Enter-chaining, click-to-open, "⋯ → Open in window") replaces
-//     reliance on the editor's buried list. Clicking a subtask opens the
-//     `SubtaskDetailPane` (the same real editor bound to the subtask) beside
-//     the parent on wide tiles / over it on narrow ones; "Open in window"
-//     pops a floating, draggable `SubtaskWindow`. Several can be open at once.
+//   • Subtask experience (Feature 4): drill into subtasks in-place via the same
+//     TaskEditor — back pops to the parent; overlay window remains the fallback
+//     outside tiles.
 //
 // This component renders both as the dedicated "task" tab (full height) and
 // inside the combined "All" view (a bounded box), so the layout is driven by
 // the tile's @container size — never by a prop.
 
-import { useEffect, useState } from "react";
-import { ListChecks, ListTree, Loader2, Plus, X } from "lucide-react";
+import { useState } from "react";
+import { ListChecks, ListTree, Loader2, X } from "lucide-react";
 import TaskEditor from "@/features/tasks/components/TaskEditor";
+import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import {
@@ -34,25 +32,38 @@ import {
 } from "@/features/war-room/redux/selectors";
 import { createTileTask } from "@/features/war-room/redux/thunks";
 import { updateTaskFieldThunk } from "@/features/tasks/redux/thunks";
+import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { cn } from "@/lib/utils";
+import { useTaskDrillStack } from "@/features/war-room/hooks/useTaskDrillStack";
+import { TileEmbeddedTaskView } from "./TileEmbeddedTaskView";
+import { TileProjectTab } from "./TileProjectTab";
 import { SubtaskRail } from "./SubtaskRail";
-import { SubtaskDetailPane } from "./SubtaskDetailPane";
-import { SubtaskWindow } from "./SubtaskWindow";
-import { TileProjectTaskList } from "./TileProjectTaskList";
 
-export function TileTaskTab({ tileId }: { tileId: string }) {
+export function TileTaskTab({
+  tileId,
+  compact,
+}: {
+  tileId: string;
+  compact?: boolean;
+}) {
   const flavor = useAppSelector((s) => selectTileFlavor(tileId)(s));
 
   // A project tile's Task tab is the PROJECT's task list (browse + create +
   // open), not the single-anchor task editor that thread/task tiles use.
   if (flavor === "project") {
-    return <TileProjectTaskList tileId={tileId} />;
+    return <TileProjectTab tileId={tileId} compact={compact} />;
   }
 
-  return <TileTaskTabAnchored tileId={tileId} />;
+  return <TileTaskTabAnchored tileId={tileId} compact={compact} />;
 }
 
-function TileTaskTabAnchored({ tileId }: { tileId: string }) {
+function TileTaskTabAnchored({
+  tileId,
+  compact,
+}: {
+  tileId: string;
+  compact?: boolean;
+}) {
   const tile = useAppSelector((s) => selectTileById(tileId)(s));
   const taskId = tile?.task_id ?? null;
   const task = useAppSelector((s) =>
@@ -61,7 +72,7 @@ function TileTaskTabAnchored({ tileId }: { tileId: string }) {
 
   // ── No task yet → fast inline creation (Feature 3) ───────────────────────
   if (!taskId) {
-    return <TileTaskCreate tileId={tileId} />;
+    return <TileTaskCreate tileId={tileId} compact={compact} />;
   }
 
   // Task linked but not yet hydrated into the slice → brief loading.
@@ -74,7 +85,51 @@ function TileTaskTabAnchored({ tileId }: { tileId: string }) {
   }
 
   return (
-    <TileTaskBody taskId={taskId} projectId={task.project_id ?? null} />
+    <TileTaskTabAnchoredBody
+      taskId={taskId}
+      taskTitle={task.title}
+      projectId={task.project_id ?? null}
+      compact={compact}
+    />
+  );
+}
+
+function TileTaskTabAnchoredBody({
+  taskId,
+  taskTitle,
+  projectId,
+  compact,
+}: {
+  taskId: string;
+  taskTitle: string;
+  projectId: string | null;
+  compact?: boolean;
+}) {
+  const drill = useTaskDrillStack();
+
+  if (drill.isDrilled && drill.currentTaskId) {
+    return (
+      <TileEmbeddedTaskView
+        taskId={drill.currentTaskId}
+        projectId={projectId}
+        compact={compact}
+        drillStack={drill.stack}
+        rootSegment={{ label: taskTitle.trim() || "Task" }}
+        onBack={drill.pop}
+        onPopToRoot={drill.reset}
+        onPopTo={drill.popTo}
+        onDrillTask={drill.push}
+      />
+    );
+  }
+
+  return (
+    <TileTaskBody
+      taskId={taskId}
+      projectId={projectId}
+      compact={compact}
+      onDrillTask={drill.push}
+    />
   );
 }
 
@@ -82,7 +137,13 @@ function TileTaskTabAnchored({ tileId }: { tileId: string }) {
  * Feature 3 — fast task creation
  * ──────────────────────────────────────────────────────────────────────── */
 
-function TileTaskCreate({ tileId }: { tileId: string }) {
+function TileTaskCreate({
+  tileId,
+  compact,
+}: {
+  tileId: string;
+  compact?: boolean;
+}) {
   const dispatch = useAppDispatch();
   // `prompt` → show the affordance; `entry` → auto-focused label input.
   const [mode, setMode] = useState<"prompt" | "entry">("prompt");
@@ -109,7 +170,7 @@ function TileTaskCreate({ tileId }: { tileId: string }) {
 
   if (mode === "prompt") {
     return (
-      <div className="grid h-full place-items-center px-4">
+      <div className={cn("grid h-full place-items-center", !compact && "px-4")}>
         <button
           type="button"
           onClick={() => setMode("entry")}
@@ -130,7 +191,12 @@ function TileTaskCreate({ tileId }: { tileId: string }) {
   // Entry — auto-focused label input; no save until content (Enter / blur).
   return (
     <div className="flex h-full flex-col">
-      <div className="flex shrink-0 items-center gap-2 border-b border-border/60 bg-card/40 px-3 py-2">
+      <div
+        className={cn(
+          "flex shrink-0 items-center gap-2 border-b border-border/60 bg-card/40 py-2",
+          compact ? "px-0" : "px-3",
+        )}
+      >
         <ListChecks className="size-4 shrink-0 text-primary" />
         <input
           // Autofocus so the user types immediately — no extra clicks.
@@ -173,7 +239,7 @@ function TileTaskCreate({ tileId }: { tileId: string }) {
           </button>
         )}
       </div>
-      <div className="grid flex-1 place-items-center px-4">
+      <div className={cn("grid flex-1 place-items-center", !compact && "px-4")}>
         <p className="text-xs text-muted-foreground">
           {busy ? "Creating task…" : "Press Enter to create, Esc to cancel."}
         </p>
@@ -189,118 +255,72 @@ function TileTaskCreate({ tileId }: { tileId: string }) {
 function TileTaskBody({
   taskId,
   projectId,
+  compact,
+  onDrillTask,
 }: {
   taskId: string;
   projectId: string | null;
+  compact?: boolean;
+  onDrillTask: (taskId: string) => void;
 }) {
-  // The subtask selected for the in-tile detail pane (null → editor only).
-  const [openSubtaskId, setOpenSubtaskId] = useState<string | null>(null);
-  // Whether the rail is showing (toggle). It also auto-opens when a subtask
-  // pane closes so the user lands back in the list.
+  const openTaskWindow = useOpenTaskEditorWindow();
   const [railOpen, setRailOpen] = useState(false);
-  // Track which add-input should auto-focus (set true when opened by click).
   const [railAutoFocus, setRailAutoFocus] = useState(false);
-  // Floating subtask windows — multiple may coexist.
-  const [windowIds, setWindowIds] = useState<string[]>([]);
 
-  const openWindow = (subtaskId: string) => {
-    setWindowIds((ids) => (ids.includes(subtaskId) ? ids : [...ids, subtaskId]));
-    // Opening a window supersedes the in-tile pane for that subtask.
-    setOpenSubtaskId((cur) => (cur === subtaskId ? null : cur));
-  };
-  const closeWindow = (subtaskId: string) =>
-    setWindowIds((ids) => ids.filter((id) => id !== subtaskId));
-
-  const openPane = (subtaskId: string) => setOpenSubtaskId(subtaskId);
-  const closePane = () => setOpenSubtaskId(null);
-
-  const showRail = railOpen || openSubtaskId !== null;
+  const showRail = railOpen;
 
   return (
     <div className="flex h-full min-h-0 flex-col @container/task">
       <div className="flex min-h-0 flex-1 @[34rem]/task:flex-row">
-        {/* Main editor column. On narrow tiles it yields to the detail pane;
-            on wide tiles editor + rail/pane sit side-by-side. */}
-        <div
-          className={cn(
-            "min-h-0 min-w-0 flex-1",
-            // Narrow: when a subtask pane is open it takes over, hide editor.
-            openSubtaskId !== null && "hidden @[34rem]/task:block",
-          )}
-        >
-          <TaskEditor taskId={taskId} embedded key={taskId} />
+        <div className="min-h-0 min-w-0 flex-1">
+          <TaskEditor
+            taskId={taskId}
+            embedded
+            compact={compact}
+            key={taskId}
+            onOpenLinkedTask={onDrillTask}
+            footerAppend={
+              <Button
+                type="button"
+                size="sm"
+                variant={showRail ? "secondary" : "ghost"}
+                onClick={() => {
+                  if (showRail) {
+                    setRailOpen(false);
+                    setRailAutoFocus(false);
+                  } else {
+                    setRailOpen(true);
+                    setRailAutoFocus(true);
+                  }
+                }}
+                className="h-6 w-6 shrink-0 p-0"
+                aria-pressed={showRail}
+                title={showRail ? "Hide subtasks" : "Add / open subtasks"}
+                aria-label={showRail ? "Hide subtasks" : "Add / open subtasks"}
+              >
+                <ListTree className="size-3.5" />
+              </Button>
+            }
+          />
         </div>
 
-        {/* Right rail / detail pane. Beside the editor on wide tiles; on narrow
-            tiles it stacks below. The detail pane (editor hidden) gets the full
-            stacked area; the rail is height-capped so the parent task editor
-            stays dominant. Width is capped on wide so the editor keeps room. */}
         {showRail && (
           <div
             className={cn(
               "flex min-h-0 min-w-0 flex-col border-t border-border/60",
-              "@[34rem]/task:w-72 @[34rem]/task:shrink-0 @[34rem]/task:border-l @[34rem]/task:border-t-0",
-              openSubtaskId !== null
-                ? // Detail pane: full stacked area on narrow (editor hidden).
-                  "flex-1 @[34rem]/task:flex-none"
-                : // Rail: bounded on narrow so the editor keeps most of the box.
-                  "max-h-[55%] shrink-0 @[34rem]/task:max-h-none @[34rem]/task:flex-none",
+              "max-h-[55%] shrink-0 @[34rem]/task:max-h-none @[34rem]/task:w-72 @[34rem]/task:shrink-0 @[34rem]/task:border-l @[34rem]/task:border-t-0",
             )}
           >
-            {openSubtaskId !== null ? (
-              <SubtaskDetailPane
-                subtaskId={openSubtaskId}
-                onClose={closePane}
-                onOpenInWindow={() => openWindow(openSubtaskId)}
-              />
-            ) : (
-              <SubtaskRail
-                taskId={taskId}
-                projectId={projectId}
-                onOpenPane={openPane}
-                onOpenWindow={openWindow}
-                autoFocus={railAutoFocus}
-              />
-            )}
+            <SubtaskRail
+              taskId={taskId}
+              projectId={projectId}
+              onOpenPane={onDrillTask}
+              onOpenWindow={(id) => openTaskWindow({ taskId: id })}
+              autoFocus={railAutoFocus}
+            />
           </div>
         )}
       </div>
-
-      {/* Persistent toggle — always one tap to the rapid subtask surface. */}
-      <button
-        type="button"
-        onClick={() => {
-          // Toggling closed also closes any open detail pane.
-          if (showRail) {
-            setRailOpen(false);
-            setOpenSubtaskId(null);
-            setRailAutoFocus(false);
-          } else {
-            setRailOpen(true);
-            setRailAutoFocus(true);
-          }
-        }}
-        className={cn(
-          "flex shrink-0 items-center gap-1.5 border-t border-border/60 bg-card/50 px-3 py-1.5 text-[11px] font-medium transition-colors",
-          "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-          showRail ? "text-primary" : "text-muted-foreground",
-        )}
-        aria-pressed={showRail}
-        title={showRail ? "Hide subtasks" : "Add / open subtasks"}
-      >
-        <ListTree className="size-3.5" />
-        <span>Subtasks</span>
-        {!showRail && <Plus className="size-3 opacity-70" />}
-      </button>
-
-      {/* Floating, draggable subtask windows — independent of tile bounds. */}
-      {windowIds.map((sid) => (
-        <SubtaskWindow
-          key={sid}
-          subtaskId={sid}
-          onClose={() => closeWindow(sid)}
-        />
-      ))}
     </div>
   );
 }

@@ -38,12 +38,14 @@ interface TaskAssigneePickerProps {
   onChange: (userId: string | null) => void;
   /** Controlled size. "sm" for inline chip, "md" for form row. */
   size?: "sm" | "md";
+  className?: string;
 }
 
 export default function TaskAssigneePicker({
   assigneeId,
   onChange,
   size = "md",
+  className,
 }: TaskAssigneePickerProps) {
   const { connections, isLoading } = useUserConnections();
   const [open, setOpen] = useState(false);
@@ -80,6 +82,7 @@ export default function TaskAssigneePicker({
           className={cn(
             "w-full inline-flex items-center gap-2 px-2 rounded-md border border-border bg-card hover:border-foreground/30 hover:bg-accent/30 transition-colors text-left",
             h,
+            className,
           )}
         >
           {current ? (

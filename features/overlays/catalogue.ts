@@ -560,6 +560,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  taskEditorWindow: {
+    label: "Task Editor Window",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   taskQuickCreateWindow: {
     label: "Task Quick Create Window",
     instanceMode: "singleton",

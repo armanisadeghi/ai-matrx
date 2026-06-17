@@ -643,6 +643,10 @@ const TaskQuickCreateWindow = dynamic(
   () => import("@/features/window-panels/windows/tasks/TaskQuickCreateWindow"),
   { ssr: false },
 );
+const TaskEditorWindow = dynamic(
+  () => import("@/features/window-panels/windows/tasks/TaskEditorWindow"),
+  { ssr: false },
+);
 const ToolCallWindowPanel = dynamic(
   () =>
     import("@/features/tool-call-visualization/window-panel/ToolCallWindowPanel"),
@@ -1275,6 +1279,9 @@ export default function OverlayController() {
     ),
     smartCodeEditorWindow: useAppSelector((s) =>
       selectOpenInstances(s, "smartCodeEditorWindow"),
+    ),
+    taskEditorWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "taskEditorWindow"),
     ),
     toolCallWindow: useAppSelector((s) =>
       selectOpenInstances(s, "toolCallWindow"),
@@ -2742,9 +2749,7 @@ export default function OverlayController() {
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "itemDetailWindow" }))
             }
-            itemType={
-              typeof data?.itemType === "string" ? data.itemType : null
-            }
+            itemType={typeof data?.itemType === "string" ? data.itemType : null}
             itemId={typeof data?.itemId === "string" ? data.itemId : null}
             initialName={
               typeof data?.initialName === "string" ? data.initialName : null
@@ -4183,6 +4188,29 @@ export default function OverlayController() {
           />
         );
       })()}
+
+      {/* TODO: review prop wiring for taskEditorWindow */}
+      {/* taskEditorWindow — multi-instance, one window per task id */}
+      {instancesById.taskEditorWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        const taskId = typeof data?.taskId === "string" ? data.taskId : null;
+        if (!taskId) return null;
+        return (
+          <TaskEditorWindow
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            taskId={taskId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "taskEditorWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+          />
+        );
+      })}
 
       {/* TODO: review prop wiring for taskQuickCreateWindow */}
       {/* taskQuickCreateWindow */}
