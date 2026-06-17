@@ -265,6 +265,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  createProjectWindow: {
+    label: "Create Project",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   creatorHub: {
     label: "Creator Hub",
     instanceMode: "singleton",

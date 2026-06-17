@@ -362,6 +362,10 @@ const CuratedIconPickerWindow = dynamic(
     ),
   { ssr: false },
 );
+const CreateProjectWindow = dynamic(
+  () => import("@/features/window-panels/windows/projects/CreateProjectWindow"),
+  { ssr: false },
+);
 const EmailDialogBridge = dynamic(
   () => import("@/components/dialogs/EmailDialogBridge"),
   { ssr: false },
@@ -1235,6 +1239,9 @@ export default function OverlayController() {
     ),
     contentHistory: useAppSelector((s) =>
       selectOpenInstances(s, "contentHistory"),
+    ),
+    createProjectWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "createProjectWindow"),
     ),
     curatedIconPickerWindow: useAppSelector((s) =>
       selectOpenInstances(s, "curatedIconPickerWindow"),
@@ -2571,6 +2578,45 @@ export default function OverlayController() {
           />
         );
       })()}
+
+      {/* createProjectWindow — multi-instance */}
+      {instancesById.createProjectWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        return (
+          <CreateProjectWindow
+            key={inst.instanceId}
+            isOpen
+            instanceId={inst.instanceId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "createProjectWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            initialOrgId={
+              typeof data?.initialOrgId === "string" ? data.initialOrgId : null
+            }
+            initialOrgSlug={
+              typeof data?.initialOrgSlug === "string"
+                ? data.initialOrgSlug
+                : null
+            }
+            orgLocked={
+              typeof data?.orgLocked === "boolean" ? data.orgLocked : false
+            }
+            skipRedirect={
+              typeof data?.skipRedirect === "boolean" ? data.skipRedirect : true
+            }
+          />
+        );
+      })}
 
       {/* curatedIconPickerWindow — multi-instance */}
       {instancesById.curatedIconPickerWindow.map((inst) => {
