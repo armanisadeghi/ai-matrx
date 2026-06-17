@@ -243,12 +243,12 @@ const URGENCY_COLORS: Record<LogUrgency, string> = {
 
 function AgeGutter({
   timestamp,
-  gutterColor,
   alignTop = false,
+  emphasis = false,
 }: {
   timestamp: string | null;
-  gutterColor: string;
   alignTop?: boolean;
+  emphasis?: boolean;
 }) {
   const label = timestamp
     ? formatRelativeTime(timestamp, { style: "long", fallback: "" })
@@ -256,7 +256,9 @@ function AgeGutter({
   return (
     <span
       title={timestamp ? formatAbsoluteDate(timestamp) : undefined}
-      className={`select-none shrink-0 w-[6.75rem] text-right pr-2 font-sans text-[10px] leading-5 border-r border-neutral-800 mr-2 text-neutral-500 whitespace-nowrap ${gutterColor} ${alignTop ? "pt-1.5" : ""}`}
+      className={`select-none shrink-0 w-[6.75rem] text-right pr-2 font-sans text-[10px] leading-5 border-r border-border mr-2 whitespace-nowrap ${
+        emphasis ? "text-primary" : "text-foreground"
+      } ${alignTop ? "pt-1.5" : ""}`}
     >
       {label || "—"}
     </span>
@@ -305,23 +307,21 @@ const LogLine = React.memo(function LogLine({
 
   // Background priority: anchor > in-range > selected-for-json > hover
   const bgClass = isAnchor
-    ? "bg-blue-800/35 ring-1 ring-inset ring-blue-500"
+    ? "bg-primary/15 ring-1 ring-inset ring-primary"
     : inSelection
-      ? "bg-blue-900/20 ring-1 ring-inset ring-blue-800/40"
+      ? "bg-primary/10 ring-1 ring-inset ring-primary/60"
       : selected
-        ? "bg-blue-950/30"
-        : "hover:bg-white/5";
+        ? "bg-accent"
+        : "hover:bg-accent/70";
 
-  const gutterColor = isAnchor
-    ? "text-blue-400"
-    : inSelection
-      ? "text-blue-700"
-      : "text-neutral-700";
+  const gutterEmphasis = isAnchor || inSelection;
 
   // Shared gutter style — fixed width so log text always starts at the same column
   const lineGutter = (
     <span
-      className={`select-none shrink-0 w-12 text-right pr-2 font-mono text-[10px] tabular-nums leading-5 border-r border-neutral-800 mr-2 ${gutterColor}`}
+      className={`select-none shrink-0 w-12 text-right pr-2 font-mono text-[10px] tabular-nums leading-5 border-r border-border mr-2 ${
+        gutterEmphasis ? "text-primary" : "text-muted-foreground"
+      }`}
     >
       {displayIndex}
     </span>
@@ -335,10 +335,10 @@ const LogLine = React.memo(function LogLine({
         className={`flex items-start cursor-pointer transition-colors opacity-75 ${line.bgColor} ${bgClass}`}
         onClick={handleClick}
       >
-        <AgeGutter timestamp={line.timestamp} gutterColor={gutterColor} />
+        <AgeGutter timestamp={line.timestamp} emphasis={gutterEmphasis} />
         {lineGutter}
         <span
-          className={`flex-1 font-mono text-xs leading-5 whitespace-pre-wrap break-all py-0 ${line.color}`}
+          className={`flex-1 font-mono text-xs leading-5 whitespace-pre-wrap break-all py-0 ${line.color || "text-foreground"}`}
         >
           {line.raw}
         </span>
@@ -359,12 +359,14 @@ const LogLine = React.memo(function LogLine({
     >
       <AgeGutter
         timestamp={line.timestamp}
-        gutterColor={gutterColor}
         alignTop={hasMetadata}
+        emphasis={gutterEmphasis}
       />
       {/* Line number gutter — aligned to first row of content */}
       <span
-        className={`select-none shrink-0 w-12 text-right pr-2 font-mono text-[10px] tabular-nums border-r border-neutral-800 mr-2 ${gutterColor} ${hasMetadata ? "pt-1.5" : "leading-5"}`}
+        className={`select-none shrink-0 w-12 text-right pr-2 font-mono text-[10px] tabular-nums border-r border-border mr-2 ${
+          gutterEmphasis ? "text-primary" : "text-muted-foreground"
+        } ${hasMetadata ? "pt-1.5" : "leading-5"}`}
       >
         {displayIndex}
       </span>
@@ -389,22 +391,22 @@ const LogLine = React.memo(function LogLine({
               )}
             {line.module && (
               <>
-                <span className="text-neutral-700 text-[10px]">·</span>
-                <span className="text-[10px] text-neutral-500">
+                <span className="text-muted-foreground text-[10px]">·</span>
+                <span className="text-[10px] text-foreground/80">
                   {line.module}
                 </span>
               </>
             )}
             {line.httpStatus != null && (
               <>
-                <span className="text-neutral-700 text-[10px]">·</span>
+                <span className="text-muted-foreground text-[10px]">·</span>
                 <span
                   className={`text-[10px] px-1 rounded font-medium ${
                     line.httpStatus >= 500
-                      ? "bg-red-900/60 text-red-300"
+                      ? "bg-destructive/15 text-destructive"
                       : line.httpStatus >= 400
-                        ? "bg-amber-900/60 text-amber-300"
-                        : "bg-green-900/60 text-green-300"
+                        ? "bg-warning/15 text-warning"
+                        : "bg-success/15 text-success"
                   }`}
                 >
                   {line.httpStatus}
@@ -413,8 +415,8 @@ const LogLine = React.memo(function LogLine({
             )}
             {line.timestamp && (
               <>
-                <span className="text-neutral-700 text-[10px]">·</span>
-                <span className="text-[10px] text-neutral-600 tabular-nums">
+                <span className="text-muted-foreground text-[10px]">·</span>
+                <span className="text-[10px] text-muted-foreground tabular-nums">
                   {line.timestamp}
                 </span>
               </>
@@ -422,7 +424,7 @@ const LogLine = React.memo(function LogLine({
           </div>
         )}
         <div
-          className={`font-mono text-xs leading-5 whitespace-pre-wrap break-all ${line.color}`}
+          className={`font-mono text-xs leading-5 whitespace-pre-wrap break-all ${line.color || "text-foreground"}`}
         >
           {line.raw}
         </div>
@@ -459,31 +461,34 @@ function ToggleGroup<T extends string>({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-neutral-500 text-[10px] uppercase tracking-wide w-16 shrink-0">
+      <span className="text-muted-foreground text-[10px] uppercase tracking-wide w-16 shrink-0">
         {label}
       </span>
       <button
         onClick={onAll}
         className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all
-          ${isAll ? "border-neutral-500 text-neutral-200 bg-white/10" : "border-neutral-700 text-neutral-600 hover:text-neutral-400"}`}
+          ${isAll ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground hover:bg-accent"}`}
       >
         ALL
       </button>
       <button
         onClick={onClear}
         className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all
-          ${isClear ? "border-red-600 text-red-400 bg-red-950/30" : "border-neutral-700 text-neutral-600 hover:text-neutral-400"}`}
+          ${isClear ? "border-destructive bg-destructive/10 text-destructive" : "border-border bg-card text-foreground hover:bg-accent"}`}
       >
         CLEAR
       </button>
-      <div className="w-px h-3 bg-neutral-700 shrink-0" />
+      <div className="w-px h-3 bg-border shrink-0" />
       {all.map((v) => (
         <button
           key={v}
           onClick={() => onToggle(v)}
-          className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all
-            ${colorMap?.[v] ?? "bg-white/10 text-neutral-300"}
-            ${active.has(v) ? "opacity-100" : "opacity-20 grayscale"}`}
+          className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all
+            ${
+              active.has(v)
+                ? (colorMap?.[v] ?? "bg-accent text-foreground border-border")
+                : "bg-muted text-muted-foreground border-border"
+            }`}
         >
           {labelMap?.[v] ?? v}
         </button>
@@ -510,7 +515,7 @@ function NoiseExcludeToggles({
       className={`flex items-center gap-1 ${compact ? "flex-wrap" : "flex-wrap gap-1.5"}`}
     >
       {!compact && (
-        <span className="text-neutral-500 shrink-0 mr-1">Hide noise:</span>
+        <span className="text-muted-foreground shrink-0 mr-1">Hide noise:</span>
       )}
       {NOISE_EXCLUDE_PRESETS.map((preset) => {
         const hidden = excludes[preset.key];
@@ -530,8 +535,8 @@ function NoiseExcludeToggles({
             className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all whitespace-nowrap
               ${
                 showing
-                  ? "border-cyan-600 text-cyan-200 bg-cyan-950/50"
-                  : "border-neutral-600 text-neutral-300 bg-neutral-800/80 hover:border-neutral-500 hover:text-neutral-200"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
           >
             {preset.label}
@@ -584,16 +589,16 @@ function FilterPanel({
     onChange({ ...filters, endpoints: s, endpointsCleared: cleared });
 
   return (
-    <div className="flex flex-col gap-2.5 px-3 py-2.5 bg-neutral-900 border-b border-neutral-800 text-xs">
+    <div className="flex flex-col gap-2.5 px-3 py-2.5 bg-card border-b border-border text-xs text-foreground">
       <div className="flex items-center gap-2">
-        <Search className="h-3.5 w-3.5 text-neutral-500 shrink-0" />
+        <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         <Input
           placeholder="Search raw logs…"
           value={filters.search}
           onChange={(e) => onChange({ ...filters, search: e.target.value })}
-          className="h-7 text-xs bg-neutral-800 border-neutral-700 placeholder:text-neutral-600 flex-1"
+          className="h-7 text-xs flex-1"
         />
-        <span className="text-neutral-500 shrink-0 whitespace-nowrap tabular-nums">
+        <span className="text-muted-foreground shrink-0 whitespace-nowrap tabular-nums">
           {visibleLines} / {totalLines}
         </span>
         {isFiltered && (
@@ -601,7 +606,7 @@ function FilterPanel({
             variant="ghost"
             size="sm"
             onClick={() => onChange(defaultFilters())}
-            className="h-7 px-2 text-neutral-400 hover:text-white shrink-0"
+            className="h-7 px-2 shrink-0"
           >
             <X className="h-3.5 w-3.5 mr-1" />
             Reset all
@@ -676,8 +681,8 @@ function FilterPanel({
                 availableModules.map((m) => [
                   m,
                   m === MODULE_NONE
-                    ? "bg-neutral-800 text-neutral-400"
-                    : "bg-indigo-900/40 text-indigo-300",
+                    ? "bg-muted text-muted-foreground border-border"
+                    : "bg-secondary/15 text-secondary border-border",
                 ]),
               )}
               onToggle={(m) => {
@@ -712,7 +717,7 @@ function FilterPanel({
               colorMap={Object.fromEntries(
                 availableEndpoints.map((ep) => [
                   ep,
-                  "bg-cyan-900/30 text-cyan-300",
+                  "bg-info/15 text-info border-border",
                 ]),
               )}
               onToggle={(ep) => {
@@ -760,8 +765,8 @@ function SelectionBar({
   const hasRange = anchor !== null && tail !== null;
 
   return (
-    <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 bg-blue-950/50 border-b border-blue-800/50 text-xs">
-      <span className="text-blue-400 font-medium tabular-nums">
+    <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 bg-primary/10 border-b border-primary/30 text-xs">
+      <span className="text-primary font-medium tabular-nums">
         {hasRange
           ? `${selectedCount} lines selected`
           : anchor !== null
@@ -770,8 +775,8 @@ function SelectionBar({
       </span>
       {hasRange && (
         <>
-          <span className="text-blue-700">·</span>
-          <span className="text-neutral-500 tabular-nums">
+          <span className="text-muted-foreground">·</span>
+          <span className="text-muted-foreground tabular-nums">
             lines {Math.min(anchor!, tail!) + 1}–{Math.max(anchor!, tail!) + 1}
           </span>
         </>
@@ -779,14 +784,14 @@ function SelectionBar({
       <div className="flex-1" />
       <button
         onClick={onSelectAll}
-        className="text-neutral-400 hover:text-white text-[10px] px-2 py-0.5 rounded border border-neutral-700 hover:border-neutral-500 transition-colors"
+        className="text-foreground hover:text-primary text-[10px] px-2 py-0.5 rounded border border-border hover:border-primary/50 bg-card transition-colors"
       >
         Select all visible
       </button>
       {anchor !== null && (
         <button
           onClick={onClear}
-          className="text-neutral-500 hover:text-red-400 text-[10px] px-2 py-0.5 rounded border border-neutral-700 hover:border-red-800 transition-colors"
+          className="text-muted-foreground hover:text-destructive text-[10px] px-2 py-0.5 rounded border border-border hover:border-destructive/50 bg-card transition-colors"
         >
           <X className="h-2.5 w-2.5 inline mr-1" />
           Clear
@@ -796,8 +801,8 @@ function SelectionBar({
         onClick={onCopy}
         className={`flex items-center gap-1 text-[10px] px-3 py-1 rounded font-medium transition-colors ${
           copied
-            ? "bg-green-700 text-white"
-            : "bg-blue-700 hover:bg-blue-600 text-white"
+            ? "bg-success text-success-foreground"
+            : "bg-primary hover:bg-primary/90 text-primary-foreground"
         }`}
       >
         {copied ? (
@@ -838,10 +843,10 @@ function LineRangePanel({
       : totalFetched;
 
   return (
-    <div className="flex items-center gap-3 px-3 py-1.5 bg-neutral-900 border-b border-neutral-800 text-xs">
-      <span className="text-neutral-500 shrink-0">View range:</span>
+    <div className="flex items-center gap-3 px-3 py-1.5 bg-card border-b border-border text-xs text-foreground">
+      <span className="text-muted-foreground shrink-0">View range:</span>
       <div className="flex items-center gap-1.5">
-        <span className="text-neutral-600">Start</span>
+        <span className="text-muted-foreground">Start</span>
         <Input
           type="number"
           min={0}
@@ -854,11 +859,11 @@ function LineRangePanel({
             );
             onStartOffset(v);
           }}
-          className="h-6 w-20 text-xs bg-neutral-800 border-neutral-700 text-center"
+          className="h-6 w-20 text-xs text-center"
         />
       </div>
       <div className="flex items-center gap-1.5">
-        <span className="text-neutral-600">Count</span>
+        <span className="text-muted-foreground">Count</span>
         <Input
           type="number"
           min={1}
@@ -869,10 +874,10 @@ function LineRangePanel({
             const raw = e.target.value.trim();
             onDisplayCount(raw === "" ? null : Math.max(1, parseInt(raw) || 1));
           }}
-          className="h-6 w-20 text-xs bg-neutral-800 border-neutral-700 text-center"
+          className="h-6 w-20 text-xs text-center"
         />
       </div>
-      <span className="text-neutral-600 tabular-nums">
+      <span className="text-muted-foreground tabular-nums">
         → {startOffset + 1}–{effectiveEnd} of {totalFetched}
       </span>
       <button
@@ -880,7 +885,7 @@ function LineRangePanel({
           onStartOffset(0);
           onDisplayCount(null);
         }}
-        className="ml-auto text-[10px] text-neutral-500 hover:text-white border border-neutral-700 hover:border-neutral-500 px-2 py-0.5 rounded transition-colors"
+        className="ml-auto text-[10px] text-muted-foreground hover:text-foreground border border-border hover:border-primary/50 bg-card px-2 py-0.5 rounded transition-colors"
       >
         Reset
       </button>
@@ -1125,15 +1130,15 @@ export default function CoolifyLogViewer({
   const selectionCount = selectionSet.size;
 
   return (
-    <div className="w-full h-full flex flex-col bg-neutral-950 overflow-hidden">
+    <div className="w-full h-full flex flex-col bg-background text-foreground overflow-hidden">
       {/* ── Top toolbar ── */}
-      <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-neutral-800 bg-neutral-900 flex-wrap">
+      <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-border bg-card flex-wrap">
         {!hideAppSelector && (
           <Select
             value={selectedApp}
             onValueChange={(v) => handleAppChange(v as AppKey)}
           >
-            <SelectTrigger className="w-56 h-8 text-xs bg-neutral-800 border-neutral-700">
+            <SelectTrigger className="w-56 h-8 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1145,10 +1150,10 @@ export default function CoolifyLogViewer({
                       variant="outline"
                       className={
                         app.source === "local"
-                          ? "text-[10px] py-0 border-emerald-500/60 text-emerald-400"
+                          ? "text-[10px] py-0 border-success/60 text-success"
                           : app.env === "production"
-                            ? "text-[10px] py-0 border-orange-500/60 text-orange-400"
-                            : "text-[10px] py-0 border-neutral-500 text-neutral-400"
+                            ? "text-[10px] py-0 border-warning/60 text-warning"
+                            : "text-[10px] py-0 border-border text-muted-foreground"
                       }
                     >
                       {app.source === "local"
@@ -1168,7 +1173,7 @@ export default function CoolifyLogViewer({
           value={String(lineCount)}
           onValueChange={(v) => setLineCount(parseInt(v, 10))}
         >
-          <SelectTrigger className="w-28 h-8 text-xs bg-neutral-800 border-neutral-700">
+          <SelectTrigger className="w-28 h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1184,7 +1189,7 @@ export default function CoolifyLogViewer({
           value={String(pollInterval)}
           onValueChange={(v) => setPollInterval(parseInt(v, 10))}
         >
-          <SelectTrigger className="w-32 h-8 text-xs bg-neutral-800 border-neutral-700">
+          <SelectTrigger className="w-32 h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1204,7 +1209,7 @@ export default function CoolifyLogViewer({
           onClick={fetchLogs}
           disabled={loading}
           size="sm"
-          className="h-8 text-xs bg-blue-700 hover:bg-blue-600 text-white"
+          className="h-8 text-xs"
         >
           {loading ? (
             <>
@@ -1220,8 +1225,8 @@ export default function CoolifyLogViewer({
         </Button>
 
         {isLivePolling && (
-          <Badge className="h-6 text-[10px] bg-green-900/40 text-green-400 border-green-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5 animate-pulse" />
+          <Badge className="h-6 text-[10px] bg-success/15 text-success border-success/40">
+            <span className="w-1.5 h-1.5 rounded-full bg-success mr-1.5 animate-pulse" />
             Live
           </Badge>
         )}
@@ -1239,11 +1244,11 @@ export default function CoolifyLogViewer({
         )}
 
         {fetchedAt && (
-          <span className="text-[10px] text-neutral-500">
+          <span className="text-[10px] text-muted-foreground">
             {new Date(fetchedAt).toLocaleTimeString()}
           </span>
         )}
-        <span className="text-[10px] text-neutral-500 tabular-nums">
+        <span className="text-[10px] text-muted-foreground tabular-nums">
           {viewMode === "raw"
             ? rawLineCount
             : `${filteredLines.length}/${rawLineCount}`}{" "}
@@ -1254,7 +1259,7 @@ export default function CoolifyLogViewer({
           variant="ghost"
           size="sm"
           onClick={scrollToTop}
-          className="h-8 px-2 text-neutral-400 hover:text-white"
+          className="h-8 px-2 text-muted-foreground hover:text-foreground"
           title="Scroll to top"
         >
           <ChevronUp className="h-3.5 w-3.5" />
@@ -1263,7 +1268,7 @@ export default function CoolifyLogViewer({
           variant="ghost"
           size="sm"
           onClick={scrollToBottom}
-          className="h-8 px-2 text-neutral-400 hover:text-white"
+          className="h-8 px-2 text-muted-foreground hover:text-foreground"
           title="Scroll to bottom"
         >
           <ChevronDown className="h-3.5 w-3.5" />
@@ -1274,7 +1279,7 @@ export default function CoolifyLogViewer({
           variant="ghost"
           size="sm"
           onClick={() => setShowRange((p) => !p)}
-          className={`h-8 px-2 text-xs ${showRange ? "text-white bg-white/10" : "text-neutral-400 hover:text-white"}`}
+          className={`h-8 px-2 text-xs ${showRange ? "text-foreground bg-accent" : "text-muted-foreground hover:text-foreground"}`}
           title="Set view range"
         >
           <FileText className="h-3.5 w-3.5 mr-1" />
@@ -1286,14 +1291,14 @@ export default function CoolifyLogViewer({
           variant="ghost"
           size="sm"
           onClick={() => setShowFilters((p) => !p)}
-          className={`h-8 px-2 text-xs ${showFilters ? "text-white bg-white/10" : "text-neutral-400 hover:text-white"}`}
+          className={`h-8 px-2 text-xs ${showFilters ? "text-foreground bg-accent" : "text-muted-foreground hover:text-foreground"}`}
         >
           <Filter className="h-3.5 w-3.5 mr-1" />
           Filter
         </Button>
 
         {/* View mode segmented control */}
-        <div className="flex items-center gap-0.5 bg-neutral-800 rounded p-0.5">
+        <div className="flex items-center gap-0.5 bg-muted rounded p-0.5">
           {(
             [
               {
@@ -1324,7 +1329,7 @@ export default function CoolifyLogViewer({
               size="sm"
               title={title}
               onClick={() => setViewMode(mode)}
-              className={`h-7 px-2 text-xs rounded-sm ${viewMode === mode ? "bg-white/15 text-white" : "text-neutral-500 hover:text-white"}`}
+              className={`h-7 px-2 text-xs rounded-sm ${viewMode === mode ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               {icon}
             </Button>
@@ -1379,37 +1384,37 @@ export default function CoolifyLogViewer({
 
       {/* ── Error banner ── */}
       {error && (
-        <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-red-950/40 border-b border-red-800 text-red-400 text-xs">
+        <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-destructive/10 border-b border-destructive/30 text-destructive text-xs">
           <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
         </div>
       )}
 
       {/* ── Info bar ── */}
-      <div className="shrink-0 flex items-center gap-2 px-3 py-1 border-b border-neutral-800 bg-neutral-900/50">
-        <Terminal className="h-3.5 w-3.5 text-green-500 shrink-0" />
-        <span className="text-xs font-mono text-neutral-400">
+      <div className="shrink-0 flex items-center gap-2 px-3 py-1 border-b border-border bg-muted/40">
+        <Terminal className="h-3.5 w-3.5 text-success shrink-0" />
+        <span className="text-xs font-mono text-foreground">
           {appMeta?.label} ({appMeta?.env}) — last {lineCount} lines
           {isLivePolling && (
-            <span className="text-neutral-600">
+            <span className="text-muted-foreground">
               {" "}
               · polling every {pollInterval / 1000}s
             </span>
           )}
         </span>
         {viewMode === "raw" && (
-          <span className="text-[10px] text-amber-500 ml-2">
+          <span className="text-[10px] text-warning ml-2">
             raw mode — no filtering or parsing
           </span>
         )}
         {viewMode !== "raw" && (
-          <span className="text-[10px] text-neutral-600 ml-auto">
+          <span className="text-[10px] text-muted-foreground ml-auto">
             Click any line to inspect · Shift+click to extend selection · Copy
             button to copy
           </span>
         )}
         {selectedLine && !showSelectionBar && viewMode !== "raw" && (
-          <span className="ml-auto text-[10px] text-blue-400 flex items-center gap-1">
+          <span className="ml-auto text-[10px] text-primary flex items-center gap-1">
             <Info className="h-3 w-3" />
             Line {selectedLine.lineIndex + 1}
           </span>
@@ -1421,11 +1426,11 @@ export default function CoolifyLogViewer({
         {viewMode === "raw" && (
           <pre
             ref={rawRef}
-            className="flex-1 overflow-auto p-3 text-xs font-mono leading-5 text-neutral-300 whitespace-pre-wrap break-all"
+            className="flex-1 overflow-auto p-3 text-xs font-mono leading-5 text-foreground whitespace-pre-wrap break-all"
             style={{ scrollbarGutter: "stable" }}
           >
             {!rawLogs ? (
-              <span className="text-neutral-600">
+              <span className="text-muted-foreground">
                 No logs. Select an app and click Refresh.
               </span>
             ) : (
@@ -1437,19 +1442,19 @@ export default function CoolifyLogViewer({
         {(viewMode === "log-only" || viewMode === "split") && (
           <div
             ref={logRef}
-            className={`flex flex-col overflow-y-auto min-h-0 py-1 ${viewMode === "split" ? "w-1/2 border-r border-neutral-800" : "w-full"}`}
+            className={`flex flex-col overflow-y-auto min-h-0 py-1 ${viewMode === "split" ? "w-1/2 border-r border-border" : "w-full"}`}
             style={{ scrollbarGutter: "stable" }}
           >
             {loading && !rawLogs ? (
-              <div className="px-4 py-2 text-neutral-500 text-xs font-mono">
+              <div className="px-4 py-2 text-muted-foreground text-xs font-mono">
                 Loading…
               </div>
             ) : !rawLogs ? (
-              <div className="px-4 py-2 text-neutral-500 text-xs font-mono">
+              <div className="px-4 py-2 text-muted-foreground text-xs font-mono">
                 No logs. Select an app and click Refresh.
               </div>
             ) : filteredLines.length === 0 ? (
-              <div className="px-4 py-2 text-neutral-500 text-xs font-mono">
+              <div className="px-4 py-2 text-muted-foreground text-xs font-mono">
                 No lines match the current filters.
               </div>
             ) : (
@@ -1475,10 +1480,10 @@ export default function CoolifyLogViewer({
 
         {(viewMode === "split" || viewMode === "json-only") && (
           <div
-            className={`flex flex-col min-h-0 overflow-hidden bg-neutral-900 border-l border-neutral-800 ${viewMode === "split" ? "w-1/2" : "w-full"}`}
+            className={`flex flex-col min-h-0 overflow-hidden bg-card border-l border-border ${viewMode === "split" ? "w-1/2" : "w-full"}`}
           >
             {/* ── JSON panel header: tabs + close ── */}
-            <div className="shrink-0 flex items-center border-b border-neutral-800 bg-neutral-950">
+            <div className="shrink-0 flex items-center border-b border-border bg-muted/30">
               <div className="flex items-center flex-1">
                 {(
                   [
@@ -1492,8 +1497,8 @@ export default function CoolifyLogViewer({
                     onClick={() => setJsonTab(id)}
                     className={`px-3 py-1.5 text-[11px] font-medium border-b-2 transition-colors ${
                       jsonTab === id
-                        ? "border-blue-500 text-blue-400 bg-white/5"
-                        : "border-transparent text-neutral-500 hover:text-neutral-300 hover:bg-white/5"
+                        ? "border-primary text-primary bg-accent"
+                        : "border-transparent text-muted-foreground hover:text-foreground hover:bg-accent/60"
                     }`}
                   >
                     {label}
@@ -1505,7 +1510,7 @@ export default function CoolifyLogViewer({
                   setViewMode("log-only");
                   setSelectedLine(null);
                 }}
-                className="shrink-0 p-1.5 mr-1 text-neutral-600 hover:text-white hover:bg-white/10 rounded transition-colors"
+                className="shrink-0 p-1.5 mr-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
                 title="Close panel"
               >
                 <X className="h-3.5 w-3.5" />
@@ -1531,13 +1536,13 @@ export default function CoolifyLogViewer({
                   </div>
                 )}
                 {jsonTab === "plain" && (
-                  <pre className="flex-1 min-h-0 overflow-auto p-3 text-xs font-mono leading-5 text-neutral-300 whitespace-pre-wrap break-all">
+                  <pre className="flex-1 min-h-0 overflow-auto p-3 text-xs font-mono leading-5 text-foreground whitespace-pre-wrap break-all">
                     {JSON.stringify(jsonPanelData, null, 2)}
                   </pre>
                 )}
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-neutral-600 text-xs gap-2">
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-xs gap-2">
                 <PanelLeft className="h-8 w-8 opacity-30" />
                 <span>Click a log line to inspect it here</span>
               </div>
