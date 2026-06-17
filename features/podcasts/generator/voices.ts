@@ -22,6 +22,7 @@
 // renders a disabled "preview unavailable" play button — never a broken player.
 
 import type { PodcastSpeaker, PodcastSpeakerGender } from "./types";
+import { GENERATED_VOICE_SAMPLES } from "./voiceSamplesManifest";
 
 export type VoiceGender = PodcastSpeakerGender; // "male" | "female" | "neutral"
 
@@ -119,10 +120,13 @@ export const VOICE_SAMPLE_URLS: Record<string, string> = {
     "https://storage.googleapis.com/eleven-public-prod/premade/voices/pNInz6obpgDQGcFmaJgB/d6905d7a-dd26-4187-bfff-1bd3a5ea7cac.mp3",
 };
 
-/** Sample MP3 for a voice value, or undefined when none is available yet. */
+/** Sample audio for a voice value, or undefined when none is available yet.
+ *  Prefers our own generated static asset (durable, served from /public; see
+ *  scripts/generate-voice-samples.mjs) and falls back to a seeded external
+ *  preview URL. */
 export function sampleUrlFor(value: string | null | undefined): string | undefined {
   if (!value) return undefined;
-  return VOICE_SAMPLE_URLS[value];
+  return GENERATED_VOICE_SAMPLES[value] ?? VOICE_SAMPLE_URLS[value];
 }
 
 // ── Lookup + provider band ──────────────────────────────────────────────────
