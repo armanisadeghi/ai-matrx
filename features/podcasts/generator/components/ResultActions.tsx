@@ -18,7 +18,6 @@ import {
   Link2,
   Share2,
   Globe,
-  Lock,
   Loader2,
   Check,
   AudioLines,
@@ -113,49 +112,51 @@ export function ResultActions({
 
   return (
     <div className="space-y-4">
-      {/* Primary actions */}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Primary actions — kept to a single compact row on desktop. */}
+      <div className="flex flex-wrap items-center gap-1.5">
         {href && (
-          <Button asChild className="gap-2">
-            <Link href={href}>
+          <Button asChild size="sm" className="gap-1.5">
+            <Link href={href} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4" />
-              Open the podcast
+              Podcast
             </Link>
           </Button>
         )}
         <Button
           variant={published ? "secondary" : "outline"}
+          size="sm"
           onClick={togglePublish}
           disabled={publishing}
-          className="gap-2"
+          className="gap-1.5"
         >
           {publishing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : published ? (
             <Globe className="h-4 w-4 text-emerald-500" />
           ) : (
-            <Lock className="h-4 w-4" />
+            <Globe className="h-4 w-4" />
           )}
           {published ? "Published" : "Publish"}
         </Button>
         {audioUrl && (
-          <Button asChild variant="outline" className="gap-2">
+          <Button asChild size="sm" variant="outline" className="gap-1.5">
             <a href={audioUrl} download={`${title || "episode"}.wav`}>
               <Download className="h-4 w-4" />
               Audio
             </a>
           </Button>
         )}
-        <Button variant="outline" onClick={copyLink} className="gap-2">
+        <Button size="sm" variant="outline" onClick={copyLink} className="gap-1.5">
           <Link2 className="h-4 w-4" />
-          Copy link
+          Link
         </Button>
         <Button
           variant="outline"
+          size="sm"
           onClick={() =>
             share({ title, url: absoluteUrl ?? undefined })
           }
-          className="gap-2"
+          className="gap-1.5"
         >
           <Share2 className="h-4 w-4" />
           Share

@@ -6,6 +6,12 @@
 // interrupted/failed/stalled run is in, this offers the user a way forward:
 // Resume (replay the server checkpoint — finished work isn't redone) and/or
 // Re-run from the saved source. Alive/completed runs render nothing here.
+//
+// Layout note: this banner lives in the run page's fixed ~360px right column,
+// so it always stacks vertically — message on top, then each action on its own
+// full-width row. A horizontal (sm:flex-row) split keys off the viewport width,
+// not this narrow column, which forced the text to one-word-per-line and pushed
+// the buttons out past the container edge.
 
 import { AlertTriangle, Clock, Loader2, RefreshCw, RotateCcw, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,17 +47,19 @@ function Actions({
   onRerun: () => void;
   tone: string;
 }) {
+  // Stacked, full-width buttons — each action gets its own row so nothing can
+  // overflow the narrow column (see layout note at top of file).
   return (
-    <div className="flex shrink-0 flex-wrap gap-2">
+    <div className="flex w-full flex-col gap-2">
       {canReconnect && (
-        <Button size="sm" variant="outline" onClick={onResume} className={`gap-1.5 ${tone}`}>
-          <RefreshCw className="h-4 w-4" />
+        <Button size="sm" variant="outline" onClick={onResume} className={`w-full justify-center gap-1.5 ${tone}`}>
+          <RefreshCw className="h-4 w-4 shrink-0" />
           Resume
         </Button>
       )}
       {canRerun && (
-        <Button size="sm" variant="ghost" onClick={onRerun} className="gap-1.5">
-          <RotateCcw className="h-4 w-4" />
+        <Button size="sm" variant="ghost" onClick={onRerun} className="w-full justify-center gap-1.5">
+          <RotateCcw className="h-4 w-4 shrink-0" />
           Re-run from source
         </Button>
       )}
@@ -77,7 +85,7 @@ export function RunRecoveryBanner({
     return (
       <div className="flex items-start gap-2.5 rounded-xl border border-sky-500/30 bg-sky-500/5 px-4 py-3 text-sm text-sky-700 dark:text-sky-400">
         <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin" />
-        <span>
+        <span className="min-w-0 break-words">
           Still generating in the background — this can take a few minutes (the
           audio is the long step). You can leave this page; it&apos;ll keep going
           and update automatically.
@@ -89,10 +97,10 @@ export function RunRecoveryBanner({
   // Live stream went silent — recoverable, not done.
   if (streaming && stalled) {
     return (
-      <div className="flex flex-col gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-500 sm:flex-row sm:items-center sm:justify-between">
-        <span className="flex items-start gap-2.5">
+      <div className="flex flex-col gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-500">
+        <span className="flex min-w-0 items-start gap-2.5">
           <WifiOff className="mt-0.5 h-5 w-5 shrink-0" />
-          <span>
+          <span className="min-w-0 break-words">
             The connection went quiet — we&apos;ve stopped waiting on stalled
             steps. Everything finished so far is saved; resume to pick it back up.
           </span>
@@ -111,10 +119,10 @@ export function RunRecoveryBanner({
   if (status === "error") {
     const h = humanizeGenerationError(error);
     return (
-      <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex items-start gap-2.5">
+      <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+        <div className="flex min-w-0 items-start gap-2.5">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-          <div className="min-w-0">
+          <div className="min-w-0 break-words">
             <p className="font-medium">{h.short}</p>
             <p className="mt-0.5 text-destructive/70">
               {h.hint ??
@@ -148,10 +156,10 @@ export function RunRecoveryBanner({
   // audio-only resume (finished media replays free).
   if (status === "done" && audioMissing && (canReconnect || canRerun)) {
     return (
-      <div className="flex flex-col gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-500 sm:flex-row sm:items-center sm:justify-between">
-        <span className="flex items-start gap-2.5">
+      <div className="flex flex-col gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-500">
+        <span className="flex min-w-0 items-start gap-2.5">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-          <span>
+          <span className="min-w-0 break-words">
             The audio didn&apos;t make it — everything else (script, covers,
             clips) is saved. Resume to re-run just the audio step.
           </span>
@@ -170,10 +178,10 @@ export function RunRecoveryBanner({
   // Interrupted: persisted as running but no live stream owns it here.
   if (status === "running" && !streaming) {
     return (
-      <div className="flex flex-col gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-500 sm:flex-row sm:items-center sm:justify-between">
-        <span className="flex items-start gap-2.5">
+      <div className="flex flex-col gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-500">
+        <span className="flex min-w-0 items-start gap-2.5">
           <Clock className="mt-0.5 h-5 w-5 shrink-0" />
-          <span>
+          <span className="min-w-0 break-words">
             This run was interrupted. Everything generated so far is saved
             {canReconnect
               ? " — resume to pick up exactly where it left off."
