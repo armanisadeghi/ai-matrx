@@ -30,7 +30,9 @@ export const APPLY_VERSION = "v1" as const;
 export type BuiltinDirective =
   | "create_project_with_tasks"
   | "create_task"
-  | "db_create";
+  | "create_tasks"
+  | "db_create"
+  | "db_update";
 
 // ── Envelope (what the agent emits) ──────────────────────────────────────────
 
@@ -219,6 +221,15 @@ export const BUILTIN_DIRECTIVE_PAYLOAD_SCHEMAS: Record<BuiltinDirective, JsonSch
       parent_task_id: { type: ["string", "null"] },
     },
   },
+  create_tasks: {
+    type: "object",
+    additionalProperties: false,
+    required: ["tasks"],
+    properties: {
+      tasks: { type: "array", items: TASK_SCHEMA },
+      project_id: { type: ["string", "null"] },
+    },
+  },
   db_create: {
     type: "object",
     additionalProperties: false,
@@ -231,4 +242,42 @@ export const BUILTIN_DIRECTIVE_PAYLOAD_SCHEMAS: Record<BuiltinDirective, JsonSch
       data: { type: "object", description: "The row's writable fields." },
     },
   },
+  db_update: {
+    type: "object",
+    additionalProperties: false,
+    required: ["resource_type", "id", "data"],
+    properties: {
+      resource_type: {
+        type: "string",
+        description: "An agent_data-registered resource (note, task, project, transcript, …).",
+      },
+      id: { type: "string", description: "Row id to update." },
+      data: { type: "object", description: "The fields to change." },
+    },
+  },
 };
+
+// ── Agent-declared apply config (the "named function" path) ──────────────────
+//
+// Instead of emitting the full envelope, an agent can emit a PLAIN payload and
+// declare the directive on itself. Store this fragment in `agx_agent.settings`
+// (merge into the existing settings JSONB). The aidream dispatcher then wraps
+// the agent's whole structured output as the payload and applies the directive.
+// This is what the built-in "Project Builder" agent uses.
+
+export interface AgentDeclaredApply {
+  directive: BuiltinDirective | string;
+  /** Contract version (defaults to v1 server-side). */
+  version?: typeof APPLY_VERSION;
+  /** Output field to use as the idempotency key; defaults to the request id
+   *  (one apply per agent turn). */
+  idempotency_key_field?: string;
+}
+
+/** Build the `{ output_apply: {...} }` fragment to merge into an agent's
+ *  `settings`. Returns the wrapper so a caller can `{ ...settings, ...frag }`. */
+export function buildAgentDeclaredApply(
+  config: AgentDeclaredApply,
+): { output_apply: AgentDeclaredApply } {
+  return { output_apply: { version: APPLY_VERSION, ...config } };
+}
