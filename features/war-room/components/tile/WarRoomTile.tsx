@@ -67,12 +67,14 @@ export function WarRoomTile({
             : "border-border hover:border-primary/30 hover:shadow-[var(--elevation-1)]",
       )}
     >
-      {/* Accent rail — glance-read the thread type without reading the title. */}
+      {/* Accent rail — glance-read the thread type without reading the title.
+          On "All", sections carry their own full-height kind rails, so keep the
+          tile spine neutral and avoid a second competing color. */}
       <span
         aria-hidden
         className={cn(
           "pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-xl opacity-80 transition-opacity group-hover/tile:opacity-100",
-          kind.rail,
+          shownTab === "combined" ? "bg-border/70" : kind.rail,
         )}
       />
 

@@ -50,6 +50,8 @@ import { isWarRoomToolName } from "@/features/agents/war-room-tools/tools/names"
 import { getWarRoomInlineToolDef } from "@/features/agents/war-room-tools/tools/tool-defs";
 import { isWarRoomMasterToolName } from "@/features/agents/war-room-master-tools/tools/names";
 import { getWarRoomMasterInlineToolDef } from "@/features/agents/war-room-master-tools/tools/tool-defs";
+import { isScribeToolName } from "@/features/agents/scribe-tools/tools/names";
+import { getScribeInlineToolDef } from "@/features/agents/scribe-tools/tools/tool-defs";
 
 interface BuildOptions {
   mode?: "additive" | "replace";

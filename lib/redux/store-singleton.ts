@@ -30,6 +30,14 @@ let storeInstance: AppStore | null = null;
 
 export function setStoreSingleton(store: AppStore): void {
   storeInstance = store;
+  // TEMP DEBUG (dev-only): expose the store for runtime conversationId
+  // diagnostics. Remove after debugging.
+  if (
+    typeof window !== "undefined" &&
+    process.env.NODE_ENV !== "production"
+  ) {
+    (window as unknown as { __mtxStore?: AppStore }).__mtxStore = store;
+  }
 }
 
 export function getStoreSingleton(): AppStore | null {

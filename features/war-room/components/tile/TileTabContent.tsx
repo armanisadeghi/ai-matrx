@@ -5,10 +5,11 @@
 // Renders the REAL tab bodies (TileTaskTab / TileNotesTab / TileAudioTab) for a
 // tile. These components self-manage their data from Redux, so we just place
 // them — the single source of body composition shared by the Grid tile and the
-// Stage tile. The "All" view is one quiet single-scroll column with hairline
-// kind-colored section rails (no nested chrome, no double-layered editors) — the
-// combined view the busy multitasker scans top-to-bottom; notes render in their
-// single-layer `compact` form there.
+// Stage tile. The "All" view is one quiet single-scroll column with full-height
+// kind-colored section rails + matching tint across each block (header + body) —
+// no nested chrome, no double-layered editors — the combined view the busy
+// multitasker scans top-to-bottom; notes render in their single-layer `compact`
+// form there.
 
 import { TileTaskTab } from "./TileTaskTab";
 import { TileNotesTab } from "./TileNotesTab";
@@ -73,12 +74,23 @@ function CombinedSection({
 }) {
   const k = tileKindOf(kind);
   return (
-    <section className={last ? "" : "border-b border-border/50"}>
-      <div className="sticky top-0 z-10 flex items-center gap-1.5 px-3 h-7 bg-card/85 backdrop-blur-sm">
-        <span
-          aria-hidden
-          className={cn("h-2.5 w-0.5 rounded-full", k.rail)}
-        />
+    <section
+      className={cn("relative", k.bg, !last && "border-b border-border/50")}
+    >
+      {/* Full-height kind rail — spans the sticky label row and the body so each
+          section reads as one bounded block, not a tick beside the header only. */}
+      <span
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-y-0 left-0 w-[3px]",
+          k.rail,
+        )}
+      />
+      <div
+        className={cn(
+          "sticky top-0 z-10 flex items-center gap-1.5 pl-3.5 pr-3 h-7 bg-inherit backdrop-blur-sm",
+        )}
+      >
         <k.Icon className={cn("size-3", k.text)} />
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {k.label}
@@ -88,7 +100,7 @@ function CombinedSection({
           bounded box lets them resolve their height and prevents any content
           (or absolute layers) from bleeding into the section below. Each body
           scrolls internally for more. */}
-      <div className="h-64 overflow-hidden">{children}</div>
+      <div className="h-64 overflow-hidden pl-3.5">{children}</div>
     </section>
   );
 }

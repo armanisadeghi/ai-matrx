@@ -99,7 +99,7 @@ export default function CreateProjectWindow({
       minWidth={420}
       minHeight={420}
       width={560}
-      height={680}
+      height={720}
       position="center"
       onClose={onClose}
     >

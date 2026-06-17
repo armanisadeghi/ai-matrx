@@ -46,12 +46,13 @@ export function StageTile({
 
   return (
     <div className="@container relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--elevation-2)]">
-      {/* Accent rail keyed to the shown view. */}
+      {/* Accent rail keyed to the shown view. Neutral on "All" — section rails
+          inside TileTabContent carry per-kind color for the full stack. */}
       <span
         aria-hidden
         className={cn(
           "pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-2xl opacity-80",
-          kind.rail,
+          shownTab === "combined" ? "bg-border/70" : kind.rail,
         )}
       />
 
