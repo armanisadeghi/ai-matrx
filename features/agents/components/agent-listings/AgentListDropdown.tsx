@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { ChevronDown, ChevronRight, MousePointerClick } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -143,6 +143,12 @@ export function AgentListDropdown({
     coreDetailMouseLeave(() => setRightPanel(null));
   }, [coreDetailMouseLeave]);
 
+  const resolveAgentHref = useMemo(() => {
+    if (!navigateTo) return undefined;
+    return (agent: AgentDefinitionRecord) =>
+      navigateTo.replace("{id}", agent.id);
+  }, [navigateTo]);
+
   const hasRightPanel = rightPanel !== null;
 
   const trigger = triggerSlot ?? (
@@ -177,6 +183,7 @@ export function AgentListDropdown({
       allTags={allTags}
       inputRef={inputRef}
       onSelectAgent={handleSelectAgent}
+      resolveAgentHref={resolveAgentHref}
       onReset={consumer.resetFilters}
       activeFilterCount={activeFilterCount}
       isMobile={isMobile}

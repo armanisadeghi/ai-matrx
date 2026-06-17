@@ -14,6 +14,7 @@
 // All behavior runs through the shared useTileActions + the canonical tab
 // bodies (TileTaskTab / TileNotesTab / TileAudioTab) — nothing reimplemented.
 
+import { useState } from "react";
 import { Pin, Focus } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setTileActiveTabPersisted } from "@/features/war-room/redux/thunks";
@@ -21,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { EditableTitle } from "../shared/EditableTitle";
 import { TileContextOverride } from "./TileContextOverride";
 import { TileFlavorBadge } from "./TileFlavorBadge";
-import { TileTabBar } from "./TileTabBar";
+import { TileTabSelect } from "./TileTabSelect";
 import { TileTabContent } from "./TileTabContent";
 import { TileMetricChips } from "./TileMetricChips";
 import { TileOptionsMenu } from "./TileOptionsMenu";
@@ -46,6 +47,7 @@ export function WarRoomTile({
   const actions = useTileActions(tileId, sessionId);
   const metrics = useTileMetrics(tileId);
   const { projectedTab } = useRoomView();
+  const [contextOpen, setContextOpen] = useState(false);
   if (!actions) return null;
 
   // The board projector overrides what's SHOWN, never what's SAVED.
@@ -74,13 +76,15 @@ export function WarRoomTile({
         )}
       />
 
-      {/* Header — pin/icon · title · metric chips · tabs · context · focus · ⋯ */}
+      {/* Header — [pin] · TITLE (always wins space) · chips · view dropdown · focus · ⋯
+          The leading kind icon is gone (the accent rail + the view dropdown's own
+          icon already convey kind); the six-segment switcher collapsed into one
+          dropdown; the context control moved into the ⋯ menu — all so the thread
+          title stays readable even at 12 tiles. Nothing was removed, only moved. */}
       <div className="shrink-0 flex items-center gap-1.5 pl-2.5 pr-1.5 h-9 border-b border-border/70">
         {actions.isPinned ? (
           <Pin className="size-3 shrink-0 text-primary fill-primary/20" />
-        ) : (
-          <kind.Icon className={cn("size-3.5 shrink-0", kind.text)} />
-        )}
+        ) : null}
 
         <EditableTitle
           value={actions.title}
@@ -99,38 +103,37 @@ export function WarRoomTile({
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1">
-          <div className="@max-[15rem]:hidden">
-            <TileTabBar
-              active={shownTab}
-              onChange={(tab) => dispatch(setTileActiveTabPersisted(tileId, tab))}
-            />
-          </div>
+          <TileTabSelect
+            active={shownTab}
+            onChange={(tab) => dispatch(setTileActiveTabPersisted(tileId, tab))}
+          />
 
-          {/* Secondary controls — quiet until hover so density reads calm. */}
-          <div className="flex items-center opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover/tile:opacity-100">
-            <TileContextOverride tileId={tileId} />
-            {onStage ? (
-              <button
-                type="button"
-                onClick={onStage}
-                title="Bring to stage"
-                className="grid place-items-center size-6 shrink-0 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-              >
-                <Focus className="size-3.5" />
-              </button>
-            ) : null}
-          </div>
+          {/* Focus — quiet until hover so a wall of 12 reads calm. */}
+          {onStage ? (
+            <button
+              type="button"
+              onClick={onStage}
+              title="Bring to stage"
+              className="grid place-items-center size-6 shrink-0 rounded-md text-muted-foreground opacity-0 transition-opacity duration-150 hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/tile:opacity-100"
+            >
+              <Focus className="size-3.5" />
+            </button>
+          ) : null}
 
-          <TileOptionsMenu actions={actions} onStage={onStage} />
+          <TileOptionsMenu
+            actions={actions}
+            onStage={onStage}
+            onOpenContext={() => setContextOpen(true)}
+            contextActive={metrics.contextOverridden}
+          />
+          {/* Anchor-only popover, opened from the ⋯ menu's Context item. */}
+          <TileContextOverride
+            tileId={tileId}
+            open={contextOpen}
+            onOpenChange={setContextOpen}
+            hideTrigger
+          />
         </div>
-      </div>
-
-      {/* Compact tab row for very narrow cells where the header switcher hides. */}
-      <div className="hidden @max-[15rem]:flex shrink-0 items-center justify-center px-2 py-1 border-b border-border/60">
-        <TileTabBar
-          active={shownTab}
-          onChange={(tab) => dispatch(setTileActiveTabPersisted(tileId, tab))}
-        />
       </div>
 
       {/* A faint banner only while the projector is overriding this tile's tab. */}

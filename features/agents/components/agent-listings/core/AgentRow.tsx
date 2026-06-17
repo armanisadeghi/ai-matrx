@@ -10,6 +10,8 @@ export interface AgentRowProps {
   isActive: boolean;
   isHovered: boolean;
   isMobile: boolean;
+  /** Row href. Defaults to `/agents/[id]`. */
+  href?: string;
   onClick: () => void;
   onHover: () => void;
   onHoverEnd: () => void;
@@ -21,11 +23,14 @@ export function AgentRow({
   isActive,
   isHovered,
   isMobile,
+  href,
   onClick,
   onHover,
   onHoverEnd,
   onDetailPress,
 }: AgentRowProps) {
+  const rowHref = href ?? `/agents/${agent.id}`;
+
   return (
     <div
       className={cn(
@@ -38,7 +43,7 @@ export function AgentRow({
       onMouseLeave={isMobile ? undefined : onHoverEnd}
     >
       <Link
-        href={`/agents/${agent.id}`}
+        href={rowHref}
         onClick={(e) => {
           if (e.metaKey || e.ctrlKey) return;
           e.preventDefault();

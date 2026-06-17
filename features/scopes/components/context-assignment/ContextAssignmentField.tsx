@@ -141,6 +141,38 @@ function levelInitiallyExpanded(
 /** Checkbox rendering inside the field. `standard` = shadcn Checkbox (trial on chat). */
 export type ContextCheckboxVariant = "custom" | "standard";
 
+/** Selectable dimensions inside the field. Org-of-record dropdown (assignment)
+ *  and org rows (active/filter) are separate from this list. */
+export type ContextAssignmentDimension = "scopes" | "projects" | "tasks";
+
+const DEFAULT_DIMENSIONS: ContextAssignmentDimension[] = [
+  "scopes",
+  "projects",
+  "tasks",
+];
+
+function resolveDimensions(dimensions?: ContextAssignmentDimension[]) {
+  const set = new Set(dimensions ?? DEFAULT_DIMENSIONS);
+  return {
+    scopes: set.has("scopes"),
+    projects: set.has("projects"),
+    tasks: set.has("tasks"),
+  } as const;
+}
+
+function searchPlaceholderForDimensions(
+  dims: ReturnType<typeof resolveDimensions>,
+): string {
+  const parts: string[] = [];
+  if (dims.scopes) parts.push("scopes");
+  if (dims.projects) parts.push("projects");
+  if (dims.tasks) parts.push("tasks");
+  if (parts.length === 0) return "Search…";
+  if (parts.length === 1) return `Search ${parts[0]}…`;
+  const last = parts[parts.length - 1];
+  return `Search ${parts.slice(0, -1).join(", ")} and ${last}…`;
+}
+
 export interface ContextAssignmentFieldProps {
   /** Required for "assignment" mode (the entity being tagged). Optional for
    *  "active"/"filter" modes, which have no subject entity. */
@@ -189,6 +221,9 @@ export interface ContextAssignmentFieldProps {
   defaultExpandedSections?: DefaultExpandedSections;
   /** `standard` uses the app Checkbox primitive. Default: `custom`. */
   checkboxVariant?: ContextCheckboxVariant;
+  /** Which dimensions to render. Default: scopes + projects + tasks. Pass
+   *  `["scopes"]` for pure scope tagging (e.g. project/agent settings). */
+  dimensions?: ContextAssignmentDimension[];
   className?: string;
 }
 
@@ -673,8 +708,10 @@ export function ContextAssignmentField({
   fill = false,
   defaultExpandedSections,
   checkboxVariant = "custom",
+  dimensions,
   className,
 }: ContextAssignmentFieldProps) {
+  const dims = useMemo(() => resolveDimensions(dimensions), [dimensions]);
   const defaultScopeTypeOpen = levelInitiallyExpanded(
     defaultExpandedSections,
     "scopeType",
@@ -701,17 +738,22 @@ export function ContextAssignmentField({
   const [allProjects, setAllProjects] = useState<AssignableProject[]>([]);
   const [allTasks, setAllTasks] = useState<AssignableTask[]>([]);
   useEffect(() => {
+    if (!dims.projects && !dims.tasks) return;
     let alive = true;
-    void fetchAssignableProjects().then((p) => {
-      if (alive) setAllProjects(p);
-    });
-    void fetchAssignableTasks().then((t) => {
-      if (alive) setAllTasks(t);
-    });
+    if (dims.projects) {
+      void fetchAssignableProjects().then((p) => {
+        if (alive) setAllProjects(p);
+      });
+    }
+    if (dims.tasks) {
+      void fetchAssignableTasks().then((t) => {
+        if (alive) setAllTasks(t);
+      });
+    }
     return () => {
       alive = false;
     };
-  }, []);
+  }, [dims.projects, dims.tasks]);
 
   // Org: an explicitly-passed `defaultOrganizationId` wins; otherwise the
   // default is "All organizations" (nothing filtered out). Always changeable.
@@ -908,24 +950,31 @@ export function ContextAssignmentField({
 
   // Lateral suggestions from REAL project↔scope links (suggest, never force).
   const suggestions = useMemo(() => {
-    if (mode !== "assignment" || orgsInView.length === 0)
+    if (
+      mode !== "assignment" ||
+      orgsInView.length === 0 ||
+      (!dims.projects && !dims.scopes)
+    )
       return [] as { id: string; label: string; kind: "project" | "scope" }[];
     const out: { id: string; label: string; kind: "project" | "scope" }[] = [];
     const seen = new Set<string>();
     const allProjectsInView = orgsInView.flatMap((o) => o.projects);
-    selScopes.forEach((sid) => {
-      allProjectsInView.forEach((p) => {
-        if (
-          p.scope_ids.includes(sid) &&
-          !selProjects.has(p.id) &&
-          !seen.has(p.id)
-        ) {
-          seen.add(p.id);
-          out.push({ id: p.id, label: p.name, kind: "project" });
-        }
+    if (dims.projects) {
+      selScopes.forEach((sid) => {
+        allProjectsInView.forEach((p) => {
+          if (
+            p.scope_ids.includes(sid) &&
+            !selProjects.has(p.id) &&
+            !seen.has(p.id)
+          ) {
+            seen.add(p.id);
+            out.push({ id: p.id, label: p.name, kind: "project" });
+          }
+        });
       });
-    });
+    }
     selProjects.forEach((pid) => {
+      if (!dims.scopes) return;
       const p = allProjectsInView.find((x) => x.id === pid);
       p?.scope_ids.forEach((sid) => {
         if (selScopes.has(sid) || seen.has(sid)) return;
@@ -940,7 +989,7 @@ export function ContextAssignmentField({
       });
     });
     return out.slice(0, 4);
-  }, [mode, selScopes, selProjects, orgsInView]);
+  }, [mode, selScopes, selProjects, orgsInView, dims.projects, dims.scopes]);
 
   const toggle = (
     set: React.Dispatch<React.SetStateAction<Set<string>>>,
@@ -1197,7 +1246,10 @@ export function ContextAssignmentField({
         });
         return;
       }
-      if (selection.projectIds.length > 0 || selection.taskIds.length > 0) {
+      if (
+        (dims.projects && selection.projectIds.length > 0) ||
+        (dims.tasks && selection.taskIds.length > 0)
+      ) {
         // Loud until ctx_associations lands — never a silent partial save.
         console.warn(
           "[context-assignment] project/task associations await the ctx_associations migration — logged only",
@@ -1222,7 +1274,10 @@ export function ContextAssignmentField({
   }
 
   const totalSelected =
-    selScopes.size + selOrgs.size + selProjects.size + selTasks.size;
+    (dims.scopes ? selScopes.size : 0) +
+    selOrgs.size +
+    (dims.projects ? selProjects.size : 0) +
+    (dims.tasks ? selTasks.size : 0);
   const SubIcon = subject?.icon ?? FileText;
   const loadingTree = organizations.length === 0;
   const allowCreate = mode !== "filter";
@@ -1287,7 +1342,7 @@ export function ContextAssignmentField({
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search scopes, projects, tasks…"
+              placeholder={searchPlaceholderForDimensions(dims)}
               className="h-9 pl-9"
               style={{ fontSize: "16px" }}
             />
@@ -1311,31 +1366,37 @@ export function ContextAssignmentField({
           ) : (
             <>
               {mode !== "assignment" ? (
-                /* Hierarchical org → scope type → scope tree. One display,
-                   no duplicate org pickers; the org row's checkbox is the
-                   explicit opt-in (a scope never drags its org along). */
-                <HierarchyTree
-                  organizations={organizations}
-                  query={query}
-                  selOrgs={selOrgs}
-                  onToggleOrg={toggleOrg}
-                  selScopes={selScopes}
-                  onToggleScope={toggleScope}
-                  defaultExpandedSections={defaultExpandedSections}
-                  checkboxVariant={checkboxVariant}
-                  allowCreate={allowCreate}
-                  addingTypeId={
-                    adding && adding !== "project" && adding !== "task"
-                      ? adding
-                      : null
-                  }
-                  onStartAdd={(typeId) => setAdding(typeId)}
-                  onCancelAdd={() => setAdding(null)}
-                  onCommitAddScope={(typeId, orgIdForAdd, name) =>
-                    void addScope(typeId, name, orgIdForAdd)
-                  }
-                />
-              ) : (
+                dims.scopes ? (
+                  /* Hierarchical org → scope type → scope tree. One display,
+                     no duplicate org pickers; the org row's checkbox is the
+                     explicit opt-in (a scope never drags its org along). */
+                  <HierarchyTree
+                    organizations={organizations}
+                    query={query}
+                    selOrgs={selOrgs}
+                    onToggleOrg={toggleOrg}
+                    selScopes={selScopes}
+                    onToggleScope={toggleScope}
+                    defaultExpandedSections={defaultExpandedSections}
+                    checkboxVariant={checkboxVariant}
+                    allowCreate={allowCreate}
+                    addingTypeId={
+                      adding && adding !== "project" && adding !== "task"
+                        ? adding
+                        : null
+                    }
+                    onStartAdd={(typeId) => setAdding(typeId)}
+                    onCancelAdd={() => setAdding(null)}
+                    onCommitAddScope={(typeId, orgIdForAdd, name) =>
+                      void addScope(typeId, name, orgIdForAdd)
+                    }
+                  />
+                ) : (
+                  <div className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+                    Scope selection is hidden for this surface.
+                  </div>
+                )
+              ) : dims.scopes ? (
                 <>
                   {!hasAnyScopeType && (
                     <div className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
@@ -1427,112 +1488,124 @@ export function ContextAssignmentField({
                     );
                   })}
                 </>
+              ) : (
+                <div className="rounded-md border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+                  Scope selection is hidden for this surface.
+                </div>
               )}
 
-              <SectionShell
-                icon={Briefcase}
-                title="Projects"
-                count={projects.length}
-                defaultOpen={defaultProjectOpen}
-                addLabel={allowCreate ? "New project" : undefined}
-                onAdd={allowCreate ? () => setAdding("project") : undefined}
-                headerExtra={
-                  hiddenProjects > 0 || showAllProjects ? (
-                    <MiniToggle
-                      on={showAllProjects}
-                      onChange={setShowAllProjects}
-                      label={
-                        showAllProjects
-                          ? "All orgs"
-                          : `Show all (${hiddenProjects})`
-                      }
+              {dims.projects && (
+                <SectionShell
+                  icon={Briefcase}
+                  title="Projects"
+                  count={projects.length}
+                  defaultOpen={defaultProjectOpen}
+                  addLabel={allowCreate ? "New project" : undefined}
+                  onAdd={allowCreate ? () => setAdding("project") : undefined}
+                  headerExtra={
+                    hiddenProjects > 0 || showAllProjects ? (
+                      <MiniToggle
+                        on={showAllProjects}
+                        onChange={setShowAllProjects}
+                        label={
+                          showAllProjects
+                            ? "All orgs"
+                            : `Show all (${hiddenProjects})`
+                        }
+                      />
+                    ) : undefined
+                  }
+                >
+                  {adding === "project" && (
+                    <InlineAdd
+                      placeholder="New project name"
+                      onCommit={(v) => void addProject(v)}
+                      onCancel={() => setAdding(null)}
                     />
-                  ) : undefined
-                }
-              >
-                {adding === "project" && (
-                  <InlineAdd
-                    placeholder="New project name"
-                    onCommit={(v) => void addProject(v)}
-                    onCancel={() => setAdding(null)}
-                  />
-                )}
-                {projects.length === 0 ? (
-                  <div className="px-2.5 py-1.5 text-xs text-muted-foreground">
-                    {q ? "No matches." : "No projects yet."}
-                  </div>
-                ) : (
-                  projects.map((p) => (
-                    <CheckRow
-                      key={p.id}
-                      on={selProjects.has(p.id)}
-                      label={p.name}
-                      checkboxVariant={checkboxVariant}
-                      right={
-                        <span className="max-w-[45%] shrink-0 truncate text-[11px] text-muted-foreground">
-                          {orgLabel(p.orgId)}
-                        </span>
-                      }
-                      onClick={() => toggleProject(p.id)}
-                    />
-                  ))
-                )}
-              </SectionShell>
-
-              <SectionShell
-                icon={FolderOpen}
-                title="Tasks"
-                count={tasks.length}
-                defaultOpen={defaultTaskOpen}
-                addLabel={allowCreate ? "New task" : undefined}
-                onAdd={allowCreate ? () => setAdding("task") : undefined}
-                headerExtra={
-                  hiddenTasks > 0 || showAllTasks ? (
-                    <MiniToggle
-                      on={showAllTasks}
-                      onChange={setShowAllTasks}
-                      label={
-                        showAllTasks ? "All orgs" : `Show all (${hiddenTasks})`
-                      }
-                    />
-                  ) : undefined
-                }
-              >
-                {adding === "task" && (
-                  <InlineAdd
-                    placeholder="New task title"
-                    onCommit={(v) => void addTask(v)}
-                    onCancel={() => setAdding(null)}
-                  />
-                )}
-                {tasks.length === 0 ? (
-                  <div className="px-2.5 py-1.5 text-xs text-muted-foreground">
-                    {q ? "No matches." : "No tasks yet."}
-                  </div>
-                ) : (
-                  tasks.map((t) => (
-                    <CheckRow
-                      key={t.id}
-                      on={selTasks.has(t.id)}
-                      label={t.title}
-                      checkboxVariant={checkboxVariant}
-                      right={
-                        <span className="flex max-w-[45%] shrink items-center gap-1 text-[11px] text-muted-foreground">
-                          {t.status === "completed" ? (
-                            <CheckCircle2 className="h-3 w-3 shrink-0" />
-                          ) : (
-                            <Circle className="h-3 w-3 shrink-0" />
-                          )}
-                          <span className="truncate">
-                            {t.projectId ? projName(t.projectId) : "No project"}
+                  )}
+                  {projects.length === 0 ? (
+                    <div className="px-2.5 py-1.5 text-xs text-muted-foreground">
+                      {q ? "No matches." : "No projects yet."}
+                    </div>
+                  ) : (
+                    projects.map((p) => (
+                      <CheckRow
+                        key={p.id}
+                        on={selProjects.has(p.id)}
+                        label={p.name}
+                        checkboxVariant={checkboxVariant}
+                        right={
+                          <span className="max-w-[45%] shrink-0 truncate text-[11px] text-muted-foreground">
+                            {orgLabel(p.orgId)}
                           </span>
-                        </span>
-                      }
-                      onClick={() => toggleTask(t.id)}
+                        }
+                        onClick={() => toggleProject(p.id)}
+                      />
+                    ))
+                  )}
+                </SectionShell>
+              )}
+
+              {dims.tasks && (
+                <SectionShell
+                  icon={FolderOpen}
+                  title="Tasks"
+                  count={tasks.length}
+                  defaultOpen={defaultTaskOpen}
+                  addLabel={allowCreate ? "New task" : undefined}
+                  onAdd={allowCreate ? () => setAdding("task") : undefined}
+                  headerExtra={
+                    hiddenTasks > 0 || showAllTasks ? (
+                      <MiniToggle
+                        on={showAllTasks}
+                        onChange={setShowAllTasks}
+                        label={
+                          showAllTasks
+                            ? "All orgs"
+                            : `Show all (${hiddenTasks})`
+                        }
+                      />
+                    ) : undefined
+                  }
+                >
+                  {adding === "task" && (
+                    <InlineAdd
+                      placeholder="New task title"
+                      onCommit={(v) => void addTask(v)}
+                      onCancel={() => setAdding(null)}
                     />
-                  ))
-                )}
-              </SectionShell>
+                  )}
+                  {tasks.length === 0 ? (
+                    <div className="px-2.5 py-1.5 text-xs text-muted-foreground">
+                      {q ? "No matches." : "No tasks yet."}
+                    </div>
+                  ) : (
+                    tasks.map((t) => (
+                      <CheckRow
+                        key={t.id}
+                        on={selTasks.has(t.id)}
+                        label={t.title}
+                        checkboxVariant={checkboxVariant}
+                        right={
+                          <span className="flex max-w-[45%] shrink items-center gap-1 text-[11px] text-muted-foreground">
+                            {t.status === "completed" ? (
+                              <CheckCircle2 className="h-3 w-3 shrink-0" />
+                            ) : (
+                              <Circle className="h-3 w-3 shrink-0" />
+                            )}
+                            <span className="truncate">
+                              {t.projectId
+                                ? projName(t.projectId)
+                                : "No project"}
+                            </span>
+                          </span>
+                        }
+                        onClick={() => toggleTask(t.id)}
+                      />
+                    ))
+                  )}
+                </SectionShell>
+              )}
             </>
           )}
         </div>
@@ -1557,6 +1630,7 @@ export function ContextAssignmentField({
                 addedProjects={addedProjects}
                 allTasks={allTasks}
                 addedTasks={addedTasks}
+                dimensions={dimensions}
                 onRemoveOrg={(id) =>
                   setSelOrgs((p) => {
                     const n = new Set(p);
@@ -1594,23 +1668,27 @@ export function ContextAssignmentField({
                     />
                   );
                 })}
-                {[...selProjects].map((id) => (
-                  <Chip
-                    key={id}
-                    label={projName(id)}
-                    onRemove={() => toggle(setSelProjects, id)}
-                  />
-                ))}
-                {[...selTasks].map((id) => (
-                  <Chip
-                    key={id}
-                    label={
-                      [...allTasks, ...addedTasks].find((t) => t.id === id)
-                        ?.title ?? id
-                    }
-                    onRemove={() => toggle(setSelTasks, id)}
-                  />
-                ))}
+                {[...selProjects].map((id) =>
+                  dims.projects ? (
+                    <Chip
+                      key={id}
+                      label={projName(id)}
+                      onRemove={() => toggle(setSelProjects, id)}
+                    />
+                  ) : null,
+                )}
+                {[...selTasks].map((id) =>
+                  dims.tasks ? (
+                    <Chip
+                      key={id}
+                      label={
+                        [...allTasks, ...addedTasks].find((t) => t.id === id)
+                          ?.title ?? id
+                      }
+                      onRemove={() => toggle(setSelTasks, id)}
+                    />
+                  ) : null,
+                )}
                 {mode === "assignment" &&
                   [...derivedTypeIds].map((tid) => (
                     <span
@@ -1631,26 +1709,30 @@ export function ContextAssignmentField({
                     </span>
                   </span>
                 )}
-                {suggestions.map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() =>
-                      s.kind === "project"
-                        ? toggleProject(s.id)
-                        : toggleScope(s.id)
-                    }
-                    title={
-                      s.kind === "project"
-                        ? "This scope is in this project — attach there too?"
-                        : "This project is linked to this scope — file it scope-wide?"
-                    }
-                    className="inline-flex items-center gap-1 rounded-md border border-dashed border-amber-400/60 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/40"
-                  >
-                    <Wand2 className="h-3 w-3" />
-                    {s.label}
-                    <Plus className="h-3 w-3" />
-                  </button>
-                ))}
+                {suggestions
+                  .filter((s) =>
+                    s.kind === "project" ? dims.projects : dims.scopes,
+                  )
+                  .map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() =>
+                        s.kind === "project"
+                          ? toggleProject(s.id)
+                          : toggleScope(s.id)
+                      }
+                      title={
+                        s.kind === "project"
+                          ? "This scope is in this project — attach there too?"
+                          : "This project is linked to this scope — file it scope-wide?"
+                      }
+                      className="inline-flex items-center gap-1 rounded-md border border-dashed border-amber-400/60 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/40"
+                    >
+                      <Wand2 className="h-3 w-3" />
+                      {s.label}
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  ))}
               </div>
             )}
           </div>

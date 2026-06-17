@@ -4,11 +4,11 @@ import React, { useEffect, useState } from "react";
 import { ChevronLeft, Search, Loader2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { listAccessibleDocuments } from "@/features/data-tables/document-service";
 import {
-  listAccessibleDocuments,
   isServiceFailure,
-} from "@/features/data-tables/document-service";
-import type { DocumentRow } from "@/features/data-tables/types";
+  type DocumentRow,
+} from "@/features/data-tables/types";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 
 interface DocumentsResourcePickerProps {

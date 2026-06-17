@@ -13,7 +13,11 @@
  *    caller keeps its last-good render.
  */
 
-import { detectDiagramType, splitFrontmatter, type MermaidDiagramType } from "./diagram-type";
+import {
+  detectDiagramType,
+  splitFrontmatter,
+  type MermaidDiagramType,
+} from "./diagram-type";
 
 export interface MermaidFix {
   rule: string;
@@ -29,11 +33,42 @@ export interface LadderResult {
   error?: string;
 }
 
-export type MermaidValidator = (source: string) => Promise<{ ok: boolean; error?: string }>;
+export type MermaidValidator = (
+  source: string,
+) => Promise<{ ok: boolean; error?: string }>;
+
+/**
+ * Turn an engine error into something a human can act on. Mermaid (and the
+ * libraries under it) sometimes throw raw JS runtime errors — most notoriously
+ * a `Converting circular structure to JSON … __reactFiber …` TypeError that
+ * carries a live DOM node — instead of a parse message. Those say nothing
+ * useful to the reader, so we replace them with a clear line. The raw text is
+ * still logged at the call site for debugging.
+ */
+export function humanizeMermaidError(raw?: string): string | undefined {
+  if (!raw) return raw;
+  const lower = raw.toLowerCase();
+  const isInternalNoise =
+    lower.includes("circular structure") ||
+    lower.includes("__reactfiber") ||
+    lower.includes("htmlhtmlelement") ||
+    lower.includes("statenode") ||
+    lower.includes("converting circular");
+  if (isInternalNoise) {
+    return "The diagram could not be parsed — the syntax is invalid.";
+  }
+  // Collapse multi-line stack dumps to the first, most relevant line.
+  const firstLine = raw.split("\n")[0]?.trim();
+  return firstLine && firstLine.length > 0 ? firstLine : raw;
+}
 
 // ─── Stage A — lossless normalizers (near-zero false-positive risk) ─────────
 
-type Normalizer = { rule: string; detail: string; apply: (s: string) => string };
+type Normalizer = {
+  rule: string;
+  detail: string;
+  apply: (s: string) => string;
+};
 
 const NORMALIZERS: Normalizer[] = [
   {
@@ -59,9 +94,23 @@ const NORMALIZERS: Normalizer[] = [
     apply: (s) => s.replace(/[“”]/g, '"').replace(/[‘’]/g, "'"),
   },
   {
+    rule: "convert-newline-escapes",
+    detail:
+      "Converted literal \\n line-break escapes to <br/> (mermaid uses <br/>, not \\n)",
+    // The #1 LLM mistake: emitting a literal backslash-n (two chars) for a
+    // line break inside a label. Mermaid's parser rejects it; the line break
+    // token is <br/>. Real source newlines are 0x0A bytes and are untouched —
+    // this only rewrites the two-char escape sequences `\n` and `\r\n`.
+    apply: (s) => s.replace(/\\(?:r\\)?n/g, "<br/>"),
+  },
+  {
     rule: "decode-arrow-entities",
     detail: "Decoded HTML-escaped arrows (--&gt; → -->)",
-    apply: (s) => s.replace(/--&gt;/g, "-->").replace(/-&gt;&gt;/g, "->>").replace(/&gt;/g, ">"),
+    apply: (s) =>
+      s
+        .replace(/--&gt;/g, "-->")
+        .replace(/-&gt;&gt;/g, "->>")
+        .replace(/&gt;/g, ">"),
   },
   {
     rule: "normalize-arrow-dashes",
@@ -103,7 +152,9 @@ const FIXERS: Fixer[] = [
     appliesTo: FLOWCHART_ONLY,
     apply: (s) =>
       mapBodyLines(s, (line) => {
-        const m = /^(\s*)(flowchart|graph)\s+(TB|TD|LR|RL|BT)\s+(\S.*)$/.exec(line);
+        const m = /^(\s*)(flowchart|graph)\s+(TB|TD|LR|RL|BT)\s+(\S.*)$/.exec(
+          line,
+        );
         return m ? `${m[1]}${m[2]} ${m[3]}\n${m[1]}  ${m[4]}` : line;
       }),
   },
@@ -111,13 +162,17 @@ const FIXERS: Fixer[] = [
     rule: "fix-comment-syntax",
     detail: "Converted // and # comment lines to %% comments",
     appliesTo: ANY,
-    apply: (s) => mapBodyLines(s, (line) => line.replace(/^(\s*)(\/\/|#)(?!#)\s?/, "$1%% ")),
+    apply: (s) =>
+      mapBodyLines(s, (line) =>
+        line.replace(/^(\s*)(\/\/|#)(?!#)\s?/, "$1%% "),
+      ),
   },
   {
     rule: "strip-list-bullets",
     detail: "Removed markdown list bullets the model added before statements",
     appliesTo: ANY,
-    apply: (s) => mapBodyLines(s, (line) => line.replace(/^(\s*)[-*]\s+(?=\w)/, "$1")),
+    apply: (s) =>
+      mapBodyLines(s, (line) => line.replace(/^(\s*)[-*]\s+(?=\w)/, "$1")),
   },
   {
     rule: "fix-arrow-typos",
@@ -136,26 +191,60 @@ const FIXERS: Fixer[] = [
     appliesTo: FLOWCHART_ONLY,
     apply: (s) =>
       mapBodyLines(s, (line) => {
-        // Per bracket type. The content class excludes ONLY that bracket's
-        // closer (so a [] label can legally contain parens, which is the most
-        // common LLM mistake — `A[Validate (strict) mode]`). The `(?!\[|\()`
-        // / `(?!\{)` guards avoid the multi-bracket shapes (stadium `([`,
-        // subroutine `[[`, hexagon `{{`) so we never change a node's shape.
-        const wrap = (label: string) => `"${label.trim().replace(/"/g, "#quot;")}"`;
-        return line
+        // Quote a label only when it carries a character that confuses the
+        // flowchart grammar. The original source is preserved for copy/export;
+        // this only affects what renders.
+        const UNSAFE = /[(){}\[\]:;#&|]/;
+        const wrap = (label: string) =>
+          `"${label.trim().replace(/"/g, "#quot;")}"`;
+        // Multi-char shapes FIRST (longest delimiters win) so we never mistake
+        // a stadium `([` for a plain `[`, etc. The inner class forbids the
+        // shape's own closer so we stop at the right boundary.
+        let out = line
+          // stadium ([label])
           .replace(
-            /([A-Za-z0-9_]+)\[(?!\[)(?!")([^\]]*[(){}:;#&][^\]]*)\]/g,
+            /([A-Za-z0-9_]+)\(\[(?!")([^\]]*)\]\)/g,
+            (m, id: string, label: string) =>
+              UNSAFE.test(label) ? `${id}([${wrap(label)}])` : m,
+          )
+          // cylinder/database [(label)]
+          .replace(
+            /([A-Za-z0-9_]+)\[\((?!")([^)]*)\)\]/g,
+            (m, id: string, label: string) =>
+              UNSAFE.test(label) ? `${id}[(${wrap(label)})]` : m,
+          )
+          // subroutine [[label]]
+          .replace(
+            /([A-Za-z0-9_]+)\[\[(?!")([^\]]*)\]\]/g,
+            (m, id: string, label: string) =>
+              UNSAFE.test(label) ? `${id}[[${wrap(label)}]]` : m,
+          )
+          // hexagon {{label}}
+          .replace(
+            /([A-Za-z0-9_]+)\{\{(?!")([^}]*)\}\}/g,
+            (m, id: string, label: string) =>
+              UNSAFE.test(label) ? `${id}{{${wrap(label)}}}` : m,
+          );
+        // Single-char shapes LAST. The `(?!\[|\()` / `(?!\{)` guards skip the
+        // multi-char shapes already handled above so a node's shape is never
+        // changed. A `[]` label may legally contain parens — the most common
+        // LLM mistake (`A[Validate (strict) mode]`).
+        out = out
+          .replace(
+            /([A-Za-z0-9_]+)\[(?!\[)(?!\()(?!")([^\]]*[(){}:;#&][^\]]*)\]/g,
             (_m, id: string, label: string) => `${id}[${wrap(label)}]`,
           )
           .replace(
             /([A-Za-z0-9_]+)\{(?!\{)(?!")([^}]*[()[\]:;#&][^}]*)\}/g,
             (_m, id: string, label: string) => `${id}{${wrap(label)}}`,
           );
+        return out;
       }),
   },
   {
     rule: "fix-reserved-end",
-    detail: 'Renamed reserved node id "end" (lowercase "end" breaks flowcharts)',
+    detail:
+      'Renamed reserved node id "end" (lowercase "end" breaks flowcharts)',
     appliesTo: FLOWCHART_ONLY,
     apply: (s) =>
       mapBodyLines(s, (line) => {
@@ -170,7 +259,10 @@ const FIXERS: Fixer[] = [
     rule: "strip-markdown-emphasis",
     detail: "Removed **bold** / __underline__ markers inside labels",
     appliesTo: ANY,
-    apply: (s) => mapBodyLines(s, (line) => line.replace(/\*\*([^*]+)\*\*/g, "$1").replace(/__([^_]+)__/g, "$1")),
+    apply: (s) =>
+      mapBodyLines(s, (line) =>
+        line.replace(/\*\*([^*]+)\*\*/g, "$1").replace(/__([^_]+)__/g, "$1"),
+      ),
   },
   {
     rule: "remove-trailing-commas",
@@ -195,8 +287,12 @@ const FIXERS: Fixer[] = [
     appliesTo: FLOWCHART_ONLY,
     apply: (s) =>
       mapBodyLines(s, (line) =>
-        line.replace(/([[({])"(.*)"([\])}])/g, (full, open: string, inner: string, close: string) =>
-          inner.includes('"') ? `${open}"${inner.replace(/"/g, "#quot;")}"${close}` : full,
+        line.replace(
+          /([[({])"(.*)"([\])}])/g,
+          (full, open: string, inner: string, close: string) =>
+            inner.includes('"')
+              ? `${open}"${inner.replace(/"/g, "#quot;")}"${close}`
+              : full,
         ),
       ),
   },

@@ -32,7 +32,7 @@ description: Use whenever a task touches context selection, scope tagging, or th
 
 | You need… | Use | Mode/notes |
 |---|---|---|
-| Tag an entity (file/note/agent/…) inline on a page | `ContextAssignmentField` | `mode="assignment"`, pass `subject` |
+| Tag an entity (file/note/agent/…) inline on a page | `ContextAssignmentField` | `mode="assignment"`, pass `subject`; use `dimensions={["scopes"]}` when the surface is scope-only (no project/task FK intent) |
 | Same, without blocking the page | `ContextAssignmentPopover` | trigger = your button |
 | Same, as an explicit modal step | `ContextAssignmentDialog` | controlled `open` |
 | Same, floating/draggable | `ContextAssignmentWindow` | inline-controlled |
@@ -62,6 +62,11 @@ Surface A writers MUST live there; ESLint + FEATURE.md enforce it).
   `active-context/` components only. Entity FKs (e.g. a note's project_id)
   → that feature's save pipeline, applied from `onSaved`'s selection (see
   `features/notes/components/NoteContextSection.tsx` as the template).
+- **Dimension gating.** Pass `dimensions={["scopes"]}` (or any subset of
+  `"scopes" | "projects" | "tasks"`) to hide sections that do not apply —
+  e.g. project settings (scope tagging only) vs notes (scopes + project/task
+  FK intent). Default is all three. Org dropdown (assignment) and org rows
+  (active/filter) are independent of `dimensions`.
 - **Org default-but-changeable.** Assignment mode defaults to **"All
   organizations"** (`ALL_ORGS` sentinel — nothing filtered, scope sections
   grouped per org, `selection.organizationId = null`). Surfaces that "enforce"

@@ -4,11 +4,8 @@ import React, { useEffect, useState } from "react";
 import { ChevronLeft, Search, Loader2, Notebook } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  listAccessibleWorkbooks,
-  isServiceFailure,
-} from "@/features/data-tables/workbook-service";
-import type { Workbook } from "@/features/data-tables/types";
+import { listAccessibleWorkbooks } from "@/features/data-tables/workbook-service";
+import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
 import { filterAndSortBySearch } from "@/utils/search-scoring";
 
 interface WorkbooksResourcePickerProps {
