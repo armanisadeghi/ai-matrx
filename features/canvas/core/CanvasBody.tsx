@@ -22,6 +22,11 @@
 import React, { isValidElement } from "react";
 import dynamic from "next/dynamic";
 import type { CanvasContent } from "@/features/canvas/redux/canvasSlice";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
+import {
+  ArtifactRender,
+  hasArtifactRenderer,
+} from "@/features/canvas/artifact-types/artifact-renderers";
 
 // All blocks load lazily — keeps the canvas itself small and only pays for
 // the block types the user actually opens.
@@ -183,6 +188,28 @@ export function getSubtitle(type: string): string | undefined {
 function renderContent(content: CanvasContent): React.ReactNode {
   const { type, data } = content;
 
+  // ── Unified artifact renderer (Wave B) ───────────────────────────────────
+  // Types with a unified renderer registered render through the single shared
+  // path; the rest fall through to their legacy case below.
+  const _def = getArtifactDef(type);
+  if (_def && hasArtifactRenderer(_def.canvasType)) {
+    const meta = content.metadata as
+      | { conversationId?: string; messageId?: string }
+      | undefined;
+    return (
+      <div className="h-full">
+        <ArtifactRender
+          canvasType={_def.canvasType}
+          mode="canvas"
+          data={data}
+          metadata={content.metadata as Record<string, unknown> | undefined}
+          conversationId={meta?.conversationId}
+          messageId={meta?.messageId}
+        />
+      </div>
+    );
+  }
+
   switch (type) {
     case "quiz":
       return (
@@ -241,12 +268,7 @@ function renderContent(content: CanvasContent): React.ReactNode {
         </div>
       );
 
-    case "comparison":
-      return (
-        <div className="h-full p-0">
-          <ComparisonTableBlock comparison={data} />
-        </div>
-      );
+    // comparison → unified renderer (handled by the early-branch above)
 
     case "troubleshooting":
       return (

@@ -1,6 +1,11 @@
 "use client";
 import React, { useCallback } from "react";
 import { BlockComponents, LoadingComponents } from "./BlockComponentRegistry";
+import { resolveArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
+import {
+  ArtifactRender,
+  hasArtifactRenderer,
+} from "@/features/canvas/artifact-types/artifact-renderers";
 import { looksLikeDiff } from "../diff-blocks/diff-style-registry";
 import { safeJsonParse } from "./json-parse-utils";
 import { useBlockRenderingConfig } from "@/components/mardown-display/chat-markdown/BlockRenderingContext";
@@ -225,6 +230,32 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     },
     [index, isStreamActive, onContentChange, handleOpenEditor, messageId],
   );
+
+  // ── Unified artifact renderer (Wave B) ───────────────────────────────────
+  // Standalone materializable blocks whose type has a unified renderer are
+  // rendered through the single shared path (chat/canvas/artifact identical).
+  // `artifact`/`artifact_ref` keep going through ArtifactBlock/ArtifactRefBlock
+  // (which use the unified renderer internally + add chrome). Types not yet
+  // migrated fall through to their legacy case below.
+  if (block.type !== "artifact" && block.type !== "artifact_ref") {
+    const _def = resolveArtifactDef(block.type);
+    if (_def && hasArtifactRenderer(_def.canvasType)) {
+      return (
+        <ArtifactRender
+          key={index}
+          canvasType={_def.canvasType}
+          mode="inline"
+          raw={block.content}
+          serverData={block.serverData}
+          metadata={block.metadata as Record<string, unknown> | undefined}
+          taskId={taskId}
+          conversationId={conversationId}
+          messageId={messageId}
+          isStreamActive={isStreamActive}
+        />
+      );
+    }
+  }
 
   switch (block.type) {
     case "audio_output": {
@@ -1128,50 +1159,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         </React.Suspense>
       );
 
-    case "comparison_table":
-      if (block.serverData) {
-        return (
-          <BlockComponents.ComparisonTableBlock
-            key={index}
-            comparison={block.serverData as any}
-            taskId={taskId}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="comparison_table"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      if (isBlockLoading(block)) {
-        return <LoadingComponents.ComparisonLoading key={index} />;
-      }
-      const ComparisonWithParser = React.lazy(async () => {
-        const { parseComparisonJSON } =
-          await import("../../blocks/comparison/parseComparisonJSON");
-        const comparisonData = parseComparisonJSON(block.content);
-        if (!comparisonData) throw new Error("Failed to parse comparison");
-        return {
-          default: () => (
-            <BlockComponents.ComparisonTableBlock
-              comparison={comparisonData}
-              taskId={taskId}
-            />
-          ),
-        };
-      });
-      return (
-        <React.Suspense
-          key={index}
-          fallback={<LoadingComponents.ComparisonLoading />}
-        >
-          <ComparisonWithParser />
-        </React.Suspense>
-      );
+    // comparison_table → unified renderer (handled by the early-branch above)
 
     case "troubleshooting":
       if (block.serverData) {

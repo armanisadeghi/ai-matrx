@@ -7,6 +7,10 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectCanvasIsAvailable } from "@/features/canvas/redux/canvasSlice";
 import type { CanvasContentType } from "@/features/canvas/redux/canvasSlice";
 import { resolveCanvasType } from "@/features/canvas/artifact-types/artifact-type-registry";
+import {
+    ArtifactRender,
+    hasArtifactRenderer,
+} from "@/features/canvas/artifact-types/artifact-renderers";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import BasicMarkdownContent from "../../chat-markdown/BasicMarkdownContent";
 import { safeJsonParse } from "../../chat-markdown/block-registry/json-parse-utils";
@@ -127,6 +131,25 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
                 <div className="p-3 text-sm">
                     <BasicMarkdownContent content={content} isStreamActive={isStreamActive} />
                 </div>
+            );
+        }
+
+        // ── Unified artifact renderer (Wave B) ───────────────────────────
+        // Types with a unified renderer registered render through the single
+        // shared path; the rest fall through to the legacy switch below.
+        if (hasArtifactRenderer(canvasType)) {
+            return (
+                <ArtifactRender
+                    canvasType={canvasType}
+                    mode="artifact"
+                    raw={content}
+                    serverData={serverData}
+                    metadata={metadata as Record<string, unknown> | undefined}
+                    artifactId={artifactId}
+                    messageId={messageId}
+                    taskId={dedupKey}
+                    isStreamActive={isStreamActive}
+                />
             );
         }
 
@@ -327,20 +350,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
                 return <JsonFallback content={content} />;
             }
 
-            case "comparison": {
-                const compData = safeJsonParse(content) as any;
-                if (compData?.comparison) {
-                    const ComparisonWithData = React.lazy(async () => {
-                        const { parseComparisonJSON } = await import("../comparison/parseComparisonJSON");
-                        const { default: ComparisonTableBlock } = await import("../comparison/ComparisonTableBlock");
-                        const parsed = parseComparisonJSON(JSON.stringify(compData));
-                        if (!parsed) throw new Error("Failed to parse comparison");
-                        return { default: () => <ComparisonTableBlock comparison={parsed} taskId={dedupKey} /> };
-                    });
-                    return <Suspense fallback={<MatrxMiniLoader />}><ComparisonWithData /></Suspense>;
-                }
-                return <JsonFallback content={content} />;
-            }
+            // comparison → unified renderer (handled by the early-branch above)
 
             case "decision_tree":
             case "decision-tree": {

@@ -42,9 +42,30 @@ const MATERIALIZABLE_MARKERS = [
   "```mmd",
 ];
 
+/**
+ * Build the search string from RAW block text — NOT JSON.stringify, which
+ * escapes inner quotes (`\"comparison\"`) and would defeat quote-wrapped markers
+ * like `'"comparison"'` / `'"diagram"'`, silently skipping JSON-object artifacts.
+ */
+function toSearchString(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((b) => {
+        if (typeof b === "string") return b;
+        if (b && typeof b === "object" && typeof (b as { text?: unknown }).text === "string") {
+          return (b as { text: string }).text;
+        }
+        return JSON.stringify(b);
+      })
+      .join("\n");
+  }
+  return JSON.stringify(content);
+}
+
 export function mightContainMaterializable(content: unknown): boolean {
   if (!content) return false;
-  const s = typeof content === "string" ? content : JSON.stringify(content);
+  const s = toSearchString(content);
   return MATERIALIZABLE_MARKERS.some((m) => s.includes(m));
 }
 
