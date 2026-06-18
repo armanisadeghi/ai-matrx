@@ -104,6 +104,7 @@ export const LLM_PARAMS_KEYS = [
     'compaction_settings',
     'detected_contexts',
     'dictionary',
+    'tts_quality',
 ] as const satisfies readonly (keyof LLMParams)[];
 
 export type LLMParamsKey = (typeof LLM_PARAMS_KEYS)[number];

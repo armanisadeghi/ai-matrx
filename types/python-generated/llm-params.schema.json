@@ -813,6 +813,18 @@
       ],
       "default": null,
       "title": "Dictionary"
+    },
+    "tts_quality": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tts Quality"
     }
   },
   "title": "LLMParams",

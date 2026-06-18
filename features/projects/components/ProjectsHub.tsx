@@ -32,11 +32,25 @@ import {
   ChevronsUpDown,
   Filter,
   X,
+  ListFilter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableHeader,
@@ -54,6 +68,12 @@ import type {
   ProjectStatus,
   ProjectPriority,
 } from "@/features/projects/types";
+import {
+  compareTimestamps,
+  formatAbsoluteDate,
+  formatRelativeTime,
+  toEpochMs,
+} from "@/utils/datetime";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -64,7 +84,7 @@ type Stat = {
   preview: { id: string; title: string }[];
 };
 type ViewMode = "cards" | "table";
-type SortKey = "name" | "org" | "open" | "done";
+type SortKey = "name" | "org" | "open" | "done" | "updated";
 type OrgMap = Map<string, { name: string; slug: string; isPersonal: boolean }>;
 
 export function ProjectsHub({
@@ -142,6 +162,7 @@ export function ProjectsHub({
           description: string | null;
           organization_id: string | null;
           created_by: string | null;
+          updated_at: string | null;
           status: ProjectStatus | null;
           priority: ProjectPriority | null;
           start_date: string | null;
@@ -164,7 +185,7 @@ export function ProjectsHub({
             targetDate: r.target_date ?? null,
             settings: {},
             createdAt: "",
-            updatedAt: "",
+            updatedAt: r.updated_at ?? "",
             role: "member" as const,
           })),
         );
@@ -483,6 +504,285 @@ function Section({
   );
 }
 
+type UpdatedFilter =
+  | "any"
+  | "hour"
+  | "today"
+  | "week"
+  | "month"
+  | "quarter"
+  | "year";
+
+type ProjectColumnFilters = {
+  name: string;
+  organizationId: string;
+  openMin?: number;
+  openMax?: number;
+  doneMin?: number;
+  doneMax?: number;
+  updated: UpdatedFilter;
+};
+
+const EMPTY_COLUMN_FILTERS: ProjectColumnFilters = {
+  name: "",
+  organizationId: "",
+  updated: "any",
+};
+
+const UPDATED_FILTER_OPTIONS: ReadonlyArray<{
+  value: UpdatedFilter;
+  label: string;
+}> = [
+  { value: "any", label: "Any time" },
+  { value: "hour", label: "Last hour" },
+  { value: "today", label: "Last 24 hours" },
+  { value: "week", label: "Last 7 days" },
+  { value: "month", label: "Last 30 days" },
+  { value: "quarter", label: "Last 90 days" },
+  { value: "year", label: "Last year" },
+];
+
+function hasActiveColumnFilters(filters: ProjectColumnFilters): boolean {
+  return (
+    filters.name.trim().length > 0 ||
+    filters.organizationId.length > 0 ||
+    filters.openMin !== undefined ||
+    filters.openMax !== undefined ||
+    filters.doneMin !== undefined ||
+    filters.doneMax !== undefined ||
+    filters.updated !== "any"
+  );
+}
+
+function passesNumberRange(
+  value: number,
+  min: number | undefined,
+  max: number | undefined,
+): boolean {
+  if (min !== undefined && value < min) return false;
+  if (max !== undefined && value > max) return false;
+  return true;
+}
+
+function passesUpdatedFilter(
+  updatedAt: string,
+  filter: UpdatedFilter,
+): boolean {
+  if (filter === "any") return true;
+  const updated = toEpochMs(updatedAt);
+  if (Number.isNaN(updated)) return false;
+  const age = Date.now() - updated;
+  const hour = 60 * 60 * 1000;
+  const day = 24 * hour;
+  switch (filter) {
+    case "hour":
+      return age <= hour;
+    case "today":
+      return age <= day;
+    case "week":
+      return age <= 7 * day;
+    case "month":
+      return age <= 30 * day;
+    case "quarter":
+      return age <= 90 * day;
+    case "year":
+      return age <= 365 * day;
+    default:
+      return true;
+  }
+}
+
+function ColumnFilterButton({
+  active,
+  label,
+  children,
+  align = "start",
+}: {
+  active: boolean;
+  label: string;
+  children: React.ReactNode;
+  align?: "start" | "end";
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          title={`Filter ${label}`}
+          onClick={(e) => e.stopPropagation()}
+          className={cn(
+            "rounded p-0.5 transition-colors",
+            active
+              ? "text-primary hover:text-primary/80"
+              : "text-muted-foreground/40 hover:text-muted-foreground",
+          )}
+        >
+          <ListFilter className={cn("h-3 w-3", active && "fill-primary/20")} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align={align}
+        side="bottom"
+        className="w-auto p-3"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function TextColumnFilter({
+  label,
+  value,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (next: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2 w-[200px]">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          Filter: {label}
+        </p>
+        {value.trim().length > 0 && (
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => onChange("")}
+          >
+            clear
+          </button>
+        )}
+      </div>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-8 text-sm"
+      />
+    </div>
+  );
+}
+
+function NumberRangeColumnFilter({
+  label,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  min: number | undefined;
+  max: number | undefined;
+  onChange: (patch: { min?: number; max?: number }) => void;
+}) {
+  const [minText, setMinText] = React.useState(
+    min !== undefined ? String(min) : "",
+  );
+  const [maxText, setMaxText] = React.useState(
+    max !== undefined ? String(max) : "",
+  );
+
+  React.useEffect(() => {
+    setMinText(min !== undefined ? String(min) : "");
+  }, [min]);
+  React.useEffect(() => {
+    setMaxText(max !== undefined ? String(max) : "");
+  }, [max]);
+
+  const commit = (raw: string, kind: "min" | "max") => {
+    if (raw.trim() === "") {
+      onChange({ [kind]: undefined });
+      return;
+    }
+    const n = parseInt(raw.replace(/[^0-9]/g, ""), 10);
+    if (!Number.isNaN(n)) onChange({ [kind]: n });
+  };
+
+  const hasFilter = min !== undefined || max !== undefined;
+
+  return (
+    <div className="flex flex-col gap-2 w-[190px]">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          Filter: {label}
+        </p>
+        {hasFilter && (
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              setMinText("");
+              setMaxText("");
+              onChange({ min: undefined, max: undefined });
+            }}
+          >
+            clear
+          </button>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Input
+          value={minText}
+          onChange={(e) => setMinText(e.target.value)}
+          onBlur={(e) => commit(e.target.value, "min")}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
+          placeholder="min"
+          className="h-7 text-xs w-[80px] tabular-nums"
+        />
+        <span className="text-xs text-muted-foreground">–</span>
+        <Input
+          value={maxText}
+          onChange={(e) => setMaxText(e.target.value)}
+          onBlur={(e) => commit(e.target.value, "max")}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
+          placeholder="max"
+          className="h-7 text-xs w-[80px] tabular-nums"
+        />
+      </div>
+    </div>
+  );
+}
+
+function UpdatedColumnFilter({
+  value,
+  onChange,
+}: {
+  value: UpdatedFilter;
+  onChange: (next: UpdatedFilter) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2 w-[180px]">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        Filter: Updated
+      </p>
+      <div className="flex flex-col gap-0.5">
+        {UPDATED_FILTER_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={cn(
+              "rounded px-2 py-1 text-left text-xs hover:bg-accent",
+              value === opt.value && "bg-accent font-medium",
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ProjectsTable({
   projects,
   stats,
@@ -493,15 +793,62 @@ function ProjectsTable({
   orgMap: OrgMap;
 }) {
   const router = useRouter();
-  const [sortKey, setSortKey] = React.useState<SortKey>("name");
-  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
+  const [sortKey, setSortKey] = React.useState<SortKey>("updated");
+  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("desc");
+  const [columnFilters, setColumnFilters] =
+    React.useState<ProjectColumnFilters>(EMPTY_COLUMN_FILTERS);
 
   const orgEntry = (p: ProjectWithRole) =>
     p.organizationId ? (orgMap.get(p.organizationId) ?? null) : null;
   const orgLabel = (p: ProjectWithRole) => orgEntry(p)?.name ?? "—";
 
+  const orgOptions = React.useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const p of projects) {
+      if (!p.organizationId) continue;
+      const name = orgMap.get(p.organizationId)?.name ?? "—";
+      seen.set(p.organizationId, name);
+    }
+    return [...seen.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [projects, orgMap]);
+
+  const patchFilters = (patch: Partial<ProjectColumnFilters>) => {
+    setColumnFilters((prev) => ({ ...prev, ...patch }));
+  };
+
+  const filtered = React.useMemo(() => {
+    const nameQ = columnFilters.name.trim().toLowerCase();
+    return projects.filter((p) => {
+      if (nameQ && !p.name.toLowerCase().includes(nameQ)) return false;
+      if (
+        columnFilters.organizationId &&
+        p.organizationId !== columnFilters.organizationId
+      ) {
+        return false;
+      }
+      const open = stats.get(p.id)?.open ?? 0;
+      const done = stats.get(p.id)?.done ?? 0;
+      if (
+        !passesNumberRange(open, columnFilters.openMin, columnFilters.openMax)
+      ) {
+        return false;
+      }
+      if (
+        !passesNumberRange(done, columnFilters.doneMin, columnFilters.doneMax)
+      ) {
+        return false;
+      }
+      if (!passesUpdatedFilter(p.updatedAt, columnFilters.updated)) {
+        return false;
+      }
+      return true;
+    });
+  }, [projects, stats, columnFilters]);
+
   const sorted = React.useMemo(() => {
-    const arr = [...projects];
+    const arr = [...filtered];
     const dir = sortDir === "asc" ? 1 : -1;
     arr.sort((a, b) => {
       switch (sortKey) {
@@ -517,126 +864,307 @@ function ProjectsTable({
           return (
             ((stats.get(a.id)?.done ?? 0) - (stats.get(b.id)?.done ?? 0)) * dir
           );
+        case "updated":
+          return compareTimestamps(a.updatedAt, b.updatedAt) * dir;
         default:
           return 0;
       }
     });
     return arr;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects, stats, sortKey, sortDir]);
+  }, [filtered, stats, sortKey, sortDir]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else {
       setSortKey(key);
-      setSortDir(key === "open" || key === "done" ? "desc" : "asc");
+      setSortDir(
+        key === "open" || key === "done" || key === "updated" ? "desc" : "asc",
+      );
     }
   };
 
-  const SortHead = ({
+  const filtersActive = hasActiveColumnFilters(columnFilters);
+
+  const ColumnHead = ({
     k,
     children,
     className,
+    align = "left",
+    filter,
   }: {
     k: SortKey;
     children: React.ReactNode;
     className?: string;
+    align?: "left" | "right";
+    filter: React.ReactNode;
   }) => (
     <TableHead className={className}>
-      <button
-        onClick={() => toggleSort(k)}
-        className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
-      >
-        {children}
-        {sortKey === k ? (
-          sortDir === "asc" ? (
-            <ChevronUp className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronDown className="h-3.5 w-3.5" />
-          )
-        ) : (
-          <ChevronsUpDown className="h-3.5 w-3.5 opacity-40" />
+      <div
+        className={cn(
+          "inline-flex items-center gap-0.5",
+          align === "right" && "justify-end w-full",
         )}
-      </button>
+      >
+        <button
+          type="button"
+          onClick={() => toggleSort(k)}
+          className={cn(
+            "inline-flex items-center gap-1 hover:text-foreground transition-colors",
+            align === "right" && "justify-end",
+          )}
+        >
+          {children}
+          {sortKey === k ? (
+            sortDir === "asc" ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )
+          ) : (
+            <ChevronsUpDown className="h-3.5 w-3.5 opacity-40" />
+          )}
+        </button>
+        {filter}
+      </div>
     </TableHead>
   );
 
   return (
     <div className="rounded-lg border border-border overflow-hidden">
+      {filtersActive && (
+        <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/20 px-3 py-1.5">
+          <span className="text-xs text-muted-foreground">
+            Column filters active
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={() => setColumnFilters(EMPTY_COLUMN_FILTERS)}
+          >
+            Clear all
+          </Button>
+        </div>
+      )}
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <SortHead k="name">Project</SortHead>
-            <SortHead k="org" className="w-60">
+            <ColumnHead
+              k="name"
+              filter={
+                <ColumnFilterButton
+                  active={columnFilters.name.trim().length > 0}
+                  label="project"
+                >
+                  <TextColumnFilter
+                    label="Project"
+                    value={columnFilters.name}
+                    placeholder="Contains…"
+                    onChange={(name) => patchFilters({ name })}
+                  />
+                </ColumnFilterButton>
+              }
+            >
+              Project
+            </ColumnHead>
+            <ColumnHead
+              k="org"
+              className="w-60"
+              filter={
+                <ColumnFilterButton
+                  active={columnFilters.organizationId.length > 0}
+                  label="organization"
+                >
+                  <div className="flex flex-col gap-2 w-[200px]">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Filter: Organization
+                      </p>
+                      {columnFilters.organizationId.length > 0 && (
+                        <button
+                          type="button"
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                          onClick={() => patchFilters({ organizationId: "" })}
+                        >
+                          clear
+                        </button>
+                      )}
+                    </div>
+                    <Select
+                      value={columnFilters.organizationId || "__all__"}
+                      onValueChange={(v) =>
+                        patchFilters({
+                          organizationId: v === "__all__" ? "" : v,
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="All organizations" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">
+                          All organizations
+                        </SelectItem>
+                        {orgOptions.map((o) => (
+                          <SelectItem key={o.id} value={o.id}>
+                            {o.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </ColumnFilterButton>
+              }
+            >
               Organization
-            </SortHead>
-            <SortHead k="open" className="w-24 text-right">
+            </ColumnHead>
+            <ColumnHead
+              k="open"
+              className="w-24 text-right"
+              align="right"
+              filter={
+                <ColumnFilterButton
+                  active={
+                    columnFilters.openMin !== undefined ||
+                    columnFilters.openMax !== undefined
+                  }
+                  label="open tasks"
+                  align="end"
+                >
+                  <NumberRangeColumnFilter
+                    label="Open"
+                    min={columnFilters.openMin}
+                    max={columnFilters.openMax}
+                    onChange={({ min, max }) =>
+                      patchFilters({ openMin: min, openMax: max })
+                    }
+                  />
+                </ColumnFilterButton>
+              }
+            >
               Open
-            </SortHead>
-            <SortHead k="done" className="w-24 text-right">
+            </ColumnHead>
+            <ColumnHead
+              k="done"
+              className="w-24 text-right"
+              align="right"
+              filter={
+                <ColumnFilterButton
+                  active={
+                    columnFilters.doneMin !== undefined ||
+                    columnFilters.doneMax !== undefined
+                  }
+                  label="done tasks"
+                  align="end"
+                >
+                  <NumberRangeColumnFilter
+                    label="Done"
+                    min={columnFilters.doneMin}
+                    max={columnFilters.doneMax}
+                    onChange={({ min, max }) =>
+                      patchFilters({ doneMin: min, doneMax: max })
+                    }
+                  />
+                </ColumnFilterButton>
+              }
+            >
               Done
-            </SortHead>
+            </ColumnHead>
+            <ColumnHead
+              k="updated"
+              className="w-36"
+              filter={
+                <ColumnFilterButton
+                  active={columnFilters.updated !== "any"}
+                  label="updated"
+                >
+                  <UpdatedColumnFilter
+                    value={columnFilters.updated}
+                    onChange={(updated) => patchFilters({ updated })}
+                  />
+                </ColumnFilterButton>
+              }
+            >
+              Updated
+            </ColumnHead>
             <TableHead className="w-40 text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {sorted.map((p) => {
-            const s = stats.get(p.id);
-            return (
-              <TableRow
-                key={p.id}
-                className="cursor-pointer"
-                onClick={() => router.push(`/projects/${p.id}`)}
+        <TableBody className="[&_tr:nth-child(even)]:bg-muted/30">
+          {sorted.length === 0 ? (
+            <TableRow className="hover:bg-transparent">
+              <TableCell
+                colSpan={6}
+                className="py-10 text-center text-sm text-muted-foreground"
               >
-                <TableCell className="py-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="h-7 w-7 rounded-md flex items-center justify-center shrink-0 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                      <FolderKanban className="h-4 w-4" />
+                No projects match these column filters.
+              </TableCell>
+            </TableRow>
+          ) : (
+            sorted.map((p) => {
+              const s = stats.get(p.id);
+              return (
+                <TableRow
+                  key={p.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/projects/${p.id}`)}
+                >
+                  <TableCell className="py-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="h-7 w-7 rounded-md flex items-center justify-center shrink-0 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                        <FolderKanban className="h-4 w-4" />
+                      </span>
+                      <span className="font-medium text-foreground truncate">
+                        {p.name}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-2">
+                    <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Building2 className="h-3.5 w-3.5 shrink-0" />
+                      {orgEntry(p)?.name ?? "—"}
                     </span>
-                    <span className="font-medium text-foreground truncate">
-                      {p.name}
+                  </TableCell>
+                  <TableCell className="py-2 text-right tabular-nums">
+                    {s?.open ?? 0}
+                  </TableCell>
+                  <TableCell className="py-2 text-right tabular-nums text-muted-foreground">
+                    {s?.done ?? 0}
+                  </TableCell>
+                  <TableCell className="py-2 text-sm text-muted-foreground whitespace-nowrap">
+                    <span title={formatAbsoluteDate(p.updatedAt)}>
+                      {formatRelativeTime(p.updatedAt, { style: "long" })}
                     </span>
-                  </div>
-                </TableCell>
-                <TableCell className="py-2">
-                  <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Building2 className="h-3.5 w-3.5 shrink-0" />
-                    {orgEntry(p)?.name ?? "—"}
-                  </span>
-                </TableCell>
-                <TableCell className="py-2 text-right tabular-nums">
-                  {s?.open ?? 0}
-                </TableCell>
-                <TableCell className="py-2 text-right tabular-nums text-muted-foreground">
-                  {s?.done ?? 0}
-                </TableCell>
-                <TableCell className="py-2">
-                  <div
-                    className="flex items-center justify-end gap-1.5"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => router.push(`/projects/${p.id}`)}
+                  </TableCell>
+                  <TableCell className="py-2">
+                    <div
+                      className="flex items-center justify-end gap-1.5"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      Open
-                    </Button>
-                    <Button
-                      asChild
-                      size="sm"
-                      variant="ghost"
-                      className="text-muted-foreground"
-                    >
-                      <Link href={`/projects/${p.id}/settings`}>
-                        <Settings className="h-3.5 w-3.5" />
-                      </Link>
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => router.push(`/projects/${p.id}`)}
+                      >
+                        Open
+                      </Button>
+                      <Button
+                        asChild
+                        size="sm"
+                        variant="ghost"
+                        className="text-muted-foreground"
+                      >
+                        <Link href={`/projects/${p.id}/settings`}>
+                          <Settings className="h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          )}
         </TableBody>
       </Table>
     </div>

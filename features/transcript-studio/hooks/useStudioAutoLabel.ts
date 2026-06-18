@@ -39,6 +39,8 @@ const LABEL_INPUT_MAX_CHARS = 8000;
 const PLACEHOLDER_TITLES = new Set([
   NEW_SESSION_DEFAULT_TITLE.toLowerCase(),
   "new studio session",
+  "recording",
+  "voice pad recording",
   "untitled",
   "",
 ]);
@@ -132,6 +134,8 @@ export function useStudioAutoLabel({
             text: head.slice(0, LABEL_INPUT_MAX_CHARS),
             content_type: "transcript",
             label_max_chars: TITLE_MAX_LEN,
+            studio_session_id: sessionId,
+            persist_label: true,
           },
           controller.signal,
         );
