@@ -12776,7 +12776,7 @@ export interface paths {
         put?: never;
         /**
          * Label content with GLiNER2
-         * @description Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id.
+         * @description Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id. Pass studio_session_id + persist_label=true to write the label to the session and any linked transcript that still has a placeholder title.
          */
         post: operations["label_content_label_post"];
         delete?: never;
@@ -18120,6 +18120,10 @@ export interface components {
              * @default false
              */
             server_gave_up: boolean;
+            /** Policy Category */
+            policy_category?: string | null;
+            /** Policy Reason */
+            policy_reason?: string | null;
         };
         /** ExtensionScrapeQueue */
         ExtensionScrapeQueue: {
@@ -18131,6 +18135,10 @@ export interface components {
             level_3_user_gated?: components["schemas"]["ExtensionScrapeItem"][];
             /** Level 4 Paste */
             level_4_paste?: components["schemas"]["ExtensionScrapeItem"][];
+            /** Gated Login */
+            gated_login?: components["schemas"]["ExtensionScrapeItem"][];
+            /** Low Value */
+            low_value?: components["schemas"]["ExtensionScrapeItem"][];
             /** Totals */
             totals?: {
                 [key: string]: number;
@@ -20703,6 +20711,13 @@ export interface components {
             conversation_id?: string | null;
             /** @default generic */
             content_type: components["schemas"]["ContentType"];
+            /** Studio Session Id */
+            studio_session_id?: string | null;
+            /**
+             * Persist Label
+             * @default false
+             */
+            persist_label: boolean;
             /**
              * Max Chars
              * @default 8000

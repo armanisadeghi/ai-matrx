@@ -36040,7 +36040,7 @@
           "Content Labeling (GLiNER2)"
         ],
         "summary": "Label content with GLiNER2",
-        "description": "Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id.",
+        "description": "Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id. Pass studio_session_id + persist_label=true to write the label to the session and any linked transcript that still has a placeholder title.",
         "operationId": "label_content_label_post",
         "requestBody": {
           "content": {
@@ -50904,6 +50904,28 @@
             "type": "boolean",
             "title": "Server Gave Up",
             "default": false
+          },
+          "policy_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Category"
+          },
+          "policy_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Reason"
           }
         },
         "type": "object",
@@ -50946,6 +50968,20 @@
             },
             "type": "array",
             "title": "Level 4 Paste"
+          },
+          "gated_login": {
+            "items": {
+              "$ref": "#/components/schemas/ExtensionScrapeItem"
+            },
+            "type": "array",
+            "title": "Gated Login"
+          },
+          "low_value": {
+            "items": {
+              "$ref": "#/components/schemas/ExtensionScrapeItem"
+            },
+            "type": "array",
+            "title": "Low Value"
           },
           "totals": {
             "additionalProperties": {
@@ -58216,6 +58252,22 @@
           "content_type": {
             "$ref": "#/components/schemas/ContentType",
             "default": "generic"
+          },
+          "studio_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Studio Session Id"
+          },
+          "persist_label": {
+            "type": "boolean",
+            "title": "Persist Label",
+            "default": false
           },
           "max_chars": {
             "type": "integer",

@@ -8,6 +8,7 @@ import {
   ChevronRight,
   ChevronUp,
   ChevronsUpDown,
+  CornerDownRight,
   Eye,
   ListFilter,
 } from "lucide-react";
@@ -248,13 +249,50 @@ function OptionColumnFilter<T extends string>({
   );
 }
 
+const TREE_SLOT_PX = 20;
+
 type VisibleTreeRow = {
   item: TranscriptHubItem;
   depth: number;
   hasChildren: boolean;
   isChild: boolean;
+  isLastChild: boolean;
   itemKey: string;
 };
+
+function HubTableTreeGutter({
+  depth,
+  hasChildren,
+  isCollapsed,
+  isChild,
+}: {
+  depth: number;
+  hasChildren: boolean;
+  isCollapsed: boolean;
+  isChild: boolean;
+}) {
+  return (
+    <div
+      className="flex h-full shrink-0 items-center"
+      style={{ width: (depth + 1) * TREE_SLOT_PX }}
+    >
+      {Array.from({ length: depth }).map((_, index) => (
+        <span key={index} className="inline-flex w-5 shrink-0" aria-hidden />
+      ))}
+      <span className="inline-flex w-5 shrink-0 items-center justify-center">
+        {hasChildren ? (
+          isCollapsed ? (
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          )
+        ) : isChild ? (
+          <CornerDownRight className="h-3 w-3 text-muted-foreground/70" />
+        ) : null}
+      </span>
+    </div>
+  );
+}
 
 function collectParentKeys(nodes: HubTreeNode[]): Set<string> {
   const keys = new Set<string>();
@@ -276,7 +314,8 @@ function flattenVisibleTree(
 ): VisibleTreeRow[] {
   const out: VisibleTreeRow[] = [];
   const walk = (list: HubTreeNode[], depth: number) => {
-    for (const node of list) {
+    for (let index = 0; index < list.length; index += 1) {
+      const node = list[index];
       const key = hubItemKey(node.item);
       const hasChildren = node.children.length > 0;
       out.push({
@@ -284,6 +323,7 @@ function flattenVisibleTree(
         depth,
         hasChildren,
         isChild: depth > 0,
+        isLastChild: index === list.length - 1,
         itemKey: key,
       });
       if (hasChildren && !collapsed.has(key)) {
@@ -427,8 +467,17 @@ export function TranscriptsHubTable({
       depth: 0,
       hasChildren: false,
       isChild: false,
+      isLastChild: true,
       itemKey: hubItemKey(item),
     }));
+
+  const showTreeColumn = tree != null;
+  const maxTreeDepth = React.useMemo(() => {
+    if (!showTreeColumn) return 0;
+    return displayRows.reduce((max, row) => Math.max(max, row.depth), 0);
+  }, [displayRows, showTreeColumn]);
+  const treeColumnWidth = (maxTreeDepth + 1) * TREE_SLOT_PX;
+  const columnCount = showTreeColumn ? 8 : 7;
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -508,6 +557,30 @@ export function TranscriptsHubTable({
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
+            {showTreeColumn ? (
+              <TableHead
+                className="p-0"
+                style={{ width: treeColumnWidth, minWidth: treeColumnWidth }}
+              />
+            ) : null}
+            <ColumnHead
+              k="title"
+              filter={
+                <ColumnFilterButton
+                  active={columnFilters.title.trim().length > 0}
+                  label="name"
+                >
+                  <TextColumnFilter
+                    label="Name"
+                    value={columnFilters.title}
+                    placeholder="Contains…"
+                    onChange={(title) => patchFilters({ title })}
+                  />
+                </ColumnFilterButton>
+              }
+            >
+              Name
+            </ColumnHead>
             <ColumnHead
               k="type"
               className="w-28"
@@ -526,24 +599,6 @@ export function TranscriptsHubTable({
               }
             >
               Type
-            </ColumnHead>
-            <ColumnHead
-              k="title"
-              filter={
-                <ColumnFilterButton
-                  active={columnFilters.title.trim().length > 0}
-                  label="title"
-                >
-                  <TextColumnFilter
-                    label="Title"
-                    value={columnFilters.title}
-                    placeholder="Contains…"
-                    onChange={(title) => patchFilters({ title })}
-                  />
-                </ColumnFilterButton>
-              }
-            >
-              Title
             </ColumnHead>
             <TableHead className="min-w-[160px] text-xs">Details</TableHead>
             <ColumnHead
@@ -588,7 +643,7 @@ export function TranscriptsHubTable({
           {displayRows.length === 0 ? (
             <TableRow className="hover:bg-transparent">
               <TableCell
-                colSpan={7}
+                colSpan={columnCount}
                 className="py-10 text-center text-sm text-muted-foreground"
               >
                 No items match these filters.
@@ -596,11 +651,19 @@ export function TranscriptsHubTable({
             </TableRow>
           ) : (
             displayRows.map((row) => {
-              const { item, depth, hasChildren, isChild, itemKey } = row;
+              const {
+                item,
+                depth,
+                hasChildren,
+                isChild,
+                isLastChild,
+                itemKey,
+              } = row;
               const href = primaryHubHref(item);
               const meta = KIND_META[item.kind];
               const details = hubItemDetails(item);
               const isCollapsed = collapsed.has(itemKey);
+              const isExpandedParent = hasChildren && !isCollapsed;
 
               return (
                 <TableRow
@@ -608,9 +671,12 @@ export function TranscriptsHubTable({
                   className={cn(
                     "cursor-pointer",
                     isChild
-                      ? "bg-muted/45 hover:bg-muted/60 border-l-2 border-l-primary/15"
+                      ? cn(
+                          "bg-muted/25 hover:bg-muted/40",
+                          isLastChild && "border-b border-border",
+                        )
                       : "hover:bg-muted/30",
-                    hasChildren && !isChild && "bg-card",
+                    isExpandedParent && "border-b-0 bg-card",
                   )}
                   onClick={() => {
                     if (hasChildren) {
@@ -620,6 +686,48 @@ export function TranscriptsHubTable({
                     router.push(href);
                   }}
                 >
+                  {showTreeColumn ? (
+                    <TableCell
+                      className="py-2 px-0 align-middle"
+                      style={{
+                        width: treeColumnWidth,
+                        minWidth: treeColumnWidth,
+                      }}
+                    >
+                      <HubTableTreeGutter
+                        depth={depth}
+                        hasChildren={hasChildren}
+                        isCollapsed={isCollapsed}
+                        isChild={isChild}
+                      />
+                    </TableCell>
+                  ) : null}
+                  <TableCell className="py-2 max-w-[280px]">
+                    <div className="min-w-0">
+                      <span
+                        className={cn(
+                          "block text-sm truncate",
+                          hasChildren && !isChild && "font-semibold",
+                          !hasChildren && !isChild && "font-medium",
+                          isChild && "font-normal text-muted-foreground",
+                        )}
+                      >
+                        {item.title}
+                      </span>
+                      {hasChildren && isCollapsed ? (
+                        <span className="block text-[10px] text-muted-foreground/70 mt-0.5">
+                          {item.kind === "processor"
+                            ? "Contains nested sessions"
+                            : "Contains recordings"}
+                        </span>
+                      ) : null}
+                      {item.kind === "processor" && item.description ? (
+                        <span className="block text-xs text-muted-foreground truncate mt-0.5">
+                          {item.description}
+                        </span>
+                      ) : null}
+                    </div>
+                  </TableCell>
                   <TableCell className="py-2">
                     <Badge
                       variant="outline"
@@ -631,46 +739,6 @@ export function TranscriptsHubTable({
                     >
                       {meta.label}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="py-2 max-w-[280px]">
-                    <div
-                      className={cn(
-                        "min-w-0 flex items-start gap-1",
-                        depth === 1 && "pl-4",
-                        depth === 2 && "pl-8",
-                        depth >= 3 && "pl-12",
-                      )}
-                    >
-                      {hasChildren ? (
-                        <span className="mt-0.5 shrink-0 text-muted-foreground">
-                          {isCollapsed ? (
-                            <ChevronRight className="h-3.5 w-3.5" />
-                          ) : (
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          )}
-                        </span>
-                      ) : isChild ? (
-                        <span className="w-5 shrink-0" />
-                      ) : null}
-                      <div className="min-w-0 flex-1">
-                        <span
-                          className={cn(
-                            "block text-sm truncate",
-                            hasChildren && !isChild
-                              ? "font-medium"
-                              : "font-medium",
-                            isChild && "font-normal text-muted-foreground",
-                          )}
-                        >
-                          {item.title}
-                        </span>
-                        {item.kind === "processor" && item.description ? (
-                          <span className="block text-xs text-muted-foreground truncate mt-0.5">
-                            {item.description}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
                   </TableCell>
                   <TableCell className="py-2 text-xs text-muted-foreground">
                     <span className="line-clamp-2">{details || "—"}</span>
