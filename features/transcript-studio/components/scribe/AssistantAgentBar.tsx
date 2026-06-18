@@ -62,6 +62,10 @@ export function AssistantAgentBar({
   const activeAgentName = useAppSelector((s) =>
     activeAgentId ? selectAgentById(s, activeAgentId)?.name : undefined,
   );
+  // Conversation titles ("chat labels") for the roster — keyed by conversationId.
+  const conversationsById = useAppSelector(
+    (s) => s.conversationList.byConversationId,
+  );
 
   // When switching to an agent that already has a conversation here, ask the
   // user whether to resume it or start fresh.
@@ -139,9 +143,13 @@ export function AssistantAgentBar({
     .sort((a, b) => b.lastUsedAt.localeCompare(a.lastUsedAt))
     .map((c) => {
       const isActive = c.conversationId === activeConversationId;
+      const agentName = agents[c.agentId]?.name ?? "Assistant";
+      const chatLabel = conversationsById[c.conversationId]?.title?.trim();
+      // Show the conversation's own label ("Agent: Chat label"), not just the
+      // agent — multiple chats with the same agent are otherwise indistinguishable.
       return {
         key: c.conversationId,
-        label: agents[c.agentId]?.name ?? "Assistant",
+        label: chatLabel ? `${agentName}: ${chatLabel}` : agentName,
         description: `${relativeTime(c.lastUsedAt)}${isActive ? " · current" : ""}`,
         icon: <Webhook className="h-4 w-4" />,
         disabled: isActive,
@@ -166,6 +174,12 @@ export function AssistantAgentBar({
         compact ? "px-1.5 py-1" : "gap-2 px-2 py-1.5",
       )}
     >
+      {!compact ? (
+        <span className="text-[11px] font-medium text-muted-foreground">
+          Assistant
+        </span>
+      ) : null}
+
       <AgentListDropdown
         onSelect={handlePickAgent}
         compact
@@ -176,7 +190,7 @@ export function AssistantAgentBar({
               "flex min-w-0 items-center gap-1 rounded-full bg-muted/60 text-left transition-colors active:bg-accent",
               compact ? "px-2 py-0.5" : "gap-1.5 px-2.5 py-1",
             )}
-            title="Change the Scribe assistant agent"
+            title="Change the assistant agent"
           >
             <Webhook className="h-3.5 w-3.5 shrink-0 text-primary" />
             <span
@@ -185,27 +199,15 @@ export function AssistantAgentBar({
                 compact ? "max-w-[7rem]" : "max-w-[12rem]",
               )}
             >
-              {activeAgentName ?? "Assistant agent"}
+              {activeAgentName ?? "Select agent"}
             </span>
           </button>
         }
       />
 
-      {!compact ? (
-        <span className="text-[11px] text-muted-foreground">
-          Scribe assistant
-        </span>
-      ) : null}
-
       <div className="flex-1" />
 
-      {!compact ? (
-        <ActiveContextButton
-          size="xs"
-          align="end"
-          triggerClassName="max-w-[280px]"
-        />
-      ) : null}
+      <ActiveContextButton size="xs" align="end" iconOnly warnWhenEmpty />
 
       <button
         type="button"

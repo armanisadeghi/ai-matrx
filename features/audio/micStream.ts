@@ -12,11 +12,19 @@
 // acquisition. Tapping record three times = three prompts.
 //
 // This manager keeps ONE stream warm and hands it to every caller. After the
-// last holder releases it, the stream is kept alive for a short KEEPALIVE
+// last holder releases it, the stream is kept alive for a SHORT keepalive
 // window; if another recording starts within that window, the same live
 // stream (and the same OS grant) is reused — no second prompt. Only after the
 // window elapses with no holders is the stream actually stopped (mic light
 // off), so we don't hold the mic open forever.
+//
+// KEEPALIVE IS DELIBERATELY SHORT (a few seconds). It used to be 3 minutes,
+// which kept the BROWSER'S recording indicator lit for minutes after the user
+// stopped recording — alarming and abnormal ("why is my mic still on?"). A few
+// seconds still coalesces a quick stop→re-record (the iOS re-prompt case) while
+// clearing the mic light almost immediately once the user is actually done. On
+// desktop, re-acquiring after release does NOT re-prompt (the origin's grant
+// persists), so a short window costs nothing there.
 //
 // Reference-counted: concurrent holders (e.g. an analyser tap + a recorder)
 // are fine; the stream is only eligible for release when the count hits zero.
@@ -25,7 +33,7 @@
 // defeat the keepalive and kill it for other holders. Call `releaseMicStream`
 // instead.
 
-const DEFAULT_KEEPALIVE_MS = 180_000; // 3 minutes
+const DEFAULT_KEEPALIVE_MS = 6_000; // a few seconds — clear the mic light promptly
 
 type Listener = (state: MicStreamState) => void;
 
