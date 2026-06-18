@@ -14,12 +14,8 @@ import {
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import BasicMarkdownContent from "../../chat-markdown/BasicMarkdownContent";
 import { safeJsonParse } from "../../chat-markdown/block-registry/json-parse-utils";
-import { InlineMediaRef } from "@/features/files";
-import SandboxedHtml from "../common/SandboxedHtml";
-
 // Lazy load block renderers — only the ones that accept raw content strings
 const CodeBlock = lazy(() => import("@/features/code-editor/components/code-block/CodeBlock"));
-const FlashcardsBlock = lazy(() => import("../flashcards/FlashcardsBlock"));
 
 interface ArtifactBlockProps {
     content: string;
@@ -154,241 +150,17 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
             );
         }
 
-        switch (artifactType) {
-            // ---- Direct rendering types (no parsing needed) ----
-
-            case "iframe":
-                // allow-scripts WITHOUT allow-same-origin: interactive app
-                // artifacts run in a unique opaque origin and cannot reach the
-                // parent (aimatrx.com) origin. Combining the two would let the
-                // framed content remove its own sandbox = XSS in shared/forked
-                // conversations.
-                return (
-                    <iframe
-                        srcDoc={content}
-                        className="w-full border-0"
-                        style={{ minHeight: "300px", height: "400px" }}
-                        title={artifactTitle}
-                        sandbox="allow-scripts allow-forms"
-                    />
-                );
-
-            case "html":
-                // Model/user-authored HTML → fully sandboxed iframe, never
-                // dangerouslySetInnerHTML (conversations can be shared/forked,
-                // making this cross-user stored XSS).
-                return (
-                    <SandboxedHtml html={content} title={artifactTitle} height={400} />
-                );
-
-            case "code":
-                return (
-                    <Suspense fallback={<MatrxMiniLoader />}>
-                        <CodeBlock code={content} language="text" fontSize={14} className="my-0" isStreamActive={isStreamActive} />
-                    </Suspense>
-                );
-
-            case "image":
-                return (
-                    <div className="flex items-center justify-center p-4 bg-muted/30">
-                        <InlineMediaRef
-                            ref={content}
-                            alt={artifactTitle}
-                            size="fill"
-                            fit="contain"
-                            rounded="md"
-                            className="max-w-full max-h-[400px]"
-                        />
-                    </div>
-                );
-
-            // ---- FlashcardsBlock accepts raw content string ----
-
-            case "flashcards":
-                return (
-                    <Suspense fallback={<MatrxMiniLoader />}>
-                        <FlashcardsBlock content={content} taskId={dedupKey} />
-                    </Suspense>
-                );
-
-            // ---- Types that need markdown parsing ----
-            // Use the same React.lazy(async () => { import parser; parse; return component }) pattern
-            // that BlockRenderer uses. This avoids loading parsers until needed.
-
-            case "timeline": {
-                const TimelineWithParser = React.lazy(async () => {
-                    const { parseTimelineMarkdown } = await import("../timeline/parseTimelineMarkdown");
-                    const { default: TimelineBlock } = await import("../timeline/TimelineBlock");
-                    const data = parseTimelineMarkdown(content);
-                    if (!data) throw new Error("Failed to parse timeline");
-                    return { default: () => <TimelineBlock timeline={data} taskId={dedupKey} /> };
-                });
-                return <Suspense fallback={<MarkdownPreview content={content} />}><TimelineWithParser /></Suspense>;
-            }
-
-            case "research": {
-                const ResearchWithParser = React.lazy(async () => {
-                    const { parseResearchMarkdown } = await import("../research/parseResearchMarkdown");
-                    const { default: ResearchBlock } = await import("../research/ResearchBlock");
-                    const data = parseResearchMarkdown(content);
-                    if (!data) throw new Error("Failed to parse research");
-                    return { default: () => <ResearchBlock research={data} taskId={dedupKey} /> };
-                });
-                return <Suspense fallback={<MarkdownPreview content={content} />}><ResearchWithParser /></Suspense>;
-            }
-
-            case "resources": {
-                const ResourcesWithParser = React.lazy(async () => {
-                    const { parseResourcesMarkdown } = await import("../resources/parseResourcesMarkdown");
-                    const { default: ResourceCollectionBlock } = await import("../resources/ResourceCollectionBlock");
-                    const data = parseResourcesMarkdown(content);
-                    if (!data) throw new Error("Failed to parse resources");
-                    return { default: () => <ResourceCollectionBlock collection={data} taskId={dedupKey} /> };
-                });
-                return <Suspense fallback={<MarkdownPreview content={content} />}><ResourcesWithParser /></Suspense>;
-            }
-
-            case "progress":
-            case "progress_tracker": {
-                const ProgressWithParser = React.lazy(async () => {
-                    const { parseProgressMarkdown } = await import("../progress/parseProgressMarkdown");
-                    const { default: ProgressTrackerBlock } = await import("../progress/ProgressTrackerBlock");
-                    const data = parseProgressMarkdown(content);
-                    if (!data) throw new Error("Failed to parse progress");
-                    return { default: () => <ProgressTrackerBlock tracker={data} taskId={dedupKey} /> };
-                });
-                return <Suspense fallback={<MarkdownPreview content={content} />}><ProgressWithParser /></Suspense>;
-            }
-
-            case "troubleshooting": {
-                const TroubleshootingWithParser = React.lazy(async () => {
-                    const { parseTroubleshootingMarkdown } = await import("../troubleshooting/parseTroubleshootingMarkdown");
-                    const { default: TroubleshootingBlock } = await import("../troubleshooting/TroubleshootingBlock");
-                    const data = parseTroubleshootingMarkdown(content);
-                    if (!data) throw new Error("Failed to parse troubleshooting");
-                    return { default: () => <TroubleshootingBlock troubleshooting={data} taskId={dedupKey} /> };
-                });
-                return <Suspense fallback={<MarkdownPreview content={content} />}><TroubleshootingWithParser /></Suspense>;
-            }
-
-            case "recipe":
-            case "cooking_recipe": {
-                const RecipeWithParser = React.lazy(async () => {
-                    const { parseRecipeMarkdown } = await import("../cooking-recipes/parseRecipeMarkdown");
-                    const { default: RecipeViewer } = await import("../cooking-recipes/cookingRecipeDisplay");
-                    const data = parseRecipeMarkdown(content);
-                    if (!data) throw new Error("Failed to parse recipe");
-                    return { default: () => <RecipeViewer recipe={data} taskId={dedupKey} /> };
-                });
-                return <Suspense fallback={<MarkdownPreview content={content} />}><RecipeWithParser /></Suspense>;
-            }
-
-            // ---- Types that need JSON parsing ----
-
-            case "quiz": {
-                const quizData = safeJsonParse(content) as any;
-                if (quizData) {
-                    const normalised = quizData.quizTitle
-                        ? quizData
-                        : quizData.quiz_title
-                            ? { quizTitle: quizData.quiz_title, category: quizData.category, multipleChoice: quizData.multiple_choice }
-                            : null;
-                    if (normalised?.quizTitle && Array.isArray(normalised.multipleChoice)) {
-                        const QuizWithData = React.lazy(async () => {
-                            const { default: MultipleChoiceQuiz } = await import("../quiz/MultipleChoiceQuiz");
-                            return { default: () => <MultipleChoiceQuiz quizData={normalised} taskId={dedupKey} /> };
-                        });
-                        return <Suspense fallback={<MatrxMiniLoader />}><QuizWithData /></Suspense>;
-                    }
-                }
-                return <JsonFallback content={content} />;
-            }
-
-            case "presentation": {
-                const presData = safeJsonParse(content) as any;
-                const slides = presData?.presentation?.slides || presData?.slides;
-                if (slides && Array.isArray(slides)) {
-                    const theme = presData?.presentation?.theme || presData?.theme;
-                    const SlideshowWithData = React.lazy(async () => {
-                        const { default: Slideshow } = await import("../presentations/Slideshow");
-                        return { default: () => <Slideshow slides={slides} taskId={dedupKey} theme={theme} /> };
-                    });
-                    return <Suspense fallback={<MatrxMiniLoader />}><SlideshowWithData /></Suspense>;
-                }
-                return <JsonFallback content={content} />;
-            }
-
-            case "mermaid": {
-                // Render a materialized mermaid artifact (artifact_ref → here)
-                // through the SAME MermaidBlock used in chat, so a reloaded
-                // diagram looks identical and isn't lost.
-                const MermaidArtifact = React.lazy(
-                    () => import("../mermaid/MermaidBlock"),
-                );
-                return (
-                    <Suspense fallback={<MatrxMiniLoader />}>
-                        <MermaidArtifact
-                            content={content}
-                            taskId={dedupKey}
-                            artifactId={serverData?.artifactId ?? metadata?.artifactId}
-                        />
-                    </Suspense>
-                );
-            }
-
-            case "diagram": {
-                const diagramData = safeJsonParse(content) as any;
-                if (diagramData?.diagram) {
-                    const DiagramWithData = React.lazy(async () => {
-                        const { parseDiagramJSON } = await import("../diagram/parseDiagramJSON");
-                        const { default: InteractiveDiagramBlock } = await import("../diagram/InteractiveDiagramBlock");
-                        const parsed = parseDiagramJSON(JSON.stringify(diagramData));
-                        if (!parsed) throw new Error("Failed to parse diagram");
-                        return { default: () => <InteractiveDiagramBlock diagram={parsed} taskId={dedupKey} /> };
-                    });
-                    return <Suspense fallback={<MatrxMiniLoader />}><DiagramWithData /></Suspense>;
-                }
-                return <JsonFallback content={content} />;
-            }
-
-            // comparison → unified renderer (handled by the early-branch above)
-
-            case "decision_tree":
-            case "decision-tree": {
-                const treeData = safeJsonParse(content) as any;
-                if (treeData?.decision_tree) {
-                    const TreeWithData = React.lazy(async () => {
-                        const { parseDecisionTreeJSON } = await import("../decision-tree/parseDecisionTreeJSON");
-                        const { default: DecisionTreeBlock } = await import("../decision-tree/DecisionTreeBlock");
-                        const parsed = parseDecisionTreeJSON(JSON.stringify(treeData));
-                        if (!parsed) throw new Error("Failed to parse decision tree");
-                        return { default: () => <DecisionTreeBlock decisionTree={parsed} taskId={dedupKey} /> };
-                    });
-                    return <Suspense fallback={<MatrxMiniLoader />}><TreeWithData /></Suspense>;
-                }
-                return <JsonFallback content={content} />;
-            }
-
-            case "math_problem": {
-                const mathData = safeJsonParse(content) as any;
-                if (mathData?.math_problem) {
-                    const MathWithData = React.lazy(async () => {
-                        const { default: MathProblemBlock } = await import("../math/MathProblemBlock");
-                        return { default: () => <MathProblemBlock problemData={mathData} /> };
-                    });
-                    return <Suspense fallback={<MatrxMiniLoader />}><MathWithData /></Suspense>;
-                }
-                return <JsonFallback content={content} />;
-            }
-
-            // ---- Fallback: render as markdown ----
-            default:
-                return (
-                    <div className="p-3 text-sm">
-                        <BasicMarkdownContent content={content} isStreamActive={isStreamActive} />
-                    </div>
-                );
-        }
+        // All unified types (iframe, html, code, image, flashcards, timeline,
+        // research, resources, progress/progress_tracker, troubleshooting,
+        // recipe/cooking_recipe, quiz, presentation, mermaid, diagram,
+        // decision_tree/decision-tree, math_problem) are handled by the
+        // hasArtifactRenderer early-branch above (Wave F removal).
+        // Fallback: render as markdown for any unregistered type.
+        return (
+            <div className="p-3 text-sm">
+                <BasicMarkdownContent content={content} isStreamActive={isStreamActive} />
+            </div>
+        );
     };
 
     return (

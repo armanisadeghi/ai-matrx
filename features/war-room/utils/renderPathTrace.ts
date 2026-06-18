@@ -1,19 +1,57 @@
 /**
- * Dev-only render-path tracing for /war-room/[id] → Stage → Agent tab →
- * AgentAssistantMessage. Open DevTools, switch to Stage, open the Agent tab,
- * and watch `[war-room/render-path]` logs in order.
+ * Render-path tracing for /war-room/[id] → Stage → Agent tab →
+ * AgentAssistantMessage. Filter DevTools console on `[war-room/render-path]`.
  *
- * Gated to development — zero overhead in production builds.
+ * **Development:** always on.
+ *
+ * **Production:** off by default. Opt in with either:
+ *   - `?war-room-trace=1` on the URL (persists for the browser tab via sessionStorage)
+ *   - `localStorage.setItem('war-room:render-path-trace', '1')` then reload
+ *
+ * Disable on prod: `?war-room-trace=0` or
+ * `localStorage.removeItem('war-room:render-path-trace')`.
  */
 
 const PREFIX = "[war-room/render-path]";
+const STORAGE_KEY = "war-room:render-path-trace";
+const QUERY_PARAM = "war-room-trace";
+
+function isWarRoomRenderPathTraceEnabled(): boolean {
+  if (process.env.NODE_ENV !== "production") return true;
+  if (typeof window === "undefined") return false;
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const qp = params.get(QUERY_PARAM);
+    if (qp === "1" || qp === "true") {
+      sessionStorage.setItem(STORAGE_KEY, "1");
+      return true;
+    }
+    if (qp === "0" || qp === "false") {
+      sessionStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEY);
+      return false;
+    }
+  } catch {
+    // sessionStorage blocked — fall through
+  }
+
+  try {
+    if (sessionStorage.getItem(STORAGE_KEY) === "1") return true;
+    if (localStorage.getItem(STORAGE_KEY) === "1") return true;
+  } catch {
+    return false;
+  }
+
+  return false;
+}
 
 export function traceWarRoomRenderPath(
   step: number,
   label: string,
   detail?: Record<string, unknown>,
 ): void {
-  if (process.env.NODE_ENV === "production") return;
+  if (!isWarRoomRenderPathTraceEnabled()) return;
   if (detail) {
     console.log(`${PREFIX} ${step}. ${label}`, detail);
   } else {

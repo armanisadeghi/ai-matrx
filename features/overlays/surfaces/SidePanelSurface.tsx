@@ -86,6 +86,16 @@ export function SidePanelSurface({
   headerActions,
   children,
 }: SidePanelSurfaceProps) {
+  const isQuickNotesPanel = title === "Quick Note";
+  React.useEffect(() => {
+    if (isQuickNotesPanel) {
+      console.log(
+        "[Track Quick Notes] 1, SidePanelSurface.tsx — Quick Notes side panel mounted",
+        { title, defaultWidth },
+      );
+    }
+  }, [isQuickNotesPanel, title, defaultWidth]);
+
   const isMobile = useIsMobile();
   const [open, setOpen] = React.useState(true);
   const [widthBoost, setWidthBoost] = React.useState(0);

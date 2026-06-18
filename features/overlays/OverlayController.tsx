@@ -555,9 +555,12 @@ const QuickNoteSaveWindow = dynamic(
 );
 const QuickNotesSheet = dynamic(
   () =>
-    import("@/features/notes/actions/QuickNotesSheet").then((m) => ({
-      default: m.QuickNotesSheet,
-    })),
+    import("@/features/notes/actions/QuickNotesSheet").then((m) => {
+      console.log(
+        "[Track Quick Notes] 3, OverlayController.tsx — QuickNotesSheet dynamic chunk loaded",
+      );
+      return { default: m.QuickNotesSheet };
+    }),
   { ssr: false },
 );
 const QuickScribeSheet = dynamic(
@@ -3720,6 +3723,9 @@ export default function OverlayController() {
           | null
           | undefined;
         if (!isOpen) return null;
+        console.log(
+          "[Track Quick Notes] 2, OverlayController.tsx — quickNotes open, rendering SidePanelSurface + QuickNotesSheet",
+        );
         return (
           <SidePanelSurface
             title="Quick Note"

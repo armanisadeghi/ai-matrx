@@ -32,6 +32,59 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { LucideIcon } from "lucide-react";
+import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
+import { ArtifactRender, hasArtifactRenderer } from "@/features/canvas/artifact-types/artifact-renderers";
+
+// ── CanvasItemPreview ─────────────────────────────────────────────────────────
+
+/**
+ * Loads a canvas_items row by id and renders it via the unified ArtifactRender.
+ * Shown inside CmsArtifactDetail when the artifact has a canvas_item_id.
+ */
+function CanvasItemPreview({ canvasItemId }: { canvasItemId: string }) {
+  const { row, loading, error } = useCanvasItem(canvasItemId, { resolve: "latest" });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error || !row) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground py-6 justify-center">
+        <AlertCircle className="h-4 w-4" />
+        <span>Canvas content unavailable</span>
+      </div>
+    );
+  }
+
+  const canvasType: string = row.type;
+  if (!hasArtifactRenderer(canvasType)) {
+    return (
+      <div className="text-xs text-muted-foreground py-4 text-center">
+        No renderer for type <span className="font-mono">{canvasType}</span>
+      </div>
+    );
+  }
+
+  // canvas_items.content is stored as { data, type, metadata }
+  const contentObj = row.content as { data?: unknown; type?: string; metadata?: Record<string, unknown> } | null;
+  const data = contentObj?.data ?? contentObj;
+  const metadata = contentObj?.metadata;
+
+  return (
+    <ArtifactRender
+      canvasType={canvasType}
+      mode="canvas"
+      data={data}
+      metadata={metadata as Record<string, unknown> | undefined}
+      artifactId={row.id}
+    />
+  );
+}
 
 const STATUS_VARIANT: Record<
   ArtifactStatus,
@@ -241,6 +294,20 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Canvas content preview — rendered for materialized artifacts */}
+        {artifact.canvasItemId && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Content Preview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CanvasItemPreview canvasItemId={artifact.canvasItemId} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* External link preview (HTML pages) */}
         {artifact.externalUrl && artifact.artifactType === "html_page" && (

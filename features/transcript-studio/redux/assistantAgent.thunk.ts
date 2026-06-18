@@ -35,6 +35,53 @@ interface ThunkApi {
   state: RootState;
 }
 
+/**
+ * Persist a conversation to the session row ONLY once it is real server-side.
+ *
+ * A fresh conversation id is minted client-side (`generateConversationId`) and
+ * does NOT exist in `cx_conversation` until the FIRST turn streams — the server
+ * creates the row then (executeInstance Turn 1, `is_new:true`). Writing the id
+ * to `studio_sessions.assistant_conversation_id` BEFORE that point saves a
+ * placeholder that `loadConversation` later 406s on (0 rows) — the conversation
+ * "disappears". So minting only updates Redux optimistically; this thunk does
+ * the durable write, called from `useStudioAssistant` the moment the server has
+ * confirmed the turn. Idempotent.
+ */
+export const persistAssistantConversationThunk = createAsyncThunk<
+  void,
+  { sessionId: string; conversationId: string },
+  ThunkApi
+>(
+  "transcriptStudio/persistAssistantConversation",
+  async ({ sessionId, conversationId }, { dispatch, getState }) => {
+    if (!sessionId || !conversationId) return;
+    const session = getState().transcriptStudio.byId[sessionId];
+    if (!session) return;
+    const roster = session.assistantConversations ?? [];
+    // The conversation is normally already in the optimistic in-memory roster
+    // (with its agent); fall back to the resolved default if not.
+    const agentId =
+      findRosterByConversation(roster, conversationId)?.agentId ??
+      resolveDefaultAssistantAgentId(getState());
+    const nextRoster = findRosterByConversation(roster, conversationId)
+      ? touchRoster(roster, conversationId)
+      : appendRoster(roster, makeRosterRef(conversationId, agentId));
+    try {
+      const updated = await updateSession(sessionId, {
+        assistantConversationId: conversationId,
+        assistantConversations: nextRoster,
+      });
+      if (updated) dispatch(sessionUpserted(updated));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(
+        "[studio] persistAssistantConversation: persist failed",
+        err,
+      );
+    }
+  },
+);
+
 async function mintInstance(
   dispatch: AppDispatch,
   agentId: string,

@@ -120,6 +120,23 @@ export async function materializeMessageArtifacts(
           );
         }
       }
+
+      // Discovery-index write: register a cx_artifact row pointing back to
+      // this canvas_items row so materialized artifacts appear in the /artifacts
+      // library. NON-BLOCKING — a failure here must never abort the rewrite.
+      try {
+        await canvasArtifactService.upsertDiscoveryIndex({
+          canvasId: saved.id,
+          canvasType: artifact.canvasType,
+          title: artifact.title ?? null,
+          messageId,
+          conversationId,
+        });
+      } catch (err) {
+        errors.push(
+          `artifact #${artifact.artifactIndex} (${artifact.canvasType}) discovery-index write failed: ${String(err)}`,
+        );
+      }
     } else {
       errors.push(
         `artifact #${artifact.artifactIndex} (${artifact.canvasType}) failed to persist`,
