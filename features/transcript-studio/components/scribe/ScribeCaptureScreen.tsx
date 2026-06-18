@@ -89,7 +89,9 @@ function LiveTranscriptBox({
 }
 
 export function ScribeCaptureScreen({ sessionId }: ScribeCaptureScreenProps) {
-  const session = useStudioSession({ sessionId });
+  // Scribe = WHOLE-recording model (see useStudioSession): chunks are live
+  // preview only; the complete recording is transcribed once on stop.
+  const session = useStudioSession({ sessionId, mode: "whole" });
   const liveTranscript = useAppSelector((s) => s.recordings.liveTranscript);
   const [openTranscript, setOpenTranscript] = useState<{
     id: string;

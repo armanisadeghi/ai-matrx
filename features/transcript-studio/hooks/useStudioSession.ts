@@ -30,6 +30,7 @@ import {
   stopSessionRecordingThunk,
   uploadRecordingAudioThunk,
 } from "../redux/thunks";
+import { transcribeRecordingWholeThunk } from "../redux/transcribeRecordingWhole.thunk";
 import { selectRawSegmentsForRecording } from "../redux/selectors";
 import { recordingKept } from "../redux/slice";
 
@@ -43,6 +44,16 @@ const MIN_KEEP_TEXT_CHARS = 12;
 
 interface UseStudioSessionOptions {
   sessionId: string | null;
+  /**
+   * Recording model:
+   *  - "chunked" (default, Studio): each chunk is stored as a raw segment with
+   *    per-chunk timing; the interval cleaner runs as text streams in.
+   *  - "whole" (Scribe): each recording is ONE unit. Chunks drive only the live
+   *    preview + crash-safe copy; on stop the COMPLETE recording is transcribed
+   *    once (Whisper's accurate per-segment timestamps) and stored, then cleaned.
+   *    This is what makes Scribe's audio markers resolve correctly.
+   */
+  mode?: "chunked" | "whole";
 }
 
 interface UseStudioSessionReturn {
@@ -65,6 +76,7 @@ interface UseStudioSessionReturn {
 
 export function useStudioSession({
   sessionId,
+  mode = "chunked",
 }: UseStudioSessionOptions): UseStudioSessionReturn {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -144,6 +156,11 @@ export function useStudioSession({
         }
         safetyIdRef.current = info.safetyId || safetyIdRef.current;
         if (info.tEnd > lastTEndRef.current) lastTEndRef.current = info.tEnd;
+        // WHOLE mode (Scribe): chunks drive ONLY the live preview + the crash-
+        // safe copy — they are never stored. The complete recording is
+        // transcribed once on stop (accurate Whisper timestamps), so we don't
+        // ingest per-chunk segments with hand-stitched timing here.
+        if (mode === "whole") return;
         if (!info.text.trim()) return;
         void dispatch(
           ingestRawChunkThunk({
@@ -153,24 +170,24 @@ export function useStudioSession({
           }),
         );
       },
-      onComplete: (_result, audioBlob) => {
+      onComplete: (result, audioBlob) => {
         const recordingSegmentId = recordingSegmentIdRef.current;
-        if (recordingSegmentId) {
-          // Discard guard: a too-short clip with negligible transcript is almost
-          // always silence Whisper hallucinated into "Thank you". Drop it rather
-          // than create an empty card + waste a cleaning pass.
-          const rawText = selectRawSegmentsForRecording(
-            sessionId,
-            recordingSegmentId,
-          )(store.getState())
-            .map((r) => r.text)
-            .join(" ")
-            .trim();
-          const durationMs = lastTEndRef.current * 1000;
+        if (!recordingSegmentId) {
+          recordingSegmentIdRef.current = null;
+          safetyIdRef.current = null;
+          return;
+        }
+
+        // ── WHOLE (Scribe): transcribe the complete recording once ──────────
+        if (mode === "whole") {
+          // Discard guard from the LIVE preview text + wall-clock duration —
+          // there are no stored raw segments in this mode yet.
+          const liveText = (result.text ?? "").trim();
+          const durationSec =
+            store.getState().recordings.durationSec || lastTEndRef.current;
           const tooShort =
-            rawText.length === 0 ||
-            (durationMs < MIN_KEEP_DURATION_MS &&
-              rawText.length < MIN_KEEP_TEXT_CHARS);
+            durationSec * 1000 < MIN_KEEP_DURATION_MS &&
+            liveText.length < MIN_KEEP_TEXT_CHARS;
           if (tooShort) {
             void dispatch(
               deleteRecordingSegmentThunk({ sessionId, recordingSegmentId }),
@@ -182,37 +199,111 @@ export function useStudioSession({
             safetyIdRef.current = null;
             return;
           }
-          // Kept — signal the UI so it can offer the "send to agent" follow-up
-          // (a discarded clip never reaches here, so it never prompts).
           dispatch(recordingKept());
-          // Finalize the row instantly (card leaves "processing"), then clean
-          // THIS recording into one cleaned segment anchored to it
-          // (recording-aligned). The full-session clean is the concatenation of
-          // those rows. Audio uploads in the background so the user never waits.
+          const capturedSafetyId = safetyIdRef.current;
+          // Finalize the card (placeholder tEnd from wall-clock; the whole-file
+          // pass stamps the accurate Whisper duration). Audio uploads durably.
           void dispatch(
             finalizeRecordingSegmentThunk({
               sessionId,
               recordingSegmentId,
-              tEnd: lastTEndRef.current,
+              tEnd: durationSec,
             }),
-          ).finally(() => {
-            void dispatch(
-              cleanRecordingThunk({
-                sessionId,
-                recordingSegmentId,
-                triggerCause: "session-stop",
-              }),
-            );
-          });
+          );
           void dispatch(
             uploadRecordingAudioThunk({
               sessionId,
               recordingSegmentId,
               audioBlob: audioBlob ?? null,
-              safetyId: safetyIdRef.current,
+              safetyId: capturedSafetyId,
             }),
           );
+          // Transcribe the COMPLETE recording → accurate raw segments → THEN
+          // clean (recording-aligned) on that accurate text.
+          void dispatch(
+            transcribeRecordingWholeThunk({
+              sessionId,
+              recordingSegmentId,
+              audioBlob: audioBlob ?? null,
+              safetyId: capturedSafetyId,
+              fallbackDurationSec: durationSec,
+            }),
+          )
+            .unwrap()
+            .then((res) => {
+              if (res.status === "complete") {
+                void dispatch(
+                  cleanRecordingThunk({
+                    sessionId,
+                    recordingSegmentId,
+                    triggerCause: "session-stop",
+                  }),
+                );
+              }
+            })
+            .catch(() => {
+              // transcribeRecordingWholeThunk surfaced its own toast.
+            });
+          recordingSegmentIdRef.current = null;
+          safetyIdRef.current = null;
+          return;
         }
+
+        // ── CHUNKED (Studio) — unchanged ────────────────────────────────────
+        // Discard guard: a too-short clip with negligible transcript is almost
+        // always silence Whisper hallucinated into "Thank you". Drop it rather
+        // than create an empty card + waste a cleaning pass.
+        const rawText = selectRawSegmentsForRecording(
+          sessionId,
+          recordingSegmentId,
+        )(store.getState())
+          .map((r) => r.text)
+          .join(" ")
+          .trim();
+        const durationMs = lastTEndRef.current * 1000;
+        const tooShort =
+          rawText.length === 0 ||
+          (durationMs < MIN_KEEP_DURATION_MS &&
+            rawText.length < MIN_KEEP_TEXT_CHARS);
+        if (tooShort) {
+          void dispatch(
+            deleteRecordingSegmentThunk({ sessionId, recordingSegmentId }),
+          );
+          toast("Discarded — recording was too short to keep.", {
+            closeButton: true,
+          });
+          recordingSegmentIdRef.current = null;
+          safetyIdRef.current = null;
+          return;
+        }
+        // Kept — signal the UI so it can offer the "send to agent" follow-up.
+        dispatch(recordingKept());
+        // Finalize instantly (card leaves "processing"), then clean THIS
+        // recording into one cleaned segment anchored to it. Audio uploads in
+        // the background so the user never waits.
+        void dispatch(
+          finalizeRecordingSegmentThunk({
+            sessionId,
+            recordingSegmentId,
+            tEnd: lastTEndRef.current,
+          }),
+        ).finally(() => {
+          void dispatch(
+            cleanRecordingThunk({
+              sessionId,
+              recordingSegmentId,
+              triggerCause: "session-stop",
+            }),
+          );
+        });
+        void dispatch(
+          uploadRecordingAudioThunk({
+            sessionId,
+            recordingSegmentId,
+            audioBlob: audioBlob ?? null,
+            safetyId: safetyIdRef.current,
+          }),
+        );
         recordingSegmentIdRef.current = null;
         safetyIdRef.current = null;
       },
@@ -227,6 +318,7 @@ export function useStudioSession({
     }
   }, [
     sessionId,
+    mode,
     recording,
     dispatch,
     store,
