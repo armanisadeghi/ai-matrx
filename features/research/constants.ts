@@ -68,6 +68,21 @@ export const SCRAPE_STATUS_CONFIG: Record<
     bgClass: "bg-orange-100 dark:bg-orange-900/30",
     textClass: "text-orange-700 dark:text-orange-400",
   },
+  // Honest user-driven terminal verdicts (2026-06-18). `ignored` = not wanted
+  // (not dead/gated); `content_mismatch` = page isn't what it claimed (redirect /
+  // wrong content), not a 404. Added in matrx-extend's scrape-queue management.
+  ignored: {
+    label: "Ignored",
+    color: "#94a3b8",
+    bgClass: "bg-slate-100 dark:bg-slate-800/60",
+    textClass: "text-slate-600 dark:text-slate-400",
+  },
+  content_mismatch: {
+    label: "Wrong content",
+    color: "#d946ef",
+    bgClass: "bg-fuchsia-100 dark:bg-fuchsia-900/30",
+    textClass: "text-fuchsia-700 dark:text-fuchsia-400",
+  },
 };
 
 export const SOURCE_TYPE_CONFIG: Record<

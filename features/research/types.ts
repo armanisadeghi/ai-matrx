@@ -104,7 +104,10 @@ export type ScrapeStatus =
   | "skipped"
   | "complete"
   | "dead_link"
-  | "gated";
+  | "gated"
+  // Honest user-driven terminal verdicts (2026-06-18, from matrx-extend).
+  | "ignored"
+  | "content_mismatch";
 export type SourceType = "web" | "youtube" | "pdf" | "file" | "manual";
 export type SourceOrigin =
   | "search"
