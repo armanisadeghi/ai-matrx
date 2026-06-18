@@ -46,6 +46,15 @@ const RENDERERS: Record<
   React.LazyExoticComponent<ArtifactRendererComponent>
 > = {
   comparison: lazy(() => import("./renderers/ComparisonArtifact")),
+  timeline: lazy(() => import("./renderers/TimelineArtifact")),
+  research: lazy(() => import("./renderers/ResearchArtifact")),
+  resources: lazy(() => import("./renderers/ResourcesArtifact")),
+  progress: lazy(() => import("./renderers/ProgressArtifact")),
+  troubleshooting: lazy(() => import("./renderers/TroubleshootingArtifact")),
+  recipe: lazy(() => import("./renderers/RecipeArtifact")),
+  diagram: lazy(() => import("./renderers/DiagramArtifact")),
+  "decision-tree": lazy(() => import("./renderers/DecisionTreeArtifact")),
+  presentation: lazy(() => import("./renderers/PresentationArtifact")),
 };
 
 export function hasArtifactRenderer(canvasType: string | null | undefined): boolean {
