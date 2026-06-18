@@ -97,6 +97,13 @@ export function CreateWithAiTabs({
   manualLabel = "Manual",
   aiLabel = "Use AI",
 }: CreateWithAiTabsProps) {
+  console.log(
+    "[Track New Project] 16, CreateWithAiTabs.tsx — component render",
+    {
+      enableAi,
+      defaultMode,
+    },
+  );
   const [mode, setMode] = useState<CreateWithAiMode>(defaultMode);
   // Lazy-mount the AI tab on first visit, then keep it mounted so switching
   // back and forth never relaunches the agent or shifts layout.

@@ -134,6 +134,9 @@ export function ProjectsHub({
   // self-fetched list both on a manual create and when the AI agent creates one
   // server-side (the agent writes directly to the DB).
   const handleCreate = React.useCallback(() => {
+    console.log(
+      "[Track New Project] 1, ProjectsHub.tsx — New project button → handleCreate",
+    );
     openCreateProject({
       onCreated: refresh,
       onAiCreated: refresh,

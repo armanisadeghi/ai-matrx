@@ -27,6 +27,10 @@ import {
 const OVERLAY_ID = "createProjectWindow";
 const BASE_WINDOW_ID = "create-project-window";
 
+console.log(
+  "[Track New Project] 10b, CreateProjectWindow.tsx — module evaluated (chunk loaded)",
+);
+
 export interface CreateProjectWindowProps extends CreateProjectWindowData {
   isOpen: boolean;
   onClose: () => void;
@@ -44,6 +48,14 @@ export default function CreateProjectWindow({
   orgLocked,
   skipRedirect,
 }: CreateProjectWindowProps) {
+  console.log(
+    "[Track New Project] 12, CreateProjectWindow.tsx — component render",
+    {
+      instanceId,
+      isOpen,
+    },
+  );
+
   // Track the last project created so the window-close event can report it,
   // and keep a synced ref to the callback group so the unmount cleanup reads a
   // current (not stale-closure) value. callbackGroupId is stable per instance,
@@ -90,6 +102,11 @@ export default function CreateProjectWindow({
       windowInstanceId: instanceId,
     });
   };
+
+  console.log(
+    "[Track New Project] 13, CreateProjectWindow.tsx — rendering WindowPanel + ProjectCreatePanel",
+    { windowId },
+  );
 
   return (
     <WindowPanel

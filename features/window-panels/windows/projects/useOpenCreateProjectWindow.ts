@@ -71,6 +71,9 @@ export function useOpenCreateProjectWindow() {
     (
       options: OpenCreateProjectWindowOptions = {},
     ): CreateProjectWindowHandle => {
+      console.log(
+        "[Track New Project] 2, useOpenCreateProjectWindow.ts — openCreateProject called",
+      );
       const instanceId =
         options.instanceId ??
         `${OVERLAY_ID}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -89,6 +92,14 @@ export function useOpenCreateProjectWindow() {
         orgLocked: options.orgLocked ?? false,
         skipRedirect: options.skipRedirect ?? true,
       };
+      console.log(
+        "[Track New Project] 4, useOpenCreateProjectWindow.ts — dispatch openOverlay",
+        {
+          overlayId: OVERLAY_ID,
+          instanceId,
+          callbackGroupId,
+        },
+      );
       dispatch(openOverlay({ overlayId: OVERLAY_ID, instanceId, data }));
 
       const handleRef: HandleRef = { instanceId, callbackGroupId, dispose };

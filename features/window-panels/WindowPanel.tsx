@@ -295,6 +295,16 @@ export function WindowPanel({
   captureTraySnapshot,
   ...hookOpts
 }: WindowPanelProps) {
+  if (overlayId === "createProjectWindow") {
+    console.log(
+      "[Track New Project] 14, WindowPanel.tsx — WindowPanel render",
+      {
+        id: hookOpts.id,
+        overlayId,
+        title,
+      },
+    );
+  }
   // ── Pre-compute id and popout capabilities BEFORE useWindowPanel so we
   //    can pass `onTriggerPopout` to the drag-detection logic. The id is
   //    derived the same way useWindowPanel does internally (`opts.id ?? useId()`).

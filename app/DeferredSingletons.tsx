@@ -32,10 +32,12 @@
 import "@/features/window-panels/utils/lazy-bundle-guard";
 
 import dynamic from "next/dynamic";
+import { useEffect } from "react";
 import { installThirdPartyNoiseFilter } from "@/lib/console-noise";
 import { useIdleReady, useIdleTask } from "@/utils/idle-scheduler";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { OverlayState } from "@/lib/redux/slices/overlaySlice";
+import { selectOpenInstances } from "@/lib/redux/slices/overlaySlice";
 import {
   selectUser,
   selectIsSuperAdmin,
@@ -91,6 +93,30 @@ function selectAnyOverlayOpen(state: { overlays: OverlayState }): boolean {
  */
 function OverlayControllerGate() {
   const hasAny = useAppSelector(selectAnyOverlayOpen);
+  const createProjectInstances = useAppSelector((s) =>
+    selectOpenInstances(s, "createProjectWindow"),
+  );
+
+  useEffect(() => {
+    if (hasAny) {
+      console.log(
+        "[Track New Project] 6, DeferredSingletons.tsx — OverlayControllerGate: overlay open, mounting OverlayController",
+      );
+    }
+  }, [hasAny]);
+
+  useEffect(() => {
+    if (createProjectInstances.length > 0) {
+      console.log(
+        "[Track New Project] 7, DeferredSingletons.tsx — OverlayControllerGate: createProjectWindow instance(s) in Redux",
+        {
+          count: createProjectInstances.length,
+          instanceIds: createProjectInstances.map((i) => i.instanceId),
+        },
+      );
+    }
+  }, [createProjectInstances]);
+
   if (!hasAny) return null;
   return <OverlayController />;
 }

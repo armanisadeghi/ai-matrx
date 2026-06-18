@@ -94,6 +94,12 @@ export function createCreateProjectCallbackGroup(
   handlers: CreateProjectWindowHandlers,
 ): { callbackGroupId: string; dispose: () => void } {
   const callbackGroupId = callbackManager.createGroup();
+  console.log(
+    "[Track New Project] 3, callbacks.ts — createCreateProjectCallbackGroup",
+    {
+      callbackGroupId,
+    },
+  );
 
   const fanOut = (event: CreateProjectWindowEvent) => {
     switch (event.type) {

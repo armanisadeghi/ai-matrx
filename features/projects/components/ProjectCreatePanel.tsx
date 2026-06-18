@@ -60,6 +60,9 @@ export function ProjectCreatePanel({
   onAiComplete,
   ...coreProps
 }: ProjectCreatePanelProps) {
+  console.log(
+    "[Track New Project] 15, ProjectCreatePanel.tsx — component render",
+  );
   const dispatch = useAppDispatch();
 
   const handleAiRunComplete = useCallback(() => {

@@ -363,7 +363,15 @@ const CuratedIconPickerWindow = dynamic(
   { ssr: false },
 );
 const CreateProjectWindow = dynamic(
-  () => import("@/features/window-panels/windows/projects/CreateProjectWindow"),
+  () =>
+    import("@/features/window-panels/windows/projects/CreateProjectWindow").then(
+      (m) => {
+        console.log(
+          "[Track New Project] 10, OverlayController.tsx — CreateProjectWindow dynamic chunk loaded",
+        );
+        return m;
+      },
+    ),
   { ssr: false },
 );
 const EmailDialogBridge = dynamic(
@@ -722,6 +730,12 @@ const WhatsAppShellWindow = dynamic(
 
 export default function OverlayController() {
   const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    console.log(
+      "[Track New Project] 8, OverlayController.tsx — OverlayController mounted",
+    );
+  }, []);
 
   // useEffect(() => {
   //   if (!_confirmedNewMount) {
@@ -1305,6 +1319,19 @@ export default function OverlayController() {
       selectOpenInstances(s, "transcriptionCleanup"),
     ),
   };
+
+  useEffect(() => {
+    const instances = instancesById.createProjectWindow;
+    if (instances.length > 0) {
+      console.log(
+        "[Track New Project] 9, OverlayController.tsx — selector has open createProjectWindow instance(s), rendering dynamic CreateProjectWindow",
+        {
+          count: instances.length,
+          instanceIds: instances.map((i) => i.instanceId),
+        },
+      );
+    }
+  }, [instancesById.createProjectWindow]);
 
   return (
     <>
@@ -2600,6 +2627,10 @@ export default function OverlayController() {
       {/* createProjectWindow — multi-instance */}
       {instancesById.createProjectWindow.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
+        console.log(
+          "[Track New Project] 11, OverlayController.tsx — rendering <CreateProjectWindow />",
+          { instanceId: inst.instanceId },
+        );
         return (
           <CreateProjectWindow
             key={inst.instanceId}
