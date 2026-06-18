@@ -17,6 +17,17 @@ failure on the frontend. Mirrors the backend's `KNOWN_DEFECTS.md` in aidream.
 
 ## OPEN
 
+### D9 — Scribe: agent edits to the working document apply all-at-once, not streamed
+**Severity: low — a UX gap, not data loss. Deferred: needs an aidream change.**
+
+**What.** When the Scribe assistant edits the working document, the edit appears all at once after the turn finishes, not token-by-token like a chat response streams.
+
+**Why it happens.** The agent writes the doc server-side via `ctx_patch`; the client only learns of it through the `context_changed` stream event, which carries **no content** — so the client re-fetches the doc after the turn (for bound docs) and can't render incremental deltas (`instance-working-document.thunks.ts`). True live streaming requires aidream to emit working-document **deltas** as a dedicated event (like chat tokens), which the client would apply incrementally.
+
+**Fence / status.** Deferred per the 2026-06-17 Scribe-improvements spec (Feature 8: "implement if achievable without significant work, else defer and document the blocker"). No data loss — the final content always lands; only the live-typing feel is missing.
+
+**What's open.** aidream: stream working-document edit deltas as a dedicated event type. FE: incremental apply in `instance-working-document.thunks.ts` / the working-doc editors once the backend emits deltas.
+
 ### D8 — `item_presentation`: `session` + `message` open seed-only (no canonical table); other gap types use the generic detail window
 **Severity: low — every type now opens a window; two open without DB enrichment, and the generic window is a read-only detail view (not the type's full editor).**
 
