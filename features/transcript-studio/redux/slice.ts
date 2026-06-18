@@ -318,11 +318,17 @@ const slice = createSlice({
       state.cleanedIdsBySession[sessionId] = ids;
     },
     /**
-     * Apply a cleanup-pass result. Stamps any active prior segments whose
-     * tStart >= newSegment.tStart as superseded (drops them from the active
-     * registry — the DB still has them for audit), then inserts the new row
-     * at the right ordered position. Mirrors `applyCleanupRun` in
-     * studioService.ts so client + server stay in sync.
+     * Apply a cleanup-pass result. Supersession MUST mirror the DB's
+     * `applyCleanupRun` (studioService.ts) or client + server drift:
+     *   - Recording-aligned (recordingSegmentId set): supersede ONLY this
+     *     recording's prior clean for the same processor — every OTHER
+     *     recording's clean coexists. (The old `tStart >=` window deleted every
+     *     LATER recording whenever an earlier one re-cleaned — the cleaned
+     *     transcripts vanished mid-session and each re-clean was a wasted LLM
+     *     call. This was the data-loss bug.)
+     *   - Time-windowed (Studio interval cleaner, recordingSegmentId null):
+     *     supersede same-processor rows at/after this segment's tStart.
+     * Then insert the new row at its ordered position.
      */
     cleanedSegmentApplied(
       state,
@@ -336,12 +342,21 @@ const slice = createSlice({
       const byId = state.cleanedById[sessionId]!;
       const ids = state.cleanedIdsBySession[sessionId]!;
 
-      // Drop active rows whose tStart >= segment.tStart (now superseded).
+      const recordingAligned = segment.recordingSegmentId != null;
+      const incomingProcessor = segment.processorKey ?? "clean";
+
       const survivingIds: string[] = [];
       for (const id of ids) {
         const c = byId[id];
         if (!c) continue;
-        if (c.tStart >= segment.tStart) {
+        if (id === segment.id) continue; // same row re-applied — re-added below
+        const sameProcessor = (c.processorKey ?? "clean") === incomingProcessor;
+        const superseded =
+          sameProcessor &&
+          (recordingAligned
+            ? c.recordingSegmentId === segment.recordingSegmentId
+            : c.recordingSegmentId == null && c.tStart >= segment.tStart);
+        if (superseded) {
           delete byId[id];
         } else {
           survivingIds.push(id);

@@ -25,10 +25,10 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 
-export type RecordActionKey = "agent" | "save" | "both" | "now";
+export type RecordActionKey = "agent" | "save" | "both" | "input";
 
-/** Auto-fired when the countdown lapses — the hands-free default for this surface. */
-export const AUTO_RECORD_ACTION: RecordActionKey = "now";
+/** Auto-fired when the countdown lapses — the hands-free default: submit to the agent. */
+export const AUTO_RECORD_ACTION: RecordActionKey = "agent";
 
 interface RecordActionSheetProps {
   open: boolean;
@@ -54,8 +54,8 @@ const CHOICES: Choice[] = [
   {
     key: "agent",
     label: "Send to agent",
-    description: "Drop it in the input, ready to send",
-    icon: FileText,
+    description: "Submit it as a turn now",
+    icon: Webhook,
     tile: "bg-primary/15 text-primary",
   },
   {
@@ -68,15 +68,15 @@ const CHOICES: Choice[] = [
   {
     key: "both",
     label: "Both",
-    description: "Save it and drop it in the input",
+    description: "Submit to the agent and save",
     icon: Layers,
     tile: "bg-accent text-accent-foreground",
   },
   {
-    key: "now",
-    label: "Send now",
-    description: "Fire it as a turn right away",
-    icon: Webhook,
+    key: "input",
+    label: "Edit first",
+    description: "Drop it in the input to edit before sending",
+    icon: FileText,
     tile: "bg-muted text-foreground",
   },
 ];

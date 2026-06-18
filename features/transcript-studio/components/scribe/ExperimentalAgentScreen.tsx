@@ -92,11 +92,12 @@ export function ExperimentalAgentScreen({
   const blockedByOther = isRecordingGlobal && !owned;
 
   // Apply a chosen action to the finished turn, then close the sheet.
+  //   agent / both → SUBMIT it to the agent as a turn now (the hands-free voice
+  //                  flow — auto-voice reads the reply). This is the default.
   //   save / both  → persist as a real studio recording (Tab-1 pipeline) so it
   //                  lands as a card in the Record tab with audio + raw + cleaned.
-  //   agent / both → stage the transcript in the input AND open + focus it so the
-  //                  cursor is ready (the input is hidden by default on this tab).
-  //   now → fire it to the agent as a turn immediately (hands-free voice flow).
+  //   input → stage the transcript in the input AND open + focus it to edit
+  //           before sending (the input is hidden by default on this tab).
   const executeAction = useCallback(
     (key: RecordActionKey, result: PendingRecordingResult) => {
       const { text, audioBlob, durationSec } = result;
@@ -113,15 +114,15 @@ export function ExperimentalAgentScreen({
           toast.success("Saved to transcripts");
         }
         if (key === "agent" || key === "both") {
+          void assistant.send(text);
+        }
+        if (key === "input") {
           if (conversationId) {
             dispatch(setUserInputText({ conversationId, text }));
             // Reveal the input — AgentTextarea auto-focuses on mount, so the
             // cursor lands in the field ready to edit/send.
             setInputOpen(true);
           }
-        }
-        if (key === "now") {
-          void assistant.send(text);
         }
       }
       chosenKeyRef.current = null;
