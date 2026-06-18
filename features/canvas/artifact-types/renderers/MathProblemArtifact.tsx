@@ -52,9 +52,15 @@ export default function MathProblemArtifact({
   }
 
   if (mode === "canvas") {
+    // Guard malformed payloads — without `math_problem` the spread is a no-op
+    // and MathProblem would render empty with no error.
+    const mp = (payload as { math_problem?: Record<string, unknown> })
+      .math_problem;
+    if (!mp) return isStreamActive ? <MatrxMiniLoader /> : null;
     return (
       <Suspense fallback={<MatrxMiniLoader />}>
-        <MathProblem id="canvas-preview" {...(payload as any).math_problem} />
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <MathProblem id="canvas-preview" {...(mp as any)} />
       </Suspense>
     );
   }
