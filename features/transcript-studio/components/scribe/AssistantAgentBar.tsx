@@ -224,21 +224,28 @@ export function AssistantAgentBar({
         {!compact ? "New" : null}
       </button>
 
-      {conversations.length > 1 && (
-        <button
-          type="button"
-          onClick={() => setRosterOpen(true)}
-          className={cn(
-            "flex items-center rounded-full text-muted-foreground transition-colors active:bg-accent",
-            compact ? "gap-0.5 px-1.5 py-0.5" : "gap-1 px-2 py-1 text-[11px]",
-          )}
-          aria-label="Switch conversation"
-          title="Switch between this session's agent conversations"
-        >
-          <History className="h-3.5 w-3.5" />
-          {conversations.length}
-        </button>
-      )}
+      {/* History is ALWAYS rendered — never hidden/re-shown (hiding a control is
+          jarring, and it used to "appear" the moment you picked an agent, which
+          read as fake history). It's disabled only when there's nothing to switch
+          to (0 or 1 conversation); the count reflects the real roster from state. */}
+      <button
+        type="button"
+        onClick={() => setRosterOpen(true)}
+        disabled={conversations.length <= 1}
+        className={cn(
+          "flex items-center rounded-full text-muted-foreground transition-colors active:bg-accent disabled:opacity-40 disabled:active:bg-transparent",
+          compact ? "gap-0.5 px-1.5 py-0.5" : "gap-1 px-2 py-1 text-[11px]",
+        )}
+        aria-label="Conversation history"
+        title={
+          conversations.length <= 1
+            ? "No other conversations in this session yet"
+            : "Switch between this session's agent conversations"
+        }
+      >
+        <History className="h-3.5 w-3.5" />
+        {conversations.length || 0}
+      </button>
 
       <ActionSheet
         open={pendingAgentId !== null}

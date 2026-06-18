@@ -189,16 +189,29 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
       dispatch(
         setShowMicrophone({ conversationId: newConversationId, value: true }),
       );
+      // Put the new conversation into the in-memory roster + active pointer
+      // IMMEDIATELY (optimistic), so it's tracked + shown in History the instant
+      // it exists — and is never lost from history if the DB persist below
+      // races/fails. Previously the Redux roster was only updated on persist
+      // SUCCESS, so a failed/slow write orphaned the conversation in-memory too.
+      const sessionNow = getState().transcriptStudio.byId[sessionId];
+      const nextRoster = appendRoster(
+        sessionNow?.assistantConversations ?? [],
+        makeRosterRef(newConversationId, defaultAgentId),
+      );
+      if (sessionNow) {
+        dispatch(
+          sessionUpserted({
+            ...sessionNow,
+            assistantConversationId: newConversationId,
+            assistantConversations: nextRoster,
+          }),
+        );
+      }
       try {
-        const existingRoster =
-          getState().transcriptStudio.byId[sessionId]?.assistantConversations ??
-          [];
         const updated = await updateSession(sessionId, {
           assistantConversationId: newConversationId,
-          assistantConversations: appendRoster(
-            existingRoster,
-            makeRosterRef(newConversationId, defaultAgentId),
-          ),
+          assistantConversations: nextRoster,
         });
         if (updated) {
           dispatch(sessionUpserted(updated));

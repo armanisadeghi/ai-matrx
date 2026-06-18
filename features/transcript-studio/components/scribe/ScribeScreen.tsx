@@ -115,9 +115,7 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   // Recording is a session-global concern (capturable from any mode), so the
   // control lives in the header and its state is read here. The capture
   // screen keeps its own full-size transport.
-  // Scribe = WHOLE-recording model: each recording is one file, transcribed once
-  // on stop with accurate Whisper timestamps (not Studio's per-chunk stitching).
-  const recorder = useStudioSession({ sessionId, mode: "whole" });
+  const recorder = useStudioSession({ sessionId });
 
   // One-shot GLiNER2 auto-label once the first transcript text streams in —
   // only while the title is still the placeholder; never overrides a custom name.

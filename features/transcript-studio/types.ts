@@ -33,15 +33,7 @@ export type ModuleId = "tasks" | "flashcards" | "decisions" | "quiz" | string;
  */
 export type SessionSource = "studio" | "cleanup" | (string & {});
 
-export type RawSegmentSource =
-  | "chunk"
-  | "fallback"
-  | "imported"
-  | "manual"
-  // Scribe whole-recording model: one raw segment per Whisper segment from a
-  // single transcription of the COMPLETE recording (accurate file-relative
-  // timestamps), not the per-chunk live stream.
-  | "whole";
+export type RawSegmentSource = "chunk" | "fallback" | "imported" | "manual";
 
 export type ConceptKind =
   | "theme"
