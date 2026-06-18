@@ -26,6 +26,7 @@ import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { useAutoVoiceResponse } from "../../hooks/useAutoVoiceResponse";
 import { ingestExternalRecordingThunk } from "../../redux/thunks";
 import { RecordActionSheet, type RecordActionKey } from "./RecordActionSheet";
+import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 interface ExperimentalAgentScreenProps {
   sessionId: string;
@@ -215,6 +216,21 @@ export function ExperimentalAgentScreen({
     }
   }, [isRecording]);
 
+  const surfaceKey = `studio-assistant-experimental:${sessionId}`;
+
+  useEffect(() => {
+    if (!conversationId) return;
+    traceWarRoomRenderPath(
+      11,
+      "ExperimentalAgentScreen → AgentConversationColumn",
+      {
+        studioSessionId: sessionId,
+        conversationId,
+        surfaceKey,
+      },
+    );
+  }, [sessionId, conversationId, surfaceKey]);
+
   if (!conversationId) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -228,7 +244,7 @@ export function ExperimentalAgentScreen({
       <div className="min-h-0 flex-1">
         <AgentConversationColumn
           conversationId={conversationId}
-          surfaceKey={`studio-assistant-experimental:${sessionId}`}
+          surfaceKey={surfaceKey}
           constrainWidth
           edgeToEdgeScroll
           hideInput={!inputOpen}

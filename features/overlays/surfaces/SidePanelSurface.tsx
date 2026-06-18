@@ -169,7 +169,7 @@ export function SidePanelSurface({
         defaultSize={Math.min(maxPct, defaultPct)}
         minSize={minPct}
         maxSize={maxPct}
-        contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+        contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
         className={cn("z-40")}
       >
         {children}

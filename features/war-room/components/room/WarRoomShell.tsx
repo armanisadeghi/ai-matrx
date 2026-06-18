@@ -72,6 +72,7 @@ import {
   type Density,
 } from "./roomViewContext";
 import { TILE_KIND_ORDER, tileKindOf } from "./tileKind";
+import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 // The TIER-2 ROOM agent panel pulls the whole agent execution graph (via
 // AgentConversationColumn). Lazy-load it so that heavy chunk never ships in the
@@ -141,6 +142,11 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   const loading = tilesStatus === "loading" || tilesStatus === "idle";
   const notFound = tilesStatus === "error" && !session;
   const ready = tilesStatus === "ready";
+
+  useEffect(() => {
+    if (!ready || mode !== "stage") return;
+    traceWarRoomRenderPath(2, "WarRoomShell → Stage mode", { sessionId });
+  }, [ready, mode, sessionId]);
 
   return (
     <div className="@container h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">

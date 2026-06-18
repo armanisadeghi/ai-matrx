@@ -34,10 +34,14 @@
  * action bar is hidden — same gate as the single-message path.
  */
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { AgentAssistantMessage } from "./AgentAssistantMessage";
 import { AssistantActionBar } from "./AssistantActionBar";
+import {
+  isWarRoomTileAgentSurface,
+  traceWarRoomRenderPath,
+} from "@/features/war-room/utils/renderPathTrace";
 
 export interface AssistantTurnGroupMember {
   /** Stable React key for this sub-message render. */
@@ -94,6 +98,22 @@ export function AssistantTurnGroup({
   // `AgentAssistantMessage`.
   const showBar =
     !!lastMember && !lastMember.isStreamActive && !!anchorMessageId;
+
+  useEffect(() => {
+    if (!isWarRoomTileAgentSurface(surfaceKey)) return;
+    traceWarRoomRenderPath(14, "AssistantTurnGroup", {
+      conversationId,
+      memberCount: members.length,
+      anchorMessageId,
+      streaming: lastMember?.isStreamActive ?? false,
+    });
+  }, [
+    surfaceKey,
+    conversationId,
+    members.length,
+    anchorMessageId,
+    lastMember?.isStreamActive,
+  ]);
 
   return (
     <div

@@ -56,6 +56,7 @@ import {
 } from "@/features/war-room/redux/selectors";
 import { loadTileSubtasks } from "@/features/war-room/redux/thunks";
 import { buildTileAgentContextEntries } from "@/features/war-room/service/warRoomAgentContext";
+import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 import { setClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
 import { WAR_ROOM_TOOL_NAMES } from "@/features/agents/war-room-tools/tools/names";
 import {
@@ -131,6 +132,21 @@ export default function TileAgentPanel({
   const { conversationId } = useStudioAssistant(sessionId, {
     buildExtraEntries,
   });
+
+  useEffect(() => {
+    traceWarRoomRenderPath(9, "TileAgentPanel mount", {
+      tileId,
+      studioSessionId: sessionId,
+    });
+  }, [tileId, sessionId]);
+
+  useEffect(() => {
+    if (!conversationId) return;
+    traceWarRoomRenderPath(10, "TileAgentPanel → conversation ready", {
+      tileId,
+      conversationId,
+    });
+  }, [tileId, conversationId]);
 
   // ── Arm the War Room WRITE tools on THIS conversation only ───────────────
   // The war-room agent is the same studio-assistant agent used by Scribe; the

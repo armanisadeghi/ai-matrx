@@ -9,6 +9,7 @@
 // a thin top accent + full-height left rail only (no label row, no interior
 // tint) so we never stack a second header on chrome the tab bodies already own.
 
+import { useEffect } from "react";
 import { TileTaskTab } from "./TileTaskTab";
 import { TileNotesTab } from "./TileNotesTab";
 import { TileAudioTab } from "./TileAudioTab";
@@ -19,6 +20,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectTileFlavor } from "@/features/war-room/redux/selectors";
 import { cn } from "@/lib/utils";
 import type { TileFlavor, TileTab } from "@/features/war-room/types";
+
+import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 export function TileTabContent({
   tab,
@@ -33,6 +36,15 @@ export function TileTabContent({
   tileLayout?: "grid" | "stage";
 }) {
   const compact = tileLayout === "grid";
+
+  useEffect(() => {
+    if (tab !== "agent" || tileLayout !== "stage") return;
+    traceWarRoomRenderPath(6, "TileTabContent → agent (stage layout)", {
+      tileId,
+      sessionId,
+    });
+  }, [tab, tileLayout, tileId, sessionId]);
+
   switch (tab) {
     case "task":
       return <TileTaskTab tileId={tileId} compact={compact} />;

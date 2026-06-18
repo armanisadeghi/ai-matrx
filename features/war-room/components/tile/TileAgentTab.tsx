@@ -21,6 +21,7 @@ import { Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveAudioSessionId } from "@/features/war-room/redux/selectors";
 import { ensureTileAudioSession } from "@/features/war-room/redux/thunks";
+import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 // Code-split: TileAgentPanel pulls the Scribe Agent+ graph (agents execution +
 // TTS + working-document). Lazy so it never weighs down the room bundle; it
@@ -50,6 +51,18 @@ export function TileAgentTab({
   useEffect(() => {
     if (!sessionId) void dispatch(ensureTileAudioSession(tileId));
   }, [sessionId, tileId, dispatch]);
+
+  useEffect(() => {
+    traceWarRoomRenderPath(7, "TileAgentTab mount", { tileId });
+  }, [tileId]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    traceWarRoomRenderPath(8, "TileAgentTab → studio session ready", {
+      tileId,
+      studioSessionId: sessionId,
+    });
+  }, [tileId, sessionId]);
 
   if (!sessionId) {
     return (

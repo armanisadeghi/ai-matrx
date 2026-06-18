@@ -32,6 +32,10 @@ import {
 import { AgentUserMessage } from "./user/AgentUserMessage";
 import { MarkdownContextMenuProvider } from "@/features/context-menu-v2/markdown/MarkdownContextMenuProvider";
 import type { AssistantTurnGroupMember } from "./assistant/AssistantTurnGroup";
+import {
+  isWarRoomTileAgentSurface,
+  traceWarRoomRenderPath,
+} from "@/features/war-room/utils/renderPathTrace";
 const AssistantTurnGroup = dynamic(
   () =>
     import("./assistant/AssistantTurnGroup").then((m) => ({
@@ -324,6 +328,20 @@ export function AgentConversationDisplay({
     prevLengthRef.current = count;
     prevLastKeyRef.current = lastKey;
   }, [displayEntries]);
+
+  const assistantGroupCount = displayGroups.filter(
+    (g) => g.kind === "assistant" || g.kind === "assistant-failed",
+  ).length;
+
+  useEffect(() => {
+    if (!isWarRoomTileAgentSurface(surfaceKey)) return;
+    traceWarRoomRenderPath(13, "AgentConversationDisplay", {
+      conversationId,
+      messageCount: messages.length,
+      assistantGroupCount,
+      streamPhase: phase,
+    });
+  }, [surfaceKey, conversationId, messages.length, assistantGroupCount, phase]);
 
   if (displayGroups.length === 0) {
     return <AgentEmptyMessageDisplay conversationId={conversationId} />;

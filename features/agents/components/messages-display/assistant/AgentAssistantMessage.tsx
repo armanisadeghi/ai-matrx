@@ -30,7 +30,7 @@
  * DB-loaded turn:    messageId set, isStreamActive=false (no requestId).
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import MarkdownStream from "@/components/MarkdownStream";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useDebugContext } from "@/hooks/useDebugContext";
@@ -58,6 +58,10 @@ import { commitInlineContentEdit } from "@/features/agents/redux/execution-syste
 import { toast } from "sonner";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStrip";
+import {
+  isWarRoomTileAgentSurface,
+  traceWarRoomRenderPath,
+} from "@/features/war-room/utils/renderPathTrace";
 
 interface AgentAssistantMessageProps {
   conversationId: string;
@@ -97,6 +101,16 @@ export function AgentAssistantMessage({
   canRetry = false,
 }: AgentAssistantMessageProps) {
   useDebugContext("AgentAssistantMessage");
+
+  useEffect(() => {
+    if (!isWarRoomTileAgentSurface(surfaceKey)) return;
+    traceWarRoomRenderPath(15, "AgentAssistantMessage render", {
+      conversationId,
+      messageId: messageId ?? null,
+      requestId: requestId ?? null,
+      isStreamActive,
+    });
+  }, [surfaceKey, conversationId, messageId, requestId, isStreamActive]);
 
   const dispatch = useAppDispatch();
   const [retrying, setRetrying] = useState(false);

@@ -10,6 +10,7 @@
 // projector (shows the projected tab without mutating the saved one) and wears
 // the kind accent rail like every other tile.
 
+import { useEffect } from "react";
 import { Maximize2, Pin } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectTileFlavor } from "@/features/war-room/redux/selectors";
@@ -28,6 +29,7 @@ import { useTileActions } from "@/features/war-room/hooks/useTileActions";
 import { useTileMetrics } from "@/features/war-room/hooks/useTileMetrics";
 import { useRoomView } from "./roomViewContext";
 import { tileTabKind } from "./tileKind";
+import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 export function StageTile({
   tileId,
@@ -46,6 +48,17 @@ export function StageTile({
 
   const shownTab = projectedTab ?? actions.activeTab;
   const kind = tileTabKind(shownTab, flavor);
+
+  useEffect(() => {
+    traceWarRoomRenderPath(4, "StageTile", {
+      tileId,
+      sessionId,
+      activeTab: shownTab,
+    });
+    if (shownTab === "agent") {
+      traceWarRoomRenderPath(5, "StageTile → Agent tab selected", { tileId });
+    }
+  }, [tileId, sessionId, shownTab]);
 
   return (
     <div
@@ -115,7 +128,12 @@ export function StageTile({
 
       {/* Body */}
       <div className="flex-1 min-h-0 border-t border-border/60 bg-card">
-        <TileTabContent tab={shownTab} tileId={tileId} sessionId={sessionId} />
+        <TileTabContent
+          tab={shownTab}
+          tileId={tileId}
+          sessionId={sessionId}
+          tileLayout="stage"
+        />
       </div>
     </div>
   );

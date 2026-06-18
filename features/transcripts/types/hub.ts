@@ -77,7 +77,8 @@ export type TranscriptHubItem =
   | UnsortedHubItem
   | RecordingHubItem;
 
-export type HubSectionId = TranscriptHubKind;
+/** Paginated hub sections — excludes `recording`, which loads on demand for parent grouping. */
+export type HubSectionId = Exclude<TranscriptHubKind, "recording">;
 
 export interface HubPageResult<T extends TranscriptHubItem> {
   items: T[];
