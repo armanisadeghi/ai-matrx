@@ -38,7 +38,7 @@ export function StageView({ sessionId }: { sessionId: string }) {
   const stagedId = resolveStagedId(chosenStageId, visibleIds);
 
   useEffect(() => {
-    traceWarRoomRenderPath(3, "StageView", {
+    traceWarRoomRenderPath(3, "StageView.tsx", "Stage view render", {
       sessionId,
       stagedTileId: stagedId,
       visibleThreadCount: visibleIds.length,

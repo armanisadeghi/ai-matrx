@@ -26,14 +26,23 @@ import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrac
 // Code-split: TileAgentPanel pulls the Scribe Agent+ graph (agents execution +
 // TTS + working-document). Lazy so it never weighs down the room bundle; it
 // loads on demand the first time an Agent tab is opened.
-const TileAgentPanel = dynamic(() => import("./TileAgentPanel"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full items-center justify-center">
-      <Loader2 className="size-4 animate-spin text-muted-foreground" />
-    </div>
-  ),
-});
+const TileAgentPanel = dynamic(
+  () =>
+    import("./TileAgentPanel").then((m) => {
+      console.log(
+        "[Track War Room] 8b, TileAgentTab.tsx — TileAgentPanel dynamic chunk loaded",
+      );
+      return m;
+    }),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      </div>
+    ),
+  },
+);
 
 export function TileAgentTab({
   tileId,
@@ -53,12 +62,12 @@ export function TileAgentTab({
   }, [sessionId, tileId, dispatch]);
 
   useEffect(() => {
-    traceWarRoomRenderPath(7, "TileAgentTab mount", { tileId });
+    traceWarRoomRenderPath(7, "TileAgentTab.tsx", "mount", { tileId });
   }, [tileId]);
 
   useEffect(() => {
     if (!sessionId) return;
-    traceWarRoomRenderPath(8, "TileAgentTab → studio session ready", {
+    traceWarRoomRenderPath(8, "TileAgentTab.tsx", "studio session ready", {
       tileId,
       studioSessionId: sessionId,
     });

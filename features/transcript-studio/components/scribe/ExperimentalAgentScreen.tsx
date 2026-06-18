@@ -222,7 +222,8 @@ export function ExperimentalAgentScreen({
     if (!conversationId) return;
     traceWarRoomRenderPath(
       11,
-      "ExperimentalAgentScreen → AgentConversationColumn",
+      "ExperimentalAgentScreen.tsx",
+      "rendering AgentConversationColumn",
       {
         studioSessionId: sessionId,
         conversationId,

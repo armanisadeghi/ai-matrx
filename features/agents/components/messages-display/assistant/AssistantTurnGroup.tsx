@@ -101,12 +101,17 @@ export function AssistantTurnGroup({
 
   useEffect(() => {
     if (!isWarRoomTileAgentSurface(surfaceKey)) return;
-    traceWarRoomRenderPath(14, "AssistantTurnGroup", {
-      conversationId,
-      memberCount: members.length,
-      anchorMessageId,
-      streaming: lastMember?.isStreamActive ?? false,
-    });
+    traceWarRoomRenderPath(
+      14,
+      "AssistantTurnGroup.tsx",
+      "assistant turn group render",
+      {
+        conversationId,
+        memberCount: members.length,
+        anchorMessageId,
+        streaming: lastMember?.isStreamActive ?? false,
+      },
+    );
   }, [
     surfaceKey,
     conversationId,

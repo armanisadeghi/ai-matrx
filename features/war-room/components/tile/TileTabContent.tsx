@@ -39,10 +39,15 @@ export function TileTabContent({
 
   useEffect(() => {
     if (tab !== "agent" || tileLayout !== "stage") return;
-    traceWarRoomRenderPath(6, "TileTabContent → agent (stage layout)", {
-      tileId,
-      sessionId,
-    });
+    traceWarRoomRenderPath(
+      6,
+      "TileTabContent.tsx",
+      "routing to TileAgentTab (stage)",
+      {
+        tileId,
+        sessionId,
+      },
+    );
   }, [tab, tileLayout, tileId, sessionId]);
 
   switch (tab) {

@@ -335,12 +335,17 @@ export function AgentConversationDisplay({
 
   useEffect(() => {
     if (!isWarRoomTileAgentSurface(surfaceKey)) return;
-    traceWarRoomRenderPath(13, "AgentConversationDisplay", {
-      conversationId,
-      messageCount: messages.length,
-      assistantGroupCount,
-      streamPhase: phase,
-    });
+    traceWarRoomRenderPath(
+      13,
+      "AgentConversationDisplay.tsx",
+      "message list render",
+      {
+        conversationId,
+        messageCount: messages.length,
+        assistantGroupCount,
+        streamPhase: phase,
+      },
+    );
   }, [surfaceKey, conversationId, messages.length, assistantGroupCount, phase]);
 
   if (displayGroups.length === 0) {

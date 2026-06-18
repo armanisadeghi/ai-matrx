@@ -64,6 +64,10 @@ import {
   clearWarRoomToolBinding,
 } from "@/features/agents/war-room-tools/binding-registry";
 
+console.log(
+  "[Track War Room] 8c, TileAgentPanel.tsx — module evaluated (chunk loaded)",
+);
+
 export default function TileAgentPanel({
   sessionId,
   tileId,
@@ -134,7 +138,7 @@ export default function TileAgentPanel({
   });
 
   useEffect(() => {
-    traceWarRoomRenderPath(9, "TileAgentPanel mount", {
+    traceWarRoomRenderPath(9, "TileAgentPanel.tsx", "mount", {
       tileId,
       studioSessionId: sessionId,
     });
@@ -142,7 +146,7 @@ export default function TileAgentPanel({
 
   useEffect(() => {
     if (!conversationId) return;
-    traceWarRoomRenderPath(10, "TileAgentPanel → conversation ready", {
+    traceWarRoomRenderPath(10, "TileAgentPanel.tsx", "conversation ready", {
       tileId,
       conversationId,
     });

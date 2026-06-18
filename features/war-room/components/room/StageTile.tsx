@@ -50,13 +50,15 @@ export function StageTile({
   const kind = tileTabKind(shownTab, flavor);
 
   useEffect(() => {
-    traceWarRoomRenderPath(4, "StageTile", {
+    traceWarRoomRenderPath(4, "StageTile.tsx", "Stage tile render", {
       tileId,
       sessionId,
       activeTab: shownTab,
     });
     if (shownTab === "agent") {
-      traceWarRoomRenderPath(5, "StageTile → Agent tab selected", { tileId });
+      traceWarRoomRenderPath(5, "StageTile.tsx", "Agent tab selected", {
+        tileId,
+      });
     }
   }, [tileId, sessionId, shownTab]);
 

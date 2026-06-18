@@ -120,12 +120,17 @@ export function AgentConversationColumn({
 
   useEffect(() => {
     if (!isWarRoomTileAgentSurface(surfaceKey)) return;
-    traceWarRoomRenderPath(12, "AgentConversationColumn", {
-      conversationId,
-      displayConversationId: displayId,
-      messageCount,
-      surfaceKey,
-    });
+    traceWarRoomRenderPath(
+      12,
+      "AgentConversationColumn.tsx",
+      "conversation column render",
+      {
+        conversationId,
+        displayConversationId: displayId,
+        messageCount,
+        surfaceKey,
+      },
+    );
   }, [surfaceKey, conversationId, displayId, messageCount]);
 
   const handleScroll = useCallback(() => {

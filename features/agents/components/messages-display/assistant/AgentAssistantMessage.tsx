@@ -104,12 +104,17 @@ export function AgentAssistantMessage({
 
   useEffect(() => {
     if (!isWarRoomTileAgentSurface(surfaceKey)) return;
-    traceWarRoomRenderPath(15, "AgentAssistantMessage render", {
-      conversationId,
-      messageId: messageId ?? null,
-      requestId: requestId ?? null,
-      isStreamActive,
-    });
+    traceWarRoomRenderPath(
+      15,
+      "AgentAssistantMessage.tsx",
+      "assistant message render",
+      {
+        conversationId,
+        messageId: messageId ?? null,
+        requestId: requestId ?? null,
+        isStreamActive,
+      },
+    );
   }, [surfaceKey, conversationId, messageId, requestId, isStreamActive]);
 
   const dispatch = useAppDispatch();
@@ -251,6 +256,32 @@ export function AgentAssistantMessage({
     flatText.length > 0 ||
     (serverProcessedBlocks?.length ?? 0) > 0 ||
     streamedBlockCount > 0;
+
+  useEffect(() => {
+    if (!isWarRoomTileAgentSurface(surfaceKey)) return;
+    if (!hasBody && !failed) return;
+    traceWarRoomRenderPath(
+      16,
+      "AgentAssistantMessage.tsx",
+      "assistant message body visible",
+      {
+        conversationId,
+        messageId: messageId ?? null,
+        requestId: requestId ?? null,
+        isStreamActive,
+        hasBody,
+        failed,
+      },
+    );
+  }, [
+    surfaceKey,
+    conversationId,
+    messageId,
+    requestId,
+    isStreamActive,
+    hasBody,
+    failed,
+  ]);
 
   const failedError = failed
     ? (() => {

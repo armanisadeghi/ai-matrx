@@ -16,7 +16,9 @@ export default function WarRoomSessionPage() {
 
   useEffect(() => {
     if (!id) return;
-    traceWarRoomRenderPath(1, "WarRoomSessionPage", { sessionId: id });
+    traceWarRoomRenderPath(1, "page.tsx", "WarRoomSessionPage", {
+      sessionId: id,
+    });
   }, [id]);
 
   if (!id) return null;

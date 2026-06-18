@@ -1,6 +1,6 @@
 /**
  * Render-path tracing for /war-room/[id] → Stage → Agent tab →
- * AgentAssistantMessage. Filter DevTools console on `[war-room/render-path]`.
+ * AgentAssistantMessage. Filter DevTools console on `[Track War Room]`.
  *
  * **Development:** always on.
  *
@@ -12,7 +12,7 @@
  * `localStorage.removeItem('war-room:render-path-trace')`.
  */
 
-const PREFIX = "[war-room/render-path]";
+const PREFIX = "[Track War Room]";
 const STORAGE_KEY = "war-room:render-path-trace";
 const QUERY_PARAM = "war-room-trace";
 
@@ -48,14 +48,16 @@ function isWarRoomRenderPathTraceEnabled(): boolean {
 
 export function traceWarRoomRenderPath(
   step: number,
+  file: string,
   label: string,
   detail?: Record<string, unknown>,
 ): void {
   if (!isWarRoomRenderPathTraceEnabled()) return;
+  const line = `${PREFIX} ${step}, ${file} — ${label}`;
   if (detail) {
-    console.log(`${PREFIX} ${step}. ${label}`, detail);
+    console.log(line, detail);
   } else {
-    console.log(`${PREFIX} ${step}. ${label}`);
+    console.log(line);
   }
 }
 

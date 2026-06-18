@@ -145,7 +145,9 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
 
   useEffect(() => {
     if (!ready || mode !== "stage") return;
-    traceWarRoomRenderPath(2, "WarRoomShell → Stage mode", { sessionId });
+    traceWarRoomRenderPath(2, "WarRoomShell.tsx", "Stage mode ready", {
+      sessionId,
+    });
   }, [ready, mode, sessionId]);
 
   return (
