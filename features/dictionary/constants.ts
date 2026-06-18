@@ -16,6 +16,21 @@ export const DICTIONARY_AGENT_IDS = {
   assistant: "ab1a868e-b866-4ade-9383-fd63b0928c7c",
 } as const;
 
+/**
+ * Per-surface dictionary keys for TTS "read aloud" playback. The key selects
+ * which dictionary (+ any per-task additions) the voice applies; a surface with
+ * no stored selection resolves to the user's personal dictionary by default.
+ *
+ *  - `READ_ALOUD_DICTIONARY_SURFACE` — the shared generic read-aloud surface
+ *    (chat message read-aloud, the global audio modal, flashcard audio). One
+ *    surface so a user's personal pronunciations apply everywhere text is
+ *    spoken, and a single place to attach a read-aloud dictionary picker later.
+ *  - `SCRIBE_DICTIONARY_SURFACE` — the transcript Scribe's own selector surface,
+ *    so the Scribe's voice-out + "Read aloud" honor the picks made there.
+ */
+export const READ_ALOUD_DICTIONARY_SURFACE = "matrx-user/read-aloud";
+export const SCRIBE_DICTIONARY_SURFACE = "matrx-user/transcript-scribe";
+
 /** Human labels for the four owner levels (+ the per-task "custom" source). */
 export const DICT_LEVEL_LABELS: Record<DictLevel | "custom", string> = {
   user: "Personal",

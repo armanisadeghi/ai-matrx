@@ -23,6 +23,8 @@ interface Props {
   autoStart?: boolean;
   className?: string;
   disabled?: boolean;
+  /** Dictionary surface whose pronunciations to apply to the spoken text. */
+  dictionarySurfaceKey?: string;
 }
 
 export default function SpeakerGroupCore({
@@ -31,9 +33,10 @@ export default function SpeakerGroupCore({
   autoStart = false,
   className,
   disabled = false,
+  dictionarySurfaceKey,
 }: Props) {
   const { isLoading, isPlaying, isPaused, speak, pause, resume, stop } =
-    useCartesiaSpeaker({ processMarkdown });
+    useCartesiaSpeaker({ processMarkdown, dictionarySurfaceKey });
 
   const autoStartFired = useRef(false);
 
@@ -41,7 +44,6 @@ export default function SpeakerGroupCore({
     if (!autoStart || autoStartFired.current) return;
     autoStartFired.current = true;
     speak(text);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const canPlay = !disabled && !isLoading && !isPlaying;

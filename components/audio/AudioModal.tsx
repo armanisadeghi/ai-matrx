@@ -13,6 +13,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Headphones } from 'lucide-react';
 import SpeakerGroupCore from '@/features/tts/components/SpeakerGroupCore';
+import { READ_ALOUD_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import { cn } from "@/lib/utils";
 
 interface AudioModalProps {
@@ -24,6 +25,7 @@ interface AudioModalProps {
     description?: string;
     hideText?: boolean;
     className?: string;
+    dictionarySurfaceKey?: string;
 }
 
 const AudioModal: React.FC<AudioModalProps> = ({
@@ -35,6 +37,7 @@ const AudioModal: React.FC<AudioModalProps> = ({
     description = "Listen to the audio explanation.",
     hideText = false,
     className,
+    dictionarySurfaceKey = READ_ALOUD_DICTIONARY_SURFACE,
 }) => {
     return (
         <Credenza open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -64,7 +67,7 @@ const AudioModal: React.FC<AudioModalProps> = ({
                     <div className={cn("w-full flex justify-center", hideText ? "mt-0" : "mt-4 sm:mt-6")}>
                         {/* Auto-plays on open via SpeakerGroupCore; keyed by text so
                             switching cards remounts and re-speaks; unmounts on close to stop. */}
-                        {isOpen && <SpeakerGroupCore key={text} text={text} autoStart />}
+                        {isOpen && <SpeakerGroupCore key={text} text={text} autoStart dictionarySurfaceKey={dictionarySurfaceKey} />}
                     </div>
                 </CredenzaBody>
             </CredenzaContent>

@@ -10,6 +10,7 @@ import {
   selectMessageHasHistory,
 } from "../../_legacy-stubs";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
+import { READ_ALOUD_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import {
   getMessageActions,
   resumePendingAuthAction,
@@ -62,7 +63,7 @@ const MessageOptionsMenu: React.FC<MessageOptionsMenuProps> = ({
     speak: cartesiaSpeak,
     isLoading: isTtsGenerating,
     isPlaying: isTtsPlaying,
-  } = useCartesiaSpeaker({ processMarkdown: true });
+  } = useCartesiaSpeaker({ processMarkdown: true, dictionarySurfaceKey: READ_ALOUD_DICTIONARY_SURFACE });
 
   useEffect(() => {
     if (instance) {

@@ -27,6 +27,7 @@ import { loadWordPressCSS } from "@/features/html-pages/css/wordpress-styles";
 import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
+import { READ_ALOUD_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { toast } from "sonner";
@@ -70,7 +71,7 @@ const MessageOptionsMenu: React.FC<MessageOptionsMenuProps> = ({
     speak,
     isLoading: isTtsGenerating,
     isPlaying: isTtsPlaying,
-  } = useCartesiaSpeaker({ processMarkdown: true });
+  } = useCartesiaSpeaker({ processMarkdown: true, dictionarySurfaceKey: READ_ALOUD_DICTIONARY_SURFACE });
 
   // Notes handlers
   const handleSaveToScratch = async () => {

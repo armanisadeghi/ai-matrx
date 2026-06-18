@@ -23,6 +23,7 @@ import {
   selectAccumulatedText,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useCartesiaStreamingSpeaker } from "@/features/tts/hooks/useCartesiaStreamingSpeaker";
+import { SCRIBE_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import {
   setVoicePlayback,
   clearVoicePlayback,
@@ -44,6 +45,7 @@ export function useAutoVoiceResponse({
     processMarkdown: true,
     firstChunkMax: 90,
     nextChunkMax: 300,
+    dictionarySurfaceKey: SCRIBE_DICTIONARY_SURFACE,
   });
 
   // Requests already fully handled (spoken, or skipped because they predate us

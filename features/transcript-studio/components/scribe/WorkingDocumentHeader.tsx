@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
+import { SCRIBE_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { useWorkingDocumentDraft } from "../../hooks/useWorkingDocumentDraft";
 import { useWorkingDocChanges } from "../../hooks/useWorkingDocChanges";
@@ -44,7 +45,7 @@ export function WorkingDocumentHeader({
   const [docOpen, setDocOpen] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
 
-  const speaker = useCartesiaSpeaker({ purpose: "reading" });
+  const speaker = useCartesiaSpeaker({ purpose: "reading", dictionarySurfaceKey: SCRIBE_DICTIONARY_SURFACE });
   const reading = speaker.isPlaying || speaker.isLoading;
 
   const workingDoc = assistant.workingDocument;
