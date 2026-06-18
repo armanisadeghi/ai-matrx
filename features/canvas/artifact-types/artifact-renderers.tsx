@@ -46,6 +46,7 @@ const RENDERERS: Record<
   React.LazyExoticComponent<ArtifactRendererComponent>
 > = {
   comparison: lazy(() => import("./renderers/ComparisonArtifact")),
+  flashcards: lazy(() => import("./renderers/FlashcardsArtifact")),
   timeline: lazy(() => import("./renderers/TimelineArtifact")),
   research: lazy(() => import("./renderers/ResearchArtifact")),
   resources: lazy(() => import("./renderers/ResourcesArtifact")),
