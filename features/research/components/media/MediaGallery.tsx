@@ -18,6 +18,8 @@ import {
   Bug,
   Video,
   FileText,
+  FileSpreadsheet,
+  FileType,
   Music,
   ExternalLink,
 } from "lucide-react";
@@ -35,7 +37,18 @@ import { useResearchMedia } from "../../hooks/useResearchState";
 import { updateMedia } from "../../service";
 import type { ResearchMedia } from "../../types";
 import { idMatchesQuery } from "@/utils/search-scoring";
-import { bucketMedia, formatResolvedSizeLabel } from "./mediaCategorization";
+import {
+  bucketMedia,
+  formatResolvedSizeLabel,
+  isFeaturedPhoto,
+} from "./mediaCategorization";
+import {
+  embedInfo,
+  videoPoster,
+  fileNameFromUrl,
+  fileExt,
+  hostLabel,
+} from "./mediaEmbed";
 import MediaDebugPanel from "./MediaDebugPanel";
 
 const TYPE_ICONS = {
@@ -206,19 +219,13 @@ export default function MediaGallery() {
       ) : (
         <div className="space-y-5">
           {buckets.documents.length > 0 && (
-            <ResourceSection
-              icon={FileText}
-              title="Documents"
-              description="PDFs, slides, spreadsheets, and other files"
+            <DocumentSection
               items={buckets.documents}
               onToggleRelevance={handleToggleRelevance}
             />
           )}
           {buckets.videos.length > 0 && (
-            <ResourceSection
-              icon={Video}
-              title="Videos"
-              description="Video files and YouTube/Vimeo links"
+            <VideoSection
               items={buckets.videos}
               onToggleRelevance={handleToggleRelevance}
             />
@@ -239,7 +246,8 @@ export default function MediaGallery() {
               description="Wider than tall"
               items={buckets.landscape}
               aspectClass="aspect-video"
-              gridClass="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2"
+              featuredGrid="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"
+              standardGrid="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2"
               onToggleRelevance={handleToggleRelevance}
             />
           )}
@@ -250,7 +258,8 @@ export default function MediaGallery() {
               description="Roughly 1:1"
               items={buckets.square}
               aspectClass="aspect-square"
-              gridClass="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2"
+              featuredGrid="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"
+              standardGrid="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2"
               onToggleRelevance={handleToggleRelevance}
             />
           )}
@@ -261,7 +270,8 @@ export default function MediaGallery() {
               description="Taller than wide"
               items={buckets.portrait}
               aspectClass="aspect-[3/4]"
-              gridClass="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"
+              featuredGrid="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"
+              standardGrid="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2"
               onToggleRelevance={handleToggleRelevance}
             />
           )}
@@ -272,7 +282,8 @@ export default function MediaGallery() {
               description="Images without width/height"
               items={buckets.unknownAspect}
               aspectClass="aspect-video"
-              gridClass="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2"
+              featuredGrid="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"
+              standardGrid="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2"
               onToggleRelevance={handleToggleRelevance}
             />
           )}
@@ -347,7 +358,10 @@ interface PhotoAspectSectionProps extends SectionProps {
   title: string;
   description: string;
   aspectClass: string;
-  gridClass: string;
+  /** Fewer columns → larger tiles for big, high-resolution images. */
+  featuredGrid: string;
+  /** More columns → smaller tiles for modest-resolution images. */
+  standardGrid: string;
 }
 
 function PhotoAspectSection({
@@ -356,9 +370,16 @@ function PhotoAspectSection({
   description,
   items,
   aspectClass,
-  gridClass,
+  featuredGrid,
+  standardGrid,
   onToggleRelevance,
 }: PhotoAspectSectionProps) {
+  // Items arrive sorted by area (largest first). Split into a big-tile
+  // "featured" band and a small-tile "standard" band so resolution drives
+  // display size — big, high-quality images read large; modest ones stay small.
+  const featured = items.filter(isFeaturedPhoto);
+  const standard = items.filter((i) => !isFeaturedPhoto(i));
+
   return (
     <section className="space-y-2">
       <SectionHeader
@@ -367,16 +388,30 @@ function PhotoAspectSection({
         count={items.length}
         description={description}
       />
-      <div className={gridClass}>
-        {items.map((item) => (
-          <PhotoCard
-            key={item.id}
-            item={item}
-            aspectClass={aspectClass}
-            onToggleRelevance={onToggleRelevance}
-          />
-        ))}
-      </div>
+      {featured.length > 0 && (
+        <div className={featuredGrid}>
+          {featured.map((item) => (
+            <PhotoCard
+              key={item.id}
+              item={item}
+              aspectClass={aspectClass}
+              onToggleRelevance={onToggleRelevance}
+            />
+          ))}
+        </div>
+      )}
+      {standard.length > 0 && (
+        <div className={standardGrid}>
+          {standard.map((item) => (
+            <PhotoCard
+              key={item.id}
+              item={item}
+              aspectClass={aspectClass}
+              onToggleRelevance={onToggleRelevance}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -388,9 +423,9 @@ function GraphicsSection({ items, onToggleRelevance }: SectionProps) {
         icon={Shapes}
         title="Graphics"
         count={items.length}
-        description="Logos, thumbnails, and small graphics (under 200px)"
+        description="Logos, thumbnails, banners, and small graphics — shown at their real size"
       />
-      <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-2">
+      <div className="flex flex-wrap gap-2">
         {items.map((item) => (
           <GraphicCard
             key={item.id}
@@ -495,28 +530,32 @@ function GraphicCard({
   onToggleRelevance: (item: ResearchMedia) => void;
 }) {
   const dims = formatResolvedSizeLabel(item);
-  const tooltip = item.alt_text || item.caption || item.url;
+  const tooltip =
+    [item.alt_text, item.caption, dims].filter(Boolean).join(" · ") || item.url;
 
+  // Fixed height, width follows the image's aspect (object-contain) so a wide
+  // banner reads wide-and-short and a logo reads small — no tiny image marooned
+  // in a big box.
   return (
     <div
       className={cn(
-        "group relative rounded-lg border bg-card/60 backdrop-blur-sm overflow-hidden transition-all",
+        "group relative h-24 inline-flex items-center justify-center rounded-lg border bg-muted/20 backdrop-blur-sm overflow-hidden transition-all",
         item.is_relevant ? "border-primary/20" : "border-border/50 opacity-60",
       )}
       title={tooltip}
     >
-      <div className="aspect-square bg-muted/30 flex items-center justify-center p-2 overflow-hidden">
-        {item.url ? (
-          <img
-            src={item.thumbnail_url || item.url}
-            alt={item.alt_text || ""}
-            className="max-w-full max-h-full object-contain"
-            loading="lazy"
-          />
-        ) : (
+      {item.url ? (
+        <img
+          src={item.thumbnail_url || item.url}
+          alt={item.alt_text || ""}
+          className="h-full w-auto max-w-[220px] object-contain"
+          loading="lazy"
+        />
+      ) : (
+        <div className="h-full w-24 flex items-center justify-center">
           <ImageIcon className="h-5 w-5 text-muted-foreground/30" />
-        )}
-      </div>
+        </div>
+      )}
       {dims && (
         <span className="absolute bottom-1 left-1 px-1 rounded bg-background/70 backdrop-blur-sm text-[9px] tabular-nums text-muted-foreground/80 opacity-0 group-hover:opacity-100 transition-opacity">
           {dims}
@@ -691,6 +730,227 @@ function ResourceSection({
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
         {items.map((item) => (
           <ResourceCard
+            key={item.id}
+            item={item}
+            onToggleRelevance={onToggleRelevance}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const DIRECT_VIDEO_RE = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i;
+
+/** Videos play INSIDE the app — YouTube/Vimeo embed, or an inline <video> for a
+ * direct file. A poster (server thumbnail or a derived YouTube thumb) shows
+ * until the user hits play, so we never load N iframes at once. */
+function VideoCard({
+  item,
+  onToggleRelevance,
+}: {
+  item: ResearchMedia;
+  onToggleRelevance: (item: ResearchMedia) => void;
+}) {
+  const [playing, setPlaying] = useState(false);
+  const embed = embedInfo(item);
+  const poster = videoPoster(item);
+  const isDirectFile = DIRECT_VIDEO_RE.test(item.url);
+  const canPlayInApp = !!embed || isDirectFile;
+  const label = item.alt_text || item.caption || hostLabel(item.url) || item.url;
+
+  return (
+    <div
+      className={cn(
+        "group relative rounded-xl border bg-card/60 backdrop-blur-sm overflow-hidden transition-all",
+        item.is_relevant ? "border-primary/20" : "border-border/50 opacity-60",
+      )}
+    >
+      <div className="relative aspect-video bg-black/50 flex items-center justify-center overflow-hidden">
+        {playing && embed ? (
+          <iframe
+            src={embed.embedUrl}
+            title={label}
+            className="absolute inset-0 h-full w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+        ) : playing && isDirectFile ? (
+          // eslint-disable-next-line jsx-a11y/media-has-caption
+          <video
+            src={item.url}
+            className="absolute inset-0 h-full w-full"
+            controls
+            autoPlay
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() =>
+              canPlayInApp
+                ? setPlaying(true)
+                : window.open(item.url, "_blank", "noopener,noreferrer")
+            }
+            className="absolute inset-0 h-full w-full"
+            title={canPlayInApp ? "Play" : "Open on source site"}
+          >
+            {poster ? (
+              <img
+                src={poster}
+                alt={label}
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <Video className="h-7 w-7 text-muted-foreground/40" />
+            )}
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black/60 backdrop-blur-sm group-hover:bg-black/75 transition-colors">
+                <Play className="h-5 w-5 text-white" />
+              </span>
+            </span>
+          </button>
+        )}
+      </div>
+      <div className="p-1.5 flex items-center justify-between gap-1">
+        <p className="text-[10px] truncate text-foreground/80 flex-1" title={label}>
+          {label}
+        </p>
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 text-muted-foreground/50 hover:text-foreground transition-colors"
+          title="Open on source site"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      </div>
+      <Button
+        variant={item.is_relevant ? "default" : "outline"}
+        size="icon"
+        className="absolute top-1.5 right-1.5 h-6 w-6 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity"
+        onClick={() => onToggleRelevance(item)}
+      >
+        {item.is_relevant ? (
+          <Check className="h-3 w-3" />
+        ) : (
+          <X className="h-3 w-3" />
+        )}
+      </Button>
+    </div>
+  );
+}
+
+function VideoSection({ items, onToggleRelevance }: SectionProps) {
+  return (
+    <section className="space-y-2">
+      <SectionHeader
+        icon={Video}
+        title="Videos"
+        count={items.length}
+        description="Plays in-app — YouTube/Vimeo embeds and video files"
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        {items.map((item) => (
+          <VideoCard
+            key={item.id}
+            item={item}
+            onToggleRelevance={onToggleRelevance}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function docIcon(item: ResearchMedia): React.ComponentType<{ className?: string }> {
+  const ext = fileExt(item.url);
+  const kind = resourceKind(item);
+  if (ext === "pdf" || kind === "pdf") return FileText;
+  if (["csv", "tsv", "xls", "xlsx", "ods"].includes(ext) || kind === "csv")
+    return FileSpreadsheet;
+  if (["doc", "docx", "ppt", "pptx", "odt", "rtf", "txt"].includes(ext))
+    return FileType;
+  return File;
+}
+
+/** A file card with a type icon, real file name, source host, and an Open
+ * action. (In-app "Save to my files" lands next, with the server endpoint.) */
+function DocumentCard({
+  item,
+  onToggleRelevance,
+}: {
+  item: ResearchMedia;
+  onToggleRelevance: (item: ResearchMedia) => void;
+}) {
+  const Icon = docIcon(item);
+  const name = (item.alt_text || "").trim() || fileNameFromUrl(item.url);
+  const host = hostLabel(item.url);
+  const ext = fileExt(item.url) || resourceKind(item) || "";
+
+  return (
+    <div
+      className={cn(
+        "group relative flex flex-col rounded-xl border bg-card/60 backdrop-blur-sm overflow-hidden transition-all",
+        item.is_relevant ? "border-primary/20" : "border-border/50 opacity-60",
+      )}
+    >
+      <div className="flex items-start gap-2 p-2.5">
+        <div className="h-10 w-10 shrink-0 rounded-lg bg-primary/8 flex items-center justify-center">
+          <Icon className="h-5 w-5 text-primary/70" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p
+            className="text-[11px] font-medium text-foreground/90 line-clamp-2 break-words"
+            title={name}
+          >
+            {name}
+          </p>
+          <p className="mt-0.5 truncate text-[9px] text-muted-foreground/70">
+            {[host, ext && ext.toUpperCase()].filter(Boolean).join(" · ")}
+          </p>
+        </div>
+      </div>
+      <div className="mt-auto flex items-center gap-3 border-t border-border/40 px-2.5 py-1.5">
+        <a
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ExternalLink className="h-3 w-3" /> Open
+        </a>
+      </div>
+      <Button
+        variant={item.is_relevant ? "default" : "outline"}
+        size="icon"
+        className="absolute top-1.5 right-1.5 h-6 w-6 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity"
+        onClick={() => onToggleRelevance(item)}
+      >
+        {item.is_relevant ? (
+          <Check className="h-3 w-3" />
+        ) : (
+          <X className="h-3 w-3" />
+        )}
+      </Button>
+    </div>
+  );
+}
+
+function DocumentSection({ items, onToggleRelevance }: SectionProps) {
+  return (
+    <section className="space-y-2">
+      <SectionHeader
+        icon={FileText}
+        title="Documents"
+        count={items.length}
+        description="PDFs, slides, spreadsheets, and other files"
+      />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+        {items.map((item) => (
+          <DocumentCard
             key={item.id}
             item={item}
             onToggleRelevance={onToggleRelevance}
