@@ -3661,6 +3661,38 @@ export type Database = {
           },
         ]
       }
+      canvas_item_state: {
+        Row: {
+          canvas_id: string
+          created_at: string
+          state: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          canvas_id: string
+          created_at?: string
+          state?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          canvas_id?: string
+          created_at?: string
+          state?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_item_state_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       canvas_items: {
         Row: {
           artifact_index: number | null
@@ -16015,6 +16047,8 @@ export type Database = {
           last_server_failure_reason: string | null
           origin: string
           page_age: string | null
+          policy_category: string | null
+          policy_reason: string | null
           rank: number | null
           raw_search_result: Json | null
           scrape_status: string
@@ -16042,6 +16076,8 @@ export type Database = {
           last_server_failure_reason?: string | null
           origin?: string
           page_age?: string | null
+          policy_category?: string | null
+          policy_reason?: string | null
           rank?: number | null
           raw_search_result?: Json | null
           scrape_status?: string
@@ -16069,6 +16105,8 @@ export type Database = {
           last_server_failure_reason?: string | null
           origin?: string
           page_age?: string | null
+          policy_category?: string | null
+          policy_reason?: string | null
           rank?: number | null
           raw_search_result?: Json | null
           scrape_status?: string
@@ -17275,6 +17313,8 @@ export type Database = {
       }
       scrape_domain: {
         Row: {
+          category: string | null
+          category_reason: string | null
           common_name: string | null
           content_selector: string | null
           created_at: string | null
@@ -17289,6 +17329,8 @@ export type Database = {
           url: string | null
         }
         Insert: {
+          category?: string | null
+          category_reason?: string | null
           common_name?: string | null
           content_selector?: string | null
           created_at?: string | null
@@ -17303,6 +17345,8 @@ export type Database = {
           url?: string | null
         }
         Update: {
+          category?: string | null
+          category_reason?: string | null
           common_name?: string | null
           content_selector?: string | null
           created_at?: string | null
@@ -17883,6 +17927,8 @@ export type Database = {
       }
       scrape_path_pattern: {
         Row: {
+          category: string | null
+          category_reason: string | null
           content_selector: string | null
           created_at: string | null
           id: string
@@ -17896,6 +17942,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          category?: string | null
+          category_reason?: string | null
           content_selector?: string | null
           created_at?: string | null
           id?: string
@@ -17909,6 +17957,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          category?: string | null
+          category_reason?: string | null
           content_selector?: string | null
           created_at?: string | null
           id?: string
