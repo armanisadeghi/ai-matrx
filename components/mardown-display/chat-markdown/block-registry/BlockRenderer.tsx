@@ -251,6 +251,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           taskId={taskId}
           conversationId={conversationId}
           messageId={messageId}
+          blockIndex={index}
           isStreamActive={isStreamActive}
         />
       );

@@ -20,9 +20,6 @@ import SandboxedHtml from "../common/SandboxedHtml";
 // Lazy load block renderers — only the ones that accept raw content strings
 const CodeBlock = lazy(() => import("@/features/code-editor/components/code-block/CodeBlock"));
 const FlashcardsBlock = lazy(() => import("../flashcards/FlashcardsBlock"));
-const MermaidView = lazy(() =>
-    import("@/components/mermaid/MermaidView").then((m) => ({ default: m.MermaidView })),
-);
 
 interface ArtifactBlockProps {
     content: string;
@@ -112,16 +109,20 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
     const renderContent = () => {
         // Mermaid renders progressively during streaming (last-good-render
         // semantics live inside the renderer) — never fall back to a markdown
-        // preview for it.
-        if (artifactType === "mermaid") {
+        // preview for it. Routed through the unified renderer (MermaidBlock).
+        if (canvasType === "mermaid" && hasArtifactRenderer("mermaid")) {
             return (
-                <Suspense fallback={<MatrxMiniLoader />}>
-                    <MermaidView
-                        source={content}
-                        isStreamActive={!isComplete && isStreamActive}
-                        viewportMaxHeight={560}
-                    />
-                </Suspense>
+                <ArtifactRender
+                    canvasType="mermaid"
+                    mode="artifact"
+                    raw={content}
+                    serverData={serverData}
+                    metadata={metadata as Record<string, unknown> | undefined}
+                    artifactId={serverData?.artifactId ?? metadata?.artifactId}
+                    isStreamActive={isStreamActive}
+                    taskId={taskId}
+                    messageId={messageId}
+                />
             );
         }
 

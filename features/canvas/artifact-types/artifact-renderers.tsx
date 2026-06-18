@@ -32,6 +32,8 @@ export interface ArtifactRendererProps {
   artifactId?: string;
   conversationId?: string;
   messageId?: string;
+  /** Block position within the message — used by quiz/mermaid state persistence. */
+  blockIndex?: number;
   taskId?: string;
   isStreamActive?: boolean;
 }
@@ -56,6 +58,13 @@ const RENDERERS: Record<
   diagram: lazy(() => import("./renderers/DiagramArtifact")),
   "decision-tree": lazy(() => import("./renderers/DecisionTreeArtifact")),
   presentation: lazy(() => import("./renderers/PresentationArtifact")),
+  math_problem: lazy(() => import("./renderers/MathProblemArtifact")),
+  quiz: lazy(() => import("./renderers/QuizArtifact")),
+  mermaid: lazy(() => import("./renderers/MermaidArtifact")),
+  html: lazy(() => import("./renderers/HtmlArtifact")),
+  iframe: lazy(() => import("./renderers/IframeArtifact")),
+  code: lazy(() => import("./renderers/CodeArtifact")),
+  image: lazy(() => import("./renderers/ImageArtifact")),
 };
 
 export function hasArtifactRenderer(canvasType: string | null | undefined): boolean {
