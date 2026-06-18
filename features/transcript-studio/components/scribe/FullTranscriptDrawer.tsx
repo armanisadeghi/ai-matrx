@@ -17,6 +17,7 @@ import {
   selectRecordingSegments,
 } from "../../redux/selectors";
 import { cleanRecordingThunk } from "../../redux/thunks";
+import { buildTimestampedTranscript } from "../../utils/timecode";
 
 export type TranscriptSection = "raw" | "clean";
 
@@ -47,11 +48,9 @@ export function FullTranscriptDrawer({
   const index = recordingSegmentId
     ? recordings.findIndex((r) => r.id === recordingSegmentId)
     : -1;
-  const rawText = raws
-    .map((r) => r.text)
-    .join(" ")
-    .trim();
-  const cleanText = cleanSeg?.text?.trim() ?? "";
+  // Timestamped (`[m:ss] text`) — the single standard for transcript display + copy.
+  const rawText = buildTimestampedTranscript(raws, "\n");
+  const cleanText = cleanSeg ? buildTimestampedTranscript([cleanSeg]) : "";
 
   const reclean = async () => {
     if (!recordingSegmentId || cleaning) return;

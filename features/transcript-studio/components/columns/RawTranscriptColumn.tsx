@@ -11,6 +11,7 @@ import {
   deleteRawSegmentThunk,
   updateRawSegmentTextThunk,
 } from "../../redux/thunks";
+import { formatTimecode } from "../../utils/timecode";
 import { useScrollSyncOptional } from "../scroll-sync/ScrollSyncProvider";
 import { AudioImportDialog } from "./AudioImportDialog";
 import { ColumnEmptyState } from "./ColumnEmptyState";
@@ -24,17 +25,6 @@ interface RawTranscriptColumnProps {
   /** True iff this session is the active recording. Drives the live dot. */
   isRecording: boolean;
   className?: string;
-}
-
-function formatTimecode(sec: number): string {
-  if (!Number.isFinite(sec) || sec < 0) sec = 0;
-  const total = Math.floor(sec);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  if (m < 60) return `${m}:${s.toString().padStart(2, "0")}`;
-  const h = Math.floor(m / 60);
-  const mm = m % 60;
-  return `${h}:${mm.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 function summarizeSegments(segs: RawSegment[]): string {

@@ -14,6 +14,7 @@ import type {
   StudioDocument,
   StudioSession,
 } from "../types";
+import { buildTimestampedTranscript } from "../utils/timecode";
 
 const selectScope = (state: RootState) => state.transcriptStudio;
 
@@ -193,6 +194,31 @@ export function selectSessionRawText(sessionId: string | null) {
       .filter(Boolean)
       .join(" ")
       .trim();
+  };
+}
+
+/**
+ * Timestamped variants — the standard `[m:ss] text` per segment, for human-facing
+ * DISPLAY + copy/export (the plain selectors above stay for machine consumers:
+ * agent context, RAG, search). Reference-stable primitive strings.
+ */
+export function selectSessionRawTimestamped(sessionId: string | null) {
+  return (state: RootState): string => {
+    if (!sessionId) return "";
+    return buildTimestampedTranscript(
+      selectRawSegments(sessionId)(state),
+      "\n",
+    );
+  };
+}
+
+export function selectSessionCleanedTimestamped(sessionId: string | null) {
+  return (state: RootState): string => {
+    if (!sessionId) return "";
+    const cleaned = [...selectCleanedSegments(sessionId)(state)]
+      .filter((c) => c.processorKey === "clean")
+      .sort((a, b) => a.tStart - b.tStart);
+    return buildTimestampedTranscript(cleaned, "\n\n");
   };
 }
 
