@@ -100,7 +100,9 @@ export type SourceFeature =
   /** "Edit with AI" inside the Mermaid Workbench (canvas diagram editor). */
   | "mermaid-workbench"
   /** "Use AI" tab of the create-project panel (`ProjectCreatePanel`). */
-  | "project-create";
+  | "project-create"
+  /** "Use AI" tab of the create-task panel (`TaskCreatePanel`). */
+  | "task-create";
 
 export const SOURCE_APP = "matrx-admin" as const;
 

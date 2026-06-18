@@ -64,6 +64,7 @@ import { TaskDueDatePicker } from "./TaskDueDatePicker";
 import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { formatDateOnly } from "@/utils/dateOnly";
 import { cn } from "@/utils/cn";
+import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
 
 type Priority = TaskPriority;
 
@@ -164,6 +165,7 @@ function TaskEditorInner({
 }) {
   const dispatch = useAppDispatch();
   const openTaskEditor = useOpenTaskEditorWindow();
+  const { metadataPending } = useEnsureTaskLoaded(taskId);
   const task = useAppSelector((s) => selectTaskById(s, taskId));
   const draft = useAppSelector(selectTaskEdit(taskId));
   const isDirty = useAppSelector(selectTaskIsDirty(taskId));
@@ -867,16 +869,26 @@ function TaskEditorInner({
                   </div>
                 </PropertyRow>
                 <PropertyRow label="Created" compact={compact}>
-                  <span className="text-xs text-muted-foreground">
-                    {task.created_at
-                      ? new Date(task.created_at).toLocaleString()
-                      : "—"}
-                  </span>
+                  {task.created_at ? (
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(task.created_at).toLocaleString()}
+                    </span>
+                  ) : metadataPending ? (
+                    <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </PropertyRow>
                 <PropertyRow label="Owner" last compact={compact}>
-                  <code className="text-[10px] font-mono bg-muted px-2 py-1 rounded">
-                    {task.user_id ?? "—"}
-                  </code>
+                  {task.user_id ? (
+                    <code className="text-[10px] font-mono bg-muted px-2 py-1 rounded">
+                      {task.user_id}
+                    </code>
+                  ) : metadataPending ? (
+                    <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </PropertyRow>
               </div>
             )}
