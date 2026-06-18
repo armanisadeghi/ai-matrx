@@ -160,6 +160,7 @@ const DashboardPage = () => {
       icon: link.icon as React.ReactElement,
       color: (link.color || "gray") as CardProps["color"],
       path: link.href,
+      external: link.external,
     }));
 
   const userSettingsCards: CardProps[] = [

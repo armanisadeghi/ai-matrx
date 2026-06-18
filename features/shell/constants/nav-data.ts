@@ -14,6 +14,14 @@ export const DEFAULT_ADMIN_SURFACES: AdminNavSurface[] = [
   "headerMenu",
 ];
 
+/**
+ * Separately-hosted Matrx apps that live on their own origin (not Next routes).
+ * These are reached via absolute URLs + `external: true` so the shell renders
+ * a real `<a target="_blank">` (new tab) with an external-link affordance,
+ * instead of an in-app `<Link>` transition. Add future standalone apps here.
+ */
+export const WORKFLOWS_APP_URL = "https://workflows.aimatrx.com";
+
 export function adminItemOnSurface(
   item: ShellNavItem,
   surface: AdminNavSurface,
@@ -43,6 +51,12 @@ export interface ShellNavChild {
   profileMenu?: boolean;
   guestHidden?: boolean;
   guestHref?: string;
+  /**
+   * Points at a separately-hosted app on its own origin. When true, `href` is
+   * an absolute URL and the shell renders an `<a target="_blank">` (new tab)
+   * with an external-link icon instead of an in-app `<Link>` transition.
+   */
+  external?: boolean;
 }
 
 export interface ShellNavItem {
@@ -80,6 +94,12 @@ export interface ShellNavItem {
    * don't bounce off a workspace they can't use yet.
    */
   guestHref?: string;
+  /**
+   * Points at a separately-hosted app on its own origin. When true, `href` is
+   * an absolute URL and the shell renders an `<a target="_blank">` (new tab)
+   * with an external-link icon instead of an in-app `<Link>` transition.
+   */
+  external?: boolean;
 }
 
 // Primary navigation items — canonical app URLs shared by (a), (ssr), and (authenticated).
@@ -807,7 +827,8 @@ export const primaryNavItems: ShellNavItem[] = [
   },
   {
     label: "Workflows",
-    href: "/workflows",
+    href: WORKFLOWS_APP_URL,
+    external: true,
     iconName: "Workflow",
     section: "primary",
     profileMenu: true,

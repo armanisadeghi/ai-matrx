@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Aperture,
   ArrowLeftRight,
+  ArrowUpRight,
   BookOpen,
   Boxes,
   Building2,
@@ -79,6 +80,7 @@ import {
 export const shellIconComponents: Record<string, LucideIcon> = {
   Aperture,
   ArrowLeftRight,
+  ArrowUpRight,
   BookOpen,
   Boxes,
   Building2,

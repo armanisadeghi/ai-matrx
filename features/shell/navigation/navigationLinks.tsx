@@ -45,6 +45,7 @@ function shellItemToNavigationLink(item: ShellNavItem): NavigationLink {
     color: item.color,
     favicon: faviconForHref(item.href),
     adminSurfaces: item.adminSurfaces,
+    external: item.external,
   };
 }
 
@@ -65,6 +66,7 @@ function shellChildToNavigationLink(
     description: child.description ?? parent.description,
     color: child.color ?? parent.color,
     favicon: faviconForHref(child.href),
+    external: child.external,
   };
 }
 
@@ -97,6 +99,8 @@ export interface NavigationLink {
   color?: string;
   /** Echo of nav-data admin routing; primary links leave this unset. */
   adminSurfaces?: AdminNavSurface[];
+  /** Separately-hosted app on its own origin — open in a new tab. */
+  external?: boolean;
 }
 
 // Flat (legacy / transitional) sidebars can't nest — they take a flat

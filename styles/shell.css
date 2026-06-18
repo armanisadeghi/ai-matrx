@@ -612,6 +612,23 @@ button.shell-nav-item {
   pointer-events: auto;
 }
 
+/* External-link affordance — separately-hosted apps (opens in a new tab).
+   Pushed to the trailing edge, muted, and revealed only with the label when
+   the sidebar is expanded so it never crowds the collapsed icon rail. */
+.shell-nav-external {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0;
+  color: var(--muted-foreground, currentColor);
+  pointer-events: none;
+  transition: opacity var(--shell-duration-normal) var(--shell-ease-smooth);
+}
+
+.shell-root:has(#shell-sidebar-toggle:checked) .shell-nav-external {
+  opacity: 0.6;
+}
+
 /* Collapsed state. Two rules keep every icon perfectly stationary through the
    collapse animation — no vertical drift AND no horizontal "dance":
 

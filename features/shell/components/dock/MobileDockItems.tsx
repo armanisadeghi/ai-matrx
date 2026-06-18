@@ -13,6 +13,20 @@ import type { ShellNavItem } from "../../constants/nav-data";
 
 /** Single dock link — reusable by custom route docks. */
 export function MobileDockItem({ item }: { item: ShellNavItem }) {
+  if (item.external) {
+    return (
+      <a
+        href={item.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shell-dock-item"
+        aria-label={item.label}
+      >
+        <ShellIcon name={item.iconName} size={22} strokeWidth={1.75} />
+      </a>
+    );
+  }
+
   return (
     <Link
       href={item.href}

@@ -105,6 +105,7 @@ export default function MobileSideSheet({
                   href={item.href}
                   iconName={item.iconName}
                   label={item.label}
+                  external={item.external}
                 />
               ),
             )}
