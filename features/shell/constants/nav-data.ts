@@ -22,6 +22,9 @@ export const DEFAULT_ADMIN_SURFACES: AdminNavSurface[] = [
  */
 export const WORKFLOWS_APP_URL = "https://workflows.aimatrx.com";
 
+/** Standalone admin SPA (separate Vite app on its own origin). */
+export const ADMIN_APP_URL = "https://admin.aimatrx.com";
+
 export function adminItemOnSurface(
   item: ShellNavItem,
   surface: AdminNavSurface,
@@ -138,84 +141,6 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "indigo",
   },
   {
-    // Group parent — sidebar-only organizational node. Real destinations
-    // (My Orgs, Scopes, Context) live on the children so they still appear
-    // as dashboard tiles / profile entries via the flatten step.
-    label: "My Orgs",
-    href: "/organizations",
-    iconName: "Building2",
-    section: "primary",
-    dockOrder: 3,
-    profileMenu: false,
-    dashboard: false,
-    description: "Your teams, scopes, and shared context",
-    color: "sky",
-    guestHidden: true,
-    children: [
-      {
-        label: "My Orgs",
-        href: "/organizations",
-        iconName: "Building2",
-        description: "Your teams and shared workspaces",
-        color: "sky",
-        profileMenu: true,
-        dashboard: true,
-        guestHidden: true,
-      },
-      {
-        label: "Scopes",
-        href: "/scopes",
-        iconName: "Layers",
-        description:
-          "Define the dimensions your team works in — clients, products, teams, repos. Scopes carry context into every agent run.",
-        color: "emerald",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Context",
-        href: "/agent-context",
-        iconName: "BookOpen",
-        description: "Manage context items, templates, and knowledge (legacy)",
-        color: "cyan",
-        profileMenu: true,
-        dashboard: true,
-      },
-    ],
-  },
-  {
-    // Group parent — Notes & Documents.
-    label: "Notes",
-    href: "/notes",
-    iconName: "NotebookPen",
-    section: "primary",
-    dockOrder: 4,
-    profileMenu: false,
-    dashboard: false,
-    description: "Notes and cloud documents",
-    color: "amber",
-    children: [
-      {
-        label: "Notes",
-        href: "/notes",
-        iconName: "NotebookPen",
-        description: "Create and manage your notes and documents",
-        color: "amber",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Documents",
-        href: "/documents",
-        iconName: "FileText",
-        description: "Cloud documents — realtime co-editing, full history",
-        color: "indigo",
-        profileMenu: true,
-        dashboard: true,
-      },
-    ],
-  },
-  {
     // Sidebar points at the gallery (`/agents/all`) for authed users; for
     // guests, the marketing landing (`/agents`) so they see the pitch
     // instead of the deep-link compact card.
@@ -224,6 +149,7 @@ export const primaryNavItems: ShellNavItem[] = [
     guestHref: "/agents",
     iconName: "Webhook",
     section: "primary",
+    dockOrder: 3,
     profileMenu: true,
     dashboard: true,
     description: "AI Agent Harness Management",
@@ -261,6 +187,126 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: "Swords",
         description:
           "Compare agents side by side — models, prompts, and outputs",
+      },
+    ],
+  },
+  {
+    // Group parent — notes & cloud documents.
+    label: "Docs",
+    href: "/notes",
+    iconName: "NotepadText",
+    section: "primary",
+    dockOrder: 4,
+    profileMenu: false,
+    dashboard: false,
+    description: "Notes and cloud documents",
+    color: "amber",
+    children: [
+      {
+        label: "Notes",
+        href: "/notes",
+        iconName: "NotebookPen",
+        description: "Create and manage your notes and documents",
+        color: "amber",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Documents",
+        href: "/documents",
+        iconName: "FileText",
+        description: "Cloud documents — realtime co-editing, full history",
+        color: "indigo",
+        profileMenu: true,
+        dashboard: true,
+      },
+    ],
+  },
+  {
+    // Group parent — Tables, Workbooks, and Pick Lists.
+    label: "Data",
+    href: "/data",
+    iconName: "Table",
+    section: "primary",
+    dockOrder: 5,
+    profileMenu: false,
+    dashboard: false,
+    description: "Tables, workbooks, and pick lists",
+    color: "cyan",
+    children: [
+      {
+        label: "Tables",
+        href: "/data",
+        iconName: "Table",
+        description: "Manage your custom data or create tables in a Chat",
+        color: "cyan",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Workbooks",
+        href: "/workbooks",
+        iconName: "FileSpreadsheet",
+        description:
+          "Lossless spreadsheets — multi-sheet, formulas, formatting",
+        color: "emerald",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Pick Lists",
+        href: "/lists",
+        iconName: "ListChecks",
+        description: "Reusable option lists for forms, fields, and data",
+        color: "teal",
+        profileMenu: true,
+        dashboard: true,
+      },
+    ],
+  },
+  {
+    // Group parent — sidebar-only organizational node. Real destinations
+    // (My Orgs, Scopes, Context) live on the children so they still appear
+    // as dashboard tiles / profile entries via the flatten step.
+    label: "My Orgs",
+    href: "/organizations",
+    iconName: "Building2",
+    section: "primary",
+    dockOrder: 6,
+    profileMenu: false,
+    dashboard: false,
+    description: "Your teams, scopes, and shared context",
+    color: "sky",
+    guestHidden: true,
+    children: [
+      {
+        label: "My Orgs",
+        href: "/organizations",
+        iconName: "Building2",
+        description: "Your teams and shared workspaces",
+        color: "sky",
+        profileMenu: true,
+        dashboard: true,
+        guestHidden: true,
+      },
+      {
+        label: "Scopes",
+        href: "/scopes",
+        iconName: "Layers",
+        description:
+          "Define the dimensions your team works in — clients, products, teams, repos. Scopes carry context into every agent run.",
+        color: "emerald",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Context",
+        href: "/agent-context",
+        iconName: "BookOpen",
+        description: "Manage context items, templates, and knowledge (legacy)",
+        color: "cyan",
+        profileMenu: true,
+        dashboard: true,
       },
     ],
   },
@@ -411,7 +457,7 @@ export const primaryNavItems: ShellNavItem[] = [
     href: "/projects",
     iconName: "FolderKanban",
     section: "primary",
-    dockOrder: 5,
+    dockOrder: 7,
     profileMenu: false,
     dashboard: false,
     description: "Projects, tasks, and the War Room",
@@ -455,7 +501,7 @@ export const primaryNavItems: ShellNavItem[] = [
     guestHref: "/files",
     iconName: "FolderOpen",
     section: "primary",
-    dockOrder: 7,
+    dockOrder: 8,
     profileMenu: true,
     dashboard: true,
     description: "Browse and manage your files and documents",
@@ -509,7 +555,6 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "orange",
         profileMenu: true,
         dashboard: true,
-        group: "Free Tools",
       },
       {
         label: "UUID Generator",
@@ -519,7 +564,6 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "orange",
         profileMenu: true,
         dashboard: true,
-        group: "Free Tools",
       },
       {
         label: "Zip Code Heatmap",
@@ -529,7 +573,6 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "orange",
         profileMenu: true,
         dashboard: true,
-        group: "Free Tools",
       },
     ],
   },
@@ -586,47 +629,6 @@ export const primaryNavItems: ShellNavItem[] = [
       { label: "Studio", href: "/transcripts/studio", iconName: "Columns2" },
       { label: "Scribe", href: "/transcripts/scribe", iconName: "Mic" },
       { label: "Cleanup", href: "/transcripts/cleanup", iconName: "Eraser" },
-    ],
-  },
-  {
-    // Group parent — Tables, Workbooks, and Pick Lists.
-    label: "Data",
-    href: "/data",
-    iconName: "Boxes",
-    section: "primary",
-    profileMenu: false,
-    dashboard: false,
-    description: "Tables, workbooks, and pick lists",
-    color: "cyan",
-    children: [
-      {
-        label: "Tables",
-        href: "/data",
-        iconName: "Table",
-        description: "Manage your custom data or create tables in a Chat",
-        color: "cyan",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Workbooks",
-        href: "/workbooks",
-        iconName: "FileSpreadsheet",
-        description:
-          "Lossless spreadsheets — multi-sheet, formulas, formatting",
-        color: "emerald",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Pick Lists",
-        href: "/lists",
-        iconName: "ListChecks",
-        description: "Reusable option lists for forms, fields, and data",
-        color: "teal",
-        profileMenu: true,
-        dashboard: true,
-      },
     ],
   },
   {
@@ -693,7 +695,7 @@ export const primaryNavItems: ShellNavItem[] = [
   },
   {
     // Placeholder until a dedicated /medical landing ships.
-    label: "Medical Hub (Coming Soon)",
+    label: "Medical Hub (Soon)",
     href: "/education",
     iconName: "HeartPulse",
     section: "primary",

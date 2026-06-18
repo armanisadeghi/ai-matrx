@@ -25,7 +25,6 @@ import {
 } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
 import { DictionarySection } from "@/features/dictionary/components/DictionarySection";
-import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
 import {
@@ -58,8 +57,6 @@ interface ScopeEditViewProps {
 export function ScopeEditView({
   orgId,
   orgSlugOrId,
-  orgName,
-  orgIsPersonal,
   typeParam,
   scopeParam,
   canManage,
@@ -174,21 +171,6 @@ export function ScopeEditView({
 
   return (
     <div className="space-y-6 pr-14">
-      <ScopeBreadcrumb
-        orgSlugOrId={orgSlugOrId}
-        orgName={orgName}
-        orgIsPersonal={orgIsPersonal}
-        backHref={hubHref}
-        trail={[
-          {
-            label: scopeType.label_plural,
-            href: scopeTypeHref(orgSlugOrId, scopeType),
-          },
-          { label: scope.name, href: hubHref },
-          { label: "Edit" },
-        ]}
-      />
-
       {/* Header */}
       <Card className="p-6">
         <div className="flex items-start justify-between gap-4">

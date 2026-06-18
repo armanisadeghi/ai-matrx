@@ -46,10 +46,18 @@ export default function DocumentPage({
   const [renameSaving, setRenameSaving] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(false);
+  // Editability must be RESOLVED before the editor mounts. Univer boots once
+  // per documentId; if `editable` flips false→true after mount, the boot
+  // effect tears down and recreates Univer, and disposing it mid-render
+  // crashes Univer's React popups (ParagraphMenu) — content loads, then
+  // vanishes. Gate the mount on this flag so `editable` is stable from frame 1.
+  const [permsResolved, setPermsResolved] = useState(false);
 
   useEffect(() => {
+    let active = true;
     (async () => {
       const res = await getDocument(id);
+      if (!active) return;
       if (isServiceFailure(res)) {
         setError(res.error);
         return;
@@ -73,13 +81,15 @@ export default function DocumentPage({
         });
         setCanEdit(perm === true);
       }
+      setPermsResolved(true);
     })();
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const isOwner =
-    doc !== null &&
-    currentUserId !== null &&
-    doc.user_id === currentUserId;
+    doc !== null && currentUserId !== null && doc.user_id === currentUserId;
 
   const commitRename = async () => {
     if (!doc || renameDraft === doc.document_name) return;
@@ -149,14 +159,21 @@ export default function DocumentPage({
   return (
     <div className="flex h-page w-full flex-col p-0 sm:p-3 sm:pr-12">
       <div className="min-h-0 flex-1 overflow-hidden sm:rounded-md sm:border sm:border-border">
-        <DocumentEditor
-          documentId={id}
-          documentName={doc?.document_name ?? undefined}
-          editable={canEdit}
-          collab
-          toolbarLeftSlot={titleSlot}
-          toolbarRightSlot={shareSlot}
-        />
+        {permsResolved && doc ? (
+          <DocumentEditor
+            documentId={id}
+            documentName={doc.document_name}
+            editable={canEdit}
+            collab
+            toolbarLeftSlot={titleSlot}
+            toolbarRightSlot={shareSlot}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-muted-foreground">
+            <Loader2 className="size-4 animate-spin mr-2" />
+            Loading document…
+          </div>
+        )}
       </div>
     </div>
   );

@@ -63,6 +63,8 @@ const AgentEmptyMessageDisplay = dynamic(
   { ssr: false },
 );
 
+const ASSISTANT_MSG_DEBUG = "[ASSISTANT MESSAGE DEBUG]";
+
 interface DisplayEntry {
   key: string;
   role: "user" | "assistant" | "system";
@@ -332,6 +334,208 @@ export function AgentConversationDisplay({
   const assistantGroupCount = displayGroups.filter(
     (g) => g.kind === "assistant" || g.kind === "assistant-failed",
   ).length;
+
+  const prevPhaseRef = useRef(phase);
+  useEffect(() => {
+    if (prevPhaseRef.current === phase) return;
+    console.log(`${ASSISTANT_MSG_DEBUG} streamPhase`, {
+      conversationId,
+      from: prevPhaseRef.current,
+      to: phase,
+      isActive,
+      latestRequestId,
+    });
+    prevPhaseRef.current = phase;
+  }, [conversationId, phase, isActive, latestRequestId]);
+
+  const prevLatestRequestIdRef = useRef(latestRequestId);
+  useEffect(() => {
+    if (prevLatestRequestIdRef.current === latestRequestId) return;
+    console.log(`${ASSISTANT_MSG_DEBUG} latestRequestId`, {
+      conversationId,
+      from: prevLatestRequestIdRef.current,
+      to: latestRequestId,
+      phase,
+      isActive,
+    });
+    prevLatestRequestIdRef.current = latestRequestId;
+  }, [conversationId, latestRequestId, phase, isActive]);
+
+  const prevIsActiveRef = useRef(isActive);
+  useEffect(() => {
+    if (prevIsActiveRef.current === isActive) return;
+    console.log(`${ASSISTANT_MSG_DEBUG} isActive`, {
+      conversationId,
+      from: prevIsActiveRef.current,
+      to: isActive,
+      phase,
+      latestRequestId,
+    });
+    prevIsActiveRef.current = isActive;
+  }, [conversationId, isActive, phase, latestRequestId]);
+
+  const prevRawMessageCountRef = useRef(messages.length);
+  useEffect(() => {
+    if (prevRawMessageCountRef.current === messages.length) return;
+    console.log(`${ASSISTANT_MSG_DEBUG} rawMessageCount`, {
+      conversationId,
+      from: prevRawMessageCountRef.current,
+      to: messages.length,
+      phase,
+      latestRequestId,
+    });
+    prevRawMessageCountRef.current = messages.length;
+  }, [conversationId, messages.length, phase, latestRequestId]);
+
+  const prevDisplayEntriesKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const entriesKey = displayEntries
+      .map(
+        (e) =>
+          `${e.key}:${e.role}:${e.messageId ?? "null"}:${e.requestId ?? "null"}:${e.isStreamActive}:${e.isFailed}:${e.canRetry}`,
+      )
+      .join("|");
+    if (prevDisplayEntriesKeyRef.current === entriesKey) return;
+
+    const streamingEntry = displayEntries.find((e) => e.isStreamActive);
+    const syntheticStreaming = displayEntries.some((e) =>
+      e.key.startsWith("__streaming__:"),
+    );
+
+    console.log(`${ASSISTANT_MSG_DEBUG} displayEntries`, {
+      conversationId,
+      entryCount: displayEntries.length,
+      phase,
+      isActive,
+      latestRequestId,
+      hasSyntheticStreamingBubble: syntheticStreaming,
+      activeStreamingEntry: streamingEntry
+        ? {
+            key: streamingEntry.key,
+            messageId: streamingEntry.messageId,
+            requestId: streamingEntry.requestId,
+            isFailed: streamingEntry.isFailed,
+            isSynthetic: streamingEntry.key.startsWith("__streaming__:"),
+          }
+        : null,
+      entries: displayEntries.map((e) => ({
+        key: e.key,
+        role: e.role,
+        messageId: e.messageId,
+        requestId: e.requestId,
+        isStreamActive: e.isStreamActive,
+        isFailed: e.isFailed,
+        canRetry: e.canRetry,
+        renderNote:
+          e.role === "user"
+            ? "→ AgentUserMessage"
+            : e.isFailed
+              ? "→ standalone AgentAssistantMessage (failed)"
+              : e.isStreamActive
+                ? e.key.startsWith("__streaming__:")
+                  ? "→ synthetic pre-reservation streaming bubble"
+                  : "→ streaming assistant cx_message (MarkdownStream path)"
+                : "→ folds into AssistantTurnGroup buffer",
+      })),
+    });
+    prevDisplayEntriesKeyRef.current = entriesKey;
+  }, [conversationId, displayEntries, phase, isActive, latestRequestId]);
+
+  const prevDisplayGroupsKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const groupsKey = displayGroups
+      .map((g) => {
+        if (g.kind === "user") return `user:${g.key}:${g.messageId}`;
+        if (g.kind === "assistant-failed") {
+          return `failed:${g.key}:${g.messageId ?? "null"}:${g.requestId ?? "null"}:${g.isStreamActive}:${g.canRetry}`;
+        }
+        return `assistant:${g.key}:${g.members.length}:${g.members.map((m) => `${m.key}:${m.isStreamActive}`).join(",")}`;
+      })
+      .join("|");
+    if (prevDisplayGroupsKeyRef.current === groupsKey) return;
+
+    console.log(`${ASSISTANT_MSG_DEBUG} displayGroups`, {
+      conversationId,
+      groupCount: displayGroups.length,
+      assistantGroupCount,
+      groups: displayGroups.map((g) => {
+        if (g.kind === "user") {
+          return {
+            kind: g.kind,
+            key: g.key,
+            messageId: g.messageId,
+            renders: "AgentUserMessage",
+          };
+        }
+        if (g.kind === "assistant-failed") {
+          return {
+            kind: g.kind,
+            key: g.key,
+            messageId: g.messageId,
+            requestId: g.requestId,
+            isStreamActive: g.isStreamActive,
+            canRetry: g.canRetry,
+            renders: "AgentAssistantMessage (failed, no turn group)",
+            actionBar: "hidden (failed turn)",
+          };
+        }
+        const lastMember = g.members[g.members.length - 1];
+        const showGroupActionBar =
+          !!lastMember &&
+          !lastMember.isStreamActive &&
+          g.members.some((m) => m.messageId);
+        return {
+          kind: g.kind,
+          key: g.key,
+          memberCount: g.members.length,
+          renders: "AssistantTurnGroup",
+          members: g.members.map((m) => ({
+            key: m.key,
+            messageId: m.messageId,
+            requestId: m.requestId,
+            isStreamActive: m.isStreamActive,
+            perMemberActionBar: "hidden (group owns bar)",
+          })),
+          groupActionBar: showGroupActionBar
+            ? "visible"
+            : "hidden (streaming or no anchor id)",
+        };
+      }),
+    });
+    prevDisplayGroupsKeyRef.current = groupsKey;
+  }, [conversationId, displayGroups, assistantGroupCount]);
+
+  const displayGroupsCycleRef = useRef(0);
+  useEffect(() => {
+    displayGroupsCycleRef.current += 1;
+    console.log(`${ASSISTANT_MSG_DEBUG} displayGroups cycle`, {
+      cycle: displayGroupsCycleRef.current,
+      conversationId,
+      groupCount: displayGroups.length,
+      displayGroups,
+    });
+  }, [conversationId, displayGroups]);
+
+  const isEmpty = displayGroups.length === 0;
+  const prevIsEmptyRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (prevIsEmptyRef.current === isEmpty) return;
+    console.log(`${ASSISTANT_MSG_DEBUG} topLevelBranch`, {
+      conversationId,
+      from:
+        prevIsEmptyRef.current === null
+          ? null
+          : prevIsEmptyRef.current
+            ? "AgentEmptyMessageDisplay"
+            : "messageList",
+      to: isEmpty ? "AgentEmptyMessageDisplay" : "messageList",
+      reason: isEmpty
+        ? "displayGroups is empty — no user/assistant entries survived filtering"
+        : `rendering ${displayGroups.length} group(s)`,
+      groupCount: displayGroups.length,
+    });
+    prevIsEmptyRef.current = isEmpty;
+  }, [conversationId, isEmpty, displayGroups.length]);
 
   useEffect(() => {
     if (!isWarRoomTileAgentSurface(surfaceKey)) return;

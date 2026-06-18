@@ -64,7 +64,7 @@ export default function ScopeItemPage() {
 
   return (
     <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
-      <div className="max-w-4xl mx-auto p-6 md:p-8">
+      <div className="max-w-4xl mx-auto px-6 md:px-8 pt-10 pb-12">
         <ScopeItemDetail
           orgId={org.id}
           orgSlugOrId={orgSlugOrId}

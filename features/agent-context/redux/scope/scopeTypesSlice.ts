@@ -15,6 +15,9 @@ const scopeTypesAdapter = createEntityAdapter<ScopeType>({
   sortComparer: (a, b) => a.sort_order - b.sort_order,
 });
 
+/** Stable empty list for selectors — never mutate. */
+const EMPTY_SCOPE_TYPES: ScopeType[] = [];
+
 interface ScopeTypesExtraState {
   loading: boolean;
   error: string | null;
@@ -213,7 +216,13 @@ export const selectScopeTypesByOrg = createSelector(
   // is_system scope types are PLATFORM infrastructure (the "Environment" home for ambient
   // items, etc.) — they live under a real org for FK reasons but must NOT appear in that
   // org's normal scope management. They're managed via the admin surface, not here.
-  (types, orgId) => types.filter((t) => t.organization_id === orgId && !t.is_system),
+  (types, orgId) => {
+    if (!orgId) return EMPTY_SCOPE_TYPES;
+    const filtered = types.filter(
+      (t) => t.organization_id === orgId && !t.is_system,
+    );
+    return filtered.length > 0 ? filtered : EMPTY_SCOPE_TYPES;
+  },
 );
 
 /**

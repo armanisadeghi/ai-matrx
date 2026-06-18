@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import IconResolver from "@/components/official/icons/IconResolver";
 import { adminCategoriesData } from "@/features/admin/constants/admin-categories";
+import { ADMIN_APP_URL } from "@/features/shell/constants/nav-data";
 
 const iconSlot =
   "flex h-4 w-4 shrink-0 items-center justify-center text-muted-foreground [&>svg]:h-4 [&>svg]:w-4 [&>svg]:max-w-none";
@@ -74,6 +75,22 @@ export default function AdminMenu() {
             </span>
             <span className="truncate">Dashboard</span>
           </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="gap-2">
+          <a href={ADMIN_APP_URL} target="_blank" rel="noopener noreferrer">
+            <span
+              className={cn(iconSlot, "text-emerald-500 dark:text-emerald-400")}
+            >
+              <IconResolver iconName="Gauge" />
+            </span>
+            <span className="flex-1 truncate font-medium text-emerald-600 dark:text-emerald-400">
+              Admin Console
+            </span>
+            <IconResolver
+              iconName="ArrowUpRight"
+              className="h-3.5 w-3.5 text-emerald-500/70 dark:text-emerald-400/70"
+            />
+          </a>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
 

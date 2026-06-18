@@ -419,6 +419,12 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
+- `2026-06-18` — claude: **Univer integration aligned to official docs — single-boot lifecycle + native theming (documents + workbooks).** Root-caused the "content loads then vanishes after ~1–2s + `Cannot read properties of undefined (reading 'key')` in `ParagraphMenu`" crash: the boot effect depended on `[id, editable, collab]`, so the async owner/permission check flipping `editable` `false`→`true` tore Univer down and recreated it; disposing Univer mid-render crashed its popups. Fix (per https://docs.univer.ai): **(1) Lifecycle** — Univer now boots EXACTLY ONCE per id (boot effect deps `[id]` only); `editable` / `collab` / collab host-election are read from refs inside the long-lived command listener, so prop toggles never recreate the instance. The `[id]` pages also gate the editor mount on `permsResolved` so editability is known before mount. **(2) Theme/dark mode** — replaced the `colorScheme: "light"` CSS hack (which broke dark mode and fought Univer's portals) with Univer's real theming: `createUniver({ theme: defaultTheme, darkMode })` + new shared hook `hooks/useUniverDarkModeSync.ts` that mirrors the app's Redux `theme.mode` to `univerAPI.toggleDarkMode(isDark)`. Removed the global `color-scheme: light !important` popup overrides in `app/globals.css` (kept only toolbar-geometry rules).
+- `2026-06-18` — claude: **`/documents` hub — card overflow fix + table view.** Landing page
+  cards now constrain long names/descriptions (`min-w-0`, `truncate`/`line-clamp-2`). Added search
+  bar, cards/table toggle (persisted), sort menu for cards, and `DocumentsHubTable` with per-column
+  sort + filters (name, description, source, created, updated) — mirrors transcripts hub table,
+  no grouping.
 - `2026-06-16` — claude: **Agents can attach + edit workbooks/documents.** New
   `{Workbooks,Documents}ResourcePicker.tsx` + entries in `ResourcePickerMenu.tsx` let users attach
   a workbook/document to a chat (emitting the `input_workbook`/`input_document` resource blocks that

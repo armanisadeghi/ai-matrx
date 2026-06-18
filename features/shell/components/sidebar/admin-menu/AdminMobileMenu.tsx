@@ -11,6 +11,7 @@
 import Link from "next/link";
 import IconResolver from "@/components/official/icons/IconResolver";
 import { adminCategoriesData } from "@/features/admin/constants/admin-categories";
+import { ADMIN_APP_URL } from "@/features/shell/constants/nav-data";
 
 function closeSheet() {
   const checkbox = document.getElementById(
@@ -36,6 +37,25 @@ export default function AdminMobileMenu() {
         </span>
         <span>Admin Dashboard</span>
       </Link>
+
+      <a
+        href={ADMIN_APP_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shell-mobile-nav-item"
+        onClick={closeSheet}
+      >
+        <span className="shell-nav-icon text-emerald-500 dark:text-emerald-400">
+          <IconResolver iconName="Gauge" className="h-5 w-5" />
+        </span>
+        <span className="flex-1 font-medium text-emerald-600 dark:text-emerald-400">
+          Admin Console
+        </span>
+        <IconResolver
+          iconName="ArrowUpRight"
+          className="h-4 w-4 text-emerald-500/70 dark:text-emerald-400/70"
+        />
+      </a>
 
       {adminCategoriesData.map((category) => (
         <details key={category.name} className="shell-mobile-nav-group">

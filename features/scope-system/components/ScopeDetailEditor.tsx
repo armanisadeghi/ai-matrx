@@ -30,7 +30,7 @@ import {
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
 import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
-import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
+import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import {
@@ -64,8 +64,6 @@ interface ScopeDetailEditorProps {
 export function ScopeDetailEditor({
   orgId,
   orgSlugOrId,
-  orgName,
-  orgIsPersonal,
   typeParam,
   scopeParam,
   canManage,
@@ -218,45 +216,32 @@ export function ScopeDetailEditor({
 
   return (
     <div className="space-y-6 pr-14">
-      <ScopeBreadcrumb
-        orgSlugOrId={orgSlugOrId}
-        orgName={orgName}
-        orgIsPersonal={orgIsPersonal}
-        backHref={scopeTypeHref(orgSlugOrId, scopeType)}
-        trail={[
-          {
-            label: scopeType.label_plural,
-            href: scopeTypeHref(orgSlugOrId, scopeType),
-          },
-          { label: scope.name },
-        ]}
-        actions={
-          <>
-            <Button asChild variant="outline" size="sm">
-              <Link href={scopeEditHref(orgSlugOrId, scopeType, scope)}>
-                <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                Edit settings
-              </Link>
+      <PageHeaderRightPortal>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href={scopeEditHref(orgSlugOrId, scopeType, scope)}>
+              <Pencil className="h-3.5 w-3.5 mr-1.5" />
+              Edit settings
+            </Link>
+          </Button>
+          {canManage && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+            >
+              {deleting ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              Delete
             </Button>
-            {canManage && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-              >
-                {deleting ? (
-                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                )}
-                Delete
-              </Button>
-            )}
-          </>
-        }
-      />
+          )}
+        </div>
+      </PageHeaderRightPortal>
 
       <Card className="p-6">
         <div className="flex items-start gap-4">
