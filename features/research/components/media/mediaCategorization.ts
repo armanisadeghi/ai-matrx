@@ -161,10 +161,16 @@ export function photoGrade(item: ResearchMedia): PhotoGrade {
   return "modest";
 }
 
-/** A photo big enough to deserve a larger "featured" tile. */
+/**
+ * A photo big enough to deserve a larger "featured" tile. Cut tuned to real
+ * feedback: 700×700 / 1280×720 / 2560×1706 read large; 400×400 / 640×360 stay
+ * in the small standard band.
+ */
 export function isFeaturedPhoto(item: ResearchMedia): boolean {
-  const g = photoGrade(item);
-  return g === "hero" || g === "large";
+  const resolved = getResolved(item);
+  const max = resolvedMaxDimension(resolved);
+  const area = resolvedPixelArea(resolved);
+  return max >= 1000 || area >= 450_000;
 }
 
 export function aspectRatioFromResolved(
