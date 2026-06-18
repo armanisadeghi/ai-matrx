@@ -364,6 +364,21 @@ export function RecordingCard({
           </p>
         </div>
 
+        {/* Overflow menu — the non-swipe path. Swipe is great on touch, but on
+            desktop a mouse-drag swipe is awkward, so every action is also one
+            tap away here (opens the same sheet the swipe "More" does). */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen(true);
+          }}
+          aria-label="Recording options"
+          className="flex h-10 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground active:bg-accent"
+        >
+          <MoreHorizontal className="h-5 w-5" />
+        </button>
+
         {/* Play in the shared session player */}
         <button
           type="button"

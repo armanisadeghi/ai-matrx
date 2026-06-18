@@ -59,8 +59,23 @@ export function useWorkingDocChanges(
   const draftRef = useRef(draft);
   draftRef.current = draft;
 
+  // Has the persisted document loaded yet? At mount `remoteContent` is usually
+  // EMPTY (the doc fetch / realtime hydration hasn't landed), so seeding `seen`
+  // to that empty value and then receiving the real content would read the
+  // PERSISTED doc as an unseen "agent change" on every page refresh. The first
+  // non-empty content after mount is the baseline the user is returning to —
+  // acknowledge it as seen, never flag it.
+  const baselinedRef = useRef(norm(remoteContent).length > 0);
+
   useEffect(() => {
     setAfter(remoteContent);
+    if (!baselinedRef.current) {
+      if (norm(remoteContent).length > 0) {
+        baselinedRef.current = true;
+        setSeen(remoteContent);
+      }
+      return;
+    }
     // The change matches the user's own in-flight draft → it's the user's edit
     // echoing back through autosave/realtime. Acknowledge it silently so it is
     // never flagged as an agent change. (Also covers the no-drift case once the

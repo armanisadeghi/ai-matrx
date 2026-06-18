@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   AlignLeft,
+  BookA,
   ChevronLeft,
   FileText,
   FlaskConical,
@@ -46,7 +47,7 @@ import { ScribeLiveScreen } from "./ScribeLiveScreen";
 import { AssistantAgentBar } from "./AssistantAgentBar";
 import { WorkingDocumentHeader } from "./WorkingDocumentHeader";
 import { VoicePlaybackButton } from "./VoicePlaybackButton";
-import { DictionaryIndicatorButton } from "@/features/dictionary/components/DictionaryIndicatorButton";
+import { useOpenDictionarySelectorWindow } from "@/features/overlays/openers/dictionarySelectorWindow";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { addClientTool } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
 import { SCRIBE_TOOL_NAMES } from "@/features/agents/scribe-tools/tools/names";
@@ -144,6 +145,8 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
   const recordingBlocked =
     recorder.isAnyRecording && !recorder.isOwnedRecording;
 
+  const openDictionary = useOpenDictionarySelectorWindow();
+
   const menuItems: ActionSheetItem[] = [
     {
       key: "view-raw",
@@ -158,6 +161,14 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
       description: "AI-cleaned full session — refresh to re-run",
       icon: <AlignLeft className="h-4 w-4" />,
       onSelect: () => setSessionViewer("clean"),
+    },
+    {
+      key: "dictionary",
+      label: "Custom dictionary",
+      description: "Terms & pronunciations that bias transcription",
+      icon: <BookA className="h-4 w-4" />,
+      onSelect: () =>
+        openDictionary({ surfaceKey: "matrx-user/transcript-scribe" }),
     },
     {
       key: "rename",
@@ -262,8 +273,8 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
           {/* Voice playback stop — only renders while a voice reply is
               loading/playing, so audio can be stopped from any tab. */}
           <VoicePlaybackButton />
-          {/* Custom Dictionary context selector for this surface. */}
-          <DictionaryIndicatorButton surfaceKey="matrx-user/transcript-scribe" />
+          {/* Custom Dictionary moved into the ⋮ session menu (declutters the
+              header — it's supplementary, not a primary control). */}
           {/* Recording control — inline, session-global. Tap to start; while
               recording it pulses red and stops. */}
           <button
