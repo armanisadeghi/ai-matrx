@@ -21,7 +21,9 @@ export function hubItemMatchesQuery(
 
 function durationSortValue(item: TranscriptHubItem): number {
   if (item.kind === "processor") return item.durationSeconds ?? 0;
-  if (item.kind === "unsorted") return (item.durationMs ?? 0) / 1000;
+  if (item.kind === "unsorted" || item.kind === "recording") {
+    return (item.durationMs ?? 0) / 1000;
+  }
   return item.durationMs / 1000;
 }
 

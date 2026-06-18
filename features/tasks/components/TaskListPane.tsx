@@ -10,6 +10,8 @@ import {
   CircleDashed,
   CheckCircle2,
   Folder,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -40,6 +42,10 @@ import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsD
 import { Input } from "@/components/ui/input";
 import { cn } from "@/utils/cn";
 import type { TaskWithProject } from "@/features/tasks/types";
+import TasksTableView from "@/features/tasks/components/TasksTableView";
+
+type ListViewMode = "list" | "table";
+const LIST_VIEW_STORAGE_KEY = "tasks-list-view";
 
 export default function TaskListPane() {
   const dispatch = useAppDispatch();
@@ -62,6 +68,16 @@ export default function TaskListPane() {
   const scopeNameMap = useAppSelector((state) =>
     selectScopeNameMapForOrg(state, orgId),
   );
+
+  const [listView, setListView] = React.useState<ListViewMode>("list");
+  React.useEffect(() => {
+    const saved = window.localStorage.getItem(LIST_VIEW_STORAGE_KEY);
+    if (saved === "list" || saved === "table") setListView(saved);
+  }, []);
+  const setListViewPersist = (mode: ListViewMode) => {
+    setListView(mode);
+    window.localStorage.setItem(LIST_VIEW_STORAGE_KEY, mode);
+  };
 
   const activeGroupKey = useMemo(() => {
     if (!selectedTaskId) return null;
@@ -131,6 +147,34 @@ export default function TaskListPane() {
         <span className="text-[11px] text-muted-foreground tabular-nums shrink-0 pl-1">
           {totalCount}
         </span>
+        <div className="flex items-center rounded-md border border-border p-0.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setListViewPersist("list")}
+            className={cn(
+              "h-6 w-6 rounded flex items-center justify-center transition-colors",
+              listView === "list"
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+            title="List view"
+          >
+            <List className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setListViewPersist("table")}
+            className={cn(
+              "h-6 w-6 rounded flex items-center justify-center transition-colors",
+              listView === "table"
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+            title="Table view"
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+          </button>
+        </div>
         <form onSubmit={handleAddTask} className="flex gap-1 flex-1 min-w-0">
           <Input
             type="text"
@@ -159,7 +203,7 @@ export default function TaskListPane() {
         </form>
       </div>
 
-      {groupByBanner && (
+      {groupByBanner && listView === "list" && (
         <div className="shrink-0 px-3 py-1.5 border-b border-border/50 bg-muted/40">
           <span className="text-xs font-semibold uppercase tracking-wider text-foreground/90">
             {groupByBanner}
@@ -169,7 +213,9 @@ export default function TaskListPane() {
 
       {/* List */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        {loading && totalCount === 0 ? (
+        {listView === "table" ? (
+          <TasksTableView />
+        ) : loading && totalCount === 0 ? (
           <div className="space-y-1 p-2 animate-pulse">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-12 bg-muted/50 rounded" />

@@ -23,7 +23,7 @@ export function TranscriptsModeController() {
   };
 
   return (
-    <div className="matrx-glass-thin-border flex min-w-0 items-center gap-0 rounded-full p-0.5">
+    <div className="pointer-events-auto matrx-glass-thin-border flex min-w-0 items-center gap-0 rounded-full p-0.5">
       {TRANSCRIPTS_MODES.map(({ id, label, icon: Icon, href }) => {
         const isActive = id === mode;
         return (

@@ -4,6 +4,7 @@ import type {
   CleanupHubItem,
   HubPageResult,
   ProcessorHubItem,
+  RecordingHubItem,
   SessionHubItem,
   UnsortedHubItem,
 } from "@/features/transcripts/types/hub";
@@ -144,6 +145,152 @@ export async function fetchProcessorHubPage(
   return { items, hasMore: from + items.length < total };
 }
 
+function recordingToHubItem(
+  row: {
+    id: string;
+    session_id: string;
+    segment_index: number;
+    started_at: string;
+    ended_at: string | null;
+    updated_at: string;
+  },
+  parentKind: "session" | "cleanup",
+): RecordingHubItem {
+  return {
+    kind: "recording",
+    id: row.id,
+    sessionId: row.session_id,
+    parentKind,
+    segmentIndex: row.segment_index,
+    durationMs: recordingDurationMs(row.started_at, row.ended_at),
+    title: `Recording ${row.segment_index + 1}`,
+    createdAt: row.started_at,
+    updatedAt: row.updated_at ?? row.started_at,
+  };
+}
+
+/**
+ * Batch-load active (non-detached) recording segments for hub grouping.
+ * Best-effort: returns [] on failure so the hub still renders flat.
+ */
+export async function fetchRecordingHubItemsForSessions(
+  parents: Array<{ id: string; kind: "session" | "cleanup" }>,
+): Promise<RecordingHubItem[]> {
+  const ids = parents.map((p) => p.id);
+  if (ids.length === 0) return [];
+  const kindById = new Map(parents.map((p) => [p.id, p.kind]));
+
+  const { data, error } = await db
+    .from("studio_recording_segments")
+    .select("id, session_id, segment_index, started_at, ended_at, updated_at")
+    .in("session_id", ids)
+    .is("detached_at", null)
+    .order("segment_index", { ascending: true });
+
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `[transcripts-hub] session recordings failed: ${error.message}`,
+    );
+    return [];
+  }
+
+  return (data ?? []).map((row) =>
+    recordingToHubItem(
+      row as {
+        id: string;
+        session_id: string;
+        segment_index: number;
+        started_at: string;
+        ended_at: string | null;
+        updated_at: string;
+      },
+      kindById.get(row.session_id) ?? "session",
+    ),
+  );
+}
+
+function parentKindFromSessionSource(
+  source: string | null | undefined,
+): "session" | "cleanup" {
+  return source === "cleanup" ? "cleanup" : "session";
+}
+
+/**
+ * Load every active recording segment the user can access (RLS-scoped).
+ * Used when hub grouping is on so children appear even if their parent
+ * session is not on the current hub page.
+ */
+export async function fetchActiveRecordingHubItems(): Promise<
+  RecordingHubItem[]
+> {
+  const { data, error } = await db
+    .from("studio_recording_segments")
+    .select(
+      "id, session_id, segment_index, started_at, ended_at, updated_at, studio_sessions!inner(source)",
+    )
+    .is("detached_at", null)
+    .order("session_id", { ascending: true })
+    .order("segment_index", { ascending: true });
+
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `[transcripts-hub] active recordings failed: ${error.message}`,
+    );
+    return [];
+  }
+
+  return (data ?? []).map(
+    (row: {
+      id: string;
+      session_id: string;
+      segment_index: number;
+      started_at: string;
+      ended_at: string | null;
+      updated_at: string;
+      studio_sessions?: { source: string } | { source: string }[] | null;
+    }) => {
+      const sessionJoin = row.studio_sessions;
+      const source = Array.isArray(sessionJoin)
+        ? sessionJoin[0]?.source
+        : sessionJoin?.source;
+      return recordingToHubItem(row, parentKindFromSessionSource(source));
+    },
+  );
+}
+
+/**
+ * Hydrate session/cleanup hub rows for parent sessions referenced by
+ * recordings but missing from the paginated hub list.
+ */
+export async function fetchHubSessionItemsByIds(
+  ids: string[],
+): Promise<Array<SessionHubItem | CleanupHubItem>> {
+  if (ids.length === 0) return [];
+
+  const { data, error } = await db
+    .from("studio_sessions")
+    .select("*")
+    .in("id", ids)
+    .eq("is_deleted", false);
+
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error(
+      `[transcripts-hub] parent session hydrate failed: ${error.message}`,
+    );
+    return [];
+  }
+
+  const items = ((data ?? []) as SessionRow[]).map((row) =>
+    sessionToHubItem(row, row.source === "cleanup" ? "cleanup" : "session"),
+  ) as Array<SessionHubItem | CleanupHubItem>;
+
+  await enrichSessionMetrics(items);
+  return items;
+}
+
 export async function fetchSessionHubPage(
   page: number,
   pageSize = HUB_PAGE_SIZE,
@@ -210,7 +357,7 @@ export async function fetchUnsortedHubPage(
 
   const { data, error, count } = await db
     .from("studio_recording_segments")
-    .select("*", { count: "exact" })
+    .select("*, studio_sessions!inner(source)", { count: "exact" })
     .eq("user_id", userId)
     .not("detached_at", "is", null)
     .order("detached_at", { ascending: false })
@@ -223,19 +370,31 @@ export async function fetchUnsortedHubPage(
   const items: UnsortedHubItem[] = (data ?? []).map(
     (row: {
       id: string;
+      session_id: string;
       segment_index: number;
       started_at: string;
       ended_at: string | null;
       detached_at: string | null;
-    }) => ({
-      kind: "unsorted",
-      id: row.id,
-      title: `Recording ${row.segment_index + 1}`,
-      segmentIndex: row.segment_index,
-      durationMs: recordingDurationMs(row.started_at, row.ended_at),
-      createdAt: row.started_at,
-      updatedAt: row.detached_at ?? row.started_at,
-    }),
+      studio_sessions?: { source: string } | { source: string }[] | null;
+    }) => {
+      const sessionJoin = row.studio_sessions;
+      const source = Array.isArray(sessionJoin)
+        ? sessionJoin[0]?.source
+        : sessionJoin?.source;
+      const parentKind =
+        source === "cleanup" ? ("cleanup" as const) : ("session" as const);
+      return {
+        kind: "unsorted",
+        id: row.id,
+        title: `Recording ${row.segment_index + 1}`,
+        segmentIndex: row.segment_index,
+        durationMs: recordingDurationMs(row.started_at, row.ended_at),
+        createdAt: row.started_at,
+        updatedAt: row.detached_at ?? row.started_at,
+        sessionId: row.session_id,
+        parentKind,
+      };
+    },
   );
 
   const total = count ?? items.length;

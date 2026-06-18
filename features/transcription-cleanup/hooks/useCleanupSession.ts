@@ -291,7 +291,8 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
     }
     if (locallyCreatedRef.current.has(activeSessionId)) {
       // Fresh local session — refs are already correct and the content is in
-      // the page's local state. Nothing to load.
+      // the page's local state. Nothing to load; clear any stale snapshot.
+      setLoaded(null);
       setLoadState("ready");
       return;
     }

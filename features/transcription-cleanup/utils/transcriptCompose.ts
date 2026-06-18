@@ -3,8 +3,7 @@ export function composeTranscriptParts(
   ...parts: (string | null | undefined)[]
 ): string {
   return parts
-    .map((part) => part?.trim())
-    .filter((part): part is string => Boolean(part))
+    .filter((part): part is string => Boolean(part?.trim()))
     .join("\n\n");
 }
 
