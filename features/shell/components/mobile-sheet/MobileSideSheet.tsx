@@ -12,12 +12,14 @@
 
 import ShellIcon from "../ShellIcon";
 import {
+  groupNavChildren,
   navItemsForViewer,
   primaryNavItems,
   settingsItem,
 } from "../../constants/nav-data";
 import MobileSheetNavLink from "./MobileSheetNavLink";
 import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
+import AdminMobileMenuItem from "../sidebar/admin-menu/AdminMobileMenuItem";
 
 interface MobileSideSheetProps {
   isAuthenticated: boolean;
@@ -67,7 +69,7 @@ export default function MobileSideSheet({
             {visibleItems.map((item) =>
               item.children && item.children.length > 0 ? (
                 <div
-                  key={item.href}
+                  key={item.label}
                   className="shell-mobile-nav-group"
                   data-nav-group={item.href}
                 >
@@ -77,20 +79,29 @@ export default function MobileSideSheet({
                     label={item.label}
                   />
                   <div className="shell-mobile-nav-children">
-                    {item.children.map((child) => (
-                      <MobileSheetNavLink
-                        key={child.href}
-                        href={child.href}
-                        iconName={child.iconName}
-                        label={child.label}
-                        isChild
-                      />
+                    {groupNavChildren(item.children).map((section) => (
+                      <div key={section.label ?? section.items[0]?.href}>
+                        {section.label ? (
+                          <div className="shell-mobile-section-label">
+                            {section.label}
+                          </div>
+                        ) : null}
+                        {section.items.map((child) => (
+                          <MobileSheetNavLink
+                            key={child.href}
+                            href={child.href}
+                            iconName={child.iconName}
+                            label={child.label}
+                            isChild
+                          />
+                        ))}
+                      </div>
                     ))}
                   </div>
                 </div>
               ) : (
                 <MobileSheetNavLink
-                  key={item.href}
+                  key={item.label}
                   href={item.href}
                   iconName={item.iconName}
                   label={item.label}
@@ -106,8 +117,9 @@ export default function MobileSideSheet({
               label={settingsItem.label}
             />
 
-            {/* Admin section — injected by AdminNavInjector (client component) */}
-            <div id="admin-nav-mobile-slot" />
+            {/* Admin section — single "Administration" entry, self-gated by
+                selectIsAdmin (client component) */}
+            <AdminMobileMenuItem />
           </div>
 
           {/* Route menu — populated by MobileRouteMenuSlot client island */}

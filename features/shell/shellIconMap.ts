@@ -25,6 +25,7 @@ import {
   FolderOpen,
   GitCompareArrows,
   Globe,
+  Images,
   Layers,
   LayoutDashboard,
   LayoutGrid,
@@ -56,6 +57,7 @@ import {
   User,
   Webhook,
   Workflow,
+  Wrench,
   X,
   Zap,
 } from "lucide-react";
@@ -83,6 +85,7 @@ export const shellIconComponents: Record<string, LucideIcon> = {
   FolderOpen,
   GitCompareArrows,
   Globe,
+  Images,
   Layers,
   LayoutDashboard,
   LayoutGrid,
@@ -114,6 +117,7 @@ export const shellIconComponents: Record<string, LucideIcon> = {
   User,
   Webhook,
   Workflow,
+  Wrench,
   X,
   Zap,
 };

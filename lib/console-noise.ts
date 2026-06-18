@@ -16,12 +16,21 @@
 // React strips these dev-time `console.error` warnings from production
 // bundles, so anything filtered here is dev-only noise.
 //
-// Two consumers:
-//   - `installThirdPartyNoiseFilter()` wraps the global `console.error` once
-//     to drop matching calls before they reach the dev overlay / DevTools.
+// Consumer:
 //   - `isKnownThirdPartyNoise(args)` is a pure predicate that the admin
 //     debug collector calls before forwarding to Redux, so the AdminIndicator
-//     panel stays clean regardless of which wrapper landed on top.
+//     panel stays clean.
+//
+// NOTE: We deliberately do NOT monkeypatch the global `console.error` to drop
+// this noise. A synchronous global wrapper inserts its own frame at the top of
+// every captured stack, so Next.js's dev overlay reported `console-noise.ts`
+// as the origin of *real* errors (e.g. "Maximum update depth exceeded") —
+// hiding the actual error and making the filter look like the thing failing.
+// Suppressing a few dev-only third-party warnings was not worth corrupting the
+// origin of every genuine error, so the global wrapper was removed. The
+// Filerobot styled-components warnings reappear in the dev console only (React
+// strips them from production builds). To hide them locally, add this file to
+// your DevTools "Ignore List".
 
 // TODO[2026-Q3]: react-filerobot-image-editor@5.0.1 is built on
 // styled-components v6 and spreads a fixed set of its own component props
@@ -91,24 +100,4 @@ export function isKnownThirdPartyNoise(args: readonly unknown[]): boolean {
   }
 
   return false;
-}
-
-let installed = false;
-
-/**
- * Wrap `console.error` so calls matching `isKnownThirdPartyNoise` are dropped
- * before they hit the dev overlay. Idempotent — calling more than once is a
- * no-op. Safe to call from a `dynamic()` loader, a module top level, or an
- * effect; SSR-safe (no-op on the server).
- */
-export function installThirdPartyNoiseFilter(): void {
-  if (installed) return;
-  if (typeof window === "undefined") return;
-  installed = true;
-
-  const original = console.error.bind(console);
-  console.error = (...args: unknown[]) => {
-    if (isKnownThirdPartyNoise(args)) return;
-    original(...args);
-  };
 }

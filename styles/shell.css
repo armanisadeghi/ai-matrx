@@ -375,6 +375,13 @@
   grid-template-areas:
     "sidebar header"
     "sidebar main";
+  /* Animate the column track in lockstep with the fixed sidebar's width so the
+     main content reflows over the SAME 600ms in BOTH directions. Without this
+     the grid snapped instantly: opening still looked smooth (the opaque sidebar
+     visibly grew into already-reflowed content), but closing read as instant
+     (content filled immediately while the transparent collapsed sidebar shrank
+     with nothing visible to track). */
+  transition: grid-template-columns 600ms var(--shell-ease-smooth);
 }
 
 /* ---------------------------------------------------------------------------
@@ -407,7 +414,10 @@
   background: var(--shell-sidebar-bg);
   border-right: 1px solid var(--shell-sidebar-border);
   transition:
-    width var(--shell-duration-slow) var(--shell-ease-spring),
+    /* Smooth, non-overshooting ease (NOT the spring — its >1 control point
+       overshoots the target width and springs back). Slower duration for a
+       calmer collapse/expand that travels once and stops in a single spot. */
+    width 600ms var(--shell-ease-smooth),
     background var(--shell-duration-normal) var(--shell-ease-smooth),
     border-color var(--shell-duration-normal) var(--shell-ease-smooth);
   overflow: hidden;
@@ -602,10 +612,26 @@ button.shell-nav-item {
   pointer-events: auto;
 }
 
-/* Center icons when collapsed */
+/* Collapsed state. Two rules keep every icon perfectly stationary through the
+   collapse animation — no vertical drift AND no horizontal "dance":
+
+   1. Vertical: keep the SAME vertical padding as the expanded state (0.15rem)
+      so every row is the exact same height in both states. This prevents the
+      cumulative drift (~7px/row) that otherwise pushes the lower icons down by
+      100px+ as the sidebar collapses.
+
+   2. Horizontal: DO NOT switch to `justify-content: center`. The icon already
+      sits at x=12px (nav padding 6px + item padding 6px), which is exactly
+      centered in the 2.75rem (44px) collapsed rail — (44-20)/2 = 12 — and it's
+      the same x it occupies when expanded. Centering would instead snap the
+      icon toward the middle of the still-208px-wide row the instant the toggle
+      flips, then slide it left as the width animates down — the "dance". Left-
+      anchoring keeps the icon fixed; the shrinking width simply trims the empty
+      label space to its right, so the menu visually covers the text and only
+      then reaches the icon-only width, with zero icon movement. */
 .shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-item {
-  justify-content: center;
-  padding: 0.375rem;
+  justify-content: flex-start;
+  padding: 0.15rem 0.375rem;
   gap: 0;
 }
 
@@ -721,63 +747,82 @@ button.shell-nav-item {
   transform: rotate(90deg);
 }
 
-/* Flyout panel — portaled to <body>, floats beside the rail (glass surface). */
+/* Flyout panel — portaled to <body>, floats beside the rail. Standard shadcn
+   popover surface (solid, theme-matched) so it reads like the rest of the UI. */
 .shell-nav-flyout {
   min-width: 12rem;
   max-width: 16rem;
   display: flex;
   flex-direction: column;
-  gap: 0.0625rem;
-  padding: 0.375rem;
-  border-radius: 0.625rem;
-  background: var(--matrx-glass-bg-active);
-  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8) brightness(1.1);
-  -webkit-backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8)
-    brightness(1.1);
-  border: 1px solid var(--matrx-glass-border-color);
-  box-shadow: var(--matrx-glass-shadow);
+  gap: 0.125rem;
+  padding: 0.25rem;
+  border-radius: var(--radius);
+  background: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
   animation: shell-flyout-in var(--shell-duration-fast) var(--shell-ease-spring);
 }
 
 .shell-nav-flyout-header {
-  padding: 0.25rem 0.5rem 0.375rem;
+  padding: 0.375rem 0.5rem 0.25rem;
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--shell-nav-icon);
+  color: hsl(var(--muted-foreground));
+}
+
+.shell-nav-flyout-section {
+  padding: 0.5rem 0.5rem 0.125rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--muted-foreground));
+}
+
+.shell-nav-flyout-section:not(:first-child) {
+  margin-top: 0.25rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid hsl(var(--border) / 0.6);
 }
 
 .shell-nav-flyout-item {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.5rem;
   padding: 0.375rem 0.5rem;
-  border-radius: 0.375rem;
+  border-radius: calc(var(--radius) - 2px);
   text-decoration: none;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--shell-nav-text);
-  border: 1px solid transparent;
+  color: hsl(var(--popover-foreground));
   transition:
     background var(--shell-duration-fast) var(--shell-ease-smooth),
     color var(--shell-duration-fast) var(--shell-ease-smooth);
 }
 
 .shell-nav-flyout-item:hover {
-  background: var(--matrx-glass-bg-hover);
-  color: var(--shell-nav-text-hover);
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
 }
 
 .shell-nav-flyout-item .shell-nav-icon {
   display: inline-flex;
   flex-shrink: 0;
-  color: var(--shell-nav-icon);
+  color: hsl(var(--muted-foreground));
 }
 
+.shell-nav-flyout-item:hover .shell-nav-icon {
+  color: hsl(var(--accent-foreground));
+}
+
+/* Active route — same blue pill the rail uses, for cohesion across the menu. */
 .shell-nav-flyout-item[data-active="true"] {
   background: var(--shell-pill-bg);
-  border-color: var(--shell-pill-border);
   color: var(--shell-pill-text);
   font-weight: 600;
 }
@@ -819,6 +864,19 @@ button.shell-nav-item {
   gap: 0.125rem;
   min-height: 0;
   flex: 1;
+}
+
+/* Admin section — bordered block at the end of the main nav. Top + bottom
+   rules mark it as a distinct group so additional admin chrome can live here. */
+.shell-admin-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin-top: 0.375rem;
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+  border-top: 1px solid var(--matrx-glass-border-color);
+  border-bottom: 1px solid var(--matrx-glass-border-color);
 }
 
 /* Default: main nav visible, route nav hidden */
@@ -1361,6 +1419,11 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   padding: 0.5rem 0.75rem;
   font-size: 0.8125rem;
   font-weight: 500;
+}
+
+/* Admin accordion caret (mobile) — flips when its <details> is open. */
+details[open] > summary .shell-mobile-admin-caret {
+  transform: rotate(180deg);
 }
 
 /* Active state for grouped children + group parents in the mobile sheet. */
@@ -1917,7 +1980,10 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
     opacity: 0;
     pointer-events: none;
     transition:
-      left var(--shell-duration-slow) var(--shell-ease-spring),
+      /* Match the main sidebar's width transition exactly so this strip tracks
+         the sidebar edge in lockstep — same smooth ease, same 600ms, no spring
+         overshoot. */
+      left 600ms var(--shell-ease-smooth),
       opacity var(--shell-duration-normal) var(--shell-ease-smooth);
   }
 

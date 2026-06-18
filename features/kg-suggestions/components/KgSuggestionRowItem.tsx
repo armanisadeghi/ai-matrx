@@ -46,6 +46,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/utils/cn";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -59,6 +60,7 @@ import {
 } from "@/features/scope-system/utils/scopeRoutes";
 import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindow";
 import { useKgSuggestionEnrichment } from "@/features/kg-suggestions/hooks/useKgSuggestionEnrichment";
+import { useSourcePreviewDoc } from "@/features/kg-suggestions/hooks/useSourcePreviewDoc";
 import { useOpenSourcePreview } from "@/features/kg-suggestions/components/source-preview/SourcePreviewContext";
 import { sourceLinkFor } from "@/features/kg-suggestions/service/sourcePreviewService";
 import type {
@@ -339,10 +341,15 @@ export function KgSuggestionRowItem({
             </div>
           ) : null}
 
-          {/* ── Source (where it came from) ── */}
-          <div className="space-y-2 border-t border-border/60 pt-2.5">
+          {/* ── Source — clearly labelled as where the suggestion came from ── */}
+          <div className="space-y-1 border-t border-border/60 pt-2.5">
+            <div className="pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Where this suggestion came from
+            </div>
+
+            {/* Item type */}
             <div className="flex items-center gap-2 text-xs">
-              <span className="w-[5rem] shrink-0 text-muted-foreground">
+              <span className="w-[6.5rem] shrink-0 text-muted-foreground">
                 Item type
               </span>
               <span className="inline-flex items-center gap-1 text-foreground/90">
@@ -354,46 +361,41 @@ export function KgSuggestionRowItem({
                 {capitalize(linkSourceLabel)}
               </span>
             </div>
+
+            {/* Item name */}
             <div className="flex items-start gap-2 text-xs">
-              <span className="w-[5rem] shrink-0 pt-0.5 text-muted-foreground">
+              <span className="w-[6.5rem] shrink-0 pt-0.5 text-muted-foreground">
                 Item name
               </span>
               <span className="min-w-0 flex-1 pt-0.5 text-foreground/90 truncate">
                 {sourceTitle}
               </span>
-              <PreviewSourceButton
-                kind={row.source_kind}
-                id={row.source_id}
-                snippet={row.context_snippet}
-                title={source?.title ?? null}
-                openableAsNote={source?.openableAs === "note"}
-                label="Preview source"
-              />
             </div>
 
+            {/* Agent comments — the reasoning behind the suggestion */}
             {row.context_snippet ? (
-              <button
-                type="button"
-                onClick={() =>
-                  openSourcePreview?.({
-                    kind: row.source_kind,
-                    id: row.source_id,
-                    snippet: row.context_snippet,
-                    title: source?.title ?? null,
-                  })
-                }
-                className={cn(
-                  "block w-full text-left text-[11px] text-foreground/70 line-clamp-2 border-l-2 border-border pl-2",
-                  openSourcePreview &&
-                    "hover:text-foreground hover:border-primary/60 transition-colors cursor-pointer",
-                )}
-                title={openSourcePreview ? "Preview source" : undefined}
-              >
-                “{row.context_snippet}”
-              </button>
+              <div className="flex items-start gap-2 text-xs">
+                <span className="w-[6.5rem] shrink-0 pt-0.5 text-muted-foreground">
+                  Agent comments
+                </span>
+                <span className="min-w-0 flex-1 pt-0.5 break-words italic text-foreground/80">
+                  “{row.context_snippet}”
+                </span>
+              </div>
             ) : null}
 
-            <div className="flex items-center gap-2 flex-wrap">
+            {/* A real preview of the source item — click to open the source */}
+            <SourceItemPreview
+              kind={row.source_kind}
+              id={row.source_id}
+              snippet={row.context_snippet}
+              title={source?.title ?? null}
+            />
+          </div>
+
+          {/* ── Actions + meta (confidence + match move down here to save space) ── */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-0.5">
+            <div className="flex items-center gap-2">
               <ConfidenceBar pct={confidencePct} />
               <span className="text-[10px] text-muted-foreground tabular-nums">
                 {confidencePct}%
@@ -401,49 +403,44 @@ export function KgSuggestionRowItem({
               <Badge variant="outline" className="h-4 text-[10px] px-1.5">
                 {matchLabel(row.match_kind)}
               </Badge>
-              <span className="text-[10px] text-muted-foreground">
-                Detected {formatRelative(row.created_at)}
-              </span>
             </div>
-          </div>
-
-          {/* ── Actions (bottom) ── */}
-          <div className="flex items-center justify-end gap-1.5 border-t border-border/60 pt-2.5">
-            <DeferControl
-              busy={busy}
-              onDefer={(note) =>
-                void run(
-                  "defer",
-                  () => defer(row.id, note),
-                  "Snoozed for 7 days",
-                )
-              }
-            />
-            <RejectButton
-              busy={busy}
-              onClick={() =>
-                void run(
-                  "reject",
-                  () => reject(row.id),
-                  "Dismissed for 30 days",
-                )
-              }
-            />
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() =>
-                void run(
-                  "accept",
-                  () => accept(row.id),
-                  `Tagged to ${scopeName ?? "scope"}`,
-                )
-              }
-              className="inline-flex items-center gap-1 rounded border border-primary bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              <Link2 className="h-3 w-3" />
-              {acceptVerb}
-            </button>
+            <div className="ml-auto flex items-center gap-1.5">
+              <DeferControl
+                busy={busy}
+                onDefer={(note) =>
+                  void run(
+                    "defer",
+                    () => defer(row.id, note),
+                    "Snoozed for 7 days",
+                  )
+                }
+              />
+              <RejectButton
+                busy={busy}
+                onClick={() =>
+                  void run(
+                    "reject",
+                    () => reject(row.id),
+                    "Dismissed for 30 days",
+                  )
+                }
+              />
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  void run(
+                    "accept",
+                    () => accept(row.id),
+                    `Tagged to ${scopeName ?? "scope"}`,
+                  )
+                }
+                className="inline-flex items-center gap-1 rounded border border-primary bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                <Link2 className="h-3 w-3" />
+                {acceptVerb}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1049,6 +1046,76 @@ function PreviewSourceButton({
         <ExternalLink className="h-3 w-3" />
       )}
       {label ?? (inPanel ? "Preview" : "Open")}
+    </button>
+  );
+}
+
+/**
+ * An inline, read-only peek at the ACTUAL source item the suggestion was drawn
+ * from — enough content to decide without spelunking. Loads the body via the
+ * cached `useSourcePreviewDoc` (deduped across the card + the full preview
+ * panel), clamps it to a few lines, and acts as the link to the full source:
+ * clicking opens the non-blocking source-preview panel beside the inbox.
+ */
+function SourceItemPreview({
+  kind,
+  id,
+  snippet,
+  title,
+}: {
+  kind: string;
+  id: string;
+  snippet: string | null;
+  title: string | null;
+}) {
+  const { doc, loading } = useSourcePreviewDoc(kind, id);
+  const openPreview = useOpenSourcePreview();
+  const body = doc?.body?.trim() || null;
+
+  return (
+    <button
+      type="button"
+      disabled={!openPreview}
+      onClick={() =>
+        openPreview?.({ kind, id, snippet, title: doc?.title ?? title })
+      }
+      title={openPreview ? "Open source" : undefined}
+      className={cn(
+        "group block w-full overflow-hidden rounded-md border border-border bg-muted/30 text-left",
+        openPreview &&
+          "cursor-pointer transition-colors hover:border-primary/50",
+      )}
+    >
+      <div className="flex items-center justify-between gap-2 border-b border-border/60 bg-muted/40 px-2 py-1">
+        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          Item preview
+        </span>
+        {openPreview ? (
+          <span className="inline-flex items-center gap-0.5 text-[10px] text-foreground opacity-60 transition-opacity group-hover:opacity-100">
+            Open source
+            <ArrowRight className="h-2.5 w-2.5" />
+          </span>
+        ) : null}
+      </div>
+      <div className="px-2.5 py-2">
+        {loading ? (
+          <div className="space-y-1.5">
+            <Skeleton className="h-2.5 w-full" />
+            <Skeleton className="h-2.5 w-[85%]" />
+            <Skeleton className="h-2.5 w-[55%]" />
+          </div>
+        ) : body ? (
+          <p className="line-clamp-4 whitespace-pre-wrap break-words text-[11px] leading-relaxed text-foreground/80">
+            {body}
+          </p>
+        ) : (
+          <p className="text-[11px] italic text-muted-foreground">
+            {doc?.notFound
+              ? "This source couldn’t be loaded — it may have been deleted."
+              : "No inline preview for this item. Open the source to read it."}
+          </p>
+        )}
+      </div>
     </button>
   );
 }

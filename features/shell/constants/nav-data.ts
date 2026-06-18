@@ -28,6 +28,8 @@ export interface ShellNavChild {
   href: string;
   iconName: string;
   exact?: boolean;
+  /** Optional subgroup label in sidebar / mobile flyouts (e.g. "RAG"). */
+  group?: string;
   /**
    * Group-child metadata. A group parent is a sidebar-only organizational
    * node (`dashboard: false`); its real destinations live on the children.
@@ -89,7 +91,7 @@ export const primaryNavItems: ShellNavItem[] = [
     // hard-redirects guests off `/dashboard` to `/login` anyway, so
     // pointing the sidebar there would bounce guests through an
     // unnecessary login hop.
-    label: "Dashboard",
+    label: "AI Matrx",
     href: "/dashboard",
     guestHref: "/features",
     iconName: "LayoutDashboard",
@@ -229,6 +231,62 @@ export const primaryNavItems: ShellNavItem[] = [
     ],
   },
   {
+    // Knowledge umbrella. Authed users jump straight to the live
+    // workspace still needs to be created; guests hit `/knowledge` (the
+    // KnowledgeShowcasePage — an informational map of the system, no
+    // auth required). `/knowledge/graph` is the graph sub-route.
+    label: "Knowledge",
+    href: "/knowledge",
+    guestHref: "/knowledge",
+    iconName: "Database",
+    section: "primary",
+    profileMenu: true,
+    dashboard: true,
+    description:
+      "RAG data stores, knowledge graph, deep research, and org-wide search",
+    color: "amber",
+    children: [
+      {
+        label: "Research",
+        href: "/research",
+        iconName: "FlaskConical",
+        description: "Deep research with automated topic analysis",
+        color: "purple",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Knowledge Graph",
+        href: "/knowledge/graph",
+        iconName: "Network",
+      },
+      {
+        label: "Data Stores",
+        href: "/rag/data-stores",
+        iconName: "Database",
+        group: "RAG",
+      },
+      {
+        label: "Search",
+        href: "/rag/search",
+        iconName: "Search",
+        group: "RAG",
+      },
+      {
+        label: "Library",
+        href: "/rag/library",
+        iconName: "FileText",
+        group: "RAG",
+      },
+      {
+        label: "Repositories",
+        href: "/rag/repositories",
+        iconName: "Code2",
+        group: "RAG",
+      },
+    ],
+  },
+  {
     label: "Agent Apps",
     href: "/agent-apps",
     iconName: "Puzzle",
@@ -237,16 +295,6 @@ export const primaryNavItems: ShellNavItem[] = [
     dashboard: true,
     description: "Browse and run interactive apps built from agents",
     color: "emerald",
-  },
-  {
-    label: "Research",
-    href: "/research",
-    iconName: "FlaskConical",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Deep research with Automated topic analysis",
-    color: "purple",
   },
   {
     label: "Reports",
@@ -323,24 +371,59 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "blue",
   },
   {
-    label: "PDF Extractor",
+    // Group parent — Utilities. Real destinations live on the children so
+    // they still surface as dashboard tiles / profile entries via flatten.
+    label: "Utilities",
     href: "/tools/pdf-extractor",
-    iconName: "FileScan",
+    iconName: "Wrench",
     section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Upload, extract, and process PDF documents",
+    profileMenu: false,
+    dashboard: false,
+    description: "Handy document and data tools",
     color: "orange",
+    children: [
+      {
+        label: "PDF Extractor",
+        href: "/tools/pdf-extractor",
+        iconName: "FileScan",
+        description: "Upload, extract, and process PDF documents",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Webscraper",
+        href: "/scraper",
+        guestHref: "/features",
+        iconName: "Globe",
+        description: "Extract and process data from web sources",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+      },
+    ],
   },
   {
-    label: "Images",
+    // Group parent — Media.
+    label: "Media",
     href: "/images",
-    iconName: "Aperture",
+    iconName: "Images",
     section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Browse, generate, edit, annotate, and convert images",
+    profileMenu: false,
+    dashboard: false,
+    description: "Images and visual media tools",
     color: "pink",
+    children: [
+      {
+        label: "Images",
+        href: "/images",
+        iconName: "Aperture",
+        description: "Browse, generate, edit, annotate, and convert images",
+        color: "pink",
+        profileMenu: true,
+        dashboard: true,
+      },
+    ],
   },
   {
     // Transcripts umbrella — one feature, slash-versioned sub-routes.
@@ -417,23 +500,6 @@ export const primaryNavItems: ShellNavItem[] = [
     ],
   },
   {
-    // `/scraper` lives in `(transitional)` and that group's layout
-    // hard-redirects guests to `/login`. We don't have a dedicated
-    // scraper landing yet, so guests in the sidebar go to `/features`
-    // (browse the platform) instead of bouncing through login. The
-    // middleware also locks `/scraper` for guests — see
-    // `utils/supabase/middleware.ts`.
-    label: "Webscraper",
-    href: "/scraper",
-    guestHref: "/features",
-    iconName: "Globe",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Extract and process data from web sources",
-    color: "orange",
-  },
-  {
     // Group parent — Code workspace and Sandboxes.
     label: "Code",
     href: "/code",
@@ -487,49 +553,6 @@ export const primaryNavItems: ShellNavItem[] = [
     dashboard: true,
     description: "Design and automate complex workflows",
     color: "purple",
-  },
-  {
-    // Knowledge umbrella. Authed users jump straight to the live
-    // workspace at `/rag/data-stores`; guests hit `/knowledge` (the
-    // KnowledgeShowcasePage — an informational map of the system, no
-    // auth required). `/knowledge/graph` is the graph sub-route.
-    label: "Knowledge",
-    href: "/rag/data-stores",
-    guestHref: "/knowledge",
-    iconName: "Database",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description:
-      "Documents, data stores, RAG search, and the org-wide knowledge graph",
-    color: "amber",
-    children: [
-      {
-        label: "Data Stores",
-        href: "/rag/data-stores",
-        iconName: "Database",
-      },
-      {
-        label: "Search",
-        href: "/rag/search",
-        iconName: "Search",
-      },
-      {
-        label: "Library",
-        href: "/rag/library",
-        iconName: "FileText",
-      },
-      {
-        label: "Repositories",
-        href: "/rag/repositories",
-        iconName: "Code2",
-      },
-      {
-        label: "Knowledge Graph",
-        href: "/knowledge/graph",
-        iconName: "Network",
-      },
-    ],
   },
 ];
 
@@ -591,6 +614,28 @@ export const adminNavItems: ShellNavItem[] = [
 export const dockItems = primaryNavItems
   .filter((item) => item.dockOrder != null)
   .sort((a, b) => (a.dockOrder ?? 0) - (b.dockOrder ?? 0));
+
+export interface ShellNavChildSection {
+  label?: string;
+  items: ShellNavChild[];
+}
+
+/** Preserve child order; consecutive items sharing a `group` render under one label. */
+export function groupNavChildren(
+  children: ShellNavChild[],
+): ShellNavChildSection[] {
+  const sections: ShellNavChildSection[] = [];
+  for (const child of children) {
+    const label = child.group;
+    const last = sections[sections.length - 1];
+    if (last && last.label === label) {
+      last.items.push(child);
+    } else {
+      sections.push({ label, items: [child] });
+    }
+  }
+  return sections;
+}
 
 /**
  * Filter + rewrite nav items for the current viewer. Authenticated

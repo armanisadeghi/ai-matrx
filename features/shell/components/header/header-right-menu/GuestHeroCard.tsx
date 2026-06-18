@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { UserPlus, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,10 +14,17 @@ import { cn } from "@/lib/utils";
  * page after authenticating.
  */
 export function GuestHeroCard() {
-  const returnUrl =
-    typeof window !== "undefined"
-      ? encodeURIComponent(window.location.pathname + window.location.search)
-      : "";
+  // Computed after mount only — reading window during render produces a
+  // server/client mismatch (server has no returnUrl, client does). Both the
+  // server and first client render emit the bare hrefs; the returnUrl is
+  // appended post-hydration.
+  const [returnUrl, setReturnUrl] = useState("");
+  useEffect(() => {
+    setReturnUrl(
+      encodeURIComponent(window.location.pathname + window.location.search),
+    );
+  }, []);
+
   const signUpHref = `/sign-up${returnUrl ? `?returnUrl=${returnUrl}` : ""}`;
   const signInHref = `/login${returnUrl ? `?returnUrl=${returnUrl}` : ""}`;
 

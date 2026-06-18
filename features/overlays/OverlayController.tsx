@@ -28,10 +28,6 @@ import {
 } from "@/lib/redux/slices/overlaySlice";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 
-// Module-level guard so the mount-confirmation log fires once per page
-// session regardless of strict-mode double-invokes or route remounts.
-let _confirmedNewMount = false;
-
 // Prop-type imports for overlay components below — used to replace `as never`
 // casts emitted by the codegen with precise static types.
 import type { QuickCreateTab } from "@/features/agent-shortcuts/hooks/useShortcutQuickCreate";
@@ -3547,7 +3543,6 @@ export default function OverlayController() {
         return (
           <SidePanelSurface
             title="Quick Chat"
-            description="Chat with the Matrx assistant from anywhere."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickChat" }))}
             storageKey="quick-chat"
             defaultWidth={520}
@@ -3599,7 +3594,6 @@ export default function OverlayController() {
         return (
           <SidePanelSurface
             title="Quick Chat"
-            description="Chat with the Matrx assistant from anywhere."
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "quickChatWindow" }))
             }
@@ -3626,7 +3620,6 @@ export default function OverlayController() {
         return (
           <SidePanelSurface
             title="Quick Data"
-            description="Spin up and edit data tables on the fly."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickData" }))}
             storageKey="quick-data"
             defaultWidth={680}
@@ -3729,7 +3722,6 @@ export default function OverlayController() {
         return (
           <SidePanelSurface
             title="Quick Note"
-            description="Capture a note from anywhere."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickNotes" }))}
             storageKey="quick-note"
             defaultWidth={560}
@@ -3754,7 +3746,6 @@ export default function OverlayController() {
         return (
           <SidePanelSurface
             title="Quick Scribe"
-            description="Capture voice from anywhere — transcribed and cleaned on the fly."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickScribe" }))}
             storageKey="quick-scribe"
             defaultWidth={560}
@@ -3778,7 +3769,6 @@ export default function OverlayController() {
         return (
           <SidePanelSurface
             title="Quick Task"
-            description="Capture and track tasks from anywhere."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickTasks" }))}
             storageKey="quick-task"
             defaultWidth={560}

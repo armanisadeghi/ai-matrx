@@ -71,10 +71,10 @@ export function AdminDebugContextCollector() {
     console.error = (...args: unknown[]) => {
       originalError(...args);
       // Drop documented third-party dev warnings (see lib/console-noise.ts)
-      // so the admin debug panel stays focused on signal. The same predicate
-      // is checked by the global console.error wrapper installed at the
-      // Filerobot loader, but we re-check here so the panel stays clean
-      // regardless of which wrapper landed on top of the other.
+      // so the admin debug panel stays focused on signal. These warnings are
+      // intentionally left in the dev console itself (we no longer monkeypatch
+      // the global console.error — doing so corrupted the origin of real
+      // errors); we only filter them out of the Redux-backed debug panel here.
       if (isKnownThirdPartyNoise(args)) return;
       const message = args
         .map((a) =>

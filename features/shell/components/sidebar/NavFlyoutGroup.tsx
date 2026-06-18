@@ -18,7 +18,7 @@ import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import ShellIcon from "../ShellIcon";
 import { useSidebarExpanded } from "../../hooks/useSidebarExpanded";
-import type { ShellNavItem } from "../../constants/nav-data";
+import { groupNavChildren, type ShellNavItem } from "../../constants/nav-data";
 
 interface NavFlyoutGroupProps {
   item: ShellNavItem;
@@ -205,23 +205,32 @@ export default function NavFlyoutGroup({ item }: NavFlyoutGroupProps) {
             onMouseLeave={scheduleClose}
           >
             <div className="shell-nav-flyout-header">{item.label}</div>
-            {children.map((child) => (
-              <Link
-                key={child.href}
-                href={child.href}
-                role="menuitem"
-                className="shell-nav-flyout-item"
-                data-active={child.href === activeHref ? "true" : undefined}
-              >
-                <span className="shell-nav-icon">
-                  <ShellIcon
-                    name={child.iconName}
-                    size={16}
-                    strokeWidth={1.75}
-                  />
-                </span>
-                <span>{child.label}</span>
-              </Link>
+            {groupNavChildren(children).map((section) => (
+              <div key={section.label ?? section.items[0]?.href}>
+                {section.label ? (
+                  <div className="shell-nav-flyout-section">
+                    {section.label}
+                  </div>
+                ) : null}
+                {section.items.map((child) => (
+                  <Link
+                    key={child.href}
+                    href={child.href}
+                    role="menuitem"
+                    className="shell-nav-flyout-item"
+                    data-active={child.href === activeHref ? "true" : undefined}
+                  >
+                    <span className="shell-nav-icon">
+                      <ShellIcon
+                        name={child.iconName}
+                        size={16}
+                        strokeWidth={1.75}
+                      />
+                    </span>
+                    <span>{child.label}</span>
+                  </Link>
+                ))}
+              </div>
             ))}
           </div>,
           document.body,

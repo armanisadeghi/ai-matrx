@@ -33,7 +33,6 @@ import "@/features/window-panels/utils/lazy-bundle-guard";
 
 import dynamic from "next/dynamic";
 import { useEffect } from "react";
-import { installThirdPartyNoiseFilter } from "@/lib/console-noise";
 import { useIdleReady, useIdleTask } from "@/utils/idle-scheduler";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { OverlayState } from "@/lib/redux/slices/overlaySlice";
@@ -151,14 +150,6 @@ const SYSTEM_BROKERS = [
 ];
 
 export default function DeferredSingletons() {
-  // Install the third-party dev-noise filter as early as possible on every
-  // authenticated route. The Filerobot image editor (which leaks
-  // styled-components props onto the DOM) mounts via several entry points —
-  // not just its edit-mode shell — so installing the filter only inside that
-  // shell missed the file-preview / org pages. Installing here covers them
-  // all. Idempotent + SSR-safe; see lib/console-noise.ts.
-  installThirdPartyNoiseFilter();
-
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);

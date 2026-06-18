@@ -57,7 +57,7 @@ export default function CompactTaskItem({
 
   return (
     <div
-      className={`group px-3 py-2.5 rounded-lg border transition-all cursor-pointer relative ${
+      className={`group px-3 py-1.5 rounded-sm border transition-all cursor-pointer relative ${
         isSelected
           ? "bg-primary/10 border-primary/30 shadow-sm"
           : "bg-card border-border hover:border-border/80 hover:shadow-sm"
@@ -78,7 +78,7 @@ export default function CompactTaskItem({
         <div className="flex-1 min-w-0">
           {/* Title */}
           <h3
-            className={`text-sm font-medium mb-1 ${
+            className={`text-xs font-medium mb-1 ${
               task.completed
                 ? "line-through text-muted-foreground"
                 : "text-foreground"
@@ -89,6 +89,13 @@ export default function CompactTaskItem({
 
           {/* Metadata */}
           <div className="flex items-center gap-3 flex-wrap text-xs">
+            {/* Project */}
+            {task.projectName && !hideProjectName && (
+              <div className="flex items-center gap-1">
+                <span className="text-primary">{task.projectName}</span>
+              </div>
+            )}
+
             {/* Due Date */}
             {task.dueDate && (
               <div
@@ -105,13 +112,6 @@ export default function CompactTaskItem({
                     day: "numeric",
                   })}
                 </span>
-              </div>
-            )}
-
-            {/* Project */}
-            {task.projectName && !hideProjectName && (
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <span className="text-primary">● {task.projectName}</span>
               </div>
             )}
 

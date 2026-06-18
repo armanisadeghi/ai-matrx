@@ -5,11 +5,6 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 
-const AdminNavInjector = dynamic(
-  () => import("@/features/shell/components/sidebar/AdminNavInjector"),
-  { ssr: false, loading: () => null },
-);
-
 const AdminIndicatorWrapper = dynamic(
   () => import("@/components/admin/controls/AdminIndicatorWrapper"),
   { ssr: false, loading: () => null },
@@ -44,7 +39,6 @@ export default function AdminFeatureProvider() {
 
   return (
     <>
-      <AdminNavInjector />
       <AdminIndicatorWrapper />
       <AppleKeyExpiryBanner />
       <DebugIndicatorManager />
