@@ -22,7 +22,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { parseTranscriptContent } from "./transcript-parser";
+import {
+  parseTranscript,
+  resolveTranscriptInnerHeaderLabel,
+  type ParsedTranscript,
+} from "./transcript-parser";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -71,6 +75,8 @@ export type ViewMode = "detailed" | "compact" | "text-only";
 
 export type TranscriptViewerProps = {
   content: string;
+  /** When provided, skips re-parsing `content` (keeps block shell + viewer in sync). */
+  parsedTranscript?: ParsedTranscript;
   hideTitle?: boolean;
   onTimeClick?: (seconds: number) => void;
   onCopySegment?: (text: string) => void;
@@ -401,6 +407,7 @@ const formatTime = (seconds: number) => {
 
 const AdvancedTranscriptViewer = ({
   content,
+  parsedTranscript: parsedTranscriptProp,
   hideTitle = false,
   onTimeClick = () => {},
   onCopySegment = () => {},
@@ -450,13 +457,27 @@ const AdvancedTranscriptViewer = ({
   const [copyAllSuccess, setCopyAllSuccess] = useState(false);
 
   const segmentRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [innerHeaderLabel, setInnerHeaderLabel] = useState("Audio Transcript");
 
   // Parse transcript content
   useEffect(() => {
-    if (!content) return;
+    if (!content.trim()) {
+      setInnerHeaderLabel("Audio Transcript");
+      setTranscript([]);
+      setStats({
+        segmentCount: 0,
+        totalDuration: 0,
+        wordCount: 0,
+        charCount: 0,
+      });
+      return;
+    }
 
-    const parsedTranscript = parseTranscriptContent(content);
-    setTranscript(parsedTranscript);
+    const parsed = parsedTranscriptProp ?? parseTranscript(content);
+    setInnerHeaderLabel(resolveTranscriptInnerHeaderLabel(parsed));
+    setTranscript(parsed.segments);
+
+    const parsedTranscript = parsed.segments;
 
     // Calculate stats
     if (parsedTranscript.length > 0) {
@@ -481,8 +502,15 @@ const AdvancedTranscriptViewer = ({
         wordCount,
         charCount,
       });
+    } else {
+      setStats({
+        segmentCount: 0,
+        totalDuration: 0,
+        wordCount: 0,
+        charCount: 0,
+      });
     }
-  }, [content]);
+  }, [content, parsedTranscriptProp]);
 
   // Search functionality
   useEffect(() => {
@@ -851,7 +879,7 @@ const AdvancedTranscriptViewer = ({
           {!hideTitle && (
             <CardTitle>
               <div className="flex justify-between items-center">
-                <span>Audio Transcription</span>
+                <span>{innerHeaderLabel}</span>
                 <div className="flex items-center space-x-2 text-sm font-normal">
                   <span>Show timecodes</span>
                   <Switch
@@ -907,18 +935,27 @@ const AdvancedTranscriptViewer = ({
                   defaultValue="detailed"
                   value={viewMode}
                   onValueChange={(value) => setViewMode(value as ViewMode)}
-                  className="w-auto"
+                  className="w-auto rounded-full"
                 >
-                  <TabsList className="h-8">
-                    <TabsTrigger value="detailed" className="h-7 px-2 text-xs">
+                  <TabsList className="h-7 p-0">
+                    <TabsTrigger
+                      value="detailed"
+                      className="h-7 px-2 text-xs rounded-md border border-border"
+                    >
                       <AlignJustify className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">Detailed</span>
                     </TabsTrigger>
-                    <TabsTrigger value="compact" className="h-7 px-2 text-xs">
+                    <TabsTrigger
+                      value="compact"
+                      className="h-7 px-2 text-xs rounded-md border border-border"
+                    >
                       <ChevronsUpDown className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">Compact</span>
                     </TabsTrigger>
-                    <TabsTrigger value="text-only" className="h-7 px-2 text-xs">
+                    <TabsTrigger
+                      value="text-only"
+                      className="h-7 px-2 text-xs rounded-md border border-border"
+                    >
                       <TextIcon className="h-3.5 w-3.5" />
                       <span className="hidden sm:inline">Text Only</span>
                     </TabsTrigger>
