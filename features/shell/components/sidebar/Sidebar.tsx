@@ -13,7 +13,7 @@
 // data-sidebar-view on <nav> controls which is visible (default: "main").
 
 import NavItem from "./NavItem";
-import NavItemGroup from "./NavItemGroup";
+import NavFlyoutGroup from "./NavFlyoutGroup";
 import RouteMenuSlot from "./RouteMenuSlot";
 import RouteHeaderSlot from "./RouteHeaderSlot";
 import ShellIcon from "../ShellIcon";
@@ -70,7 +70,7 @@ export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
         <div className="shell-sidebar-main-nav">
           {visibleItems.map((item) =>
             item.children ? (
-              <NavItemGroup key={item.href} item={item} />
+              <NavFlyoutGroup key={item.href} item={item} />
             ) : (
               <NavItem key={item.href} item={item} />
             ),

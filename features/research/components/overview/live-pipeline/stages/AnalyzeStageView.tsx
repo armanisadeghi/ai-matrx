@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Brain, Star } from "lucide-react";
 import type {
   PipelineState,
@@ -12,6 +13,7 @@ import { WorkItemCard } from "../ui/WorkItemCard";
 import { ModelBadge } from "../ui/ModelBadge";
 import { AgentBadge } from "../ui/AgentBadge";
 import { Sparkline } from "../ui/Sparkline";
+import { FoldableSection } from "../ui/FoldableSection";
 
 interface Props {
   state: PipelineState;
@@ -43,7 +45,9 @@ function LegendStrip({
         <span key={v}>{badgeFn(v)}</span>
       ))}
       {overflow > 0 && (
-        <span className="text-[10px] text-muted-foreground">+{overflow} more</span>
+        <span className="text-[10px] text-muted-foreground">
+          +{overflow} more
+        </span>
       )}
     </div>
   );
@@ -57,9 +61,7 @@ function AnalyzeCard({ item }: { item: WorkItem }) {
     );
   }
   if (item.metadata.model_id) {
-    badges.push(
-      <ModelBadge key="model" modelId={item.metadata.model_id} />,
-    );
+    badges.push(<ModelBadge key="model" modelId={item.metadata.model_id} />);
   }
   const meta = item.metadata.result_length
     ? `${(item.metadata.result_length / 1024).toFixed(1)} KB`
@@ -89,6 +91,14 @@ export function AnalyzeStageView({
     .filter((i) => i.status !== "active")
     .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
 
+  const [completedOpen, setCompletedOpen] = useState(active.length === 0);
+
+  useEffect(() => {
+    if (active.length > 0) {
+      setCompletedOpen(false);
+    }
+  }, [active.length]);
+
   return (
     <SectionCard
       title={
@@ -104,9 +114,7 @@ export function AnalyzeStageView({
               timestamps={stage.recentCompletions}
               className="text-purple-500"
             />
-            <span className="tabular-nums">
-              {derived.rate.toFixed(1)}/s
-            </span>
+            <span className="tabular-nums">{derived.rate.toFixed(1)}/s</span>
           </div>
         )
       }
@@ -171,14 +179,22 @@ export function AnalyzeStageView({
       {/* Recently completed */}
       {completed.length > 0 && (
         <div className="mt-3 pt-3 border-t border-border/40">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-            Recently completed
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 max-h-72 overflow-y-auto">
-            {completed.slice(0, 24).map((item) => (
-              <AnalyzeCard key={item.id} item={item} />
-            ))}
-          </div>
+          <FoldableSection
+            open={completedOpen}
+            onOpenChange={setCompletedOpen}
+            summary={
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Recently completed ({completed.length})
+              </span>
+            }
+            contentClassName="pt-1.5"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 max-h-72 overflow-y-auto">
+              {completed.slice(0, 24).map((item) => (
+                <AnalyzeCard key={item.id} item={item} />
+              ))}
+            </div>
+          </FoldableSection>
         </div>
       )}
     </SectionCard>

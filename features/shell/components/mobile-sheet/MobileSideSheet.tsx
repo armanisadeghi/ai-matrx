@@ -23,7 +23,9 @@ interface MobileSideSheetProps {
   isAuthenticated: boolean;
 }
 
-export default function MobileSideSheet({ isAuthenticated }: MobileSideSheetProps) {
+export default function MobileSideSheet({
+  isAuthenticated,
+}: MobileSideSheetProps) {
   const visibleItems = navItemsForViewer(primaryNavItems, isAuthenticated);
   return (
     <div className="shell-mobile-sheet-wrapper">
@@ -58,16 +60,43 @@ export default function MobileSideSheet({ isAuthenticated }: MobileSideSheetProp
           {/* Route menu switch + content — client island */}
           <MobileRouteMenuSlot />
 
-          {/* Standard nav — always server-rendered */}
+          {/* Standard nav — always server-rendered. Groups render the parent
+              plus an inline, indented set of children (mobile stacks the tree
+              vertically rather than hiding it behind a collapse). */}
           <div className="shell-mobile-main-nav">
-            {visibleItems.map((item) => (
-              <MobileSheetNavLink
-                key={item.href}
-                href={item.href}
-                iconName={item.iconName}
-                label={item.label}
-              />
-            ))}
+            {visibleItems.map((item) =>
+              item.children && item.children.length > 0 ? (
+                <div
+                  key={item.href}
+                  className="shell-mobile-nav-group"
+                  data-nav-group={item.href}
+                >
+                  <MobileSheetNavLink
+                    href={item.href}
+                    iconName={item.iconName}
+                    label={item.label}
+                  />
+                  <div className="shell-mobile-nav-children">
+                    {item.children.map((child) => (
+                      <MobileSheetNavLink
+                        key={child.href}
+                        href={child.href}
+                        iconName={child.iconName}
+                        label={child.label}
+                        isChild
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <MobileSheetNavLink
+                  key={item.href}
+                  href={item.href}
+                  iconName={item.iconName}
+                  label={item.label}
+                />
+              ),
+            )}
 
             {/* Settings */}
             <div className="shell-mobile-section-divider" />

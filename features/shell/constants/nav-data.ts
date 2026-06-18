@@ -28,6 +28,19 @@ export interface ShellNavChild {
   href: string;
   iconName: string;
   exact?: boolean;
+  /**
+   * Group-child metadata. A group parent is a sidebar-only organizational
+   * node (`dashboard: false`); its real destinations live on the children.
+   * These optional fields let a child surface as a dashboard tile / profile
+   * menu entry just like a top-level item, so nesting the sidebar never
+   * removes a destination from the dashboard or profile menu.
+   */
+  description?: string;
+  color?: string;
+  dashboard?: boolean;
+  profileMenu?: boolean;
+  guestHidden?: boolean;
+  guestHref?: string;
 }
 
 export interface ShellNavItem {
@@ -103,27 +116,82 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "indigo",
   },
   {
+    // Group parent — sidebar-only organizational node. Real destinations
+    // (My Orgs, Scopes, Context) live on the children so they still appear
+    // as dashboard tiles / profile entries via the flatten step.
     label: "My Orgs",
     href: "/organizations",
     iconName: "Building2",
     section: "primary",
     dockOrder: 3,
-    profileMenu: true,
-    dashboard: true,
-    description: "Your teams and shared workspaces",
+    profileMenu: false,
+    dashboard: false,
+    description: "Your teams, scopes, and shared context",
     color: "sky",
     guestHidden: true,
+    children: [
+      {
+        label: "My Orgs",
+        href: "/organizations",
+        iconName: "Building2",
+        description: "Your teams and shared workspaces",
+        color: "sky",
+        profileMenu: true,
+        dashboard: true,
+        guestHidden: true,
+      },
+      {
+        label: "Scopes",
+        href: "/scopes",
+        iconName: "Layers",
+        description:
+          "Define the dimensions your team works in — clients, products, teams, repos. Scopes carry context into every agent run.",
+        color: "emerald",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Context",
+        href: "/agent-context",
+        iconName: "BookOpen",
+        description: "Manage context items, templates, and knowledge (legacy)",
+        color: "cyan",
+        profileMenu: true,
+        dashboard: true,
+      },
+    ],
   },
   {
+    // Group parent — Notes & Documents.
     label: "Notes",
     href: "/notes",
     iconName: "NotebookPen",
     section: "primary",
     dockOrder: 4,
-    profileMenu: true,
-    dashboard: true,
-    description: "Create and manage your notes and documents",
+    profileMenu: false,
+    dashboard: false,
+    description: "Notes and cloud documents",
     color: "amber",
+    children: [
+      {
+        label: "Notes",
+        href: "/notes",
+        iconName: "NotebookPen",
+        description: "Create and manage your notes and documents",
+        color: "amber",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Documents",
+        href: "/documents",
+        iconName: "FileText",
+        description: "Cloud documents — realtime co-editing, full history",
+        color: "indigo",
+        profileMenu: true,
+        dashboard: true,
+      },
+    ],
   },
   {
     // Sidebar points at the gallery (`/agents/all`) for authed users; for
@@ -199,26 +267,46 @@ export const primaryNavItems: ShellNavItem[] = [
   },
 
   {
-    label: "Tasks",
-    href: "/tasks",
-    iconName: "ListTodo",
-    section: "primary",
-    dockOrder: 5,
-    profileMenu: true,
-    dashboard: true,
-    description: "Organize and track your tasks and projects",
-    color: "emerald",
-  },
-  {
+    // Group parent — Projects, Tasks, and the War Room.
     label: "Projects",
     href: "/projects",
-    iconName: "Puzzle",
+    iconName: "FolderKanban",
     section: "primary",
-    dockOrder: 6,
-    profileMenu: true,
-    dashboard: true,
-    description: "Create and manage projects, collaborate with teams",
+    dockOrder: 5,
+    profileMenu: false,
+    dashboard: false,
+    description: "Projects, tasks, and the War Room",
     color: "violet",
+    children: [
+      {
+        label: "Projects",
+        href: "/projects",
+        iconName: "Folder",
+        description: "Create and manage projects, collaborate with teams",
+        color: "violet",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Tasks",
+        href: "/tasks",
+        iconName: "ListTodo",
+        description: "Organize and track your tasks and projects",
+        color: "emerald",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "War Room",
+        href: "/war-room",
+        iconName: "Radar",
+        description:
+          "Session-based command center — tasks, notes, and audio side by side",
+        color: "rose",
+        profileMenu: true,
+        dashboard: true,
+      },
+    ],
   },
   {
     // Sidebar points at the workspace (`/files/all`) for authed users; for
@@ -288,34 +376,45 @@ export const primaryNavItems: ShellNavItem[] = [
     ],
   },
   {
-    label: "Tables",
+    // Group parent — Tables, Workbooks, and Pick Lists.
+    label: "Data",
     href: "/data",
-    iconName: "Table",
+    iconName: "Boxes",
     section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Manage your custom data or create tables in a Chat",
+    profileMenu: false,
+    dashboard: false,
+    description: "Tables, workbooks, and pick lists",
     color: "cyan",
-  },
-  {
-    label: "Workbooks",
-    href: "/workbooks",
-    iconName: "FileSpreadsheet",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Lossless spreadsheets — multi-sheet, formulas, formatting",
-    color: "emerald",
-  },
-  {
-    label: "Documents",
-    href: "/documents",
-    iconName: "FileText",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Cloud documents — realtime co-editing, full history",
-    color: "indigo",
+    children: [
+      {
+        label: "Tables",
+        href: "/data",
+        iconName: "Table",
+        description: "Manage your custom data or create tables in a Chat",
+        color: "cyan",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Workbooks",
+        href: "/workbooks",
+        iconName: "FileSpreadsheet",
+        description:
+          "Lossless spreadsheets — multi-sheet, formulas, formatting",
+        color: "emerald",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Pick Lists",
+        href: "/lists",
+        iconName: "ListChecks",
+        description: "Reusable option lists for forms, fields, and data",
+        color: "teal",
+        profileMenu: true,
+        dashboard: true,
+      },
+    ],
   },
   {
     // `/scraper` lives in `(transitional)` and that group's layout
@@ -335,24 +434,35 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "orange",
   },
   {
-    label: "Sandboxes",
-    href: "/sandbox",
-    iconName: "Container",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Your AI Agents in a cloud computer with your stuff!",
-    color: "orange",
-  },
-  {
+    // Group parent — Code workspace and Sandboxes.
     label: "Code",
     href: "/code",
     iconName: "Code2",
     section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "VSCode-style workspace for sandbox and cloud projects",
+    profileMenu: false,
+    dashboard: false,
+    description: "Code workspace and sandboxes",
     color: "indigo",
+    children: [
+      {
+        label: "Code",
+        href: "/code",
+        iconName: "Code2",
+        description: "VSCode-style workspace for sandbox and cloud projects",
+        color: "indigo",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Sandboxes",
+        href: "/sandbox",
+        iconName: "Container",
+        description: "Your AI Agents in a cloud computer with your stuff!",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+      },
+    ],
   },
   {
     // Hidden from guests — DMs and team threads have no meaningful guest
@@ -377,27 +487,6 @@ export const primaryNavItems: ShellNavItem[] = [
     dashboard: true,
     description: "Design and automate complex workflows",
     color: "purple",
-  },
-  {
-    label: "Scopes",
-    href: "/scopes",
-    iconName: "Layers",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description:
-      "Define the dimensions your team works in — clients, products, teams, repos. Scopes carry context into every agent run.",
-    color: "emerald",
-  },
-  {
-    label: "Context",
-    href: "/agent-context",
-    iconName: "BookOpen",
-    section: "primary",
-    profileMenu: true,
-    dashboard: true,
-    description: "Manage context items, templates, and knowledge (legacy)",
-    color: "cyan",
   },
   {
     // Knowledge umbrella. Authed users jump straight to the live

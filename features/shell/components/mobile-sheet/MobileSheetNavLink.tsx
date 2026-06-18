@@ -7,12 +7,15 @@ interface MobileSheetNavLinkProps {
   href: string;
   iconName: string;
   label: string;
+  /** Render as an indented child of a nav group (smaller icon, inset). */
+  isChild?: boolean;
 }
 
 export default function MobileSheetNavLink({
   href,
   iconName,
   label,
+  isChild = false,
 }: MobileSheetNavLinkProps) {
   function closeSheet() {
     const checkbox = document.getElementById(
@@ -25,11 +28,19 @@ export default function MobileSheetNavLink({
     <Link
       href={href}
       data-nav-href={href}
-      className="shell-mobile-nav-item"
+      className={
+        isChild
+          ? "shell-mobile-nav-item shell-mobile-nav-child"
+          : "shell-mobile-nav-item"
+      }
       onClick={closeSheet}
     >
       <span className="shell-nav-icon">
-        <ShellIcon name={iconName} size={20} strokeWidth={1.75} />
+        <ShellIcon
+          name={iconName}
+          size={isChild ? 18 : 20}
+          strokeWidth={1.75}
+        />
       </span>
       <span>{label}</span>
     </Link>

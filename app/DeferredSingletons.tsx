@@ -91,35 +91,35 @@ function selectAnyOverlayOpen(state: { overlays: OverlayState }): boolean {
  * preloading the Impl chunk on idle (loadableGenerated.modules). The
  * gate prevents that prefetch until the first dispatch.
  */
-function OverlayControllerGate() {
-  const hasAny = useAppSelector(selectAnyOverlayOpen);
-  const createProjectInstances = useAppSelector((s) =>
-    selectOpenInstances(s, "createProjectWindow"),
-  );
+// function OverlayControllerGate() {
+//   const hasAny = useAppSelector(selectAnyOverlayOpen);
+//   const createProjectInstances = useAppSelector((s) =>
+//     selectOpenInstances(s, "createProjectWindow"),
+//   );
 
-  useEffect(() => {
-    if (hasAny) {
-      console.log(
-        "[Track New Project] 6, DeferredSingletons.tsx — OverlayControllerGate: overlay open, mounting OverlayController",
-      );
-    }
-  }, [hasAny]);
+//   useEffect(() => {
+//     if (hasAny) {
+//       console.log(
+//         "[Track New Project] 6, DeferredSingletons.tsx — OverlayControllerGate: overlay open, mounting OverlayController",
+//       );
+//     }
+//   }, [hasAny]);
 
-  useEffect(() => {
-    if (createProjectInstances.length > 0) {
-      console.log(
-        "[Track New Project] 7, DeferredSingletons.tsx — OverlayControllerGate: createProjectWindow instance(s) in Redux",
-        {
-          count: createProjectInstances.length,
-          instanceIds: createProjectInstances.map((i) => i.instanceId),
-        },
-      );
-    }
-  }, [createProjectInstances]);
+//   useEffect(() => {
+//     if (createProjectInstances.length > 0) {
+//       console.log(
+//         "[Track New Project] 7, DeferredSingletons.tsx — OverlayControllerGate: createProjectWindow instance(s) in Redux",
+//         {
+//           count: createProjectInstances.length,
+//           instanceIds: createProjectInstances.map((i) => i.instanceId),
+//         },
+//       );
+//     }
+//   }, [createProjectInstances]);
 
-  if (!hasAny) return null;
-  return <OverlayController />;
-}
+//   if (!hasAny) return null;
+//   return <OverlayController />;
+// }
 
 // ─── Static system broker descriptors (data only) ─────────────────────────
 
@@ -264,7 +264,7 @@ export default function DeferredSingletons() {
   return (
     <>
       <PersistentDOMConnector />
-      <OverlayControllerGate />
+      <OverlayController />
       <LegacyPromptOverlaysController />
       <LazyMessagingIsland />
       <AudioRecoveryToast />

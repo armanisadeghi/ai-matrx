@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Download, MoreVertical, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -20,6 +20,7 @@ import { SectionCard } from "../ui/SectionCard";
 import { StageHeader } from "../ui/StageHeader";
 import { WorkItemCard } from "../ui/WorkItemCard";
 import { CaptureLevelChip } from "../ui/CaptureLevelChip";
+import { FoldableSection } from "../ui/FoldableSection";
 
 function formatBytes(chars: number): string {
   if (chars < 1024) return `${chars} B`;
@@ -65,9 +66,7 @@ function VerdictMenu({
       toast.success(message[verdict]);
       onDone?.();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Verdict failed",
-      );
+      toast.error(err instanceof Error ? err.message : "Verdict failed");
     } finally {
       setBusy(false);
     }
@@ -104,7 +103,10 @@ function VerdictMenu({
             <DropdownMenuSeparator />
           </>
         )}
-        <DropdownMenuItem onClick={() => submit("accept_as_is")} className="text-xs">
+        <DropdownMenuItem
+          onClick={() => submit("accept_as_is")}
+          className="text-xs"
+        >
           Accept as-is (page is sparse)
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => submit("retry")} className="text-xs">
@@ -143,10 +145,7 @@ function ScrapeCard({
   const badges: React.ReactNode[] = [];
   if (item.metadata.capture_level) {
     badges.push(
-      <CaptureLevelChip
-        key="cap"
-        level={item.metadata.capture_level}
-      />,
+      <CaptureLevelChip key="cap" level={item.metadata.capture_level} />,
     );
   }
   if (item.metadata.last_failure_reason) {
@@ -201,6 +200,14 @@ export function ScrapeStageView({
   const completed = items
     .filter((i) => i.status !== "active")
     .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
+
+  const [completedOpen, setCompletedOpen] = useState(active.length === 0);
+
+  useEffect(() => {
+    if (active.length > 0) {
+      setCompletedOpen(false);
+    }
+  }, [active.length]);
 
   const counts = {
     success: 0,
@@ -264,19 +271,27 @@ export function ScrapeStageView({
 
       {completed.length > 0 && (
         <div className="mt-3 pt-3 border-t border-border/40">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-            Recently completed
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 max-h-72 overflow-y-auto">
-            {completed.slice(0, 24).map((item) => (
-              <ScrapeCard
-                key={item.id}
-                item={item}
-                topicId={topicId}
-                onUpdated={onSourceUpdated}
-              />
-            ))}
-          </div>
+          <FoldableSection
+            open={completedOpen}
+            onOpenChange={setCompletedOpen}
+            summary={
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Recently completed ({completed.length})
+              </span>
+            }
+            contentClassName="pt-1.5"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 max-h-72 overflow-y-auto">
+              {completed.slice(0, 24).map((item) => (
+                <ScrapeCard
+                  key={item.id}
+                  item={item}
+                  topicId={topicId}
+                  onUpdated={onSourceUpdated}
+                />
+              ))}
+            </div>
+          </FoldableSection>
         </div>
       )}
     </SectionCard>

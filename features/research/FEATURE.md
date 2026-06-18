@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-06-15`
+**Last updated:** `2026-06-17`
 
 ---
 
@@ -46,7 +46,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 ## Key flows
 
 - **Run pipeline** — overview `Run pipeline` → `api.runPipeline` (empty body) → `useResearchStream.startStream` → events `dispatch`ed into `usePipelineProgress`. `onEnd` calls `pipeline.finalize()` + `refresh()`. Document is NOT produced here.
-- **Live render** — `PipelineOrchestra` (graph) + `LivePipelineActivity`: finished stages → `StageStatSquare` rail, active stage(s) → large card, writing streams via `StreamingTextPanel` (MarkdownStream).
+- **Live render** — `PipelineOrchestra` (graph) + `LivePipelineActivity`: finished stages → `StageStatSquare` rail (click to expand inline detail; external-link opens results route), active stage(s) → large card, writing streams via `StreamingTextPanel` (MarkdownStream). Completed keywords / scrape+analyze item batches / source feed auto-fold via `FoldableSection`; when the run finishes the whole drawer (metrics + stages + activity log) collapses together — user can reopen.
 - **Document** — `/document` → `DocumentViewer` auto-generates (`api.generateDocument`, streams `chunk`+`document_complete`) when report-ready and none exists; persists to `rs_document`.
 - **Tags** — Tags page: create tag + consolidate. Source detail: `SourceTagPicker` assigns sources to tags (`assignTagsToSource`/`removeSourceTag`); consolidation synthesizes over a tag's sources.
 - **Curate** — `/curate` (`CurationTable`): `getCurationData` joins each source with importance + per-keyword rank + scraped content size + analysis state + tags in one shape; filter/sort/group by keyword or tag; select across groups → batch include/exclude (`bulkUpdateSources`) to clean the set before the final synthesis. Casual browsing stays on `sources`/`content` (shared `SourceResultsTable`).
@@ -81,13 +81,15 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 **Primitives reused** — `MarkdownStream` (rich-document engine); `ContentActionBar`; `components/ui` (Badge, Skeleton, DropdownMenu, Progress); `hierarchy-filter`; `sonner` toast; `useServiceQuery` pattern.
 
 **Primitives introduced**
-- `StageStatSquare` + `stageMeta` (`components/overview/live-pipeline/`) — compact finished-stage stat tile + shared per-stage display data. No existing primitive renders a stage outcome as a docking rail square; `stageMeta` canonicalizes icon/label/route/duration/square-data (replaced `CompletedStageStrip`'s private copies).
+- `LivePipelineActivity` + `StageStatSquare` + `stageMeta` (`components/overview/live-pipeline/`) — compact finished-stage stat tile + shared per-stage display data. No existing primitive renders a stage outcome as a docking rail square; `stageMeta` canonicalizes icon/label/route/duration/square-data (replaced `CompletedStageStrip`'s private copies).
+- `FoldableSection` (`components/overview/live-pipeline/ui/`) — reusable collapse/expand row for live-pipeline work (completed keywords, item batches, source feed). Completed work auto-folds; click to reopen.
 - `SourceTagPicker` (`components/sources/`) — source⇄tag toggle. No existing tag-assignment UI existed; consumes existing `assignTagsToSource`.
 
 ---
 
 ## Change log
 
+- `2026-06-17` — **Progressive folding in live pipeline.** Completed keywords fold to pills (click to expand); scrape/analyze "Recently completed" batches and the search source feed auto-collapse when work moves on. Finished stages dock as `StageStatSquare` tiles — click toggles inline stage detail (external-link still opens the results route). When a run completes, `LivePipelineActivity` collapses metrics + stage detail + activity log together; "Show details" reopens everything.
 - `2026-06-15` — Analyze-curation popup (`AnalyzeCurationDialog`): trim/edit scraped content before the analysis call; `rs_content.original_content` backs up the original once (migration applied + ledgered) and `restoreOriginalContent` recovers it.
 - `2026-06-15` — Power curation table at `/curate` (`CurationTable` + `getCurationData`): human-in-the-loop work surface — filter/sort/group by keyword+tag, importance + content-size columns (large pages flagged as likely-junk), batch include/exclude. Keyword + content lists made tabular via shared `SourceResultsTable`; "Page Summary" labels; page summary expanded by default; ugly streaming carets removed everywhere.
 - `2026-06-15` — Per-keyword home route (`keywords/[keywordId]`); per-keyword importance ranking (`ranking.ts` + `IMPORTANCE_CONFIG`) surfaced on source detail/list, analysis list, keyword home (replaced ambiguous `rs_source.rank`); re-analyze + all result views preserve content + show an honest "provider stopped early" reason instead of blanking.
