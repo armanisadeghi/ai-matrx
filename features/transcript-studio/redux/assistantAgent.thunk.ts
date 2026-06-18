@@ -185,33 +185,23 @@ export const switchAssistantAgentThunk = createAsyncThunk<
     dispatch(setShowMicrophone({ conversationId, value: true }));
 
     // Optimistically track the new conversation in the in-memory roster +
-    // active pointer so it shows in History immediately and is never lost if
-    // the DB persist below races/fails (the old code only updated the Redux
-    // roster on persist SUCCESS).
-    const nextRoster = appendRoster(
-      roster,
-      makeRosterRef(conversationId, agentId),
-    );
+    // active pointer so it shows in History immediately. NOT persisted to the DB
+    // here — a fresh id has no cx_conversation row until its first turn streams;
+    // saving it now would be a placeholder loadConversation 406s on. The durable
+    // write happens on first-turn confirmation (persistAssistantConversationThunk
+    // from useStudioAssistant).
     const sessionNow = getState().transcriptStudio.byId[sessionId];
     if (sessionNow) {
       dispatch(
         sessionUpserted({
           ...sessionNow,
           assistantConversationId: conversationId,
-          assistantConversations: nextRoster,
+          assistantConversations: appendRoster(
+            roster,
+            makeRosterRef(conversationId, agentId),
+          ),
         }),
       );
-    }
-
-    try {
-      const updated = await updateSession(sessionId, {
-        assistantConversationId: conversationId,
-        assistantConversations: nextRoster,
-      });
-      if (updated) dispatch(sessionUpserted(updated));
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error("[studio] switchAssistantAgent: persist failed", err);
     }
     return conversationId;
   },
