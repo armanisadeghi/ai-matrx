@@ -45,8 +45,8 @@ export interface ArtifactTypeDef {
 }
 
 export const ARTIFACT_TYPE_DEFS: ArtifactTypeDef[] = [
-  { canvasType: "flashcards", aliases: ["flashcards"], standaloneAliases: ["flashcards"], materializable: true },
-  { canvasType: "quiz", aliases: ["quiz"], standaloneAliases: ["quiz"], materializable: true },
+  { canvasType: "flashcards", aliases: ["flashcards"], standaloneAliases: ["flashcards"], materializable: true, persistenceStrategy: "custom", adapter: "flashcards" },
+  { canvasType: "quiz", aliases: ["quiz"], standaloneAliases: ["quiz"], materializable: true, persistenceStrategy: "custom", adapter: "quiz" },
   { canvasType: "presentation", aliases: ["presentation"], standaloneAliases: ["presentation"], materializable: true },
   { canvasType: "timeline", aliases: ["timeline"], standaloneAliases: ["timeline"], materializable: true },
   { canvasType: "research", aliases: ["research"], standaloneAliases: ["research"], materializable: true },

@@ -33,6 +33,8 @@ import type {
   CxArtifactRefContent,
 } from "@/features/public-chat/types/cx-tables";
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
+import { getAdapter } from "@/features/canvas/artifact-types/persistence/artifact-adapters";
 import { planMaterialization } from "./planMaterialization";
 
 export interface MaterializeParams {
@@ -90,6 +92,34 @@ export async function materializeMessageArtifacts(
         id: saved.id,
         version: saved.version,
       });
+
+      // Custom-system linkage: create + link the domain record (flashcards →
+      // user_flashcard_sets, tasks → ctx_tasks, …). Idempotent (adapters dedupe
+      // on source_message_id / natural key) so reconcile re-runs are safe.
+      // NON-BLOCKING (D2): a domain-write failure must not abort the artifact or
+      // the message rewrite — the canvas_items row already persisted and the
+      // link backfills on a later load. Generic types have no onMaterialize.
+      const def = getArtifactDef(artifact.canvasType);
+      const adapter = getAdapter(def?.adapter);
+      if (adapter.onMaterialize) {
+        try {
+          const link = await adapter.onMaterialize({
+            artifactId: saved.id,
+            canvasType: artifact.canvasType,
+            title: artifact.title,
+            rawContent: artifact.content,
+            sourceMessageId: messageId,
+            conversationId,
+          });
+          if (link && (link.externalSystem || link.externalId)) {
+            await canvasArtifactService.setExternalLink(saved.id, link);
+          }
+        } catch (err) {
+          errors.push(
+            `artifact #${artifact.artifactIndex} (${artifact.canvasType}) domain link failed: ${String(err)}`,
+          );
+        }
+      }
     } else {
       errors.push(
         `artifact #${artifact.artifactIndex} (${artifact.canvasType}) failed to persist`,

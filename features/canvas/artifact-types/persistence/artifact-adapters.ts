@@ -58,9 +58,16 @@ export const GENERIC_ADAPTER: ArtifactPersistenceAdapter = {
     ),
 };
 
-/** adapter key → adapter. Custom adapters (Wave D) register here. */
+import { FLASHCARDS_ADAPTER } from "./flashcards-adapter";
+import { QUIZ_ADAPTER } from "./quiz-adapter";
+import { TASKS_ADAPTER } from "./tasks-adapter";
+
+/** adapter key → adapter. */
 export const ADAPTERS: Record<string, ArtifactPersistenceAdapter> = {
   generic: GENERIC_ADAPTER,
+  flashcards: FLASHCARDS_ADAPTER,
+  quiz: QUIZ_ADAPTER,
+  tasks: TASKS_ADAPTER,
 };
 
 /** Resolve an adapter by key, defaulting to the generic adapter. */

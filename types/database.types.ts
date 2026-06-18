@@ -3701,6 +3701,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -3728,6 +3730,8 @@ export type Database = {
           conversation_id?: string | null
           created_at?: string | null
           description?: string | null
+          external_id?: string | null
+          external_system?: string | null
           id?: string
           is_archived?: boolean | null
           is_favorited?: boolean | null
@@ -3755,6 +3759,8 @@ export type Database = {
           conversation_id?: string | null
           created_at?: string | null
           description?: string | null
+          external_id?: string | null
+          external_system?: string | null
           id?: string
           is_archived?: boolean | null
           is_favorited?: boolean | null
@@ -7472,6 +7478,7 @@ export type Database = {
       cx_artifact: {
         Row: {
           artifact_type: Database["public"]["Enums"]["artifact_type"]
+          canvas_item_id: string | null
           conversation_id: string
           created_at: string
           deleted_at: string | null
@@ -7493,6 +7500,7 @@ export type Database = {
         }
         Insert: {
           artifact_type: Database["public"]["Enums"]["artifact_type"]
+          canvas_item_id?: string | null
           conversation_id: string
           created_at?: string
           deleted_at?: string | null
@@ -7514,6 +7522,7 @@ export type Database = {
         }
         Update: {
           artifact_type?: Database["public"]["Enums"]["artifact_type"]
+          canvas_item_id?: string | null
           conversation_id?: string
           created_at?: string
           deleted_at?: string | null
@@ -7534,6 +7543,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cx_artifact_canvas_item_id_fkey"
+            columns: ["canvas_item_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_items"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cx_artifact_conversation_id_fkey"
             columns: ["conversation_id"]
@@ -28258,6 +28274,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28294,6 +28312,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28330,6 +28350,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28366,6 +28388,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28409,6 +28433,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28498,6 +28524,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28546,6 +28574,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28591,6 +28621,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null

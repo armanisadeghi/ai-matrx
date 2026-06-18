@@ -169,6 +169,31 @@ export const canvasArtifactService = {
     },
 
     /**
+     * Link a materialized artifact to its custom-system domain record
+     * (external_system/external_id). Owner-only via RLS; failures are logged,
+     * not thrown (the artifact itself already persisted).
+     */
+    async setExternalLink(
+        canvasId: string,
+        link: { externalSystem?: string; externalId?: string },
+    ): Promise<void> {
+        try {
+            const { error } = await supabase
+                .from("canvas_items")
+                .update({
+                    external_system: link.externalSystem ?? null,
+                    external_id: link.externalId ?? null,
+                })
+                .eq("id", canvasId);
+            if (error) {
+                console.error("[canvasArtifactService.setExternalLink] error:", error);
+            }
+        } catch (err) {
+            console.error("[canvasArtifactService.setExternalLink] error:", err);
+        }
+    },
+
+    /**
      * Get a single canvas item by id. RLS scopes this to the owner, public
      * items, or items the caller has explicit permission on — so it safely
      * resolves an artifact_ref both for the author and for shared views.
