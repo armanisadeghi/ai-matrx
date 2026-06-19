@@ -23,6 +23,7 @@ as $$
 declare
   v_outputs jsonb;
   v_assets jsonb;
+  v_kind_obj jsonb;
   v_asset_id text;
 begin
   if p_kind is null or p_kind = '' then
@@ -56,7 +57,17 @@ begin
 
   -- Prepend the new asset (newest first).
   v_assets := jsonb_build_array(p_asset) || v_assets;
-  v_outputs := jsonb_set(v_outputs, array[p_kind, 'assets'], v_assets, true);
+
+  -- Build the kind object then set it with a SINGLE-LEVEL path. A two-level
+  -- `jsonb_set(v_outputs, '{kind,assets}', …, true)` SILENTLY NO-OPS when the
+  -- `kind` key doesn't already exist (Postgres jsonb_set never creates missing
+  -- intermediate parents) — that dropped the first blog/slides asset every time
+  -- (seo/podcast only survived because their keys pre-existed). Setting the
+  -- whole kind object via the one-level path `{kind}` does create it. Preserve
+  -- any other fields already under the kind by merging onto the existing object.
+  v_kind_obj := coalesce(v_outputs -> p_kind, '{}'::jsonb);
+  v_kind_obj := jsonb_set(v_kind_obj, array['assets'], v_assets, true);
+  v_outputs := jsonb_set(v_outputs, array[p_kind], v_kind_obj, true);
 
   update public.rs_topic set outputs = v_outputs where id = p_topic_id;
 

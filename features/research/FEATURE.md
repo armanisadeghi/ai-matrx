@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-06-17`
+**Last updated:** `2026-06-19`
 
 ---
 
@@ -23,7 +23,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 **Hooks** (`features/research/hooks/`)
 - `useResearchStream()` — NDJSON/SSE stream consumer (chunk/data/info/end callbacks).
 - `usePipelineProgress({ topic })` — reduces stream events into the per-stage `PipelineState` the orchestra renders. Owns the terminal sweep (see Invariants).
-- `useResearchApi()` — Python backend calls (run/search/scrape/analyzeAll/synthesize/generateDocument/consolidateTag/…).
+- `useResearchApi()` — Python backend calls (run/search/scrape/analyzeAll/synthesize/generateDocument/consolidateTag/**rankSourceAuthority**/…).
 - `useResearchState.ts` — Supabase read hooks (`useResearchSources`, `useAnalysesForTopic`, `useResearchSynthesis`, `useResearchDocument`, `useResearchTags`, `useSourceTags`, …).
 
 **Services**
@@ -39,7 +39,9 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 **Tables** (Supabase, `rs_` prefix): `rs_topic`, `rs_keyword`, `rs_source`, `rs_content`, `rs_analysis`, `rs_synthesis`, `rs_tag`, `rs_source_tag`, `rs_document`, `rs_media`. Normal feature tables (RLS-gated, client writes allowed) — none are protected-resources.
 
-**Key types** (`types.ts`): `PipelineState`/`StageState`/`WorkItem` (`hooks/usePipelineProgress.ts`), `ResearchSource` (has `rank` = Google position), `ResearchAnalysis`/`ResearchSynthesis` (`result` text + `result_structured` json), `ResearchDocument`, `ResearchTag`/`SourceTag`.
+**Key types** (`types.ts`): `PipelineState`/`StageState`/`WorkItem` (`hooks/usePipelineProgress.ts`), `ResearchSource` (has `rank` = Google position, + `authority_score`/`authority_tier`/`authority_reasoning`/`authority_ranked_at` = AI source authority), `ResearchAnalysis`/`ResearchSynthesis` (`result` text + `result_structured` json), `ResearchDocument`, `ResearchTag`/`SourceTag`.
+
+**Source authority columns** (`rs_source`): `authority_score` (0-100), `authority_tier` (`high|medium|low`), `authority_reasoning` (one sentence), `authority_ranked_at` (null = not yet ranked). Written by the backend Source Authority Ranker; read straight through `getSources` (`select *`).
 
 ---
 
@@ -49,7 +51,8 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 - **Live render** — `PipelineOrchestra` (graph) + `LivePipelineActivity`: finished stages → `StageStatSquare` rail (click to expand inline detail; external-link opens results route), active stage(s) → large card, writing streams via `StreamingTextPanel` (MarkdownStream). Completed keywords / scrape+analyze item batches / source feed auto-fold via `FoldableSection`; when the run finishes the whole drawer (metrics + stages + activity log) collapses together — user can reopen.
 - **Document** — `/document` → `DocumentViewer` auto-generates (`api.generateDocument`, streams `chunk`+`document_complete`) when report-ready and none exists; persists to `rs_document`.
 - **Tags** — Tags page: create tag + consolidate. Source detail: `SourceTagPicker` assigns sources to tags (`assignTagsToSource`/`removeSourceTag`); consolidation synthesizes over a tag's sources.
-- **Curate** — `/curate` (`CurationTable`): `getCurationData` joins each source with importance + per-keyword rank + scraped content size + analysis state + tags in one shape; filter/sort/group by keyword or tag; select across groups → batch include/exclude (`bulkUpdateSources`) to clean the set before the final synthesis. Casual browsing stays on `sources`/`content` (shared `SourceResultsTable`).
+- **Curate** — `/curate` (`CurationTable`): `getCurationData` joins each source with importance + per-keyword rank + scraped content size + analysis state + tags in one shape; filter/sort/group by keyword or tag (incl. **sort by Authority**); select across groups → batch include/exclude (`bulkUpdateSources`) to clean the set before the final synthesis. Casual browsing stays on `sources`/`content` (shared `SourceResultsTable`).
+- **Rank authority** — `AuthorityRankButton` (Sources toolbar) → `api.rankSourceAuthority` → `useResearchStream`. Backend chunks the topic's included sources ≤50/batch, runs the **Source Authority Ranker** agent, and writes `authority_*` back to `rs_source`; `onEnd` refetches. Per-source score/tier/reasoning render via `AuthorityTierBadge` on the source list, curation table, results table, and source detail. (Replaces the old manual copy/paste "Authority export" round-trip.)
 
 ---
 
@@ -64,7 +67,8 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 - **Tags are manual.** `/run` produces no tags. The orchestra Tags node is a static manual branch (no `isLive` animation, dashed edges) — it must not imply auto-generation. Functional loop = create → assign sources (`SourceTagPicker`) → consolidate.
 - **Editing scraped content backs up the original ONCE.** `rs_content.original_content` is set on the first edit only — **never overwrite an existing backup**; the true scrape stays recoverable (`restoreOriginalContent`). Curation before analysis (`AnalyzeCurationDialog`) trims junk to cut model + RAG cost. Content reads are Supabase-direct — no FE cache to bust on edit.
 - **"Sources discovered" = `stored_count ?? sources_found` summed**, identical in `usePipelineProgress.derived` and `SearchStageView`. Keep the formula in one shape so one screen never shows two totals.
-- **Streaming contract:** `app/(core)/research/RESEARCH_STREAMING_GUIDE.md`. Backend source of truth: aidream `research/stream_events.py`.
+- **Authority ≠ importance — three distinct axes, never conflate.** `authority_*` = AI-judged source *trustworthiness* (domain-led, written by the ranker agent). `importance`/`rank` = search-position salience (`ranking.ts`). Both surface side by side; they answer different questions. `AuthorityTierBadge` is the ONE renderer for authority everywhere — never hand-roll a score pill. It tolerates an out-of-contract tier (derives from score) so a stray agent value never breaks a row.
+- **Streaming contract:** `app/(core)/research/RESEARCH_STREAMING_GUIDE.md`. Backend source of truth: aidream `research/stream_events.py` (authority events: `authority_rank_start`/`authority_rank_batch`/`authority_rank_complete`).
 
 ---
 
@@ -89,6 +93,9 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 ## Change log
 
+- `2026-06-19` — **Source authority ranking.** New AI step scores how authoritative each source is (0-100 + `high|medium|low` tier + one-sentence reasoning), written back to `rs_source` (`authority_*` columns, migration applied + ledgered). Server: `POST /research/topics/{id}/sources/rank-authority` (streaming) → `research/source_authority.py` chunks included sources ≤50/batch, runs the floating **Source Authority Ranker** agent (`be502ddf-…`, always-latest), persists per source. FE: `AuthorityRankButton` (Sources toolbar, replaces the manual "Authority export" copy/paste — old `AuthorityExportButton`/`authorityExport.ts` now superseded), `AuthorityTierBadge` (source list desktop+mobile, curation table, results table, source detail), authority sort in `/curate`, `authority_score` `SourceSortBy`. Synthesis source-selection is unchanged for now (authority is captured + shown; the algorithm shift comes later). Backend verified end-to-end (real DB write-back). _Pending:_ regen `api-types.ts` (hand-written `AuthorityRankRequest` bridges); optional auto-run inside `run_initial_pass`; delete the superseded export files.
+- `2026-06-18` — **Two data-loss bugs fixed (outputs + analyses).** (1) **Blog/slides outputs were silently dropped** — `rs_topic_append_output` used a two-level `jsonb_set(outputs,'{kind,assets}',…,true)`, but Postgres `jsonb_set` never creates a missing intermediate parent, so the *first* asset of any kind whose key didn't already exist in `outputs` was a no-op (seo/podcast only persisted because their keys pre-existed from the old client path). Fixed: build the kind object and set it via the single-level path `{kind}` (migration re-applied + ledger checksum updated). (2) **Editing source content appeared to delete its analysis** — editing writes a new content version (v+1) and `SourceDetail` filtered analyses strictly to the current version, hiding the prior (expensive) ones. Verified via DB: those analyses are NOT deleted (they survive on older versions; `ON DELETE CASCADE` only fires if the content row itself is deleted, which editing doesn't do; 0 orphaned analyses). Fixed: `currentAnalyses` falls back to the newest prior version that has analyses, shown under an amber "ran on v{n}, edited since — re-analyze to refresh; previous analysis was kept" banner.
+- `2026-06-18` — **Manual tagging on the Sources list.** Tags were only assignable on the source-detail page (`SourceTagPicker`) or hidden in `/curate` — undiscoverable when browsing. The Sources list (`SourceList`) now shows each source's tag chips inline + a compact per-row `SourceTagsInline` picker (toggle existing tags, "Create new tag…"), on both desktop rows and mobile cards. `BulkActionBar` gained an **Add to tag** dropdown (existing tag or create-new) so the multi-select set can be tagged in batch, matching `/curate`'s `CurationBatchBar`. Backed by new `getTopicSourceTags(topicId)` / `useTopicSourceTags` (one query for the whole topic's source⇄tag map, keyed by `source_id` — no per-row fetch). Reuses existing `assignTagsToSource` / `removeSourceTag` / `addTagToSources` / `createTag`; no schema change. (Note: pipeline-level auto-tag — `max_auto_tag_calls` — remains unwired in the backend, §B2; per-source "Suggest tags" still lives on source detail.)
 - `2026-06-18` — **Outputs Studio fixes.** (1) Slide-deck preview no longer clipped — removed the fixed `h-[440px]` wrapper so the `Slideshow` renders at its natural height. (2) Output persistence made atomic — new `rs_topic_append_output` RPC (row-locked server-side append into `rs_topic.outputs`; migration applied + ledgered) replaces the client read-modify-write that let the 8–12 min podcast run clobber blog/slides generated during its wait. (3) Podcast wait now reuses the generator components (`LiveProgressRail` + `ProductionTeaser` + `MediaOptionsGrid`) so cover art, clips, and a script sneak-peek fill the long render.
 - `2026-06-17` — **Progressive folding in live pipeline.** Completed keywords fold to pills (click to expand); scrape/analyze "Recently completed" batches and the search source feed auto-collapse when work moves on. Finished stages dock as `StageStatSquare` tiles — click toggles inline stage detail (external-link still opens the results route). When a run completes, `LivePipelineActivity` collapses metrics + stage detail + activity log together; "Show details" reopens everything.
 - `2026-06-15` — Analyze-curation popup (`AnalyzeCurationDialog`): trim/edit scraped content before the analysis call; `rs_content.original_content` backs up the original once (migration applied + ledgered) and `restoreOriginalContent` recovers it.

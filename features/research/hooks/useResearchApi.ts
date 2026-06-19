@@ -10,6 +10,7 @@ import type {
   ContentPasteRequest,
   AnalyzeRequest,
   AnalyzeBulkRequest,
+  AuthorityRankRequest,
   SynthesisRequest,
   SuggestRequest,
   AddLinksToScope,
@@ -73,6 +74,13 @@ export function useResearchApi() {
         body: SynthesisRequest,
         signal?: AbortSignal,
       ) => api.post(endpoints(topicId).synthesize, body, signal),
+
+      // --- Source authority ranking (chunks ≤50 → Source Authority Ranker) ---
+      rankSourceAuthority: (
+        topicId: string,
+        body?: AuthorityRankRequest,
+        signal?: AbortSignal,
+      ) => api.post(endpoints(topicId).rankAuthority, body ?? {}, signal),
 
       // --- Keywords (Python for validation + project_id resolution) ---
       addKeywords: (topicId: string, body: KeywordCreate) =>

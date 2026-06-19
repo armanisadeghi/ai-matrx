@@ -480,6 +480,43 @@ export async function getTags(topicId: string): Promise<ResearchTag[]> {
   return data ?? [];
 }
 
+/**
+ * All source⇄tag assignments for a topic in one query, keyed by source_id.
+ * Lets the Sources list show each source's tag chips + a per-row picker without
+ * firing one `getSourceTags` per row. Mirrors `getCurationData`'s tag join, but
+ * standalone so the list doesn't pay for the heavier curation aggregate.
+ */
+export async function getTopicSourceTags(
+  topicId: string,
+): Promise<Record<string, { id: string; name: string }[]>> {
+  const { data: tagRows, error: tagErr } = await supabase
+    .from("rs_tag")
+    .select("id, name")
+    .eq("topic_id", topicId);
+  if (tagErr) throw tagErr;
+  const tags = (tagRows ?? []) as { id: string; name: string }[];
+  if (tags.length === 0) return {};
+  const tagName = new Map(tags.map((t) => [t.id, t.name]));
+
+  const { data: stRows, error: stErr } = await supabase
+    .from("rs_source_tag")
+    .select("source_id, tag_id")
+    .in(
+      "tag_id",
+      tags.map((t) => t.id),
+    );
+  if (stErr) throw stErr;
+
+  const out: Record<string, { id: string; name: string }[]> = {};
+  for (const st of stRows ?? []) {
+    (out[st.source_id] ??= []).push({
+      id: st.tag_id,
+      name: tagName.get(st.tag_id) ?? "Tag",
+    });
+  }
+  return out;
+}
+
 export async function createTag(
   topicId: string,
   tag: TagCreate,

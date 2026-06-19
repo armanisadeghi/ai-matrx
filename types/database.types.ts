@@ -16084,6 +16084,10 @@ export type Database = {
       }
       rs_source: {
         Row: {
+          authority_ranked_at: string | null
+          authority_reasoning: string | null
+          authority_score: number | null
+          authority_tier: string | null
           description: string | null
           discovered_at: string | null
           extra_snippets: Json | null
@@ -16113,6 +16117,10 @@ export type Database = {
           user_verdict_notes: string | null
         }
         Insert: {
+          authority_ranked_at?: string | null
+          authority_reasoning?: string | null
+          authority_score?: number | null
+          authority_tier?: string | null
           description?: string | null
           discovered_at?: string | null
           extra_snippets?: Json | null
@@ -16142,6 +16150,10 @@ export type Database = {
           user_verdict_notes?: string | null
         }
         Update: {
+          authority_ranked_at?: string | null
+          authority_reasoning?: string | null
+          authority_score?: number | null
+          authority_tier?: string | null
           description?: string | null
           discovered_at?: string | null
           extra_snippets?: Json | null

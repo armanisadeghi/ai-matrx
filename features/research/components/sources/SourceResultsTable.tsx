@@ -5,6 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
+import { AuthorityTierBadge } from "./AuthorityTierBadge";
 import { sourceTypeFromDb, type ResearchSource } from "../../types";
 import { fmtCount } from "../../format";
 
@@ -43,6 +44,9 @@ export function SourceResultsTable({
             <th className="py-1.5 px-1 font-medium">Source</th>
             <th className="py-1.5 px-2 font-medium whitespace-nowrap">Search</th>
             <th className="py-1.5 px-2 font-medium whitespace-nowrap">Scrape</th>
+            <th className="py-1.5 px-2 font-medium whitespace-nowrap">
+              Authority
+            </th>
             {dataSizeFor && (
               <th className="py-1.5 px-2 font-medium text-right whitespace-nowrap hidden sm:table-cell">
                 Data
@@ -97,6 +101,19 @@ export function SourceResultsTable({
                 </td>
                 <td className="py-2 px-2 align-top">
                   <StatusBadge status={src.scrape_status} />
+                </td>
+                <td className="py-2 px-2 align-top">
+                  {src.authority_score != null ? (
+                    <AuthorityTierBadge
+                      score={src.authority_score}
+                      tier={src.authority_tier}
+                      reasoning={src.authority_reasoning}
+                    />
+                  ) : (
+                    <span className="text-[11px] text-muted-foreground/40">
+                      —
+                    </span>
+                  )}
                 </td>
                 {dataSizeFor && (
                   <td

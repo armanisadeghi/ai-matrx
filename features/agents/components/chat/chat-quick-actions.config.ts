@@ -59,7 +59,7 @@ export const SECONDARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
     label: "Create an Image",
   },
   {
-    id: "7a90bace-1c2b-4d40-829d-b6d875573324",
+    id: "11fcc4f0-62a0-4b39-a75e-fd2adf395192",
     label: "Conduct Research",
   },
   {
