@@ -66,6 +66,9 @@ export default function ProTextareaDisplay({
   const [replaceMode, setReplaceMode] = useState("");
   const [minimal, setMinimal] = useState("");
   const [errVal, setErrVal] = useState("");
+  const [cleanupDemo, setCleanupDemo] = useState(
+    "so um basically what i wanted to say is that the the meeting went pretty good i think and we should probably like follow up with the client by next week maybe tuesday or wednesday",
+  );
 
   if (!component) return null;
 
@@ -92,8 +95,11 @@ import { Field } from '@/components/official/Field';
   protectTranscription={true}              // warn modal on unmount mid-record
   onRequestClose={() => {}}                // paired with .requestClose() expando
 
-  // --- copy button (top-right) ---
-  showCopyButton={true}
+  // --- "…" actions menu (top-right, floats over text, hover-only) ---
+  showCopyButton={true}            // Copy item in the menu
+  enableCleanup={true}             // AI "Clean up" item — ON by default
+  cleanupAgentId={null}            // override the cleanup agent (default: surface "clean" role)
+  cleanupContextItems={[]}         // extra context blocks for the cleanup agent
 
   // --- submit button (bottom-right, primary) ---
   onSubmit={() => {}}                      // enables the button + shortcuts
@@ -120,7 +126,7 @@ import { Field } from '@/components/official/Field';
     <ComponentDisplayWrapper
       component={component}
       code={code}
-      description="Tier-2 canonical textarea. Streaming voice, copy, submit, auto-grow, floating label, and protection modal — all opt-in. Hover-revealed controls auto-hide while typing (mirrors the OS cursor)."
+      description="Tier-2 canonical textarea. Streaming voice, a hover-revealed '…' menu (Copy + AI Clean up, on by default), submit, auto-grow, floating label, and protection modal. Top-right controls float over the text and auto-hide while typing (mirrors the OS cursor)."
     >
       <div className="w-full max-w-3xl space-y-8">
         {/* Behaviour callouts the docstring guarantees — surfaced at the top so
@@ -128,10 +134,12 @@ import { Field } from '@/components/official/Field';
         <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
           <p>
             <span className="font-semibold text-foreground">
-              Hover controls auto-hide on keystroke.
+              Hover controls float over the text and auto-hide on keystroke.
             </span>{" "}
-            Mic + copy reappear on mouse motion — matches the OS cursor
-            behaviour. Recording/transcribing always keeps the mic visible.
+            The mic + &ldquo;…&rdquo; menu reserve no gutter — they overlay the
+            text and reappear on mouse motion (never from focus), matching the
+            OS cursor behaviour. Recording/transcribing always keeps the mic
+            visible.
           </p>
           <p>
             <span className="font-semibold text-foreground">
@@ -158,7 +166,7 @@ import { Field } from '@/components/official/Field';
         {/* 1. Bare placeholder — the simplest possible usage */}
         <Variant
           title="1. Bare textarea"
-          features={["placeholder", "voice", "copy", "no label"]}
+          features={["placeholder", "voice", "… menu", "clean up", "no label"]}
           code={`<ProTextarea
   value={v}
   onChange={(e) => setV(e.target.value)}
@@ -367,15 +375,20 @@ import { Field } from '@/components/official/Field';
           />
         </Variant>
 
-        {/* 8. Minimal — no copy, no submit, used in compact toolbars */}
+        {/* 8. Minimal — no menu at all (voice only), used in compact toolbars */}
         <Variant
-          title="8. Minimal (no copy)"
-          features={["showCopyButton={false}", "voice only"]}
+          title="8. Minimal (no menu — voice only)"
+          features={[
+            "showCopyButton={false}",
+            "enableCleanup={false}",
+            "voice only",
+          ]}
           code={`<ProTextarea
   value={v}
   onChange={(e) => setV(e.target.value)}
-  showCopyButton={false}
-  placeholder="Mic only — copy hidden."
+  showCopyButton={false}    // hide Copy
+  enableCleanup={false}     // hide AI Clean up
+  placeholder="Mic only — the … menu is gone."
   className="min-h-[80px]"
 />`}
         >
@@ -383,7 +396,8 @@ import { Field } from '@/components/official/Field';
             value={minimal}
             onChange={(e) => setMinimal(e.target.value)}
             showCopyButton={false}
-            placeholder="Mic only — copy hidden."
+            enableCleanup={false}
+            placeholder="Mic only — the … menu is gone."
             className="min-h-[80px]"
           />
         </Variant>
@@ -434,10 +448,31 @@ import { Field } from '@/components/official/Field';
 />`}
         >
           <ProTextarea
-            value="Locked content — controls don't appear on hover, mic and copy are inert."
+            value="Locked content — controls don't appear on hover, mic and the … menu are inert."
             onChange={() => {}}
             disabled
             className="min-h-[80px]"
+          />
+        </Variant>
+
+        {/* 11. AI Clean up — default-on menu action */}
+        <Variant
+          title="11. AI Clean up (on by default)"
+          features={["enableCleanup (default)", "… menu", "streamed result"]}
+          code={`<ProTextarea
+  value={v}
+  onChange={(e) => setV(e.target.value)}
+  // enableCleanup is true by default — open the … menu → Clean up.
+  // cleanupAgentId={"…"}            // optional override
+  // cleanupContextItems={[…]}       // optional extra context
+  minHeight={120}
+/>`}
+        >
+          <ProTextarea
+            value={cleanupDemo}
+            onChange={(e) => setCleanupDemo(e.target.value)}
+            placeholder="Type something messy, then … menu → Clean up."
+            className="min-h-[120px]"
           />
         </Variant>
 

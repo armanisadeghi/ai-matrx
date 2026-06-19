@@ -59,7 +59,7 @@ import type { Project } from "../types";
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Represents the org context chosen in the form: null = Personal project */
-type OrgContext = { id: string; name: string; slug: string } | null;
+export type OrgContext = { id: string; name: string; slug: string } | null;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-components
@@ -109,7 +109,7 @@ function SlugIndicator({
   );
 }
 
-function OrgSelector({
+export function OrgSelector({
   orgs,
   orgsLoading,
   selectedOrg,

@@ -10,6 +10,11 @@ const CodeBlock = lazy(
   () => import("@/features/code-editor/components/code-block/CodeBlock"),
 );
 
+// Inline auto-preview for complete HTML documents (converts to a live webpage).
+const HtmlInlinePreview = lazy(
+  () => import("@/features/html-pages/components/HtmlInlinePreview"),
+);
+
 // Static imports for frequently used, lightweight components
 import { QuestionnaireProvider } from "../../blocks/questionnaire/QuestionnaireContext";
 
@@ -134,6 +139,11 @@ const UnifiedImageBlockRenderer = lazy(() =>
 const VideoOutputBlock = lazy(
   () => import("../../blocks/videos/VideoOutputBlock"),
 );
+const YouTubeEmbedBlock = lazy(() =>
+  import("@/features/files/blocks/youtube/YouTubeEmbed").then((m) => ({
+    default: m.YouTubeEmbed,
+  })),
+);
 const SearchResultsBlock = lazy(
   () => import("../../blocks/data-events/SearchResultsBlock"),
 );
@@ -246,6 +256,12 @@ export const BlockComponents = {
     </LazyBlockWrapper>
   ),
 
+  HtmlInlinePreview: (props: any) => (
+    <LazyBlockWrapper>
+      <HtmlInlinePreview {...props} />
+    </LazyBlockWrapper>
+  ),
+
   // Wrapped lazy components
   ThinkingVisualization: (props: any) => (
     <LazyBlockWrapper>
@@ -270,6 +286,11 @@ export const BlockComponents = {
   VideoBlock: (props: any) => (
     <LazyBlockWrapper>
       <VideoBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  YouTubeEmbedBlock: (props: any) => (
+    <LazyBlockWrapper>
+      <YouTubeEmbedBlock {...props} />
     </LazyBlockWrapper>
   ),
   TranscriptBlock: (props: any) => (

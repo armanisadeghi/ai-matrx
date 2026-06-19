@@ -26,6 +26,11 @@
 import { getMetadataFromText } from "@/features/rich-text-editor/utils/patternUtils";
 import type { TypedRenderBlock } from "@/types/python-generated/stream-events";
 import type { MissingBlockType } from "@/types/python-generated/missing-types";
+import {
+  parseYouTubeUrl,
+  isYouTubeThumbnailUrl,
+  youTubeWatchUrl,
+} from "@/lib/media/youtube";
 
 /**
  * All block type strings this splitter can emit — the union of:
@@ -1351,6 +1356,80 @@ function detectAudioMarkdown(line: string): {
   return { isAudio: false };
 }
 
+/**
+ * Detect a standalone YouTube link and promote it to a playable `youtube`
+ * block. Recognizes three author shapes, each of which must be the WHOLE line
+ * (so an inline YouTube mention inside a sentence stays as text):
+ *
+ *   1. Linked thumbnail   — `[![alt](thumb)](https://youtu.be/ID?t=15)`
+ *   2. Plain markdown link — `[Watch this](https://www.youtube.com/watch?v=ID)`
+ *   3. Bare URL            — `https://youtu.be/ID`
+ *
+ * The video id + start offset come from the LINK target via the shared
+ * `parseYouTubeUrl` primitive; for the linked-thumbnail form we keep the
+ * author's thumbnail as the facade poster when it's a real YouTube thumb.
+ */
+function detectYoutubeMarkdown(line: string): {
+  isYoutube: boolean;
+  videoId?: string;
+  start?: number;
+  title?: string;
+  poster?: string;
+  watchUrl?: string;
+} {
+  const trimmed = line.trim();
+
+  // 1. Linked thumbnail: [![alt](thumb)](target)
+  const linkedThumb = trimmed.match(
+    /^\[!\[(.*?)\]\((https?:\/\/[^\s)]+?)\)\]\((https?:\/\/[^\s)]+?)\)$/,
+  );
+  if (linkedThumb) {
+    const parsed = parseYouTubeUrl(linkedThumb[3]);
+    if (parsed) {
+      return {
+        isYoutube: true,
+        videoId: parsed.videoId,
+        start: parsed.start,
+        title: linkedThumb[1] || undefined,
+        poster: isYouTubeThumbnailUrl(linkedThumb[2])
+          ? linkedThumb[2]
+          : undefined,
+        watchUrl: youTubeWatchUrl(parsed.videoId, parsed.start),
+      };
+    }
+  }
+
+  // 2. Plain markdown link: [text](target)
+  const plainLink = trimmed.match(/^\[([^\]]*)\]\((https?:\/\/[^\s)]+?)\)$/);
+  if (plainLink) {
+    const parsed = parseYouTubeUrl(plainLink[2]);
+    if (parsed) {
+      return {
+        isYoutube: true,
+        videoId: parsed.videoId,
+        start: parsed.start,
+        title: plainLink[1] || undefined,
+        watchUrl: youTubeWatchUrl(parsed.videoId, parsed.start),
+      };
+    }
+  }
+
+  // 3. Bare URL on its own line.
+  if (/^https?:\/\/\S+$/.test(trimmed)) {
+    const parsed = parseYouTubeUrl(trimmed);
+    if (parsed) {
+      return {
+        isYoutube: true,
+        videoId: parsed.videoId,
+        start: parsed.start,
+        watchUrl: youTubeWatchUrl(parsed.videoId, parsed.start),
+      };
+    }
+  }
+
+  return { isYoutube: false };
+}
+
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
@@ -1575,6 +1654,34 @@ export const splitContentIntoBlocksV2 = (
       });
 
       i = extraction.nextIndex;
+      continue;
+    }
+
+    // 3.9. Check for a YouTube link BEFORE images — a linked thumbnail
+    // `[![alt](thumb)](yt-url)` must become a playable embed, not the image
+    // its thumbnail points at.
+    const youtubeCheck = detectYoutubeMarkdown(line);
+    if (youtubeCheck.isYoutube && youtubeCheck.videoId) {
+      if (currentText.trim()) {
+        blocks.push({ type: "text", content: currentText.trimEnd() });
+        currentText = "";
+      }
+
+      blocks.push({
+        type: "youtube",
+        // Keep the original line as content so the DB round-trip
+        // (reconstructBlockMarkdown default → content) re-detects it on reload.
+        content: trimmedLine,
+        src: youtubeCheck.watchUrl,
+        metadata: {
+          videoId: youtubeCheck.videoId,
+          start: youtubeCheck.start,
+          title: youtubeCheck.title,
+          poster: youtubeCheck.poster,
+        },
+      });
+
+      i++;
       continue;
     }
 

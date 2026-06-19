@@ -22,6 +22,7 @@
  */
 
 import React, { useCallback } from "react";
+import { FileJson } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import {
@@ -30,6 +31,7 @@ import {
 } from "@/features/agents/components/smart/CreateWithAiTabs";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { ProjectFormCore, type ProjectFormCoreProps } from "./ProjectFormCore";
+import { ProjectImportJsonPanel } from "./ProjectImportJsonPanel";
 
 /** The agent that powers the "Use AI" create-project flow. */
 export const PROJECT_CREATE_AGENT_ID = "917074a0-fc06-4ff4-9805-4a517e04d08b";
@@ -41,6 +43,8 @@ export type ProjectCreateMode = CreateWithAiMode;
 export interface ProjectCreatePanelProps extends ProjectFormCoreProps {
   /** Show the "Use AI" mode + switcher. Default true. */
   enableAi?: boolean;
+  /** Show the "Paste JSON" import tab. Default true. */
+  enableJsonImport?: boolean;
   /** Which mode is selected on mount. Default "manual". */
   defaultMode?: ProjectCreateMode;
   /**
@@ -55,14 +59,12 @@ export interface ProjectCreatePanelProps extends ProjectFormCoreProps {
 
 export function ProjectCreatePanel({
   enableAi = true,
+  enableJsonImport = true,
   defaultMode = "manual",
   isMobile = false,
   onAiComplete,
   ...coreProps
 }: ProjectCreatePanelProps) {
-  console.log(
-    "[Track New Project] 15, ProjectCreatePanel.tsx — component render",
-  );
   const dispatch = useAppDispatch();
 
   const handleAiRunComplete = useCallback(() => {
@@ -78,6 +80,19 @@ export function ProjectCreatePanel({
     onAiComplete?.();
   }, [dispatch, onAiComplete]);
 
+  const handleJsonCreated = useCallback(
+    (info: { projectId: string; slug?: string }) => {
+      dispatch(
+        invalidateAndRefetchFullContext() as unknown as Parameters<
+          typeof dispatch
+        >[0],
+      );
+      onAiComplete?.();
+      void info;
+    },
+    [dispatch, onAiComplete],
+  );
+
   return (
     <CreateWithAiTabs
       manual={<ProjectFormCore isMobile={isMobile} {...coreProps} />}
@@ -87,6 +102,27 @@ export function ProjectCreatePanel({
       enableAi={enableAi}
       defaultMode={defaultMode}
       isMobile={isMobile}
+      extraTabs={
+        enableJsonImport
+          ? [
+              {
+                id: "json",
+                label: "Paste JSON",
+                icon: FileJson,
+                content: (
+                  <ProjectImportJsonPanel
+                    initialOrgId={coreProps.initialOrgId ?? null}
+                    initialOrgSlug={coreProps.initialOrgSlug ?? null}
+                    orgLocked={coreProps.orgLocked ?? false}
+                    isMobile={isMobile}
+                    onCreated={handleJsonCreated}
+                    onClose={coreProps.onClose}
+                  />
+                ),
+              },
+            ]
+          : []
+      }
     />
   );
 }

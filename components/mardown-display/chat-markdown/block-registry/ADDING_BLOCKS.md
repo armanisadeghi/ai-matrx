@@ -109,7 +109,7 @@ Python team: if the block is ever emitted server-side as a `render_block`, they 
 
 ---
 
-## Flavor G — Pure client-only text pattern (no tag, no fence — e.g. `tree`, `accent-divider`, `heavy-divider`)
+## Flavor G — Pure client-only text pattern (no tag, no fence — e.g. `tree`, `accent-divider`, `heavy-divider`, `youtube`)
 
 Regex/structural detection directly in the splitter.
 
@@ -118,7 +118,11 @@ Regex/structural detection directly in the splitter.
 3. **`BlockRenderer.tsx`** — `case "<type>":`. If rendering is trivial (e.g. a divider), inline the JSX; otherwise delegate to a component.
 4. **`BlockComponentRegistry.tsx`** — entry only if the renderer delegates to a component.
 
-No Python work. No DB round-trip work (the raw pattern survives in the text chunk).
+No Python work. No DB round-trip work (the raw pattern survives in the text chunk — keep the original line on `content` so `reconstructBlockMarkdown`'s default re-emits it and the reload splitter re-detects it).
+
+**`youtube` is the fullest worked example.** It shows two things the dividers don't:
+- **Detection-order matters.** Its step runs **before** image detection, because a linked thumbnail `[![alt](thumb)](yt-url)` must become a playable embed, not the image its thumbnail points at. Order your detector relative to the others deliberately.
+- **One component, two feeders.** The renderer (`features/files/blocks/youtube/YouTubeEmbed`) is shared with the server `media_block(kind: "youtube")` case — a client-detected block and a server render-block converge on the same component. URL parsing lives in the shared `@/lib/media/youtube` primitive (also consumed by research), never re-implemented per call-site.
 
 ---
 

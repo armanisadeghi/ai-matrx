@@ -1,31 +1,8 @@
 import type { ResearchMedia } from "../../types";
+// YouTube id extraction lives in the shared primitive — do not re-implement.
+import { youtubeId } from "@/lib/media/youtube";
 
-/** Extract a YouTube video id from watch / share / embed / shorts URLs. */
-export function youtubeId(url: string): string | null {
-  try {
-    const u = new URL(url);
-    const host = u.hostname.replace(/^www\./, "").toLowerCase();
-    if (host === "youtu.be") {
-      const id = u.pathname.split("/").filter(Boolean)[0];
-      return isYtId(id) ? id : null;
-    }
-    if (host.endsWith("youtube.com") || host === "youtube-nocookie.com") {
-      if (u.pathname === "/watch") {
-        const v = u.searchParams.get("v");
-        return v && isYtId(v) ? v : null;
-      }
-      const m = u.pathname.match(/^\/(?:embed|shorts|v|live)\/([^/?#]+)/);
-      return m && isYtId(m[1]) ? m[1] : null;
-    }
-  } catch {
-    /* malformed */
-  }
-  return null;
-}
-
-function isYtId(id: string | undefined): id is string {
-  return !!id && /^[A-Za-z0-9_-]{6,}$/.test(id);
-}
+export { youtubeId } from "@/lib/media/youtube";
 
 /** Extract a numeric Vimeo id from player/share URLs. */
 export function vimeoId(url: string): string | null {

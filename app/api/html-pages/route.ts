@@ -156,6 +156,43 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Content-based idempotency (covers callers WITHOUT a source message —
+        // e.g. notes / rich-document, where the inline auto-preview would
+        // otherwise insert a fresh row on every mount/reload). If this user
+        // already has a page with byte-identical html_content, reuse it. This
+        // is the safety net that makes auto-publishing duplication-proof on
+        // every surface, not just chat. Best-effort: any failure falls through
+        // to the insert.
+        try {
+          const { data: existingByContent } = await htmlDb
+            .from("html_pages")
+            .select(
+              "id, meta_title, meta_description, is_indexable, created_at",
+            )
+            .eq("user_id", user.id)
+            .eq("html_content", htmlContent)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (existingByContent?.id) {
+            return NextResponse.json({
+              success: true,
+              pageId: existingByContent.id,
+              url: `${HTML_SITE_URL}/p/${existingByContent.id}`,
+              metaTitle: existingByContent.meta_title,
+              metaDescription: existingByContent.meta_description,
+              isIndexable: existingByContent.is_indexable,
+              createdAt: existingByContent.created_at,
+              reused: true,
+            });
+          }
+        } catch (contentLookupErr) {
+          console.warn(
+            "[html-pages API] content idempotency pre-check skipped (falling through to insert):",
+            contentLookupErr,
+          );
+        }
+
         const { data, error } = await htmlDb
           .from("html_pages")
           .insert(insertData)
