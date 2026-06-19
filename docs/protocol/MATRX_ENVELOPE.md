@@ -23,12 +23,16 @@
   to. A small **registered** set (never ad-hoc). Each `kind` declares a `category`.
 - **`type`** *(string, required)* — the specific op within the `kind`. Descriptive
   (`create_project_with_tasks`, `user_table_cell`, `is_valid_email`).
-- **Everything else is defined by the `kind`** (`items` for actions, id fields +
-  `display` for references, `args` for validators, …).
+- **`items`** *(array, required)* — the **universal payload**. Every `(kind, type)`
+  registers a Pydantic **item model**; `items` is a list of those. One item or a
+  hundred — always a list. There is no other place for data.
 
-**Reserved keys:** `matrx_version`, `kind`, `type` — a payload MUST NOT use them at
-the top level. Flat by design: an LLM `output_schema` declares the control fields
-as `const` and only authors the body.
+**Exactly four top-level keys** — `matrx_version`, `kind`, `type`, `items`, and
+nothing else (the outer model `forbid`s extras). The shell is identical for every
+kind; all variation lives *inside* each item, typed per `(kind, type)`. An LLM
+`output_schema` makes the three control fields `const`, so the model only authors
+`items`. **Don't force one item shape across kinds, and don't wrap a singular kind
+in anything but the list — the uniformity is the shell, not the item.**
 
 ## Detection & routing — one path, shared by client + server
 
@@ -57,12 +61,12 @@ JSON or delimiter tokens. Full contract: [MATRX_REFERENCES.md](MATRX_REFERENCES.
 
 ## The `kind` registry (launch set)
 
-| kind | category | what it is | body |
+| kind | category | what it is | each `items[]` |
 |---|---|---|---|
-| `output_directive` | `side_effect` | output that applies a durable server action (the apply system) | `items: [...]` |
-| `reference` | `pure` | a pointer resolved/rendered/fetched on read; never carries stored data | id fields + optional `display` |
-| `secret` | `sensitive` | a token resolved to a secret only for the model; redacted everywhere stored/shown | `token` + `source` |
-| `validation` | `pure` | name a validation function to run (server workflows, client dynamic forms) | `args: {...}` |
+| `output_directive` | `side_effect` | output that applies a durable server action (the apply system) | the thing to create/update (a project, a task, a row) |
+| `reference` | `pure` | a pointer resolved/fetched on read; never carries stored data | `{ purpose, slot?, ref, display? }` |
+| `secret` | `sensitive` | a token resolved only for the model; redacted on store/display | `{ purpose, token, source }` |
+| `validation` | `pure` | name a validation function to run (server workflows, client dynamic forms) | `{ args }` |
 
 **`category`** is a documented property of each `kind` (not a wire field):
 - `pure` — no mutation; resolving/running twice is free.
@@ -84,17 +88,18 @@ delivered, before the stream closes ("has the last word").
   wire, so the model can't fumble it.
 - A failed apply is **warn-not-fatal** — the delivered response always stands.
 
-**`reference`** — a pure pointer. **Stores ids, never data.** Optional `display` is a
-*last-known* hint for instant paint; the resolver re-fetches live values on render →
-never stale.
+**`reference`** — each item is a pure pointer `{ purpose, slot?, ref, display? }`.
+**Stores ids, never data.** Optional `display` is a *last-known* hint for instant
+paint; the resolver re-fetches live values on render → never stale. (`purpose` =
+`substitute`/`expand`/`inline`/`context`; `slot` names the `{{slot}}` it fills.)
 
 **`secret`** — `kind:"secret"` makes "**must never persist resolved**" one greppable,
 enforceable rule. The resolver injects the real value only into the model-bound
 payload; the redactor strips it from everything stored or shown.
 
-**`validation`** — names a validation function + `args`. Identical shape server-side
-(workflow gate) and client-side (dynamic form/process). Pure: returns a result,
-mutates nothing.
+**`validation`** — each item names a validation function + `args`. Identical shape
+server-side (workflow gate) and client-side (dynamic form/process). Pure: returns a
+result, mutates nothing.
 
 ## Examples (every current case, unified)
 
@@ -103,26 +108,24 @@ mutates nothing.
 { "matrx_version":1, "kind":"output_directive", "type":"create_project_with_tasks",
   "items":[ { "name":"Website Redesign", "tasks":[ /* … */ ] } ] }
 
-// output_directive — generic typed write (resource_type is part of db_create's body)
+// output_directive — generic typed write; resource_type lives IN the item (mixed batches OK)
 { "matrx_version":1, "kind":"output_directive", "type":"db_create",
-  "resource_type":"note", "items":[ { "title":"…", "content":"…" } ] }
+  "items":[ { "resource_type":"note", "data":{ "title":"…", "content":"…" } } ] }
 
-// reference — user-table cell (now carries the top-level marker; ids only + display hint)
-{ "matrx_version":1, "kind":"reference", "type":"user_table_cell",
-  "table_id":"a67b…", "row_id":"b671…", "field_name":"short_description",
-  "display":{ "label":"Short Description" } }
-
-// reference — item card (presentation = a reference + display, never the live data)
-{ "matrx_version":1, "kind":"reference", "type":"agent", "id":"<uuid>",
-  "display":{ "name":"Project Copilot", "about":"Plans work, edits tasks & notes…" } }
+// reference — picklist item (in a ```matrx fence); purpose/slot/ref/display are item fields
+{ "matrx_version":1, "kind":"reference", "type":"picklist_item",
+  "items":[ { "purpose":"substitute", "slot":"style",
+              "ref":{ "list_id":"a729…", "item_id":"0c36…" },
+              "display":{ "label":"Illustrated Recipe" } } ] }
 
 // secret — hidden picklist value (resolved for the model, redacted on store/display)
 { "matrx_version":1, "kind":"secret", "type":"picklist_value",
-  "token":"opt_7f3a", "source":{ "picklist_id":"…", "option_id":"…" } }
+  "items":[ { "purpose":"substitute", "token":"opt_7f3a",
+              "source":{ "picklist_id":"…", "option_id":"…" } } ] }
 
 // validation — run a validator (server workflow gate OR client form)
 { "matrx_version":1, "kind":"validation", "type":"is_valid_email",
-  "args":{ "value":"a@b.com" } }
+  "items":[ { "args":{ "value":"a@b.com" } } ] }
 ```
 
 ## Client vs server responsibilities
@@ -139,7 +142,9 @@ mutates nothing.
 
 - Detect **only** by `matrx_version` presence.
 - `kind` is registered, never ad-hoc; each declares a `category`.
-- A payload never uses a reserved key (`matrx_version`/`kind`/`type`).
+- **Exactly four top-level keys** (`matrx_version`/`kind`/`type`/`items`); all data
+  lives inside each item. `items` is always a list. Every `(kind, type)` has a
+  registered Pydantic item model — that's the only way to be in the system.
 - `reference` stores ids + optional last-known `display`, never live data.
 - `secret` must pass the redactor before any persist/display.
 - `output_directive` idempotency is server-derived; a failed apply warns, never fatal.
@@ -200,6 +205,15 @@ the consuming `FEATURE.md`s.
 
 ## Change Log
 
+- 2026-06-17 — **items-everywhere is canonical.** Exactly four top-level keys
+  (`matrx_version`/`kind`/`type`/`items`); all data lives inside each item, typed by
+  a registered Pydantic item model. Built the generic core
+  (`aidream/services/matrx_envelope/`: outer model, registry, decode, schema-gen),
+  migrated `output_directives` onto it (per-item receipts, server-derived
+  idempotency, `create_tasks` collapsed into `create_task` with N items), registered
+  the `reference` shapes, and shipped the registry enforcement
+  (`scripts/generate_envelope_registry.py` + `validate_envelope_registry.py` in
+  `release.sh`). Agent skill: `matrx-envelope`.
 - 2026-06-17 — Added the position invariant (actions execute at output root only;
   in-content = resolve only), the ` ```matrx ` in-content fence + `reference` kind
   ([MATRX_REFERENCES.md](MATRX_REFERENCES.md)), and the Registration & enforcement system

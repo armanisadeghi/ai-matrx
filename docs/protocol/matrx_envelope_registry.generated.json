@@ -1,0 +1,634 @@
+{
+  "kinds": {
+    "output_directive": "side_effect",
+    "reference": "pure",
+    "secret": "sensitive",
+    "validation": "pure"
+  },
+  "matrx_version": 1,
+  "shapes": [
+    {
+      "category": "side_effect",
+      "doc": "Create a project with its tasks and subtasks atomically (one item = one project tree).",
+      "item_model": "ProjectInput",
+      "kind": "output_directive",
+      "purposes": [],
+      "schema": {
+        "$defs": {
+          "SubtaskInput": {
+            "properties": {
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "title": "SubtaskInput",
+            "type": "object"
+          },
+          "TaskInput": {
+            "properties": {
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "subtasks": {
+                "items": {
+                  "$ref": "#/$defs/SubtaskInput"
+                },
+                "title": "Subtasks",
+                "type": "array"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "title": "TaskInput",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "end_date": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "End Date"
+                },
+                "name": {
+                  "title": "Name",
+                  "type": "string"
+                },
+                "slug": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slug"
+                },
+                "start_date": {
+                  "anyOf": [
+                    {
+                      "format": "date",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Start Date"
+                },
+                "tasks": {
+                  "items": {
+                    "$ref": "#/$defs/TaskInput"
+                  },
+                  "title": "Tasks",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "title": "ProjectInput",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "output_directive",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "create_project_with_tasks",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "create_project_with_tasks"
+    },
+    {
+      "category": "side_effect",
+      "doc": "Create one task (optional project_id / parent_task_id). Multiple items = multiple tasks.",
+      "item_model": "CreateTaskItem",
+      "kind": "output_directive",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "parent_task_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Parent Task Id"
+                },
+                "project_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Project Id"
+                },
+                "title": {
+                  "title": "Title",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title"
+              ],
+              "title": "CreateTaskItem",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "output_directive",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "create_task",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "create_task"
+    },
+    {
+      "category": "side_effect",
+      "doc": "Create one row of any agent_data resource (RLS + field policy). Items may mix resource_types.",
+      "item_model": "DbCreateItem",
+      "kind": "output_directive",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "data": {
+                  "additionalProperties": true,
+                  "default": {},
+                  "title": "Data",
+                  "type": "object"
+                },
+                "resource_type": {
+                  "title": "Resource Type",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "resource_type"
+              ],
+              "title": "DbCreateItem",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "output_directive",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "db_create",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "db_create"
+    },
+    {
+      "category": "side_effect",
+      "doc": "Update one agent_data row by id (RLS + field policy). Idempotent by nature.",
+      "item_model": "DbUpdateItem",
+      "kind": "output_directive",
+      "purposes": [],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "data": {
+                  "additionalProperties": true,
+                  "default": {},
+                  "title": "Data",
+                  "type": "object"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "resource_type": {
+                  "title": "Resource Type",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "resource_type",
+                "id"
+              ],
+              "title": "DbUpdateItem",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "output_directive",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "db_update",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "db_update"
+    },
+    {
+      "category": "pure",
+      "doc": "Pointer to one udt_dataset_rows cell; substitutes its value into the model-bound text.",
+      "item_model": "DatasetCellRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "$defs": {
+          "DatasetCellRefIds": {
+            "additionalProperties": false,
+            "properties": {
+              "dataset_id": {
+                "title": "Dataset Id",
+                "type": "string"
+              },
+              "field_name": {
+                "title": "Field Name",
+                "type": "string"
+              },
+              "row_id": {
+                "title": "Row Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "dataset_id",
+              "row_id",
+              "field_name"
+            ],
+            "title": "DatasetCellRefIds",
+            "type": "object"
+          },
+          "RefDisplay": {
+            "additionalProperties": true,
+            "properties": {
+              "label": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Label"
+              }
+            },
+            "title": "RefDisplay",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "display": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/RefDisplay"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "enum": [
+                    "substitute",
+                    "expand",
+                    "inline",
+                    "context"
+                  ],
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "ref": {
+                  "$ref": "#/$defs/DatasetCellRefIds"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "ref"
+              ],
+              "title": "DatasetCellRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "dataset_cell",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "dataset_cell"
+    },
+    {
+      "category": "pure",
+      "doc": "Pointer to one udt_picklist_items row; substitutes its description into the model-bound text.",
+      "item_model": "PicklistItemRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "$defs": {
+          "PicklistRefIds": {
+            "additionalProperties": false,
+            "properties": {
+              "item_id": {
+                "title": "Item Id",
+                "type": "string"
+              },
+              "list_id": {
+                "title": "List Id",
+                "type": "string"
+              }
+            },
+            "required": [
+              "list_id",
+              "item_id"
+            ],
+            "title": "PicklistRefIds",
+            "type": "object"
+          },
+          "RefDisplay": {
+            "additionalProperties": true,
+            "properties": {
+              "label": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Label"
+              }
+            },
+            "title": "RefDisplay",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "display": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/RefDisplay"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "enum": [
+                    "substitute",
+                    "expand",
+                    "inline",
+                    "context"
+                  ],
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "ref": {
+                  "$ref": "#/$defs/PicklistRefIds"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "ref"
+              ],
+              "title": "PicklistItemRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "picklist_item",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "picklist_item"
+    }
+  ]
+}
