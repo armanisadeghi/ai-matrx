@@ -33,7 +33,6 @@ import {
   Save,
   SlidersHorizontal,
 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -3567,17 +3566,13 @@ function ToolCard({
       onClick={() => onToggle(tool.id)}
     >
       <div className="flex items-start gap-3 w-full px-3 py-2.5">
-        {/* Checkbox indicator */}
+        {/* Checkbox indicator — official component, presentational (card handles toggle) */}
         <div className="mt-0.5 shrink-0">
-          <div
-            className={`flex items-center justify-center w-4 h-4 rounded border-[1.5px] transition-all ${
-              active
-                ? `${colors.dot} border-transparent text-white`
-                : "border-border group-hover:border-primary/50"
-            }`}
-          >
-            {active && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-          </div>
+          <Checkbox
+            checked={active}
+            tabIndex={-1}
+            className="pointer-events-none"
+          />
         </div>
 
         {/* Content */}

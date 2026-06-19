@@ -22,7 +22,8 @@ export type CanvasContentType =
   | "code_edit_error"
   | "progress"
   | "math_problem"
-  | "mermaid";
+  | "mermaid"
+  | "tasks";
 
 /**
  * Canvas content types that hold live, non-serializable runtime state —

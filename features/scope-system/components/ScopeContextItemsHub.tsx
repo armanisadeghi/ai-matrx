@@ -25,7 +25,6 @@ import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
-import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
 import {
@@ -58,8 +57,6 @@ interface ScopeContextItemsHubProps {
 export function ScopeContextItemsHub({
   orgId,
   orgSlugOrId,
-  orgName,
-  orgIsPersonal,
   typeParam,
   scopeParam,
   canManage,
@@ -130,25 +127,7 @@ export function ScopeContextItemsHub({
   const total = rows?.length ?? 0;
 
   return (
-    <div className="space-y-6 pr-14">
-      <ScopeBreadcrumb
-        orgSlugOrId={orgSlugOrId}
-        orgName={orgName}
-        orgIsPersonal={orgIsPersonal}
-        backHref={scopeHref(orgSlugOrId, scopeType, scope)}
-        trail={[
-          {
-            label: scopeType.label_plural,
-            href: scopeTypeHref(orgSlugOrId, scopeType),
-          },
-          {
-            label: scope.name,
-            href: scopeHref(orgSlugOrId, scopeType, scope),
-          },
-          { label: "Context items" },
-        ]}
-      />
-
+    <div className="space-y-6">
       {/* Header */}
       <Card className="p-6">
         <div className="flex items-start gap-3">

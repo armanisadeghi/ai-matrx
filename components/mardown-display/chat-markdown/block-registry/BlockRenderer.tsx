@@ -1,8 +1,13 @@
 "use client";
 import React, { useCallback } from "react";
 import { BlockComponents, LoadingComponents } from "./BlockComponentRegistry";
+import { resolveArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import {
+  ArtifactRender,
+  hasArtifactRenderer,
+} from "@/features/canvas/artifact-types/artifact-renderers";
 import { looksLikeDiff } from "../diff-blocks/diff-style-registry";
-import { safeJsonParse } from "./json-parse-utils";
 import { useBlockRenderingConfig } from "@/components/mardown-display/chat-markdown/BlockRenderingContext";
 import { InlineCodeSnippet } from "../InlineCodeSnippet";
 import type { TypedRenderBlock } from "@/types/python-generated/stream-events";
@@ -164,6 +169,30 @@ function isBlockLoading(block: {
 }
 
 /**
+ * canvasType → its dedicated streaming skeleton. Reuses the existing per-type
+ * loading visualizations (QuizLoadingVisualization, etc.) instead of the
+ * generic "Initializing Matrx" MatrxMiniLoader, which is meant for app boot and
+ * reads as nonsense mid-response. Types without a bespoke skeleton fall back to
+ * a neutral pulse (handled at the call site).
+ */
+const ARTIFACT_LOADING_COMPONENTS: Partial<
+  Record<string, () => React.ReactElement>
+> = {
+  quiz: LoadingComponents.QuizLoading,
+  presentation: LoadingComponents.PresentationLoading,
+  recipe: LoadingComponents.RecipeLoading,
+  timeline: LoadingComponents.TimelineLoading,
+  research: LoadingComponents.ResearchLoading,
+  resources: LoadingComponents.ResourcesLoading,
+  progress: LoadingComponents.ProgressLoading,
+  comparison: LoadingComponents.ComparisonLoading,
+  troubleshooting: LoadingComponents.TroubleshootingLoading,
+  "decision-tree": LoadingComponents.DecisionTreeLoading,
+  diagram: LoadingComponents.DiagramLoading,
+  math_problem: LoadingComponents.MathProblemLoading,
+};
+
+/**
  * Renders individual content blocks with lazy-loaded components
  * Extracted from MarkdownStream for better code splitting
  */
@@ -225,6 +254,55 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     },
     [index, isStreamActive, onContentChange, handleOpenEditor, messageId],
   );
+
+  // ── Unified artifact renderer (Wave B) ───────────────────────────────────
+  // Standalone materializable blocks whose type has a unified renderer are
+  // rendered through the single shared path (chat/canvas/artifact identical).
+  // `artifact` blocks go through the dedicated `case "artifact"` below (UUID id
+  // → render-by-id; else inline ArtifactBlock chrome). Standalone materializable
+  // types (```tasks, ```mermaid, JSON blocks, …) route through the unified
+  // renderer here.
+  if (block.type !== "artifact") {
+    const _def = resolveArtifactDef(block.type);
+    if (_def && hasArtifactRenderer(_def.canvasType)) {
+      // Gate on the BLOCK's own completion, not the global message stream.
+      // Previously every block received the message-wide `isStreamActive`, so a
+      // quiz/slide-deck that had fully streamed in still showed its loader until
+      // the ENTIRE message finished — the "loading forever" bug. A block is
+      // "loading" only while its own content is incomplete (isStreamingBlock /
+      // metadata.isComplete === false). While loading, show the type-aware
+      // skeleton instead of the generic "Initializing Matrx" loader; once
+      // complete, render immediately with isStreamActive=false even if later
+      // blocks in the same message are still streaming.
+      if (isBlockLoading(block)) {
+        const Loader = ARTIFACT_LOADING_COMPONENTS[_def.canvasType];
+        return Loader ? (
+          <Loader key={index} />
+        ) : (
+          <div
+            key={index}
+            className="my-2 h-16 rounded-md bg-muted/40 animate-pulse"
+            aria-label={`Loading ${_def.canvasType}`}
+          />
+        );
+      }
+      return (
+        <ArtifactRender
+          key={index}
+          canvasType={_def.canvasType}
+          mode="inline"
+          raw={block.content}
+          serverData={block.serverData}
+          metadata={block.metadata as Record<string, unknown> | undefined}
+          taskId={taskId}
+          conversationId={conversationId}
+          messageId={messageId}
+          blockIndex={index}
+          isStreamActive={false}
+        />
+      );
+    }
+  }
 
   switch (block.type) {
     case "audio_output": {
@@ -554,7 +632,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           />
         );
       }
-      if (lang === "xml" || lang === "html" || lang === "svg") {
+      // if (lang === "xml" || lang === "html" || lang === "svg") {
+      if (lang === "xml" || lang === "svg") {
         return (
           <BlockComponents.XmlBlock
             key={index}
@@ -681,16 +760,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         <BlockComponents.TranscriptBlock key={index} content={block.content} />
       );
 
-    case "tasks":
-      return (
-        <BlockComponents.TasksBlock
-          key={index}
-          content={block.content}
-          messageId={messageId}
-          conversationId={conversationId}
-          blockIndex={index}
-        />
-      );
+    // "tasks" → handled by the early unified-renderer branch above
+    // (resolveArtifactDef("tasks") → tasks def → TasksArtifact).
 
     case "structured_info":
       return (
@@ -760,598 +831,11 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         </React.Suspense>
       );
 
-    case "flashcards":
-      if (block.serverData) {
-        return (
-          <BlockComponents.FlashcardsBlock
-            key={index}
-            serverData={block.serverData as any}
-            taskId={taskId}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="flashcards"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      return (
-        <BlockComponents.FlashcardsBlock
-          key={index}
-          content={block.content}
-          taskId={taskId}
-        />
-      );
-
-    case "quiz":
-      // Server-processed path
-      if (block.serverData) {
-        return (
-          <BlockComponents.MultipleChoiceQuiz
-            key={index}
-            quizData={block.serverData as any}
-            taskId={taskId}
-            conversationId={conversationId}
-            messageId={messageId}
-            blockIndex={index}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="quiz"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      if (isBlockLoading(block)) {
-        return <LoadingComponents.QuizLoading key={index} />;
-      }
-
-      const quizData = safeJsonParse(block.content) as any | null;
-      if (quizData) {
-        // Normalise legacy snake_case LLM output to the canonical camelCase shape.
-        // The server-processed path already sends camelCase; raw markdown from the
-        // LLM uses quiz_title / multiple_choice. Either must produce the same shape
-        // for MultipleChoiceQuiz.
-        const normalised = quizData.quizTitle
-          ? quizData
-          : quizData.quiz_title
-            ? {
-                quizTitle: quizData.quiz_title,
-                category: quizData.category,
-                multipleChoice: quizData.multiple_choice,
-              }
-            : null;
-        if (
-          normalised &&
-          normalised.quizTitle &&
-          Array.isArray(normalised.multipleChoice) &&
-          normalised.multipleChoice.length > 0
-        ) {
-          return (
-            <BlockComponents.MultipleChoiceQuiz
-              key={index}
-              quizData={normalised}
-              taskId={taskId}
-              conversationId={conversationId}
-              messageId={messageId}
-              blockIndex={index}
-            />
-          );
-        }
-      }
-      return renderFallbackContent(block.content);
-
-    case "presentation":
-      if (block.serverData) {
-        const sd = block.serverData as any;
-        return (
-          <BlockComponents.Slideshow
-            key={index}
-            slides={sd.slides}
-            taskId={taskId}
-            theme={
-              sd.theme || {
-                primaryColor: "#2563eb",
-                secondaryColor: "#1e40af",
-                accentColor: "#60a5fa",
-                backgroundColor: "#ffffff",
-                textColor: "#1f2937",
-              }
-            }
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="presentation"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      if (isBlockLoading(block)) {
-        return <LoadingComponents.PresentationLoading key={index} />;
-      }
-      const presentationData = safeJsonParse(block.content) as any | null;
-      if (
-        presentationData &&
-        presentationData.presentation?.slides &&
-        Array.isArray(presentationData.presentation.slides)
-      ) {
-        return (
-          <BlockComponents.Slideshow
-            key={index}
-            slides={presentationData.presentation.slides}
-            taskId={taskId}
-            theme={
-              presentationData.presentation.theme || {
-                primaryColor: "#2563eb",
-                secondaryColor: "#1e40af",
-                accentColor: "#60a5fa",
-                backgroundColor: "#ffffff",
-                textColor: "#1f2937",
-              }
-            }
-          />
-        );
-      }
-      return renderFallbackContent(block.content);
-
-    case "cooking_recipe":
-      if (block.serverData) {
-        return (
-          <BlockComponents.RecipeViewer
-            key={index}
-            recipe={block.serverData as any}
-            taskId={taskId}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="cooking_recipe"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      if (isBlockLoading(block)) {
-        return <LoadingComponents.RecipeLoading key={index} />;
-      }
-      const RecipeWithParser = React.lazy(async () => {
-        const { parseRecipeMarkdown } =
-          await import("../../blocks/cooking-recipes/parseRecipeMarkdown");
-        const recipeData = parseRecipeMarkdown(block.content);
-        if (!recipeData) throw new Error("Failed to parse recipe");
-        return {
-          default: () => (
-            <BlockComponents.RecipeViewer recipe={recipeData} taskId={taskId} />
-          ),
-        };
-      });
-      return (
-        <React.Suspense
-          key={index}
-          fallback={<LoadingComponents.RecipeLoading />}
-        >
-          <RecipeWithParser />
-        </React.Suspense>
-      );
-
-    case "timeline":
-      if (block.serverData) {
-        return (
-          <BlockComponents.TimelineBlock
-            key={index}
-            timeline={block.serverData as any}
-            taskId={taskId}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="timeline"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      if (isBlockLoading(block)) {
-        return <LoadingComponents.TimelineLoading key={index} />;
-      }
-      const TimelineWithParser = React.lazy(async () => {
-        const { parseTimelineMarkdown } =
-          await import("../../blocks/timeline/parseTimelineMarkdown");
-        const timelineData = parseTimelineMarkdown(block.content);
-        if (!timelineData) throw new Error("Failed to parse timeline");
-        return {
-          default: () => (
-            <BlockComponents.TimelineBlock
-              timeline={timelineData}
-              taskId={taskId}
-            />
-          ),
-        };
-      });
-      return (
-        <React.Suspense
-          key={index}
-          fallback={<LoadingComponents.TimelineLoading />}
-        >
-          <TimelineWithParser />
-        </React.Suspense>
-      );
-
-    case "research":
-      if (block.serverData) {
-        return (
-          <BlockComponents.ResearchBlock
-            key={index}
-            research={block.serverData as any}
-            taskId={taskId}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="research"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      if (isBlockLoading(block)) {
-        return <LoadingComponents.ResearchLoading key={index} />;
-      }
-      const ResearchWithParser = React.lazy(async () => {
-        const { parseResearchMarkdown } =
-          await import("../../blocks/research/parseResearchMarkdown");
-        const researchData = parseResearchMarkdown(block.content);
-        if (!researchData) throw new Error("Failed to parse research");
-        return {
-          default: () => (
-            <BlockComponents.ResearchBlock
-              research={researchData}
-              taskId={taskId}
-            />
-          ),
-        };
-      });
-      return (
-        <React.Suspense
-          key={index}
-          fallback={<LoadingComponents.ResearchLoading />}
-        >
-          <ResearchWithParser />
-        </React.Suspense>
-      );
-
-    case "resources":
-      if (block.serverData) {
-        return (
-          <BlockComponents.ResourceCollectionBlock
-            key={index}
-            collection={block.serverData as any}
-            taskId={taskId}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="resources"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      if (isBlockLoading(block)) {
-        return <LoadingComponents.ResourcesLoading key={index} />;
-      }
-      const ResourcesWithParser = React.lazy(async () => {
-        const { parseResourcesMarkdown } =
-          await import("../../blocks/resources/parseResourcesMarkdown");
-        const resourcesData = parseResourcesMarkdown(block.content);
-        if (!resourcesData) throw new Error("Failed to parse resources");
-        return {
-          default: () => (
-            <BlockComponents.ResourceCollectionBlock
-              collection={resourcesData}
-              taskId={taskId}
-            />
-          ),
-        };
-      });
-      return (
-        <React.Suspense
-          key={index}
-          fallback={<LoadingComponents.ResourcesLoading />}
-        >
-          <ResourcesWithParser />
-        </React.Suspense>
-      );
-
-    case "progress_tracker":
-      if (block.serverData) {
-        return (
-          <BlockComponents.ProgressTrackerBlock
-            key={index}
-            tracker={block.serverData as any}
-            taskId={taskId}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="progress_tracker"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      if (isBlockLoading(block)) {
-        return <LoadingComponents.ProgressLoading key={index} />;
-      }
-      const ProgressWithParser = React.lazy(async () => {
-        const { parseProgressMarkdown } =
-          await import("../../blocks/progress/parseProgressMarkdown");
-        const progressData = parseProgressMarkdown(block.content);
-        if (!progressData) throw new Error("Failed to parse progress");
-        return {
-          default: () => (
-            <BlockComponents.ProgressTrackerBlock
-              tracker={progressData}
-              taskId={taskId}
-            />
-          ),
-        };
-      });
-      return (
-        <React.Suspense
-          key={index}
-          fallback={<LoadingComponents.ProgressLoading />}
-        >
-          <ProgressWithParser />
-        </React.Suspense>
-      );
-
-    case "comparison_table":
-      if (block.serverData) {
-        return (
-          <BlockComponents.ComparisonTableBlock
-            key={index}
-            comparison={block.serverData as any}
-            taskId={taskId}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="comparison_table"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      if (isBlockLoading(block)) {
-        return <LoadingComponents.ComparisonLoading key={index} />;
-      }
-      const ComparisonWithParser = React.lazy(async () => {
-        const { parseComparisonJSON } =
-          await import("../../blocks/comparison/parseComparisonJSON");
-        const comparisonData = parseComparisonJSON(block.content);
-        if (!comparisonData) throw new Error("Failed to parse comparison");
-        return {
-          default: () => (
-            <BlockComponents.ComparisonTableBlock
-              comparison={comparisonData}
-              taskId={taskId}
-            />
-          ),
-        };
-      });
-      return (
-        <React.Suspense
-          key={index}
-          fallback={<LoadingComponents.ComparisonLoading />}
-        >
-          <ComparisonWithParser />
-        </React.Suspense>
-      );
-
-    case "troubleshooting":
-      if (block.serverData) {
-        return (
-          <BlockComponents.TroubleshootingBlock
-            key={index}
-            troubleshooting={block.serverData as any}
-            taskId={taskId}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="troubleshooting"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      if (isBlockLoading(block)) {
-        return <LoadingComponents.TroubleshootingLoading key={index} />;
-      }
-      const TroubleshootingWithParser = React.lazy(async () => {
-        const { parseTroubleshootingMarkdown } =
-          await import("../../blocks/troubleshooting/parseTroubleshootingMarkdown");
-        const troubleshootingData = parseTroubleshootingMarkdown(block.content);
-        if (!troubleshootingData)
-          throw new Error("Failed to parse troubleshooting");
-        return {
-          default: () => (
-            <BlockComponents.TroubleshootingBlock
-              troubleshooting={troubleshootingData}
-              taskId={taskId}
-            />
-          ),
-        };
-      });
-      return (
-        <React.Suspense
-          key={index}
-          fallback={<LoadingComponents.TroubleshootingLoading />}
-        >
-          <TroubleshootingWithParser />
-        </React.Suspense>
-      );
-
-    case "decision_tree":
-      if (block.serverData) {
-        return (
-          <BlockComponents.DecisionTreeBlock
-            key={index}
-            decisionTree={block.serverData as any}
-            taskId={taskId}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="decision_tree"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      if (isBlockLoading(block)) {
-        return <LoadingComponents.DecisionTreeLoading key={index} />;
-      }
-      const DecisionTreeWithParser = React.lazy(async () => {
-        const { parseDecisionTreeJSON } =
-          await import("../../blocks/decision-tree/parseDecisionTreeJSON");
-        const decisionTreeData = parseDecisionTreeJSON(block.content);
-        if (!decisionTreeData) throw new Error("Failed to parse decision tree");
-        return {
-          default: () => (
-            <BlockComponents.DecisionTreeBlock
-              decisionTree={decisionTreeData}
-              taskId={taskId}
-            />
-          ),
-        };
-      });
-      return (
-        <React.Suspense
-          key={index}
-          fallback={<LoadingComponents.DecisionTreeLoading />}
-        >
-          <DecisionTreeWithParser />
-        </React.Suspense>
-      );
-
-    case "diagram":
-      if (block.serverData) {
-        return (
-          <BlockComponents.InteractiveDiagramBlock
-            key={index}
-            diagram={block.serverData as any}
-            taskId={taskId}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="diagram"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      if (isBlockLoading(block)) {
-        return <LoadingComponents.DiagramLoading key={index} />;
-      }
-      const DiagramWithParser = React.lazy(async () => {
-        const { parseDiagramJSON } =
-          await import("../../blocks/diagram/parseDiagramJSON");
-        const diagramData = parseDiagramJSON(block.content);
-        if (!diagramData) throw new Error("Failed to parse diagram");
-        return {
-          default: () => (
-            <BlockComponents.InteractiveDiagramBlock
-              diagram={diagramData}
-              taskId={taskId}
-            />
-          ),
-        };
-      });
-      return (
-        <React.Suspense
-          key={index}
-          fallback={<LoadingComponents.DiagramLoading />}
-        >
-          <DiagramWithParser />
-        </React.Suspense>
-      );
-
-    // Mermaid owns ALL its phases internally (skeleton → progressive render →
-    // toolbar/error) — never swap it for a loading skeleton: it must keep
-    // receiving content while its fence is still streaming. The streaming
-    // signal is the BLOCK's own status (fence closes → diagram is final even
-    // if the message keeps streaming text after it).
-    case "mermaid": {
-      const mermaidStreaming = Boolean(block.isStreamingBlock);
-      if (block.serverData) {
-        return (
-          <BlockComponents.MermaidBlock
-            key={index}
-            serverData={block.serverData as any}
-            metadata={block.metadata}
-            isStreamActive={mermaidStreaming}
-            conversationId={conversationId}
-            messageId={messageId}
-            blockIndex={index}
-            taskId={taskId}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="mermaid"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      return (
-        <BlockComponents.MermaidBlock
-          key={index}
-          content={block.content}
-          metadata={block.metadata}
-          isStreamActive={mermaidStreaming}
-          conversationId={conversationId}
-          messageId={messageId}
-          blockIndex={index}
-          taskId={taskId}
-        />
-      );
-    }
+    // flashcards, quiz, presentation, cooking_recipe, timeline, research,
+    // resources, progress_tracker, comparison_table, troubleshooting,
+    // decision_tree, diagram, mermaid, math_problem → unified renderer
+    // (all handled by the early-branch above via resolveArtifactDef +
+    // hasArtifactRenderer; cases removed in Wave F)
 
     case "svg":
       // Client-only fence type (no server parser yet): always content.
@@ -1384,41 +868,6 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           isStreamActive={Boolean(block.isStreamingBlock) || isStreamActive}
         />
       );
-
-    case "math_problem":
-      if (block.serverData) {
-        return (
-          <BlockComponents.MathProblemBlock
-            key={index}
-            problemData={block.serverData as any}
-          />
-        );
-      }
-      if (strictServerData) {
-        return (
-          <StrictModeError
-            key={index}
-            blockType="math_problem"
-            blockId={(block as any).blockId}
-          />
-        );
-      }
-      if (isBlockLoading(block)) {
-        return <LoadingComponents.MathProblemLoading key={index} />;
-      }
-      const mathProblemData = safeJsonParse(block.content) as Record<
-        string,
-        unknown
-      > | null;
-      if (mathProblemData && mathProblemData.math_problem) {
-        return (
-          <BlockComponents.MathProblemBlock
-            key={index}
-            problemData={mathProblemData}
-          />
-        );
-      }
-      return renderFallbackContent(block.content);
 
     case "search_replace":
       return (
@@ -1472,7 +921,36 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       );
     }
 
-    case "artifact":
+    case "artifact": {
+      // R3 recognition: a `<artifact>` whose id is a real canvas UUID is
+      // MATERIALIZED → render the live row BY ID (ignore the inline body, which
+      // is the model-facing archive). A non-UUID / absent id (the model's
+      // `artifact_1`, or mid-stream) renders inline and stays a materialization
+      // candidate. This is the single load-bearing branch that lets the canonical
+      // `<artifact id>body</artifact>` text be both model-readable and rendered live.
+      const artifactMeta = block.metadata as
+        | {
+            artifactId?: string;
+            artifactType?: string;
+            artifactTitle?: string;
+            version?: number;
+          }
+        | undefined;
+      if (isMaterializedArtifactId(artifactMeta?.artifactId)) {
+        return (
+          <BlockComponents.ArtifactRefBlock
+            key={index}
+            serverData={{
+              artifact_id: artifactMeta?.artifactId,
+              artifact_type: artifactMeta?.artifactType,
+              version: artifactMeta?.version,
+              title: artifactMeta?.artifactTitle,
+            }}
+            messageId={messageId}
+            taskId={taskId}
+          />
+        );
+      }
       return (
         <BlockComponents.ArtifactBlock
           key={index}
@@ -1484,16 +962,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           taskId={taskId}
         />
       );
-
-    case "artifact_ref":
-      return (
-        <BlockComponents.ArtifactRefBlock
-          key={index}
-          serverData={block.serverData}
-          messageId={messageId}
-          taskId={taskId}
-        />
-      );
+    }
 
     case "editor_error":
       return (
@@ -1510,6 +979,15 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
           key={index}
           content={block.content}
           metadata={block.metadata}
+        />
+      );
+
+    case "audiocite":
+      return (
+        <BlockComponents.AudioCitationBlock
+          key={index}
+          content={block.content}
+          metadata={block.metadata as Record<string, string> | undefined}
         />
       );
 

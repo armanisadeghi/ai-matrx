@@ -22,7 +22,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { parseTranscriptContent } from "./transcript-parser";
+import {
+  parseTranscript,
+  resolveTranscriptInnerHeaderLabel,
+  type ParsedTranscript,
+} from "./transcript-parser";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -50,7 +54,6 @@ import {
   Trash,
   UserRound,
   MergeIcon,
-  CopyCheck,
   Link,
   ChevronsUpDown,
 } from "lucide-react";
@@ -71,6 +74,8 @@ export type ViewMode = "detailed" | "compact" | "text-only";
 
 export type TranscriptViewerProps = {
   content: string;
+  /** When provided, skips re-parsing `content` (keeps block shell + viewer in sync). */
+  parsedTranscript?: ParsedTranscript;
   hideTitle?: boolean;
   onTimeClick?: (seconds: number) => void;
   onCopySegment?: (text: string) => void;
@@ -204,24 +209,24 @@ const TranscriptSegmentItem = React.memo(
         <ContextMenuTrigger disabled={readOnly}>
           <div
             ref={setRef}
-            className={`relative rounded-md transition-colors ${
+            className={`relative rounded-md transition-colors group/segment ${
               isActive
                 ? "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 shadow-sm"
                 : isCurrentSearchResult
                   ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800"
                   : isSearchResult
                     ? "bg-yellow-50/50 dark:bg-yellow-900/10"
-                    : "group hover:bg-accent/50"
+                    : "hover:bg-accent/50"
             }`}
           >
             {/* Header with timecode and speaker */}
-            <div className="flex items-center justify-between px-3 pt-2 pb-1">
+            <div className="flex items-center justify-between py-0.5">
               <div className="flex items-center gap-2">
                 {showTimecodes && (
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-6 px-2 font-mono text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                    className="h-6 p-1 font-mono text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                     onClick={() => onTimeClick(segment.seconds)}
                   >
                     <Clock className="mr-1 h-3 w-3" />
@@ -238,10 +243,10 @@ const TranscriptSegmentItem = React.memo(
 
               <div
                 className={cn(
-                  "flex items-center gap-1 transition-opacity",
+                  "flex items-center gap-0 transition-opacity",
                   showInlineActions
                     ? "opacity-100"
-                    : "opacity-0 group-hover:opacity-100",
+                    : "opacity-0 group-hover/segment:opacity-100",
                 )}
               >
                 <Tooltip>
@@ -337,17 +342,16 @@ const TranscriptSegmentItem = React.memo(
               </div>
             </div>
 
-            {/* Line separator */}
-            <Separator className="my-1" />
-
             {/* Transcript text */}
-            <div className="px-3 pb-2 pt-1">
+            <div className="px-3 pb-2 pt-0">
               <div
                 className={`text-sm ${viewMode === "compact" ? "line-clamp-2" : ""}`}
               >
                 {highlightSearchTerm(segment.text)}
               </div>
             </div>
+
+            {!isLastSegment && <Separator className="my-1" />}
           </div>
         </ContextMenuTrigger>
 
@@ -401,6 +405,7 @@ const formatTime = (seconds: number) => {
 
 const AdvancedTranscriptViewer = ({
   content,
+  parsedTranscript: parsedTranscriptProp,
   hideTitle = false,
   onTimeClick = () => {},
   onCopySegment = () => {},
@@ -450,13 +455,27 @@ const AdvancedTranscriptViewer = ({
   const [copyAllSuccess, setCopyAllSuccess] = useState(false);
 
   const segmentRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [innerHeaderLabel, setInnerHeaderLabel] = useState("Audio Transcript");
 
   // Parse transcript content
   useEffect(() => {
-    if (!content) return;
+    if (!content.trim()) {
+      setInnerHeaderLabel("Audio Transcript");
+      setTranscript([]);
+      setStats({
+        segmentCount: 0,
+        totalDuration: 0,
+        wordCount: 0,
+        charCount: 0,
+      });
+      return;
+    }
 
-    const parsedTranscript = parseTranscriptContent(content);
-    setTranscript(parsedTranscript);
+    const parsed = parsedTranscriptProp ?? parseTranscript(content);
+    setInnerHeaderLabel(resolveTranscriptInnerHeaderLabel(parsed));
+    setTranscript(parsed.segments);
+
+    const parsedTranscript = parsed.segments;
 
     // Calculate stats
     if (parsedTranscript.length > 0) {
@@ -481,8 +500,15 @@ const AdvancedTranscriptViewer = ({
         wordCount,
         charCount,
       });
+    } else {
+      setStats({
+        segmentCount: 0,
+        totalDuration: 0,
+        wordCount: 0,
+        charCount: 0,
+      });
     }
-  }, [content]);
+  }, [content, parsedTranscriptProp]);
 
   // Search functionality
   useEffect(() => {
@@ -841,17 +867,17 @@ const AdvancedTranscriptViewer = ({
       );
     }
 
-    return <div className="space-y-4">{content}</div>;
+    return <div className="space-y-0">{content}</div>;
   };
 
   return (
     <TooltipProvider>
-      <Card className="w-full bg-transparent border-0">
-        <CardHeader className="pb-2">
+      <Card className="w-full bg-transparent border-0 p-0 m-0">
+        <CardHeader className="pb-2 p-0 m-0">
           {!hideTitle && (
             <CardTitle>
               <div className="flex justify-between items-center">
-                <span>Audio Transcription</span>
+                <span>{innerHeaderLabel}</span>
                 <div className="flex items-center space-x-2 text-sm font-normal">
                   <span>Show timecodes</span>
                   <Switch
@@ -863,9 +889,9 @@ const AdvancedTranscriptViewer = ({
             </CardTitle>
           )}
 
-          <div className="flex flex-col gap-2 pt-2">
+          <div className="flex flex-col gap-2 pt-1">
             <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
                 placeholder="Search transcript..."
                 value={searchTerm}
@@ -873,7 +899,7 @@ const AdvancedTranscriptViewer = ({
                 className="pl-8 pr-20"
               />
               {searchTerm && (
-                <div className="absolute right-2 top-1.5 flex items-center gap-1">
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   <Badge variant="outline" className="h-7 px-2 font-mono">
                     {searchResults.length > 0
                       ? `${currentSearchIndex + 1}/${searchResults.length}`
@@ -901,25 +927,34 @@ const AdvancedTranscriptViewer = ({
               )}
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Tabs
                   defaultValue="detailed"
                   value={viewMode}
                   onValueChange={(value) => setViewMode(value as ViewMode)}
-                  className="w-auto"
+                  className="w-auto rounded-full"
                 >
-                  <TabsList className="h-8">
-                    <TabsTrigger value="detailed" className="h-7 px-2 text-xs">
-                      <AlignJustify className="h-3.5 w-3.5" />
+                  <TabsList className="h-7 p-0">
+                    <TabsTrigger
+                      value="detailed"
+                      className="h-7 px-2 text-xs rounded-md border border-border"
+                    >
+                      <AlignJustify className="h-3.5 w-3.5 pr-1" />
                       <span className="hidden sm:inline">Detailed</span>
                     </TabsTrigger>
-                    <TabsTrigger value="compact" className="h-7 px-2 text-xs">
-                      <ChevronsUpDown className="h-3.5 w-3.5" />
+                    <TabsTrigger
+                      value="compact"
+                      className="h-7 px-2 text-xs rounded-md border border-border"
+                    >
+                      <ChevronsUpDown className="h-3.5 w-3.5 pr-1" />
                       <span className="hidden sm:inline">Compact</span>
                     </TabsTrigger>
-                    <TabsTrigger value="text-only" className="h-7 px-2 text-xs">
-                      <TextIcon className="h-3.5 w-3.5" />
+                    <TabsTrigger
+                      value="text-only"
+                      className="h-7 px-2 text-xs rounded-md border border-border"
+                    >
+                      <TextIcon className="h-3.5 w-3.5 pr-1" />
                       <span className="hidden sm:inline">Text Only</span>
                     </TabsTrigger>
                   </TabsList>
@@ -930,20 +965,20 @@ const AdvancedTranscriptViewer = ({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-8 px-2 text-xs"
+                      className="h-7 px-2 text-xs"
                       onClick={() => setIsCopyAllOpen(true)}
                     >
-                      <CopyCheck className="h-3.5 w-3.5" />
+                      <Copy className="h-3.5 w-3.5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Copy all transcript text</TooltipContent>
                 </Tooltip>
               </div>
 
-              <div className="flex gap-3 text-xs text-muted-foreground">
+              <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1 pb-1.5 text-xs text-muted-foreground min-w-0 basis-full sm:basis-auto sm:justify-end">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center">
+                    <div className="flex items-center shrink-0 whitespace-nowrap">
                       <Clock className="h-3.5 w-3.5 pr-1" />
                       <span>{formatTime(stats.totalDuration)}</span>
                     </div>
@@ -953,7 +988,7 @@ const AdvancedTranscriptViewer = ({
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center">
+                    <div className="flex items-center shrink-0 whitespace-nowrap">
                       <MessageSquare className="h-3.5 w-3.5 pr-1" />
                       <span>{stats.segmentCount} Segments</span>
                     </div>
@@ -963,7 +998,7 @@ const AdvancedTranscriptViewer = ({
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center">
+                    <div className="flex items-center shrink-0 whitespace-nowrap">
                       <FileText className="h-3.5 w-3.5 pr-1" />
                       <span>{stats.wordCount.toLocaleString()} Words</span>
                     </div>
@@ -973,7 +1008,7 @@ const AdvancedTranscriptViewer = ({
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center hidden sm:flex">
+                    <div className="flex items-center shrink-0 whitespace-nowrap">
                       <span>{stats.charCount.toLocaleString()} Chars</span>
                     </div>
                   </TooltipTrigger>
@@ -984,7 +1019,7 @@ const AdvancedTranscriptViewer = ({
           </div>
         </CardHeader>
         <Separator className="my-1" />
-        <CardContent className="pt-0 bg-transparent border-t border-zinc-200 dark:border-zinc-700">
+        <CardContent className="p-0 bg-transparent">
           {renderTranscriptContent()}
         </CardContent>
       </Card>

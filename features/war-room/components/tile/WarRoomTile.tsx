@@ -16,12 +16,14 @@
 
 import { useState } from "react";
 import { Pin, Focus } from "lucide-react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectTileFlavor } from "@/features/war-room/redux/selectors";
 import { setTileActiveTabPersisted } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 import { EditableTitle } from "../shared/EditableTitle";
 import { TileContextOverride } from "./TileContextOverride";
 import { TileFlavorBadge } from "./TileFlavorBadge";
+import { TileProjectMarker } from "./TileProjectMarker";
 import { TileTabSelect } from "./TileTabSelect";
 import { TileTabContent } from "./TileTabContent";
 import { TileMetricChips } from "./TileMetricChips";
@@ -29,7 +31,7 @@ import { TileOptionsMenu } from "./TileOptionsMenu";
 import { useTileActions } from "@/features/war-room/hooks/useTileActions";
 import { useTileMetrics } from "@/features/war-room/hooks/useTileMetrics";
 import { useRoomView } from "../room/roomViewContext";
-import { tileKindOf } from "../room/tileKind";
+import { tileTabKind } from "../room/tileKind";
 
 export function WarRoomTile({
   tileId,
@@ -48,18 +50,22 @@ export function WarRoomTile({
   const metrics = useTileMetrics(tileId);
   const { projectedTab } = useRoomView();
   const [contextOpen, setContextOpen] = useState(false);
+  const flavor = useAppSelector((s) => selectTileFlavor(tileId)(s));
   if (!actions) return null;
 
   // The board projector overrides what's SHOWN, never what's SAVED.
   const shownTab = projectedTab ?? actions.activeTab;
   const projected = projectedTab !== null && projectedTab !== actions.activeTab;
-  const kind = tileKindOf(shownTab);
+  const kind = tileTabKind(shownTab, flavor);
 
   return (
     <div
       onDoubleClick={onStage}
       className={cn(
         "group/tile @container relative flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-card transition-all duration-200",
+        shownTab === "combined"
+          ? "border-l-[3px] border-l-border/70"
+          : cn("border-l-[3px]", kind.sectionBorder),
         actions.isPinned
           ? "border-primary/40 shadow-[var(--elevation-2)] ring-1 ring-primary/15"
           : featured
@@ -67,15 +73,6 @@ export function WarRoomTile({
             : "border-border hover:border-primary/30 hover:shadow-[var(--elevation-1)]",
       )}
     >
-      {/* Accent rail — glance-read the thread type without reading the title. */}
-      <span
-        aria-hidden
-        className={cn(
-          "pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-xl opacity-80 transition-opacity group-hover/tile:opacity-100",
-          kind.rail,
-        )}
-      />
-
       {/* Header — [pin] · TITLE (always wins space) · chips · view dropdown · focus · ⋯
           The leading kind icon is gone (the accent rail + the view dropdown's own
           icon already convey kind); the six-segment switcher collapsed into one
@@ -94,8 +91,12 @@ export function WarRoomTile({
           inputClassName="min-w-0 text-xs font-medium"
         />
 
-        {/* Flavor marker (project / task) — quiet, hidden on the tightest cells. */}
-        <TileFlavorBadge tileId={tileId} className="@max-[16rem]:hidden" />
+        {/* Project tiles: named link to /projects/[id]. Task tiles: quiet pill. */}
+        {flavor === "project" ? (
+          <TileProjectMarker tileId={tileId} />
+        ) : (
+          <TileFlavorBadge tileId={tileId} className="@max-[16rem]:hidden" />
+        )}
 
         {/* Live readings — hide on the tightest cells (handled by the chips). */}
         <div className="ml-0.5 @max-[12rem]:hidden">
@@ -105,6 +106,7 @@ export function WarRoomTile({
         <div className="ml-auto flex shrink-0 items-center gap-1">
           <TileTabSelect
             active={shownTab}
+            flavor={flavor}
             onChange={(tab) => dispatch(setTileActiveTabPersisted(tileId, tab))}
           />
 
@@ -146,7 +148,12 @@ export function WarRoomTile({
 
       {/* Body */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <TileTabContent tab={shownTab} tileId={tileId} sessionId={sessionId} />
+        <TileTabContent
+          tab={shownTab}
+          tileId={tileId}
+          sessionId={sessionId}
+          tileLayout="grid"
+        />
       </div>
     </div>
   );

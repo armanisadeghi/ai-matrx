@@ -13,15 +13,11 @@
 // data-sidebar-view on <nav> controls which is visible (default: "main").
 
 import NavItem from "./NavItem";
-import NavItemGroup from "./NavItemGroup";
+import NavFlyoutGroup from "./NavFlyoutGroup";
+import AdminSidebarSection from "./admin-menu/AdminSidebarSection";
 import RouteMenuSlot from "./RouteMenuSlot";
 import RouteHeaderSlot from "./RouteHeaderSlot";
 import ShellIcon from "../ShellIcon";
-import SidebarNotesToggle from "@/features/notes/actions/SidebarNotesToggle";
-import SidebarVoicePadToggle from "../controls/SidebarVoicePadToggle";
-import SidebarAdminIndicatorToggle from "../controls/SidebarAdminIndicatorToggle";
-import SidebarCreatorHubToggle from "../controls/SidebarCreatorHubToggle";
-import SidebarEnvToggle from "../controls/SidebarEnvToggle";
 import SidebarWindowToggleIsland from "./SidebarWindowToggleIsland";
 import {
   navItemsForViewer,
@@ -70,27 +66,22 @@ export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
         <div className="shell-sidebar-main-nav">
           {visibleItems.map((item) =>
             item.children ? (
-              <NavItemGroup key={item.href} item={item} />
+              <NavFlyoutGroup key={item.label} item={item} />
             ) : (
-              <NavItem key={item.href} item={item} />
+              <NavItem key={item.label} item={item} />
             ),
           )}
-
-          <div id="admin-nav-slot" />
         </div>
 
         {/* Route menu — populated by RouteMenuSlot client island */}
         <div className="shell-sidebar-route-nav" />
       </nav>
 
-      {/* Footer — Admin indicator (admins), Voice + Settings */}
+      {/* Footer — admin section + Windows + Settings. Lives OUTSIDE the nav so it
+          is never hidden by the route-menu view switch (e.g. on /chat). */}
       <div className="shell-sidebar-footer">
-        <SidebarEnvToggle />
-        <SidebarCreatorHubToggle />
-        <SidebarAdminIndicatorToggle />
+        <AdminSidebarSection />
         <SidebarWindowToggleIsland />
-        <SidebarNotesToggle />
-        <SidebarVoicePadToggle />
         <NavItem item={settingsItem} />
       </div>
     </aside>

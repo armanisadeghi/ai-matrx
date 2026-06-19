@@ -86,7 +86,7 @@ export async function fetchTranscripts(): Promise<Transcript[]> {
  */
 export async function fetchTranscriptsPaginated(
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
 ): Promise<Transcript[]> {
   const { data, error } = await supabase
     .from("transcripts")
@@ -324,7 +324,20 @@ export async function saveDraftTranscript(
     throw error;
   }
 
-  return mapTranscriptRow(data);
+  const transcript = mapTranscriptRow(data);
+  const labelSourceText = input.segments
+    .map((s) => s.text?.trim() ?? "")
+    .filter(Boolean)
+    .join(" ");
+  void import("./autoLabelTranscript")
+    .then(({ autoLabelDraftTranscript }) =>
+      autoLabelDraftTranscript(transcript.id, labelSourceText),
+    )
+    .catch((err) => {
+      console.warn("[transcripts] draft auto-label failed:", err);
+    });
+
+  return transcript;
 }
 
 /**
@@ -369,7 +382,7 @@ export async function finalizeDraft(
  */
 export async function getDraftTranscripts(
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
 ): Promise<Transcript[]> {
   const { data, error } = await supabase
     .from("transcripts")
@@ -491,9 +504,7 @@ export async function getTranscriptsByTag(tag: string): Promise<Transcript[]> {
  * Get a signed URL for an audio/video file. The argument is now a
  * cld_files UUID; the universal handler mints (and auto-refreshes) the URL.
  */
-export async function getSignedUrl(
-  fileId: string,
-): Promise<string | null> {
+export async function getSignedUrl(fileId: string): Promise<string | null> {
   try {
     const { fileHandler } = await import("@/features/files/handler/handler");
     return await fileHandler.use({ kind: "file_id", fileId }).as({

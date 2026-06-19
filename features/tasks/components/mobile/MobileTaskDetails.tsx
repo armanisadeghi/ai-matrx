@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   Calendar,
   Flag,
-  Folder,
   Trash2,
   Plus,
   X,
@@ -13,12 +12,10 @@ import {
   MoreVertical,
 } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { selectProjects } from "@/features/tasks/redux/selectors";
 import {
   updateTaskFieldThunk,
   toggleTaskCompleteThunk,
   deleteTaskThunk,
-  moveTaskThunk,
 } from "@/features/tasks/redux/thunks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import { Button } from "@/components/ui/button";
@@ -40,9 +37,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import * as taskService from "@/features/tasks/services/taskService";
-import { ScopePicker } from "@/features/agent-context/components/ScopePicker";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { TaskContextPicker } from "../TaskContextSection";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
 interface MobileTaskDetailsProps {
   task: any;
@@ -54,8 +50,6 @@ export default function MobileTaskDetails({
   onBack,
 }: MobileTaskDetailsProps) {
   const dispatch = useAppDispatch();
-  const projects = useAppSelector(selectProjects);
-  const orgId = useAppSelector(selectOrganizationId);
 
   const refresh = () => dispatch(invalidateAndRefetchFullContext());
   const createSubtask = async (parentTaskId: string, title: string) => {
@@ -74,9 +68,6 @@ export default function MobileTaskDetails({
   const [title, setTitle] = useState(task.title || "");
   const [description, setDescription] = useState(task.description || "");
   const [dueDate, setDueDate] = useState(task.dueDate || "");
-  const [projectId, setProjectId] = useState<string | null>(
-    task.projectId || null,
-  );
   const [priority, setPriority] = useState<"low" | "medium" | "high" | null>(
     task.priority || null,
   );
@@ -84,6 +75,8 @@ export default function MobileTaskDetails({
   const [isDirty, setIsDirty] = useState(false);
   const [newSubtask, setNewSubtask] = useState("");
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
+  const { inputRef: subtaskInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
+    useRefocusInputAfterAsync(isAddingSubtask);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Update local state when task changes
@@ -91,17 +84,9 @@ export default function MobileTaskDetails({
     setTitle(task.title || "");
     setDescription(task.description || "");
     setDueDate(task.dueDate || "");
-    setProjectId(task.projectId || null);
     setPriority(task.priority || null);
     setIsDirty(false);
-  }, [
-    task.id,
-    task.title,
-    task.description,
-    task.dueDate,
-    task.projectId,
-    task.priority,
-  ]);
+  }, [task.id, task.title, task.description, task.dueDate, task.priority]);
 
   const handleSave = async () => {
     if (!isDirty || isSaving) return;
@@ -123,15 +108,6 @@ export default function MobileTaskDetails({
           updateTaskFieldThunk({
             taskId: task.id,
             patch: { due_date: dueDate || null },
-          }),
-        );
-      }
-      if (projectId !== task.projectId) {
-        await dispatch(
-          moveTaskThunk({
-            taskId: task.id,
-            fromProjectId: task.projectId,
-            toProjectId: projectId,
           }),
         );
       }
@@ -171,6 +147,7 @@ export default function MobileTaskDetails({
     try {
       await createSubtask(task.id, newSubtask);
       setNewSubtask("");
+      scheduleSubtaskRefocus();
       await refresh();
     } catch (error) {
       console.error("Error adding subtask:", error);
@@ -365,48 +342,13 @@ export default function MobileTaskDetails({
             />
           </div>
 
-          {/* Project */}
+          {/* Context — org, scopes, project (compact) */}
           <div>
-            <label className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-              <Folder size={16} />
-              Project
+            <label className="text-sm font-medium text-muted-foreground mb-2 block">
+              Context
             </label>
-            <Select
-              value={projectId || "none"}
-              onValueChange={(val) => {
-                setProjectId(val === "none" ? null : val);
-                setIsDirty(true);
-              }}
-            >
-              <SelectTrigger className="text-sm">
-                <SelectValue>
-                  {projectId
-                    ? projects.find((p) => p.id === projectId)?.name
-                    : "No Project"}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">
-                  <span className="text-muted-foreground">No Project</span>
-                </SelectItem>
-                {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <TaskContextPicker taskId={task.id} taskTitle={task.title} />
           </div>
-
-          {/* Scopes */}
-          {orgId && (
-            <div>
-              <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                Scopes
-              </label>
-              <ScopePicker entityType="task" entityId={task.id} orgId={orgId} />
-            </div>
-          )}
 
           {/* Priority */}
           <div>
@@ -490,6 +432,7 @@ export default function MobileTaskDetails({
               ))}
               <div className="flex items-center gap-2 mt-2">
                 <Input
+                  ref={subtaskInputRef}
                   value={newSubtask}
                   onChange={(e) => setNewSubtask(e.target.value)}
                   placeholder="Add a subtask..."
@@ -504,9 +447,12 @@ export default function MobileTaskDetails({
                       });
                     }, 300);
                   }}
-                  onKeyPress={(e) =>
-                    e.key === "Enter" && !e.shiftKey && handleAddSubtask()
-                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      void handleAddSubtask();
+                    }
+                  }}
                 />
                 <Button
                   size="icon"

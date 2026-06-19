@@ -41,6 +41,7 @@ export function AudioModalHost() {
             title={modalProps.title}
             description={modalProps.description}
             hideText={modalProps.hideText}
+            dictionarySurfaceKey={modalProps.dictionarySurfaceKey}
         />
     );
 }

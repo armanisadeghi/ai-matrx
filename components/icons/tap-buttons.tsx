@@ -173,6 +173,42 @@ export function MaximizeTapButton(props: TapButtonProps) {
   );
 }
 
+// lucide: home v0.577.0 — used as the "Hub" (main/list) action
+export function HomeTapButton(props: TapButtonProps) {
+  return (
+    <Wrap ariaLabel="Hub" {...props}>
+      <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+      <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </Wrap>
+  );
+}
+
+// lucide: layout-grid v0.577.0
+export function LayoutGridTapButton(props: TapButtonProps) {
+  return (
+    <Wrap ariaLabel="Card view" {...props}>
+      <rect width="7" height="7" x="3" y="3" rx="1" />
+      <rect width="7" height="7" x="14" y="3" rx="1" />
+      <rect width="7" height="7" x="14" y="14" rx="1" />
+      <rect width="7" height="7" x="3" y="14" rx="1" />
+    </Wrap>
+  );
+}
+
+// lucide: list v0.577.0
+export function ListTapButton(props: TapButtonProps) {
+  return (
+    <Wrap ariaLabel="Table view" {...props}>
+      <path d="M3 5h.01" />
+      <path d="M3 12h.01" />
+      <path d="M3 19h.01" />
+      <path d="M8 5h13" />
+      <path d="M8 12h13" />
+      <path d="M8 19h13" />
+    </Wrap>
+  );
+}
+
 // lucide: arrow-down-up (hand-crafted — kept as-is)
 export function ArrowDownUpTapButton(props: TapButtonProps) {
   return (

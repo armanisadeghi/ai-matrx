@@ -218,6 +218,16 @@ export function useResearchTags(topicId: string) {
   );
 }
 
+/** All source⇄tag assignments for a topic, keyed by source_id — powers the
+ *  Sources list tag chips + per-row picker without one query per row. */
+export function useTopicSourceTags(topicId: string) {
+  return useServiceQuery<Record<string, { id: string; name: string }[]>>(
+    () => service.getTopicSourceTags(topicId),
+    [topicId],
+    !!topicId,
+  );
+}
+
 export function useSourceTags(sourceId: string | undefined) {
   return useServiceQuery<SourceTag[]>(
     () => service.getSourceTags(sourceId!),

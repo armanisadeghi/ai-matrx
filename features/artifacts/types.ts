@@ -84,6 +84,8 @@ export interface CxArtifactRow {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  /** FK → canvas_items.id. Set when this row was created by the materialization discovery index. */
+  canvas_item_id: string | null;
 }
 
 // ── Redux record shape (camelCase — in-memory representation) ─────────────
@@ -108,6 +110,8 @@ export interface CxArtifactRecord {
   metadata: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
+  /** FK → canvas_items.id. Non-null when created via the materialization discovery-index path. */
+  canvasItemId: string | null;
 }
 
 /** Convert a DB row to a Redux record. */
@@ -131,6 +135,7 @@ export function rowToArtifactRecord(row: CxArtifactRow): CxArtifactRecord {
     metadata: row.metadata ?? {},
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    canvasItemId: row.canvas_item_id ?? null,
   };
 }
 

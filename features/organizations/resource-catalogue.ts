@@ -72,8 +72,7 @@ export const CONTENT_ROLES: ContentRoleMeta[] = [
   {
     id: "utility",
     title: "Utilities",
-    tagline:
-      "What your team can do — the agents and tools that act on your knowledge.",
+    tagline: "The agents and tools that act on your knowledge.",
     accentText: "text-violet-600 dark:text-violet-400",
     accentBg: "bg-violet-500/10",
     accentBar: "bg-violet-500",
@@ -81,8 +80,7 @@ export const CONTENT_ROLES: ContentRoleMeta[] = [
   {
     id: "source",
     title: "Sources",
-    tagline:
-      "Knowledge coming in — the raw material your team brings to the org.",
+    tagline: "Incoming sources of truth (Knowledge In).",
     accentText: "text-sky-600 dark:text-sky-400",
     accentBg: "bg-sky-500/10",
     accentBar: "bg-sky-500",
@@ -90,7 +88,7 @@ export const CONTENT_ROLES: ContentRoleMeta[] = [
   {
     id: "destination",
     title: "Outputs",
-    tagline: "Knowledge your team produces — what the work creates.",
+    tagline: "Knowledge your team produces.",
     accentText: "text-emerald-600 dark:text-emerald-400",
     accentBg: "bg-emerald-500/10",
     accentBar: "bg-emerald-500",
@@ -98,7 +96,7 @@ export const CONTENT_ROLES: ContentRoleMeta[] = [
   {
     id: "hybrid",
     title: "Sources & Outputs",
-    tagline: "Dual-role — the same item can feed knowledge in and capture it.",
+    tagline: "Source or Destination.",
     accentText: "text-teal-600 dark:text-teal-400",
     accentBg: "bg-teal-500/10",
     accentBar: "bg-gradient-to-r from-sky-500 to-emerald-500",
@@ -106,8 +104,7 @@ export const CONTENT_ROLES: ContentRoleMeta[] = [
   {
     id: "container",
     title: "Workspaces",
-    tagline:
-      "How work is organized — the containers that group everything else.",
+    tagline: "How work is organized.",
     accentText: "text-amber-600 dark:text-amber-400",
     accentBg: "bg-amber-500/10",
     accentBar: "bg-amber-500",

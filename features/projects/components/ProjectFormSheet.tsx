@@ -9,10 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  ProjectFormCore,
-  type ProjectFormCoreProps,
-} from "./ProjectFormCore";
+import type { ProjectFormCoreProps } from "./ProjectFormCore";
+import { ProjectCreatePanel } from "./ProjectCreatePanel";
 import type { Project } from "../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -32,6 +30,14 @@ export interface ProjectFormSheetProps {
   orgSlug?: string | null;
   /** When true, don't redirect to settings after creation */
   skipRedirect?: boolean;
+  /** Show the "Use AI" mode alongside the manual form. Default true. */
+  enableAi?: boolean;
+  /**
+   * Fired when an AI run created a project server-side (no project object).
+   * The panel already refreshes nav-tree consumers globally; wire this only if
+   * the caller self-fetches its own list.
+   */
+  onAiComplete?: () => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -72,6 +78,8 @@ export function ProjectFormSheet({
   organizationId,
   orgSlug,
   skipRedirect,
+  enableAi = true,
+  onAiComplete,
 }: ProjectFormSheetProps) {
   const isMobile = useIsMobile();
 
@@ -98,7 +106,14 @@ export function ProjectFormSheet({
               Name it, pick an owner, and go.
             </p>
           </div>
-          <ProjectFormCore {...sharedProps} isMobile />
+          <div className="flex-1 min-h-0 px-1 pt-3">
+            <ProjectCreatePanel
+              {...sharedProps}
+              enableAi={enableAi}
+              onAiComplete={onAiComplete}
+              isMobile
+            />
+          </div>
         </DrawerContent>
       </Drawer>
     );
@@ -106,7 +121,7 @@ export function ProjectFormSheet({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90dvh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[90dvh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Create New Project</DialogTitle>
           <DialogDescription>
@@ -114,8 +129,12 @@ export function ProjectFormSheet({
             creation.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto">
-          <ProjectFormCore {...sharedProps} />
+        <div className="flex-1 min-h-0">
+          <ProjectCreatePanel
+            {...sharedProps}
+            enableAi={enableAi}
+            onAiComplete={onAiComplete}
+          />
         </div>
       </DialogContent>
     </Dialog>

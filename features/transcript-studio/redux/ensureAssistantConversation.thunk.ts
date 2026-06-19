@@ -173,7 +173,14 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
       }
 
       // 3. Fresh conversation — mint with the resolved default agent (user-wide
-      // default → seeded agent), seed UI, persist the link + roster for next load.
+      // default → seeded agent), seed UI. The id is set in Redux (optimistic
+      // roster + active pointer) so History shows it immediately, but it is NOT
+      // persisted to the DB here: a freshly-minted id has NO cx_conversation row
+      // until the FIRST turn streams (the server creates it then). Persisting the
+      // placeholder before that saves an id `loadConversation` 406s on (0 rows) —
+      // the conversation "disappears". `useStudioAssistant` calls
+      // `persistAssistantConversationThunk` the instant the server confirms the
+      // turn, so only REAL conversations ever hit the session row.
       const defaultAgentId = resolveDefaultAssistantAgentId(getState());
       const newConversationId = await createInstanceForSession(
         dispatch,
@@ -189,35 +196,17 @@ export const ensureAssistantConversationThunk = createAsyncThunk<
       dispatch(
         setShowMicrophone({ conversationId: newConversationId, value: true }),
       );
-      try {
-        const existingRoster =
-          getState().transcriptStudio.byId[sessionId]?.assistantConversations ??
-          [];
-        const updated = await updateSession(sessionId, {
-          assistantConversationId: newConversationId,
-          assistantConversations: appendRoster(
-            existingRoster,
-            makeRosterRef(newConversationId, defaultAgentId),
-          ),
-        });
-        if (updated) {
-          dispatch(sessionUpserted(updated));
-        } else {
-          // Loud recovery: the session row is gone (deleted, or a local/optimistic
-          // session never persisted), so the conversation link can't be saved.
-          // eslint-disable-next-line no-console
-          console.warn(
-            "[studio] ensureAssistantConversation: session row missing — assistant_conversation_id not persisted (conversation will not survive refresh)",
-            { sessionId },
-          );
-        }
-      } catch (err) {
-        // Loud recovery: failing to persist means the next refresh orphans
-        // this conversation again — surface it rather than swallow.
-        // eslint-disable-next-line no-console
-        console.error(
-          "[studio] ensureAssistantConversation: failed to persist assistant_conversation_id — conversation will not survive refresh",
-          err,
+      const sessionNow = getState().transcriptStudio.byId[sessionId];
+      if (sessionNow) {
+        dispatch(
+          sessionUpserted({
+            ...sessionNow,
+            assistantConversationId: newConversationId,
+            assistantConversations: appendRoster(
+              sessionNow.assistantConversations ?? [],
+              makeRosterRef(newConversationId, defaultAgentId),
+            ),
+          }),
         );
       }
       return newConversationId;

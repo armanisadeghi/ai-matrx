@@ -330,6 +330,11 @@ const ATTRIBUTE_XML_BLOCKS = [
   // body carries <message>+<surrounding_code> for errors, raw code for snippets.
   "editor_error",
   "editor_code_snippet",
+  // Audio citation — an agent reference to a moment in a scribe session's audio.
+  // `start`/`end` are session-relative seconds; the body is the cited label.
+  // Emitted mid-sentence (handled by detectMidLineAttributeXml), so a reply can
+  // cite the audio inline like a footnote.
+  "audiocite",
 ] as const;
 type AttributeXmlBlockType = (typeof ATTRIBUTE_XML_BLOCKS)[number];
 
@@ -505,11 +510,13 @@ function extractAttributeXmlBlock(
 
   // Type-specific metadata construction
 
-  // Editor pill tags — pass attributes straight through as metadata so the
-  // chip component can render file/line/severity/language without parsing.
+  // Editor pill tags + audio citations — pass attributes straight through as
+  // metadata so the chip component can read file/line/severity/language (editor)
+  // or start/end/session (audiocite) without re-parsing the tag.
   if (
     detection.type === "editor_error" ||
-    detection.type === "editor_code_snippet"
+    detection.type === "editor_code_snippet" ||
+    detection.type === "audiocite"
   ) {
     return {
       content: innerContent,
@@ -1705,6 +1712,33 @@ export const splitContentIntoBlocksV2 = (
               language: "json",
             });
           }
+          i = j;
+          continue;
+        }
+      } else if (openCount > closeCount) {
+        // Incomplete bare JSON — more `{` than `}`, so the object is still
+        // streaming in (no closing brace collected before content ran out).
+        // If the partial content already reveals a known typed-block root key,
+        // commit it as that typed block in a loading state instead of letting
+        // it fall through to raw text. This mirrors the StreamBlockAccumulator's
+        // early type resolution and the fenced-JSON path, so an unfenced quiz /
+        // slide deck shows its skeleton mid-stream rather than ugly raw JSON.
+        // Gated on detectJsonBlockType (known root keys only) — prose with a
+        // stray "{" never matches, so it stays text. On a *finalized* message
+        // the braces are balanced and this branch never fires.
+        const partialJson = jsonLines.join("\n").trim();
+        const jsonType = detectJsonBlockType(partialJson);
+        if (jsonType) {
+          if (currentText.trim()) {
+            blocks.push({ type: "text", content: currentText.trimEnd() });
+            currentText = "";
+          }
+          blocks.push({
+            type: jsonType as SplitterBlockType,
+            content: partialJson,
+            language: "json",
+            metadata: { isComplete: false },
+          });
           i = j;
           continue;
         }

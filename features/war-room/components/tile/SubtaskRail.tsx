@@ -11,15 +11,14 @@
  *     user can chain type → Enter → type → Enter with no extra clicks. When
  *     the rail mounts via the "+" affordance the input auto-focuses.
  *   • Click a subtask → opens it in the in-tile detail pane (via `onOpenPane`).
- *   • Each subtask carries a "⋯" menu → "Open in window" (`onOpenWindow`),
- *     which the parent turns into a floating, draggable `SubtaskWindow`.
+ *   • Click a subtask → `useOpenTaskEditorWindow({ taskId })` (overlay).
  *   • Checkbox toggles completion; trash deletes — both via existing thunks.
  *
  * All persistence reuses the canonical task thunks unchanged
  * (`createSubtaskThunk` / `toggleTaskCompleteThunk` / `deleteTaskThunk`).
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CheckSquare,
   Eye,
@@ -49,6 +48,7 @@ import {
   setShowCompleted,
 } from "@/features/tasks/redux/taskUiSlice";
 import { cn } from "@/lib/utils";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
 export function SubtaskRail({
   taskId,
@@ -69,7 +69,7 @@ export function SubtaskRail({
   const showCompleted = useAppSelector(selectShowCompleted);
   const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const { inputRef, scheduleRefocus } = useRefocusInputAfterAsync(adding);
 
   // Auto-focus the entry line when first revealed so the user types at once.
   useEffect(() => {
@@ -91,6 +91,7 @@ export function SubtaskRail({
       ).unwrap();
       if (newId) {
         setDraft("");
+        scheduleRefocus();
         return true;
       }
       return false;
@@ -102,7 +103,7 @@ export function SubtaskRail({
   return (
     <div className="flex h-full min-h-0 flex-col bg-card/30">
       {/* Header */}
-      <div className="flex h-8 shrink-0 items-center gap-1.5 border-b border-border/60 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border/60 pl-1.5 pr-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         <CheckSquare className="size-3.5 text-primary" />
         <span>Subtasks</span>
         {subtasks.length > 0 && (
@@ -139,45 +140,41 @@ export function SubtaskRail({
       </div>
 
       {/* Rapid entry — always visible, stays focused for chained adds. */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-border/40 bg-muted/20 px-2.5 py-1.5">
-        <Plus className="size-3.5 shrink-0 text-muted-foreground" />
+      <div className="flex h-7 shrink-0 items-center gap-1.5 border-b border-border/40 bg-muted/20 pl-1.5 pr-2">
+        <Plus className="size-3 shrink-0 text-muted-foreground" />
         <input
           ref={inputRef}
           type="text"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={async (e) => {
+          onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              const ok = await addSubtask();
-              // Keep the cursor on a fresh empty line for the next subtask.
-              if (ok) inputRef.current?.focus();
+              void addSubtask();
             }
           }}
           onBlur={() => {
-            // Save-on-blur when there's content (no explicit Add click needed).
             if (draft.trim()) void addSubtask();
           }}
           placeholder="Add subtask, press Enter…"
-          className="h-6 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
-          // 16px prevents the iOS focus-zoom on responsive web.
+          className="h-6 min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
           style={{ fontSize: "16px" }}
           disabled={adding}
           aria-label="Add subtask"
         />
         {adding && (
-          <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
+          <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />
         )}
       </div>
 
       {/* List */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {subtasks.length === 0 ? (
-          <p className="px-2.5 py-3 text-xs italic text-muted-foreground">
+          <p className="py-1.5 pl-1.5 pr-2 text-[11px] italic text-muted-foreground">
             No subtasks yet. Type above to add your first.
           </p>
         ) : visibleSubtasks.length === 0 ? (
-          <p className="px-2.5 py-3 text-xs italic text-muted-foreground">
+          <p className="py-1.5 pl-1.5 pr-2 text-[11px] italic text-muted-foreground">
             All subtasks completed. Use the eye icon above to show them.
           </p>
         ) : (
@@ -187,7 +184,7 @@ export function SubtaskRail({
               return (
                 <li
                   key={st.id}
-                  className="group flex items-center gap-2 border-b border-border/30 px-2.5 py-1.5 transition-colors hover:bg-accent/40"
+                  className="group flex h-7 items-center gap-1.5 border-b border-border/30 pl-1.5 pr-2 transition-colors hover:bg-accent/40"
                 >
                   <Checkbox
                     checked={isDone}
@@ -195,13 +192,13 @@ export function SubtaskRail({
                       dispatch(toggleTaskCompleteThunk({ taskId: st.id }))
                     }
                     aria-label={isDone ? "Mark incomplete" : "Mark complete"}
+                    className="size-3.5"
                   />
-                  {/* Click the title to open the detail pane. */}
                   <button
                     type="button"
                     onClick={() => onOpenPane(st.id)}
                     className={cn(
-                      "min-w-0 flex-1 truncate text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm",
+                      "min-w-0 flex-1 truncate rounded-sm text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                       isDone && showCompleted
                         ? "text-muted-foreground line-through"
                         : "text-foreground hover:text-primary",
@@ -215,7 +212,7 @@ export function SubtaskRail({
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
-                        className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 data-[state=open]:opacity-100"
+                        className="grid size-5 shrink-0 place-items-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 data-[state=open]:opacity-100"
                         title="Subtask options"
                         aria-label="Subtask options"
                       >
@@ -225,7 +222,7 @@ export function SubtaskRail({
                     <DropdownMenuContent align="end" className="w-44">
                       <DropdownMenuItem onClick={() => onOpenPane(st.id)}>
                         <CheckSquare className="size-3.5" />
-                        Open detail
+                        Open task
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onOpenWindow(st.id)}>
                         <PanelRightOpen className="size-3.5" />

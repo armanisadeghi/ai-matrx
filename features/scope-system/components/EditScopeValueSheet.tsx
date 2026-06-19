@@ -278,6 +278,7 @@ export function EditScopeValueSheet({
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 minHeight={200}
+                maxHeight={600}
                 autoGrow
                 className={
                   row.value_type === "object" || row.value_type === "array"

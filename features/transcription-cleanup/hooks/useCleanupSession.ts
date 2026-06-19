@@ -92,6 +92,9 @@ const TITLE_MAX_LEN = 50;
 const LABEL_INPUT_MAX_CHARS = 8000;
 const CLEANUP_PLACEHOLDER_TITLES = new Set([
   NEW_CLEANUP_TITLE.toLowerCase(),
+  "new session",
+  "recording",
+  "voice pad recording",
   "untitled",
   "",
 ]);
@@ -288,7 +291,8 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
     }
     if (locallyCreatedRef.current.has(activeSessionId)) {
       // Fresh local session — refs are already correct and the content is in
-      // the page's local state. Nothing to load.
+      // the page's local state. Nothing to load; clear any stale snapshot.
+      setLoaded(null);
       setLoadState("ready");
       return;
     }
@@ -503,6 +507,8 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
               text: trimmed.slice(0, LABEL_INPUT_MAX_CHARS),
               content_type: "transcript",
               label_max_chars: TITLE_MAX_LEN,
+              studio_session_id: sessionId,
+              persist_label: true,
             },
             controller.signal,
           );

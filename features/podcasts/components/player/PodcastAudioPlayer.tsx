@@ -49,6 +49,13 @@ type AudioWithLegacyPitch = HTMLAudioElement & {
 const SKIP_SECONDS = 15;
 const SPEED_OPTIONS = [1, 1.25, 1.5, 2, 3] as const;
 
+// A just-persisted audio object can 404/stall for several seconds right after
+// generation finishes (CDN propagation, last-byte flush). Rather than give up
+// after a single quick retry, we retry on a backoff schedule that covers a
+// ~13s window before declaring failure — long enough that the object is almost
+// always live by the final attempt, so the user never has to refresh the page.
+const AUDIO_RETRY_DELAYS_MS = [800, 1200, 2000, 3000, 3000, 3000] as const;
+
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
@@ -116,18 +123,35 @@ export function PodcastAudioPlayer({
     });
   });
   const [audioError, setAudioError] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   // The live-player handoff (initialTime/autoPlay) applies exactly once per
   // source — not again after the user seeks or replays.
   const handoffAppliedRef = useRef(false);
-  // One silent retry per source before declaring failure — a just-persisted
-  // CDN object can 404/stall for a beat right after generation finishes.
-  const errorRetriedRef = useRef(false);
+  // Silent retries on a backoff schedule before declaring failure — a
+  // just-persisted CDN object can 404/stall for several seconds right after
+  // generation finishes. Tracks attempts + the pending timer so we can cancel
+  // it on source change / unmount.
+  const errorRetryCountRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearRetryTimer = useCallback(() => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+  }, []);
 
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const handleLoadedMetadata = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    // A successful load means any earlier transient error is resolved — clear
+    // the retry state so a later hiccup gets the full retry budget again.
+    clearRetryTimer();
+    errorRetryCountRef.current = 0;
+    setRetrying(false);
+    setAudioError(false);
     setDuration(audio.duration ?? 0);
     if (handoffAppliedRef.current) return;
     handoffAppliedRef.current = true;
@@ -144,7 +168,35 @@ export function PodcastAudioPlayer({
           // Autoplay denied — the user resumes manually at the carried position.
         });
     }
-  }, [initialTime, autoPlay]);
+  }, [initialTime, autoPlay, clearRetryTimer]);
+
+  // Drive a single retry cycle: bump the attempt counter, schedule a reload on
+  // the backoff schedule, and only declare failure once the budget is spent.
+  const handleAudioError = useCallback(() => {
+    const attempt = errorRetryCountRef.current;
+    if (attempt < AUDIO_RETRY_DELAYS_MS.length) {
+      errorRetryCountRef.current = attempt + 1;
+      setRetrying(true);
+      clearRetryTimer();
+      retryTimerRef.current = setTimeout(() => {
+        retryTimerRef.current = null;
+        audioRef.current?.load();
+      }, AUDIO_RETRY_DELAYS_MS[attempt]);
+      return;
+    }
+    setRetrying(false);
+    setAudioError(true);
+    onError?.();
+  }, [clearRetryTimer, onError]);
+
+  // Manual retry from the failure state — resets the budget and reloads now.
+  const retryNow = useCallback(() => {
+    clearRetryTimer();
+    errorRetryCountRef.current = 0;
+    setAudioError(false);
+    setRetrying(true);
+    audioRef.current?.load();
+  }, [clearRetryTimer]);
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
@@ -229,9 +281,14 @@ export function PodcastAudioPlayer({
     setCurrentTime(0);
     setDuration(0);
     setAudioError(false);
+    setRetrying(false);
     handoffAppliedRef.current = false;
-    errorRetriedRef.current = false;
-  }, [audioUrl]);
+    errorRetryCountRef.current = 0;
+    clearRetryTimer();
+  }, [audioUrl, clearRetryTimer]);
+
+  // Cancel any pending retry when the component unmounts.
+  useEffect(() => clearRetryTimer, [clearRetryTimer]);
 
   // Apply playback speed AND preserve pitch — this is the YouTube/Spotify
   // technique that keeps voices natural-sounding at higher speeds (no chipmunk
@@ -280,8 +337,25 @@ export function PodcastAudioPlayer({
   if (audioError) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-10 text-muted-foreground">
+        {/* Keep the headless <audio> mounted so retryNow()'s load() has a target. */}
+        <audio
+          ref={audioRef}
+          src={audioUrl}
+          onLoadedMetadata={handleLoadedMetadata}
+          onError={handleAudioError}
+          preload="metadata"
+          className="hidden"
+        />
         <Music className="h-10 w-10 opacity-40" />
         <p className="text-sm">Unable to load audio.</p>
+        <button
+          type="button"
+          onClick={retryNow}
+          className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Try again
+        </button>
       </div>
     );
   }
@@ -320,15 +394,7 @@ export function PodcastAudioPlayer({
         onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => setIsPlaying(false)}
-        onError={() => {
-          if (!errorRetriedRef.current) {
-            errorRetriedRef.current = true;
-            setTimeout(() => audioRef.current?.load(), 1500);
-            return;
-          }
-          setAudioError(true);
-          onError?.();
-        }}
+        onError={handleAudioError}
         loop={isLooping}
         preload="metadata"
       />
@@ -354,8 +420,17 @@ export function PodcastAudioPlayer({
               {title}
             </p>
           )}
-          <p className={`text-sm mt-0.5 ${txtMuted}`}>
-            {duration > 0 ? formatTime(duration) : "--:--"}
+          <p className={`flex items-center gap-1.5 text-sm mt-0.5 ${txtMuted}`}>
+            {duration > 0 ? (
+              formatTime(duration)
+            ) : retrying ? (
+              <>
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                Loading audio…
+              </>
+            ) : (
+              "--:--"
+            )}
           </p>
         </div>
       </div>

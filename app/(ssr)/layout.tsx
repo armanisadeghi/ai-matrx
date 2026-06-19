@@ -17,6 +17,8 @@ import MobileSideSheet from "@/features/shell/components/mobile-sheet/MobileSide
 import GlassPortal from "@/features/shell/components/GlassPortal";
 import NavActiveSync from "@/features/shell/components/NavActiveSync";
 import VisualViewportSync from "@/features/shell/components/VisualViewportSync";
+import ShellSidebarCookieSync from "@/features/shell/components/ShellSidebarCookieSync";
+import { readSidebarExpandedCookie } from "@/features/shell/utils/server-cookies";
 import type { UserData } from "@/utils/userDataMapper";
 
 const emptyGlobalCache = getEmptyGlobalCache();
@@ -48,6 +50,7 @@ export default async function SSRLayout({
   const supabase = await createClient();
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") || "/ssr";
+  const sidebarExpanded = await readSidebarExpandedCookie();
 
   // getUser() validates the JWT — no redirect for guests, they get limited UI
   const {
@@ -94,7 +97,12 @@ export default async function SSRLayout({
   return (
     <Providers initialReduxState={initialReduxState}>
       <div className="shell-root" data-pathname={pathname}>
-        <input type="checkbox" id="shell-sidebar-toggle" aria-hidden="true" />
+        <input
+          type="checkbox"
+          id="shell-sidebar-toggle"
+          aria-hidden="true"
+          defaultChecked={sidebarExpanded}
+        />
         <input type="checkbox" id="shell-mobile-menu" aria-hidden="true" />
         <input type="checkbox" id="shell-user-menu" aria-hidden="true" />
         <input type="checkbox" id="shell-panel-toggle" aria-hidden="true" />
@@ -114,6 +122,7 @@ export default async function SSRLayout({
 
       <NavActiveSync />
       <VisualViewportSync />
+      <ShellSidebarCookieSync />
     </Providers>
   );
 }

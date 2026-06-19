@@ -173,7 +173,7 @@ export default function TaskAttachmentsPanel({
         className="sr-only"
         onChange={handleFilesSelected}
       />
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="flex items-center gap-1.5 pl-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         <Paperclip className="w-3 h-3" />
         <span>Attachments</span>
         <span className="tabular-nums text-muted-foreground/60">({count})</span>

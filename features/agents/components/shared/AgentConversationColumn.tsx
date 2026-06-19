@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { ArrowDown } from "lucide-react";
 import { motion } from "motion/react";
@@ -14,6 +14,10 @@ import { selectMessageCount } from "@/features/agents/redux/execution-system/mes
 import { selectShowCreatorPanel } from "@/lib/redux/preferences/creatorDebugSlice";
 
 import { cn } from "@/lib/utils";
+import {
+  isWarRoomTileAgentSurface,
+  traceWarRoomRenderPath,
+} from "@/features/war-room/utils/renderPathTrace";
 
 // CreatorRunPanel renders a <WindowPanel> as styling chrome (admin-gated
 // tab panel). Without `dynamic()` it would pull WindowPanel and the
@@ -113,6 +117,21 @@ export function AgentConversationColumn({
   const messageCount = useAppSelector(selectMessageCount(displayId));
   const showLanding = !!landingContent && messageCount === 0;
   const showCreatorPanel = useAppSelector(selectShowCreatorPanel);
+
+  useEffect(() => {
+    if (!isWarRoomTileAgentSurface(surfaceKey)) return;
+    traceWarRoomRenderPath(
+      12,
+      "AgentConversationColumn.tsx",
+      "conversation column render",
+      {
+        conversationId,
+        displayConversationId: displayId,
+        messageCount,
+        surfaceKey,
+      },
+    );
+  }, [surfaceKey, conversationId, displayId, messageCount]);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;

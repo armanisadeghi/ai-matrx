@@ -17,6 +17,9 @@ const scopesAdapter = createEntityAdapter<Scope>({
     (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name),
 });
 
+/** Stable empty list for selectors — never mutate. */
+const EMPTY_SCOPES: Scope[] = [];
+
 interface ScopesExtraState {
   loading: boolean;
   error: string | null;
@@ -222,12 +225,20 @@ export const selectScopesError = (state: StateWithScopes) => state.scopes.error;
 
 export const selectScopesByOrg = createSelector(
   [selectAllScopes, (_state: StateWithScopes, orgId: string) => orgId],
-  (scopes, orgId) => scopes.filter((s) => s.organization_id === orgId),
+  (scopes, orgId) => {
+    if (!orgId) return EMPTY_SCOPES;
+    const filtered = scopes.filter((s) => s.organization_id === orgId);
+    return filtered.length > 0 ? filtered : EMPTY_SCOPES;
+  },
 );
 
 export const selectScopesByType = createSelector(
   [selectAllScopes, (_state: StateWithScopes, typeId: string) => typeId],
-  (scopes, typeId) => scopes.filter((s) => s.scope_type_id === typeId),
+  (scopes, typeId) => {
+    if (!typeId) return EMPTY_SCOPES;
+    const filtered = scopes.filter((s) => s.scope_type_id === typeId);
+    return filtered.length > 0 ? filtered : EMPTY_SCOPES;
+  },
 );
 
 /**
@@ -244,9 +255,7 @@ export const selectScopeBySlugOrId = createSelector(
   (scopes, typeId, slugOrId) =>
     isUuid(slugOrId)
       ? scopes.find((s) => s.id === slugOrId)
-      : scopes.find(
-          (s) => s.scope_type_id === typeId && s.slug === slugOrId,
-        ),
+      : scopes.find((s) => s.scope_type_id === typeId && s.slug === slugOrId),
 );
 
 export const selectChildScopes = createSelector(

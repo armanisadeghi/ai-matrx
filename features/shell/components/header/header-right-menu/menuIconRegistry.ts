@@ -17,6 +17,7 @@ import {
   Bell,
   UserPlus,
   Lock,
+  Mic,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -39,6 +40,7 @@ export const MENU_ICON_REGISTRY = {
   Bell,
   UserPlus,
   Lock,
+  Mic,
 } as const;
 
 export type MenuIconKey = keyof typeof MENU_ICON_REGISTRY;

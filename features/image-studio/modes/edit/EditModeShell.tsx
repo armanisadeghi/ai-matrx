@@ -20,7 +20,13 @@
  * "Save as duplicate" creates a fresh file.
  */
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
@@ -44,7 +50,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectFileName } from "@/features/files/redux/selectors";
@@ -60,7 +71,6 @@ import { EditAiToolbar } from "./EditAiToolbar";
 import { MaskOverlay } from "./MaskOverlay";
 import { EditorTabHint } from "./EditorTabHint";
 import { useMaskState } from "./use-mask-state";
-import { installThirdPartyNoiseFilter } from "@/lib/console-noise";
 
 // Filerobot 5.0.1 ships THREE files (HistoryButtons.js, TabsResponsive.js,
 // TabsNavbar/index.js) whose compiled output calls `React.createElement(...)`
@@ -74,7 +84,6 @@ const FilerobotImageEditor = dynamic(
     const ReactDefault =
       (ReactNs as unknown as { default?: typeof ReactNs }).default ?? ReactNs;
     (globalThis as unknown as { React?: unknown }).React = ReactDefault;
-    installThirdPartyNoiseFilter();
     return import("react-filerobot-image-editor");
   },
   { ssr: false, loading: () => <EditorSkeleton /> },
@@ -179,7 +188,9 @@ export function EditModeShell({
   const { url, filename } = useImageSource(source);
   const themeMode = useThemeMode();
   const [saving, setSaving] = useState(false);
-  const [savingVariants, setSavingVariants] = useState<AssetPreset | null>(null);
+  const [savingVariants, setSavingVariants] = useState<AssetPreset | null>(
+    null,
+  );
 
   // Allows AI ops + version-restore to swap the underlying source mid-edit.
   // We bump a key to force-remount Filerobot when this changes.
@@ -218,8 +229,7 @@ export function EditModeShell({
   }, [activeUrl]);
 
   const effectiveCloudFileId =
-    cloudFileId ??
-    (source?.kind === "cloudFileId" ? source.cloudFileId : null);
+    cloudFileId ?? (source?.kind === "cloudFileId" ? source.cloudFileId : null);
 
   // Use the Redux file name when available so it stays in sync with renames.
   const reduxFileName = useAppSelector((s) =>
@@ -304,12 +314,15 @@ export function EditModeShell({
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn("[image-edit] auto-version of AI result failed", err);
-        toast.warning("AI result loaded — couldn't auto-save as a new version.", {
-          description:
-            err instanceof Error
-              ? err.message
-              : "Use the Save button to commit manually.",
-        });
+        toast.warning(
+          "AI result loaded — couldn't auto-save as a new version.",
+          {
+            description:
+              err instanceof Error
+                ? err.message
+                : "Use the Save button to commit manually.",
+          },
+        );
       }
     },
     [defaultFolder, effectiveCloudFileId, mask],
@@ -343,7 +356,8 @@ export function EditModeShell({
             mode === "version" && effectiveCloudFileId
               ? effectiveCloudFileId
               : undefined,
-          changeSummary: mode === "version" ? "Edited in Image Studio" : undefined,
+          changeSummary:
+            mode === "version" ? "Edited in Image Studio" : undefined,
         });
         if (mode === "version") {
           toast.success("Saved as new version.");
@@ -364,7 +378,14 @@ export function EditModeShell({
         setSaving(false);
       }
     },
-    [defaultFolder, filename, effectiveCloudFileId, onSave, presentation, router],
+    [
+      defaultFolder,
+      filename,
+      effectiveCloudFileId,
+      onSave,
+      presentation,
+      router,
+    ],
   );
 
   // Filerobot's onSave is sync but our save is async — fire and forget,
@@ -431,13 +452,18 @@ export function EditModeShell({
       root.querySelector<HTMLElement>('[data-tut="reset"] button'),
       root.querySelector<HTMLElement>('[data-tut="reset"]'),
       root.querySelector<HTMLElement>(".FIE_topbar-reset-button"),
-      root.querySelector<HTMLElement>(".FIE_topbar-history-buttons-wrapper button[title*='Reset' i]"),
+      root.querySelector<HTMLElement>(
+        ".FIE_topbar-history-buttons-wrapper button[title*='Reset' i]",
+      ),
     ].filter(Boolean) as HTMLElement[];
     let target: HTMLElement | null = candidates[0] ?? null;
     if (!target) {
       const buttons = root.querySelectorAll<HTMLElement>("button");
       buttons.forEach((b) => {
-        if (!target && /Reset|delete all/i.test(b.getAttribute("title") ?? "")) {
+        if (
+          !target &&
+          /Reset|delete all/i.test(b.getAttribute("title") ?? "")
+        ) {
           target = b;
         }
       });
@@ -472,7 +498,9 @@ export function EditModeShell({
         toast.success("Renamed.");
       } catch (err) {
         toast.error(
-          err instanceof Error ? `Rename failed: ${err.message}` : "Rename failed.",
+          err instanceof Error
+            ? `Rename failed: ${err.message}`
+            : "Rename failed.",
         );
       }
     },
@@ -490,7 +518,8 @@ export function EditModeShell({
         await addAssetVariants(effectiveCloudFileId, { preset });
         toast.success(`${labelForPreset(preset)} variants generated.`);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Variant generation failed";
+        const msg =
+          err instanceof Error ? err.message : "Variant generation failed";
         toast.error(msg);
       } finally {
         setSavingVariants(null);
@@ -634,7 +663,9 @@ export function EditModeShell({
                 </DropdownMenuContent>
               </DropdownMenu>
             </TooltipTrigger>
-            <TooltipContent>Generate Web / Social / Email / Avatar / Favicon variants</TooltipContent>
+            <TooltipContent>
+              Generate Web / Social / Email / Avatar / Favicon variants
+            </TooltipContent>
           </Tooltip>
 
           {/* Save dropdown */}
@@ -671,7 +702,9 @@ export function EditModeShell({
                 </DropdownMenuContent>
               </DropdownMenu>
             </TooltipTrigger>
-            <TooltipContent>Save edits — choose new version or duplicate</TooltipContent>
+            <TooltipContent>
+              Save edits — choose new version or duplicate
+            </TooltipContent>
           </Tooltip>
 
           {/* History rail toggle — subtle "selected" state via accent. */}
@@ -709,10 +742,7 @@ export function EditModeShell({
             canvas — so the image never moves under the user's mouse.
         */}
         <div className="flex-1 min-h-0 relative">
-          <div
-            ref={canvasAreaRef}
-            className="absolute inset-0"
-          >
+          <div ref={canvasAreaRef} className="absolute inset-0">
             <FilerobotImageEditor
               key={editorKey}
               source={activeUrl}
@@ -802,7 +832,9 @@ export function EditModeShell({
                       <ChevronLeft className="h-3.5 w-3.5 rotate-180" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="left">Close version history</TooltipContent>
+                  <TooltipContent side="left">
+                    Close version history
+                  </TooltipContent>
                 </Tooltip>
               </div>
               <VersionsRail
@@ -890,7 +922,9 @@ function FilenameField({
           </button>
         </TooltipTrigger>
         <TooltipContent>
-          {cloudFileId ? "Click to rename — extension stays the same" : displayName}
+          {cloudFileId
+            ? "Click to rename — extension stays the same"
+            : displayName}
         </TooltipContent>
       </Tooltip>
     );
@@ -1039,7 +1073,8 @@ function labelForPreset(p: AssetPreset): string {
 // a generic "AI edit" so the versions rail always has something readable.
 function deriveOpSummary(filename: string): string {
   const stem = filename.replace(/\.[^.]+$/, "").toLowerCase();
-  if (stem.includes("no-bg") || stem.includes("bg-remove")) return "Background removed";
+  if (stem.includes("no-bg") || stem.includes("bg-remove"))
+    return "Background removed";
   if (stem.includes("inpaint")) return "Inpainted region";
   if (stem.includes("upscale") || /\b[24]x\b/.test(stem)) return "Upscaled";
   if (stem.includes("auto-color")) return "Auto color applied";

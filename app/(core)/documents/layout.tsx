@@ -23,9 +23,5 @@ export default async function DocumentsLayout({
 }) {
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) return <DocumentsLanding />;
-  return (
-    <div className="w-full h-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-200 scrollbar-none">
-      {children}
-    </div>
-  );
+  return <div className="w-full h-full scrollbar-none">{children}</div>;
 }

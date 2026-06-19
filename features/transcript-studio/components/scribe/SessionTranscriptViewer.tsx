@@ -13,8 +13,8 @@ import {
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import {
   selectRecordingSegments,
-  selectSessionCleanedText,
-  selectSessionRawText,
+  selectSessionCleanedTimestamped,
+  selectSessionRawTimestamped,
 } from "../../redux/selectors";
 import { cleanRecordingThunk } from "../../redux/thunks";
 
@@ -44,8 +44,10 @@ export function SessionTranscriptViewer({
 }: SessionTranscriptViewerProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const rawText = useAppSelector(selectSessionRawText(sessionId));
-  const cleanText = useAppSelector(selectSessionCleanedText(sessionId));
+  // Timestamped (`[m:ss] text`) — the single standard for the transcript display
+  // + copy. Plain selectors stay for machine consumers (agent context, RAG).
+  const rawText = useAppSelector(selectSessionRawTimestamped(sessionId));
+  const cleanText = useAppSelector(selectSessionCleanedTimestamped(sessionId));
   const [refreshing, setRefreshing] = useState(false);
 
   const isClean = mode === "clean";

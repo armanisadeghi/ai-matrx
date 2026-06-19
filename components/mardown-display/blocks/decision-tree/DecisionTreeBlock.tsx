@@ -12,20 +12,15 @@ import {
   Home,
   HelpCircle,
   Target,
-  Lightbulb,
-  AlertCircle,
   Info,
-  Zap,
-  Star,
   ChevronRight,
   ChevronDown,
-  PlayCircle,
-  StopCircle,
   Clock,
   ExternalLink,
   Printer,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import IconButton from "@/components/official/IconButton";
 
 interface DecisionNode {
   id: string;
@@ -46,9 +41,19 @@ interface DecisionTreeData {
   root: DecisionNode;
 }
 
+export interface DecisionTreeState {
+  currentNodeId: string;
+  history: NavigationStep[];
+  completedPaths: string[];
+}
+
 interface DecisionTreeBlockProps {
   decisionTree: DecisionTreeData;
   taskId?: string; // Task ID for canvas deduplication
+  /** Seed navigation/completion state from persisted storage (optional). */
+  initialState?: DecisionTreeState;
+  /** Called whenever the user changes interaction state (optional). */
+  onStateChange?: (state: DecisionTreeState) => void;
 }
 
 interface NavigationStep {
@@ -58,9 +63,35 @@ interface NavigationStep {
   timestamp: number;
 }
 
+/** Walk the tree and return the node with the given id, or null. */
+function findNodeById(root: DecisionNode, id: string): DecisionNode | null {
+  if (root.id === id) return root;
+  if (root.yes) {
+    const found = findNodeById(root.yes, id);
+    if (found) return found;
+  }
+  if (root.no) {
+    const found = findNodeById(root.no, id);
+    if (found) return found;
+  }
+  return null;
+}
+
+const STAT_ITEMS = [
+  { key: "totalNodes", label: "Nodes", icon: GitBranch },
+  { key: "questionNodes", label: "Questions", icon: HelpCircle },
+  { key: "actionNodes", label: "Actions", icon: Target },
+  { key: "completedPaths", label: "Completed", icon: CheckCircle2 },
+] as const;
+
+const navBtnClass =
+  "inline-flex items-center justify-center gap-1 p-1.5 md:px-2 md:py-1.5 rounded-md text-xs font-medium border transition-colors";
+
 const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
   decisionTree,
   taskId,
+  initialState,
+  onStateChange,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const blockContentRef = useRef<HTMLDivElement>(null);
@@ -82,18 +113,44 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
       setIsPrinting(false);
     }
   }, [decisionTree.title, isPrinting]);
-  const [currentNode, setCurrentNode] = useState<DecisionNode>(
-    decisionTree.root,
-  );
+  const [currentNode, setCurrentNode] = useState<DecisionNode>(() => {
+    if (initialState?.currentNodeId) {
+      const restored = findNodeById(decisionTree.root, initialState.currentNodeId);
+      if (restored) return restored;
+    }
+    return decisionTree.root;
+  });
   const [navigationHistory, setNavigationHistory] = useState<NavigationStep[]>(
-    [],
+    () => initialState?.history ?? [],
   );
-  const [completedPaths, setCompletedPaths] = useState<Set<string>>(new Set());
+  const [completedPaths, setCompletedPaths] = useState<Set<string>>(
+    () => new Set(initialState?.completedPaths ?? []),
+  );
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(
     new Set(["root"]),
   );
   const [showFullTree, setShowFullTree] = useState(false);
   const { open: openCanvas } = useCanvas();
+
+  // Keep a stable ref to onStateChange so closures don't go stale.
+  const onStateChangeRef = useRef(onStateChange);
+  onStateChangeRef.current = onStateChange;
+
+  /** Emit the current navigation + completion state to the persistence layer. */
+  const emitState = useCallback(
+    (
+      node: DecisionNode,
+      history: NavigationStep[],
+      paths: Set<string>,
+    ) => {
+      onStateChangeRef.current?.({
+        currentNodeId: node.id,
+        history,
+        completedPaths: Array.from(paths),
+      });
+    },
+    [],
+  );
 
   // Calculate tree statistics
   const treeStats = useMemo(() => {
@@ -134,13 +191,15 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
         timestamp: Date.now(),
       };
 
-      setNavigationHistory((prev) => [...prev, step]);
-      setCurrentNode(nextNode);
+      const newHistory = [...navigationHistory, step];
+      const newPaths = nextNode.action
+        ? new Set([...completedPaths, nextNode.id])
+        : completedPaths;
 
-      // Mark path as completed if we reach an action node
-      if (nextNode.action) {
-        setCompletedPaths((prev) => new Set([...prev, nextNode.id]));
-      }
+      setNavigationHistory(newHistory);
+      setCurrentNode(nextNode);
+      if (nextNode.action) setCompletedPaths(newPaths);
+      emitState(nextNode, newHistory, newPaths);
     }
   };
 
@@ -156,6 +215,7 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
         node = step.choice === "yes" ? node.yes || node : node.no || node;
       }
       setCurrentNode(node);
+      emitState(node, newHistory, completedPaths);
     }
   };
 
@@ -163,11 +223,13 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
     setCurrentNode(decisionTree.root);
     setNavigationHistory([]);
     setCompletedPaths(new Set());
+    emitState(decisionTree.root, [], new Set());
   };
 
   const goToRoot = () => {
     setCurrentNode(decisionTree.root);
     setNavigationHistory([]);
+    emitState(decisionTree.root, [], completedPaths);
   };
 
   const toggleNodeExpansion = (nodeId: string) => {
@@ -218,11 +280,25 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
     }
   };
 
-  const renderTreeNode = (
-    node: DecisionNode,
-    depth = 0,
-    parentChoice?: "yes" | "no",
-  ) => {
+  const getFullTreeNodeColor = (node: DecisionNode) => {
+    if (node.question) {
+      return "bg-card border border-border border-l-[3px] border-l-orange-400 text-foreground";
+    }
+    if (node.action) {
+      const isCompleted = completedPaths.has(node.id);
+      return isCompleted
+        ? "bg-card border border-border border-l-[3px] border-l-green-500 text-foreground"
+        : "bg-card border border-border border-l-[3px] border-l-purple-400 text-foreground";
+    }
+    return "bg-card border border-border text-foreground";
+  };
+
+  const branchLabelClass = (choice: "yes" | "no") =>
+    choice === "yes"
+      ? "text-green-700 dark:text-green-400 border-green-300 dark:border-green-700 bg-green-50/90 dark:bg-green-950/50"
+      : "text-red-700 dark:text-red-400 border-red-300 dark:border-red-700 bg-red-50/90 dark:bg-red-950/50";
+
+  const renderTreeNode = (node: DecisionNode, depth = 0) => {
     if (!node) return null;
 
     const isExpanded = expandedNodes.has(node.id);
@@ -231,131 +307,190 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
     const hasChildren = !!(node.yes || node.no);
     const IconComponent = getNodeIcon(node);
 
+    const cardColor =
+      isActive || !showFullTree
+        ? getNodeColor(node, isActive)
+        : getFullTreeNodeColor(node);
+
     return (
-      <div key={node.id} className="relative">
-        {/* Connection Line */}
-        {depth > 0 && (
-          <div className="absolute -left-4 top-6 w-4 h-px bg-gray-300 dark:bg-gray-600" />
-        )}
-
-        {/* Node */}
+      <div key={node.id} className="min-w-0">
         <div
-          className={`flex items-start gap-3 mb-4 ${depth > 0 ? "ml-8" : ""}`}
+          className={`rounded-md transition-all ${cardColor} ${
+            isActive && node.question ? "p-3 shadow-md" : "p-2 hover:shadow-sm"
+          }`}
         >
-          {/* Choice Indicator */}
-          {parentChoice && (
-            <div
-              className={`flex-shrink-0 px-2 py-1 rounded-full text-xs font-bold ${
-                parentChoice === "yes"
-                  ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300"
-                  : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300"
-              }`}
-            >
-              {parentChoice === "yes" ? "YES" : "NO"}
-            </div>
-          )}
-
-          {/* Node Content */}
-          <div
-            className={`flex-1 p-4 rounded-lg border-2 transition-all ${getNodeColor(node, isActive)} ${
-              isActive ? "shadow-lg scale-105" : "hover:shadow-md"
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-3 flex-1">
-                <div
-                  className={`p-2 rounded-lg ${isActive ? "bg-white/20" : "bg-textured"}`}
-                >
+          {isActive && node.question ? (
+            <div className="space-y-2">
+              <div className="flex gap-2 text-sm">
+                <span className="relative flex-shrink-0 mt-[calc(0.5*(1.375em-0.875rem))]">
                   <IconComponent
-                    className={`h-4 w-4 ${isActive ? "text-white" : ""}`}
+                    className={`h-6 w-6 ${isActive ? "text-white" : ""}`}
                   />
                   {isCompleted && (
-                    <CheckCircle2 className="h-3 w-3 text-green-500 absolute -mt-1 -ml-1" />
+                    <CheckCircle2 className="h-3 w-3 text-green-500 absolute -top-0.5 -right-0.5" />
+                  )}
+                </span>
+                <p className="text-sm font-semibold leading-snug flex-1 min-w-0 pt-1">
+                  {node.question}
+                </p>
+                {hasChildren && showFullTree && (
+                  <button
+                    type="button"
+                    onClick={() => toggleNodeExpansion(node.id)}
+                    className="p-1 hover:bg-white/20 rounded transition-colors flex-shrink-0"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {node.description && (
+                <p className="text-xs opacity-90 leading-relaxed">
+                  {node.description}
+                </p>
+              )}
+
+              {(node.priority || node.category || node.estimatedTime) && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {node.priority && (
+                    <span
+                      className={`px-1.5 py-0.5 text-[10px] font-medium rounded-full ${getPriorityColor(node.priority)}`}
+                    >
+                      {node.priority}
+                    </span>
+                  )}
+                  {node.category && (
+                    <span className="px-1.5 py-0.5 text-[10px] bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-full">
+                      {node.category}
+                    </span>
+                  )}
+                  {node.estimatedTime && (
+                    <div className="flex items-center gap-1 text-[10px] opacity-75">
+                      <Clock className="h-3 w-3" />
+                      {node.estimatedTime}
+                    </div>
                   )}
                 </div>
+              )}
 
-                <div className="flex-1">
-                  <div className="font-semibold mb-1">
-                    {node.question || node.action || "Decision Point"}
-                  </div>
-                  {node.description && (
-                    <p className="text-sm opacity-90 mb-2">
-                      {node.description}
-                    </p>
-                  )}
+              <div className="flex gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleChoice("yes")}
+                  disabled={!node.yes}
+                  title="Yes"
+                  className="inline-flex shrink-0 w-20 max-w-20 items-center justify-center gap-1 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white rounded-md text-xs font-medium transition-colors"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleChoice("no")}
+                  disabled={!node.no}
+                  title="No"
+                  className="inline-flex shrink-0 w-20 max-w-20 items-center justify-center gap-1 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded-md text-xs font-medium transition-colors"
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                  No
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 min-w-0">
+              <span className="relative flex-shrink-0 mt-0.5">
+                <IconComponent className="h-3.5 w-3.5 opacity-70" />
+                {isCompleted && (
+                  <CheckCircle2 className="h-2.5 w-2.5 text-green-500 absolute -top-0.5 -right-0.5" />
+                )}
+              </span>
 
-                  <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium leading-snug">
+                  {node.question || node.action || "Decision Point"}
+                </div>
+                {node.description && (
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                    {node.description}
+                  </p>
+                )}
+
+                {(node.priority || node.category || node.estimatedTime) && (
+                  <div className="flex items-center gap-1.5 flex-wrap mt-1">
                     {node.priority && (
                       <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(node.priority)}`}
+                        className={`px-1.5 py-0.5 text-[10px] font-medium rounded-full ${getPriorityColor(node.priority)}`}
                       >
-                        {node.priority} priority
+                        {node.priority}
                       </span>
                     )}
                     {node.category && (
-                      <span className="px-2 py-1 text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-full">
+                      <span className="px-1.5 py-0.5 text-[10px] bg-muted text-muted-foreground rounded-full">
                         {node.category}
                       </span>
                     )}
                     {node.estimatedTime && (
-                      <div className="flex items-center gap-1 text-xs opacity-75">
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                         <Clock className="h-3 w-3" />
                         {node.estimatedTime}
                       </div>
                     )}
                   </div>
-                </div>
+                )}
               </div>
 
-              {/* Interactive Buttons */}
-              {isActive && node.question && (
-                <div className="flex gap-2 ml-4">
-                  <button
-                    onClick={() => handleChoice("yes")}
-                    disabled={!node.yes}
-                    className="flex items-center gap-2 px-3 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Yes
-                  </button>
-                  <button
-                    onClick={() => handleChoice("no")}
-                    disabled={!node.no}
-                    className="flex items-center gap-2 px-3 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    No
-                  </button>
-                </div>
-              )}
-
-              {/* Tree Expansion Toggle */}
               {hasChildren && showFullTree && (
                 <button
+                  type="button"
                   onClick={() => toggleNodeExpansion(node.id)}
-                  className="p-1 hover:bg-white/20 rounded transition-colors ml-2"
+                  className="p-1 hover:bg-muted rounded transition-colors flex-shrink-0"
                 >
                   {isExpanded ? (
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-3.5 w-3.5" />
                   ) : (
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-3.5 w-3.5" />
                   )}
                 </button>
               )}
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Child Nodes */}
         {hasChildren && (showFullTree ? isExpanded : isActive) && (
-          <div className="relative">
-            {/* Vertical Connection Line */}
-            <div className="absolute left-4 top-0 w-px h-full bg-gray-300 dark:bg-gray-600" />
-
-            <div className="space-y-2">
-              {node.yes && renderTreeNode(node.yes, depth + 1, "yes")}
-              {node.no && renderTreeNode(node.no, depth + 1, "no")}
-            </div>
+          <div className="mt-1.5 space-y-2">
+            {showFullTree ? (
+              <>
+                {node.yes && (
+                  <div className="pl-2 border-l-2 border-green-500/60 dark:border-green-600/60">
+                    <span
+                      className={`inline-block text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border mb-1 ${branchLabelClass("yes")}`}
+                    >
+                      Yes
+                    </span>
+                    <div>{renderTreeNode(node.yes, depth + 1)}</div>
+                  </div>
+                )}
+                {node.no && (
+                  <div className="pl-2 border-l-2 border-red-500/60 dark:border-red-600/60">
+                    <span
+                      className={`inline-block text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded border mb-1 ${branchLabelClass("no")}`}
+                    >
+                      No
+                    </span>
+                    <div>{renderTreeNode(node.no, depth + 1)}</div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {node.yes && renderTreeNode(node.yes, depth + 1)}
+                {node.no && renderTreeNode(node.no, depth + 1)}
+              </>
+            )}
           </div>
         )}
       </div>
@@ -373,208 +508,196 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
       )}
 
       <div
-        className={`w-full ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-4" : "py-6"}`}
+        className={`w-full border border-border rounded-xl ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-2" : "py-2"}`}
       >
         <div
           className={`max-w-6xl mx-auto ${isFullScreen ? "bg-textured rounded-2xl shadow-2xl h-full max-h-[95dvh] w-full flex flex-col overflow-hidden" : ""}`}
         >
           {/* Fullscreen Header */}
           {isFullScreen && (
-            <div className="flex-shrink-0 px-6 py-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30">
-              <div className="flex items-center gap-3">
-                <GitBranch className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">
-                  Decision Tree
+            <div className="flex-shrink-0 px-3 py-2 border-b border-border flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30">
+              <div className="flex items-center gap-2 min-w-0">
+                <GitBranch className="h-4 w-4 flex-shrink-0 text-indigo-600 dark:text-indigo-400" />
+                <h3 className="text-sm font-semibold text-foreground truncate">
+                  {decisionTree.title}
                 </h3>
               </div>
-              <div className="flex items-center gap-2">
-                <button
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <IconButton
+                  icon={Printer}
+                  tooltip={isPrinting ? "Saving…" : "Print / Save as PDF"}
                   onClick={handlePrint}
                   disabled={isPrinting}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-500 dark:bg-slate-600 text-white text-sm font-medium transition-all shadow-sm hover:bg-slate-600 dark:hover:bg-slate-700 disabled:opacity-50"
-                >
-                  <Printer className="h-4 w-4" />
-                  <span>{isPrinting ? "Saving…" : "Print"}</span>
-                </button>
-                <button
+                  size="sm"
+                  className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
+                />
+                <IconButton
+                  icon={Minimize2}
+                  tooltip="Exit full screen"
                   onClick={() => setIsFullScreen(false)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium transition-all shadow-sm"
-                >
-                  <Minimize2 className="h-4 w-4" />
-                  <span>Exit</span>
-                </button>
+                  size="sm"
+                  variant="outline"
+                />
               </div>
             </div>
           )}
 
           {/* Scrollable Content */}
           <div className={isFullScreen ? "flex-1 overflow-y-auto" : ""}>
-            <div ref={blockContentRef} className="p-6 space-y-6">
+            <div ref={blockContentRef} className="p-2 space-y-3">
               {/* Header Section */}
-              <div className="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-pink-950/40 rounded-2xl p-6 shadow-lg border-2 border-indigo-200 dark:border-indigo-800/50">
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-indigo-500 dark:bg-indigo-600 rounded-xl shadow-md">
-                      <GitBranch className="h-8 w-8 text-white" />
+              <div className="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 dark:from-indigo-950/40 dark:via-purple-950/30 dark:to-pink-950/40 rounded-xl p-2 border border-indigo-200 dark:border-indigo-800/50">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    <div className="p-2 bg-indigo-500 dark:bg-indigo-600 rounded-lg flex-shrink-0">
+                      <GitBranch className="h-4 w-4 text-white" />
                     </div>
-                    <div className="flex-1">
-                      <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <h1 className="text-sm font-bold text-foreground leading-tight line-clamp-2">
                         {decisionTree.title}
                       </h1>
                       {decisionTree.description && (
-                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                           {decisionTree.description}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
-                    {!isFullScreen && (
-                      <>
-                        <button
-                          onClick={handlePrint}
-                          disabled={isPrinting}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-500 dark:bg-slate-600 text-white text-sm font-semibold shadow-md hover:bg-slate-600 dark:hover:bg-slate-700 hover:shadow-lg transform hover:scale-105 transition-all disabled:opacity-50"
-                        >
-                          <Printer className="h-4 w-4" />
-                          <span>{isPrinting ? "Saving…" : "Print"}</span>
-                        </button>
-                        <button
-                          onClick={() =>
-                            openCanvas({
-                              type: "decision-tree",
-                              data: decisionTree,
-                              metadata: {
-                                title: decisionTree.title,
-                                sourceTaskId: taskId,
-                              },
-                            })
-                          }
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transform hover:scale-105 transition-all"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          <span>Canvas</span>
-                        </button>
-                        <button
-                          onClick={() => setIsFullScreen(true)}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-500 dark:bg-indigo-600 text-white text-sm font-semibold shadow-md hover:bg-indigo-600 dark:hover:bg-indigo-700 hover:shadow-lg transform hover:scale-105 transition-all"
-                        >
-                          <Maximize2 className="h-4 w-4" />
-                          <span>Focus</span>
-                        </button>
-                      </>
-                    )}
-                  </div>
+                  {!isFullScreen && (
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <IconButton
+                        icon={Printer}
+                        tooltip={isPrinting ? "Saving…" : "Print / Save as PDF"}
+                        onClick={handlePrint}
+                        disabled={isPrinting}
+                        size="sm"
+                        className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
+                      />
+                      <IconButton
+                        icon={ExternalLink}
+                        tooltip="Open Canvas"
+                        onClick={() =>
+                          openCanvas({
+                            type: "decision-tree",
+                            data: decisionTree,
+                            metadata: {
+                              title: decisionTree.title,
+                              sourceTaskId: taskId,
+                            },
+                          })
+                        }
+                        size="sm"
+                        className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
+                      />
+                      <IconButton
+                        icon={Maximize2}
+                        tooltip="Expand to full screen"
+                        onClick={() => setIsFullScreen(true)}
+                        size="sm"
+                        className="bg-indigo-500 dark:bg-indigo-600 text-white hover:bg-indigo-600 dark:hover:bg-indigo-700"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                {/* Navigation Controls */}
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={goToRoot}
-                      className="flex items-center gap-2 px-3 py-2 bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium border-border transition-colors"
-                    >
-                      <Home className="h-4 w-4" />
-                      Start Over
-                    </button>
+                {/* Navigation Controls — first row to wrap on narrow widths */}
+                <div className="flex items-center gap-1 flex-wrap mb-2">
+                  <button
+                    type="button"
+                    onClick={goToRoot}
+                    title="Start Over"
+                    className={`${navBtnClass} bg-background/60 hover:bg-background text-foreground border-border`}
+                  >
+                    <Home className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="hidden md:inline">Start</span>
+                  </button>
 
-                    <button
-                      onClick={goBack}
-                      disabled={navigationHistory.length === 0}
-                      className="flex items-center gap-2 px-3 py-2 bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium border-border transition-colors"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      Back
-                    </button>
+                  <button
+                    type="button"
+                    onClick={goBack}
+                    disabled={navigationHistory.length === 0}
+                    title="Back"
+                    className={`${navBtnClass} bg-background/60 hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed text-foreground border-border`}
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="hidden md:inline">Back</span>
+                  </button>
 
-                    <button
-                      onClick={resetTree}
-                      className="flex items-center gap-2 px-3 py-2 bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium border-border transition-colors"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                      Reset
-                    </button>
+                  <button
+                    type="button"
+                    onClick={resetTree}
+                    title="Reset"
+                    className={`${navBtnClass} bg-background/60 hover:bg-background text-foreground border-border`}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="hidden md:inline">Reset</span>
+                  </button>
 
-                    <button
-                      onClick={() => setShowFullTree(!showFullTree)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        showFullTree
-                          ? "bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700"
-                          : "bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border-border"
-                      }`}
-                    >
-                      <GitBranch className="h-4 w-4" />
-                      {showFullTree ? "Hide Tree" : "Show Full Tree"}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowFullTree(!showFullTree)}
+                    title={showFullTree ? "Hide full tree" : "Show full tree"}
+                    className={`${navBtnClass} border ${
+                      showFullTree
+                        ? "bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700"
+                        : "bg-background/60 hover:bg-background text-foreground border-border"
+                    }`}
+                  >
+                    <GitBranch className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="hidden md:inline">Full</span>
+                  </button>
 
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Step {navigationHistory.length + 1}
+                  <div
+                    className={`${navBtnClass} bg-background/60 text-muted-foreground border-border tabular-nums`}
+                    title={`Step ${navigationHistory.length + 1}`}
+                  >
+                    <span className="hidden md:inline">Step</span>
+                    {navigationHistory.length + 1}
                   </div>
                 </div>
 
                 {/* Progress Stats */}
-                <div className="grid md:grid-cols-4 gap-4">
-                  <div className="bg-textured/50 rounded-lg p-3 border border-indigo-200 dark:border-indigo-800/50">
-                    <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-1">
-                      <GitBranch className="h-4 w-4" />
-                      <span className="text-xs font-medium">Total Nodes</span>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {STAT_ITEMS.map(({ key, label, icon: StatIcon }) => (
+                    <div
+                      key={key}
+                      className="rounded-md border border-border bg-background/50 px-1.5 py-1.5 text-center"
+                    >
+                      <div className="flex items-center justify-center gap-1 text-muted-foreground">
+                        <StatIcon className="h-3 w-3 flex-shrink-0" />
+                        <span className="text-[10px] font-medium truncate hidden md:inline">
+                          {label}
+                        </span>
+                      </div>
+                      <div className="text-sm font-semibold text-foreground tabular-nums">
+                        {treeStats[key]}
+                      </div>
                     </div>
-                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {treeStats.totalNodes}
-                    </div>
-                  </div>
-                  <div className="bg-textured/50 rounded-lg p-3 border border-orange-200 dark:border-orange-800/50">
-                    <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 mb-1">
-                      <HelpCircle className="h-4 w-4" />
-                      <span className="text-xs font-medium">Questions</span>
-                    </div>
-                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {treeStats.questionNodes}
-                    </div>
-                  </div>
-                  <div className="bg-textured/50 rounded-lg p-3 border border-purple-200 dark:border-purple-800/50">
-                    <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-1">
-                      <Target className="h-4 w-4" />
-                      <span className="text-xs font-medium">Actions</span>
-                    </div>
-                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {treeStats.actionNodes}
-                    </div>
-                  </div>
-                  <div className="bg-textured/50 rounded-lg p-3 border border-green-200 dark:border-green-800/50">
-                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-1">
-                      <CheckCircle2 className="h-4 w-4" />
-                      <span className="text-xs font-medium">Completed</span>
-                    </div>
-                    <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                      {treeStats.completedPaths}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 
               {/* Navigation Breadcrumbs */}
               {navigationHistory.length > 0 && (
-                <div className="bg-textured rounded-lg p-4 border-border">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                    <ArrowRight className="h-4 w-4" />
+                <div className="bg-background/50 rounded-lg p-2 border border-border">
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+                    <ArrowRight className="h-3.5 w-3.5" />
                     Decision Path
                   </h3>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 rounded-full text-sm font-medium">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-medium">
                       Start
                     </span>
                     {navigationHistory.map((step, index) => (
                       <React.Fragment key={index}>
-                        <ArrowRight className="h-4 w-4 text-gray-400" />
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">
+                        <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                        <div className="flex items-center gap-1 min-w-0">
+                          <span className="text-xs text-muted-foreground max-w-[8rem] sm:max-w-xs truncate">
                             {step.question}
                           </span>
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold flex-shrink-0 ${
                               step.choice === "yes"
                                 ? "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300"
                                 : "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300"
@@ -590,20 +713,25 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
               )}
 
               {/* Decision Tree Visualization */}
-              <div className="bg-textured rounded-xl shadow-lg border-border overflow-hidden">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                      <GitBranch className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                      {showFullTree
-                        ? "Full Decision Tree"
-                        : "Current Decision Point"}
+              <div className="bg-background/50 rounded-lg border border-border overflow-hidden">
+                <div className="p-2">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <h2 className="text-sm font-semibold text-foreground flex items-center gap-1.5 min-w-0">
+                      <GitBranch className="h-4 w-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                      <span className="truncate">
+                        {showFullTree
+                          ? "Full Decision Tree"
+                          : "Current Decision Point"}
+                      </span>
                     </h2>
 
                     {currentNode.action && (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 rounded-lg">
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span className="text-sm font-medium">
+                      <div
+                        className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 rounded-md flex-shrink-0"
+                        title="Decision Complete"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span className="text-xs font-medium hidden sm:inline">
                           Decision Complete
                         </span>
                       </div>
@@ -620,41 +748,49 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
 
               {/* Final Action Display */}
               {currentNode.action && (
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-xl p-6 border-2 border-green-300 dark:border-green-700 shadow-lg">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 bg-green-500 dark:bg-green-600 rounded-full">
-                      <Target className="h-8 w-8 text-white" />
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-lg p-3 border border-green-300 dark:border-green-700">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-green-500 dark:bg-green-600 rounded-full flex-shrink-0">
+                      <Target className="h-4 w-4 text-white" />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-green-900 dark:text-green-100 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-1">
                         Recommended Action
                       </h3>
-                      <p className="text-green-800 dark:text-green-200 text-lg mb-4">
+                      <p className="text-green-800 dark:text-green-200 text-sm mb-2">
                         {currentNode.action}
                       </p>
                       {currentNode.description && (
-                        <p className="text-green-700 dark:text-green-300 text-sm">
+                        <p className="text-green-700 dark:text-green-300 text-xs mb-2">
                           {currentNode.description}
                         </p>
                       )}
-                      <div className="flex items-center gap-4 mt-4">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <button
-                          onClick={() =>
-                            setCompletedPaths(
-                              (prev) => new Set([...prev, currentNode.id]),
-                            )
-                          }
-                          className="flex items-center gap-2 px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-700 dark:hover:bg-green-800 transition-colors"
+                          type="button"
+                          onClick={() => {
+                            const newPaths = new Set([...completedPaths, currentNode.id]);
+                            setCompletedPaths(newPaths);
+                            emitState(currentNode, navigationHistory, newPaths);
+                          }}
+                          title="Mark as Completed"
+                          className="inline-flex items-center gap-1 px-2 py-1.5 bg-green-600 dark:bg-green-700 text-white rounded-md text-xs font-medium hover:bg-green-700 dark:hover:bg-green-800 transition-colors"
                         >
-                          <CheckCircle2 className="h-4 w-4" />
-                          Mark as Completed
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">
+                            Mark as Completed
+                          </span>
                         </button>
                         <button
+                          type="button"
                           onClick={goToRoot}
-                          className="flex items-center gap-2 px-4 py-2 bg-textured text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700 rounded-lg text-sm font-medium hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors"
+                          title="Start New Decision"
+                          className="inline-flex items-center gap-1 px-2 py-1.5 bg-background text-green-700 dark:text-green-300 border border-green-300 dark:border-green-700 rounded-md text-xs font-medium hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors"
                         >
-                          <RotateCcw className="h-4 w-4" />
-                          Start New Decision
+                          <RotateCcw className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">
+                            Start New Decision
+                          </span>
                         </button>
                       </div>
                     </div>

@@ -67,22 +67,32 @@ export const TASK_PRIORITY_META: Record<
   },
 };
 
-const PRIORITY_OPTIONS: { value: TaskPriority; label: string; short: string }[] =
-  [
-    { value: null, label: "None", short: "None" },
-    { value: "low", label: "Low", short: "Low" },
-    { value: "medium", label: "Medium", short: "Med" },
-    { value: "high", label: "High", short: "High" },
-  ];
+const PRIORITY_OPTIONS: {
+  value: TaskPriority;
+  label: string;
+  short: string;
+}[] = [
+  { value: null, label: "None", short: "None" },
+  { value: "low", label: "Low", short: "Low" },
+  { value: "medium", label: "Medium", short: "Med" },
+  { value: "high", label: "High", short: "High" },
+];
 
 export function TaskPriorityPicker({
   value,
   onChange,
   variant = "pill",
+  className,
+  triggerRef,
+  onTriggerKeyDown,
 }: {
   value: TaskPriority;
   onChange: (value: TaskPriority) => void;
   variant?: "pill" | "segmented";
+  className?: string;
+  /** Pill variant only — focus target for keyboard field chains. */
+  triggerRef?: React.Ref<HTMLButtonElement>;
+  onTriggerKeyDown?: React.KeyboardEventHandler<HTMLButtonElement>;
 }) {
   if (variant === "segmented") {
     return (
@@ -112,15 +122,29 @@ export function TaskPriorityPicker({
     );
   }
 
-  return <PriorityPillPicker value={value} onChange={onChange} />;
+  return (
+    <PriorityPillPicker
+      value={value}
+      onChange={onChange}
+      className={className}
+      triggerRef={triggerRef}
+      onTriggerKeyDown={onTriggerKeyDown}
+    />
+  );
 }
 
 function PriorityPillPicker({
   value,
   onChange,
+  className,
+  triggerRef,
+  onTriggerKeyDown,
 }: {
   value: TaskPriority;
   onChange: (value: TaskPriority) => void;
+  className?: string;
+  triggerRef?: React.Ref<HTMLButtonElement>;
+  onTriggerKeyDown?: React.KeyboardEventHandler<HTMLButtonElement>;
 }) {
   const [open, setOpen] = React.useState(false);
   const meta = value ? TASK_PRIORITY_META[value] : null;
@@ -128,12 +152,15 @@ function PriorityPillPicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
+          ref={triggerRef}
           type="button"
+          onKeyDown={onTriggerKeyDown}
           className={cn(
             "inline-flex items-center gap-1 h-6 px-1.5 rounded-md border text-[10px] font-medium transition-colors hover:bg-accent",
             meta
               ? meta.pill
               : "border-transparent text-muted-foreground/50 hover:text-foreground",
+            className,
           )}
           title="Set priority"
         >

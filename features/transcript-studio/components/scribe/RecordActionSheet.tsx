@@ -3,13 +3,20 @@
 // RecordActionSheet — the "what do we do with this turn?" chooser for Agent+.
 //
 // Opens the instant recording STOPS (not after transcription) so the user picks
-// during the 2-3s the transcript takes to prepare. Three big, icon-led, color-
-// distinct choices. If the user doesn't pick, a 5s countdown auto-sends to the
-// agent (which works for either intent). The choice is reported immediately via
-// onChoose; the parent executes it now or the moment the transcript is ready.
+// during the 2-3s the transcript takes to prepare. Four big, icon-led, color-
+// distinct choices spanning the two things you can do with a captured turn —
+// hand it to the agent, and/or save it durably to Transcripts:
+//   • agent — drop the transcript in the input (auto-opens + focuses) to review.
+//   • save  — save audio + transcript + cleaned copy to Transcripts (Tab-1 pipeline).
+//   • both  — save AND drop it in the input.
+//   • now   — fire it to the agent as a turn immediately (hands-free voice flow).
+// If the user doesn't pick, a 5s countdown auto-sends the turn to the agent,
+// preserving the voice-in / voice-out flow this surface is built around. The
+// choice is reported immediately via onChoose; the parent executes it now or the
+// moment the transcript is ready.
 
 import { useEffect, useRef, useState } from "react";
-import { FileText, Loader2, Send, Webhook } from "lucide-react";
+import { FileText, Layers, Loader2, Save, Webhook } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Drawer,
@@ -18,7 +25,10 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 
-export type RecordActionKey = "send" | "transcribe" | "transcribe-send";
+export type RecordActionKey = "agent" | "save" | "both" | "input";
+
+/** Auto-fired when the countdown lapses — the hands-free default: submit to the agent. */
+export const AUTO_RECORD_ACTION: RecordActionKey = "agent";
 
 interface RecordActionSheetProps {
   open: boolean;
@@ -42,23 +52,30 @@ interface Choice {
 
 const CHOICES: Choice[] = [
   {
-    key: "send",
+    key: "agent",
     label: "Send to agent",
-    description: "Fire it as a turn now",
+    description: "Submit it as a turn now",
     icon: Webhook,
     tile: "bg-primary/15 text-primary",
   },
   {
-    key: "transcribe-send",
-    label: "Transcribe & send",
-    description: "Stage it in the input and send",
-    icon: Send,
+    key: "save",
+    label: "Save to transcripts",
+    description: "Save audio, transcript & cleaned copy",
+    icon: Save,
     tile: "bg-secondary/15 text-secondary",
   },
   {
-    key: "transcribe",
-    label: "Transcribe only",
-    description: "Drop into the input to edit first",
+    key: "both",
+    label: "Both",
+    description: "Submit to the agent and save",
+    icon: Layers,
+    tile: "bg-accent text-accent-foreground",
+  },
+  {
+    key: "input",
+    label: "Edit first",
+    description: "Drop it in the input to edit before sending",
     icon: FileText,
     tile: "bg-muted text-foreground",
   },
@@ -95,7 +112,7 @@ export function RecordActionSheet({
   useEffect(() => {
     if (!open || preparing || chosen) return;
     if (secondsLeft <= 0) {
-      choose("send");
+      choose(AUTO_RECORD_ACTION);
       return;
     }
     const id = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);

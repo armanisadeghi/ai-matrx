@@ -27,7 +27,7 @@ export default function MasterAgentPanel() {
       {/* Header — identifies the agent + its scope. shrink-0 so the column
           below owns the remaining height. */}
       <header className="shrink-0 flex items-center gap-2 border-b border-border px-3 py-2">
-        <span className="grid place-items-center size-6 rounded-md bg-primary/10 text-primary shrink-0">
+        <span className="grid place-items-center size-6 shrink-0 text-primary">
           <Radar className="size-3.5" />
         </span>
         <div className="min-w-0">

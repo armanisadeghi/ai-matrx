@@ -475,6 +475,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: false,
   },
+  quickScribe: {
+    label: "Quick Scribe",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   quickTasks: {
     label: "Quick Tasks",
     instanceMode: "singleton",
@@ -558,6 +563,11 @@ export const OVERLAY_CATALOGUE = {
   streamDebugHistoryWindow: {
     label: "Stream Debug History Window",
     instanceMode: "singleton",
+    isWindow: true,
+  },
+  taskEditorWindow: {
+    label: "Task Editor Window",
+    instanceMode: "multi",
     isWindow: true,
   },
   taskQuickCreateWindow: {

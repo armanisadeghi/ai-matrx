@@ -16,7 +16,9 @@
  *   button at bottom-right. `Cmd/Ctrl + Enter` triggers it. `submitOnEnter`
  *   makes plain Enter submit (Shift+Enter still inserts newline).
  * - **Auto-grow** — `autoGrow` resizes the textarea to fit content within
- *   `minHeight` / `maxHeight` bounds.
+ *   `minHeight` / `maxHeight` bounds. Once content reaches `maxHeight` the
+ *   textarea becomes internally scrollable (it does not clip). Always pass a
+ *   `maxHeight` with `autoGrow` so the field can't grow past the viewport.
  * - **Floating label** — pass `floatingLabel="…"` for a dense-form label that
  *   animates inside the border. See "Labelling" below.
  *
@@ -414,7 +416,12 @@ export const ProTextarea = React.forwardRef<
             "flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm resize-y placeholder:text-neutral-500 dark:placeholder:text-neutral-400",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
             "disabled:cursor-not-allowed disabled:opacity-50",
-            autoGrow && "resize-none overflow-hidden",
+            // Auto-grow disables the manual resize handle. Use overflow-y-auto
+            // (not overflow-hidden) so that once content hits `maxHeight` the
+            // textarea becomes internally scrollable instead of clipping text
+            // the user can never reach. While growing (height === scrollHeight)
+            // no scrollbar shows; it only appears once capped at maxHeight.
+            autoGrow && "resize-none overflow-y-auto",
             // Static right-padding to clear two TapTargetButtons (44px each
             // = 88px total) at the top-right.
             showTopRightControls ? "pr-24" : "pr-3",

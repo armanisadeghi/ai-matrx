@@ -57,7 +57,7 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="grid place-items-center size-9 rounded-lg bg-primary/10 text-primary shrink-0">
+        <span className="grid place-items-center size-9 shrink-0 text-primary">
           <LayoutGrid className="size-4.5" />
         </span>
         <button

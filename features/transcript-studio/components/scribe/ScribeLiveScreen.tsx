@@ -194,11 +194,15 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
         )}
       </section>
 
-      {/* Hero: status + mic + error. */}
-      <section className="relative z-10 flex shrink-0 flex-col items-center justify-end gap-4 px-4 pb-6 pb-safe">
+      {/* Hero: status + mic + error. The orb defaults to 260px — sized for a
+          full-viewport voice surface — but here the tab sits BELOW the shared
+          agent bar + working-document header, so a 260px orb makes this hero
+          taller than the tab and the mic/error get clipped off the bottom. A
+          smaller orb keeps the whole control cluster on-screen. */}
+      <section className="relative z-10 flex shrink-0 flex-col items-center justify-end gap-3 px-4 pb-4 pb-safe">
         <VoiceStatusPill status={liveStatus} />
         <div className="relative inline-flex items-center justify-center">
-          <VoiceOrb status={liveStatus} />
+          <VoiceOrb status={liveStatus} size={188} />
           <div className="relative z-10">
             <VoiceMicButton status={liveStatus} onToggle={toggle} />
           </div>

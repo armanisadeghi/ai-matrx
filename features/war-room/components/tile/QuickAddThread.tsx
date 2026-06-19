@@ -67,8 +67,18 @@ const FLAVOR_OPTIONS: {
   icon: typeof SquareStack;
   hint: string;
 }[] = [
-  { value: "thread", label: "Thread", icon: SquareStack, hint: "A general thread" },
-  { value: "task", label: "Task", icon: ListChecks, hint: "Anchored to a task" },
+  {
+    value: "thread",
+    label: "Thread",
+    icon: SquareStack,
+    hint: "A general thread",
+  },
+  {
+    value: "task",
+    label: "Task",
+    icon: ListChecks,
+    hint: "Anchored to a task",
+  },
   {
     value: "project",
     label: "Project",
@@ -192,7 +202,7 @@ export function QuickAddThread({
           position: nextPosition,
           title:
             trimmedName ||
-            (flavor === "project" ? projectName ?? undefined : undefined),
+            (flavor === "project" ? (projectName ?? undefined) : undefined),
           flavor,
           projectId: effectiveProjectId,
           // task/project tiles open on the Task tab; threads keep the default.
@@ -279,7 +289,7 @@ export function QuickAddThread({
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
           )}
         >
-          <span className="grid place-items-center size-5 shrink-0 rounded-full bg-muted/60 text-muted-foreground transition-colors group-hover/new:bg-primary/10 group-hover/new:text-primary">
+          <span className="grid place-items-center size-5 shrink-0 rounded-full bg-muted/60 text-muted-foreground transition-colors group-hover/new:text-primary">
             <Plus className="size-3.5" />
           </span>
           <span className="text-[13px] font-medium text-muted-foreground group-hover/new:text-primary">
@@ -299,7 +309,7 @@ export function QuickAddThread({
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         )}
       >
-        <span className="grid place-items-center size-10 rounded-full bg-muted/60 text-muted-foreground transition-colors group-hover/new:bg-primary/10 group-hover/new:text-primary">
+        <span className="grid place-items-center size-10 rounded-full bg-muted/60 text-muted-foreground transition-colors group-hover/new:text-primary">
           <Plus className="size-5" />
         </span>
         <span className="text-xs font-medium">New thread</span>
@@ -349,7 +359,7 @@ export function QuickAddThread({
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="grid place-items-center size-5 shrink-0 rounded-full bg-primary/10 text-primary">
+        <span className="grid place-items-center size-5 shrink-0 text-primary">
           {busy ? (
             <Loader2 className="size-3 animate-spin" />
           ) : (

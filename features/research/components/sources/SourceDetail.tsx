@@ -53,6 +53,7 @@ import { AnalyzeCurationDialog } from "./AnalyzeCurationDialog";
 import { AnalysisCard } from "../analysis/AnalysisCard";
 import { SourceTagPicker } from "./SourceTagPicker";
 import { SourceRankBadges } from "./SourceRankBadges";
+import { AuthorityTierBadge } from "./AuthorityTierBadge";
 import MarkdownStream from "@/components/MarkdownStream";
 import type {
   ResearchSource,
@@ -165,12 +166,35 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
   const [selectedVersion, setSelectedVersion] = useState(0);
   const currentContent = contentVersions[selectedVersion] ?? null;
 
-  // Analyses from DB filtered to current content version
-  const currentAnalyses = useMemo(() => {
+  // Analyses for the currently-selected content version — but NEVER hide
+  // expensive prior analyses. Editing content writes a NEW version (v+1); the
+  // prior analyses stay in the DB attached to the OLD version (verified: they
+  // survive, ON DELETE CASCADE only fires if the content row itself is deleted,
+  // which editing does not do). A strict `content_id === current` filter made
+  // them vanish from view after an edit — reading as catastrophic loss of paid
+  // LLM output. So: show the current version's own analyses if it has any;
+  // otherwise fall back to the newest prior version that does, flagged stale so
+  // the UI can explain the data is preserved (just from before the edit).
+  const { currentAnalyses, staleAnalysisVersion } = useMemo<{
+    currentAnalyses: ResearchAnalysis[];
+    staleAnalysisVersion: number | null;
+  }>(() => {
     const db = (allAnalyses ?? []) as ResearchAnalysis[];
-    if (!currentContent) return db;
-    return db.filter((a) => a.content_id === currentContent.id);
-  }, [allAnalyses, currentContent]);
+    if (!currentContent)
+      return { currentAnalyses: db, staleAnalysisVersion: null };
+    const own = db.filter((a) => a.content_id === currentContent.id);
+    if (own.length > 0)
+      return { currentAnalyses: own, staleAnalysisVersion: null };
+    // `contentVersions` is newest-first — surface the most recent OTHER version
+    // that still carries analyses.
+    for (const v of contentVersions) {
+      if (v.id === currentContent.id) continue;
+      const prior = db.filter((a) => a.content_id === v.id);
+      if (prior.length > 0)
+        return { currentAnalyses: prior, staleAnalysisVersion: v.version };
+    }
+    return { currentAnalyses: [], staleAnalysisVersion: null };
+  }, [allAnalyses, currentContent, contentVersions]);
 
   // ── Scrape stream ────────────────────────────────────────────────────────
   const scrapeStream = useResearchStream();
@@ -458,6 +482,27 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                 </MetaRow>
                 <MetaRow label="Status" icon={<Info className="h-3 w-3" />}>
                   <StatusBadge status={typedSource.scrape_status} />
+                </MetaRow>
+                <MetaRow
+                  label="Authority"
+                  icon={<TrendingUp className="h-3 w-3" />}
+                >
+                  {typedSource.authority_score != null ? (
+                    <div className="flex flex-col items-end gap-1">
+                      <AuthorityTierBadge
+                        score={typedSource.authority_score}
+                        tier={typedSource.authority_tier}
+                        reasoning={typedSource.authority_reasoning}
+                      />
+                      {typedSource.authority_reasoning && (
+                        <span className="max-w-[16rem] text-right text-[11px] font-normal text-muted-foreground">
+                          {typedSource.authority_reasoning}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">Not yet ranked</span>
+                  )}
                 </MetaRow>
                 <MetaRow label="Origin" icon={<Tag className="h-3 w-3" />}>
                   <OriginBadge
@@ -923,6 +968,19 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   <div className="px-4 py-3">
                     <MarkdownStream content={interrupted.text} />
                   </div>
+                </div>
+              )}
+              {/* Stale-analysis notice — prior analyses preserved after an edit */}
+              {staleAnalysisVersion != null && currentAnalyses.length > 0 && (
+                <div className="rounded-lg border border-amber-500/40 bg-amber-500/[0.06] px-3 py-2 flex items-start gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                    Showing analysis from <b>v{staleAnalysisVersion}</b> of this
+                    content. You&rsquo;ve edited it since (now v
+                    {currentContent?.version}), so this may be out of date —
+                    re-analyze to refresh. Your previous analysis was kept, not
+                    deleted.
+                  </p>
                 </div>
               )}
               {/* Completed analyses */}

@@ -18,16 +18,27 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Keyboard, Loader2, Mic, Square, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { useGlobalRecording } from "@/providers/GlobalRecordingProvider";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { useAutoVoiceResponse } from "../../hooks/useAutoVoiceResponse";
+import { ingestExternalRecordingThunk } from "../../redux/thunks";
 import { RecordActionSheet, type RecordActionKey } from "./RecordActionSheet";
+import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 interface ExperimentalAgentScreenProps {
   sessionId: string;
+  /** War Room grid tiles — shrink the bottom voice control row. */
+  compact?: boolean;
+}
+
+/** The finished turn: transcript + assembled audio + length, carried to the chooser. */
+interface PendingRecordingResult {
+  text: string;
+  audioBlob: Blob | null;
+  durationSec: number;
 }
 
 const STANDALONE_LABEL_PREFIX = "scribe-agent:";
@@ -41,8 +52,10 @@ function formatClock(totalSec: number): string {
 
 export function ExperimentalAgentScreen({
   sessionId,
+  compact,
 }: ExperimentalAgentScreenProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const assistant = useStudioAssistant(sessionId);
   const conversationId = assistant.conversationId;
   const recording = useGlobalRecording();
@@ -50,9 +63,11 @@ export function ExperimentalAgentScreen({
   const ownedRef = useRef(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   // Post-stop chooser state. The sheet opens the moment recording STOPS; the
-  // transcript ("pendingText") lands a couple seconds later. The user's choice
-  // can arrive before OR after the text — we reconcile the two below.
-  const [pendingText, setPendingText] = useState<string | null>(null);
+  // finished turn ("pendingResult" — transcript + audio + length) lands a couple
+  // seconds later. The user's choice can arrive before OR after it — we reconcile
+  // the two below.
+  const [pendingResult, setPendingResult] =
+    useState<PendingRecordingResult | null>(null);
   const chosenKeyRef = useRef<RecordActionKey | null>(null);
   // Agent+ is a voice-in / voice-out surface: no text field by default, and
   // responses are read back automatically. Both are toggleable from the bar.
@@ -77,32 +92,55 @@ export function ExperimentalAgentScreen({
   const isRecording = isRecordingGlobal && owned;
   const blockedByOther = isRecordingGlobal && !owned;
 
-  // Apply a chosen action to the finished transcript, then close the sheet.
+  // Apply a chosen action to the finished turn, then close the sheet.
+  //   agent / both → SUBMIT it to the agent as a turn now (the hands-free voice
+  //                  flow — auto-voice reads the reply). This is the default.
+  //   save / both  → persist as a real studio recording (Tab-1 pipeline) so it
+  //                  lands as a card in the Record tab with audio + raw + cleaned.
+  //   input → stage the transcript in the input AND open + focus it to edit
+  //           before sending (the input is hidden by default on this tab).
   const executeAction = useCallback(
-    (key: RecordActionKey, text: string) => {
+    (key: RecordActionKey, result: PendingRecordingResult) => {
+      const { text, audioBlob, durationSec } = result;
       if (text) {
-        if (key === "send") {
+        if (key === "save" || key === "both") {
+          void dispatch(
+            ingestExternalRecordingThunk({
+              sessionId,
+              audioBlob,
+              text,
+              durationSec,
+            }),
+          );
+          toast.success("Saved to transcripts");
+        }
+        if (key === "agent" || key === "both") {
           void assistant.send(text);
-        } else if (conversationId) {
-          dispatch(setUserInputText({ conversationId, text }));
-          if (key === "transcribe-send") void assistant.send(text);
+        }
+        if (key === "input") {
+          if (conversationId) {
+            dispatch(setUserInputText({ conversationId, text }));
+            // Reveal the input — AgentTextarea auto-focuses on mount, so the
+            // cursor lands in the field ready to edit/send.
+            setInputOpen(true);
+          }
         }
       }
       chosenKeyRef.current = null;
-      setPendingText(null);
+      setPendingResult(null);
       setSheetOpen(false);
     },
-    [assistant, conversationId, dispatch],
+    [assistant, conversationId, dispatch, sessionId],
   );
 
-  // The user tapped (or the timer auto-fired) a choice. Execute now if the
-  // transcript is already in; otherwise hold it and onComplete will pick it up.
+  // The user tapped (or the timer auto-fired) a choice. Execute now if the turn
+  // is already in; otherwise hold it and onComplete will pick it up.
   const handleChoose = useCallback(
     (key: RecordActionKey) => {
       chosenKeyRef.current = key;
-      if (pendingText !== null) executeAction(key, pendingText);
+      if (pendingResult !== null) executeAction(key, pendingResult);
     },
-    [pendingText, executeAction],
+    [pendingResult, executeAction],
   );
 
   const startRecording = async () => {
@@ -114,7 +152,7 @@ export function ExperimentalAgentScreen({
           kind: "standalone",
           label: `${STANDALONE_LABEL_PREFIX}${sessionId}`,
         },
-        onComplete: (result) => {
+        onComplete: (result, audioBlob) => {
           ownedRef.current = false;
           const text = (result.text ?? "").trim();
           if (!text) {
@@ -123,12 +161,20 @@ export function ExperimentalAgentScreen({
             toast("Nothing was transcribed.");
             return;
           }
-          // Text is ready. If a choice is already queued, run it; otherwise
-          // surface it so the sheet's countdown / buttons act on real text.
+          // Capture the length NOW: recordingFinalized (which resets durationSec)
+          // runs right after this callback, so read it fresh from the store.
+          const durationSec = store.getState().recordings.durationSec;
+          const finished: PendingRecordingResult = {
+            text,
+            audioBlob: audioBlob ?? null,
+            durationSec,
+          };
+          // The turn is ready. If a choice is already queued, run it; otherwise
+          // surface it so the sheet's countdown / buttons act on the real turn.
           if (chosenKeyRef.current) {
-            executeAction(chosenKeyRef.current, text);
+            executeAction(chosenKeyRef.current, finished);
           } else {
-            setPendingText(text);
+            setPendingResult(finished);
           }
         },
         onError: (message) => {
@@ -148,7 +194,7 @@ export function ExperimentalAgentScreen({
   // Stop opens the chooser immediately — we don't wait for transcription.
   const handleStop = useCallback(() => {
     chosenKeyRef.current = null;
-    setPendingText(null);
+    setPendingResult(null);
     setSheetOpen(true);
     void recording.stop();
   }, [recording]);
@@ -170,6 +216,22 @@ export function ExperimentalAgentScreen({
     }
   }, [isRecording]);
 
+  const surfaceKey = `studio-assistant-experimental:${sessionId}`;
+
+  useEffect(() => {
+    if (!conversationId) return;
+    traceWarRoomRenderPath(
+      11,
+      "ExperimentalAgentScreen.tsx",
+      "rendering AgentConversationColumn",
+      {
+        studioSessionId: sessionId,
+        conversationId,
+        surfaceKey,
+      },
+    );
+  }, [sessionId, conversationId, surfaceKey]);
+
   if (!conversationId) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -183,7 +245,7 @@ export function ExperimentalAgentScreen({
       <div className="min-h-0 flex-1">
         <AgentConversationColumn
           conversationId={conversationId}
-          surfaceKey={`studio-assistant-experimental:${sessionId}`}
+          surfaceKey={surfaceKey}
           constrainWidth
           edgeToEdgeScroll
           hideInput={!inputOpen}
@@ -192,33 +254,47 @@ export function ExperimentalAgentScreen({
       </div>
 
       {/* Single record control */}
-      <div className="shrink-0 border-t border-border bg-card/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+      <div
+        className={cn(
+          "shrink-0 border-t border-border bg-card/95 backdrop-blur",
+          compact
+            ? "px-2 pt-1.5 pb-1"
+            : "px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3",
+        )}
+      >
+        {!compact ? (
+          <div
+            className={cn(
+              "mb-2 flex items-center justify-center gap-2 text-xs transition-opacity",
+              isRecording ? "opacity-100" : "opacity-40",
+            )}
+          >
+            <span className="relative flex h-2 w-2">
+              {isRecording && !isPaused && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+              )}
+              <span
+                className={cn(
+                  "relative inline-flex h-2 w-2 rounded-full",
+                  isRecording ? "bg-red-500" : "bg-muted-foreground",
+                )}
+              />
+            </span>
+            <span className="font-mono tabular-nums text-foreground">
+              {formatClock(isRecording ? durationSec : 0)}
+            </span>
+            <span className="text-muted-foreground">
+              {isRecording ? "Recording" : "Tap to record a turn"}
+            </span>
+          </div>
+        ) : null}
+
         <div
           className={cn(
-            "mb-2 flex items-center justify-center gap-2 text-xs transition-opacity",
-            isRecording ? "opacity-100" : "opacity-40",
+            "flex items-center justify-center",
+            compact ? "gap-2" : "gap-4",
           )}
         >
-          <span className="relative flex h-2 w-2">
-            {isRecording && !isPaused && (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
-            )}
-            <span
-              className={cn(
-                "relative inline-flex h-2 w-2 rounded-full",
-                isRecording ? "bg-red-500" : "bg-muted-foreground",
-              )}
-            />
-          </span>
-          <span className="font-mono tabular-nums text-foreground">
-            {formatClock(isRecording ? durationSec : 0)}
-          </span>
-          <span className="text-muted-foreground">
-            {isRecording ? "Recording" : "Tap to record a turn"}
-          </span>
-        </div>
-
-        <div className="flex items-center justify-center gap-4">
           {/* Auto-voice toggle — read responses aloud. Dimmed when off. */}
           <button
             type="button"
@@ -231,18 +307,23 @@ export function ExperimentalAgentScreen({
               autoVoice ? "Turn off voice replies" : "Turn on voice replies"
             }
             className={cn(
-              "flex h-16 w-16 items-center justify-center rounded-full transition-transform active:scale-95",
+              "flex items-center justify-center rounded-full transition-transform active:scale-95",
+              compact ? "h-9 w-9" : "h-16 w-16",
               autoVoice
                 ? "bg-secondary text-secondary-foreground"
                 : "bg-muted text-muted-foreground/60",
             )}
           >
             {speaking ? (
-              <Volume2 className="h-6 w-6 animate-pulse" />
+              <Volume2
+                className={
+                  compact ? "h-4 w-4 animate-pulse" : "h-6 w-6 animate-pulse"
+                }
+              />
             ) : autoVoice ? (
-              <Volume2 className="h-6 w-6" />
+              <Volume2 className={compact ? "h-4 w-4" : "h-6 w-6"} />
             ) : (
-              <VolumeX className="h-6 w-6" />
+              <VolumeX className={compact ? "h-4 w-4" : "h-6 w-6"} />
             )}
           </button>
 
@@ -254,7 +335,8 @@ export function ExperimentalAgentScreen({
             }
             aria-label={isRecording ? "Stop recording" : "Start recording"}
             className={cn(
-              "flex h-16 w-16 items-center justify-center rounded-full transition-transform active:scale-95",
+              "flex items-center justify-center rounded-full transition-transform active:scale-95",
+              compact ? "h-9 w-9" : "h-16 w-16",
               isRecording
                 ? "bg-red-500 text-white"
                 : blockedByOther || recording.isFinalizing
@@ -263,11 +345,19 @@ export function ExperimentalAgentScreen({
             )}
           >
             {isRecording ? (
-              <Square className="h-6 w-6 fill-current" />
+              <Square
+                className={
+                  compact ? "h-4 w-4 fill-current" : "h-6 w-6 fill-current"
+                }
+              />
             ) : recording.isFinalizing ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
+              <Loader2
+                className={
+                  compact ? "h-4 w-4 animate-spin" : "h-6 w-6 animate-spin"
+                }
+              />
             ) : (
-              <Mic className="h-7 w-7" />
+              <Mic className={compact ? "h-5 w-5" : "h-7 w-7"} />
             )}
           </button>
 
@@ -279,17 +369,23 @@ export function ExperimentalAgentScreen({
             aria-pressed={inputOpen}
             aria-label={inputOpen ? "Hide text input" : "Show text input"}
             className={cn(
-              "flex h-16 w-16 items-center justify-center rounded-full transition-transform active:scale-95",
+              "flex items-center justify-center rounded-full transition-transform active:scale-95",
+              compact ? "h-9 w-9" : "h-16 w-16",
               inputOpen
                 ? "bg-primary/15 text-primary"
                 : "bg-muted text-muted-foreground/60",
             )}
           >
-            <Keyboard className="h-6 w-6" />
+            <Keyboard className={compact ? "h-4 w-4" : "h-6 w-6"} />
           </button>
         </div>
         {blockedByOther && (
-          <p className="mt-2 text-center text-xs text-muted-foreground">
+          <p
+            className={cn(
+              "text-center text-muted-foreground",
+              compact ? "mt-1 text-[10px]" : "mt-2 text-xs",
+            )}
+          >
             Another recording is active. Stop it first.
           </p>
         )}
@@ -301,10 +397,10 @@ export function ExperimentalAgentScreen({
           setSheetOpen(o);
           if (!o) {
             chosenKeyRef.current = null;
-            setPendingText(null);
+            setPendingResult(null);
           }
         }}
-        preparing={pendingText === null}
+        preparing={pendingResult === null}
         onChoose={handleChoose}
       />
     </div>

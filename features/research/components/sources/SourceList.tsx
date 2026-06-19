@@ -4,6 +4,7 @@ import { useState, useCallback, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { toast } from "sonner";
 import {
   ExternalLink,
   MoreVertical,
@@ -35,13 +36,25 @@ import {
   useResearchSources,
   useResearchKeywords,
   useSourceImportance,
+  useResearchTags,
+  useTopicSourceTags,
 } from "../../hooks/useResearchState";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
-import { bulkUpdateSources, updateSource } from "../../service";
+import {
+  bulkUpdateSources,
+  updateSource,
+  addTagToSources,
+  createTag,
+} from "../../service";
 import { useSourceFilters } from "../../hooks/useSourceFilters";
 import { SourceFilters } from "./SourceFilters";
 import { BulkActionBar } from "./BulkActionBar";
+import { SourceTagsInline } from "./SourceTagsInline";
+import { AuthorityRankButton } from "./AuthorityRankButton";
+import { AuthorityTierBadge } from "./AuthorityTierBadge";
+import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import type { ResearchTag } from "../../types";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
 import { OriginBadge } from "../shared/OriginBadge";
@@ -119,6 +132,10 @@ interface SourceRowProps {
   scraping: boolean;
   navigating: boolean;
   anyNavigating: boolean;
+  tags: ResearchTag[];
+  assignedTags: { id: string; name: string }[];
+  onTagsChanged: () => void;
+  onCreateTag: (sourceId: string) => void;
   onSelect: (id: string) => void;
   onToggleInclude: (source: ResearchSource) => void;
   onScrape: (source: ResearchSource, e: React.MouseEvent) => void;
@@ -133,6 +150,10 @@ function SourceRow({
   scraping,
   navigating,
   anyNavigating,
+  tags,
+  assignedTags,
+  onTagsChanged,
+  onCreateTag,
   onSelect,
   onToggleInclude,
   onScrape,
@@ -240,6 +261,16 @@ function SourceRow({
               )}
               <span className="text-muted-foreground/30">·</span>
               <StatusBadge status={source.scrape_status} />
+              {source.authority_score != null && (
+                <>
+                  <span className="text-muted-foreground/30">·</span>
+                  <AuthorityTierBadge
+                    score={source.authority_score}
+                    tier={source.authority_tier}
+                    reasoning={source.authority_reasoning}
+                  />
+                </>
+              )}
               {needsScrape && (
                 <Button
                   variant="outline"
@@ -256,6 +287,15 @@ function SourceRow({
                   {source.scrape_status === "pending" ? "Scrape" : "Re-scrape"}
                 </Button>
               )}
+            </div>
+            <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+              <SourceTagsInline
+                sourceId={source.id}
+                assigned={assignedTags}
+                tags={tags}
+                onChanged={onTagsChanged}
+                onCreateTag={onCreateTag}
+              />
             </div>
             {expanded && hasSnippets && (
               <div className="mt-2 space-y-1.5">
@@ -389,10 +429,21 @@ export default function SourceList() {
   });
   const { data: keywords } = useResearchKeywords(topicId);
   const { data: importanceMap } = useSourceImportance(topicId);
+  const { data: tags, refresh: refetchTags } = useResearchTags(topicId);
+  const { data: sourceTagMap, refresh: refetchSourceTags } =
+    useTopicSourceTags(topicId);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [scrapingIds, setScrapingIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
+  const [tagBusy, setTagBusy] = useState(false);
+  // Shared "create tag" dialog target: a source id assigns the new tag to that
+  // source; "__bulk__" assigns it to the whole current selection.
+  const [createTagTarget, setCreateTagTarget] = useState<string | null>(null);
+  const [creatingTag, setCreatingTag] = useState(false);
+
+  const tagList = (tags as ResearchTag[]) ?? [];
+  const tagsBySource = sourceTagMap ?? {};
 
   const allSources = (sources as ResearchSource[]) ?? [];
   const sourceList = useMemo(() => {
@@ -471,6 +522,56 @@ export default function SourceList() {
     [topicId, selected, refetchSources, refresh],
   );
 
+  const refreshTagState = useCallback(() => {
+    refetchSourceTags();
+    refetchTags();
+  }, [refetchSourceTags, refetchTags]);
+
+  const handleBatchAddTag = useCallback(
+    async (tagId: string) => {
+      if (selected.size === 0) return;
+      setTagBusy(true);
+      try {
+        await addTagToSources(tagId, [...selected]);
+        const name = tagList.find((t) => t.id === tagId)?.name ?? "tag";
+        toast.success(`Tagged ${selected.size} source(s) with "${name}"`);
+        refreshTagState();
+      } catch (err) {
+        toast.error(
+          `Tagging failed: ${err instanceof Error ? err.message : "unknown error"}`,
+        );
+      } finally {
+        setTagBusy(false);
+      }
+    },
+    [selected, tagList, refreshTagState],
+  );
+
+  const handleCreateTag = useCallback(
+    async (name: string) => {
+      const target = createTagTarget;
+      if (!target) return;
+      setCreatingTag(true);
+      try {
+        const tag = await createTag(topicId, { name });
+        const sourceIds = target === "__bulk__" ? [...selected] : [target];
+        await addTagToSources(tag.id, sourceIds);
+        toast.success(
+          `Created "${tag.name}" · tagged ${sourceIds.length} source(s)`,
+        );
+        setCreateTagTarget(null);
+        refreshTagState();
+      } catch (err) {
+        toast.error(
+          `Couldn't create tag: ${err instanceof Error ? err.message : "unknown error"}`,
+        );
+      } finally {
+        setCreatingTag(false);
+      }
+    },
+    [createTagTarget, topicId, selected, refreshTagState],
+  );
+
   const handleToggleInclude = useCallback(
     async (source: ResearchSource) => {
       await updateSource(source.id, { is_included: !source.is_included });
@@ -523,6 +624,9 @@ export default function SourceList() {
         count={sourceList.length}
         search={search}
         onSearchChange={setSearch}
+        trailing={
+          <AuthorityRankButton topicId={topicId} onRanked={refetchSources} />
+        }
       />
 
       {/* Desktop Table */}
@@ -585,6 +689,10 @@ export default function SourceList() {
                   scraping={scrapingIds.has(source.id)}
                   navigating={navigatingId === source.id}
                   anyNavigating={anyNavigating}
+                  tags={tagList}
+                  assignedTags={tagsBySource[source.id] ?? []}
+                  onTagsChanged={refreshTagState}
+                  onCreateTag={(id) => setCreateTagTarget(id)}
                   onSelect={toggleSelect}
                   onToggleInclude={handleToggleInclude}
                   onScrape={handleScrapeSource}
@@ -704,6 +812,13 @@ export default function SourceList() {
                     />
                     <StatusBadge status={source.scrape_status} />
                     <OriginBadge origin={sourceOriginFromDb(source.origin)} />
+                    {source.authority_score != null && (
+                      <AuthorityTierBadge
+                        score={source.authority_score}
+                        tier={source.authority_tier}
+                        reasoning={source.authority_reasoning}
+                      />
+                    )}
                     {source.page_age && (
                       <span className="text-[10px] text-muted-foreground">
                         {pageAgeDisplay}
@@ -721,6 +836,22 @@ export default function SourceList() {
                           : "Re-scrape"}
                       </button>
                     )}
+                  </div>
+
+                  {/* Tags */}
+                  <div
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  >
+                    <SourceTagsInline
+                      sourceId={source.id}
+                      assigned={tagsBySource[source.id] ?? []}
+                      tags={tagList}
+                      onChanged={refreshTagState}
+                      onCreateTag={(id) => setCreateTagTarget(id)}
+                    />
                   </div>
                 </div>
               </Link>
@@ -764,11 +895,30 @@ export default function SourceList() {
       {/* Bulk Action Bar */}
       <BulkActionBar
         selectedCount={selected.size}
+        tags={tagList}
         onInclude={() => handleBulk("include")}
         onExclude={() => handleBulk("exclude")}
         onMarkStale={() => handleBulk("mark_stale")}
         onMarkComplete={() => handleBulk("mark_complete")}
+        onAddTag={handleBatchAddTag}
+        onCreateTag={() => setCreateTagTarget("__bulk__")}
         onClear={() => setSelected(new Set())}
+        busy={tagBusy}
+      />
+
+      <TextInputDialog
+        open={createTagTarget !== null}
+        onOpenChange={(o) => !creatingTag && !o && setCreateTagTarget(null)}
+        title="New tag dimension"
+        description={
+          createTagTarget === "__bulk__"
+            ? `Create a tag and assign the ${selected.size} selected source(s) to it.`
+            : "Create a tag and assign this source to it."
+        }
+        placeholder="e.g. Economic Impact"
+        confirmLabel="Create & tag"
+        busy={creatingTag}
+        onConfirm={handleCreateTag}
       />
     </div>
   );

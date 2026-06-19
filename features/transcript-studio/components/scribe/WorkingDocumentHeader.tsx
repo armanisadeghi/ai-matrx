@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { useCartesiaSpeaker } from "@/features/tts/hooks/useCartesiaSpeaker";
+import { SCRIBE_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import { useStudioAssistant } from "../../hooks/useStudioAssistant";
 import { useWorkingDocumentDraft } from "../../hooks/useWorkingDocumentDraft";
 import { useWorkingDocChanges } from "../../hooks/useWorkingDocChanges";
@@ -23,6 +24,7 @@ import { WorkingDocDiff } from "./WorkingDocDiff";
 
 interface WorkingDocumentHeaderProps {
   sessionId: string;
+  compact?: boolean;
 }
 
 /**
@@ -34,6 +36,7 @@ interface WorkingDocumentHeaderProps {
  */
 export function WorkingDocumentHeader({
   sessionId,
+  compact,
 }: WorkingDocumentHeaderProps) {
   const assistant = useStudioAssistant(sessionId);
   const [focusOpen, setFocusOpen] = useState(false);
@@ -42,7 +45,7 @@ export function WorkingDocumentHeader({
   const [docOpen, setDocOpen] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
 
-  const speaker = useCartesiaSpeaker({ purpose: "reading" });
+  const speaker = useCartesiaSpeaker({ purpose: "reading", dictionarySurfaceKey: SCRIBE_DICTIONARY_SURFACE });
   const reading = speaker.isPlaying || speaker.isLoading;
 
   const workingDoc = assistant.workingDocument;
@@ -87,17 +90,33 @@ export function WorkingDocumentHeader({
     }
   };
 
+  const iconBtn = compact ? "h-6 w-6" : "h-8 w-8";
+  const iconSize = compact ? "h-3.5 w-3.5" : "h-4 w-4";
+
   return (
     <div className="shrink-0 border-b border-border">
-      <div className="flex items-center gap-1 px-2">
+      <div
+        className={cn(
+          "flex items-center gap-0.5",
+          compact ? "px-1.5" : "gap-1 px-2",
+        )}
+      >
         <button
           type="button"
           onClick={() => setDocOpen((v) => !v)}
           aria-expanded={docOpen}
-          className="flex min-w-0 flex-1 items-center gap-1.5 py-2 text-left"
+          className={cn(
+            "flex min-w-0 flex-1 items-center gap-1 text-left",
+            compact ? "py-1" : "gap-1.5 py-2",
+          )}
         >
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Working document
+          <span
+            className={cn(
+              "font-medium uppercase tracking-wide text-muted-foreground",
+              compact ? "text-[10px]" : "text-xs",
+            )}
+          >
+            {compact ? "Doc" : "Working document"}
           </span>
           {!docOpen && docContent.trim() && (
             <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground/70">
@@ -111,10 +130,15 @@ export function WorkingDocumentHeader({
             onClick={() => setDiffOpen(true)}
             aria-label="View the agent's latest changes"
             title="View the agent's latest changes"
-            className="relative flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-primary active:bg-accent"
+            className={cn(
+              "relative flex items-center gap-1 rounded-full text-primary active:bg-accent",
+              compact ? "h-6 px-1.5" : "h-8 gap-1.5 px-2.5 text-xs font-medium",
+            )}
           >
-            <GitCompare className="h-4 w-4" />
-            <span className="hidden sm:inline">View changes</span>
+            <GitCompare className={iconSize} />
+            {!compact ? (
+              <span className="hidden sm:inline">View changes</span>
+            ) : null}
             <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary" />
           </button>
         )}
@@ -123,7 +147,8 @@ export function WorkingDocumentHeader({
           onClick={handleReadAloud}
           disabled={!docContent.trim()}
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-full",
+            "flex items-center justify-center rounded-full",
+            iconBtn,
             docContent.trim()
               ? "text-foreground active:bg-accent"
               : "text-muted-foreground/50",
@@ -131,9 +156,9 @@ export function WorkingDocumentHeader({
           aria-label={reading ? "Stop reading" : "Read aloud"}
         >
           {reading ? (
-            <VolumeX className="h-4 w-4" />
+            <VolumeX className={iconSize} />
           ) : (
-            <Volume2 className="h-4 w-4" />
+            <Volume2 className={iconSize} />
           )}
         </button>
         <button
@@ -142,7 +167,8 @@ export function WorkingDocumentHeader({
           disabled={!copyText}
           aria-label={hasCopied ? "Copied" : "Copy document"}
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-full",
+            "flex items-center justify-center rounded-full",
+            iconBtn,
             copyText
               ? hasCopied
                 ? "text-green-500 active:bg-accent"
@@ -151,9 +177,9 @@ export function WorkingDocumentHeader({
           )}
         >
           {hasCopied ? (
-            <Check className="h-4 w-4" />
+            <Check className={iconSize} />
           ) : (
-            <Copy className="h-4 w-4" />
+            <Copy className={iconSize} />
           )}
         </button>
         <button
@@ -162,13 +188,14 @@ export function WorkingDocumentHeader({
           disabled={!workingDoc}
           aria-label="Open focused editor"
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-full",
+            "flex items-center justify-center rounded-full",
+            iconBtn,
             workingDoc
               ? "text-foreground active:bg-accent"
               : "text-muted-foreground/50",
           )}
         >
-          <Maximize2 className="h-4 w-4" />
+          <Maximize2 className={iconSize} />
         </button>
         <button
           type="button"
@@ -177,11 +204,15 @@ export function WorkingDocumentHeader({
           aria-label={
             docOpen ? "Collapse working document" : "Expand working document"
           }
-          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground active:bg-accent"
+          className={cn(
+            "flex items-center justify-center rounded-full text-muted-foreground active:bg-accent",
+            iconBtn,
+          )}
         >
           <ChevronRight
             className={cn(
-              "h-4 w-4 shrink-0 transition-transform",
+              iconSize,
+              "shrink-0 transition-transform",
               docOpen && "rotate-90",
             )}
           />

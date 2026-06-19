@@ -67,6 +67,17 @@ export type ExtensionCaptureLevel = 1 | 2 | 3;
 export type AnalyzeRequest = components["schemas"]["AnalyzeRequest"];
 export type AnalyzeBulkRequest = components["schemas"]["AnalyzeBulkRequest"];
 export type SynthesisRequest = components["schemas"]["SynthesisRequest"];
+/**
+ * Body for POST /research/topics/{id}/sources/rank-authority.
+ * Hand-written; replace with components["schemas"]["AuthorityRankRequest"] on
+ * the next OpenAPI type regen from Python.
+ */
+export interface AuthorityRankRequest {
+  /** Specific sources to rank. Omit/null = every included source on the topic. */
+  source_ids?: string[] | null;
+  /** Re-rank sources that already have an authority score. */
+  force?: boolean;
+}
 // topic_id was added on 2026-05-02; pending next type regen from Python
 export type SuggestRequest = components["schemas"]["SuggestRequest"] & {
   topic_id?: string | null;
@@ -104,7 +115,10 @@ export type ScrapeStatus =
   | "skipped"
   | "complete"
   | "dead_link"
-  | "gated";
+  | "gated"
+  // Honest user-driven terminal verdicts (2026-06-18, from matrx-extend).
+  | "ignored"
+  | "content_mismatch";
 export type SourceType = "web" | "youtube" | "pdf" | "file" | "manual";
 export type SourceOrigin =
   | "search"
@@ -256,6 +270,16 @@ export interface ResearchSource {
   scrape_status: string;
   discovered_at: string | null;
   last_seen_at: string | null;
+  /** AI-assessed authoritativeness 0-100 (Source Authority Ranker). null = not yet ranked. */
+  authority_score: number | null;
+  /** AI-assessed authority tier: 'high' | 'medium' | 'low'. null = not yet ranked.
+   *  Typed `string` to match the generated DB row (a CHECK constraint, not an enum);
+   *  AuthorityTierBadge narrows + validates it. */
+  authority_tier: string | null;
+  /** One-sentence justification for the score/tier. */
+  authority_reasoning: string | null;
+  /** When the authority fields were last set. null = not yet ranked. */
+  authority_ranked_at: string | null;
 }
 
 export interface ResearchContent {
@@ -664,6 +688,27 @@ export interface SynthesisFailed {
   error: string;
 }
 
+export interface AuthorityRankStart {
+  type: "authority_rank_start";
+  total: number;
+  batches: number;
+}
+
+export interface AuthorityRankBatch {
+  type: "authority_rank_batch";
+  batch_index: number;
+  batch_count: number;
+  ranked: number;
+}
+
+export interface AuthorityRankComplete {
+  type: "authority_rank_complete";
+  ranked: number;
+  total: number;
+  batches: number;
+  failed: number;
+}
+
 export interface SuggestSetupComplete {
   type: "suggest_complete";
   title: string;
@@ -717,6 +762,9 @@ export type ResearchDataEvent =
   | SynthesisStart
   | SynthesisComplete
   | SynthesisFailed
+  | AuthorityRankStart
+  | AuthorityRankBatch
+  | AuthorityRankComplete
   | SuggestSetupComplete
   | ConsolidateComplete
   | SuggestTagsComplete
@@ -768,7 +816,8 @@ export type SourceSortBy =
   | "page_age"
   | "discovered_at"
   | "hostname"
-  | "scrape_status";
+  | "scrape_status"
+  | "authority_score";
 export type SortDir = "asc" | "desc";
 
 export interface SourceFilters {

@@ -50,6 +50,8 @@ import { isWarRoomToolName } from "@/features/agents/war-room-tools/tools/names"
 import { getWarRoomInlineToolDef } from "@/features/agents/war-room-tools/tools/tool-defs";
 import { isWarRoomMasterToolName } from "@/features/agents/war-room-master-tools/tools/names";
 import { getWarRoomMasterInlineToolDef } from "@/features/agents/war-room-master-tools/tools/tool-defs";
+import { isScribeToolName } from "@/features/agents/scribe-tools/tools/names";
+import { getScribeInlineToolDef } from "@/features/agents/scribe-tools/tools/tool-defs";
 
 interface BuildOptions {
   mode?: "additive" | "replace";
@@ -125,8 +127,12 @@ export async function buildToolInjection(
   const warRoomMasterClientTools = nonWidgetClientTools.filter(
     isWarRoomMasterToolName,
   );
+  const scribeClientTools = nonWidgetClientTools.filter(isScribeToolName);
   const registeredClientTools = nonWidgetClientTools.filter(
-    (name) => !isWarRoomToolName(name) && !isWarRoomMasterToolName(name),
+    (name) =>
+      !isWarRoomToolName(name) &&
+      !isWarRoomMasterToolName(name) &&
+      !isScribeToolName(name),
   );
 
   const widgetHandleId = selectWidgetHandleIdFor(state, conversationId);
@@ -154,6 +160,12 @@ export async function buildToolInjection(
     .map((name) => getWarRoomMasterInlineToolDef(name))
     .filter((def): def is NonNullable<typeof def> => def != null);
 
+  // Scribe tools as inline specs — same mechanism, armed only on a Scribe
+  // session's assistant conversation (ScribeScreen.addClientTool).
+  const scribeInlineSpecs: ToolSpec[] = scribeClientTools
+    .map((name) => getScribeInlineToolDef(name))
+    .filter((def): def is NonNullable<typeof def> => def != null);
+
   // Per-conversation tools the user added from the Smart Input tools menu
   // (registry UUIDs → server-executed registry specs). Explicit picks, so they
   // ride regardless of the disable-injection brake (which only gates the
@@ -167,6 +179,7 @@ export async function buildToolInjection(
     ...clientToolSpecs,
     ...warRoomInlineSpecs,
     ...warRoomMasterInlineSpecs,
+    ...scribeInlineSpecs,
     ...addedToolSpecs,
   ];
 

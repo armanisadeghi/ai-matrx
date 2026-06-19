@@ -19,13 +19,14 @@ import { sourceTypeFromDb } from "../../types";
 import { fmtCount } from "../../format";
 import { StatusBadge } from "../shared/StatusBadge";
 import { SourceTypeIcon } from "../shared/SourceTypeIcon";
+import { AuthorityTierBadge } from "../sources/AuthorityTierBadge";
 import { CurationBatchBar } from "./CurationBatchBar";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 
 type GroupBy = "none" | "keyword" | "tag";
-type SortBy = "importance" | "size" | "analysis";
+type SortBy = "importance" | "size" | "analysis" | "authority";
 
 const ANALYSIS_BADGE: Record<
   CurationAnalysisState,
@@ -111,6 +112,10 @@ export default function CurationTable() {
       if (sortBy === "size") return (b.charCount ?? 0) - (a.charCount ?? 0);
       if (sortBy === "analysis")
         return ANALYSIS_SORT[b.analysis] - ANALYSIS_SORT[a.analysis];
+      if (sortBy === "authority")
+        return (
+          (b.source.authority_score ?? -1) - (a.source.authority_score ?? -1)
+        );
       return (b.importance?.score ?? 0) - (a.importance?.score ?? 0);
     });
 
@@ -284,6 +289,7 @@ export default function CurationTable() {
         "Sort",
         "Importance",
         [
+          { id: "authority", label: "Authority" },
           { id: "size", label: "Content size" },
           { id: "analysis", label: "Analysis" },
         ],
@@ -349,7 +355,7 @@ export default function CurationTable() {
     tags,
   ]);
 
-  const colCount = 8;
+  const colCount = 9;
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -401,6 +407,9 @@ export default function CurationTable() {
                 <th className="py-1.5 px-1 font-medium">Source</th>
                 <th className="py-1.5 px-2 font-medium whitespace-nowrap">
                   Scrape
+                </th>
+                <th className="py-1.5 px-2 font-medium whitespace-nowrap">
+                  Authority
                 </th>
                 <th className="py-1.5 px-2 font-medium whitespace-nowrap">
                   Size
@@ -558,6 +567,17 @@ function GroupRows({
             </td>
             <td className="py-1.5 px-2 align-middle">
               <StatusBadge status={s.scrape_status} />
+            </td>
+            <td className="py-1.5 px-2 align-middle">
+              {s.authority_score != null ? (
+                <AuthorityTierBadge
+                  score={s.authority_score}
+                  tier={s.authority_tier}
+                  reasoning={s.authority_reasoning}
+                />
+              ) : (
+                <span className="text-[11px] text-muted-foreground/40">—</span>
+              )}
             </td>
             <td
               className={cn(

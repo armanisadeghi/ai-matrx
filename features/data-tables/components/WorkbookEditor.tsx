@@ -24,6 +24,7 @@ import { Download, History, Loader2, Save } from "lucide-react";
 
 import {
   createUniver,
+  defaultTheme,
   LocaleType,
   merge,
   type FUniver,
@@ -34,11 +35,14 @@ import sheetsCoreEnUS from "@univerjs/preset-sheets-core/locales/en-US";
 import "@univerjs/preset-sheets-core/lib/index.css";
 
 import { supabase } from "@/utils/supabase/client";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { toast } from "@/components/ui/use-toast";
 
 import { useWorkbookRealtime } from "../hooks/useWorkbookRealtime";
+import { useUniverDarkModeSync } from "../hooks/useUniverDarkModeSync";
+import { disposeUniverInstance } from "../utils/disposeUniverInstance";
 import { RemoteCursorsLayer } from "./RemoteCursorsLayer";
 import { WorkbookCursorOverlay } from "./WorkbookCursorOverlay";
 import { getLatestSnapshot, saveSnapshot } from "../workbook-service";
@@ -115,6 +119,35 @@ export default function WorkbookEditor({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [historyOpen, setHistoryOpen] = useState(false);
 
+  // Univer boots ONCE per workbookId (see boot effect). `editable`, `collab`,
+  // and the collab host-election flag can change AFTER boot, so we read them
+  // from refs inside the long-lived command listener rather than the effect
+  // deps — recreating Univer on a prop toggle disposes it mid-render and
+  // crashes its popups (content loads, then vanishes).
+  const editableRef = useRef(editable);
+  const collabRef = useRef(collab);
+  const collabIsHostRef = useRef(collabIsHost);
+  useEffect(() => {
+    editableRef.current = editable;
+  }, [editable]);
+  useEffect(() => {
+    collabRef.current = collab;
+  }, [collab]);
+  useEffect(() => {
+    collabIsHostRef.current = collabIsHost;
+  }, [collabIsHost]);
+
+  // Initial dark-mode value for createUniver; live changes handled by
+  // useUniverDarkModeSync below (avoids a light→dark flash on boot).
+  const themeMode = useAppSelector((s) => s.theme.mode);
+  const darkModeRef = useRef(themeMode === "dark");
+  useEffect(() => {
+    darkModeRef.current = themeMode === "dark";
+  }, [themeMode]);
+
+  // Keep Univer's dark mode in lockstep with the app theme (Facade API).
+  useUniverDarkModeSync(apiRef, bootState === "ready");
+
   // Stable identity for the realtime callback so the hook doesn't resubscribe
   // every render.
   const onRemoteSnapshot = useCallback(
@@ -168,7 +201,9 @@ export default function WorkbookEditor({
     }
   }, [workbookId]);
 
-  // Boot Univer once.
+  // Boot Univer EXACTLY ONCE per workbookId. `editable` / `collab` are read
+  // from refs (above) so toggling them never tears the instance down — the
+  // lifecycle Univer's docs assume (create once, dispose on unmount).
   useEffect(() => {
     if (!containerRef.current) return;
     let cancelled = false;
@@ -178,6 +213,8 @@ export default function WorkbookEditor({
         const { univer, univerAPI } = createUniver({
           locale: LocaleType.EN_US,
           locales: { [LocaleType.EN_US]: merge({}, sheetsCoreEnUS) },
+          theme: defaultTheme,
+          darkMode: darkModeRef.current,
           presets: [
             UniverSheetsCorePreset({
               container: containerRef.current as HTMLElement,
@@ -210,16 +247,18 @@ export default function WorkbookEditor({
         apiRef.current.createWorkbook(initial);
         setBootState("ready");
 
-        if (!editable) return;
-
-        // Hook command stream → debounced autosave.
+        // Command stream → debounced autosave. Registered for the lifetime of
+        // the instance; viewer-mode (editable=false) is honored at fire time
+        // via editableRef so a later edit-permission grant needs no remount.
         apiRef.current.onCommandExecuted(() => {
+          if (!editableRef.current) return;
           setSaveStatus("dirty");
           if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
           saveTimerRef.current = setTimeout(() => {
+            if (!editableRef.current) return;
             // V2: only the elected host writes the canonical snapshot.
             // Solo / no-collab path: collabIsHost defaults true, so we save.
-            if (collab && !collabIsHost) return;
+            if (collabRef.current && !collabIsHostRef.current) return;
             void performSave();
           }, 2500);
         });
@@ -232,7 +271,7 @@ export default function WorkbookEditor({
         // glitch) must NEVER take the workbook page down. The user keeps a
         // working solo workbook; collab silently degrades with a console
         // warning that surfaces in error tracking.
-        if (collab) {
+        if (collabRef.current) {
           void startCollabSession().catch((err) => {
             console.warn(
               "[workbook] collab boot failed — falling back to solo mode",
@@ -254,13 +293,16 @@ export default function WorkbookEditor({
       collabSelectionDisposerRef.current = null;
       collabSessionRef.current?.stop();
       collabSessionRef.current = null;
-      univerRef.current?.dispose();
+      const univer = univerRef.current;
       univerRef.current = null;
       apiRef.current = null;
+      disposeUniverInstance(univer);
     };
-    // Re-mount when the workbookId changes (route navigation) OR when
-    // collab is toggled (boots a different session shape).
-  }, [workbookId, editable, collab]);
+    // performSave / startCollabSession are stable per workbookId and declared
+    // below this effect; intentionally omitted so Univer boots exactly once
+    // per workbook (route nav remounts via the workbookId change).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workbookId]);
 
   // Lazy-import the collab classes so the bundle for non-collab users stays
   // free of yjs / y-protocols. Resolved at session-start time only.
@@ -460,15 +502,11 @@ export default function WorkbookEditor({
   const statusPill = useMemo(() => statusPillFor(saveStatus), [saveStatus]);
 
   return (
-    // colorScheme: light pins this subtree to the light palette so Univer's
-    // portal popovers / context menus (which read browser color-scheme to
-    // decide their background) don't half-render against our dark app
-    // surfaces. The Univer canvas itself was always light; the popovers
-    // were where the visual collision happened.
-    <div
-      className="matrx-univer-shell flex h-full w-full flex-col bg-card"
-      style={{ colorScheme: "light" }}
-    >
+    // Univer owns its own light/dark theming via the Facade API
+    // (useUniverDarkModeSync); we do NOT pin a colorScheme here — that fought
+    // Univer's portals and broke dark mode. The wrapper bg uses a semantic
+    // token so it adapts with the app theme during boot.
+    <div className="matrx-univer-shell flex h-full w-full flex-col bg-card">
       <div className="flex items-center gap-2 border-b border-border px-2 py-1 text-xs min-w-0">
         {/* Left cluster — caller-supplied (back arrow + rename) when this
             editor lives on the workbook page, empty otherwise. */}

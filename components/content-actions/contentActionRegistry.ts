@@ -310,20 +310,21 @@ function exportItems(ctx: ContentActionContext): MenuItem[] {
         const instanceId = instanceKey
           ? `html-preview-${instanceKey}`
           : `html-preview-${Date.now().toString(36)}`;
+        // No message/conversation target here (generic content, not a
+        // cx_message), and `onSave` can't travel through Redux — so the
+        // bridge opens in publish/preview mode with no Save button. Mirrors
+        // the proven chat-message dispatch shape exactly.
         dispatch(
           openOverlay({
             overlayId: "htmlPreview",
             instanceId,
             data: {
               content,
-              messageId: undefined,
-              conversationId: undefined,
               title: title
                 ? `HTML preview · ${title}`
                 : "HTML Preview & Publishing",
               description:
                 "Edit markdown, preview HTML, and publish your content",
-              onSave: undefined,
               showSaveButton: false,
               isAgentSystem: false,
             },

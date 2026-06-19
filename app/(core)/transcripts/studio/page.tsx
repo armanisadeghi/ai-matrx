@@ -17,7 +17,9 @@ interface PageProps {
   searchParams: Promise<{ session?: string }>;
 }
 
-export default async function TranscriptStudioPage({ searchParams }: PageProps) {
+export default async function TranscriptStudioPage({
+  searchParams,
+}: PageProps) {
   const { session: initialSessionId } = await searchParams;
 
   const supabase = await createClient();
@@ -42,7 +44,7 @@ export default async function TranscriptStudioPage({ searchParams }: PageProps) 
   );
 
   return (
-    <>
+    <div className="h-full overflow-hidden bg-textured">
       <StudioHydrator
         seeds={seeds}
         initialSessionId={initialSessionId ?? null}
@@ -53,6 +55,6 @@ export default async function TranscriptStudioPage({ searchParams }: PageProps) 
           defaultSidebarLayout={defaultSidebarLayout}
         />
       </Suspense>
-    </>
+    </div>
   );
 }

@@ -669,6 +669,72 @@
         }
       }
     },
+    "/dictionary/publish": {
+      "post": {
+        "tags": [
+          "Dictionary"
+        ],
+        "summary": "Publish Dictionary",
+        "operationId": "publish_dictionary_dictionary_publish_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/aidream__api__routers__dictionary__PublishRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dictionary/publications": {
+      "get": {
+        "tags": [
+          "Dictionary"
+        ],
+        "summary": "List Publications",
+        "operationId": "list_publications_dictionary_publications_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PublicationStatus"
+                  },
+                  "type": "array",
+                  "title": "Response List Publications Dictionary Publications Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai-tools": {
       "get": {
         "tags": [
@@ -2936,6 +3002,101 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/agents/{agent_id}/realtime-tools": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Get Realtime Tools",
+        "description": "Resolve the agent's toolset in xAI function shape for a realtime session.\n\nSame resolution funnel as the turn-based path (``apply_unified_tools``); no\nconversation or cx_user_request side-effects. The session declares these\ntools to xAI via ``session.update``; server/client/builtin classification\ntells the browser loop how to dispatch each call.",
+        "operationId": "get_realtime_tools_ai_agents__agent_id__realtime_tools_post",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RealtimeToolsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RealtimeToolsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/tools/execute": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Execute Realtime Tool",
+        "description": "Execute ONE tool for a realtime session, reusing the turn-based executor.\n\nHTTP 200 even when the tool fails (``ok=false``) so the model can recover and\nexplain; only infra/auth failures raise. The cx_tool_call row written here is\nidentical to a turn-based one except a ``tool_origin`` provenance marker.",
+        "operationId": "execute_realtime_tool_ai_tools_execute_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolExecuteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolExecuteResponse"
+                }
               }
             }
           },
@@ -18789,6 +18950,45 @@
         }
       }
     },
+    "/rag/sweeps": {
+      "post": {
+        "tags": [
+          "Suggestion Sweeps"
+        ],
+        "summary": "Trigger Sweep",
+        "operationId": "trigger_sweep_rag_sweeps_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SweepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/rag/admin/overview": {
       "get": {
         "tags": [
@@ -21089,7 +21289,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PublishRequest"
+                "$ref": "#/components/schemas/aidream__api__routers__workflow__PublishRequest"
               }
             }
           }
@@ -29852,7 +30052,7 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 500,
+              "maximum": 2000,
               "minimum": 1,
               "default": 25,
               "title": "Page Size"
@@ -35840,7 +36040,7 @@
           "Content Labeling (GLiNER2)"
         ],
         "summary": "Label content with GLiNER2",
-        "description": "Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id.",
+        "description": "Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id. Pass studio_session_id + persist_label=true to write the label to the session and any linked transcript that still has a placeholder title.",
         "operationId": "label_content_label_post",
         "requestBody": {
           "content": {
@@ -43064,6 +43264,17 @@
               }
             ],
             "title": "Dictionary"
+          },
+          "tts_quality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tts Quality"
           },
           "organization_id": {
             "anyOf": [
@@ -50495,6 +50706,13 @@
             ],
             "title": "Capture Level",
             "default": 1
+          },
+          "images": {
+            "items": {
+              "$ref": "#/components/schemas/ExtensionMeasuredImage"
+            },
+            "type": "array",
+            "title": "Images"
           }
         },
         "type": "object",
@@ -50502,6 +50720,53 @@
           "html_content"
         ],
         "title": "ExtensionContentSubmit"
+      },
+      "ExtensionMeasuredImage": {
+        "properties": {
+          "src": {
+            "type": "string",
+            "title": "Src"
+          },
+          "alt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alt"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          }
+        },
+        "type": "object",
+        "required": [
+          "src"
+        ],
+        "title": "ExtensionMeasuredImage",
+        "description": "One image the extension measured in the live DOM.\n\n`src` is the browser's resolved `currentSrc` (post-lazy-load); `width`/\n`height` are `naturalWidth`/`naturalHeight` (true intrinsic pixels). The\nserver overlays these onto the HTML-parsed images so the gallery gets exact\ndimensions without re-downloading — see research/media/FEATURE.md."
       },
       "ExtensionScrapeItem": {
         "properties": {
@@ -50639,6 +50904,28 @@
             "type": "boolean",
             "title": "Server Gave Up",
             "default": false
+          },
+          "policy_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Category"
+          },
+          "policy_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Policy Reason"
           }
         },
         "type": "object",
@@ -50681,6 +50968,20 @@
             },
             "type": "array",
             "title": "Level 4 Paste"
+          },
+          "gated_login": {
+            "items": {
+              "$ref": "#/components/schemas/ExtensionScrapeItem"
+            },
+            "type": "array",
+            "title": "Gated Login"
+          },
+          "low_value": {
+            "items": {
+              "$ref": "#/components/schemas/ExtensionScrapeItem"
+            },
+            "type": "array",
+            "title": "Low Value"
           },
           "totals": {
             "additionalProperties": {
@@ -57749,6 +58050,17 @@
               }
             ],
             "title": "Dictionary"
+          },
+          "tts_quality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tts Quality"
           }
         },
         "additionalProperties": false,
@@ -57940,6 +58252,22 @@
           "content_type": {
             "$ref": "#/components/schemas/ContentType",
             "default": "generic"
+          },
+          "studio_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Studio Session Id"
+          },
+          "persist_label": {
+            "type": "boolean",
+            "title": "Persist Label",
+            "default": false
           },
           "max_chars": {
             "type": "integer",
@@ -64096,6 +64424,17 @@
               }
             ],
             "title": "Dictionary"
+          },
+          "tts_quality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tts Quality"
           }
         },
         "type": "object",
@@ -65152,9 +65491,17 @@
         "title": "PublicWorkflowRecord",
         "description": "Read-only public view — only the fields safe to expose anonymously.\nDeliberately omits user_id / project_id / org_id."
       },
-      "PublishRequest": {
+      "PublicationStatus": {
         "properties": {
-          "change_note": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "level": {
+            "type": "string",
+            "title": "Level"
+          },
+          "owner_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -65163,11 +65510,159 @@
                 "type": "null"
               }
             ],
-            "title": "Change Note"
+            "title": "Owner Id"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
+          "version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id"
+          },
+          "rules_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rules Hash"
+          },
+          "rule_count": {
+            "type": "integer",
+            "title": "Rule Count"
+          },
+          "synced_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Synced At"
+          },
+          "has_error": {
+            "type": "boolean",
+            "title": "Has Error"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
           }
         },
         "type": "object",
-        "title": "PublishRequest"
+        "required": [
+          "provider",
+          "level",
+          "owner_id",
+          "external_id",
+          "version_id",
+          "rules_hash",
+          "rule_count",
+          "synced_at",
+          "has_error",
+          "error"
+        ],
+        "title": "PublicationStatus"
+      },
+      "PublishResult": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "unchanged | published | updated | cleared | empty"
+          },
+          "level": {
+            "type": "string",
+            "title": "Level"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "external_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Id"
+          },
+          "version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Id"
+          },
+          "rule_count": {
+            "type": "integer",
+            "title": "Rule Count"
+          },
+          "rules_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rules Hash"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "level",
+          "owner_id",
+          "external_id",
+          "version_id",
+          "rule_count",
+          "rules_hash"
+        ],
+        "title": "PublishResult"
       },
       "QuickScrapeRequest": {
         "properties": {
@@ -65354,6 +65849,100 @@
           "pages"
         ],
         "title": "ReadingOrderReport"
+      },
+      "RealtimeTool": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "parameters": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Parameters"
+          },
+          "execution": {
+            "type": "string",
+            "title": "Execution",
+            "description": "\"server\" | \"client\" | \"builtin\""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "execution"
+        ],
+        "title": "RealtimeTool",
+        "description": "One tool declared to a realtime session, in xAI function shape.\n\n``parameters`` is the JSON Schema lifted verbatim from ``tool_def.parameters``\n(the same bytes the turn-based path hands the provider) — never re-derived."
+      },
+      "RealtimeToolsRequest": {
+        "properties": {
+          "surface": {
+            "type": "string",
+            "title": "Surface",
+            "description": "UI surface, e.g. matrx-user/chat-voice"
+          },
+          "added_tool_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Added Tool Ids"
+          },
+          "is_version": {
+            "type": "boolean",
+            "title": "Is Version",
+            "default": false
+          },
+          "client": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClientContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "surface"
+        ],
+        "title": "RealtimeToolsRequest"
+      },
+      "RealtimeToolsResponse": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "model_supports_tools": {
+            "type": "boolean",
+            "title": "Model Supports Tools"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/RealtimeTool"
+            },
+            "type": "array",
+            "title": "Tools"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "model_supports_tools",
+          "tools"
+        ],
+        "title": "RealtimeToolsResponse"
       },
       "RecoveryApplyAck": {
         "properties": {
@@ -71552,6 +72141,11 @@
             "type": "string",
             "title": "Voice",
             "default": ""
+          },
+          "gender": {
+            "type": "string",
+            "title": "Gender",
+            "default": ""
           }
         },
         "type": "object",
@@ -71559,7 +72153,7 @@
           "name"
         ],
         "title": "SpeakerSpec",
-        "description": "One requested speaker. `voice` is provider-appropriate: a Gemini\nprebuilt voice name for 1–2 hosts (Google TTS), an ElevenLabs voice_id for\n3+ hosts (dialogue TTS). Empty voice → filled from the default palette."
+        "description": "One requested speaker. `voice` is provider-appropriate: a Gemini\nprebuilt voice name for 1–2 hosts (Google TTS), an ElevenLabs voice_id for\n3+ hosts (dialogue TTS). Empty voice → filled from the default palette.\n\n`gender` (\"male\" | \"female\" | \"neutral\" | \"\") drives gender-matched voice\nselection on the ElevenLabs (3+) path. It is normally declared by the script\nagent in its ``<speaker_settings>`` block (name + gender, never voice) so the\nserver owns voice selection and can rotate the pool across episodes. Empty →\ntreated as neutral (any voice eligible)."
       },
       "SplitPartRequest": {
         "properties": {
@@ -73164,6 +73758,76 @@
         "title": "SurfaceManifest",
         "description": "The server's authoritative view of one surface's tool manifest.\n\nSurface authors compare this against their local tool registrations on\nevery boot — a drift means either the DB or the surface code is stale\nand needs reconciliation per TOOL_ROUTING_RULES.md §11.\n\nSources can be one of:\n  - ``db_surface`` — resolved from ``public.ui_surface`` +\n    ``public.tool_surface_defaults`` (the common path; 60+ matrx-user\n    surfaces).\n  - ``capability`` — resolved from a Python-registered ``Capability``\n    in matrx-ai's registry (payload-bearing extras like ``editor-state``,\n    ``sandbox-fs``, ``browser-dom``)."
       },
+      "SweepRequest": {
+        "properties": {
+          "change_type": {
+            "type": "string",
+            "enum": [
+              "context_item",
+              "scope",
+              "scope_type",
+              "organization"
+            ],
+            "title": "Change Type"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Defaults to the user's personal org."
+          },
+          "scope_type_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Type Id",
+            "description": "Required for context_item / scope / scope_type. For organization, omit to fan out across every scope type in the org."
+          },
+          "trigger_entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Entity Id",
+            "description": "The new context_item / scope id. For scope_type, defaults to scope_type_id."
+          },
+          "incremental": {
+            "type": "boolean",
+            "title": "Incremental",
+            "description": "False (default for manual) = full pass; True = only the delta since the group's high-water mark.",
+            "default": false
+          },
+          "trigger_type": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "batch"
+            ],
+            "title": "Trigger Type",
+            "default": "manual"
+          }
+        },
+        "type": "object",
+        "required": [
+          "change_type"
+        ],
+        "title": "SweepRequest"
+      },
       "SyncClustersRequest": {
         "properties": {
           "court_ids": {
@@ -74446,6 +75110,166 @@
         ],
         "title": "ToolDetail"
       },
+      "ToolExecuteRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "scope_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scope Ids"
+          },
+          "source_app": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source App"
+          },
+          "source_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Feature"
+          },
+          "store": {
+            "type": "boolean",
+            "title": "Store",
+            "default": true
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name"
+          },
+          "arguments": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Arguments"
+          },
+          "call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Id"
+          },
+          "surface": {
+            "type": "string",
+            "title": "Surface",
+            "description": "UI surface, for allowed-set resolution"
+          },
+          "is_version": {
+            "type": "boolean",
+            "title": "Is Version",
+            "default": false
+          },
+          "added_tool_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Added Tool Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "tool_name",
+          "surface"
+        ],
+        "title": "ToolExecuteRequest"
+      },
+      "ToolExecuteResponse": {
+        "properties": {
+          "call_id": {
+            "type": "string",
+            "title": "Call Id"
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "output": {
+            "type": "string",
+            "title": "Output"
+          }
+        },
+        "type": "object",
+        "required": [
+          "call_id",
+          "ok",
+          "output"
+        ],
+        "title": "ToolExecuteResponse"
+      },
       "ToolFailureRow": {
         "properties": {
           "tool_name": {
@@ -75362,6 +76186,29 @@
             "title": "Max Auto Tag Calls",
             "default": 0
           },
+          "tone_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tone Profile"
+          },
+          "outputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputs"
+          },
           "keywords": {
             "anyOf": [
               {
@@ -75545,6 +76392,29 @@
               }
             ],
             "title": "Max Auto Tag Calls"
+          },
+          "tone_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tone Profile"
+          },
+          "outputs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputs"
           },
           "agent_config": {
             "anyOf": [
@@ -79703,6 +80573,32 @@
         ],
         "title": "RestoreResponse"
       },
+      "aidream__api__routers__dictionary__PublishRequest": {
+        "properties": {
+          "level": {
+            "type": "string",
+            "title": "Level",
+            "description": "global | organization | user"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id",
+            "description": "Required for non-global tiers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "level"
+        ],
+        "title": "PublishRequest"
+      },
       "aidream__api__routers__file_analysis__RestoreResponse": {
         "properties": {
           "session_id": {
@@ -80244,6 +81140,23 @@
           "roots"
         ],
         "title": "IngestRequest"
+      },
+      "aidream__api__routers__workflow__PublishRequest": {
+        "properties": {
+          "change_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Note"
+          }
+        },
+        "type": "object",
+        "title": "PublishRequest"
       },
       "matrx_scheduler__api__schemas__ScannerStatusResponse": {
         "properties": {

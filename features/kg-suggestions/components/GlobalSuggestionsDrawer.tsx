@@ -238,7 +238,6 @@ export function GlobalSuggestionsDrawer({
           Suggestions {shownCount > 0 ? `(${shownCount})` : ""}
         </span>
       }
-      description="Proposed fills from your notes, tasks, and files. Preview the source or open the scope before deciding — nothing changes until you accept."
       expandButtonLabel="Suggestions"
       dismissDisabled={isPreviewing}
       position="right"
@@ -248,7 +247,7 @@ export function GlobalSuggestionsDrawer({
         <Link
           href="/suggestions"
           onClick={onClose}
-          className="inline-flex shrink-0 items-center gap-1 text-xs text-primary hover:underline"
+          className="mt-0.5 pr-3 inline-flex shrink-0 items-center gap-1 text-sm text-primary hover:underline"
         >
           Open full manager
           <ArrowRight className="h-3 w-3" />

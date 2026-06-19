@@ -1,8 +1,8 @@
 /**
  * useCanvasItem — load a single persisted artifact (canvas_items row) by id.
  *
- * Used to render a materialized `artifact_ref` content block: instead of
- * re-parsing raw markdown on every reload, the artifact loads by its UUID.
+ * Used to render a materialized `<artifact id=uuid>` (vision R1) by id: instead
+ * of re-parsing the inline body on every reload, the artifact loads by its UUID.
  *
  * Module-scoped in-flight dedup + short TTL cache: a conversation can contain
  * many refs and the same artifact can appear in several places / remount on

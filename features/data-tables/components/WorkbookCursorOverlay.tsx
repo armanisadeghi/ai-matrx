@@ -80,42 +80,51 @@ export function WorkbookCursorOverlay({
   // Subscribe to scroll on the currently active sheet + active-sheet switches.
   useEffect(() => {
     const api = univerAPI as FUniverLike | null | undefined;
+    const container = containerRef.current;
     if (!api) return;
     let scrollDisposer: { dispose(): void } | null | undefined;
 
     const subscribeActive = () => {
-      // Defensive across the whole boundary — Univer's facade typing is
-      // loose; a missing field or a mid-boot null reference here would
-      // crash the route, not just the overlay. Swallow + log; the worst
-      // case is stale cursor positions for one tick.
       try {
         const wb = api.getActiveWorkbook?.();
         const sheet = wb?.getActiveSheet?.();
         const newId = sheet?.getSheetId?.() ?? null;
         setActiveSheetId((prev) => (prev === newId ? prev : newId));
         scrollDisposer?.dispose();
-        scrollDisposer = sheet?.onScroll?.(() => bump());
+        scrollDisposer = undefined;
+        // onScroll requires SheetScrollManagerService in the Univer DI graph;
+        // it is absent in some preset bundles. Fall back to container scroll.
+        try {
+          scrollDisposer = sheet?.onScroll?.(() => bump());
+        } catch {
+          // Preset without scroll manager — container listener handles invalidation.
+        }
       } catch (err) {
         console.warn("[workbook] cursor overlay: subscribe failed", err);
       }
     };
 
-    // Poll the active sheet at a low rate as a belt-and-braces watchdog
-    // for active-sheet changes, since Univer's facade does not (in this
-    // version) expose a top-level onActiveSheetChanged. 750ms is invisible
-    // to the user and quiescent CPU-wise.
     subscribeActive();
     const interval = setInterval(subscribeActive, 750);
 
     const onWinResize = () => bump();
     window.addEventListener("resize", onWinResize, { passive: true });
 
+    const onContainerScroll = () => bump();
+    container?.addEventListener("scroll", onContainerScroll, {
+      passive: true,
+      capture: true,
+    });
+
     return () => {
       clearInterval(interval);
       scrollDisposer?.dispose();
       window.removeEventListener("resize", onWinResize);
+      container?.removeEventListener("scroll", onContainerScroll, {
+        capture: true,
+      });
     };
-  }, [univerAPI]);
+  }, [univerAPI, containerRef]);
 
   // Build the visible-peer set: not stale, not self, on the active sheet,
   // with row+col both set.
@@ -127,7 +136,12 @@ export function WorkbookCursorOverlay({
       if (s.uid === selfUid) return;
       if (now - s.ts > STALE_AFTER_MS) return;
       if (s.row === null || s.col === null) return;
-      if (s.sheetId !== null && activeSheetId !== null && s.sheetId !== activeSheetId) return;
+      if (
+        s.sheetId !== null &&
+        activeSheetId !== null &&
+        s.sheetId !== activeSheetId
+      )
+        return;
       out.push(s);
     });
     return out;
@@ -214,7 +228,7 @@ function useCellRects(
     const next: Array<CellRect | null> = peers.map((peer) => {
       try {
         const sheet = peer.sheetId
-          ? wb.getSheetBySheetId?.(peer.sheetId) ?? wb.getActiveSheet?.()
+          ? (wb.getSheetBySheetId?.(peer.sheetId) ?? wb.getActiveSheet?.())
           : wb.getActiveSheet?.();
         if (!sheet) return null;
         if (peer.row === null || peer.col === null) return null;

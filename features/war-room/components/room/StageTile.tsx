@@ -10,13 +10,16 @@
 // projector (shows the projected tab without mutating the saved one) and wears
 // the kind accent rail like every other tile.
 
+import { useEffect } from "react";
 import { Maximize2, Pin } from "lucide-react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectTileFlavor } from "@/features/war-room/redux/selectors";
 import { setTileActiveTabPersisted } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 import { EditableTitle } from "../shared/EditableTitle";
 import { TileContextOverride } from "../tile/TileContextOverride";
 import { TileTabBar } from "../tile/TileTabBar";
+import { TileProjectMarker } from "../tile/TileProjectMarker";
 import { TileTabContent } from "../tile/TileTabContent";
 import { TileMetricChips } from "../tile/TileMetricChips";
 import { TileOptionsMenu } from "../tile/TileOptionsMenu";
@@ -25,7 +28,8 @@ import { useTilePulse } from "@/features/war-room/hooks/useTilePulse";
 import { useTileActions } from "@/features/war-room/hooks/useTileActions";
 import { useTileMetrics } from "@/features/war-room/hooks/useTileMetrics";
 import { useRoomView } from "./roomViewContext";
-import { tileKindOf } from "./tileKind";
+import { tileTabKind } from "./tileKind";
+import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 export function StageTile({
   tileId,
@@ -39,22 +43,34 @@ export function StageTile({
   const metrics = useTileMetrics(tileId);
   const actions = useTileActions(tileId, sessionId);
   const { projectedTab } = useRoomView();
+  const flavor = useAppSelector((s) => selectTileFlavor(tileId)(s));
   if (!actions) return null;
 
   const shownTab = projectedTab ?? actions.activeTab;
-  const kind = tileKindOf(shownTab);
+  const kind = tileTabKind(shownTab, flavor);
+
+  useEffect(() => {
+    traceWarRoomRenderPath(4, "StageTile.tsx", "Stage tile render", {
+      tileId,
+      sessionId,
+      activeTab: shownTab,
+    });
+    if (shownTab === "agent") {
+      traceWarRoomRenderPath(5, "StageTile.tsx", "Agent tab selected", {
+        tileId,
+      });
+    }
+  }, [tileId, sessionId, shownTab]);
 
   return (
-    <div className="@container relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--elevation-2)]">
-      {/* Accent rail keyed to the shown view. */}
-      <span
-        aria-hidden
-        className={cn(
-          "pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-2xl opacity-80",
-          kind.rail,
-        )}
-      />
-
+    <div
+      className={cn(
+        "@container relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-[var(--elevation-2)]",
+        shownTab === "combined"
+          ? "border-l-[3px] border-l-border/70"
+          : cn("border-l-[3px]", kind.sectionBorder),
+      )}
+    >
       {/* Identity row */}
       <div className="shrink-0 flex items-center gap-2.5 pl-4 pr-3.5 pt-3 pb-2">
         <span className="shrink-0">
@@ -73,6 +89,9 @@ export function StageTile({
               className="text-[15px] font-semibold"
               inputClassName="text-[15px] font-semibold"
             />
+            {flavor === "project" ? (
+              <TileProjectMarker tileId={tileId} size="md" />
+            ) : null}
           </div>
           <div className="mt-0.5 flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
             <span>{pulse.headline}</span>
@@ -102,6 +121,7 @@ export function StageTile({
       <div className="shrink-0 pl-4 pr-3.5 pb-2.5">
         <TileTabBar
           active={shownTab}
+          flavor={flavor}
           onChange={(tab) => dispatch(setTileActiveTabPersisted(tileId, tab))}
           withLabels
           size="md"
@@ -110,7 +130,12 @@ export function StageTile({
 
       {/* Body */}
       <div className="flex-1 min-h-0 border-t border-border/60 bg-card">
-        <TileTabContent tab={shownTab} tileId={tileId} sessionId={sessionId} />
+        <TileTabContent
+          tab={shownTab}
+          tileId={tileId}
+          sessionId={sessionId}
+          tileLayout="stage"
+        />
       </div>
     </div>
   );

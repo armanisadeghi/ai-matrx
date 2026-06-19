@@ -37,6 +37,7 @@ import {
 } from "../renderers/deep-research";
 import { UserListsInline, UserListsOverlay } from "../renderers/get-user-lists";
 import { RagSearchInline } from "../renderers/rag-search";
+import { RandomWheelInline } from "../renderers/random-wheel";
 import BraveSearchDisplay from "@/features/workflows/results/registered-components/BraveSearchDisplay";
 
 import {
@@ -468,6 +469,61 @@ export const toolRendererRegistry: ToolRegistry = {
           )}
           {latency != null && <span>{latency} ms</span>}
           {reranker && <span className="ml-auto">{reranker}</span>}
+        </div>
+      );
+    },
+  },
+
+  random_wheel: {
+    toolName: "random_wheel",
+    displayName: "Random Wheel",
+    phaseLabels: {
+      running: "Spinning the wheel",
+      complete: "The wheel has spoken",
+      errorPrefix: "Wheel spin failed",
+    },
+    resultsLabel: "Result",
+    InlineComponent: RandomWheelInline,
+    OverlayComponent: RandomWheelInline,
+    // CRITICAL — keep the card expanded so the spin animation renders live.
+    keepExpandedOnStream: true,
+    getHeaderSubtitle: (entry) => {
+      const result = resultAsObject(entry);
+      const title =
+        typeof result?.title === "string" && result.title
+          ? (result.title as string)
+          : null;
+      if (title) return title;
+      const spin = filterStepEvents(entry.events, "spin")[0];
+      const meta = spin?.metadata as { title?: unknown } | undefined;
+      return typeof meta?.title === "string" && meta.title ? meta.title : null;
+    },
+    getHeaderExtras: (entry) => {
+      const result = resultAsObject(entry);
+      if (!result) return null;
+      const chosen = result.chosen as { label?: unknown } | undefined;
+      const label =
+        typeof chosen?.label === "string" ? (chosen.label as string) : null;
+      const poolSize =
+        typeof result.pool_size === "number"
+          ? (result.pool_size as number)
+          : null;
+      const candidates = Array.isArray(result.candidates)
+        ? (result.candidates as unknown[]).length
+        : null;
+      if (!label && poolSize == null) return null;
+      return (
+        <div className="flex items-center gap-3 text-white/90 text-xs mt-1">
+          {label && (
+            <span className="flex items-center gap-1">
+              Landed on <span className="font-semibold">{label}</span>
+            </span>
+          )}
+          {candidates != null && poolSize != null && poolSize > candidates && (
+            <span className="ml-auto text-white/60">
+              {candidates} of {poolSize}
+            </span>
+          )}
         </div>
       );
     },

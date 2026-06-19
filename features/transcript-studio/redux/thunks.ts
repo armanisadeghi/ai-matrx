@@ -88,6 +88,8 @@ import {
   studioDocumentUpserted,
   studioDocumentsLoaded,
 } from "./slice";
+// Imported (not just re-exported) so ingestExternalRecordingThunk can compose it.
+import { cleanRecordingThunk } from "./cleanRecording.thunk";
 
 interface CreateSessionThunkArg extends CreateSessionInput {
   /** auth.users.id of the caller — passed in to avoid an extra fetch in the thunk. */
@@ -514,6 +516,32 @@ export const finalizeRecordingSegmentThunk = createAsyncThunk<
 );
 
 /**
+ * Persist the crash-safe IndexedDB id onto the recording row as soon as it's
+ * known (the first chunk), so a recording stranded BEFORE finalize (reload /
+ * crash / bad network) still carries a pointer to its audio in IndexedDB. The
+ * session-load reconcile uses it to recover orphaned audio. Best-effort and
+ * silent — a failure here just means that one recovery path is unavailable; the
+ * audio is still safe in IndexedDB.
+ */
+export const persistRecordingSafetyIdThunk = createAsyncThunk<
+  void,
+  { sessionId: string; recordingSegmentId: string; safetyId: string }
+>(
+  "transcriptStudio/persistRecordingSafetyId",
+  async ({ sessionId, recordingSegmentId, safetyId }, { dispatch }) => {
+    try {
+      const segment = await updateRecordingSegment(recordingSegmentId, {
+        safetyId,
+      });
+      if (segment) dispatch(recordingSegmentUpserted({ sessionId, segment }));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("[studio] persist safety_id failed:", err);
+    }
+  },
+);
+
+/**
  * Upload a finished recording's audio in the background and patch `audioPath`
  * when it lands. Non-blocking: the row is already finalized, and the audio is
  * crash-safe in IndexedDB, so a failure here just leaves playback unavailable
@@ -556,6 +584,108 @@ export const uploadRecordingAudioThunk = createAsyncThunk<
     } finally {
       dispatch(recordingAudioUploadFinished({ recordingSegmentId }));
     }
+  },
+);
+
+/**
+ * Persist a finished, externally-captured recording (the Agent+ "Save to
+ * transcripts" / "Both" choices) as a real studio recording — byte-for-byte the
+ * same shape as a Tab-1 (Record) recording, no forked storage path.
+ *
+ * The Agent+ tab records EPHEMERALLY (standalone context, no live chunk ingest),
+ * so by the time the user chooses to save we already hold the whole transcript
+ * plus the assembled audio blob in memory. This drops both through the exact same
+ * studio pipeline the live Record flow uses on stop:
+ *   recording-segment row → one raw segment (the full transcript) → finalize →
+ *   background audio upload → recording-aligned cleaning pass.
+ * The clip then appears in the Record tab's card list with raw + cleaned text and
+ * playable audio, indistinguishable from a clip captured there.
+ *
+ * Returns the new recordingSegmentId, or null when there's nothing to keep.
+ */
+export const ingestExternalRecordingThunk = createAsyncThunk<
+  string | null,
+  {
+    sessionId: string;
+    audioBlob: Blob | null;
+    text: string;
+    /** Recording length in seconds — becomes the segment's tEnd (0-based per recording). */
+    durationSec: number;
+  }
+>(
+  "transcriptStudio/ingestExternalRecording",
+  async (
+    { sessionId, audioBlob, text, durationSec },
+    { dispatch, getState },
+  ) => {
+    const trimmed = text.trim();
+    if (!trimmed) return null;
+    const tEnd = Math.max(0, durationSec);
+
+    // Open a recording cycle at the next index so it slots after existing cards.
+    const state = getState() as {
+      transcriptStudio: {
+        recordingSegmentIdsBySession: Record<string, string[]>;
+      };
+    };
+    const existing =
+      state.transcriptStudio.recordingSegmentIdsBySession[sessionId] ?? [];
+    let recordingSegmentId: string;
+    try {
+      const segment = await dispatch(
+        startRecordingSegmentThunk({
+          sessionId,
+          segmentIndex: existing.length,
+          tStart: 0,
+        }),
+      ).unwrap();
+      recordingSegmentId = segment.id;
+    } catch {
+      // startRecordingSegmentThunk already surfaced a toast.
+      return null;
+    }
+
+    // The whole transcript becomes this recording's single raw segment. Awaited so
+    // it's in Redux before the cleaning pass (which reads raw from state) fires.
+    await dispatch(
+      ingestRawChunkThunk({
+        sessionId,
+        recordingSegmentId,
+        info: {
+          chunkIndex: 0,
+          tStart: 0,
+          tEnd,
+          safetyId: "",
+          text: trimmed,
+          accumulatedText: trimmed,
+        },
+      }),
+    );
+
+    // Finalize the card immediately (leaves "processing"), then clean THIS
+    // recording into one cleaned segment — exactly the Tab-1 stop ordering. Audio
+    // uploads in the background so the chooser never blocks on the network.
+    void dispatch(
+      finalizeRecordingSegmentThunk({ sessionId, recordingSegmentId, tEnd }),
+    ).finally(() => {
+      void dispatch(
+        cleanRecordingThunk({
+          sessionId,
+          recordingSegmentId,
+          triggerCause: "session-stop",
+        }),
+      );
+    });
+    void dispatch(
+      uploadRecordingAudioThunk({
+        sessionId,
+        recordingSegmentId,
+        audioBlob,
+        safetyId: null,
+      }),
+    );
+
+    return recordingSegmentId;
   },
 );
 
@@ -618,7 +748,9 @@ export const reconcileStuckRecordingsThunk = createAsyncThunk<
       .map((id) => byId[id])
       .filter((seg): seg is RecordingSegment => Boolean(seg) && !seg!.endedAt);
 
-    if (stranded.length === 0) return 0;
+    // NB: do not early-return when nothing is stranded — a recording can be
+    // properly finalized (endedAt set) yet still have lost its background audio
+    // upload, which the audio-recovery pass below handles.
 
     let healed = 0;
     for (const seg of stranded) {
@@ -646,6 +778,47 @@ export const reconcileStuckRecordingsThunk = createAsyncThunk<
           err,
         );
       }
+    }
+
+    // Audio recovery: any segment with NO audio_path but a safety_id whose blob
+    // is still in this device's IndexedDB had its background upload lost (bad
+    // network, crash before finalize). Re-upload it now so the audio stops being
+    // orphaned (KNOWN_DEFECTS D7). Same-device only — IndexedDB is per-device.
+    // LOUD on recovery: a recovery firing means the proactive upload failed.
+    let audioRecovered = 0;
+    for (const id of ids) {
+      const seg = byId[id];
+      if (!seg || seg.audioPath || !seg.safetyId) continue;
+      try {
+        const blob = await audioSafetyStore.getAudioBlob(seg.safetyId);
+        if (!blob || blob.size === 0) continue; // not on this device — skip quietly
+        await dispatch(
+          uploadRecordingAudioThunk({
+            sessionId,
+            recordingSegmentId: seg.id,
+            audioBlob: blob,
+            safetyId: seg.safetyId,
+          }),
+        ).unwrap();
+        audioRecovered += 1;
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[studio] reconcile: recovered orphaned audio for recording ${seg.id} ` +
+            `from IndexedDB (safety_id ${seg.safetyId}). Its background upload had been lost.`,
+        );
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error(
+          "[studio] reconcile: failed to recover orphaned audio",
+          seg.id,
+          err,
+        );
+      }
+    }
+    if (audioRecovered > 0) {
+      toast.success(
+        `Recovered audio for ${audioRecovered} recording${audioRecovered === 1 ? "" : "s"}.`,
+      );
     }
 
     // Un-stick the session row if it's still flagged "recording" with nothing

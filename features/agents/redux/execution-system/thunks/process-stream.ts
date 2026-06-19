@@ -1902,7 +1902,8 @@ export async function processStream({
     // ── Artifact materialization ───────────────────────────────────────────
     // Push every render-block in the just-committed assistant turn(s) into
     // canvas_items immediately, stamp each with a UUID, and rewrite the message
-    // content to reference it (cx_artifact_ref). Fire-and-forget: the raw
+    // content to its canonical `<artifact id>body</artifact>` text form (R1).
+    // Fire-and-forget: the raw
     // content is already committed (Redux + server), the upserts are idempotent
     // on (source_message_id, artifact_index), and the reconcile-on-load pass
     // retries anything that doesn't finish — so a tab close mid-materialization
@@ -1919,9 +1920,9 @@ export async function processStream({
               // Intentionally do NOT mirror the rewrite into the in-memory
               // messages slice. In-session the message renders from
               // activeRequests (anchored by _streamRequestId), so swapping
-              // byId.content to an artifact_ref would only risk remounting the
-              // live artifact and wiping its in-session state. The DB is
-              // rewritten; the next fresh load hydrates the ref and renders by id.
+              // byId.content to the rewritten text would only risk remounting
+              // the live artifact and wiping its in-session state. The DB is
+              // rewritten; the next fresh load renders the `<artifact id>` by id.
               if (res.errors.length > 0) {
                 console.error(
                   `[stream:${requestId.slice(0, 8)}] artifact materialization issues for ${target.messageId}:`,

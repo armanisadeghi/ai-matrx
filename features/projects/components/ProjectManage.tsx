@@ -38,6 +38,7 @@ import { ProjectReferencesPanel } from "./ProjectReferencesPanel";
 import { MemberManagement } from "./MemberManagement";
 import { InvitationManager } from "./InvitationManager";
 import { DangerZone } from "./DangerZone";
+import { ProjectCopyForAiButton } from "./ProjectCopyForAiButton";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -119,8 +120,8 @@ export function ProjectManage() {
   }
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
-      <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-5 pr-14 md:pr-6">
+    <div className="h-[calc(100dvh-var(--header-height))] overflow-x-hidden overflow-y-auto bg-textured">
+      <div className="mx-auto min-w-0 max-w-5xl space-y-5 p-4 pr-14 md:p-6 md:pr-6">
         {/* Top actions */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <Button
@@ -131,16 +132,23 @@ export function ProjectManage() {
           >
             <ArrowLeft className="h-4 w-4 mr-2" /> Back
           </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link
-              href={`/projects/${project.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-              Open workspace
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <ProjectCopyForAiButton
+              projectId={project.id}
+              projectName={project.name}
+              location="Projects — project settings"
+            />
+            <Button asChild variant="outline" size="sm">
+              <Link
+                href={`/projects/${project.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                Open workspace
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* Identity header */}
@@ -170,7 +178,7 @@ export function ProjectManage() {
         )}
 
         {/* General — editable form, no section header chrome */}
-        <Card className="p-5">
+        <Card className="min-w-0 overflow-hidden p-5">
           <GeneralSettings
             project={project}
             canEdit={canManageSettings}

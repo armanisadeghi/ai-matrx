@@ -12,18 +12,22 @@
 
 import ShellIcon from "../ShellIcon";
 import {
+  groupNavChildren,
   navItemsForViewer,
   primaryNavItems,
   settingsItem,
 } from "../../constants/nav-data";
 import MobileSheetNavLink from "./MobileSheetNavLink";
 import MobileRouteMenuSlot from "./MobileRouteMenuSlot";
+import AdminMobileMenuItem from "../sidebar/admin-menu/AdminMobileMenuItem";
 
 interface MobileSideSheetProps {
   isAuthenticated: boolean;
 }
 
-export default function MobileSideSheet({ isAuthenticated }: MobileSideSheetProps) {
+export default function MobileSideSheet({
+  isAuthenticated,
+}: MobileSideSheetProps) {
   const visibleItems = navItemsForViewer(primaryNavItems, isAuthenticated);
   return (
     <div className="shell-mobile-sheet-wrapper">
@@ -58,16 +62,53 @@ export default function MobileSideSheet({ isAuthenticated }: MobileSideSheetProp
           {/* Route menu switch + content — client island */}
           <MobileRouteMenuSlot />
 
-          {/* Standard nav — always server-rendered */}
+          {/* Standard nav — always server-rendered. Groups render the parent
+              plus an inline, indented set of children (mobile stacks the tree
+              vertically rather than hiding it behind a collapse). */}
           <div className="shell-mobile-main-nav">
-            {visibleItems.map((item) => (
-              <MobileSheetNavLink
-                key={item.href}
-                href={item.href}
-                iconName={item.iconName}
-                label={item.label}
-              />
-            ))}
+            {visibleItems.map((item) =>
+              item.children && item.children.length > 0 ? (
+                <div
+                  key={item.label}
+                  className="shell-mobile-nav-group"
+                  data-nav-group={item.href}
+                >
+                  <MobileSheetNavLink
+                    href={item.href}
+                    iconName={item.iconName}
+                    label={item.label}
+                  />
+                  <div className="shell-mobile-nav-children">
+                    {groupNavChildren(item.children).map((section) => (
+                      <div key={section.label ?? section.items[0]?.href}>
+                        {section.label ? (
+                          <div className="shell-mobile-section-label">
+                            {section.label}
+                          </div>
+                        ) : null}
+                        {section.items.map((child) => (
+                          <MobileSheetNavLink
+                            key={child.href}
+                            href={child.href}
+                            iconName={child.iconName}
+                            label={child.label}
+                            isChild
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <MobileSheetNavLink
+                  key={item.label}
+                  href={item.href}
+                  iconName={item.iconName}
+                  label={item.label}
+                  external={item.external}
+                />
+              ),
+            )}
 
             {/* Settings */}
             <div className="shell-mobile-section-divider" />
@@ -77,8 +118,9 @@ export default function MobileSideSheet({ isAuthenticated }: MobileSideSheetProp
               label={settingsItem.label}
             />
 
-            {/* Admin section — injected by AdminNavInjector (client component) */}
-            <div id="admin-nav-mobile-slot" />
+            {/* Admin section — single "Administration" entry, self-gated by
+                selectIsAdmin (client component) */}
+            <AdminMobileMenuItem />
           </div>
 
           {/* Route menu — populated by MobileRouteMenuSlot client island */}

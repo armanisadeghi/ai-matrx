@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.3.546",
+  "version": "0.3.565",
   "private": true,
   "scripts": {
     "dev": "set NODE_OPTIONS=--dns-result-order=ipv4first && next dev",
@@ -49,6 +49,9 @@
     "check:doctrine": "tsx scripts/check-doctrine.ts",
     "check:doctrine:staged": "tsx scripts/check-doctrine.ts --staged",
     "check:doctrine:strict": "tsx scripts/check-doctrine.ts --strict",
+    "check:ui-primitives": "tsx scripts/check-ui-primitives.ts",
+    "check:ui-primitives:staged": "tsx scripts/check-ui-primitives.ts --staged",
+    "check:ui-primitives:strict": "tsx scripts/check-ui-primitives.ts --strict",
     "check:migrations": "tsx scripts/check-migrations.ts",
     "check:migrations:strict": "tsx scripts/check-migrations.ts --strict",
     "check:data-integrity": "tsx scripts/check-data-integrity.ts",
@@ -338,7 +341,7 @@
     ]
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm -s check:doctrine:staged && pnpm -s check:migrations"
+    "pre-commit": "pnpm -s check:doctrine:staged && pnpm -s check:ui-primitives:staged && pnpm -s check:migrations"
   },
   "packageManager": "pnpm@10.29.2+sha512.bef43fa759d91fd2da4b319a5a0d13ef7a45bb985a3d7342058470f9d2051a3ba8674e629672654686ef9443ad13a82da2beb9eeb3e0221c87b8154fff9d74b8"
 }

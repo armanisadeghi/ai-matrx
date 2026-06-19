@@ -6,13 +6,11 @@
 // one-by-one, out of order, as podcast_asset events arrive. After the run
 // completes, the user picks a favorite cover (writes back to the episode).
 
-import { useEffect, useState } from "react";
-import { ImageIcon, Clapperboard, X } from "lucide-react";
-import { InlineMediaRef } from "@/features/files";
+import { useState } from "react";
+import { ImageIcon, Clapperboard } from "lucide-react";
 import { AssetCard } from "./AssetCard";
 import { AddAssetCard } from "./AddAssetCard";
 import type { AssetRegenerateOpts } from "./AssetActionsMenu";
-import { podcastMediaRef } from "../media";
 import type { MediaSlot, PodcastRunState } from "../types";
 import type { RunAssetKind } from "@/features/podcasts/studio/runs/run-types";
 
@@ -76,18 +74,8 @@ export function MediaOptionsGrid({
   modelCounts,
   only,
 }: MediaOptionsGridProps) {
-  const [lightbox, setLightbox] = useState<MediaSlot | null>(null);
   const [showAllImages, setShowAllImages] = useState(false);
   const [showAllVideos, setShowAllVideos] = useState(false);
-
-  useEffect(() => {
-    if (!lightbox) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setLightbox(null);
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [lightbox]);
 
   const imagesDone = state.images.filter((s) => s.status === "done").length;
   const videosDone = state.videos.filter((s) => s.status === "done").length;
@@ -113,7 +101,6 @@ export function MediaOptionsGrid({
       selectable={interactive}
       selected={!!slot.url && slot.url === selectedCoverUrl}
       onSelectCover={onSelectCover}
-      onEnlarge={setLightbox}
       onRegenerate={
         onRegenerate
           ? (opts) => onRegenerate("image", slot.index, opts)
@@ -128,7 +115,6 @@ export function MediaOptionsGrid({
     <AssetCard
       slot={slot}
       label={`Clip ${slot.index + 1}`}
-      onEnlarge={setLightbox}
       onRegenerate={
         onRegenerate
           ? (opts) => onRegenerate("video", slot.index, opts)
@@ -234,68 +220,6 @@ export function MediaOptionsGrid({
             </button>
           )}
         </section>
-      )}
-
-      {/* Lightbox — media fills the viewport; chrome floats on top */}
-      {lightbox?.url && (
-        <div
-          className="fixed inset-0 z-[10000] bg-black"
-          role="dialog"
-          aria-modal="true"
-          aria-label={
-            lightbox.kind === "video" ? "Clip preview" : "Cover preview"
-          }
-          onClick={() => setLightbox(null)}
-        >
-          <div
-            className="absolute inset-0"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <InlineMediaRef
-              ref={podcastMediaRef(lightbox.url)}
-              as={lightbox.kind === "video" ? "video" : undefined}
-              size="fill"
-              fit="contain"
-              rounded="none"
-              autoPlay={lightbox.kind === "video"}
-              muted={lightbox.kind === "video"}
-              loop={lightbox.kind === "video"}
-              playsInline={lightbox.kind === "video"}
-              controls={lightbox.kind === "video"}
-              controlsList={
-                lightbox.kind === "video" ? "nofullscreen" : undefined
-              }
-              preload={lightbox.kind === "video" ? "metadata" : undefined}
-              alt={
-                lightbox.kind === "video"
-                  ? `Clip ${lightbox.index + 1}`
-                  : "Cover preview"
-              }
-              className="h-dvh w-full"
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setLightbox(null)}
-            className="absolute right-4 top-4 z-[10001] flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white ring-1 ring-white/20 transition-colors hover:bg-black hover:ring-white/40"
-            aria-label="Close preview"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          <span className="pointer-events-none absolute left-4 top-4 z-[10001] rounded-md bg-black/55 px-2 py-1 text-xs font-medium text-white backdrop-blur">
-            {lightbox.kind === "video"
-              ? `Clip ${lightbox.index + 1}`
-              : `Style ${lightbox.index + 1}`}
-          </span>
-
-          {lightbox.prompt && (
-            <p className="pointer-events-none absolute inset-x-0 bottom-0 z-[10001] bg-gradient-to-t from-black/90 via-black/60 to-transparent px-4 pb-6 pt-10 text-sm text-white/80">
-              {lightbox.prompt}
-            </p>
-          )}
-        </div>
       )}
     </div>
   );

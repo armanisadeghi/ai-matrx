@@ -13,7 +13,24 @@ export const GRAPHIC_MAX_DIM = 200;
 /** Ratio within [1 − t, 1 + t] counts as square. */
 export const SQUARE_ASPECT_TOLERANCE = 0.12;
 
+// A "photo" is a substantial content image — big enough on BOTH sides, with
+// enough area, and not a banner strip. Anything that fails these is a graphic
+// (logo / thumbnail / banner / small avatar) and is shown small, never blown up
+// into a big photo tile. Tuned against real examples: 348×100 / 216×46 / 200×300
+// → graphic; 700×700 / 1280×720 / 2560×1706 → photo.
+export const PHOTO_MIN_SHORT_SIDE = 200; // the shorter side must be ≥ this
+export const PHOTO_MIN_LONG_SIDE = 320; // the longer side must be ≥ this
+export const PHOTO_MIN_AREA = 90_000; // ≈ 300×300
+export const BANNER_MAX_RATIO = 3; // wider/taller than 3:1 is a banner strip
+
 export type SizeTier = "photo" | "graphic" | "icon";
+
+/**
+ * Display weight for a photo, from its resolution. Drives tile size in the
+ * gallery so big, high-quality images render large and modest ones stay small
+ * — instead of every image filling the same box.
+ */
+export type PhotoGrade = "hero" | "large" | "standard" | "modest";
 export type AspectBucket = "landscape" | "square" | "portrait" | "unknown";
 
 export const CATEGORIZATION_RULES = {
@@ -100,17 +117,60 @@ export function categorizeSizeTier(item: ResearchMedia): SizeTier {
   }
 
   const resolved = getResolved(item);
-  const max = resolvedMaxDimension(resolved);
+  const w = resolved.width ?? 0;
+  const h = resolved.height ?? 0;
+  const max = Math.max(w, h);
+  const min = Math.min(w, h);
+  const area = w * h;
+  const ratio = min > 0 ? max / min : 0;
 
   if (max > 0) {
     if (max <= ICON_MAX_DIM) return "icon";
-    if (max < GRAPHIC_MAX_DIM) return "graphic";
-    return "photo";
+    // Substantial content image, and not a logo/icon/avatar by URL or alt.
+    const isSubstantial =
+      min >= PHOTO_MIN_SHORT_SIDE &&
+      max >= PHOTO_MIN_LONG_SIDE &&
+      area >= PHOTO_MIN_AREA &&
+      ratio <= BANNER_MAX_RATIO;
+    if (isSubstantial && !isLikelyLogoOrIcon(item)) return "photo";
+    // Everything else with known dims that isn't tiny → a graphic (logo,
+    // thumbnail, banner strip, small avatar). Shown small, never blown up.
+    return "graphic";
   }
 
+  // No dimensions — fall back to URL/alt heuristics.
   if (isLikelyLogoOrIcon(item)) return "icon";
   if (isLikelyThumbnailOrSmallGraphic(item)) return "graphic";
   return "photo";
+}
+
+/**
+ * Resolution-derived display weight for a photo. `unknown`-dimension images
+ * default to `standard`. Thresholds use the longer side OR total area so a
+ * 2560×1706 hero and a 1600×1600 both read as large, while a 400×400 stays
+ * modest.
+ */
+export function photoGrade(item: ResearchMedia): PhotoGrade {
+  const resolved = getResolved(item);
+  const max = resolvedMaxDimension(resolved);
+  const area = resolvedPixelArea(resolved);
+  if (max === 0) return "standard";
+  if (max >= 1600 || area >= 2_200_000) return "hero";
+  if (max >= 900 || area >= 600_000) return "large";
+  if (max >= 520 || area >= 230_000) return "standard";
+  return "modest";
+}
+
+/**
+ * A photo big enough to deserve a larger "featured" tile. Cut tuned to real
+ * feedback: 700×700 / 1280×720 / 2560×1706 read large; 400×400 / 640×360 stay
+ * in the small standard band.
+ */
+export function isFeaturedPhoto(item: ResearchMedia): boolean {
+  const resolved = getResolved(item);
+  const max = resolvedMaxDimension(resolved);
+  const area = resolvedPixelArea(resolved);
+  return max >= 1000 || area >= 450_000;
 }
 
 export function aspectRatioFromResolved(
@@ -178,6 +238,11 @@ export interface MediaBuckets {
   unknownAspect: ResearchMedia[];
   graphics: ResearchMedia[];
   icons: ResearchMedia[];
+  // Non-image resources — no pixel size, so they get their own groups instead
+  // of the image size/aspect tiers (PDFs/videos used to land in "unknown").
+  videos: ResearchMedia[];
+  documents: ResearchMedia[];
+  audio: ResearchMedia[];
 }
 
 export function bucketMedia(items: ResearchMedia[]): MediaBuckets {
@@ -188,9 +253,28 @@ export function bucketMedia(items: ResearchMedia[]): MediaBuckets {
     unknownAspect: [],
     graphics: [],
     icons: [],
+    videos: [],
+    documents: [],
+    audio: [],
   };
 
   for (const item of items) {
+    // Non-image resources (PDFs, videos incl. YouTube links, audio) carry no
+    // intrinsic dimensions — route them to dedicated buckets, never the
+    // image size/aspect tiers.
+    if (item.media_type === "video") {
+      buckets.videos.push(item);
+      continue;
+    }
+    if (item.media_type === "document") {
+      buckets.documents.push(item);
+      continue;
+    }
+    if (item.media_type === "audio") {
+      buckets.audio.push(item);
+      continue;
+    }
+
     const tier = categorizeSizeTier(item);
     if (tier === "graphic") {
       buckets.graphics.push(item);

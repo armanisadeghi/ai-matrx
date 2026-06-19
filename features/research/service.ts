@@ -115,6 +115,29 @@ export async function updateTopic(
   return data as ResearchTopic;
 }
 
+/**
+ * Atomically append an asset into `rs_topic.outputs[kind].assets` (newest
+ * first, de-duped by asset id) via a row-locked server-side RPC. Use this
+ * instead of read-modify-writing the whole `outputs` column — a long-running
+ * generator (podcast: 8–12 min) that persists with a stale client snapshot
+ * would otherwise clobber assets generated during its wait. Returns the new
+ * full `outputs` object.
+ */
+export async function appendTopicOutput(
+  topicId: string,
+  kind: string,
+  asset: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const { data, error } = await supabase.rpc("rs_topic_append_output", {
+    p_topic_id: topicId,
+    p_kind: kind,
+    p_asset:
+      asset as Database["public"]["Tables"]["rs_topic"]["Row"]["outputs"],
+  });
+  if (error) throw error;
+  return (data ?? {}) as Record<string, unknown>;
+}
+
 // ============================================================================
 // Keywords
 // ============================================================================
@@ -457,6 +480,43 @@ export async function getTags(topicId: string): Promise<ResearchTag[]> {
   return data ?? [];
 }
 
+/**
+ * All source⇄tag assignments for a topic in one query, keyed by source_id.
+ * Lets the Sources list show each source's tag chips + a per-row picker without
+ * firing one `getSourceTags` per row. Mirrors `getCurationData`'s tag join, but
+ * standalone so the list doesn't pay for the heavier curation aggregate.
+ */
+export async function getTopicSourceTags(
+  topicId: string,
+): Promise<Record<string, { id: string; name: string }[]>> {
+  const { data: tagRows, error: tagErr } = await supabase
+    .from("rs_tag")
+    .select("id, name")
+    .eq("topic_id", topicId);
+  if (tagErr) throw tagErr;
+  const tags = (tagRows ?? []) as { id: string; name: string }[];
+  if (tags.length === 0) return {};
+  const tagName = new Map(tags.map((t) => [t.id, t.name]));
+
+  const { data: stRows, error: stErr } = await supabase
+    .from("rs_source_tag")
+    .select("source_id, tag_id")
+    .in(
+      "tag_id",
+      tags.map((t) => t.id),
+    );
+  if (stErr) throw stErr;
+
+  const out: Record<string, { id: string; name: string }[]> = {};
+  for (const st of stRows ?? []) {
+    (out[st.source_id] ??= []).push({
+      id: st.tag_id,
+      name: tagName.get(st.tag_id) ?? "Tag",
+    });
+  }
+  return out;
+}
+
 export async function createTag(
   topicId: string,
   tag: TagCreate,
@@ -720,7 +780,8 @@ export async function getCurationData(topicId: string): Promise<CurationData> {
     if (
       !cur ||
       cur === "none" ||
-      ANALYSIS_RANK[state] > ANALYSIS_RANK[cur as Exclude<CurationAnalysisState, "none">]
+      ANALYSIS_RANK[state] >
+        ANALYSIS_RANK[cur as Exclude<CurationAnalysisState, "none">]
     ) {
       analysisBySource.set(a.source_id, state);
     }

@@ -12,7 +12,8 @@
 // conversation is kept, so the History control flips between them.
 
 import { useState } from "react";
-import { Webhook, History } from "lucide-react";
+import { Webhook, History, Plus } from "lucide-react";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentById,
@@ -30,9 +31,11 @@ import {
 } from "../../redux/thunks";
 import { ActionSheet, type ActionSheetItem } from "./ActionSheet";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
+import { cn } from "@/lib/utils";
 
 interface AssistantAgentBarProps {
   sessionId: string;
+  compact?: boolean;
 }
 
 function relativeTime(iso: string): string {
@@ -45,7 +48,10 @@ function relativeTime(iso: string): string {
   return `${Math.round(h / 24)}d ago`;
 }
 
-export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
+export function AssistantAgentBar({
+  sessionId,
+  compact,
+}: AssistantAgentBarProps) {
   const dispatch = useAppDispatch();
   const agents = useAppSelector(selectAllAgents);
   const activeAgentId = useAppSelector(selectActiveAssistantAgentId(sessionId));
@@ -55,6 +61,10 @@ export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
   const conversations = useAppSelector(selectAssistantConversations(sessionId));
   const activeAgentName = useAppSelector((s) =>
     activeAgentId ? selectAgentById(s, activeAgentId)?.name : undefined,
+  );
+  // Conversation titles ("chat labels") for the roster — keyed by conversationId.
+  const conversationsById = useAppSelector(
+    (s) => s.conversationList.byConversationId,
   );
 
   // When switching to an agent that already has a conversation here, ask the
@@ -80,6 +90,29 @@ export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
       switchAssistantAgentThunk({ sessionId, agentId: pendingAgentId, mode }),
     );
     setPendingAgentId(null);
+  };
+
+  // Save the current chat and start a clean one with the SAME agent. The old
+  // conversation is never deleted — it stays in the roster (History) — and the
+  // new one is minted fresh, so no prior history is injected. (Switching to a
+  // DIFFERENT agent is handled by the dropdown above.)
+  const handleNewConversation = async () => {
+    if (!activeAgentId) return;
+    const ok = await confirm({
+      title: "Start a fresh conversation?",
+      description:
+        "Your current chat is saved and stays available under History. The new conversation starts with a clean slate — no past messages are carried over.",
+      confirmLabel: "Start fresh",
+    });
+    if (ok) {
+      void dispatch(
+        switchAssistantAgentThunk({
+          sessionId,
+          agentId: activeAgentId,
+          mode: "fresh",
+        }),
+      );
+    }
   };
 
   const pendingAgentName = pendingAgentId
@@ -110,9 +143,13 @@ export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
     .sort((a, b) => b.lastUsedAt.localeCompare(a.lastUsedAt))
     .map((c) => {
       const isActive = c.conversationId === activeConversationId;
+      const agentName = agents[c.agentId]?.name ?? "Assistant";
+      const chatLabel = conversationsById[c.conversationId]?.title?.trim();
+      // Show the conversation's own label ("Agent: Chat label"), not just the
+      // agent — multiple chats with the same agent are otherwise indistinguishable.
       return {
         key: c.conversationId,
-        label: agents[c.agentId]?.name ?? "Assistant",
+        label: chatLabel ? `${agentName}: ${chatLabel}` : agentName,
         description: `${relativeTime(c.lastUsedAt)}${isActive ? " · current" : ""}`,
         icon: <Webhook className="h-4 w-4" />,
         disabled: isActive,
@@ -131,52 +168,84 @@ export function AssistantAgentBar({ sessionId }: AssistantAgentBarProps) {
     });
 
   return (
-    <div className="flex shrink-0 items-center gap-2 border-b border-border px-2 py-1.5">
+    <div
+      className={cn(
+        "flex shrink-0 items-center gap-1.5 border-b border-border",
+        compact ? "px-1.5 py-1" : "gap-2 px-2 py-1.5",
+      )}
+    >
+      {!compact ? (
+        <span className="text-[11px] font-medium text-muted-foreground">
+          Assistant
+        </span>
+      ) : null}
+
       <AgentListDropdown
         onSelect={handlePickAgent}
         compact
         triggerSlot={
           <button
             type="button"
-            className="flex min-w-0 items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-1 text-left transition-colors active:bg-accent"
-            title="Change the Scribe assistant agent"
+            className={cn(
+              "flex min-w-0 items-center gap-1 rounded-full bg-muted/60 text-left transition-colors active:bg-accent",
+              compact ? "px-2 py-0.5" : "gap-1.5 px-2.5 py-1",
+            )}
+            title="Change the assistant agent"
           >
             <Webhook className="h-3.5 w-3.5 shrink-0 text-primary" />
-            <span className="max-w-[12rem] truncate text-xs font-medium text-foreground">
-              {activeAgentName ?? "Assistant agent"}
+            <span
+              className={cn(
+                "truncate text-xs font-medium text-foreground",
+                compact ? "max-w-[7rem]" : "max-w-[12rem]",
+              )}
+            >
+              {activeAgentName ?? "Select agent"}
             </span>
           </button>
         }
       />
 
-      <span className="text-[11px] text-muted-foreground">
-        Scribe assistant
-      </span>
-
       <div className="flex-1" />
 
-      {/* Working context — DUAL ROLE: execute-instance stamps it onto every
-          assistant run (backend access), and it is the context the artifacts
-          this page saves (recordings, conversation, working doc) should
-          inherit. Save-side stamping lands with the ctx_associations work. */}
-      <ActiveContextButton
-        size="xs"
-        align="end"
-        triggerClassName="max-w-[280px]"
-      />
+      <ActiveContextButton size="xs" align="end" iconOnly warnWhenEmpty />
 
-      {conversations.length > 1 && (
-        <button
-          type="button"
-          onClick={() => setRosterOpen(true)}
-          className="flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-muted-foreground transition-colors active:bg-accent"
-          aria-label="Switch conversation"
-          title="Switch between this session's agent conversations"
-        >
-          <History className="h-3.5 w-3.5" />
-          {conversations.length}
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={handleNewConversation}
+        disabled={!activeAgentId}
+        className={cn(
+          "flex items-center rounded-full text-muted-foreground transition-colors active:bg-accent disabled:opacity-40",
+          compact ? "gap-0.5 px-1.5 py-0.5" : "gap-1 px-2 py-1 text-[11px]",
+        )}
+        aria-label="Start a fresh conversation"
+        title="Save this conversation and start a clean one"
+      >
+        <Plus className="h-3.5 w-3.5" />
+        {!compact ? "New" : null}
+      </button>
+
+      {/* History is ALWAYS rendered — never hidden/re-shown (hiding a control is
+          jarring, and it used to "appear" the moment you picked an agent, which
+          read as fake history). It's disabled only when there's nothing to switch
+          to (0 or 1 conversation); the count reflects the real roster from state. */}
+      <button
+        type="button"
+        onClick={() => setRosterOpen(true)}
+        disabled={conversations.length <= 1}
+        className={cn(
+          "flex items-center rounded-full text-muted-foreground transition-colors active:bg-accent disabled:opacity-40 disabled:active:bg-transparent",
+          compact ? "gap-0.5 px-1.5 py-0.5" : "gap-1 px-2 py-1 text-[11px]",
+        )}
+        aria-label="Conversation history"
+        title={
+          conversations.length <= 1
+            ? "No other conversations in this session yet"
+            : "Switch between this session's agent conversations"
+        }
+      >
+        <History className="h-3.5 w-3.5" />
+        {conversations.length || 0}
+      </button>
 
       <ActionSheet
         open={pendingAgentId !== null}

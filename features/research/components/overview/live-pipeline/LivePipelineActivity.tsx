@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -9,7 +9,13 @@ import {
   Loader2,
   CheckCircle2,
   ArrowRight,
+  ChevronDown,
 } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import type { ResearchTopic } from "../../../types";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
@@ -60,9 +66,9 @@ const STAGE_ORDER: StageKind[] = [
  * "what's happening right now" detail: metric strips, the active stage card,
  * collapsed pills for completed stages, warnings, and the raw activity feed.
  *
- * Auto-collapse rule: only the active / partial / failed stage renders as a
- * full card. Already-complete stages collapse into thin clickable strips so
- * they don't crowd out the work that's still in flight.
+ * Auto-collapse: completed stages fold into stat squares; click to expand
+ * inline detail again. When the run finishes, the whole panel (including
+ * logs) folds into a compact summary bar.
  */
 export function LivePipelineActivity({
   pipeline,
@@ -78,10 +84,6 @@ export function LivePipelineActivity({
 }: Props) {
   const { state, derived } = pipeline;
 
-  /**
-   * Stages with any meaningful activity. Filters out untouched "pending"
-   * stages so they don't appear as empty placeholders.
-   */
   const visibleStages = useMemo(
     () =>
       STAGE_ORDER.filter((kind) => {
@@ -97,9 +99,6 @@ export function LivePipelineActivity({
     [state],
   );
 
-  // Finished stages collapse into the stat-square rail; the stage(s) currently
-  // in flight render large below it. Search/scrape/analyze overlap in a real
-  // run, so there can be more than one active at once. Pending stays hidden.
   const completedStages = visibleStages.filter((k) =>
     ["complete", "partial", "failed"].includes(state.stages[k].status),
   );
@@ -123,58 +122,202 @@ export function LivePipelineActivity({
 
   const isPipelineDone = state.completedAt != null && !isStreaming;
 
-  return (
-    <div className="rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm overflow-hidden">
-      {/* Slim status bar — replaces the fat PipelineHeader. The orchestra
-          above already shows the controls + per-stage rail; this just
-          provides minimal context + a close affordance once done. */}
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-muted/20">
-        {isStreaming ? (
-          <>
-            <Loader2 className="h-3 w-3 animate-spin text-primary" />
-            <span className="text-[11px] font-medium text-foreground">
-              {state.activeStage
-                ? `${state.activeStage[0].toUpperCase()}${state.activeStage.slice(1)}…`
-                : "Working…"}
-            </span>
-            {derived.etaSeconds != null && (
-              <span className="text-[10px] text-muted-foreground tabular-nums">
-                ~{derived.etaSeconds}s remaining
-              </span>
-            )}
-            <button
-              onClick={onCancel}
-              className="ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium text-destructive hover:bg-destructive/10 transition-colors"
-            >
-              Cancel
-            </button>
-          </>
-        ) : (
-          <>
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
-            <span className="text-[11px] font-medium text-foreground">
-              Last run
-            </span>
-            {state.startedAt && state.completedAt && (
-              <span className="text-[10px] text-muted-foreground tabular-nums">
-                {Math.max(
-                  1,
-                  Math.round((state.completedAt - state.startedAt) / 1000),
-                )}
-                s total
-              </span>
-            )}
-            <button
-              onClick={onClose}
-              className="ml-auto inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              aria-label="Dismiss"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </>
-        )}
-      </div>
+  const [expandedStages, setExpandedStages] = useState<Set<StageKind>>(
+    () => new Set(),
+  );
+  const [panelExpanded, setPanelExpanded] = useState(true);
+  const prevCompletedRef = useRef<Set<StageKind>>(new Set());
 
+  // Auto-fold stages as they finish; keep active stages expanded.
+  useEffect(() => {
+    const currentCompleted = new Set(completedStages);
+    setExpandedStages((prev) => {
+      const next = new Set(prev);
+      for (const kind of activeStages) {
+        next.add(kind);
+      }
+      for (const kind of currentCompleted) {
+        if (!prevCompletedRef.current.has(kind)) {
+          next.delete(kind);
+        }
+      }
+      return next;
+    });
+    prevCompletedRef.current = currentCompleted;
+  }, [completedStages, activeStages]);
+
+  // Fold the whole panel (main + logs) when the run finishes.
+  useEffect(() => {
+    if (isPipelineDone) {
+      setPanelExpanded(false);
+    } else if (isStreaming) {
+      setPanelExpanded(true);
+    }
+  }, [isPipelineDone, isStreaming]);
+
+  const toggleStage = (kind: StageKind) => {
+    setExpandedStages((prev) => {
+      const next = new Set(prev);
+      if (next.has(kind)) {
+        next.delete(kind);
+      } else {
+        next.add(kind);
+      }
+      return next;
+    });
+  };
+
+  const renderStageView = (kind: StageKind) => {
+    if (kind === "search") {
+      return (
+        <SearchStageView
+          key="search"
+          state={state}
+          topicId={topicId}
+          ratePerSec={derived.rate}
+          etaSeconds={derived.etaSeconds}
+          iterationMode={state.iterationMode}
+        />
+      );
+    }
+    if (kind === "scrape") {
+      return (
+        <ScrapeStageView
+          key="scrape"
+          state={state}
+          topicId={topicId}
+          ratePerSec={derived.rate}
+          etaSeconds={derived.etaSeconds}
+          onSourceUpdated={onSourceUpdated}
+        />
+      );
+    }
+    if (kind === "analyze") {
+      return (
+        <AnalyzeStageView
+          key="analyze"
+          state={state}
+          derived={derived}
+          ratePerSec={derived.rate}
+          etaSeconds={derived.etaSeconds}
+        />
+      );
+    }
+    if (kind === "synthesize") {
+      return (
+        <SynthesizeStageView
+          key="synthesize"
+          state={state}
+          ratePerSec={derived.rate}
+          etaSeconds={derived.etaSeconds}
+          streamingText={streamingText}
+          isStreaming={isStreaming}
+        />
+      );
+    }
+    if (kind === "report") {
+      return (
+        <ReportStageView
+          key="report"
+          state={state}
+          topicId={topicId}
+          ratePerSec={derived.rate}
+          etaSeconds={derived.etaSeconds}
+        />
+      );
+    }
+    return null;
+  };
+
+  const expandedCompletedStages = completedStages.filter((kind) =>
+    expandedStages.has(kind),
+  );
+
+  const statusBar = (
+    <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-muted/20">
+      {isStreaming ? (
+        <>
+          <Loader2 className="h-3 w-3 animate-spin text-primary" />
+          <span className="text-[11px] font-medium text-foreground">
+            {state.activeStage
+              ? `${state.activeStage[0].toUpperCase()}${state.activeStage.slice(1)}…`
+              : "Working…"}
+          </span>
+          {derived.etaSeconds != null && (
+            <span className="text-[10px] text-muted-foreground tabular-nums">
+              ~{derived.etaSeconds}s remaining
+            </span>
+          )}
+          <button
+            onClick={onCancel}
+            className="ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium text-destructive hover:bg-destructive/10 transition-colors"
+          >
+            Cancel
+          </button>
+        </>
+      ) : (
+        <>
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+          <span className="text-[11px] font-medium text-foreground">
+            Last run
+          </span>
+          {state.startedAt && state.completedAt && (
+            <span className="text-[10px] text-muted-foreground tabular-nums">
+              {Math.max(
+                1,
+                Math.round((state.completedAt - state.startedAt) / 1000),
+              )}
+              s total
+            </span>
+          )}
+          {isPipelineDone && !panelExpanded && completedStages.length > 0 && (
+            <div className="hidden sm:flex flex-wrap gap-1.5 ml-1">
+              {completedStages.map((kind) => (
+                <StageStatSquare
+                  key={kind}
+                  stage={state.stages[kind]}
+                  base={base}
+                  expanded={expandedStages.has(kind)}
+                  onToggle={() => toggleStage(kind)}
+                />
+              ))}
+            </div>
+          )}
+          {isPipelineDone && (
+            <CollapsibleTrigger
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
+                panelExpanded ? "ml-auto" : "ml-1",
+              )}
+            >
+              {panelExpanded ? "Collapse" : "Show details"}
+              <ChevronDown
+                className={cn(
+                  "h-3 w-3 transition-transform",
+                  panelExpanded && "rotate-180",
+                )}
+              />
+            </CollapsibleTrigger>
+          )}
+          <button
+            onClick={onClose}
+            className={cn(
+              "inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors",
+              !isPipelineDone && "ml-auto",
+              isPipelineDone && panelExpanded && "ml-0",
+              isPipelineDone && !panelExpanded && "ml-auto",
+            )}
+            aria-label="Dismiss"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </>
+      )}
+    </div>
+  );
+
+  const body = (
+    <>
       <MetricsStrip
         state={state}
         derived={derived}
@@ -210,8 +353,6 @@ export function LivePipelineActivity({
           </div>
         )}
 
-        {/* Finished stages → compact stat-square rail (keywords → sources →
-            scraped → analyses → syntheses), docking left→right as they finish. */}
         {completedStages.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {completedStages.map((kind) => (
@@ -219,6 +360,8 @@ export function LivePipelineActivity({
                 key={kind}
                 stage={state.stages[kind]}
                 base={base}
+                expanded={expandedStages.has(kind)}
+                onToggle={() => toggleStage(kind)}
               />
             ))}
           </div>
@@ -234,78 +377,18 @@ export function LivePipelineActivity({
                 </div>
               )}
 
-            {activeStages.map((kind) => {
-              if (kind === "search") {
-                return (
-                  <SearchStageView
-                    key="search"
-                    state={state}
-                    topicId={topicId}
-                    ratePerSec={derived.rate}
-                    etaSeconds={derived.etaSeconds}
-                    iterationMode={state.iterationMode}
-                  />
-                );
-              }
-              if (kind === "scrape") {
-                return (
-                  <ScrapeStageView
-                    key="scrape"
-                    state={state}
-                    topicId={topicId}
-                    ratePerSec={derived.rate}
-                    etaSeconds={derived.etaSeconds}
-                    onSourceUpdated={onSourceUpdated}
-                  />
-                );
-              }
-              if (kind === "analyze") {
-                return (
-                  <AnalyzeStageView
-                    key="analyze"
-                    state={state}
-                    derived={derived}
-                    ratePerSec={derived.rate}
-                    etaSeconds={derived.etaSeconds}
-                  />
-                );
-              }
-              if (kind === "synthesize") {
-                return (
-                  <SynthesizeStageView
-                    key="synthesize"
-                    state={state}
-                    ratePerSec={derived.rate}
-                    etaSeconds={derived.etaSeconds}
-                    streamingText={streamingText}
-                    isStreaming={isStreaming}
-                  />
-                );
-              }
-              if (kind === "report") {
-                return (
-                  <ReportStageView
-                    key="report"
-                    state={state}
-                    topicId={topicId}
-                    ratePerSec={derived.rate}
-                    etaSeconds={derived.etaSeconds}
-                  />
-                );
-              }
-              return null;
-            })}
+            {expandedCompletedStages.map((kind) => renderStageView(kind))}
 
-            {/* Run finished — a clear completion card; the squares above
-                carry the per-stage results. */}
+            {activeStages.map((kind) => renderStageView(kind))}
+
             {isPipelineDone && activeStages.length === 0 && (
               <div className="flex items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/[0.06] p-4">
                 <CheckCircle2 className="h-5 w-5 shrink-0 text-green-500" />
                 <div className="min-w-0">
                   <div className="text-sm font-semibold">Run complete</div>
                   <div className="text-[11px] text-muted-foreground">
-                    Every stage finished — the squares above show what each
-                    produced.
+                    Tap a stage square above to revisit any step, or open the
+                    document.
                   </div>
                 </div>
                 <Link
@@ -326,6 +409,20 @@ export function LivePipelineActivity({
           />
         </div>
       </div>
-    </div>
+    </>
+  );
+
+  return (
+    <Collapsible
+      open={panelExpanded}
+      onOpenChange={(open) => {
+        if (!isPipelineDone && !open) return;
+        setPanelExpanded(open);
+      }}
+      className="rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm overflow-hidden"
+    >
+      {statusBar}
+      <CollapsibleContent>{body}</CollapsibleContent>
+    </Collapsible>
   );
 }

@@ -107,6 +107,9 @@ const EditorErrorBlock = lazy(
 const EditorCodeSnippetBlock = lazy(
   () => import("../../blocks/editor-resources/EditorCodeSnippetBlock"),
 );
+const AudioCitationBlock = lazy(
+  () => import("../../blocks/audio/AudioCitationBlock"),
+);
 const YamlBlock = lazy(() => import("../../blocks/yaml/YamlBlock"));
 const XmlBlock = lazy(() => import("../../blocks/xml/XmlBlock"));
 const CsvBlock = lazy(() => import("../../blocks/csv/CsvBlock"));
@@ -426,6 +429,11 @@ export const BlockComponents = {
   EditorCodeSnippetBlock: (props: any) => (
     <LazyBlockWrapper>
       <EditorCodeSnippetBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  AudioCitationBlock: (props: any) => (
+    <LazyBlockWrapper>
+      <AudioCitationBlock {...props} />
     </LazyBlockWrapper>
   ),
   YamlBlock: (props: any) => (

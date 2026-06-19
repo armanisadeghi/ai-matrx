@@ -20,9 +20,10 @@ import { useEffect, useRef } from "react";
 import { useAppStore, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectPrimaryRequest,
-  selectAccumulatedText,
+  selectSpokenText,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useCartesiaStreamingSpeaker } from "@/features/tts/hooks/useCartesiaStreamingSpeaker";
+import { SCRIBE_DICTIONARY_SURFACE } from "@/features/dictionary/constants";
 import {
   setVoicePlayback,
   clearVoicePlayback,
@@ -44,6 +45,7 @@ export function useAutoVoiceResponse({
     processMarkdown: true,
     firstChunkMax: 90,
     nextChunkMax: 300,
+    dictionarySurfaceKey: SCRIBE_DICTIONARY_SURFACE,
   });
 
   // Requests already fully handled (spoken, or skipped because they predate us
@@ -65,8 +67,10 @@ export function useAutoVoiceResponse({
   );
   const requestId = request?.requestId;
   const status = request?.status;
+  // Spoken text only — never the model's reasoning. selectSpokenText drops ALL
+  // thinking blocks (not just the first), so later thinking is never read aloud.
   const text = useAppSelector((s) =>
-    conversationId && requestId ? selectAccumulatedText(requestId)(s) : "",
+    conversationId && requestId ? selectSpokenText(requestId)(s) : "",
   );
 
   // Baseline: when enabled (re)engages for a conversation, treat whatever is

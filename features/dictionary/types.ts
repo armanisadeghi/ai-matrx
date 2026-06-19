@@ -75,6 +75,13 @@ export interface DictSelection {
   organizationIds: string[];
   scopeTypeIds: string[];
   scopeIds: string[];
+  /**
+   * Per-task ("situational") entries the user attached to THIS surface only —
+   * not saved to any tier, applied on top of (and overriding) the resolved
+   * persistent dictionary. Lives in surface-user-state; clear it when the task
+   * ends. These ride the TTS request as `dictionary.custom_entries`.
+   */
+  customEntries?: DictEntryDraft[];
 }
 
 export const DEFAULT_DICT_SELECTION: DictSelection = {
@@ -83,6 +90,7 @@ export const DEFAULT_DICT_SELECTION: DictSelection = {
   organizationIds: [],
   scopeTypeIds: [],
   scopeIds: [],
+  customEntries: [],
 };
 
 /** A merged, de-duplicated entry with source attribution. */
@@ -94,7 +102,8 @@ export interface ResolvedDictEntry {
   ipa: string | null;
   definition: string | null;
   category: string | null;
-  source_level: DictLevel;
+  /** A saved tier, or "custom" for a per-task entry attached to this surface. */
+  source_level: DictLevel | "custom";
   source_name: string;
 }
 
@@ -121,6 +130,12 @@ export interface DictConsumption {
   ttsAliases: DictPronunciation[];
   /** Markdown block for LLM context injection (cleanup agents etc.). */
   contextBlock: string;
+  /**
+   * Per-task entries that were folded into the outputs above — surfaced
+   * separately so a request payload can send them as `dictionary.custom_entries`
+   * (the backend applies them as the situational set, overriding persistent).
+   */
+  customEntries: DictEntryDraft[];
 }
 
 /** The 200-char default ceiling, mirrored from the agent context-slot policy. */

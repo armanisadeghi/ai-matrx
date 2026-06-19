@@ -22,23 +22,22 @@ export interface ChatQuickAction {
  * a reasonable general-purpose agent. Change this to swap the "default" feel
  * of the chat surface for everyone.
  */
-export const DEFAULT_NEW_CHAT_AGENT_ID =
-  "6b6b4e45-4699-4860-8dea-d8a60e07d69a";
+export const DEFAULT_NEW_CHAT_AGENT_ID = "6b6b4e45-4699-4860-8dea-d8a60e07d69a";
 
 /**
  * Primary chips — large, prominent, the headline "what you can do here" row.
  */
 export const PRIMARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
   {
-    id: "71aafb7e-4796-4a51-b223-d2c802ad3f30",
+    id: "9650acee-e21f-4cea-a0dd-b826908a0815", // Confirmed.
     label: "Show off what you can do",
   },
   {
     id: "3d1da24e-8907-442a-a4d9-0db9428c1ece",
-    label: "Tell me today's news",
+    label: "I want fair news",
   },
   {
-    id: "3ca61863-43cf-49cd-8da5-7e0a4b192867",
+    id: "96b75336-5447-4277-b5ec-0336241cffe2",
     label: "Help me write something",
   },
   {
@@ -60,7 +59,7 @@ export const SECONDARY_QUICK_ACTIONS: readonly ChatQuickAction[] = [
     label: "Create an Image",
   },
   {
-    id: "7a90bace-1c2b-4d40-829d-b6d875573324",
+    id: "11fcc4f0-62a0-4b39-a75e-fd2adf395192",
     label: "Conduct Research",
   },
   {

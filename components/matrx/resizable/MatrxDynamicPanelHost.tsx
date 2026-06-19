@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, type ReactNode } from "react";
-import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -96,16 +95,6 @@ export function MatrxDynamicPanelHost({
             ) : null}
           </div>
           {headerActions}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={requestClose}
-            disabled={dismissDisabled}
-            className="h-6 shrink-0 px-2"
-            aria-label="Close panel"
-          >
-            <X className="h-3 w-3" />
-          </Button>
         </div>
       }
     >

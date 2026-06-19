@@ -1,79 +1,22 @@
 import Link from "next/link";
-import {
-  Columns2,
-  Eraser,
-  Eye,
-  FileAudio,
-  FileText,
-  Inbox,
-  Mic,
-} from "lucide-react";
+import { Columns2, Eraser, Eye, FileText, Inbox, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TranscriptHubItem } from "@/features/transcripts/types/hub";
+import {
+  formatHubDuration,
+  hubItemDurationSeconds,
+  KIND_META,
+  primaryHubHref,
+} from "@/features/transcripts/utils/hubDisplay";
+import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 
-const KIND_META: Record<
-  TranscriptHubItem["kind"],
-  { label: string; icon: typeof FileText; accent: string }
-> = {
-  processor: {
-    label: "Transcript",
-    icon: FileText,
-    accent: "text-sky-500",
-  },
-  session: {
-    label: "Session",
-    icon: Columns2,
-    accent: "text-violet-500",
-  },
-  cleanup: {
-    label: "Cleanup",
-    icon: Eraser,
-    accent: "text-amber-500",
-  },
-  unsorted: {
-    label: "Unsorted",
-    icon: Inbox,
-    accent: "text-rose-500",
-  },
-};
-
-function formatDuration(seconds: number | null): string {
-  if (seconds == null || seconds <= 0) return "—";
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
-}
-
-function formatRelative(iso: string): string {
-  if (!iso) return "—";
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60_000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d}d ago`;
-  const mo = Math.floor(d / 30);
-  if (mo < 12) return `${mo}mo ago`;
-  return `${Math.floor(mo / 12)}y ago`;
-}
-
-function primaryHref(item: TranscriptHubItem): string {
-  switch (item.kind) {
-    case "processor":
-      return `/transcripts/processor?focus=${encodeURIComponent(item.id)}`;
-    case "session":
-      return `/transcripts/studio?session=${encodeURIComponent(item.id)}`;
-    case "cleanup":
-      return `/transcripts/cleanup?session=${encodeURIComponent(item.id)}`;
-    case "unsorted":
-      return "/transcripts/scribe/unsorted";
-  }
-}
+const KIND_ICONS = {
+  processor: FileText,
+  session: Columns2,
+  cleanup: Eraser,
+  unsorted: Inbox,
+  recording: Mic,
+} as const;
 
 function CardAction({
   href,
@@ -104,32 +47,41 @@ function CardAction({
 
 export function TranscriptsHubCard({ item }: { item: TranscriptHubItem }) {
   const meta = KIND_META[item.kind];
-  const KindIcon = meta.icon;
-  const href = primaryHref(item);
+  const KindIcon = KIND_ICONS[item.kind];
+  const href = primaryHubHref(item);
 
   const subtitle =
     item.kind === "processor"
       ? [
           item.sourceType,
-          formatDuration(item.durationSeconds),
+          formatHubDuration(hubItemDurationSeconds(item)),
           item.wordCount != null ? `${item.wordCount} words` : null,
         ]
           .filter(Boolean)
           .join(" · ")
       : item.kind === "unsorted"
         ? [
-            formatDuration(
-              item.durationMs != null ? item.durationMs / 1000 : null,
-            ),
+            formatHubDuration(hubItemDurationSeconds(item)),
             `capture #${item.segmentIndex + 1}`,
           ].join(" · ")
-        : [
-            item.status,
-            formatDuration(item.durationMs / 1000),
-            item.transcriptId ? "linked" : null,
-          ]
-            .filter(Boolean)
-            .join(" · ");
+        : item.kind === "recording"
+          ? [
+              formatHubDuration(hubItemDurationSeconds(item)),
+              `capture #${item.segmentIndex + 1}`,
+            ].join(" · ")
+          : [
+              item.status,
+              formatHubDuration(hubItemDurationSeconds(item)),
+              item.recordingCount
+                ? `${item.recordingCount} recording${item.recordingCount === 1 ? "" : "s"}`
+                : null,
+              item.charCount
+                ? `${item.charCount.toLocaleString()} chars`
+                : null,
+              item.transcriptId ? "linked" : null,
+            ]
+              .filter(Boolean)
+              .join(" · ");
 
   return (
     <div
@@ -175,7 +127,9 @@ export function TranscriptsHubCard({ item }: { item: TranscriptHubItem }) {
           <span aria-hidden className="text-muted-foreground/40">
             ·
           </span>
-          <span title={item.updatedAt}>{formatRelative(item.updatedAt)}</span>
+          <span title={formatAbsoluteDate(item.updatedAt)}>
+            {formatRelativeTime(item.updatedAt, { style: "long" })}
+          </span>
         </div>
 
         {item.kind === "processor" &&
@@ -230,6 +184,13 @@ export function TranscriptsHubCard({ item }: { item: TranscriptHubItem }) {
             label="Open cleanup session"
             icon={Eraser}
             text="Open"
+          />
+        ) : item.kind === "recording" ? (
+          <CardAction
+            href={href}
+            label="Open in Scribe"
+            icon={Mic}
+            text="Scribe"
           />
         ) : (
           <CardAction

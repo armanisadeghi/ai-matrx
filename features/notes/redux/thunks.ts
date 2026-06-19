@@ -65,6 +65,7 @@ const SAVING_NOTE_ID_TIMEOUT = 3000;
 export const fetchNotesList = createAsyncThunk<void, void>(
   "notes/fetchNotesList",
   async (_, { dispatch, getState }) => {
+    console.log("[Track Quick Notes] 6, thunks.ts — fetchNotesList started");
     const userId = getUserId(getState);
 
     dispatch(setListStatus("loading"));
@@ -95,6 +96,9 @@ export const fetchNotesList = createAsyncThunk<void, void>(
       );
     }
 
+    console.log("[Track Quick Notes] 6c, thunks.ts — fetchNotesList complete", {
+      notesCount: notes.length,
+    });
     dispatch(setListStatus("loaded"));
   },
 );

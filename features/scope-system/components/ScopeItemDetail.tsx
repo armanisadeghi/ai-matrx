@@ -36,7 +36,6 @@ import {
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { ScopeItemSuggestionsPanel } from "@/features/kg-suggestions/components/ScopeItemSuggestionsPanel";
 import { EditContextItemSheet } from "./EditContextItemSheet";
-import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import {
@@ -67,8 +66,6 @@ interface ScopeItemDetailProps {
 export function ScopeItemDetail({
   orgId,
   orgSlugOrId,
-  orgName,
-  orgIsPersonal,
   typeParam,
   scopeParam,
   itemParam,
@@ -154,6 +151,7 @@ export function ScopeItemDetail({
   }
 
   const color = resolveColor(scopeType);
+
   const valueRow = (rows ?? []).find((r) => r.item_id === item.id);
   const itemIndex = items.findIndex((i) => i.id === item.id);
   const prevItem = itemIndex > 0 ? items[itemIndex - 1] : null;
@@ -163,25 +161,7 @@ export function ScopeItemDetail({
       : null;
 
   return (
-    <div className="space-y-6 pr-14">
-      <ScopeBreadcrumb
-        orgSlugOrId={orgSlugOrId}
-        orgName={orgName}
-        orgIsPersonal={orgIsPersonal}
-        backHref={scopeHref(orgSlugOrId, scopeType, scope)}
-        trail={[
-          {
-            label: scopeType.label_plural,
-            href: scopeTypeHref(orgSlugOrId, scopeType),
-          },
-          {
-            label: scope.name,
-            href: scopeHref(orgSlugOrId, scopeType, scope),
-          },
-          { label: item.display_name },
-        ]}
-      />
-
+    <div className="space-y-6">
       {/* Item identity + value for this scope */}
       <Card className="p-6 space-y-5">
         <div className="flex items-start justify-between gap-4">

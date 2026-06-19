@@ -38,6 +38,8 @@ export interface CardProps {
   onClick?: () => void;
   /** Compact iOS-style icon layout: small square with icon + label only, no description */
   compact?: boolean;
+  /** `path` points at a separately-hosted app — open in a new tab. */
+  external?: boolean;
 }
 
 const sizeClasses: Record<CardSize, string> = {
@@ -190,9 +192,13 @@ export const Card = ({
   className,
   onClick,
   compact = false,
+  external = false,
 }: CardProps) => {
   const colorClass = colorClasses[color] ?? colorClasses.gray;
   const sizeClass = sizeClasses[size];
+  const externalLinkProps = external
+    ? { target: "_blank", rel: "noopener noreferrer" }
+    : {};
 
   if (compact) {
     // iOS-accurate: squircle icon (border-radius ~22% = rounded-[22%]), solid vivid bg, white icon, small label
@@ -225,7 +231,7 @@ export const Card = ({
 
     if (path) {
       return (
-        <Link href={path} className="block" onClick={onClick}>
+        <Link href={path} className="block" onClick={onClick} {...externalLinkProps}>
           {compactContent}
         </Link>
       );
@@ -261,7 +267,7 @@ export const Card = ({
 
   if (path) {
     return (
-      <Link href={path} className="block" onClick={onClick}>
+      <Link href={path} className="block" onClick={onClick} {...externalLinkProps}>
         {cardContent}
       </Link>
     );

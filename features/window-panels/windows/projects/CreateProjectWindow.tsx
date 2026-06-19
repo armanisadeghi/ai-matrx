@@ -17,7 +17,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { ProjectFormCore } from "@/features/projects/components/ProjectFormCore";
+import { ProjectCreatePanel } from "@/features/projects/components/ProjectCreatePanel";
 import type { Project } from "@/features/projects/types";
 import {
   emitCreateProjectEvent,
@@ -26,6 +26,10 @@ import {
 
 const OVERLAY_ID = "createProjectWindow";
 const BASE_WINDOW_ID = "create-project-window";
+
+console.log(
+  "[Track New Project] 10b, CreateProjectWindow.tsx — module evaluated (chunk loaded)",
+);
 
 export interface CreateProjectWindowProps extends CreateProjectWindowData {
   isOpen: boolean;
@@ -44,6 +48,14 @@ export default function CreateProjectWindow({
   orgLocked,
   skipRedirect,
 }: CreateProjectWindowProps) {
+  console.log(
+    "[Track New Project] 12, CreateProjectWindow.tsx — component render",
+    {
+      instanceId,
+      isOpen,
+    },
+  );
+
   // Track the last project created so the window-close event can report it,
   // and keep a synced ref to the callback group so the unmount cleanup reads a
   // current (not stale-closure) value. callbackGroupId is stable per instance,
@@ -82,6 +94,20 @@ export default function CreateProjectWindow({
     });
   };
 
+  const handleAiComplete = () => {
+    // The AI agent created the project server-side; we have no project object,
+    // so just tell consumers to refresh their list.
+    emitCreateProjectEvent(callbackGroupId, {
+      type: "ai-created",
+      windowInstanceId: instanceId,
+    });
+  };
+
+  console.log(
+    "[Track New Project] 13, CreateProjectWindow.tsx — rendering WindowPanel + ProjectCreatePanel",
+    { windowId },
+  );
+
   return (
     <WindowPanel
       title="Create Project"
@@ -90,12 +116,12 @@ export default function CreateProjectWindow({
       minWidth={420}
       minHeight={420}
       width={560}
-      height={680}
+      height={720}
       position="center"
       onClose={onClose}
     >
-      <div className="h-full min-h-0 overflow-y-auto p-4">
-        <ProjectFormCore
+      <div className="h-full min-h-0 p-4">
+        <ProjectCreatePanel
           initialOrgId={initialOrgId ?? null}
           initialOrgSlug={initialOrgSlug ?? null}
           orgLocked={orgLocked ?? false}
@@ -103,6 +129,7 @@ export default function CreateProjectWindow({
           // default — the caller decides. War Room passes skipRedirect.
           skipRedirect={skipRedirect ?? true}
           onSuccess={handleSuccess}
+          onAiComplete={handleAiComplete}
           onClose={onClose}
         />
       </div>

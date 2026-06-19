@@ -2,7 +2,7 @@
 
 **Status:** `active` — primary output surface for agent responses; rapidly evolving
 **Tier:** `1`
-**Last updated:** `2026-06-12`
+**Last updated:** `2026-06-19`
 
 > Combined doc: **Artifacts** (wire format + block renderer) and **Canvas** (DB / library that persists + versions them). These two cannot be understood separately.
 
@@ -90,18 +90,22 @@ Streamed as `content_block` NDJSON events (see [`features/agents/docs/STREAMING_
 4. UI renders the `task_list` component in real time — it must handle partial state.
 5. On `content_block.completion`, artifact is finalized. Canvas auto-persists a new row.
 
-### Flow 2 — Bidirectional interactivity
+### Flow 2 — Interactive state persistence (per viewer)
 
-1. User checks a task off in a rendered `task_list` artifact.
-2. The user interaction mutates artifact state locally.
-3. State change gets bundled into the next turn's `user_input` (see `features/agents/redux/execution-system/assembleRequest`).
-4. Model sees the updated state, responds in context.
+1. User interacts with a rendered artifact (answers a quiz, studies a flashcard deck, checks a progress item).
+2. **Custom-table types** (flashcards → `user_flashcard_*`, quiz → `quiz_sessions`, tasks → `ctx_tasks`) persist through their feature's adapter; **generic types** persist to `canvas_item_state(canvas_id, user_id, state)` via `useArtifactState` + `GENERIC_ADAPTER`. Keyed per viewer.
+3. On reload the artifact rehydrates that state (loaded by `artifact_id`), so progress survives.
+4. The model surfaces this via context on later turns (study scores, etc.) — NOT bundled into `user_input`.
 
-### Flow 3 — Sync to real app state
+> Adapter interface + registry: `features/canvas/artifact-types/persistence/`. See the **Materialization (LIVE)** section below for the full pipeline.
 
-1. Agent produces a task list artifact meant to become actual tasks.
-2. An explicit action ("Convert to tasks") invokes the tasks service → rows inserted into `features/tasks/`.
-3. The artifact is now linked to real tasks via task IDs stored in the artifact metadata.
+### Flow 3 — Data-touching artifacts: tracked proposal → Convert (tasks)
+
+Data-touching types (tasks) are **never auto-created** (vision R7). The materialized artifact is a *tracked proposal*.
+
+1. A `tasks` artifact renders the proposed checklist + an explicit **"Convert to tasks"** action (`TasksArtifact.tsx`).
+2. Convert creates real `ctx_tasks` via the canonical **`ctx_task_associations`** bridge (`entity_type='artifact'`, `entity_id=<canvas item id>`) — the same path `TaskPreviewWindow`/`TaskChipRow` use everywhere. No parallel linkage model.
+3. After Convert the artifact flips to a **live mirror** (`TaskChipRow`) of the real tasks; their status round-trips through the normal task surfaces. "Proposed vs linked" is derived from `canvas_items.external_system`.
 
 ### Flow 4 — Canvas persistence + versioning
 
@@ -123,10 +127,10 @@ The conversion that makes an artifact durable + model-referenceable. Lives in `f
 
 1. **Trigger** — at stream-end commit (`process-stream.ts`, per committed assistant turn) AND an owner-gated reconcile-on-load pass (`loadConversation` → `reconcileArtifacts.ts`) for historical / unfinished messages.
 2. **Persist** — each materializable block → a `canvas_items` row via `cx_canvas_upsert`, idempotent on the `(source_message_id, artifact_index)` natural key.
-3. **Rewrite** — the raw block in `cx_message.content` is replaced by a typed `CxArtifactRefContent` (`{type:"artifact_ref", artifact_id, artifact_type, version, artifact_index}`) and persisted via **`cx_message_set_content`** (SECURITY DEFINER, owner-checked, **status-preserving**, archives the raw original into `content_history`). NOT `cx_message_edit` (that marks status `'edited'`).
-4. **Render by id** — on reload the `artifact_ref` loads its `canvas_items` row (`useCanvasItem` → `ArtifactRefBlock`) and renders via `ArtifactBlock`. No raw re-parse → **no regeneration**.
+3. **Rewrite to the canonical R1 text form** — the raw block in `cx_message.content` is replaced by **plain text**: `<artifact type="X" id="<uuid>" version="N" title="T">body</artifact>` (`artifactWire.ts#wrapArtifactText`), persisted via **`cx_message_set_content`** (SECURITY DEFINER, owner-checked, **status-preserving**, archives the raw original into `content_history`). NOT `cx_message_edit` (marks status `'edited'`). There is **no `artifact_ref` content block** — one stored form is simultaneously what the UI renders, the durable archive, and what the model reads natively (aidream passes text through, so model-visibility is free — see [vision R1/R4](docs/ARTIFACT_VISION_AND_DESIGN.md)).
+4. **R3 recognition + render by id** — `isMaterializedArtifactId(id)` (UUID test, `artifact-types/artifactId.ts`): a `<artifact>` with a real canvas UUID → render the live row by id (`useCanvasItem` → `ArtifactRefBlock` → `ArtifactBlock`), ignoring the inline body; a non-UUID/absent id (the model's `artifact_1`, or mid-stream) → render inline + stay a materialization candidate. **Idempotent** — a fully-materialized message yields no new artifacts, so re-running never rewrites or duplicates.
 
-Pure planner: `planMaterialization.ts`. Orchestrator: `materializeMessageArtifacts.ts`. Type map (single source of truth): `materializable-types.ts`.
+Pure planner: `planMaterialization.ts`. Orchestrator: `materializeMessageArtifacts.ts`. Type registry (single source of truth): `artifact-types/artifact-type-registry.ts`.
 
 **Invariants:**
 - **Idempotent + reversible.** The unique key prevents duplicate rows; `content_history` keeps the raw original. Reconcile-on-load retries anything the live commit didn't finish — nothing vanishes, nothing duplicates.
@@ -191,8 +195,10 @@ Rules:
 
 ## Change log
 
+- `2026-06-19` — claude: **Vision build R1–R8 (Waves 0–4).** Rewrite converged from the foreign `artifact_ref` content block to the canonical **R1 text form** `<artifact type id version title>body</artifact>` (`artifactWire.ts`) — one stored form the UI renders by id (R3 recognition via `isMaterializedArtifactId`), the model reads natively (fixes model-blindness with zero server work), and archives durably; all `artifact_ref` plumbing deleted, 19 live messages migrated. **Tasks** are now tracked proposals (vision R7) — auto-create removed, explicit **Convert** via `ctx_task_associations`. **Interaction state** round-trips to `canvas_item_state` (recipe/presentation/comparison wired to `useArtifactState`, joining progress/decision-tree/troubleshooting). **Server (aidream):** `conversation_artifacts` injected as read-only context each turn (`artifact_context.py`, R8) — the model sees the latest copy + status + the user's interaction state. **HTML publish** made server-idempotent. Source of truth: [`docs/ARTIFACT_VISION_AND_DESIGN.md`](docs/ARTIFACT_VISION_AND_DESIGN.md). Deploy-pending: aidream prod, mymatrx publish live-verify.
 - `2026-06-14` — claude: **Mermaid structural editing widened 5 → 9 types** + **viewport sizing overhaul**. Added round-trip-safe adapters for **journey, quadrant, state (flat stateDiagram-v2), and ER** (outline + code editing; visual tap-to-edit stays flowchart-only); each guarantees lossless round-trip or downgrades to code-only. New `MermaidViewport` does **axis-aware fit with a readability floor** (bounded frame; tall diagrams fill width + scroll down, wide mind maps fill height + scroll across; never auto-shrinks below 50%). Plus review fixes: Code-mode unmount draft-loss, CodeMirror dark theme, fidelity-gate serialize-error transparency, svg-id-map loud version-drift degrade, and an en/em-dash arrow sanitizer normalizer. 40 adapter + sanitizer tests green. See [`docs/handoffs/MERMAID_RENDER_BLOCK_HANDOFF.md`](../../docs/handoffs/MERMAID_RENDER_BLOCK_HANDOFF.md).
 - `2026-06-12` — claude: **Mermaid diagram artifact type** — new first-class `mermaid` block (from ` ```mermaid `/` ```mmd ` fences, server + client detection) materializes to `canvas_items` (`type: "mermaid"`, `content.metadata.diagramType/title`). Renders live during streaming (last-good-render + forgiving sanitizer in `components/mermaid/`), opens into `MermaidWorkbench` (canvas) with three views of one diagram — Diagram (tap-to-edit), Outline (structured rows), Code (CodeMirror) — gated by a per-adapter round-trip fidelity check (flowchart/mindmap/sequence/pie/timeline). User edits save as new versions via `cx_canvas_save_user_version` (session-versioning); chat refs resolve `"latest"` and live-refresh on `matrx:canvas-item-updated`. Agent editing via the `matrx-user/mermaid-editor` surface + "Edit with AI" rail (clone of cleanup's `useAiPostProcess`). Skill `mermaid-diagrams` + content block seeded ([`migrations/mermaid_render_block_platform.sql`](../../migrations/mermaid_render_block_platform.sql)). Other-platform renderers deferred — see [KNOWN_DEFECTS.md](../../KNOWN_DEFECTS.md) D5.
+- `2026-06-18` — claude: **Artifact unification (Waves A–F) — ONE system.** Single source-of-truth type registry (`features/canvas/artifact-types/artifact-type-registry.ts`) replaces the 4 duplicate type→canvasType maps. **ONE renderer per type** (`artifact-types/renderers/*Artifact.tsx`) shared by all surfaces — BlockRenderer, CanvasBody, ArtifactBlock, AND the public renderer delegate via Renderer-gated early-branches; all per-type legacy switch cases deleted. **Persistence**: `canvas_item_state` (per-viewer, generic) + custom adapters (flashcards→`user_flashcard_*`, quiz→`quiz_sessions`, tasks→`ctx_tasks`); materialize calls `adapter.onMaterialize` → creates+links the domain record (`canvas_items.external_system/_id`) — verified live (flashcards → real set). **Discovery**: materialize writes a `cx_artifact` index row (`canvas_item_id`) so artifacts appear in `/artifacts` and render by id. `tasks` is now a materializable type; flashcards canvas mode = study mode (persists reviews). Demolition adversarially verified (P0/P1 none). The old aspirational Flow 2 ("bundled into user_input") was never how it worked — see corrected Flow 2.
 - `2026-06-10` — claude: **materialization pipeline LIVE + verified** — render blocks auto-persist to `canvas_items` (commit-path + owner-gated reconcile-on-load) and the message is rewritten to a typed `cx_artifact_ref` rendered by id (no regeneration). New `cx_message_set_content` RPC (status-preserving, archives raw); fixed `cx_message_status_check` to allow `'edited'` (was silently breaking every `cx_message_edit`). Wave 0 hardening: stored-XSS on public canvas (`SandboxedHtml`), html-pages GET IDOR, crypto share tokens, corrupt-save guard (`isPersistableCanvasType`), stream-commit never-drop.
 - `2026-05-19` — composer: new modern canvas shell (`CanvasSideSheetInner` + `CanvasPane` + `CanvasBody`). Vertical split via `react-resizable-panels` with persisted ratio. Floating `CanvasReopenChip` and global ⌘\ shortcut. Glass tap buttons throughout the header, matching the new chat input + sidebar language. Legacy `CanvasRenderer` / `CanvasHeader` retained for in-page surfaces.
 - `2026-04-22` — claude: initial combined FEATURE.md for artifacts + canvas.

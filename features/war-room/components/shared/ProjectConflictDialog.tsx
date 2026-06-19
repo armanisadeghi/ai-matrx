@@ -65,8 +65,8 @@ export function ProjectConflictDialog({
             This War Room is associated with{" "}
             <strong className="text-foreground">{room}</strong>, so its threads
             belong to it. You&apos;re putting this thread on{" "}
-            <strong className="text-foreground">{requested}</strong>. Pick how to
-            keep things consistent:
+            <strong className="text-foreground">{requested}</strong>. Pick how
+            to keep things consistent:
           </DialogDescription>
         </DialogHeader>
 
@@ -77,7 +77,7 @@ export function ProjectConflictDialog({
             onClick={() => onResolve("per-thread")}
             className={CHOICE_CLASS}
           >
-            <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+            <span className="mt-0.5 grid size-8 shrink-0 place-items-center text-primary">
               <SplitSquareHorizontal className="size-4" />
             </span>
             <span className="min-w-0">

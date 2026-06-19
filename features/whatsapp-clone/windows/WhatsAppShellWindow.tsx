@@ -19,10 +19,13 @@ interface WhatsAppShellWindowProps {
  * minimize/maximize) replaces the custom title bar from the modal-style demo.
  */
 export function WhatsAppShellWindow({
+  isOpen = true,
   onClose,
   userName,
   userAvatarUrl,
 }: WhatsAppShellWindowProps) {
+  if (!isOpen) return null;
+
   return (
     <WindowPanel
       id={WINDOW_ID}
@@ -33,15 +36,15 @@ export function WhatsAppShellWindow({
           AI Matrx Messenger
         </span>
       }
+      width={1200}
+      height={720}
       minWidth={1080}
       minHeight={680}
+      position="center"
       bodyClassName="p-0"
       onClose={onClose}
     >
-      <WhatsAppShellInner
-        userName={userName}
-        userAvatarUrl={userAvatarUrl}
-      />
+      <WhatsAppShellInner userName={userName} userAvatarUrl={userAvatarUrl} />
     </WindowPanel>
   );
 }

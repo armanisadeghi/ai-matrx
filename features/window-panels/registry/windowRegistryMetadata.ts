@@ -181,6 +181,17 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "quick_tasks" },
   },
 
+  // ── Task Editor ─────────────────────────────────────────────────────────
+  {
+    slug: "task-editor-window",
+    overlayId: "taskEditorWindow",
+    kind: "window",
+    label: "Task Editor",
+    defaultData: { taskId: null },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+  },
+
   // ── Quick Task Create ─────────────────────────────────────────────────────
   {
     slug: "task-quick-create-window",

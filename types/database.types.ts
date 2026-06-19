@@ -3661,6 +3661,38 @@ export type Database = {
           },
         ]
       }
+      canvas_item_state: {
+        Row: {
+          canvas_id: string
+          created_at: string
+          state: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          canvas_id: string
+          created_at?: string
+          state?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          canvas_id?: string
+          created_at?: string
+          state?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_item_state_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       canvas_items: {
         Row: {
           artifact_index: number | null
@@ -3669,6 +3701,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -3696,6 +3730,8 @@ export type Database = {
           conversation_id?: string | null
           created_at?: string | null
           description?: string | null
+          external_id?: string | null
+          external_system?: string | null
           id?: string
           is_archived?: boolean | null
           is_favorited?: boolean | null
@@ -3723,6 +3759,8 @@ export type Database = {
           conversation_id?: string | null
           created_at?: string | null
           description?: string | null
+          external_id?: string | null
+          external_system?: string | null
           id?: string
           is_archived?: boolean | null
           is_favorited?: boolean | null
@@ -7440,6 +7478,7 @@ export type Database = {
       cx_artifact: {
         Row: {
           artifact_type: Database["public"]["Enums"]["artifact_type"]
+          canvas_item_id: string | null
           conversation_id: string
           created_at: string
           deleted_at: string | null
@@ -7461,6 +7500,7 @@ export type Database = {
         }
         Insert: {
           artifact_type: Database["public"]["Enums"]["artifact_type"]
+          canvas_item_id?: string | null
           conversation_id: string
           created_at?: string
           deleted_at?: string | null
@@ -7482,6 +7522,7 @@ export type Database = {
         }
         Update: {
           artifact_type?: Database["public"]["Enums"]["artifact_type"]
+          canvas_item_id?: string | null
           conversation_id?: string
           created_at?: string
           deleted_at?: string | null
@@ -7502,6 +7543,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cx_artifact_canvas_item_id_fkey"
+            columns: ["canvas_item_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_items"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cx_artifact_conversation_id_fkey"
             columns: ["conversation_id"]
@@ -8882,6 +8930,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cx_working_documents: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          content?: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
       dashboard_saved_views: {
         Row: {
           created_at: string
@@ -9222,6 +9303,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dict_provider_publication: {
+        Row: {
+          created_at: string
+          error: Json | null
+          external_id: string | null
+          id: string
+          level: string
+          owner_id: string | null
+          provider: string
+          rule_count: number
+          rule_strings: string[]
+          rules_hash: string | null
+          synced_at: string | null
+          updated_at: string
+          version_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: Json | null
+          external_id?: string | null
+          id?: string
+          level: string
+          owner_id?: string | null
+          provider?: string
+          rule_count?: number
+          rule_strings?: string[]
+          rules_hash?: string | null
+          synced_at?: string | null
+          updated_at?: string
+          version_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: Json | null
+          external_id?: string | null
+          id?: string
+          level?: string
+          owner_id?: string | null
+          provider?: string
+          rule_count?: number
+          rule_strings?: string[]
+          rules_hash?: string | null
+          synced_at?: string | null
+          updated_at?: string
+          version_id?: string | null
+        }
+        Relationships: []
       }
       dict_settings: {
         Row: {
@@ -15955,6 +16084,10 @@ export type Database = {
       }
       rs_source: {
         Row: {
+          authority_ranked_at: string | null
+          authority_reasoning: string | null
+          authority_score: number | null
+          authority_tier: string | null
           description: string | null
           discovered_at: string | null
           extra_snippets: Json | null
@@ -15967,6 +16100,8 @@ export type Database = {
           last_server_failure_reason: string | null
           origin: string
           page_age: string | null
+          policy_category: string | null
+          policy_reason: string | null
           rank: number | null
           raw_search_result: Json | null
           scrape_status: string
@@ -15982,6 +16117,10 @@ export type Database = {
           user_verdict_notes: string | null
         }
         Insert: {
+          authority_ranked_at?: string | null
+          authority_reasoning?: string | null
+          authority_score?: number | null
+          authority_tier?: string | null
           description?: string | null
           discovered_at?: string | null
           extra_snippets?: Json | null
@@ -15994,6 +16133,8 @@ export type Database = {
           last_server_failure_reason?: string | null
           origin?: string
           page_age?: string | null
+          policy_category?: string | null
+          policy_reason?: string | null
           rank?: number | null
           raw_search_result?: Json | null
           scrape_status?: string
@@ -16009,6 +16150,10 @@ export type Database = {
           user_verdict_notes?: string | null
         }
         Update: {
+          authority_ranked_at?: string | null
+          authority_reasoning?: string | null
+          authority_score?: number | null
+          authority_tier?: string | null
           description?: string | null
           discovered_at?: string | null
           extra_snippets?: Json | null
@@ -16021,6 +16166,8 @@ export type Database = {
           last_server_failure_reason?: string | null
           origin?: string
           page_age?: string | null
+          policy_category?: string | null
+          policy_reason?: string | null
           rank?: number | null
           raw_search_result?: Json | null
           scrape_status?: string
@@ -17227,6 +17374,8 @@ export type Database = {
       }
       scrape_domain: {
         Row: {
+          category: string | null
+          category_reason: string | null
           common_name: string | null
           content_selector: string | null
           created_at: string | null
@@ -17241,6 +17390,8 @@ export type Database = {
           url: string | null
         }
         Insert: {
+          category?: string | null
+          category_reason?: string | null
           common_name?: string | null
           content_selector?: string | null
           created_at?: string | null
@@ -17255,6 +17406,8 @@ export type Database = {
           url?: string | null
         }
         Update: {
+          category?: string | null
+          category_reason?: string | null
           common_name?: string | null
           content_selector?: string | null
           created_at?: string | null
@@ -17835,6 +17988,8 @@ export type Database = {
       }
       scrape_path_pattern: {
         Row: {
+          category: string | null
+          category_reason: string | null
           content_selector: string | null
           created_at: string | null
           id: string
@@ -17848,6 +18003,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          category?: string | null
+          category_reason?: string | null
           content_selector?: string | null
           created_at?: string | null
           id?: string
@@ -17861,6 +18018,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          category?: string | null
+          category_reason?: string | null
           content_selector?: string | null
           created_at?: string | null
           id?: string
@@ -23309,6 +23468,108 @@ export type Database = {
         }
         Relationships: []
       }
+      voices: {
+        Row: {
+          accent: string | null
+          age: string | null
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          enabled: boolean
+          gender: string
+          id: string
+          is_verified: boolean
+          language: string | null
+          languages: string[]
+          metadata: Json
+          name: string
+          organization_id: string | null
+          owner_id: string | null
+          preview_url: string | null
+          provider: string
+          provider_voice_id: string
+          quality_score: number | null
+          sample_file_id: string | null
+          sample_url: string | null
+          sort_order: number
+          style: string | null
+          tags: string[]
+          updated_at: string
+          voice_type: string
+        }
+        Insert: {
+          accent?: string | null
+          age?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          gender?: string
+          id?: string
+          is_verified?: boolean
+          language?: string | null
+          languages?: string[]
+          metadata?: Json
+          name: string
+          organization_id?: string | null
+          owner_id?: string | null
+          preview_url?: string | null
+          provider: string
+          provider_voice_id: string
+          quality_score?: number | null
+          sample_file_id?: string | null
+          sample_url?: string | null
+          sort_order?: number
+          style?: string | null
+          tags?: string[]
+          updated_at?: string
+          voice_type?: string
+        }
+        Update: {
+          accent?: string | null
+          age?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          enabled?: boolean
+          gender?: string
+          id?: string
+          is_verified?: boolean
+          language?: string | null
+          languages?: string[]
+          metadata?: Json
+          name?: string
+          organization_id?: string | null
+          owner_id?: string | null
+          preview_url?: string | null
+          provider?: string
+          provider_voice_id?: string
+          quality_score?: number | null
+          sample_file_id?: string | null
+          sample_url?: string | null
+          sort_order?: number
+          style?: string | null
+          tags?: string[]
+          updated_at?: string
+          voice_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voices_sample_file_id_fkey"
+            columns: ["sample_file_id"]
+            isOneToOne: false
+            referencedRelation: "cld_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voices_sample_file_id_fkey"
+            columns: ["sample_file_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_unified_pages"
+            referencedColumns: ["file_id"]
+          },
+        ]
+      }
       wbx_capture: {
         Row: {
           captured_at: string
@@ -28058,6 +28319,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28094,6 +28357,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28130,6 +28395,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28166,6 +28433,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28209,6 +28478,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28298,6 +28569,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28346,6 +28619,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28391,6 +28666,8 @@ export type Database = {
           conversation_id: string | null
           created_at: string | null
           description: string | null
+          external_id: string | null
+          external_system: string | null
           id: string
           is_archived: boolean | null
           is_favorited: boolean | null
@@ -28622,6 +28899,10 @@ export type Database = {
           p_scope_type_ids?: string[]
           p_user_id: string
         }
+        Returns: Json
+      }
+      dict_rollup_for: {
+        Args: { p_level: string; p_owner_id: string }
         Returns: Json
       }
       dict_set_settings: {
@@ -31065,6 +31346,10 @@ export type Database = {
         }
         Returns: Json
       }
+      rs_topic_append_output: {
+        Args: { p_asset: Json; p_kind: string; p_topic_id: string }
+        Returns: Json
+      }
       sch_enqueue_manual_run: { Args: { p_task_id: string }; Returns: string }
       sch_recompute_task_next_due_at: {
         Args: { p_task_id: string }
@@ -31286,6 +31571,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      studio_session_metrics: {
+        Args: { p_session_ids: string[] }
+        Returns: {
+          char_count: number
+          recording_count: number
+          session_id: string
+        }[]
       }
       to_snake_case: { Args: { input_text: string }; Returns: string }
       tool_executor_walk_parents: {

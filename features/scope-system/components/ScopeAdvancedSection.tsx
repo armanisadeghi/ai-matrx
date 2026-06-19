@@ -150,6 +150,7 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
               value={settingsText}
               onChange={(e) => setSettingsText(e.target.value)}
               minHeight={140}
+              maxHeight={600}
               autoGrow
               className="font-mono text-sm"
               placeholder="{ }"
@@ -162,7 +163,8 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
               </p>
             )}
             <p className="text-[10px] text-muted-foreground">
-              Free-form configuration stored on the scope. Must be a JSON object.
+              Free-form configuration stored on the scope. Must be a JSON
+              object.
             </p>
           </div>
 

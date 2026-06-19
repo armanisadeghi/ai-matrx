@@ -172,28 +172,27 @@ const MODULE_CATEGORY_MAP: Record<string, LogCategory> = {
 export function levelToColor(level: LogLevel): string {
   switch (level) {
     case "DEBUG":
-      return "text-neutral-500";
+      return "text-muted-foreground";
     case "INFO":
-      return "text-blue-300";
+      return "text-info";
     case "WARNING":
-      return "text-amber-300";
+      return "text-warning";
     case "ERROR":
-      return "text-red-400";
     case "CRITICAL":
-      return "text-rose-300";
+      return "text-destructive";
     default:
-      return "text-neutral-400";
+      return "text-foreground";
   }
 }
 
 export function levelToBg(level: LogLevel): string {
   switch (level) {
     case "WARNING":
-      return "bg-amber-950/20";
+      return "bg-warning/10";
     case "ERROR":
-      return "bg-red-950/30";
+      return "bg-destructive/10";
     case "CRITICAL":
-      return "bg-rose-950/40";
+      return "bg-destructive/15";
     default:
       return "";
   }
@@ -202,25 +201,25 @@ export function levelToBg(level: LogLevel): string {
 export function categoryToColor(cat: LogCategory, fallback: string): string {
   switch (cat) {
     case "request":
-      return "text-cyan-300";
+      return "text-info";
     case "stream":
-      return "text-purple-300";
+      return "text-secondary";
     case "auth":
-      return "text-green-300";
+      return "text-success";
     case "compat":
-      return "text-amber-400";
+      return "text-warning";
     case "database":
-      return "text-teal-300";
+      return "text-info";
     case "system":
-      return "text-neutral-400";
+      return "text-muted-foreground";
     case "error":
-      return "text-red-400";
+      return "text-destructive";
     case "ai-execution":
-      return "text-violet-300";
+      return "text-secondary";
     case "cx":
-      return "text-sky-300";
+      return "text-primary";
     case "config":
-      return "text-orange-300";
+      return "text-warning";
     default:
       return fallback;
   }
@@ -338,6 +337,7 @@ export function parseLogLines(raw: string): ParsedLogLine[] {
 
       // Propagate header metadata to all continuation lines
       if (!isHeader) {
+        result[k].timestamp = header.timestamp;
         result[k].level = header.level;
         result[k].module = header.module;
         result[k].modulePath = header.modulePath;
@@ -584,6 +584,126 @@ export interface LogFilters {
   /** True when the user explicitly cleared all endpoints. */
   endpointsCleared: boolean;
   showJsonPayloads: boolean;
+  /**
+   * Quick noise exclusions — when a flag is true, matching lines are hidden.
+   * Operates on log groups (same as other filters). Search can still surface
+   * excluded groups when any line in the group matches the search term.
+   */
+  noiseExcludes: LogNoiseExcludes;
+}
+
+/** Toggle flags for high-volume log sources that drown out useful signal. */
+export interface LogNoiseExcludes {
+  cloudFiles: boolean;
+  healthChecks: boolean;
+  admin: boolean;
+  replaySweep: boolean;
+  wakeListener: boolean;
+  autoIngestListener: boolean;
+}
+
+export const DEFAULT_NOISE_EXCLUDES: LogNoiseExcludes = {
+  cloudFiles: true,
+  healthChecks: true,
+  admin: true,
+  replaySweep: true,
+  wakeListener: true,
+  autoIngestListener: true,
+};
+
+export const NOISE_EXCLUDE_PRESETS: ReadonlyArray<{
+  key: keyof LogNoiseExcludes;
+  label: string;
+  description: string;
+  match: (line: ParsedLogLine) => boolean;
+  /** When set, endpoint chips for matching paths are omitted from the filter UI. */
+  endpointMatch?: (httpPath: string) => boolean;
+}> = [
+  {
+    key: "cloudFiles",
+    label: "/cloud-files/",
+    description: "Cloud file storage HTTP requests",
+    match: (line) =>
+      line.httpPath?.includes("/cloud-files/") === true ||
+      /\/cloud-files\//i.test(line.raw),
+    endpointMatch: (path) => path.includes("/cloud-files/"),
+  },
+  {
+    key: "healthChecks",
+    label: "/health/",
+    description: "Health-check HTTP requests",
+    match: (line) => {
+      if (line.httpPath && /\/health(?:\/|$|\?)/i.test(line.httpPath)) {
+        return true;
+      }
+      return /(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+\/[^\s"]*\/health(?:\/|$|\?)/i.test(
+        line.raw,
+      );
+    },
+    endpointMatch: (path) => /\/health(?:\/|$|\?)/i.test(path),
+  },
+  {
+    key: "admin",
+    label: "/admin/",
+    description: "Admin HTTP requests",
+    match: (line) => {
+      if (line.httpPath && /\/admin(?:\/|$|\?)/i.test(line.httpPath)) {
+        return true;
+      }
+      return /\/admin(?:\/|$|\?)/i.test(line.raw);
+    },
+    endpointMatch: (path) => /\/admin(?:\/|$|\?)/i.test(path),
+  },
+  {
+    key: "replaySweep",
+    label: "Replay sweep",
+    description: "matrx_ai.persistence.replay auto-replay sweep warnings",
+    match: (line) =>
+      line.modulePath === "matrx_ai.persistence.replay" ||
+      /\[matrx_ai\.persistence\.replay\]/i.test(line.raw) ||
+      (line.module === "Replay" && /Auto-replay swept/i.test(line.raw)),
+  },
+  {
+    key: "wakeListener",
+    label: "wake-listener",
+    description: "Wake listener connection and reconnect logs",
+    match: (line) =>
+      line.modulePath === "aidream.cross_component.wake_listener" ||
+      line.module === "wake-listener" ||
+      /\[aidream\.cross_component\.wake_listener\]/i.test(line.raw) ||
+      /\[wake-listener\]/i.test(line.raw),
+  },
+  {
+    key: "autoIngestListener",
+    label: "auto-ingest-listener",
+    description: "Auto-ingest notify listener connection and reconnect logs",
+    match: (line) =>
+      line.modulePath === "aidream.workers.notify_listener" ||
+      line.module === "auto-ingest-listener" ||
+      /\[aidream\.workers\.notify_listener\]/i.test(line.raw) ||
+      /\[auto-ingest-listener\]/i.test(line.raw),
+  },
+];
+
+export function isEndpointHiddenByNoise(
+  httpPath: string,
+  excludes: LogNoiseExcludes,
+): boolean {
+  for (const preset of NOISE_EXCLUDE_PRESETS) {
+    if (!excludes[preset.key] || !preset.endpointMatch) continue;
+    if (preset.endpointMatch(httpPath)) return true;
+  }
+  return false;
+}
+
+export function isExcludedByNoise(
+  line: ParsedLogLine,
+  excludes: LogNoiseExcludes,
+): boolean {
+  for (const preset of NOISE_EXCLUDE_PRESETS) {
+    if (excludes[preset.key] && preset.match(line)) return true;
+  }
+  return false;
 }
 
 /** Sentinel used in the modules filter set to represent lines with module === null */
@@ -631,6 +751,7 @@ export function defaultFilters(): LogFilters {
     endpoints: new Set<string>(),
     endpointsCleared: false,
     showJsonPayloads: true,
+    noiseExcludes: { ...DEFAULT_NOISE_EXCLUDES },
   };
 }
 
@@ -658,7 +779,18 @@ export function applyFilters(
   const passedGroups = new Set<number>();
   const failedGroups = new Set<number>();
 
-  function headerPasses(line: ParsedLogLine): boolean {
+  function headerPasses(
+    line: ParsedLogLine,
+    opts?: { ignoreNoise?: boolean; ignoreSearch?: boolean },
+  ): boolean {
+    const searchMatches =
+      searchLower !== "" && line.raw.toLowerCase().includes(searchLower);
+    if (
+      !opts?.ignoreNoise &&
+      !searchMatches &&
+      isExcludedByNoise(line, filters.noiseExcludes)
+    )
+      return false;
     if (!filters.levels.has(line.level)) return false;
     if (!filters.categories.has(line.category)) return false;
     if (!filters.urgencies.has(line.urgency)) return false;
@@ -673,12 +805,7 @@ export function applyFilters(
     ) {
       if (!filters.endpoints.has(line.httpPath)) return false;
     }
-    if (searchLower) {
-      // For grouped entries: search across the entire group by checking if the
-      // search term appears in any member. We approximate this by checking the header;
-      // the full-group search pass below handles continuations.
-      if (!line.raw.toLowerCase().includes(searchLower)) return false;
-    }
+    if (searchLower && !opts?.ignoreSearch && !searchMatches) return false;
     return true;
   }
 
@@ -705,9 +832,14 @@ export function applyFilters(
     for (const line of lines) {
       if (line.groupId !== null && failedGroups.has(line.groupId)) {
         if (line.raw.toLowerCase().includes(searchLower)) {
-          // A continuation line matched — promote the whole group
-          passedGroups.add(line.groupId);
-          failedGroups.delete(line.groupId);
+          const header = lines.find((l) => l.groupId === line.groupId);
+          if (
+            header &&
+            headerPasses(header, { ignoreNoise: true, ignoreSearch: true })
+          ) {
+            passedGroups.add(line.groupId);
+            failedGroups.delete(line.groupId);
+          }
         }
       }
     }
@@ -727,6 +859,10 @@ export function applyFilters(
     }
 
     // Standalone lines: filtered individually
+    const searchMatches =
+      searchLower !== "" && line.raw.toLowerCase().includes(searchLower);
+    if (!searchMatches && isExcludedByNoise(line, filters.noiseExcludes))
+      return false;
     if (!filters.levels.has(line.level)) return false;
     if (!filters.categories.has(line.category)) return false;
     if (!filters.urgencies.has(line.urgency)) return false;
@@ -767,4 +903,12 @@ export function extractEndpoints(lines: ParsedLogLine[]): string[] {
     if (l.httpPath) paths.add(l.httpPath);
   }
   return Array.from(paths).sort();
+}
+
+/** Endpoints for the filter panel — omits paths hidden by active noise excludes. */
+export function filterEndpointsForDisplay(
+  endpoints: string[],
+  excludes: LogNoiseExcludes,
+): string[] {
+  return endpoints.filter((ep) => !isEndpointHiddenByNoise(ep, excludes));
 }

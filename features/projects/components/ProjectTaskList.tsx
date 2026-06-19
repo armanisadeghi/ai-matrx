@@ -17,10 +17,8 @@
  */
 
 import React from "react";
-import { useRouter } from "next/navigation";
 import {
   Loader2,
-  Plus,
   ChevronRight,
   ChevronDown,
   CircleCheck,
@@ -53,10 +51,13 @@ import {
   type TaskPriority,
 } from "@/features/tasks/components/TaskPriorityPicker";
 import { TaskDueDatePicker } from "@/features/tasks/components/TaskDueDatePicker";
+import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { isDateOnlyOverdue } from "@/utils/dateOnly";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
 const isDone = (t: DatabaseTask) => t.status === "completed";
-const isOverdue = (t: DatabaseTask) => !isDone(t) && isDateOnlyOverdue(t.due_date);
+const isOverdue = (t: DatabaseTask) =>
+  !isDone(t) && isDateOnlyOverdue(t.due_date);
 
 export function ProjectTaskList({
   projectId,
@@ -67,7 +68,7 @@ export function ProjectTaskList({
   organizationId: string | null;
   onCountsChange?: (counts: { open: number; done: number }) => void;
 }) {
-  const router = useRouter();
+  const openTaskEditor = useOpenTaskEditorWindow();
   const [tasks, setTasks] = React.useState<DatabaseTask[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [reloadTick, setReloadTick] = React.useState(0);
@@ -75,6 +76,9 @@ export function ProjectTaskList({
   const [showDone, setShowDone] = React.useState(false);
   const [addingSubFor, setAddingSubFor] = React.useState<string | null>(null);
   const [subTitle, setSubTitle] = React.useState("");
+  const [isAddingSub, setIsAddingSub] = React.useState(false);
+  const { inputRef: subInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
+    useRefocusInputAfterAsync(isAddingSub);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -152,19 +156,28 @@ export function ProjectTaskList({
 
   async function addSubtask(parentId: string) {
     const t = subTitle.trim();
+    if (!t || isAddingSub) return;
+    setIsAddingSub(true);
     setSubTitle("");
-    setAddingSubFor(null);
-    if (!t) return;
-    // project_id set so getProjectTasks (filters by project_id) returns it.
-    const res = await createTask({
-      title: t,
-      parent_task_id: parentId,
-      project_id: projectId,
-      organization_id: organizationId,
-      status: "incomplete",
-    });
-    if (res) reload();
-    else toast.error("Couldn't add the subtask.");
+    try {
+      const res = await createTask({
+        title: t,
+        parent_task_id: parentId,
+        project_id: projectId,
+        organization_id: organizationId,
+        status: "incomplete",
+      });
+      if (res) {
+        setTasks((cur) => [...cur, res]);
+        setAddingSubFor(parentId);
+        scheduleSubtaskRefocus();
+      } else {
+        setSubTitle(t);
+        toast.error("Couldn't add the subtask.");
+      }
+    } finally {
+      setIsAddingSub(false);
+    }
   }
 
   if (loading) {
@@ -187,7 +200,7 @@ export function ProjectTaskList({
           onRename={renameTask}
           onPriority={setPriority}
           onDueDate={setDueDate}
-          onOpen={(id) => router.push(`/tasks/${id}`)}
+          onOpen={(id) => openTaskEditor({ taskId: id })}
           onAddSubtask={() => {
             setAddingSubFor(t.id);
             setSubTitle("");
@@ -205,7 +218,7 @@ export function ProjectTaskList({
             onRename={renameTask}
             onPriority={setPriority}
             onDueDate={setDueDate}
-            onOpen={(id) => router.push(`/tasks/${id}`)}
+            onOpen={(id) => openTaskEditor({ taskId: id })}
           />,
         );
       }
@@ -216,18 +229,29 @@ export function ProjectTaskList({
               <div className="flex items-center gap-2 pl-7">
                 <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
                 <Input
+                  ref={subInputRef}
                   autoFocus
                   value={subTitle}
                   onChange={(e) => setSubTitle(e.target.value)}
+                  disabled={isAddingSub}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") addSubtask(t.id);
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void addSubtask(t.id);
+                    }
                     if (e.key === "Escape") {
                       setAddingSubFor(null);
                       setSubTitle("");
                     }
                   }}
-                  onBlur={() => addSubtask(t.id)}
-                  placeholder="Subtask title…"
+                  onBlur={() => {
+                    if (subTitle.trim()) {
+                      void addSubtask(t.id);
+                    } else {
+                      setAddingSubFor(null);
+                    }
+                  }}
+                  placeholder="Subtask title, Enter for next…"
                   className="h-7 text-[13px] max-w-md"
                   style={{ fontSize: "16px" }}
                 />
@@ -265,11 +289,13 @@ export function ProjectTaskList({
               renderRows(open)
             )}
 
-            {/* Inline quick-add row — set name + priority + due before adding */}
+            {/* Inline quick-add row — set name + priority + due before adding.
+                Appends optimistically (newest-first) so rapid-fire entry never
+                blanks the table or steals focus from the title input. */}
             <QuickAddRow
               projectId={projectId}
               organizationId={organizationId}
-              onAdded={reload}
+              onAdded={(task) => setTasks((cur) => [task, ...cur])}
             />
           </TableBody>
         </Table>
@@ -363,6 +389,8 @@ function TaskTableRow({
             done={done}
             isSub={isSub}
             onCommit={(next) => onRename(task, next)}
+            onOpen={isSub ? () => onOpen(task.id) : undefined}
+            onOpenEditor={() => onOpen(task.id)}
           />
           {!isSub && onAddSubtask && (
             <button
@@ -408,11 +436,17 @@ function InlineTitle({
   done,
   isSub,
   onCommit,
+  onOpen,
+  onOpenEditor,
 }: {
   value: string;
   done: boolean;
   isSub?: boolean;
   onCommit: (next: string) => void;
+  /** Subtasks: single click opens the full editor. */
+  onOpen?: () => void;
+  /** Parent tasks: double-click opens the full editor. */
+  onOpenEditor?: () => void;
 }) {
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState(value);
@@ -455,8 +489,15 @@ function InlineTitle({
   return (
     <button
       onClick={() => {
+        if (onOpen) {
+          onOpen();
+          return;
+        }
         setDraft(value);
         setEditing(true);
+      }}
+      onDoubleClick={() => {
+        onOpenEditor?.();
       }}
       className={cn(
         "flex-1 min-w-0 text-left truncate rounded px-1 -mx-1 hover:bg-accent/50",
@@ -479,15 +520,22 @@ function QuickAddRow({
 }: {
   projectId: string;
   organizationId: string | null;
-  onAdded: () => void;
+  onAdded: (task: DatabaseTask) => void;
 }) {
-  const [active, setActive] = React.useState(false);
   const [title, setTitle] = React.useState("");
   const [priority, setPriority] = React.useState<TaskPriority>(null);
   const [due, setDue] = React.useState<string | null>(null);
   const [advanced, setAdvanced] = React.useState(false);
   const [description, setDescription] = React.useState("");
-  const [busy, setBusy] = React.useState(false);
+  const [inFlight, setInFlight] = React.useState(0);
+  const titleRef = React.useRef<HTMLInputElement>(null);
+  const priorityRef = React.useRef<HTMLButtonElement>(null);
+  const dueRef = React.useRef<HTMLButtonElement>(null);
+  const descriptionRef = React.useRef<HTMLTextAreaElement>(null);
+
+  function focusTitle() {
+    requestAnimationFrame(() => titleRef.current?.focus());
+  }
 
   function resetAll() {
     setTitle("");
@@ -495,13 +543,22 @@ function QuickAddRow({
     setDue(null);
     setDescription("");
     setAdvanced(false);
-    setActive(false);
+    focusTitle();
   }
 
-  async function submit() {
+  /**
+   * Fire-and-continue: create the task, then immediately clear the title and
+   * keep the row open + focused so the user can rapid-fire. Priority and due
+   * stay sticky across entries; description clears each time.
+   */
+  async function submitAndContinue() {
     const t = title.trim();
-    if (!t || busy) return;
-    setBusy(true);
+    if (!t) return;
+    const desc = description.trim() || null;
+    setTitle("");
+    setDescription("");
+    focusTitle();
+    setInFlight((n) => n + 1);
     const res = await createTask({
       title: t,
       project_id: projectId,
@@ -509,31 +566,16 @@ function QuickAddRow({
       status: "incomplete",
       priority,
       due_date: due,
-      description: description.trim() || null,
+      description: desc,
     });
-    setBusy(false);
+    setInFlight((n) => n - 1);
     if (res) {
-      resetAll();
-      onAdded();
+      onAdded(res);
     } else {
       toast.error("Couldn't add the task.");
+      setTitle((cur) => (cur.length === 0 ? t : cur));
     }
-  }
-
-  if (!active) {
-    return (
-      <TableRow className="hover:bg-transparent">
-        <TableCell colSpan={4} className="py-1.5">
-          <button
-            onClick={() => setActive(true)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <Plus className="h-4 w-4" />
-            Add task
-          </button>
-        </TableCell>
-      </TableRow>
-    );
+    focusTitle();
   }
 
   return (
@@ -543,35 +585,82 @@ function QuickAddRow({
           <div className="flex items-center gap-2">
             <Circle className="h-4 w-4 text-muted-foreground/40 shrink-0" />
             <Input
+              ref={titleRef}
               autoFocus
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") submit();
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  void submitAndContinue();
+                  return;
+                }
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  priorityRef.current?.focus();
+                }
                 if (e.key === "Escape") resetAll();
               }}
-              placeholder="Task title, then Enter…"
+              placeholder="Task title, Enter for next field…"
               className="h-8 max-w-md"
               style={{ fontSize: "16px" }}
-              disabled={busy}
             />
           </div>
         </TableCell>
         <TableCell className="py-1.5">
-          <TaskPriorityPicker value={priority} onChange={setPriority} />
+          <TaskPriorityPicker
+            value={priority}
+            onChange={setPriority}
+            triggerRef={priorityRef}
+            onTriggerKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                void submitAndContinue();
+                return;
+              }
+              if (e.key === "Enter") {
+                e.preventDefault();
+                dueRef.current?.focus();
+              }
+            }}
+          />
         </TableCell>
         <TableCell className="py-1.5">
-          <TaskDueDatePicker value={due} overdue={false} onChange={setDue} />
+          <TaskDueDatePicker
+            value={due}
+            overdue={false}
+            onChange={setDue}
+            triggerRef={dueRef}
+            onTriggerKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                void submitAndContinue();
+                return;
+              }
+              if (e.key === "Enter") {
+                e.preventDefault();
+                if (advanced) {
+                  descriptionRef.current?.focus();
+                } else {
+                  void submitAndContinue();
+                }
+              }
+            }}
+          />
         </TableCell>
         <TableCell className="py-1.5">
           <div className="flex items-center gap-1">
             <Button
               size="sm"
-              onClick={submit}
-              disabled={busy || !title.trim()}
+              onClick={() => void submitAndContinue()}
+              disabled={!title.trim()}
               className="h-7 px-2 text-[11px]"
             >
-              {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
+              {inFlight > 0 ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                "Add"
+              )}
             </Button>
           </div>
         </TableCell>
@@ -582,9 +671,9 @@ function QuickAddRow({
         <TableCell colSpan={4} className="py-1.5">
           <div className="space-y-2">
             <button
+              type="button"
               onClick={() => setAdvanced((v) => !v)}
               className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-              disabled={busy}
             >
               {advanced ? (
                 <ChevronDown className="h-3.5 w-3.5" />
@@ -596,12 +685,24 @@ function QuickAddRow({
             </button>
             {advanced && (
               <Textarea
+                ref={descriptionRef}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Add a description…"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    void submitAndContinue();
+                    return;
+                  }
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void submitAndContinue();
+                  }
+                  if (e.key === "Escape") resetAll();
+                }}
+                placeholder="Description, Enter to add task…"
                 className="text-sm min-h-[72px] resize-y max-w-2xl"
                 style={{ fontSize: "16px" }}
-                disabled={busy}
               />
             )}
             <div className="flex items-center gap-2">
@@ -609,7 +710,6 @@ function QuickAddRow({
                 size="sm"
                 variant="ghost"
                 onClick={resetAll}
-                disabled={busy}
                 className="h-7 px-2 text-[11px]"
               >
                 Cancel

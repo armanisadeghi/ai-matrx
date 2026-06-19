@@ -1,7 +1,13 @@
 // features/notes/actions/QuickNotesSheet.tsx
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { NoteEditor } from "../components/NoteEditor";
 import { useNotesRedux } from "../hooks/useNotesRedux";
 import { useAllFolders } from "../utils/folderUtils";
@@ -33,6 +39,10 @@ import { ShareNoteDialog } from "../components/ShareNoteDialog";
 import { useToastManager } from "@/hooks/useToastManager";
 import { cn } from "@/lib/utils";
 
+console.log(
+  "[Track Quick Notes] 3b, QuickNotesSheet.tsx — module evaluated (chunk loaded)",
+);
+
 interface QuickNotesSheetProps {
   onClose?: () => void;
   className?: string;
@@ -49,6 +59,11 @@ export function QuickNotesSheet({ onClose, className }: QuickNotesSheetProps) {
     updateNote,
     findOrCreateEmptyNote,
   } = useNotesRedux();
+  console.log("[Track Quick Notes] 4, QuickNotesSheet.tsx — component render", {
+    isLoading,
+    notesCount: notes.length,
+    activeNoteId: activeNote?.id ?? null,
+  });
   const toast = useToastManager("notes");
   const [shareNoteId, setShareNoteId] = useState<string | null>(null);
 
@@ -62,6 +77,19 @@ export function QuickNotesSheet({ onClose, className }: QuickNotesSheetProps) {
   // During the list load, pass null so the editor shows its spinner rather than
   // flashing the phantom; otherwise the phantom is the editable fallback.
   const editorNote = activeNote ?? (isLoading ? null : phantomNote);
+
+  useEffect(() => {
+    if (!isLoading) {
+      console.log(
+        "[Track Quick Notes] 8, QuickNotesSheet.tsx — notes list ready, showing content",
+        {
+          notesCount: notes.length,
+          editorNoteId: editorNote?.id ?? null,
+          editorNoteLabel: editorNote?.label ?? null,
+        },
+      );
+    }
+  }, [isLoading, notes.length, editorNote?.id, editorNote?.label]);
 
   // Drop the cursor into the note body as soon as one is ready — "Quick Note"
   // means start typing, not "find the editor". The NoteEditor's plain-mode
@@ -186,6 +214,9 @@ export function QuickNotesSheet({ onClose, className }: QuickNotesSheetProps) {
   );
 
   if (isLoading) {
+    console.log(
+      "[Track Quick Notes] 7, QuickNotesSheet.tsx — loading state (waiting for notes list)",
+    );
     return (
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -215,22 +246,34 @@ export function QuickNotesSheet({ onClose, className }: QuickNotesSheetProps) {
             </SelectValue>
           </SelectTrigger>
           <SelectContent className="max-h-[400px]">
-            {Object.entries(notesByFolder).map(([folder, folderNotes]) => (
-              <React.Fragment key={folder}>
-                <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                  {folder}
-                </div>
-                {folderNotes.map((note) => (
-                  <SelectItem
-                    key={note.id}
-                    value={note.id}
-                    className="text-xs pl-4"
-                  >
-                    {note.label}
-                  </SelectItem>
-                ))}
-              </React.Fragment>
-            ))}
+            {Object.entries(notesByFolder).map(([folder, folderNotes]) => {
+              if (folderNotes.length > 0) {
+                console.log(
+                  "[Track Quick Notes] 9, QuickNotesSheet.tsx — rendering note items in selector",
+                  {
+                    folder,
+                    count: folderNotes.length,
+                    labels: folderNotes.map((n) => n.label),
+                  },
+                );
+              }
+              return (
+                <React.Fragment key={folder}>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                    {folder}
+                  </div>
+                  {folderNotes.map((note) => (
+                    <SelectItem
+                      key={note.id}
+                      value={note.id}
+                      className="text-xs pl-4"
+                    >
+                      {note.label}
+                    </SelectItem>
+                  ))}
+                </React.Fragment>
+              );
+            })}
           </SelectContent>
         </Select>
 

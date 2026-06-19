@@ -82,6 +82,10 @@ Voice-pad + agent-execution Redux, `MicrophoneIconButton`, `ContentActionBar`,
 
 - What is sent to the AI MUST equal what the user sees in the transcript
   textarea (`baseTextRef` — no stale closures in async flows).
+- **All three panes are always editable.** Transcript / Clean / Custom
+  textareas never use `readOnly`; manual edits win over live mic preview while
+  the transcript field is focused; Clean / Custom pin the visible value on focus
+  so agent streaming cannot fight typing.
 - Voice-pad state keyed under `overlayId="transcriptionCleanupPage"` —
   a `VoicePadVariant` for the SLICE only; it is NOT an overlay id
   (`VoicePadOverlayVariant` excludes it; overlay helpers must use that).
@@ -144,6 +148,14 @@ manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
 
+- 2026-06-17 — Transcript / Clean / Custom panes are always freely editable:
+  removed transcript `readOnly` during recording; live mic preview pauses while
+  the transcript field is focused; Clean / Custom pin output on focus so
+  streaming tokens cannot overwrite cursor position; locally-created sessions
+  clear stale `loaded` snapshots (fixes stuck loading veils). Fixed trailing
+  spaces (and all in-progress whitespace) being stripped on every keystroke —
+  `composeTranscriptParts` no longer `.trim()`s segment bodies; idle transcript
+  display uses `baseText` directly when not composing live/prefix/suffix parts.
 - 2026-06-14 — `CleanupPad` made embeddable so the War Room Audio tab reuses the
   REAL pipeline instead of a fake recorder. New OPTIONAL props (`sessionId`,
   `urlSync`, `variant="embedded"`, `sections`, `showNewSession`) + a

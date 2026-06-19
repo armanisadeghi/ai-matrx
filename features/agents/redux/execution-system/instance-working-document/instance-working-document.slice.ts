@@ -30,14 +30,23 @@ import { destroyInstance } from "../conversations/conversations.slice";
 
 /**
  * Durable source the working document is bound to.
- *   - "none"            — ephemeral (Redux only).
- *   - "note"            — a `public.notes` row (the generic binding offered in
- *                         the UI today).
- *   - "studio_document" — a `studio_documents` row (Scribe's source; consumed
- *                         by the shared context-value builder so there is one
- *                         working_document value shape across the app).
+ *   - "none"               — ephemeral (Redux only).
+ *   - "note"               — a `public.notes` row (a generic binding offered in
+ *                            the UI).
+ *   - "cx_working_document"— a `public.cx_working_documents` row: the durable,
+ *                            conversation-scoped default backing for chat. The
+ *                            agent's ctx_patch edits persist here and round-trip
+ *                            back via Supabase realtime (the Scribe pattern,
+ *                            applied to chat conversations).
+ *   - "studio_document"    — a `studio_documents` row (Scribe's source; consumed
+ *                            by the shared context-value builder so there is one
+ *                            working_document value shape across the app).
  */
-export type WorkingDocumentBindingKind = "none" | "note" | "studio_document";
+export type WorkingDocumentBindingKind =
+  | "none"
+  | "note"
+  | "cx_working_document"
+  | "studio_document";
 
 export interface WorkingDocumentBinding {
   kind: WorkingDocumentBindingKind;
@@ -133,6 +142,18 @@ const instanceWorkingDocumentSlice = createSlice({
       action: PayloadAction<{ conversationId: string; content: string }>,
     ) {
       const entry = ensureEntry(state, action.payload.conversationId);
+      // LOUD recovery (mirrors Scribe's BUG-B guard): never let a transient
+      // EMPTY remote wipe non-empty content. An empty realtime echo on row
+      // creation, or a bad agent cycle, would otherwise blank the document and
+      // then persist the blank. If this fires, a real upstream bug produced an
+      // empty remote — keep the user's content and scream.
+      if (action.payload.content === "" && entry.content !== "") {
+        console.warn(
+          "[working-document] blocked an empty remote from wiping a non-empty working document (BUG-B guard fired)",
+          { conversationId: action.payload.conversationId },
+        );
+        return;
+      }
       entry.content = action.payload.content;
       entry.agentRevision += 1;
     },

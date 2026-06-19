@@ -22,75 +22,14 @@
 import React, { isValidElement } from "react";
 import dynamic from "next/dynamic";
 import type { CanvasContent } from "@/features/canvas/redux/canvasSlice";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
+import {
+  ArtifactRender,
+  hasArtifactRenderer,
+} from "@/features/canvas/artifact-types/artifact-renderers";
 
-// All blocks load lazily — keeps the canvas itself small and only pays for
-// the block types the user actually opens.
-const MultipleChoiceQuiz = dynamic(
-  () => import("@/components/mardown-display/blocks/quiz/MultipleChoiceQuiz"),
-  { ssr: false },
-);
-const Slideshow = dynamic(
-  () => import("@/components/mardown-display/blocks/presentations/Slideshow"),
-  { ssr: false },
-);
-const RecipeViewer = dynamic(
-  () =>
-    import("@/components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay"),
-  { ssr: false },
-);
-const TimelineBlock = dynamic(
-  () => import("@/components/mardown-display/blocks/timeline/TimelineBlock"),
-  { ssr: false },
-);
-const ResearchBlock = dynamic(
-  () => import("@/components/mardown-display/blocks/research/ResearchBlock"),
-  { ssr: false },
-);
-const ResourceCollectionBlock = dynamic(
-  () =>
-    import("@/components/mardown-display/blocks/resources/ResourceCollectionBlock"),
-  { ssr: false },
-);
-const ProgressTrackerBlock = dynamic(
-  () =>
-    import("@/components/mardown-display/blocks/progress/ProgressTrackerBlock"),
-  { ssr: false },
-);
-const ComparisonTableBlock = dynamic(
-  () =>
-    import("@/components/mardown-display/blocks/comparison/ComparisonTableBlock"),
-  { ssr: false },
-);
-const TroubleshootingBlock = dynamic(
-  () =>
-    import("@/components/mardown-display/blocks/troubleshooting/TroubleshootingBlock"),
-  { ssr: false },
-);
-const DecisionTreeBlock = dynamic(
-  () =>
-    import("@/components/mardown-display/blocks/decision-tree/DecisionTreeBlock"),
-  { ssr: false },
-);
-const InteractiveDiagramBlock = dynamic(
-  () =>
-    import("@/components/mardown-display/blocks/diagram/InteractiveDiagramBlock"),
-  { ssr: false },
-);
-const CanvasFlashcardsView = dynamic(
-  () =>
-    import("@/features/flashcards/components/CanvasFlashcardsView").then(
-      (m) => ({ default: m.CanvasFlashcardsView }),
-    ),
-  { ssr: false },
-);
-const CodeBlock = dynamic(
-  () => import("@/features/code-editor/components/code-block/CodeBlock"),
-  { ssr: false },
-);
-const MathProblem = dynamic(
-  () => import("@/features/math/components/MathProblem"),
-  { ssr: false },
-);
+// Blocks that are NOT handled by the unified renderer (code_preview /
+// code_edit_error are NON_PERSISTABLE and have no artifact renderer).
 const CodePreviewCanvas = dynamic(
   () =>
     import("@/features/canvas/custom-components/CodePreviewCanvas").then(
@@ -103,10 +42,6 @@ const CodeEditErrorCanvas = dynamic(
     import("@/features/canvas/custom-components/CodeEditErrorCanvas").then(
       (m) => ({ default: m.CodeEditErrorCanvas }),
     ),
-  { ssr: false },
-);
-const MermaidWorkbench = dynamic(
-  () => import("@/components/mermaid/workbench/MermaidWorkbench"),
   { ssr: false },
 );
 
@@ -183,131 +118,33 @@ export function getSubtitle(type: string): string | undefined {
 function renderContent(content: CanvasContent): React.ReactNode {
   const { type, data } = content;
 
-  switch (type) {
-    case "quiz":
-      return (
-        <div className="h-full p-0">
-          <MultipleChoiceQuiz quizData={data} />
-        </div>
-      );
-
-    case "presentation":
-      return (
-        <div className="h-full">
-          <Slideshow
-            slides={data.slides || data}
-            theme={
-              data.theme || {
-                primaryColor: "#2563eb",
-                secondaryColor: "#1e40af",
-              }
-            }
-          />
-        </div>
-      );
-
-    case "recipe":
-      return (
-        <div className="h-full p-0">
-          <RecipeViewer recipe={data} />
-        </div>
-      );
-
-    case "timeline":
-      return (
-        <div className="h-full p-0">
-          <TimelineBlock timeline={data} />
-        </div>
-      );
-
-    case "research":
-      return (
-        <div className="h-full p-0">
-          <ResearchBlock research={data} />
-        </div>
-      );
-
-    case "resources":
-      return (
-        <div className="h-full p-0">
-          <ResourceCollectionBlock collection={data} />
-        </div>
-      );
-
-    case "progress":
-      return (
-        <div className="h-full p-0">
-          <ProgressTrackerBlock tracker={data} />
-        </div>
-      );
-
-    case "comparison":
-      return (
-        <div className="h-full p-0">
-          <ComparisonTableBlock comparison={data} />
-        </div>
-      );
-
-    case "troubleshooting":
-      return (
-        <div className="h-full p-0">
-          <TroubleshootingBlock troubleshooting={data} />
-        </div>
-      );
-
-    case "decision-tree":
-      return (
-        <div className="h-full p-0">
-          <DecisionTreeBlock decisionTree={data} />
-        </div>
-      );
-
-    case "diagram":
-      return (
-        <div className="h-full p-0">
-          <InteractiveDiagramBlock diagram={data} />
-        </div>
-      );
-
-    case "flashcards":
-      return (
-        <div className="h-full">
-          <CanvasFlashcardsView
-            content={typeof data === "string" ? data : undefined}
-            serverData={typeof data === "object" ? data : undefined}
-            conversationId={
-              content.metadata?.conversationId as string | undefined
-            }
-            messageId={content.metadata?.messageId as string | undefined}
-          />
-        </div>
-      );
-
-    case "math_problem":
-      return (
-        <div className="h-full p-0">
-          <MathProblem id="canvas-preview" {...data.math_problem} />
-        </div>
-      );
-
-    case "mermaid":
-      return (
-        <MermaidWorkbench
-          source={typeof data === "string" ? data : String((data as { data?: unknown })?.data ?? "")}
-          metadata={content.metadata}
+  // ── Unified artifact renderer (Wave B) ───────────────────────────────────
+  // Types with a unified renderer registered render through the single shared
+  // path; the rest fall through to their legacy case below.
+  const _def = getArtifactDef(type);
+  if (_def && hasArtifactRenderer(_def.canvasType)) {
+    const meta = content.metadata as
+      | { conversationId?: string; messageId?: string }
+      | undefined;
+    return (
+      <div className="h-full">
+        <ArtifactRender
+          canvasType={_def.canvasType}
+          mode="canvas"
+          data={data}
+          metadata={content.metadata as Record<string, unknown> | undefined}
+          conversationId={meta?.conversationId}
+          messageId={meta?.messageId}
         />
-      );
+      </div>
+    );
+  }
 
-    case "code":
-      return (
-        <div className="h-full p-0">
-          <CodeBlock
-            code={data.code || data}
-            language={data.language || "javascript"}
-          />
-        </div>
-      );
-
+  // quiz, presentation, recipe, timeline, research, resources, progress,
+  // troubleshooting, decision-tree, diagram, flashcards, math_problem,
+  // mermaid, code, iframe, html, image → unified renderer via early-branch
+  // (cases removed in Wave F; only NON_PERSISTABLE types remain below)
+  switch (type) {
     case "code_preview":
       return (
         <CodePreviewCanvas
@@ -330,35 +167,6 @@ function renderContent(content: CanvasContent): React.ReactNode {
           rawResponse={data.rawResponse}
           onClose={data.onClose || (() => {})}
         />
-      );
-
-    case "iframe":
-      return (
-        <iframe
-          src={data.url || data}
-          className="w-full h-full border-0"
-          title={titleToString(content.metadata?.title) || "Canvas Content"}
-          sandbox="allow-scripts allow-same-origin allow-forms"
-        />
-      );
-
-    case "html":
-      return (
-        <div
-          className="p-4 prose dark:prose-invert max-w-none"
-          dangerouslySetInnerHTML={{ __html: data.html || data }}
-        />
-      );
-
-    case "image":
-      return (
-        <div className="h-full flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
-          <img
-            src={data.url || data}
-            alt={titleToString(content.metadata?.title) || "Canvas Image"}
-            className="max-w-full max-h-full object-contain"
-          />
-        </div>
       );
 
     default:

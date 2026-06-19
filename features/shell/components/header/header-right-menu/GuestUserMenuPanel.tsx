@@ -8,6 +8,7 @@ import {
   COMMUNICATION_ITEMS,
   SETTINGS_ITEMS,
 } from "./userMenuItems.constants";
+import { USER_MENU_PANEL_CLASS } from "./menuItemClass";
 
 const divider = (
   <div className="h-px my-1 mx-2 bg-[var(--matrx-glass-border-color)]" />
@@ -21,7 +22,7 @@ const divider = (
  */
 export default function GuestUserMenuPanel() {
   return (
-    <div className="matrx-glass-thin-border w-60 max-lg:w-auto p-1.5 rounded-xl max-lg:rounded-2xl max-lg:p-2 shadow-2xl">
+    <div className={USER_MENU_PANEL_CLASS}>
       <GuestHeroCard />
 
       {divider}

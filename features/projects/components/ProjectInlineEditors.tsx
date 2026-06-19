@@ -62,7 +62,11 @@ import type {
 
 export const PROJECT_STATUS_META: Record<
   ProjectStatus,
-  { label: string; icon: React.ComponentType<{ className?: string }>; pill: string }
+  {
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    pill: string;
+  }
 > = {
   planning: {
     label: "Planning",
@@ -160,7 +164,10 @@ export function InlineProjectName({
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState(project.name);
   const [busy, setBusy] = React.useState(false);
-  const textCls = size === "hero" ? "text-2xl md:text-3xl font-bold" : "text-base font-semibold";
+  const textCls =
+    size === "hero"
+      ? "text-2xl md:text-3xl font-bold"
+      : "text-base font-semibold";
 
   React.useEffect(() => setDraft(project.name), [project.name]);
 
@@ -236,7 +243,10 @@ export function InlineProjectDescription({
   const [draft, setDraft] = React.useState(project.description ?? "");
   const [busy, setBusy] = React.useState(false);
 
-  React.useEffect(() => setDraft(project.description ?? ""), [project.description]);
+  React.useEffect(
+    () => setDraft(project.description ?? ""),
+    [project.description],
+  );
 
   const commit = async () => {
     const next = draft.trim();
@@ -274,7 +284,7 @@ export function InlineProjectDescription({
           rows={3}
           maxLength={2000}
           placeholder="What is this project about? Goals, scope, links…"
-          className="text-sm resize-y"
+          className="w-full min-w-0 text-sm resize-y break-words"
         />
         <p className="text-[11px] text-muted-foreground">
           {busy ? "Saving…" : "Esc to cancel · saves when you click away"}
@@ -304,12 +314,12 @@ export function InlineProjectDescription({
       disabled={!canEdit}
       onClick={() => canEdit && setEditing(true)}
       className={cn(
-        "group/desc flex items-start gap-2 text-left w-full rounded-md -mx-1 px-1 py-0.5",
+        "group/desc flex min-w-0 items-start gap-2 text-left w-full rounded-md -mx-1 px-1 py-0.5",
         canEdit && "hover:bg-accent/40 cursor-text",
       )}
       title={canEdit ? "Click to edit" : undefined}
     >
-      <span className="flex-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+      <span className="min-w-0 flex-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
         {project.description}
       </span>
       {canEdit && (
@@ -328,11 +338,17 @@ type FieldProps = {
 };
 
 export function ProjectStatusPicker({ project, canEdit, onPatch }: FieldProps) {
-  const meta = PROJECT_STATUS_META[project.status] ?? PROJECT_STATUS_META.active;
+  const meta =
+    PROJECT_STATUS_META[project.status] ?? PROJECT_STATUS_META.active;
   const Icon = meta.icon;
   if (!canEdit) {
     return (
-      <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 h-7 text-xs font-medium", meta.pill)}>
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full border px-2.5 h-7 text-xs font-medium",
+          meta.pill,
+        )}
+      >
         <Icon className="h-3.5 w-3.5" /> {meta.label}
       </span>
     );
@@ -341,10 +357,20 @@ export function ProjectStatusPicker({ project, canEdit, onPatch }: FieldProps) {
     <Select
       value={project.status}
       onValueChange={(v) =>
-        save(project.id, { status: v as ProjectStatus }, { status: v as ProjectStatus }, onPatch)
+        save(
+          project.id,
+          { status: v as ProjectStatus },
+          { status: v as ProjectStatus },
+          onPatch,
+        )
       }
     >
-      <SelectTrigger className={cn("h-7 w-auto gap-1.5 rounded-full border px-2.5 text-xs font-medium", meta.pill)}>
+      <SelectTrigger
+        className={cn(
+          "h-7 w-auto gap-1.5 rounded-full border px-2.5 text-xs font-medium",
+          meta.pill,
+        )}
+      >
         <Icon className="h-3.5 w-3.5" />
         <SelectValue />
       </SelectTrigger>
@@ -359,11 +385,21 @@ export function ProjectStatusPicker({ project, canEdit, onPatch }: FieldProps) {
   );
 }
 
-export function ProjectPriorityPicker({ project, canEdit, onPatch }: FieldProps) {
+export function ProjectPriorityPicker({
+  project,
+  canEdit,
+  onPatch,
+}: FieldProps) {
   if (!canEdit) {
     return project.priority ? (
-      <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 h-7 text-xs font-medium", PROJECT_PRIORITY_META[project.priority].pill)}>
-        <Flag className="h-3.5 w-3.5" /> {PROJECT_PRIORITY_META[project.priority].label}
+      <span
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full border px-2.5 h-7 text-xs font-medium",
+          PROJECT_PRIORITY_META[project.priority].pill,
+        )}
+      >
+        <Flag className="h-3.5 w-3.5" />{" "}
+        {PROJECT_PRIORITY_META[project.priority].label}
       </span>
     ) : (
       <span className="text-sm text-muted-foreground">None</span>
@@ -380,7 +416,9 @@ export function ProjectPriorityPicker({ project, canEdit, onPatch }: FieldProps)
       <SelectTrigger
         className={cn(
           "h-7 w-auto gap-1.5 rounded-full border px-2.5 text-xs font-medium",
-          project.priority ? PROJECT_PRIORITY_META[project.priority].pill : "text-muted-foreground",
+          project.priority
+            ? PROJECT_PRIORITY_META[project.priority].pill
+            : "text-muted-foreground",
         )}
       >
         <Flag className="h-3.5 w-3.5" />
@@ -407,13 +445,24 @@ export function ProjectDateField({
   const isTarget = field === "targetDate";
   return (
     <DatePill
-      icon={isTarget ? <CalendarRange className="h-3.5 w-3.5" /> : <CalendarClock className="h-3.5 w-3.5" />}
+      icon={
+        isTarget ? (
+          <CalendarRange className="h-3.5 w-3.5" />
+        ) : (
+          <CalendarClock className="h-3.5 w-3.5" />
+        )
+      }
       label={isTarget ? "Target" : "Start"}
       value={project[field] ?? null}
       canEdit={canEdit}
       overdueAware={isTarget}
       onChange={(d) =>
-        save(project.id, { [field]: d } as UpdateProjectOptions, { [field]: d } as Patch, onPatch)
+        save(
+          project.id,
+          { [field]: d } as UpdateProjectOptions,
+          { [field]: d } as Patch,
+          onPatch,
+        )
       }
     />
   );
@@ -421,18 +470,22 @@ export function ProjectDateField({
 
 export function ProjectOrgPicker({ project, canEdit, onPatch }: FieldProps) {
   const { organizations } = useUserOrganizations();
-  const currentOrg = organizations.find((o) => o.id === project.organizationId) ?? null;
+  const currentOrg =
+    organizations.find((o) => o.id === project.organizationId) ?? null;
   if (!canEdit) {
     return (
       <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Building2 className="h-3.5 w-3.5" /> {currentOrg ? currentOrg.name : "—"}
+        <Building2 className="h-3.5 w-3.5" />{" "}
+        {currentOrg ? currentOrg.name : "—"}
       </span>
     );
   }
   return (
     <Select
       value={project.organizationId ?? ""}
-      onValueChange={(v) => save(project.id, { organizationId: v }, { organizationId: v }, onPatch)}
+      onValueChange={(v) =>
+        save(project.id, { organizationId: v }, { organizationId: v }, onPatch)
+      }
     >
       <SelectTrigger className="h-7 w-auto gap-1.5 rounded-full border px-2.5 text-xs font-medium text-muted-foreground">
         <Building2 className="h-3.5 w-3.5" />
@@ -457,11 +510,35 @@ export function ProjectMetaRow({
 }: FieldProps & { showOrg?: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <ProjectStatusPicker project={project} canEdit={canEdit} onPatch={onPatch} />
-      <ProjectPriorityPicker project={project} canEdit={canEdit} onPatch={onPatch} />
-      <ProjectDateField project={project} field="startDate" canEdit={canEdit} onPatch={onPatch} />
-      <ProjectDateField project={project} field="targetDate" canEdit={canEdit} onPatch={onPatch} />
-      {showOrg && <ProjectOrgPicker project={project} canEdit={canEdit} onPatch={onPatch} />}
+      <ProjectStatusPicker
+        project={project}
+        canEdit={canEdit}
+        onPatch={onPatch}
+      />
+      <ProjectPriorityPicker
+        project={project}
+        canEdit={canEdit}
+        onPatch={onPatch}
+      />
+      <ProjectDateField
+        project={project}
+        field="startDate"
+        canEdit={canEdit}
+        onPatch={onPatch}
+      />
+      <ProjectDateField
+        project={project}
+        field="targetDate"
+        canEdit={canEdit}
+        onPatch={onPatch}
+      />
+      {showOrg && (
+        <ProjectOrgPicker
+          project={project}
+          canEdit={canEdit}
+          onPatch={onPatch}
+        />
+      )}
     </div>
   );
 }
@@ -484,7 +561,9 @@ function DatePill({
   const [open, setOpen] = React.useState(false);
   const selected = parseDateOnly(value);
   const overdue =
-    overdueAware && value ? new Date(value) < new Date(new Date().toDateString()) : false;
+    overdueAware && value
+      ? new Date(value) < new Date(new Date().toDateString())
+      : false;
 
   const content = (
     <span

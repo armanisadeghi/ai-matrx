@@ -46,7 +46,8 @@ export function useNotesRedux() {
   const listStatus = useAppSelector(selectNotesListStatus);
 
   const isLoading = listStatus === "loading" || listStatus === "idle";
-  const error = listStatus === "error" ? new Error("Failed to load notes") : null;
+  const error =
+    listStatus === "error" ? new Error("Failed to load notes") : null;
 
   // Convert NoteRecord → Note (strip internal _ fields) for API compatibility.
   // Rest-destructure the known internal fields: if NoteRecord adds a new
@@ -77,9 +78,23 @@ export function useNotesRedux() {
   useEffect(() => {
     if (!fetchedRef.current && listStatus === "idle") {
       fetchedRef.current = true;
+      console.log(
+        "[Track Quick Notes] 5, useNotesRedux.ts — dispatch fetchNotesList (listStatus idle)",
+      );
       dispatch(fetchNotesList());
     }
   }, [dispatch, listStatus]);
+
+  useEffect(() => {
+    if (listStatus === "loaded") {
+      console.log(
+        "[Track Quick Notes] 6b, useNotesRedux.ts — notes list status → loaded",
+        {
+          notesCount: notes.length,
+        },
+      );
+    }
+  }, [listStatus, notes.length]);
 
   const setActiveNote = useCallback(
     (note: Note | null) => {
@@ -92,13 +107,10 @@ export function useNotesRedux() {
     [dispatch],
   );
 
-  const setActiveNoteDirty = useCallback(
-    (_dirty: boolean) => {
-      // In Redux, dirty state is tracked automatically by setNoteField.
-      // This is a no-op for API compatibility.
-    },
-    [],
-  );
+  const setActiveNoteDirty = useCallback((_dirty: boolean) => {
+    // In Redux, dirty state is tracked automatically by setNoteField.
+    // This is a no-op for API compatibility.
+  }, []);
 
   const createNote = useCallback(
     async (input: CreateNoteInput): Promise<Note> => {
@@ -112,13 +124,21 @@ export function useNotesRedux() {
     async (id: string, updates: UpdateNoteInput): Promise<Note> => {
       // Apply each field update through Redux (triggers undo tracking)
       if (updates.content !== undefined) {
-        dispatch(setNoteField({ id, field: "content", value: updates.content }));
+        dispatch(
+          setNoteField({ id, field: "content", value: updates.content }),
+        );
       }
       if (updates.label !== undefined) {
         dispatch(setNoteField({ id, field: "label", value: updates.label }));
       }
       if (updates.folder_name !== undefined) {
-        dispatch(setNoteField({ id, field: "folder_name", value: updates.folder_name }));
+        dispatch(
+          setNoteField({
+            id,
+            field: "folder_name",
+            value: updates.folder_name,
+          }),
+        );
       }
       if (updates.tags !== undefined) {
         dispatch(setNoteField({ id, field: "tags", value: updates.tags }));

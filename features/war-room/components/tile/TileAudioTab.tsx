@@ -15,6 +15,10 @@
 // custom-agent slots ("Custom"). The only things hidden in embedded are the
 // pad's PAGE-scoped session list + the GLOBAL ActiveContextButton (the tile
 // owns sessions, and War Room carries its own context, never the global one).
+//
+// Grid / combined compact: session chrome folds into CleanupPad's single toolbar
+// row (sessions · + · Controls · Custom · record · save-only) — no duplicate
+// header bands eating scroll space.
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
@@ -52,7 +56,122 @@ import {
 } from "@/features/war-room/redux/thunks";
 import { cn } from "@/lib/utils";
 
-export function TileAudioTab({ tileId }: { tileId: string }) {
+function TileAudioSessionChrome({
+  tileId,
+  compact,
+  sessionId,
+  sessionIds,
+  activeIndex,
+}: {
+  tileId: string;
+  compact?: boolean;
+  sessionId: string | null;
+  sessionIds: string[];
+  activeIndex: number;
+}) {
+  const dispatch = useAppDispatch();
+
+  if (compact) {
+    return (
+      <>
+        {sessionIds.length >= 1 ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex h-6 shrink-0 items-center gap-0.5 rounded-md px-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                title="This thread's recording sessions"
+              >
+                {activeIndex >= 0 ? activeIndex + 1 : "—"}/{sessionIds.length}
+                <ChevronDown className="size-3 opacity-60" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              {sessionIds.map((sid, i) => (
+                <DropdownMenuItem
+                  key={sid}
+                  onClick={() =>
+                    dispatch(setTileActiveAudioSession(tileId, sid))
+                  }
+                  className={cn("gap-2", sid === sessionId && "text-primary")}
+                >
+                  Recording {i + 1}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => void dispatch(addAudioSessionToTile(tileId))}
+          className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          title="Start a new recording session in this tile"
+          aria-label="New recording session"
+        >
+          <Plus className="size-3.5" />
+        </button>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+        <Radio className="size-3.5 text-muted-foreground" />
+        Audio
+      </span>
+
+      {sessionIds.length >= 1 ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="ml-auto inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              title="This thread's recording sessions"
+            >
+              <Radio className="size-3 opacity-70" />
+              Session {activeIndex >= 0 ? activeIndex + 1 : "—"}/
+              {sessionIds.length}
+              <ChevronDown className="size-3 opacity-60" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            {sessionIds.map((sid, i) => (
+              <DropdownMenuItem
+                key={sid}
+                onClick={() => dispatch(setTileActiveAudioSession(tileId, sid))}
+                className={cn("gap-2", sid === sessionId && "text-primary")}
+              >
+                <Radio className="size-3.5 shrink-0" />
+                Recording {i + 1}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <span className="ml-auto" />
+      )}
+
+      <button
+        type="button"
+        onClick={() => void dispatch(addAudioSessionToTile(tileId))}
+        className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        title="Start a new recording session in this tile"
+      >
+        <Plus className="size-3.5" />
+        New Session
+      </button>
+    </>
+  );
+}
+
+export function TileAudioTab({
+  tileId,
+  compact,
+}: {
+  tileId: string;
+  compact?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const sessionId = useAppSelector(selectActiveAudioSessionId(tileId));
   const sessionIds = useAppSelector(selectAudioSessionIdsForTile(tileId));
@@ -65,64 +184,25 @@ export function TileAudioTab({ tileId }: { tileId: string }) {
     if (!sessionId) void dispatch(ensureTileAudioSession(tileId));
   }, [sessionId, tileId, dispatch]);
 
+  const sessionChrome = (
+    <TileAudioSessionChrome
+      tileId={tileId}
+      compact={compact}
+      sessionId={sessionId}
+      sessionIds={sessionIds}
+      activeIndex={activeIndex}
+    />
+  );
+
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Session chrome — the tile owns lifecycle; the pad binds to the active one. */}
-      <div className="flex shrink-0 items-center gap-1.5 border-b border-border/60 px-2 py-1.5">
-        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-          <Radio className="size-3.5 text-primary" />
-          Audio
-        </span>
+      {!compact ? (
+        <div className="flex shrink-0 items-center gap-1.5 border-b border-border/60 px-2 py-1.5">
+          {sessionChrome}
+        </div>
+      ) : null}
 
-        {/* Always-visible session list for this tile — switch between this
-            thread's recordings (the tile owns sessions; the pad's page-scoped
-            list is hidden in embedded). */}
-        {sessionIds.length >= 1 ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="ml-auto inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                title="This thread's recording sessions"
-              >
-                <Radio className="size-3 opacity-70" />
-                Session {activeIndex >= 0 ? activeIndex + 1 : "—"}/
-                {sessionIds.length}
-                <ChevronDown className="size-3 opacity-60" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              {sessionIds.map((sid, i) => (
-                <DropdownMenuItem
-                  key={sid}
-                  onClick={() =>
-                    dispatch(setTileActiveAudioSession(tileId, sid))
-                  }
-                  className={cn(sid === sessionId && "text-primary")}
-                >
-                  <Radio className="size-3.5" />
-                  Recording {i + 1}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <span className="ml-auto" />
-        )}
-
-        <button
-          type="button"
-          onClick={() => void dispatch(addAudioSessionToTile(tileId))}
-          className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          title="Start a new recording session in this tile"
-        >
-          <Plus className="size-3.5" />
-          New Session
-        </button>
-      </div>
-
-      {/* The real pipeline, bound to the tile's active session. */}
-      <div className="min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col">
         {sessionId ? (
           <CleanupPad
             key={sessionId}
@@ -130,6 +210,8 @@ export function TileAudioTab({ tileId }: { tileId: string }) {
             urlSync={false}
             variant="embedded"
             showNewSession={false}
+            compact={compact}
+            embeddedHeaderSlot={compact ? sessionChrome : undefined}
             sections={{
               sidebar: false,
               dictionary: false,

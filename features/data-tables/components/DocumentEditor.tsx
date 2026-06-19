@@ -21,6 +21,7 @@ import { History, Loader2, Save } from "lucide-react";
 
 import {
   createUniver,
+  defaultTheme,
   LocaleType,
   merge,
   type FUniver,
@@ -31,11 +32,15 @@ import docsCoreEnUS from "@univerjs/preset-docs-core/locales/en-US";
 import "@univerjs/preset-docs-core/lib/index.css";
 
 import { supabase } from "@/utils/supabase/client";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { toast } from "@/components/ui/use-toast";
 
 import { useDocumentRealtime } from "../hooks/useDocumentRealtime";
+import { useUniverDarkModeSync } from "../hooks/useUniverDarkModeSync";
+import { sanitizeUniverDocSnapshot } from "../utils/sanitizeUniverDocSnapshot";
+import { disposeUniverInstance } from "../utils/disposeUniverInstance";
 import { RemoteCursorsLayer } from "./RemoteCursorsLayer";
 import {
   getLatestDocumentSnapshot,
@@ -100,6 +105,35 @@ export default function DocumentEditor({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [historyOpen, setHistoryOpen] = useState(false);
 
+  // Univer boots ONCE per documentId (see boot effect). `editable`, `collab`,
+  // and the collab host-election flag can all change AFTER boot, so we read
+  // them from refs inside the long-lived command listener rather than putting
+  // them in the effect deps — recreating Univer on a prop toggle is what made
+  // content load then vanish (disposing Univer mid-render crashes its popups).
+  const editableRef = useRef(editable);
+  const collabRef = useRef(collab);
+  const collabIsHostRef = useRef(collabIsHost);
+  useEffect(() => {
+    editableRef.current = editable;
+  }, [editable]);
+  useEffect(() => {
+    collabRef.current = collab;
+  }, [collab]);
+  useEffect(() => {
+    collabIsHostRef.current = collabIsHost;
+  }, [collabIsHost]);
+
+  // Initial dark-mode value for createUniver. Live changes are handled by
+  // useUniverDarkModeSync below; this just avoids a light→dark flash on boot.
+  const themeMode = useAppSelector((s) => s.theme.mode);
+  const darkModeRef = useRef(themeMode === "dark");
+  useEffect(() => {
+    darkModeRef.current = themeMode === "dark";
+  }, [themeMode]);
+
+  // Keep Univer's dark mode in lockstep with the app theme (Facade API).
+  useUniverDarkModeSync(apiRef, bootState === "ready");
+
   const onRemoteSnapshot = useCallback(
     (evt: { snapshotId: string; createdBy: string | null }) => {
       // V2 (collab=true): CRDT is the source of truth; snapshots are
@@ -138,10 +172,20 @@ export default function DocumentEditor({
       const fb = apiRef.current as unknown as {
         createUniverDoc?: (data: Partial<IDocumentData>) => unknown;
       };
-      fb.createUniverDoc?.(snapshot as Partial<IDocumentData>);
+      fb.createUniverDoc?.(
+        sanitizeUniverDocSnapshot(
+          snapshot as Partial<IDocumentData>,
+          documentId,
+        ),
+      );
     }
   }, [documentId]);
 
+  // Boot Univer EXACTLY ONCE per documentId. `editable` / `collab` are read
+  // from refs (above) so toggling them never tears the instance down. This is
+  // the lifecycle Univer's docs assume (create once, dispose on unmount) —
+  // recreating on a prop change is what crashed Univer's ParagraphMenu popup
+  // mid-render and made loaded content disappear.
   useEffect(() => {
     if (!containerRef.current) return;
     let cancelled = false;
@@ -151,6 +195,8 @@ export default function DocumentEditor({
         const { univer, univerAPI } = createUniver({
           locale: LocaleType.EN_US,
           locales: { [LocaleType.EN_US]: merge({}, docsCoreEnUS) },
+          theme: defaultTheme,
+          darkMode: darkModeRef.current,
           presets: [
             UniverDocsCorePreset({
               container: containerRef.current as HTMLElement,
@@ -172,28 +218,32 @@ export default function DocumentEditor({
           setBootState("load_error");
           return;
         }
-        const initial: Partial<IDocumentData> =
+        const initial: Partial<IDocumentData> = sanitizeUniverDocSnapshot(
           (res.data?.snapshot as Partial<IDocumentData>) ??
-          defaultEmptyDocument();
+            defaultEmptyDocument(),
+          documentId,
+        );
         const fb = apiRef.current as unknown as {
           createUniverDoc?: (data: Partial<IDocumentData>) => unknown;
         };
         fb.createUniverDoc?.(initial);
         setBootState("ready");
 
-        if (!editable) return;
-
-        // Hook command stream → debounced autosave.
+        // Command stream → debounced autosave. Registered for the lifetime of
+        // the instance; viewer-mode (editable=false) is honored at fire time
+        // via editableRef so a later edit-permission grant needs no remount.
         apiRef.current.onCommandExecuted(() => {
+          if (!editableRef.current) return;
           setSaveStatus("dirty");
           if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
           saveTimerRef.current = setTimeout(() => {
-            if (collab && !collabIsHost) return;
+            if (!editableRef.current) return;
+            if (collabRef.current && !collabIsHostRef.current) return;
             void performSave();
           }, 2500);
         });
 
-        if (collab) {
+        if (collabRef.current) {
           void startCollabSession().catch((err) => {
             console.warn(
               "[document] collab boot failed — falling back to solo mode",
@@ -213,11 +263,16 @@ export default function DocumentEditor({
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       collabSessionRef.current?.stop();
       collabSessionRef.current = null;
-      univerRef.current?.dispose();
+      const univer = univerRef.current;
       univerRef.current = null;
       apiRef.current = null;
+      disposeUniverInstance(univer);
     };
-  }, [documentId, editable, collab]);
+    // performSave / startCollabSession are stable per documentId (useCallback
+    // deps = [documentId]) and are declared below this effect, so they're
+    // intentionally omitted to keep Univer booting exactly once per document.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentId]);
 
   // Lazy-import the collab classes so the bundle for non-collab users stays
   // free of yjs / y-protocols. Resolved at session-start time only.
@@ -360,16 +415,14 @@ export default function DocumentEditor({
   const statusPill = useMemo(() => statusPillFor(saveStatus), [saveStatus]);
 
   return (
-    // colorScheme: light pins this subtree to light mode so Univer's portal
-    // popovers / menus do not collide with the app's dark mode. The canvas
-    // itself was always light; the popups were where it broke.
-    <div
-      className="matrx-univer-shell flex h-full w-full flex-col bg-card"
-      style={{ colorScheme: "light" }}
-    >
+    // Univer owns its own light/dark theming via the Facade API
+    // (useUniverDarkModeSync), so we do NOT pin a colorScheme here — that fought
+    // Univer's portals and broke dark mode. The wrapper bg uses a semantic
+    // token so it adapts with the app theme during boot.
+    <div className="matrx-univer-shell flex h-full w-full flex-col">
       <div className="flex items-center gap-2 border-b border-border px-2 py-1 text-xs min-w-0">
         {toolbarLeftSlot && (
-          <div className="flex items-center gap-1 min-w-0 flex-1">
+          <div className="flex items-center gap-1 min-w-0 flex-1 pl-8 sm:pl-0">
             {toolbarLeftSlot}
           </div>
         )}
@@ -391,7 +444,7 @@ export default function DocumentEditor({
             )}
           </div>
         )}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 shrink-0 pr-8">
           {collab && bootState === "ready" && (
             <RemoteCursorsLayer
               states={remoteAwareness}
@@ -400,7 +453,7 @@ export default function DocumentEditor({
           )}
           {bootState === "ready" && saveStatus !== "idle" && (
             <div
-              className={`hidden sm:flex items-center gap-1 ${statusPill.className}`}
+              className={`hidden sm:flex items-center gap-1 border border-green-500 ${statusPill.className}`}
             >
               {statusPill.icon}
               <span>{statusPill.text}</span>
@@ -417,7 +470,6 @@ export default function DocumentEditor({
               title="Save a labeled snapshot now (bypass autosave debounce)"
             >
               <Save className="size-3" />
-              <span className="hidden sm:inline">Save now</span>
             </Button>
           )}
           <Button
@@ -428,7 +480,6 @@ export default function DocumentEditor({
             title="View snapshot history"
           >
             <History className="size-3" />
-            <span className="hidden sm:inline">History</span>
           </Button>
         </div>
       </div>

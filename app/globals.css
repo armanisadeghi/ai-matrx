@@ -1795,11 +1795,11 @@
 
 /* ─────────────────────────────────────────────────────────────────────────
    Univer (workbooks + documents) — UX overrides scoped to .matrx-univer-shell.
-   Univer ships a light-only UI; without these the second toolbar row drifts
-   center-aligned (it should hug the left like Google Sheets), the canvas
-   wastes vertical space on phones, and dark-mode portal popovers visually
-   collide with the surrounding app chrome. We pin `color-scheme: light`
-   on the editor shell (in JSX) and shape the toolbar geometry here.
+   Univer owns its own light/dark theming via the Facade API
+   (`useUniverDarkModeSync` calls `univerAPI.toggleDarkMode(isDark)`), so we do
+   NOT force a `color-scheme` anywhere — doing so broke Univer's dark mode and
+   fought its portal popovers. These rules ONLY shape toolbar geometry so the
+   secondary row hugs the left like Google Sheets.
    ──────────────────────────────────────────────────────────────────────── */
 .matrx-univer-shell {
   /* Univer renders its built-in chrome inside its container — clipping the
@@ -1816,19 +1816,5 @@
 .matrx-univer-shell [class*="univer-toolbar"][class*="group"],
 .matrx-univer-shell [class*="univer-ribbon"][class*="row"] {
   justify-content: flex-start !important;
-}
-
-
-/* Univer portals popovers to document.body — outside the .matrx-univer-shell
-   subtree — so the inline color-scheme there does not reach them. Catch
-   any Univer-classed container globally and pin it to light. Class-prefix
-   selector is stable across 0.25.x; even a future rename can only revert
-   to whatever Univer ships natively (no functional break). */
-[class*="univer-popup"],
-[class*="univer-menu"],
-[class*="univer-dropdown"],
-[class*="univer-tooltip"],
-[class*="univer-portal"] {
-  color-scheme: light !important;
 }
 

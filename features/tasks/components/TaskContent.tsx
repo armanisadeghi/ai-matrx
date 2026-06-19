@@ -44,6 +44,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
 import { EMPTY_SELECTION } from "@/features/agent-context/components/hierarchy-selection/types";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
 export default function TaskContent(): JSX.Element {
   const dispatch = useAppDispatch();
@@ -53,6 +54,10 @@ export default function TaskContent(): JSX.Element {
   const newTaskTitle = useAppSelector(selectNewTaskTitle);
   const newProjectName = useAppSelector(selectNewProjectName);
   const isCreatingTask = useAppSelector(selectIsCreatingTask);
+  const {
+    inputRef: quickAddInputRef,
+    scheduleRefocus: scheduleQuickAddRefocus,
+  } = useRefocusInputAfterAsync(isCreatingTask);
   const isCreatingProject = useAppSelector(selectIsCreatingProject);
   const loading = useAppSelector(selectTasksLoading);
   const filteredTasks = useAppSelector(selectFilteredTasks);
@@ -136,7 +141,7 @@ export default function TaskContent(): JSX.Element {
     const defaultScopeIds = Object.values(scopeSelections ?? {}).filter(
       (v): v is string => typeof v === "string" && v.length > 0,
     );
-    await dispatch(
+    const newId = await dispatch(
       createTaskThunk({
         title: newTaskTitle,
         description: taskDescription.trim() || null,
@@ -145,7 +150,11 @@ export default function TaskContent(): JSX.Element {
         organizationId: orgId,
         scopeIds: defaultScopeIds,
       }),
-    );
+    ).unwrap();
+
+    if (newId) {
+      scheduleQuickAddRefocus();
+    }
 
     // Reset all fields
     setTaskDescription("");
@@ -183,6 +192,7 @@ export default function TaskContent(): JSX.Element {
                 {/* Input row */}
                 <div className="flex items-center gap-2">
                   <Input
+                    ref={quickAddInputRef}
                     type="text"
                     value={newTaskTitle}
                     onChange={handleTitleChange}

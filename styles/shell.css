@@ -262,6 +262,8 @@
   .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
   .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href^="/files"],
   .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-nav-item[data-nav-href="/tools/pdf-extractor"],
+  .shell-root[data-pathname^="/data"]         .shell-nav-item[data-nav-href="/data"],
+  .shell-root[data-pathname^="/code"]         .shell-nav-item[data-nav-href="/code"],
   .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
 ) {
   background: var(--shell-pill-bg);
@@ -283,6 +285,8 @@
   .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
   .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href^="/files"],
   .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-nav-item[data-nav-href="/tools/pdf-extractor"],
+  .shell-root[data-pathname^="/data"]         .shell-nav-item[data-nav-href="/data"],
+  .shell-root[data-pathname^="/code"]         .shell-nav-item[data-nav-href="/code"],
   .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
 ) svg,
 :where(
@@ -299,6 +303,8 @@
   .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
   .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href^="/files"],
   .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-nav-item[data-nav-href="/tools/pdf-extractor"],
+  .shell-root[data-pathname^="/data"]         .shell-nav-item[data-nav-href="/data"],
+  .shell-root[data-pathname^="/code"]         .shell-nav-item[data-nav-href="/code"],
   .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
 ) .shell-nav-icon { color: var(--shell-pill-text); }
 
@@ -315,6 +321,8 @@
   .shell-root[data-pathname^="/projects"]     .shell-nav-item[data-nav-href="/projects"],
   .shell-root[data-pathname^="/files"]        .shell-nav-item[data-nav-href^="/files"],
   .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-nav-item[data-nav-href="/tools/pdf-extractor"],
+  .shell-root[data-pathname^="/data"]         .shell-nav-item[data-nav-href="/data"],
+  .shell-root[data-pathname^="/code"]         .shell-nav-item[data-nav-href="/code"],
   .shell-root[data-pathname^="/settings"]     .shell-nav-item[data-nav-href="/settings"]
 ) .shell-nav-label { color: var(--shell-pill-text); font-weight: 600; }
 
@@ -367,6 +375,13 @@
   grid-template-areas:
     "sidebar header"
     "sidebar main";
+  /* Animate the column track in lockstep with the fixed sidebar's width so the
+     main content reflows over the SAME 600ms in BOTH directions. Without this
+     the grid snapped instantly: opening still looked smooth (the opaque sidebar
+     visibly grew into already-reflowed content), but closing read as instant
+     (content filled immediately while the transparent collapsed sidebar shrank
+     with nothing visible to track). */
+  transition: grid-template-columns 600ms var(--shell-ease-smooth);
 }
 
 /* ---------------------------------------------------------------------------
@@ -399,7 +414,10 @@
   background: var(--shell-sidebar-bg);
   border-right: 1px solid var(--shell-sidebar-border);
   transition:
-    width var(--shell-duration-slow) var(--shell-ease-spring),
+    /* Smooth, non-overshooting ease (NOT the spring — its >1 control point
+       overshoots the target width and springs back). Slower duration for a
+       calmer collapse/expand that travels once and stops in a single spot. */
+    width 600ms var(--shell-ease-smooth),
     background var(--shell-duration-normal) var(--shell-ease-smooth),
     border-color var(--shell-duration-normal) var(--shell-ease-smooth);
   overflow: hidden;
@@ -509,12 +527,6 @@
 .shell-sidebar-footer {
   flex-shrink: 0;
   padding: 0.5rem;
-  border-top: 1px solid transparent;
-  transition: border-color var(--shell-duration-normal) var(--shell-ease-smooth);
-}
-
-.shell-root:has(#shell-sidebar-toggle:checked) .shell-sidebar-footer {
-  border-top-color: var(--matrx-glass-border-color);
 }
 
 /* ---------------------------------------------------------------------------
@@ -594,10 +606,43 @@ button.shell-nav-item {
   pointer-events: auto;
 }
 
-/* Center icons when collapsed */
+/* External-link affordance — separately-hosted apps (opens in a new tab).
+   Pushed to the trailing edge, muted, and revealed only with the label when
+   the sidebar is expanded so it never crowds the collapsed icon rail. */
+.shell-nav-external {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0;
+  color: var(--muted-foreground, currentColor);
+  pointer-events: none;
+  transition: opacity var(--shell-duration-normal) var(--shell-ease-smooth);
+}
+
+.shell-root:has(#shell-sidebar-toggle:checked) .shell-nav-external {
+  opacity: 0.6;
+}
+
+/* Collapsed state. Two rules keep every icon perfectly stationary through the
+   collapse animation — no vertical drift AND no horizontal "dance":
+
+   1. Vertical: keep the SAME vertical padding as the expanded state (0.15rem)
+      so every row is the exact same height in both states. This prevents the
+      cumulative drift (~7px/row) that otherwise pushes the lower icons down by
+      100px+ as the sidebar collapses.
+
+   2. Horizontal: DO NOT switch to `justify-content: center`. The icon already
+      sits at x=12px (nav padding 6px + item padding 6px), which is exactly
+      centered in the 2.75rem (44px) collapsed rail — (44-20)/2 = 12 — and it's
+      the same x it occupies when expanded. Centering would instead snap the
+      icon toward the middle of the still-208px-wide row the instant the toggle
+      flips, then slide it left as the width animates down — the "dance". Left-
+      anchoring keeps the icon fixed; the shrinking width simply trims the empty
+      label space to its right, so the menu visually covers the text and only
+      then reaches the icon-only width, with zero icon movement. */
 .shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-item {
-  justify-content: center;
-  padding: 0.375rem;
+  justify-content: flex-start;
+  padding: 0.15rem 0.375rem;
   gap: 0;
 }
 
@@ -684,127 +729,133 @@ button.shell-nav-item {
    9b. Nav Item Groups — Medium Routes with nested children
    --------------------------------------------------------------------------- */
 
-/* Children are hidden by default — shown only when the parent group is active */
-.shell-nav-children {
-  display: none;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-
-/* Thin separator lines above/below the children block */
-.shell-nav-children-separator {
-  height: 1px;
-  margin: 0.125rem 0.375rem;
-  background: var(--matrx-glass-border-color);
-  opacity: 0.5;
-}
-
-/* Child nav items — slightly smaller than parent items */
-.shell-nav-child {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.1rem 0.375rem;
-  border-radius: 0.25rem;
-  text-decoration: none;
-  color: var(--shell-nav-text);
-  transition:
-    background var(--shell-duration-fast) var(--shell-ease-smooth),
-    color var(--shell-duration-fast) var(--shell-ease-smooth);
+/* Group parents render a single row; their children live in a hover/click
+   flyout (.shell-nav-flyout) that NavFlyoutGroup portals to <body> beside the
+   rail. Collapsed: parent icon navigates to the main route. Expanded: the row
+   opens the flyout. No permanently-visible inline tree. Because the flyout is
+   portaled outside .shell-root, its active state is JS-driven (data-active),
+   not the CSS data-pathname matching used elsewhere. */
+.shell-nav-flyout-group {
   position: relative;
 }
 
-.shell-nav-child:hover {
-  background: var(--matrx-glass-bg-hover);
-  color: var(--shell-nav-text-hover);
+/* Caret on the expanded parent row, hinting at the submenu. */
+.shell-nav-flyout-caret {
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0.45;
+  transition:
+    transform var(--shell-duration-fast) var(--shell-ease-smooth),
+    opacity var(--shell-duration-fast) var(--shell-ease-smooth);
 }
 
-.shell-nav-child:active {
-  background: var(--matrx-glass-bg-active);
+.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-flyout-caret {
+  display: none;
 }
 
-.shell-nav-child .shell-nav-icon {
-  width: 1rem;
-  height: 1rem;
+.shell-nav-flyout-group[data-flyout-open="true"] .shell-nav-flyout-caret {
+  opacity: 0.9;
+  transform: rotate(90deg);
 }
 
-.shell-nav-child .shell-nav-label {
-  font-size: 0.75rem;
-  font-weight: 400;
-}
-
-/* Expanded sidebar: indent children */
-.shell-root:has(#shell-sidebar-toggle:checked) .shell-nav-children {
-  padding-left: 0.75rem;
-}
-
-/* Collapsed sidebar: center child icons, same as parent items */
-.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-child {
-  justify-content: center;
-  padding: 0.25rem;
-  gap: 0;
-}
-
-.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-child .shell-nav-label {
-  width: 0;
-}
-
-/* Tooltip on collapsed child items */
-.shell-root:not(:has(#shell-sidebar-toggle:checked)) .shell-nav-child[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  left: calc(100% + 0.5rem);
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--matrx-glass-bg-active);
-  backdrop-filter: blur(var(--matrx-glass-blur)) saturate(1.8) brightness(1.1);
-  border: 1px solid var(--matrx-glass-border-color);
-  border-radius: 0.375rem;
-  padding: 0.25rem 0.625rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--shell-nav-text-hover);
-  white-space: nowrap;
-  z-index: 50;
-  pointer-events: none;
-  box-shadow: var(--matrx-glass-shadow);
-  animation: shell-tooltip-in var(--shell-duration-fast) var(--shell-ease-spring);
-}
-
-/* Show children when the parent group's route is active.
-   Uses the same data-pathname prefix matching as everything else. */
-:where(
-  .shell-root[data-pathname^="/agents"] .shell-nav-group[data-nav-group="/agents"]
-) .shell-nav-children {
+/* Flyout panel — portaled to <body>, floats beside the rail. Standard shadcn
+   popover surface (solid, theme-matched) so it reads like the rest of the UI. */
+.shell-nav-flyout {
+  min-width: 12rem;
+  max-width: 16rem;
   display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.25rem;
+  border-radius: var(--radius);
+  background: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+  animation: shell-flyout-in var(--shell-duration-fast) var(--shell-ease-spring);
 }
 
-/* Active state for child items — exact match vs prefix match */
-:where(
-  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href^="/agents"][data-nav-exact="true"],
-  .shell-root[data-pathname^="/agents/templates"] .shell-nav-child[data-nav-href="/agents/templates"],
-  .shell-root[data-pathname^="/agents/new"] .shell-nav-child[data-nav-href="/agents/new"]
-) {
+.shell-nav-flyout-header {
+  padding: 0.375rem 0.5rem 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--muted-foreground));
+}
+
+.shell-nav-flyout-section {
+  padding: 0.5rem 0.5rem 0.125rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--muted-foreground));
+}
+
+.shell-nav-flyout-section:not(:first-child) {
+  margin-top: 0.25rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid hsl(var(--border) / 0.6);
+}
+
+.shell-nav-flyout-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: calc(var(--radius) - 2px);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: hsl(var(--popover-foreground));
+  transition:
+    background var(--shell-duration-fast) var(--shell-ease-smooth),
+    color var(--shell-duration-fast) var(--shell-ease-smooth);
+}
+
+.shell-nav-flyout-item:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.shell-nav-flyout-item .shell-nav-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: hsl(var(--muted-foreground));
+}
+
+.shell-nav-flyout-item:hover .shell-nav-icon {
+  color: hsl(var(--accent-foreground));
+}
+
+/* Active route — same blue pill the rail uses, for cohesion across the menu. */
+.shell-nav-flyout-item[data-active="true"] {
   background: var(--shell-pill-bg);
-  border: 1px solid var(--shell-pill-border);
+  color: var(--shell-pill-text);
+  font-weight: 600;
 }
 
-:where(
-  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href^="/agents"][data-nav-exact="true"],
-  .shell-root[data-pathname^="/agents/templates"] .shell-nav-child[data-nav-href="/agents/templates"],
-  .shell-root[data-pathname^="/agents/new"] .shell-nav-child[data-nav-href="/agents/new"]
-) svg,
-:where(
-  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href^="/agents"][data-nav-exact="true"],
-  .shell-root[data-pathname^="/agents/templates"] .shell-nav-child[data-nav-href="/agents/templates"],
-  .shell-root[data-pathname^="/agents/new"] .shell-nav-child[data-nav-href="/agents/new"]
-) .shell-nav-icon { color: var(--shell-pill-text); }
+.shell-nav-flyout-item[data-active="true"] .shell-nav-icon {
+  color: var(--shell-pill-text);
+}
 
-:where(
-  .shell-root[data-pathname="/agents"] .shell-nav-child[data-nav-href^="/agents"][data-nav-exact="true"],
-  .shell-root[data-pathname^="/agents/templates"] .shell-nav-child[data-nav-href="/agents/templates"],
-  .shell-root[data-pathname^="/agents/new"] .shell-nav-child[data-nav-href="/agents/new"]
-) .shell-nav-label { color: var(--shell-pill-text); font-weight: 600; }
+@keyframes shell-flyout-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* (Inline child-tree styles + per-child active CSS removed — desktop groups
+   now use the JS-driven .shell-nav-flyout above. Mobile keeps its own inline
+   .shell-mobile-nav-children tree below.) */
 
 /* ---------------------------------------------------------------------------
    9c. Sidebar View Switching — Large Routes
@@ -824,6 +875,13 @@ button.shell-nav-item {
   gap: 0.125rem;
   min-height: 0;
   flex: 1;
+}
+
+/* Admin section — borderless block of admin chrome in the sidebar footer. */
+.shell-admin-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
 }
 
 /* Default: main nav visible, route nav hidden */
@@ -1162,15 +1220,6 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   display: none;
 }
 
-/* Transcript Studio: shell-main pulls up under the transparent header row, so
-   the studio sidebar's top bar (New / collapse) sits beneath
-   #shell-header-center. Pass clicks through the header shell; interactive
-   portal controls opt back in via pointer-events-auto in StudioHeaderPortal. */
-.shell-root[data-pathname^="/transcripts/studio"] .shell-header > .shell-header-center,
-.shell-root[data-pathname^="/transcripts/studio"] .shell-header-inject {
-  pointer-events: none;
-}
-
 /* ---------------------------------------------------------------------------
    14. Mobile Dock — iOS-style Bottom Navigation
    --------------------------------------------------------------------------- */
@@ -1355,6 +1404,63 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
   .shell-root[data-pathname^="/files"]        .shell-mobile-nav-item[data-nav-href^="/files"],
   .shell-root[data-pathname^="/tools/pdf-extractor"] .shell-mobile-nav-item[data-nav-href="/tools/pdf-extractor"],
   .shell-root[data-pathname^="/settings"]     .shell-mobile-nav-item[data-nav-href="/settings"]
+) {
+  background: var(--shell-pill-bg);
+  border: 1px solid var(--shell-pill-border);
+  color: var(--shell-pill-text);
+}
+
+/* Mobile nav groups — parent then an inset, divider-led column of children. */
+.shell-mobile-nav-children {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0.125rem 0 0.25rem 1.25rem;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--matrx-glass-border-color);
+}
+
+.shell-mobile-nav-child {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+/* Admin accordion caret (mobile) — flips when its <details> is open. */
+details[open] > summary .shell-mobile-admin-caret {
+  transform: rotate(180deg);
+}
+
+/* Active state for grouped children + group parents in the mobile sheet. */
+:where(
+  .shell-root[data-pathname^="/agents/all"]            .shell-mobile-nav-item[data-nav-href="/agents/all"],
+  .shell-root[data-pathname^="/agents/templates"]      .shell-mobile-nav-item[data-nav-href="/agents/templates"],
+  .shell-root[data-pathname^="/agents/shortcuts"]      .shell-mobile-nav-item[data-nav-href="/agents/shortcuts"],
+  .shell-root[data-pathname^="/agents/categories"]     .shell-mobile-nav-item[data-nav-href="/agents/categories"],
+  .shell-root[data-pathname^="/agents/content-blocks"] .shell-mobile-nav-item[data-nav-href="/agents/content-blocks"],
+  .shell-root[data-pathname^="/agents/new"]            .shell-mobile-nav-item[data-nav-href="/agents/new"],
+  .shell-root[data-pathname^="/reports/agent-drift"]   .shell-mobile-nav-item[data-nav-href="/reports/agent-drift"],
+  .shell-root[data-pathname^="/tasks"]                 .shell-mobile-nav-item[data-nav-href="/tasks"],
+  .shell-root[data-pathname^="/war-room"]              .shell-mobile-nav-item[data-nav-href="/war-room"],
+  .shell-root[data-pathname^="/documents"]             .shell-mobile-nav-item[data-nav-href="/documents"],
+  .shell-root[data-pathname^="/data"]                  .shell-mobile-nav-item[data-nav-href="/data"],
+  .shell-root[data-pathname^="/workbooks"]             .shell-mobile-nav-item[data-nav-href="/workbooks"],
+  .shell-root[data-pathname^="/lists"]                 .shell-mobile-nav-item[data-nav-href="/lists"],
+  .shell-root[data-pathname^="/code"]                  .shell-mobile-nav-item[data-nav-href="/code"],
+  .shell-root[data-pathname^="/sandbox"]               .shell-mobile-nav-item[data-nav-href="/sandbox"],
+  .shell-root[data-pathname^="/scopes"]                .shell-mobile-nav-item[data-nav-href="/scopes"],
+  .shell-root[data-pathname^="/agent-context"]         .shell-mobile-nav-item[data-nav-href="/agent-context"],
+  .shell-root[data-pathname="/transcripts"]            .shell-mobile-nav-item[data-nav-href="/transcripts"],
+  .shell-root[data-pathname^="/transcripts/new"]       .shell-mobile-nav-item[data-nav-href="/transcripts/new"],
+  .shell-root[data-pathname^="/transcripts/processor"] .shell-mobile-nav-item[data-nav-href="/transcripts/processor"],
+  .shell-root[data-pathname^="/transcripts/studio"]    .shell-mobile-nav-item[data-nav-href="/transcripts/studio"],
+  .shell-root[data-pathname^="/transcripts/scribe"]    .shell-mobile-nav-item[data-nav-href="/transcripts/scribe"],
+  .shell-root[data-pathname^="/transcripts/cleanup"]   .shell-mobile-nav-item[data-nav-href="/transcripts/cleanup"],
+  .shell-root[data-pathname^="/rag/data-stores"]       .shell-mobile-nav-item[data-nav-href="/rag/data-stores"],
+  .shell-root[data-pathname^="/rag/search"]            .shell-mobile-nav-item[data-nav-href="/rag/search"],
+  .shell-root[data-pathname^="/rag/library"]           .shell-mobile-nav-item[data-nav-href="/rag/library"],
+  .shell-root[data-pathname^="/rag/repositories"]      .shell-mobile-nav-item[data-nav-href="/rag/repositories"],
+  .shell-root[data-pathname^="/knowledge/graph"]       .shell-mobile-nav-item[data-nav-href="/knowledge/graph"]
 ) {
   background: var(--shell-pill-bg);
   border: 1px solid var(--shell-pill-border);
@@ -1879,7 +1985,10 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
     opacity: 0;
     pointer-events: none;
     transition:
-      left var(--shell-duration-slow) var(--shell-ease-spring),
+      /* Match the main sidebar's width transition exactly so this strip tracks
+         the sidebar edge in lockstep — same smooth ease, same 600ms, no spring
+         overshoot. */
+      left 600ms var(--shell-ease-smooth),
       opacity var(--shell-duration-normal) var(--shell-ease-smooth);
   }
 

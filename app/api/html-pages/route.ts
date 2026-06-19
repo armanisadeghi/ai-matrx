@@ -101,6 +101,61 @@ export async function POST(request: NextRequest) {
           insertData.source_conv_id = sourceConversationId;
         if (contextMetadata) insertData.context_metadata = contextMetadata;
 
+        // Idempotency (artifact → publication is 1:1 per source message): if a
+        // page already exists for this source message, UPDATE it in place rather
+        // than inserting a duplicate. This makes publishing idempotent
+        // server-side — re-publishing the same html artifact never accumulates
+        // orphan pages, even if the client lost track of the published page id.
+        // Best-effort: ANY lookup/update failure (e.g. the source_message_id
+        // column is absent) falls through to the insert below, so publishing can
+        // never break.
+        if (sourceMessageId) {
+          try {
+            const { data: existing } = await htmlDb
+              .from("html_pages")
+              .select("id")
+              .eq("user_id", user.id)
+              .eq("source_message_id", sourceMessageId)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (existing?.id) {
+              const { data: reused, error: reuseError } = await htmlDb
+                .from("html_pages")
+                .update({
+                  html_content: htmlContent,
+                  meta_title: metaTitle,
+                  meta_description: metaDescription,
+                  meta_keywords: metaFields.metaKeywords || null,
+                  og_image: metaFields.ogImage || null,
+                  canonical_url: metaFields.canonicalUrl || null,
+                  is_indexable: metaFields.isIndexable || false,
+                })
+                .eq("id", existing.id)
+                .eq("user_id", user.id)
+                .select()
+                .single();
+              if (!reuseError && reused) {
+                return NextResponse.json({
+                  success: true,
+                  pageId: reused.id,
+                  url: `${HTML_SITE_URL}/p/${reused.id}`,
+                  metaTitle: reused.meta_title,
+                  metaDescription: reused.meta_description,
+                  isIndexable: reused.is_indexable,
+                  createdAt: reused.created_at,
+                  reused: true,
+                });
+              }
+            }
+          } catch (lookupErr) {
+            console.warn(
+              "[html-pages API] idempotency pre-check skipped (falling through to insert):",
+              lookupErr,
+            );
+          }
+        }
+
         const { data, error } = await htmlDb
           .from("html_pages")
           .insert(insertData)

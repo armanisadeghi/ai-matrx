@@ -28,10 +28,6 @@ import {
 } from "@/lib/redux/slices/overlaySlice";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 
-// Module-level guard so the mount-confirmation log fires once per page
-// session regardless of strict-mode double-invokes or route remounts.
-let _confirmedNewMount = false;
-
 // Prop-type imports for overlay components below — used to replace `as never`
 // casts emitted by the codegen with precise static types.
 import type { QuickCreateTab } from "@/features/agent-shortcuts/hooks/useShortcutQuickCreate";
@@ -363,7 +359,15 @@ const CuratedIconPickerWindow = dynamic(
   { ssr: false },
 );
 const CreateProjectWindow = dynamic(
-  () => import("@/features/window-panels/windows/projects/CreateProjectWindow"),
+  () =>
+    import("@/features/window-panels/windows/projects/CreateProjectWindow").then(
+      (m) => {
+        console.log(
+          "[Track New Project] 10, OverlayController.tsx — CreateProjectWindow dynamic chunk loaded",
+        );
+        return m;
+      },
+    ),
   { ssr: false },
 );
 const EmailDialogBridge = dynamic(
@@ -547,9 +551,19 @@ const QuickNoteSaveWindow = dynamic(
 );
 const QuickNotesSheet = dynamic(
   () =>
-    import("@/features/notes/actions/QuickNotesSheet").then((m) => ({
-      default: m.QuickNotesSheet,
-    })),
+    import("@/features/notes/actions/QuickNotesSheet").then((m) => {
+      console.log(
+        "[Track Quick Notes] 3, OverlayController.tsx — QuickNotesSheet dynamic chunk loaded",
+      );
+      return { default: m.QuickNotesSheet };
+    }),
+  { ssr: false },
+);
+const QuickScribeSheet = dynamic(
+  () =>
+    import("@/features/transcript-studio/components/QuickScribeSheet").then(
+      (m) => ({ default: m.QuickScribeSheet }),
+    ),
   { ssr: false },
 );
 const GlobalSuggestionsDrawer = dynamic(
@@ -643,6 +657,10 @@ const TaskQuickCreateWindow = dynamic(
   () => import("@/features/window-panels/windows/tasks/TaskQuickCreateWindow"),
   { ssr: false },
 );
+const TaskEditorWindow = dynamic(
+  () => import("@/features/window-panels/windows/tasks/TaskEditorWindow"),
+  { ssr: false },
+);
 const ToolCallWindowPanel = dynamic(
   () =>
     import("@/features/tool-call-visualization/window-panel/ToolCallWindowPanel"),
@@ -711,6 +729,12 @@ const WhatsAppShellWindow = dynamic(
 
 export default function OverlayController() {
   const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    console.log(
+      "[Track New Project] 8, OverlayController.tsx — OverlayController mounted",
+    );
+  }, []);
 
   // useEffect(() => {
   //   if (!_confirmedNewMount) {
@@ -903,6 +927,7 @@ export default function OverlayController() {
       selectIsOverlayOpen(s, "kgSuggestionsDrawer"),
     ),
     quickNotes: useAppSelector((s) => selectIsOverlayOpen(s, "quickNotes")),
+    quickScribe: useAppSelector((s) => selectIsOverlayOpen(s, "quickScribe")),
     quickTasks: useAppSelector((s) => selectIsOverlayOpen(s, "quickTasks")),
     quickTasksWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickTasksWindow"),
@@ -1138,6 +1163,9 @@ export default function OverlayController() {
     quickNotes: useAppSelector((s) =>
       selectOverlayData(s, "quickNotes"),
     ) as Record<string, unknown> | null,
+    quickScribe: useAppSelector((s) =>
+      selectOverlayData(s, "quickScribe"),
+    ) as Record<string, unknown> | null,
     quickTasksWindow: useAppSelector((s) =>
       selectOverlayData(s, "quickTasksWindow"),
     ) as Record<string, unknown> | null,
@@ -1276,6 +1304,9 @@ export default function OverlayController() {
     smartCodeEditorWindow: useAppSelector((s) =>
       selectOpenInstances(s, "smartCodeEditorWindow"),
     ),
+    taskEditorWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "taskEditorWindow"),
+    ),
     toolCallWindow: useAppSelector((s) =>
       selectOpenInstances(s, "toolCallWindow"),
     ),
@@ -1287,6 +1318,19 @@ export default function OverlayController() {
       selectOpenInstances(s, "transcriptionCleanup"),
     ),
   };
+
+  useEffect(() => {
+    const instances = instancesById.createProjectWindow;
+    if (instances.length > 0) {
+      console.log(
+        "[Track New Project] 9, OverlayController.tsx — selector has open createProjectWindow instance(s), rendering dynamic CreateProjectWindow",
+        {
+          count: instances.length,
+          instanceIds: instances.map((i) => i.instanceId),
+        },
+      );
+    }
+  }, [instancesById.createProjectWindow]);
 
   return (
     <>
@@ -2582,6 +2626,10 @@ export default function OverlayController() {
       {/* createProjectWindow — multi-instance */}
       {instancesById.createProjectWindow.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
+        console.log(
+          "[Track New Project] 11, OverlayController.tsx — rendering <CreateProjectWindow />",
+          { instanceId: inst.instanceId },
+        );
         return (
           <CreateProjectWindow
             key={inst.instanceId}
@@ -2742,9 +2790,7 @@ export default function OverlayController() {
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "itemDetailWindow" }))
             }
-            itemType={
-              typeof data?.itemType === "string" ? data.itemType : null
-            }
+            itemType={typeof data?.itemType === "string" ? data.itemType : null}
             itemId={typeof data?.itemId === "string" ? data.itemId : null}
             initialName={
               typeof data?.initialName === "string" ? data.initialName : null
@@ -3497,7 +3543,6 @@ export default function OverlayController() {
         return (
           <SidePanelSurface
             title="Quick Chat"
-            description="Chat with the Matrx assistant from anywhere."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickChat" }))}
             storageKey="quick-chat"
             defaultWidth={520}
@@ -3549,7 +3594,6 @@ export default function OverlayController() {
         return (
           <SidePanelSurface
             title="Quick Chat"
-            description="Chat with the Matrx assistant from anywhere."
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "quickChatWindow" }))
             }
@@ -3576,7 +3620,6 @@ export default function OverlayController() {
         return (
           <SidePanelSurface
             title="Quick Data"
-            description="Spin up and edit data tables on the fly."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickData" }))}
             storageKey="quick-data"
             defaultWidth={680}
@@ -3673,10 +3716,12 @@ export default function OverlayController() {
           | null
           | undefined;
         if (!isOpen) return null;
+        console.log(
+          "[Track Quick Notes] 2, OverlayController.tsx — quickNotes open, rendering SidePanelSurface + QuickNotesSheet",
+        );
         return (
           <SidePanelSurface
             title="Quick Note"
-            description="Capture a note from anywhere."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickNotes" }))}
             storageKey="quick-note"
             defaultWidth={560}
@@ -3684,6 +3729,30 @@ export default function OverlayController() {
             <QuickNotesSheet
               className={
                 typeof data?.className === "string" ? data.className : undefined
+              }
+            />
+          </SidePanelSurface>
+        );
+      })()}
+
+      {/* quickScribe */}
+      {(() => {
+        const isOpen = isOpenById.quickScribe;
+        const data = dataById.quickScribe as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <SidePanelSurface
+            title="Quick Scribe"
+            onClose={() => dispatch(closeOverlay({ overlayId: "quickScribe" }))}
+            storageKey="quick-scribe"
+            defaultWidth={560}
+          >
+            <QuickScribeSheet
+              sessionId={
+                typeof data?.sessionId === "string" ? data.sessionId : undefined
               }
             />
           </SidePanelSurface>
@@ -3700,7 +3769,6 @@ export default function OverlayController() {
         return (
           <SidePanelSurface
             title="Quick Task"
-            description="Capture and track tasks from anywhere."
             onClose={() => dispatch(closeOverlay({ overlayId: "quickTasks" }))}
             storageKey="quick-task"
             defaultWidth={560}
@@ -4183,6 +4251,29 @@ export default function OverlayController() {
           />
         );
       })()}
+
+      {/* TODO: review prop wiring for taskEditorWindow */}
+      {/* taskEditorWindow — multi-instance, one window per task id */}
+      {instancesById.taskEditorWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        const taskId = typeof data?.taskId === "string" ? data.taskId : null;
+        if (!taskId) return null;
+        return (
+          <TaskEditorWindow
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            taskId={taskId}
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "taskEditorWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+          />
+        );
+      })}
 
       {/* TODO: review prop wiring for taskQuickCreateWindow */}
       {/* taskQuickCreateWindow */}

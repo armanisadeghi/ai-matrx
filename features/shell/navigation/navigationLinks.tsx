@@ -11,6 +11,7 @@ import {
   adminItemOnSurface,
   type AdminNavSurface,
   type ShellNavItem,
+  type ShellNavChild,
 } from "@/features/shell/constants/nav-data";
 import { shellIconComponents } from "@/features/shell/shellIconMap";
 import { faviconRouteData } from "@/constants/favicon-route-data";
@@ -44,7 +45,45 @@ function shellItemToNavigationLink(item: ShellNavItem): NavigationLink {
     color: item.color,
     favicon: faviconForHref(item.href),
     adminSurfaces: item.adminSurfaces,
+    external: item.external,
   };
+}
+
+// A group child becomes a first-class NavigationLink so it still appears as a
+// dashboard tile / profile entry even though the sidebar nests it. Missing
+// presentation fields fall back to the parent group's values.
+function shellChildToNavigationLink(
+  child: ShellNavChild,
+  parent: ShellNavItem,
+): NavigationLink {
+  return {
+    label: child.label,
+    href: child.href,
+    icon: buildIconNode(child.iconName),
+    section: parent.section,
+    profileMenu: child.profileMenu,
+    dashboard: child.dashboard,
+    description: child.description ?? parent.description,
+    color: child.color ?? parent.color,
+    favicon: faviconForHref(child.href),
+    external: child.external,
+  };
+}
+
+// Flatten the nested primary nav into a single link list: each top-level item
+// followed by its children. Group parents carry `dashboard: false` /
+// `profileMenu: false`, so the downstream flag filters keep the dashboard +
+// profile menu showing the real destinations (the children) — nesting the
+// sidebar never removes a tile.
+function flattenPrimaryNav(items: ShellNavItem[]): NavigationLink[] {
+  const out: NavigationLink[] = [];
+  for (const item of items) {
+    out.push(shellItemToNavigationLink(item));
+    for (const child of item.children ?? []) {
+      out.push(shellChildToNavigationLink(child, item));
+    }
+  }
+  return out;
 }
 
 export interface NavigationLink {
@@ -60,11 +99,34 @@ export interface NavigationLink {
   color?: string;
   /** Echo of nav-data admin routing; primary links leave this unset. */
   adminSurfaces?: AdminNavSurface[];
+  /** Separately-hosted app on its own origin — open in a new tab. */
+  external?: boolean;
 }
 
-const primarySidebarSource: ShellNavItem[] = [...primaryNavItems, settingsItem];
+// Flat (legacy / transitional) sidebars can't nest — they take a flat
+// NavigationLink[]. To avoid dropping destinations there, expand the new
+// org-node groups (parent `dashboard: false`) into their leaf children, while
+// leaving umbrella groups (Agents, Transcripts, Knowledge, Reports — parent
+// `dashboard: true`) as a single entry exactly as before.
+function flattenForFlatSidebar(items: ShellNavItem[]): NavigationLink[] {
+  const out: NavigationLink[] = [];
+  for (const item of items) {
+    const children = item.children ?? [];
+    if (children.length > 0 && item.dashboard === false) {
+      for (const child of children) {
+        out.push(shellChildToNavigationLink(child, item));
+      }
+    } else {
+      out.push(shellItemToNavigationLink(item));
+    }
+  }
+  return out;
+}
 
-export const primaryLinks = primarySidebarSource.map(shellItemToNavigationLink);
+export const primaryLinks = [
+  ...flattenForFlatSidebar(primaryNavItems),
+  shellItemToNavigationLink(settingsItem),
+];
 
 const adminNavSidebarSource = adminNavItems.filter((item) =>
   adminItemOnSurface(item, "sidebar"),
@@ -84,7 +146,7 @@ export const adminNavigationLinks = adminNavHeaderMenuSource.map(
 );
 
 export const allNavigationLinks: NavigationLink[] = [
-  ...primaryNavItems.map(shellItemToNavigationLink),
+  ...flattenPrimaryNav(primaryNavItems),
   shellItemToNavigationLink(settingsItem),
   ...allAdminNavigationLinks,
 ];

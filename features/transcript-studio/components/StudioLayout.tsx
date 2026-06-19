@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Menu, PanelLeftOpen } from "lucide-react";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { TranscriptsListHeader } from "@/features/transcripts/components/TranscriptsListHeader";
 import {
   Group,
   Panel,
@@ -122,78 +124,89 @@ export function StudioLayout({
   );
 
   return (
-    <div
-      className={cn("flex h-page min-h-0 w-full overflow-hidden", className)}
-    >
-      {showSidebar && !isMobile ? (
-        <Group
-          id={STUDIO_SIDEBAR_GROUP_ID}
-          orientation="horizontal"
-          defaultLayout={defaultSidebarLayout ?? STUDIO_SIDEBAR_DEFAULT_LAYOUT}
-          onLayoutChanged={(layout) => {
-            const value = encodeURIComponent(JSON.stringify(layout));
-            document.cookie = `${STUDIO_SIDEBAR_COOKIE_NAME}=${value}; path=/; max-age=31536000; SameSite=Lax`;
-          }}
-          className="flex h-full w-full"
-        >
-          <Panel
-            id={STUDIO_SIDEBAR_PANEL_IDS.sidebar}
-            panelRef={sidebarPanelRef}
-            collapsible
-            collapsedSize="0%"
-            minSize="12%"
-            maxSize="40%"
-            onResize={(next, _id, prev) => {
-              if (prev === undefined) return;
-              const wasCollapsed = prev.asPercentage === 0;
-              const isCollapsedNow = next.asPercentage === 0;
-              if (wasCollapsed !== isCollapsedNow) setCollapsed(isCollapsedNow);
+    <>
+      <PageHeader>
+        <TranscriptsListHeader />
+      </PageHeader>
+      <div
+        className={cn(
+          "flex h-full min-h-0 w-full overflow-hidden pt-[var(--shell-header-h)]",
+          className,
+        )}
+      >
+        {showSidebar && !isMobile ? (
+          <Group
+            id={STUDIO_SIDEBAR_GROUP_ID}
+            orientation="horizontal"
+            defaultLayout={
+              defaultSidebarLayout ?? STUDIO_SIDEBAR_DEFAULT_LAYOUT
+            }
+            onLayoutChanged={(layout) => {
+              const value = encodeURIComponent(JSON.stringify(layout));
+              document.cookie = `${STUDIO_SIDEBAR_COOKIE_NAME}=${value}; path=/; max-age=31536000; SameSite=Lax`;
             }}
-            style={{ overflow: "hidden", height: "100%" }}
+            className="flex h-full w-full"
           >
-            <StudioSidebar
-              className="h-full"
-              onPickSession={closeMobileSidebar}
-              onCreateSession={closeMobileSidebar}
-              onCollapse={() => sidebarPanelRef.current?.collapse()}
-              navigateToSession={navigateToSession}
-            />
-          </Panel>
-          <Separator
-            className={cn(
-              "bg-border transition-colors focus:outline-none",
-              "data-[separator=hover]:bg-primary",
-              "data-[separator=active]:bg-primary",
-              "data-[separator=dragging]:bg-primary",
-              "[&[aria-orientation=vertical]]:w-px [&[aria-orientation=vertical]]:cursor-col-resize",
-            )}
-          />
-          <Panel
-            id={STUDIO_SIDEBAR_PANEL_IDS.main}
-            style={{ overflow: "hidden", height: "100%" }}
-          >
-            <div className="relative flex h-full min-h-0 flex-col">
-              {collapsed && (
-                <button
-                  type="button"
-                  onClick={() => sidebarPanelRef.current?.expand()}
-                  title="Show sessions sidebar"
-                  aria-label="Show sessions sidebar"
-                  className="absolute left-1 top-1 z-10 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background/80 text-muted-foreground shadow-sm hover:bg-accent hover:text-foreground"
-                >
-                  <PanelLeftOpen className="h-3.5 w-3.5" />
-                </button>
+            <Panel
+              id={STUDIO_SIDEBAR_PANEL_IDS.sidebar}
+              panelRef={sidebarPanelRef}
+              collapsible
+              collapsedSize="0%"
+              minSize="12%"
+              maxSize="40%"
+              onResize={(next, _id, prev) => {
+                if (prev === undefined) return;
+                const wasCollapsed = prev.asPercentage === 0;
+                const isCollapsedNow = next.asPercentage === 0;
+                if (wasCollapsed !== isCollapsedNow)
+                  setCollapsed(isCollapsedNow);
+              }}
+              style={{ overflow: "hidden", height: "100%" }}
+            >
+              <StudioSidebar
+                className="h-full"
+                onPickSession={closeMobileSidebar}
+                onCreateSession={closeMobileSidebar}
+                onCollapse={() => sidebarPanelRef.current?.collapse()}
+                navigateToSession={navigateToSession}
+              />
+            </Panel>
+            <Separator
+              className={cn(
+                "bg-border transition-colors focus:outline-none",
+                "data-[separator=hover]:bg-primary",
+                "data-[separator=active]:bg-primary",
+                "data-[separator=dragging]:bg-primary",
+                "[&[aria-orientation=vertical]]:w-px [&[aria-orientation=vertical]]:cursor-col-resize",
               )}
-              {main}
-            </div>
-          </Panel>
-        </Group>
-      ) : (
-        // Mobile (or no sidebar): single-branch render. The mobile sidebar
-        // lives in the Sheet inside `main`.
-        <div className="flex flex-1 min-w-0">{main}</div>
-      )}
-    </div>
+            />
+            <Panel
+              id={STUDIO_SIDEBAR_PANEL_IDS.main}
+              style={{ overflow: "hidden", height: "100%" }}
+            >
+              <div className="relative flex h-full min-h-0 flex-col">
+                {collapsed && (
+                  <button
+                    type="button"
+                    onClick={() => sidebarPanelRef.current?.expand()}
+                    title="Show sessions sidebar"
+                    aria-label="Show sessions sidebar"
+                    className="absolute left-1 top-1 z-10 inline-flex h-7 w-7 items-center justify-center rounded-md border border-border bg-background/80 text-muted-foreground shadow-sm hover:bg-accent hover:text-foreground"
+                  >
+                    <PanelLeftOpen className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                {main}
+              </div>
+            </Panel>
+          </Group>
+        ) : (
+          // Mobile (or no sidebar): single-branch render. The mobile sidebar
+          // lives in the Sheet inside `main`.
+          <div className="flex flex-1 min-w-0">{main}</div>
+        )}
+      </div>
+    </>
   );
 }
 

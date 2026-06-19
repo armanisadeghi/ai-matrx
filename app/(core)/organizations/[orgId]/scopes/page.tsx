@@ -50,14 +50,14 @@ export default function OrgScopesPage() {
 
   if (loading) {
     return (
-      <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center bg-textured">
+      <div className="h-dvh flex items-center justify-center bg-textured">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
   if (error || !organization) {
     return (
-      <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center bg-textured p-4">
+      <div className="h-dvh flex items-center justify-center bg-textured p-4">
         <Card className="max-w-lg w-full p-8">
           <h2 className="text-lg font-semibold mb-2">Couldn't load</h2>
           <p className="text-sm text-muted-foreground mb-4">
@@ -77,8 +77,8 @@ export default function OrgScopesPage() {
   }
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
-      <div className="max-w-5xl mx-auto p-4 md:p-6 lg:p-8">
+    <div className="h-dvh overflow-y-auto bg-textured">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 lg:px-8 pt-12 pb-12">
         <ScopesManager organization={organization} role={role} />
       </div>
     </div>

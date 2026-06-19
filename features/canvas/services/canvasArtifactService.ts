@@ -11,6 +11,47 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import type { Database } from "@/types/database.types";
+
+// ---------------------------------------------------------------------------
+// canvasType → cx_artifact artifact_type enum map
+//
+// Only canvasTypes that map to a known artifact_type enum value are listed.
+// Unmapped types (no matching enum) are SKIPPED — the discovery-index write
+// is omitted for them. When the DB enum gains new values, extend this map.
+// ---------------------------------------------------------------------------
+
+type ArtifactTypeEnum = Database["public"]["Enums"]["artifact_type"];
+
+const CANVAS_TYPE_TO_ARTIFACT_TYPE: Partial<Record<string, ArtifactTypeEnum>> = {
+    comparison: "comparison_table",
+    flashcards: "flashcard_deck",
+    timeline: "timeline",
+    diagram: "diagram",
+    quiz: "quiz",
+    presentation: "presentation",
+    code: "code_snippet",
+    html: "html_page",
+    iframe: "html_page",
+    // markdown-payload types — use "other" (valid enum value)
+    mermaid: "diagram",
+    research: "report",
+    resources: "other",
+    progress: "other",
+    troubleshooting: "other",
+    recipe: "other",
+    "decision-tree": "other",
+    math_problem: "other",
+    image: "other",
+};
+
+/**
+ * Resolve a canvasType to its cx_artifact artifact_type enum value.
+ * Returns null for types not yet in the enum — callers must skip the write.
+ */
+export function canvasTypeToArtifactType(canvasType: string): ArtifactTypeEnum | null {
+    return CANVAS_TYPE_TO_ARTIFACT_TYPE[canvasType] ?? null;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -169,9 +210,34 @@ export const canvasArtifactService = {
     },
 
     /**
+     * Link a materialized artifact to its custom-system domain record
+     * (external_system/external_id). Owner-only via RLS; failures are logged,
+     * not thrown (the artifact itself already persisted).
+     */
+    async setExternalLink(
+        canvasId: string,
+        link: { externalSystem?: string; externalId?: string },
+    ): Promise<void> {
+        try {
+            const { error } = await supabase
+                .from("canvas_items")
+                .update({
+                    external_system: link.externalSystem ?? null,
+                    external_id: link.externalId ?? null,
+                })
+                .eq("id", canvasId);
+            if (error) {
+                console.error("[canvasArtifactService.setExternalLink] error:", error);
+            }
+        } catch (err) {
+            console.error("[canvasArtifactService.setExternalLink] error:", err);
+        }
+    },
+
+    /**
      * Get a single canvas item by id. RLS scopes this to the owner, public
      * items, or items the caller has explicit permission on — so it safely
-     * resolves an artifact_ref both for the author and for shared views.
+     * resolves a materialized `<artifact id>` both for the author and shared views.
      * Returns null when not found / not accessible.
      */
     async getById(canvasId: string): Promise<CanvasArtifactRow | null> {
@@ -265,6 +331,86 @@ export const canvasArtifactService = {
             return data as CanvasArtifactRow;
         } catch (err) {
             console.error("[canvasArtifactService.createManual] Error:", err);
+            return null;
+        }
+    },
+
+    /**
+     * Upsert a cx_artifact discovery-index row that points back to a canvas_items
+     * row materialised from chat.
+     *
+     * Idempotent on canvas_item_id: if a cx_artifact row already references this
+     * canvas item, it is returned unchanged.  Only types with a known
+     * artifact_type enum value are indexed — callers should pre-filter with
+     * canvasTypeToArtifactType(), but this method also guards internally.
+     *
+     * NOT-NULL contract (from the DB schema):
+     *   conversation_id, message_id, user_id, artifact_type, status — all required.
+     *   org/project/task — all nullable, set null when not available.
+     *   canvas_item_id — nullable column in DB, set to canvasId here.
+     *
+     * NON-BLOCKING: returns null on any error (never throws).
+     */
+    async upsertDiscoveryIndex(input: {
+        canvasId: string;
+        canvasType: string;
+        title: string | null;
+        messageId: string;
+        conversationId: string;
+    }): Promise<{ id: string } | null> {
+        const artifactType = canvasTypeToArtifactType(input.canvasType);
+        if (!artifactType) {
+            // canvasType has no matching enum value — skip silently.
+            return null;
+        }
+        try {
+            const userId = requireUserId();
+
+            // Check for an existing row tied to this canvas_item_id first.
+            const { data: existing, error: lookupErr } = await supabase
+                .from("cx_artifact")
+                .select("id")
+                .eq("canvas_item_id", input.canvasId)
+                .maybeSingle();
+
+            if (lookupErr) {
+                console.error("[canvasArtifactService.upsertDiscoveryIndex] lookup error:", lookupErr);
+                return null;
+            }
+            if (existing) return { id: existing.id };
+
+            // Insert a new discovery-index row.
+            const { data, error } = await supabase
+                .from("cx_artifact")
+                .insert({
+                    canvas_item_id: input.canvasId,
+                    message_id: input.messageId,
+                    conversation_id: input.conversationId,
+                    user_id: userId,
+                    artifact_type: artifactType,
+                    status: "published",
+                    title: input.title ?? null,
+                    organization_id: null,
+                    project_id: null,
+                    task_id: null,
+                    external_system: null,
+                    external_id: null,
+                    external_url: null,
+                    description: null,
+                    thumbnail_url: null,
+                    metadata: {},
+                })
+                .select("id")
+                .single();
+
+            if (error) {
+                console.error("[canvasArtifactService.upsertDiscoveryIndex] insert error:", error);
+                return null;
+            }
+
+            return data ? { id: data.id } : null;
+        } catch (err) {
+            console.error("[canvasArtifactService.upsertDiscoveryIndex] error:", err);
             return null;
         }
     },

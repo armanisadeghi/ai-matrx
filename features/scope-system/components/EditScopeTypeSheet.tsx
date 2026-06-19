@@ -384,6 +384,7 @@ export function EditScopeTypeSheet({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               minHeight={64}
+              maxHeight={600}
               autoGrow
               disabled={busy}
             />

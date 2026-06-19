@@ -42,10 +42,12 @@ export function OrgResourceRoleSection({
 
   return (
     <section>
-      <div className="flex items-baseline gap-3 mb-3">
+      <div className="mb-3 flex items-baseline gap-3 pl-1.5">
         <div className="flex items-center gap-2">
           <span className={`h-2.5 w-2.5 rounded-full ${meta.accentBar}`} />
-          <h3 className="text-sm font-semibold text-foreground">{meta.title}</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            {meta.title}
+          </h3>
         </div>
         <p className="text-xs text-muted-foreground hidden sm:block">
           {meta.tagline}
@@ -57,27 +59,36 @@ export function OrgResourceRoleSection({
           const Icon = entry.icon;
           const count = counts[entry.key];
           const contributable =
-            entry.shareKey !== null && entry.table !== null && entry.titleColumn !== null;
+            entry.shareKey !== null &&
+            entry.table !== null &&
+            entry.titleColumn !== null;
           return (
             <div
               key={entry.key}
               className="group relative rounded-xl border border-border bg-card hover:border-primary/30 hover:bg-accent/40 transition-all overflow-hidden"
             >
               {/* role accent bar */}
-              <span className={`absolute inset-x-0 top-0 h-0.5 ${meta.accentBar} opacity-60`} />
+              <span
+                className={`absolute inset-x-0 top-0 h-0.5 ${meta.accentBar} opacity-60`}
+              />
               <button
                 onClick={() => onOpen(entry)}
                 className="w-full text-left p-3.5 flex flex-col gap-2 cursor-pointer"
                 title={entry.description}
               >
                 <div className="flex items-center justify-between">
-                  <span className={`h-9 w-9 rounded-lg flex items-center justify-center ${meta.accentBg} ${meta.accentText}`}>
+                  <span
+                    className={`h-9 w-9 rounded-lg flex items-center justify-center ${meta.accentBg} ${meta.accentText}`}
+                  >
                     <Icon className="h-[18px] w-[18px]" />
                   </span>
                   {loading ? (
                     <span className="h-5 w-8 rounded bg-muted animate-pulse" />
                   ) : count === null ? (
-                    <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] text-muted-foreground"
+                    >
                       —
                     </Badge>
                   ) : (

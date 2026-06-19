@@ -58,51 +58,55 @@ export function useConversionTracker(): {
     }
   }, []);
 
-  const persistViews = useCallback((next: CountMap) => {
-    setViews(next);
+  const writeStorage = (key: string, value: CountMap) => {
     if (typeof window === "undefined") return;
     try {
-      window.localStorage.setItem(VIEWS_KEY, JSON.stringify(next));
+      window.localStorage.setItem(key, JSON.stringify(value));
     } catch {
       // Ignore — storage failure shouldn't crash the page.
     }
-  }, []);
+  };
 
-  const persistGateAttempts = useCallback((next: CountMap) => {
-    setGateAttempts(next);
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(GATE_ATTEMPTS_KEY, JSON.stringify(next));
-    } catch {
-      // Ignore — storage failure shouldn't crash the page.
-    }
-  }, []);
-
+  // Stable across renders: functional updaters never depend on the current
+  // map, so `markViewed` / `markGateAttempt` identities don't change when the
+  // counts change. That's what keeps an effect calling `markViewed` from
+  // looping forever (Maximum update depth exceeded).
   const markViewed = useCallback(
     (surfaceId: string) => {
       if (isAuthenticated) return;
-      const next: CountMap = { ...views, [surfaceId]: (views[surfaceId] ?? 0) + 1 };
-      persistViews(next);
+      setViews((prev) => {
+        const next: CountMap = {
+          ...prev,
+          [surfaceId]: (prev[surfaceId] ?? 0) + 1,
+        };
+        writeStorage(VIEWS_KEY, next);
+        return next;
+      });
     },
-    [isAuthenticated, views, persistViews],
+    [isAuthenticated],
   );
 
   const markGateAttempt = useCallback(
     (featureName: string) => {
       if (isAuthenticated) return;
-      const next: CountMap = {
-        ...gateAttempts,
-        [featureName]: (gateAttempts[featureName] ?? 0) + 1,
-      };
-      persistGateAttempts(next);
+      setGateAttempts((prev) => {
+        const next: CountMap = {
+          ...prev,
+          [featureName]: (prev[featureName] ?? 0) + 1,
+        };
+        writeStorage(GATE_ATTEMPTS_KEY, next);
+        return next;
+      });
     },
-    [isAuthenticated, gateAttempts, persistGateAttempts],
+    [isAuthenticated],
   );
 
   const reset = useCallback(() => {
-    persistViews({});
-    persistGateAttempts({});
-  }, [persistViews, persistGateAttempts]);
+    setViews({});
+    writeStorage(VIEWS_KEY, {});
+    setGateAttempts({});
+    writeStorage(GATE_ATTEMPTS_KEY, {});
+  }, []);
 
   const totalViews = isAuthenticated
     ? 0
@@ -118,7 +122,8 @@ export function useConversionTracker(): {
   );
 
   const gateAttemptsFor = useCallback(
-    (featureName: string) => (isAuthenticated ? 0 : gateAttempts[featureName] ?? 0),
+    (featureName: string) =>
+      isAuthenticated ? 0 : (gateAttempts[featureName] ?? 0),
     [isAuthenticated, gateAttempts],
   );
 

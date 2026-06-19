@@ -18,20 +18,22 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { TileTab } from "@/features/war-room/types";
+import type { TileFlavor, TileTab } from "@/features/war-room/types";
 import {
   TILE_KIND_ORDER,
-  tileKindOf,
+  tileTabKind,
 } from "@/features/war-room/components/room/tileKind";
 
 export function TileTabSelect({
   active,
   onChange,
+  flavor,
 }: {
   active: TileTab;
   onChange: (tab: TileTab) => void;
+  flavor?: TileFlavor;
 }) {
-  const current = tileKindOf(active);
+  const current = tileTabKind(active, flavor);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -41,7 +43,7 @@ export function TileTabSelect({
           aria-label={`View: ${current.label}`}
           title={`View: ${current.label}`}
           className={cn(
-            "inline-flex items-center gap-1 h-6 pl-1.5 pr-1 shrink-0 rounded-md bg-muted/60 font-medium transition-colors",
+            "inline-flex items-center gap-1.5 h-6 pl-1.5 pr-1 shrink-0 rounded-md bg-muted/60 font-medium transition-colors",
             "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
             current.text,
           )}
@@ -55,7 +57,7 @@ export function TileTabSelect({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-36">
         {TILE_KIND_ORDER.map((id) => {
-          const k = tileKindOf(id);
+          const k = tileTabKind(id, flavor);
           const isActive = id === active;
           return (
             <DropdownMenuItem
@@ -64,9 +66,9 @@ export function TileTabSelect({
                 e.stopPropagation();
                 onChange(id);
               }}
-              className={cn(isActive && "bg-accent/60")}
+              className={cn("gap-2", isActive && "bg-accent/60")}
             >
-              <k.Icon className={cn("size-3.5", k.text)} />
+              <k.Icon className={cn("size-3.5 shrink-0", k.text)} />
               <span className={cn(isActive && "font-medium")}>{k.label}</span>
             </DropdownMenuItem>
           );

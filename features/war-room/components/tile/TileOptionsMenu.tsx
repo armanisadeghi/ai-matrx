@@ -62,43 +62,46 @@ export function TileOptionsMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
         {onStage && !isStaged ? (
-          <DropdownMenuItem onClick={onStage}>
-            <Focus className="size-3.5" />
+          <DropdownMenuItem onClick={onStage} className="gap-2">
+            <Focus className="size-3.5 shrink-0" />
             Bring to stage
           </DropdownMenuItem>
         ) : null}
         {onOpenContext ? (
-          <DropdownMenuItem onClick={onOpenContext}>
+          <DropdownMenuItem onClick={onOpenContext} className="gap-2">
             <Building2
-              className={cn("size-3.5", contextActive && "text-primary")}
+              className={cn(
+                "size-3.5 shrink-0",
+                contextActive && "text-primary",
+              )}
             />
             {contextActive ? "Context (overridden)" : "Context"}
           </DropdownMenuItem>
         ) : null}
-        <DropdownMenuItem onClick={actions.togglePin}>
+        <DropdownMenuItem onClick={actions.togglePin} className="gap-2">
           {actions.isPinned ? (
-            <PinOff className="size-3.5" />
+            <PinOff className="size-3.5 shrink-0" />
           ) : (
-            <Pin className="size-3.5" />
+            <Pin className="size-3.5 shrink-0" />
           )}
           {actions.isPinned ? "Unpin" : "Pin"}
         </DropdownMenuItem>
         {actions.canExpand ? (
-          <DropdownMenuItem onClick={actions.expand}>
-            <Maximize2 className="size-3.5" />
+          <DropdownMenuItem onClick={actions.expand} className="gap-2">
+            <Maximize2 className="size-3.5 shrink-0" />
             Expand
           </DropdownMenuItem>
         ) : null}
-        <DropdownMenuItem onClick={actions.hide}>
-          <EyeOff className="size-3.5" />
+        <DropdownMenuItem onClick={actions.hide} className="gap-2">
+          <EyeOff className="size-3.5 shrink-0" />
           Hide
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => void actions.remove()}
-          className="text-destructive focus:text-destructive"
+          className="gap-2 text-destructive focus:text-destructive"
         >
-          <Trash2 className="size-3.5" />
+          <Trash2 className="size-3.5 shrink-0" />
           Remove
         </DropdownMenuItem>
       </DropdownMenuContent>

@@ -25,9 +25,10 @@
  * and surface value-mappings drive variable resolution.
  *
  * Invariant carried from the original tool: what is sent to the AI equals the
- * fully committed transcript at stop time. During recording the textarea is
- * read-only; optional prefix/suffix inserts are queued and merged in
- * `commitTranscript` immediately before Clean / persist — never mid-chunk.
+ * fully committed transcript at stop time. All three panes (Transcript, Clean,
+ * Custom) stay freely editable — optional prefix/suffix inserts can still be
+ * queued during recording and merge in `commitTranscript` before Clean /
+ * persist; manual edits take precedence over live mic preview while focused.
  */
 
 import React, {
@@ -164,7 +165,7 @@ function SectionHeading({
       <span
         className={cn(
           "inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md",
-          accent === "primary" ? "bg-primary/10" : "bg-muted",
+          accent === "primary" ? "text-primary" : "bg-muted",
         )}
       >
         <Icon
@@ -194,7 +195,7 @@ function StatusPill({
         "inline-flex items-center gap-1 rounded-full px-1.5 py-px text-[10px] font-medium normal-case tracking-normal",
         tone === "success"
           ? "bg-green-500/10 text-green-600 dark:text-green-400"
-          : "bg-primary/10 text-primary",
+          : "text-primary border border-primary/70 bg-card",
       )}
     >
       {children}
@@ -402,6 +403,14 @@ interface CleanupPadProps {
    * (which owns session lifecycle) hides it.
    */
   showNewSession?: boolean;
+  /**
+   * Dense embedded toolbar for small hosts (e.g. War Room grid tiles): one row
+   * with optional host session chrome, icon-only Controls/Custom, and compact
+   * record / save-only buttons — no separate reveal bar or record band.
+   */
+  compact?: boolean;
+  /** Host-owned session switcher rendered at the start of the compact toolbar. */
+  embeddedHeaderSlot?: React.ReactNode;
 }
 
 /** A compact toggle chip for the embedded pad's reveal bar (Controls / Custom). */
@@ -411,13 +420,36 @@ function RevealChip({
   icon: Icon,
   label,
   title,
+  iconOnly = false,
 }: {
   active: boolean;
   onClick: () => void;
   icon: typeof SlidersHorizontal;
   label: string;
   title: string;
+  iconOnly?: boolean;
 }) {
+  if (iconOnly) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={active}
+        aria-label={label}
+        title={title}
+        className={cn(
+          "grid size-6 shrink-0 place-items-center rounded-md transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+          active
+            ? "text-primary border border-primary/70"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground",
+        )}
+      >
+        <Icon className="size-3.5" />
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -428,7 +460,7 @@ function RevealChip({
         "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         active
-          ? "bg-primary/10 text-primary"
+          ? "text-primary border border-primary/70"
           : "text-muted-foreground hover:bg-accent hover:text-foreground",
       )}
     >
@@ -446,6 +478,8 @@ export default function CleanupPad({
   variant = "page",
   sections,
   showNewSession = true,
+  compact = false,
+  embeddedHeaderSlot,
 }: CleanupPadProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
@@ -578,19 +612,25 @@ export default function CleanupPad({
   const transcriptTaRef = useRef<HTMLTextAreaElement | null>(null);
   const cleanTaRef = useRef<HTMLTextAreaElement | null>(null);
   const customTaRef = useRef<HTMLTextAreaElement | null>(null);
+  /** While the transcript textarea is focused, live mic preview must not fight typing. */
+  const transcriptFocusedRef = useRef(false);
 
   const allText = useMemo(
     () => entries.map((e) => e.text).join("\n\n"),
     [entries],
   );
   const baseText = draftText !== null ? draftText : allText;
-  const isTranscriptLocked = isMicRecording || isMicTranscribing;
-  const transcriptDisplay = composeTranscriptDisplay(
-    baseText,
-    liveTranscript,
-    pendingPrefix,
-    pendingSuffix,
-  );
+  const isRecordingOrTranscribing = isMicRecording || isMicTranscribing;
+  const hasLiveTranscriptCompose =
+    Boolean(pendingPrefix) || Boolean(pendingSuffix) || Boolean(liveTranscript);
+  const transcriptDisplay = hasLiveTranscriptCompose
+    ? composeTranscriptDisplay(
+        baseText,
+        liveTranscript,
+        pendingPrefix,
+        pendingSuffix,
+      )
+    : baseText;
   transcriptDisplayRef.current = transcriptDisplay;
 
   useEffect(() => {
@@ -682,7 +722,7 @@ export default function CleanupPad({
       cleaned_word_count: words(cleaned),
       is_recording: s.isMicRecording,
       is_transcribing: s.isMicTranscribing,
-      is_transcript_locked: s.isMicRecording || s.isMicTranscribing,
+      is_transcript_locked: false,
       live_transcript_text: s.liveTranscript || undefined,
       pending_insert_start: pendingPrefixRef.current || undefined,
       pending_insert_end: pendingSuffixRef.current || undefined,
@@ -1094,6 +1134,7 @@ export default function CleanupPad({
   );
 
   const handleLiveTranscript = useCallback((text: string) => {
+    if (transcriptFocusedRef.current) return;
     setLiveTranscript(text);
   }, []);
 
@@ -1130,7 +1171,7 @@ export default function CleanupPad({
         return;
       }
 
-      const current = baseTextRef.current.trim();
+      const current = baseTextRef.current;
       const next =
         position === "start"
           ? composeTranscriptParts(trimmed, current)
@@ -1164,7 +1205,13 @@ export default function CleanupPad({
   // ── Edits ──────────────────────────────────────────────────────────────────
   const handleDraftChange = useCallback(
     (value: string) => {
-      if (isTranscriptLocked) return;
+      setLiveTranscript("");
+      if (pendingPrefixRef.current || pendingSuffixRef.current) {
+        setPendingPrefix("");
+        setPendingSuffix("");
+        pendingPrefixRef.current = "";
+        pendingSuffixRef.current = "";
+      }
       dispatch(
         setDraftText({
           overlayId: OVERLAY_ID,
@@ -1172,10 +1219,37 @@ export default function CleanupPad({
           text: value,
         }),
       );
+      baseTextRef.current = value;
       session.persistRawReplace(value);
     },
-    [dispatch, isTranscriptLocked, session],
+    [dispatch, session],
   );
+
+  const handleTranscriptFocus = useCallback(() => {
+    transcriptFocusedRef.current = true;
+  }, []);
+
+  const handleTranscriptBlur = useCallback(() => {
+    transcriptFocusedRef.current = false;
+  }, []);
+
+  const handleCleanFocus = useCallback(() => {
+    if (editedResponse !== null) return;
+    const current = responseRef.current;
+    if (current) setEditedResponse(current);
+  }, [editedResponse]);
+
+  const handleCustomFocus = useCallback(() => {
+    const slot = slotsRef.current[activeSlotIdx];
+    if (!slot) return;
+    if (editedBySlot[slot.id] !== null && editedBySlot[slot.id] !== undefined) {
+      return;
+    }
+    const current = customRef.current;
+    if (current) {
+      setEditedBySlot((prev) => ({ ...prev, [slot.id]: current }));
+    }
+  }, [activeSlotIdx, editedBySlot]);
 
   const handleResponseChange = useCallback(
     (value: string) => {
@@ -1258,10 +1332,6 @@ export default function CleanupPad({
 
   // ── Manual Clean Up ────────────────────────────────────────────────────────
   const handleProcess = useCallback(() => {
-    if (isTranscriptLocked) {
-      toast.info("Finish recording before running Clean");
-      return;
-    }
     if (!cleanAgentIdRef.current) {
       toast.info("Choose a cleaning agent first");
       return;
@@ -1275,7 +1345,7 @@ export default function CleanupPad({
     // Autorun (source = raw): Clean and these slots run simultaneously.
     autoRunRawSlots(transcript);
     setDrawerOpen(false);
-  }, [isTranscriptLocked, runClean, autoRunRawSlots]);
+  }, [runClean, autoRunRawSlots]);
 
   const handleCopyJoined = useCallback(async () => {
     const transcript = transcriptDisplayRef.current.trim();
@@ -1320,7 +1390,8 @@ export default function CleanupPad({
         ),
       );
       setActiveSlotIdx(0);
-      await session.createNew();
+      const newId = await session.createNew();
+      if (newId) setAppliedSessionId(newId);
       setDrawerOpen(false);
     } finally {
       setIsCreatingSession(false);
@@ -1459,9 +1530,7 @@ export default function CleanupPad({
       <span
         className={cn(
           "inline-flex items-center justify-center rounded-full p-1 transition-colors",
-          isRecordingActive
-            ? "bg-red-500/15 text-red-500"
-            : "bg-primary/10 text-primary",
+          isRecordingActive ? "bg-red-500/15 text-red-500" : "text-primary",
         )}
       >
         <MicrophoneIconButton
@@ -1504,6 +1573,51 @@ export default function CleanupPad({
     >
       <CircleStop className="h-3.5 w-3.5 shrink-0" />
       <span>Save only</span>
+    </button>
+  );
+
+  const compactRecordButton = (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center rounded-full p-0.5 transition-colors",
+        isRecordingActive
+          ? "bg-red-500/15 ring-2 ring-red-500/15"
+          : "text-primary",
+      )}
+      title={recordStatus}
+    >
+      <MicrophoneIconButton
+        ref={micRef}
+        id={micId}
+        onTranscriptionComplete={handleTranscriptionComplete}
+        onTranscriptOnlyComplete={handleTranscriptOnlyComplete}
+        onLiveTranscript={handleLiveTranscript}
+        onRecordingStateChange={handleRecordingStateChange}
+        variant="icon-only"
+        size="md"
+      />
+    </span>
+  );
+
+  const compactSoftStopButton = (
+    <button
+      type="button"
+      onClick={handleSoftStop}
+      disabled={!isMicRecording}
+      title={
+        isMicRecording
+          ? "Stop and save transcript without cleaning"
+          : "Available while recording"
+      }
+      aria-label="Stop and save transcript without cleaning"
+      className={cn(
+        "grid size-7 shrink-0 place-items-center rounded-full border transition-colors",
+        isMicRecording
+          ? "border-border/80 text-muted-foreground hover:bg-muted hover:text-foreground"
+          : "cursor-not-allowed border-border/50 text-muted-foreground/45 opacity-60",
+      )}
+    >
+      <CircleStop className="size-3.5" />
     </button>
   );
 
@@ -1709,6 +1823,11 @@ export default function CleanupPad({
     </div>
   );
 
+  const paneHeaderClass =
+    compact && isEmbedded
+      ? "flex h-7 shrink-0 items-center justify-between gap-1 border-b border-border bg-muted/30 px-2"
+      : PANE_HEADER;
+
   const transcriptHandlers = makeTextHandlers(
     transcriptTaRef,
     () => transcriptDisplayRef.current,
@@ -1716,14 +1835,14 @@ export default function CleanupPad({
   );
   const transcriptPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className={PANE_HEADER}>
+      <div className={paneHeaderClass}>
         <SectionHeading icon={AudioLines} label="Transcript">
-          {isTranscriptLocked && (pendingPrefix || pendingSuffix) ? (
+          {isRecordingOrTranscribing && (pendingPrefix || pendingSuffix) ? (
             <StatusPill tone="primary">Queued</StatusPill>
           ) : null}
         </SectionHeading>
         <div className="flex shrink-0 items-center gap-1">
-          {isTranscriptLocked ? (
+          {isRecordingOrTranscribing ? (
             <>
               <button
                 type="button"
@@ -1763,7 +1882,7 @@ export default function CleanupPad({
           sourceFeature="transcription-cleanup"
           surfaceName="matrx-user/transcripts-cleanup"
           getTextarea={() => transcriptTaRef.current}
-          isEditable={!isTranscriptLocked}
+          isEditable
           contextData={menuContextData("transcript", transcriptDisplay)}
           placementMode={{ "content-block": "hide" }}
           className="flex min-h-0 flex-1 flex-col"
@@ -1772,18 +1891,18 @@ export default function CleanupPad({
           <textarea
             ref={transcriptTaRef}
             value={transcriptDisplay}
-            readOnly={isTranscriptLocked}
             onChange={(e) => handleDraftChange(e.target.value)}
+            onFocus={handleTranscriptFocus}
+            onBlur={handleTranscriptBlur}
             placeholder={
-              isTranscriptLocked
-                ? "Live transcript streams here while recording. Use At start / At end to queue extra text."
-                : "Tap the mic above to record. Transcribed text appears here and is processed automatically..."
+              isRecordingOrTranscribing
+                ? "Live transcript streams here while recording. Type freely to edit, or use At start / At end to queue inserts."
+                : "Tap the mic above to record, or type a transcript here..."
             }
             className={cn(
               "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
               "text-base md:text-sm",
               "focus:outline-none focus:ring-0",
-              isTranscriptLocked && "cursor-default",
             )}
           />
         </UnifiedAgentContextMenu>
@@ -1799,7 +1918,7 @@ export default function CleanupPad({
   );
   const cleanPane = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className={PANE_HEADER}>
+      <div className={paneHeaderClass}>
         <SectionHeading icon={Stars} label="Clean" accent="primary">
           {cleanThinking && (
             <StatusPill tone="primary">
@@ -1860,6 +1979,7 @@ export default function CleanupPad({
             ref={cleanTaRef}
             value={responseValue}
             onChange={(e) => handleResponseChange(e.target.value)}
+            onFocus={handleCleanFocus}
             placeholder={responsePlaceholder}
             className={cn(
               "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
@@ -1919,7 +2039,7 @@ export default function CleanupPad({
                 className={cn(
                   "inline-flex max-w-36 items-center gap-1 truncate rounded-md border px-2 py-1 text-[11px] font-medium transition-colors",
                   active
-                    ? "border-primary/50 bg-primary/10 text-primary"
+                    ? "text-primary border border-primary/70"
                     : "border-border text-muted-foreground hover:bg-accent/60 hover:text-foreground",
                   slots.length > 1 && "pr-5",
                 )}
@@ -2064,6 +2184,7 @@ export default function CleanupPad({
             ref={customTaRef}
             value={activeSlotValue}
             onChange={(e) => handleCustomChange(e.target.value)}
+            onFocus={handleCustomFocus}
             placeholder={customPlaceholder}
             className={cn(
               "h-full w-full flex-1 resize-none border-0 bg-background px-4 py-3 leading-relaxed",
@@ -2109,28 +2230,54 @@ export default function CleanupPad({
       <>
         {transcriptInsertDialog}
         <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background">
-          {/* Reveal bar — the full pipeline stays one click away (never
-              stripped): "Controls" opens the session-scoped sidebar (clean agent
-              · context · dictionary · clean-up) as an in-place drawer; "Custom"
-              stacks the custom-agent output slots below the clean pane. */}
-          <div className="flex shrink-0 items-center gap-1 border-b border-border px-1.5 py-1">
-            <RevealChip
-              active={showSidebar}
-              onClick={() => toggleReveal("sidebar")}
-              icon={SlidersHorizontal}
-              label="Controls"
-              title="Clean agent, context, dictionary, clean-up"
-            />
-            <RevealChip
-              active={showCustom}
-              onClick={() => toggleReveal("custom")}
-              icon={Stars}
-              label="Custom"
-              title="Custom refine agents (raw or clean → output)"
-            />
-          </div>
-
-          {recordBand}
+          {compact ? (
+            <div className="flex shrink-0 items-center gap-1 border-b border-border px-1.5 py-0.5">
+              {embeddedHeaderSlot}
+              <RevealChip
+                active={showSidebar}
+                onClick={() => toggleReveal("sidebar")}
+                icon={SlidersHorizontal}
+                label="Controls"
+                title="Clean agent, context, dictionary, clean-up"
+                iconOnly
+              />
+              <RevealChip
+                active={showCustom}
+                onClick={() => toggleReveal("custom")}
+                icon={Stars}
+                label="Custom"
+                title="Custom refine agents (raw or clean → output)"
+                iconOnly
+              />
+              <span className="min-w-0 flex-1" />
+              {compactRecordButton}
+              {compactSoftStopButton}
+            </div>
+          ) : (
+            <>
+              {/* Reveal bar — the full pipeline stays one click away (never
+                  stripped): "Controls" opens the session-scoped sidebar (clean agent
+                  · context · dictionary · clean-up) as an in-place drawer; "Custom"
+                  stacks the custom-agent output slots below the clean pane. */}
+              <div className="flex shrink-0 items-center gap-1 border-b border-border px-1.5 py-1">
+                <RevealChip
+                  active={showSidebar}
+                  onClick={() => toggleReveal("sidebar")}
+                  icon={SlidersHorizontal}
+                  label="Controls"
+                  title="Clean agent, context, dictionary, clean-up"
+                />
+                <RevealChip
+                  active={showCustom}
+                  onClick={() => toggleReveal("custom")}
+                  icon={Stars}
+                  label="Custom"
+                  title="Custom refine agents (raw or clean → output)"
+                />
+              </div>
+              {recordBand}
+            </>
+          )}
           <div className="flex min-h-0 flex-1 flex-col">
             <div
               className={cn(

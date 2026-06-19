@@ -266,3 +266,10 @@ export const selectPersonalOrg = createSelector(
   [selectAllOrgs],
   (orgs) => orgs.find((o) => o.is_personal) ?? null,
 );
+
+/** Resolve a route segment (UUID or slug) to an organization record. */
+export const selectOrgBySlugOrId = createSelector(
+  [selectAllOrgs, (_state: StateWithOrgs, slugOrId: string) => slugOrId],
+  (orgs, slugOrId) =>
+    orgs.find((o) => o.id === slugOrId || o.slug === slugOrId),
+);

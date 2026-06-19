@@ -55,6 +55,9 @@ const adapter = createEntityAdapter<ContextItem>({
     a.display_name.localeCompare(b.display_name),
 });
 
+/** Stable empty list for selectors — never mutate. */
+const EMPTY_CONTEXT_ITEMS: ContextItem[] = [];
+
 interface ExtraState {
   loading: boolean;
   error: string | null;
@@ -105,16 +108,19 @@ export const updateContextItem = createAsyncThunk(
       patch.display_name = params.display_name;
     if (params.slug !== undefined) patch.slug = params.slug;
     if (params.sort_order !== undefined) patch.sort_order = params.sort_order;
-    if (params.description !== undefined) patch.description = params.description;
+    if (params.description !== undefined)
+      patch.description = params.description;
     if (params.category !== undefined) patch.category = params.category;
     if (params.value_type !== undefined) patch.value_type = params.value_type;
     if (params.custom_component !== undefined)
       patch.custom_component = params.custom_component;
     if (params.fetch_hint !== undefined) patch.fetch_hint = params.fetch_hint;
-    if (params.sensitivity !== undefined) patch.sensitivity = params.sensitivity;
+    if (params.sensitivity !== undefined)
+      patch.sensitivity = params.sensitivity;
     if (params.tags !== undefined) patch.tags = params.tags;
     if (params.status !== undefined) patch.status = params.status;
-    if (params.status_note !== undefined) patch.status_note = params.status_note;
+    if (params.status_note !== undefined)
+      patch.status_note = params.status_note;
     if (params.review_interval_days !== undefined)
       patch.review_interval_days = params.review_interval_days;
     const { data, error } = await supabase
@@ -229,7 +235,11 @@ export const selectItemsByType = createSelector(
     selectAllContextItems,
     (_state: StateWithContextItems, typeId: string) => typeId,
   ],
-  (items, typeId) => items.filter((i) => i.scope_type_id === typeId),
+  (items, typeId) => {
+    if (!typeId) return EMPTY_CONTEXT_ITEMS;
+    const filtered = items.filter((i) => i.scope_type_id === typeId);
+    return filtered.length > 0 ? filtered : EMPTY_CONTEXT_ITEMS;
+  },
 );
 
 /**
@@ -240,8 +250,11 @@ export const selectItemBySlugOrId = createSelector(
   [
     selectAllContextItems,
     (_s: StateWithContextItems, typeId: string | undefined) => typeId,
-    (_s: StateWithContextItems, _typeId: string | undefined, slugOrId: string) =>
-      slugOrId,
+    (
+      _s: StateWithContextItems,
+      _typeId: string | undefined,
+      slugOrId: string,
+    ) => slugOrId,
   ],
   (items, typeId, slugOrId) =>
     isUuid(slugOrId)

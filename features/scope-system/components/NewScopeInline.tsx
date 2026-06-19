@@ -322,6 +322,7 @@ export function NewScopeInline({
                   placeholder="Leave blank to fill later"
                   disabled={busy}
                   minHeight={80}
+                  maxHeight={600}
                   autoGrow
                 />
                 {item.description && (
@@ -379,6 +380,7 @@ export function NewScopeInline({
                   }
                   disabled={busy}
                   minHeight={80}
+                  maxHeight={600}
                   autoGrow
                 />
               </div>

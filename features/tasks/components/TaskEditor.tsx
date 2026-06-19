@@ -1,13 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Calendar,
   Flag,
-  Folder,
   User as UserIcon,
-  MessageSquare,
   CheckSquare,
   Loader2,
   Plus,
@@ -23,9 +21,9 @@ import {
   Tag,
   Info,
   Clock,
+  X,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectProjects } from "@/features/tasks/redux/selectors";
 import {
   selectSelectedTaskId,
   selectTaskEdit,
@@ -49,12 +47,11 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import * as taskService from "@/features/tasks/services/taskService";
 import { TASK_LABEL_OPTIONS } from "@/features/tasks/services/taskService";
 import type { TaskLabel } from "@/features/tasks/services/taskService";
-import TaskScopeTags from "./TaskScopeTags";
+import { TaskContextPicker } from "./TaskContextSection";
 import TaskAssigneePicker from "./TaskAssigneePicker";
 import TaskAttachmentsPanel from "./TaskAttachmentsPanel";
 import { TaskAssociatedResources } from "./TaskAssociatedResources";
-import { Textarea } from "@/components/ui/textarea";
-import { VoiceTextarea } from "@/components/official/VoiceTextarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -64,20 +61,67 @@ import {
   type TaskPriority,
 } from "./TaskPriorityPicker";
 import { TaskDueDatePicker } from "./TaskDueDatePicker";
+import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { formatDateOnly } from "@/utils/dateOnly";
 import { cn } from "@/utils/cn";
+import { useEnsureTaskLoaded } from "@/features/tasks/hooks/useEnsureTaskLoaded";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
+import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiButton";
 
 type Priority = TaskPriority;
+
+/** Icon-only control for embedded tile chrome — no label padding. */
+function EmbeddedToolbarButton({
+  onClick,
+  disabled,
+  title,
+  variant = "ghost",
+  pressed,
+  className,
+  children,
+}: {
+  onClick?: () => void;
+  disabled?: boolean;
+  title: string;
+  variant?: "ghost" | "secondary" | "default";
+  pressed?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant={pressed ? "secondary" : variant}
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={title}
+      className={cn("h-6 w-6 shrink-0 p-0", className)}
+    >
+      {children}
+    </Button>
+  );
+}
 
 export default function TaskEditor({
   taskId: taskIdProp,
   embedded,
+  compact,
+  footerAppend,
+  onOpenLinkedTask,
 }: {
   /** When provided, edit this task directly (e.g. embedded in a War Room tile).
    *  Falls back to the global selected task (the /tasks/[id] route) when omitted. */
   taskId?: string;
   /** Embedded surfaces (tiles) hide the redundant "open in full page" link. */
   embedded?: boolean;
+  /** Dense tile hosts (grid / combined) — flush to edges, no interior gutter. */
+  compact?: boolean;
+  /** Extra controls merged into the sticky bottom bar (e.g. War Room subtasks). */
+  footerAppend?: React.ReactNode;
+  /** In-tile drill-down: open a linked task (subtask) without leaving the tile. */
+  onOpenLinkedTask?: (taskId: string) => void;
 } = {}) {
   const selectedTaskId = useAppSelector(selectSelectedTaskId);
   const taskId = taskIdProp ?? selectedTaskId;
@@ -96,22 +140,38 @@ export default function TaskEditor({
     );
   }
 
-  return <TaskEditorInner taskId={taskId} embedded={embedded} key={taskId} />;
+  return (
+    <TaskEditorInner
+      taskId={taskId}
+      embedded={embedded}
+      compact={compact}
+      footerAppend={footerAppend}
+      onOpenLinkedTask={onOpenLinkedTask}
+      key={taskId}
+    />
+  );
 }
 
 function TaskEditorInner({
   taskId,
   embedded,
+  compact,
+  footerAppend,
+  onOpenLinkedTask,
 }: {
   taskId: string;
   embedded?: boolean;
+  compact?: boolean;
+  footerAppend?: React.ReactNode;
+  onOpenLinkedTask?: (taskId: string) => void;
 }) {
   const dispatch = useAppDispatch();
+  const openTaskEditor = useOpenTaskEditorWindow();
+  const { metadataPending } = useEnsureTaskLoaded(taskId);
   const task = useAppSelector((s) => selectTaskById(s, taskId));
   const draft = useAppSelector(selectTaskEdit(taskId));
   const isDirty = useAppSelector(selectTaskIsDirty(taskId));
   const operatingTaskId = useAppSelector(selectOperatingTaskId);
-  const projects = useAppSelector(selectProjects);
   const orgId = useAppSelector(selectOrganizationId);
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -132,6 +192,8 @@ function TaskEditorInner({
   const subtasks = useAppSelector((s) => selectSubtasksByParent(s, taskId));
   const [newSubtask, setNewSubtask] = useState("");
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
+  const { inputRef: subtaskInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
+    useRefocusInputAfterAsync(isAddingSubtask);
 
   useEffect(() => {
     let cancelled = false;
@@ -266,8 +328,8 @@ function TaskEditorInner({
     setTimeout(() => setIdCopied(false), 1500);
   };
 
-  const handleAddSubtask = async () => {
-    if (!newSubtask.trim() || isAddingSubtask) return;
+  const handleAddSubtask = async (): Promise<boolean> => {
+    if (!newSubtask.trim() || isAddingSubtask) return false;
     setIsAddingSubtask(true);
     try {
       const newId = await dispatch(
@@ -276,7 +338,12 @@ function TaskEditorInner({
           title: newSubtask.trim(),
         }),
       ).unwrap();
-      if (newId) setNewSubtask("");
+      if (newId) {
+        setNewSubtask("");
+        scheduleSubtaskRefocus();
+        return true;
+      }
+      return false;
     } finally {
       setIsAddingSubtask(false);
     }
@@ -325,95 +392,163 @@ function TaskEditorInner({
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-background">
-      {/* Compact title row — single line, minimal vertical real estate.
-          Pills, description, properties etc. live in the scrollable body. */}
-      <div className="shrink-0 border-b border-border/50 bg-card/40 px-3 h-9 flex items-center gap-1.5">
-        <button
-          onClick={handleToggleComplete}
-          disabled={isOperating}
-          className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
-          title={completed ? "Mark incomplete" : "Mark complete"}
-        >
-          {completed ? (
-            <CheckCircle2 className="w-4 h-4 text-green-500" />
-          ) : (
-            <CircleDashed className="w-4 h-4" />
-          )}
-        </button>
-
-        <input
-          value={effective.title}
-          onChange={(e) => patch("title", e.target.value)}
-          placeholder="Untitled task"
+      {/* Title row — tiles get a thinner icon-only strip; full editor keeps labels. */}
+      {embedded ? (
+        <div
           className={cn(
-            "flex-1 min-w-0 h-7 bg-transparent border-none outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground/50",
-            completed && "line-through text-muted-foreground",
+            "flex h-7 shrink-0 items-center gap-1 border-b border-border/50 bg-card/40",
+            compact ? "px-0" : "px-2",
           )}
-          style={{ fontSize: "16px" }}
-        />
+        >
+          <button
+            type="button"
+            onClick={handleToggleComplete}
+            disabled={isOperating}
+            className="grid size-6 shrink-0 place-items-center text-muted-foreground transition-colors hover:text-primary"
+            title={completed ? "Mark incomplete" : "Mark complete"}
+            aria-label={completed ? "Mark incomplete" : "Mark complete"}
+          >
+            {completed ? (
+              <CheckCircle2 className="size-3.5 text-green-500" />
+            ) : (
+              <CircleDashed className="size-3.5" />
+            )}
+          </button>
 
-        <div className="flex items-center gap-0.5 shrink-0">
-          {isDirty && (
-            <>
+          <input
+            value={effective.title}
+            onChange={(e) => patch("title", e.target.value)}
+            placeholder="Untitled task"
+            className={cn(
+              "h-6 min-w-0 flex-1 border-none bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/50",
+              completed && "text-muted-foreground line-through",
+            )}
+            style={{ fontSize: "16px" }}
+          />
+
+          <EmbeddedToolbarButton
+            onClick={handleDelete}
+            disabled={isDeleting || isOperating}
+            title="Delete task"
+            className="text-muted-foreground hover:text-destructive"
+          >
+            {isDeleting ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="size-3.5" />
+            )}
+          </EmbeddedToolbarButton>
+
+          <TaskCopyForAiButton
+            taskId={taskId}
+            taskTitle={effective.title}
+            location={embedded ? "War Room — task tile" : "Tasks — task editor"}
+            size="icon"
+          />
+        </div>
+      ) : (
+        <div className="shrink-0 border-b border-border/50 bg-card/40 px-3 h-9 flex items-center gap-1.5">
+          <button
+            onClick={handleToggleComplete}
+            disabled={isOperating}
+            className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+            title={completed ? "Mark incomplete" : "Mark complete"}
+          >
+            {completed ? (
+              <CheckCircle2 className="w-4 h-4 text-green-500" />
+            ) : (
+              <CircleDashed className="w-4 h-4" />
+            )}
+          </button>
+
+          <input
+            value={effective.title}
+            onChange={(e) => patch("title", e.target.value)}
+            placeholder="Untitled task"
+            className={cn(
+              "flex-1 min-w-0 h-7 bg-transparent border-none outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground/50",
+              completed && "line-through text-muted-foreground",
+            )}
+            style={{ fontSize: "16px" }}
+          />
+
+          <div className="flex items-center gap-0.5 shrink-0">
+            <TaskCopyForAiButton
+              taskId={taskId}
+              taskTitle={effective.title}
+              location="Tasks — task editor"
+              size="sm"
+            />
+            {isDirty && (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleDiscard}
+                  disabled={isSaving}
+                  className="h-7 px-2 text-[11px]"
+                >
+                  Discard
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="h-7 px-2 text-[11px]"
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                  ) : (
+                    <Save className="w-3 h-3 mr-1" />
+                  )}
+                  Save
+                </Button>
+              </>
+            )}
+            {!embedded ? (
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={handleDiscard}
-                disabled={isSaving}
-                className="h-7 px-2 text-[11px]"
+                asChild
+                className="h-7 w-7 p-0"
+                title="Open in full page"
               >
-                Discard
+                <Link
+                  href={`/tasks/${taskId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
               </Button>
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={isSaving}
-                className="h-7 px-2 text-[11px]"
-              >
-                {isSaving ? (
-                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                ) : (
-                  <Save className="w-3 h-3 mr-1" />
-                )}
-                Save
-              </Button>
-            </>
-          )}
-          {!embedded ? (
+            ) : null}
             <Button
               size="sm"
               variant="ghost"
-              asChild
-              className="h-7 w-7 p-0"
-              title="Open in full page"
+              onClick={handleDelete}
+              disabled={isDeleting || isOperating}
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+              title="Delete task"
             >
-              <Link href={`/tasks/${taskId}`} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="w-3.5 h-3.5" />
-              </Link>
+              {isDeleting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="w-3.5 h-3.5" />
+              )}
             </Button>
-          ) : null}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleDelete}
-            disabled={isDeleting || isOperating}
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-            title="Delete task"
-          >
-            {isDeleting ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="w-3.5 h-3.5" />
-            )}
-          </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Scrollable body — left-aligned so content tracks the panel edge
           regardless of the editor column width. max-w-3xl just caps the
           reading width on ultra-wide displays so lines don't sprawl. */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="max-w-3xl px-4 py-4 space-y-5">
+        <div
+          className={cn(
+            compact ? "space-y-3 py-1" : "max-w-3xl space-y-5 px-4 py-4",
+          )}
+        >
           {/* Quick meta pills — at-a-glance task vitals, moved out of the
               compact title row so the row stays single-line. */}
           {(effective.priority || effective.dueDate || subtasks.length > 0) && (
@@ -448,85 +583,112 @@ function TaskEditorInner({
               )}
             </div>
           )}
-          {/* Scope tags — prominent, directly under header */}
-          {orgId && (
-            <section>
-              <SectionHeader icon={Tag} label="Tags" />
-              <TaskScopeTags taskId={taskId} orgId={orgId} />
-            </section>
-          )}
-
-          {/* Core properties — iOS-style grouped card */}
-          <section className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
-            <PropertyRow icon={UserIcon} label="Assignee" first>
+          {/* Core properties — compact tiles: thin inline rows; full editor: grouped card */}
+          <section
+            className={cn(
+              compact
+                ? "space-y-0"
+                : "overflow-hidden rounded-xl border border-border/60 bg-card/40",
+            )}
+          >
+            <PropertyRow
+              icon={UserIcon}
+              label="Assignee"
+              first
+              compact={compact}
+            >
               <TaskAssigneePicker
                 assigneeId={effective.assigneeId ?? null}
                 onChange={(id) => patch("assignee_id", id)}
+                size={compact ? "sm" : "md"}
+                className={
+                  compact
+                    ? "h-6 border-0 bg-transparent px-1 shadow-none hover:bg-accent/40"
+                    : undefined
+                }
               />
             </PropertyRow>
 
-            <PropertyRow icon={Folder} label="Project">
-              <ProjectSelect
-                value={effective.projectId ?? null}
-                onChange={(v) => patch("project_id", v)}
-                options={projects
-                  .filter((p) => p.id !== "__unassigned__")
-                  .map((p) => ({ id: p.id, name: p.name }))}
+            <PropertyRow icon={Tag} label="Context" compact={compact}>
+              <TaskContextPicker
+                taskId={taskId}
+                className={
+                  compact
+                    ? "h-6 border-0 bg-transparent px-1 py-0 shadow-none hover:bg-accent/40"
+                    : undefined
+                }
               />
             </PropertyRow>
 
-            <PropertyRow icon={Flag} label="Priority">
+            <PropertyRow icon={Flag} label="Priority" compact={compact}>
               <TaskPriorityPicker
-                variant="segmented"
+                variant={compact ? "pill" : "segmented"}
                 value={effective.priority ?? null}
                 onChange={(v) => patch("priority", v)}
+                className={
+                  compact
+                    ? "border-0 bg-transparent px-1 shadow-none hover:bg-accent/40"
+                    : undefined
+                }
               />
             </PropertyRow>
 
-            <PropertyRow icon={Calendar} label="Due date" last>
+            <PropertyRow
+              icon={Calendar}
+              label="Due date"
+              last
+              compact={compact}
+            >
               <TaskDueDatePicker
-                variant="field"
+                variant={compact ? "pill" : "field"}
                 value={effective.dueDate ?? null}
                 onChange={(v) => patch("due_date", v)}
               />
             </PropertyRow>
           </section>
 
-          {/* Description */}
-          <section>
-            <SectionHeader icon={MessageSquare} label="Description" />
-            <Textarea
-              value={effective.description}
-              onChange={(e) => patch("description", e.target.value)}
-              placeholder="Add a description..."
-              className="text-sm min-h-[120px] resize-y bg-card/40 border-border/60"
-            />
-          </section>
+          {/* Description — ProTextarea: floating label + voice dictation */}
+          <ProTextarea
+            value={effective.description}
+            onChange={(e) => patch("description", e.target.value)}
+            floatingLabel="Description"
+            autoGrow
+            minHeight={compact ? 72 : 120}
+            maxHeight={compact ? 220 : 400}
+            showCopyButton={!compact}
+            className={cn(
+              "resize-none border-border/60 bg-card/40 text-sm",
+              compact && "rounded-none border-x-0",
+            )}
+            wrapperClassName="w-full"
+            style={{ fontSize: "16px" }}
+          />
 
-          {/* Labels */}
-          <section>
-            <SectionHeader icon={Tag} label="Labels" />
-            <div className="flex flex-wrap gap-1.5">
-              {TASK_LABEL_OPTIONS.map((opt) => {
-                const active = effective.labels.includes(opt.value);
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => toggleLabel(opt.value)}
-                    className={cn(
-                      "h-6 px-2 rounded-full text-[11px] font-medium transition-colors border",
-                      active
-                        ? opt.color + " border-current"
-                        : "text-muted-foreground bg-muted/40 border-transparent hover:bg-accent hover:text-foreground",
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+          {/* Labels — tight text chips; section icon only (no "Labels" header row) */}
+          <div className="flex flex-wrap items-center gap-1 pl-1.5">
+            <span className="text-[10px] font-medium text-foreground pl-0">
+              Tags:
+            </span>
+            {TASK_LABEL_OPTIONS.map((opt) => {
+              const active = effective.labels.includes(opt.value);
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => toggleLabel(opt.value)}
+                  aria-pressed={active}
+                  className={cn(
+                    "inline-flex items-center rounded-md border  px-1 py-0.5 text-[10px] font-medium transition-colors",
+                    active
+                      ? opt.color + " border-current"
+                      : "border-border bg-muted/40 text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
 
           {/* Subtasks */}
           <section>
@@ -534,10 +696,23 @@ function TaskEditorInner({
               icon={CheckSquare}
               label="Subtasks"
               count={subtasks.length}
+              className="mb-1"
             />
-            <div className="rounded-xl border border-border/60 bg-card/40 overflow-hidden">
+            <div
+              className={cn(
+                "overflow-hidden bg-card/40",
+                compact
+                  ? "border-y border-border/60"
+                  : "rounded-xl border border-border/60",
+              )}
+            >
               {subtasks.length === 0 ? (
-                <p className="px-4 py-3 text-xs text-muted-foreground italic">
+                <p
+                  className={cn(
+                    "py-1.5 text-[11px] italic text-muted-foreground",
+                    compact ? "pl-1.5 pr-2" : "px-4",
+                  )}
+                >
                   No subtasks yet.
                 </p>
               ) : (
@@ -545,68 +720,74 @@ function TaskEditorInner({
                   <div
                     key={st.id}
                     className={cn(
-                      "group flex items-center gap-3 px-4 py-2 transition-colors hover:bg-accent/40",
+                      "group flex h-7 items-center gap-2 transition-colors hover:bg-accent/40",
+                      compact ? "pl-1.5 pr-2" : "px-4",
                       i !== 0 && "border-t border-border/40",
                     )}
                   >
                     <Checkbox
                       checked={st.status === "completed"}
                       onCheckedChange={() => handleToggleSubtask(st.id)}
+                      className="size-3.5"
                     />
-                    <span
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onOpenLinkedTask
+                          ? onOpenLinkedTask(st.id)
+                          : openTaskEditor({ taskId: st.id })
+                      }
                       className={cn(
-                        "flex-1 text-sm",
+                        "min-w-0 flex-1 truncate rounded-sm text-left text-xs transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         st.status === "completed" &&
                           "line-through text-muted-foreground",
                       )}
+                      title={st.title}
                     >
                       {st.title}
-                    </span>
+                    </button>
                     <button
+                      type="button"
                       onClick={() => handleDeleteSubtask(st.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                      className="grid size-5 shrink-0 place-items-center opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                      aria-label="Delete subtask"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="size-3" />
                     </button>
                   </div>
                 ))
               )}
               <div
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2 bg-muted/20",
+                  "flex h-7 items-center gap-1.5 bg-muted/20",
+                  compact ? "pl-1.5 pr-2" : "px-3",
                   subtasks.length > 0 && "border-t border-border/40",
                 )}
               >
-                <Plus className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <Plus className="size-3 shrink-0 text-muted-foreground" />
                 <input
+                  ref={subtaskInputRef}
                   type="text"
                   value={newSubtask}
                   onChange={(e) => setNewSubtask(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      handleAddSubtask();
+                      void handleAddSubtask();
                     }
                   }}
-                  placeholder="Add subtask..."
-                  className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
+                  onBlur={() => {
+                    if (newSubtask.trim()) void handleAddSubtask();
+                  }}
+                  placeholder="Add subtask, press Enter…"
+                  className="h-6 min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
                   style={{ fontSize: "16px" }}
                   disabled={isAddingSubtask}
+                  aria-label="Add subtask"
                 />
-                {newSubtask.trim() && (
-                  <Button
-                    size="sm"
-                    onClick={handleAddSubtask}
-                    disabled={isAddingSubtask}
-                    className="h-6 px-2 text-[11px]"
-                  >
-                    {isAddingSubtask ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      "Add"
-                    )}
-                  </Button>
-                )}
+                {isAddingSubtask ? (
+                  <Loader2 className="size-3 shrink-0 animate-spin text-muted-foreground" />
+                ) : null}
               </div>
             </div>
           </section>
@@ -619,45 +800,48 @@ function TaskEditorInner({
           {/* Associated resources — anything FK-linked to this task (task_id) */}
           <TaskAssociatedResources taskId={taskId} />
 
-          {/* Comments */}
+          {/* Comments — ProTextarea with floating label + existing thread */}
           <section>
-            <SectionHeader
-              icon={MessageSquare}
-              label="Comments"
-              count={comments.length}
-            />
             {isLoadingComments ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
-                <Loader2 className="w-3 h-3 animate-spin" /> Loading...
+              <div className="flex items-center gap-2 py-2 pl-1.5 text-xs text-muted-foreground">
+                <Loader2 className="size-3 animate-spin" /> Loading...
               </div>
             ) : comments.length > 0 ? (
-              <div className="space-y-2 mb-2">
+              <div className="mb-2 space-y-1.5 pl-1.5">
                 {comments.map((c) => (
                   <div
                     key={c.id}
-                    className="p-3 rounded-lg border border-border/60 bg-card/40"
+                    className="rounded-md border border-border/60 bg-card/40 p-2"
                   >
-                    <p className="text-xs text-foreground whitespace-pre-wrap">
+                    <p className="whitespace-pre-wrap text-xs text-foreground">
                       {c.content}
                     </p>
-                    <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
-                      <Clock className="w-2.5 h-2.5" />
+                    <p className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <Clock className="size-2.5" />
                       {new Date(c.created_at).toLocaleString()}
                     </p>
                   </div>
                 ))}
               </div>
             ) : null}
-            <VoiceTextarea
+            <ProTextarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment...  (⌘+Enter to post)"
-              className="text-sm min-h-[88px] resize-y bg-card/40 border-border/60"
-              rows={3}
+              floatingLabel="Comment"
+              autoGrow
+              minHeight={compact ? 64 : 88}
+              maxHeight={compact ? 160 : 220}
+              showCopyButton={false}
               onSubmit={handleAddComment}
               submitDisabled={!newComment.trim()}
               isSubmitting={isAddingComment}
               submitLabel="Post comment"
+              className={cn(
+                "resize-none border-border/60 bg-card/40 text-sm",
+                compact && "rounded-none border-x-0",
+              )}
+              wrapperClassName="w-full"
+              style={{ fontSize: "16px" }}
             />
           </section>
 
@@ -665,7 +849,7 @@ function TaskEditorInner({
           <section>
             <button
               onClick={() => setShowAdvanced((v) => !v)}
-              className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 pl-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
             >
               {showAdvanced ? (
                 <ChevronDown className="w-3 h-3" />
@@ -676,8 +860,15 @@ function TaskEditorInner({
               Advanced
             </button>
             {showAdvanced && (
-              <div className="mt-3 rounded-xl border border-border/60 bg-card/40 overflow-hidden">
-                <PropertyRow label="Task ID" first>
+              <div
+                className={cn(
+                  "mt-3 overflow-hidden bg-card/40",
+                  compact
+                    ? "border-y border-border/60"
+                    : "rounded-xl border border-border/60",
+                )}
+              >
+                <PropertyRow label="Task ID" first compact={compact}>
                   <div className="flex items-center gap-1 w-full">
                     <code className="flex-1 text-[10px] font-mono bg-muted px-2 py-1 rounded truncate">
                       {taskId}
@@ -696,17 +887,27 @@ function TaskEditorInner({
                     </Button>
                   </div>
                 </PropertyRow>
-                <PropertyRow label="Created">
-                  <span className="text-xs text-muted-foreground">
-                    {task.created_at
-                      ? new Date(task.created_at).toLocaleString()
-                      : "—"}
-                  </span>
+                <PropertyRow label="Created" compact={compact}>
+                  {task.created_at ? (
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(task.created_at).toLocaleString()}
+                    </span>
+                  ) : metadataPending ? (
+                    <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </PropertyRow>
-                <PropertyRow label="Owner" last>
-                  <code className="text-[10px] font-mono bg-muted px-2 py-1 rounded">
-                    {task.user_id ?? "—"}
-                  </code>
+                <PropertyRow label="Owner" last compact={compact}>
+                  {task.user_id ? (
+                    <code className="text-[10px] font-mono bg-muted px-2 py-1 rounded">
+                      {task.user_id}
+                    </code>
+                  ) : metadataPending ? (
+                    <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </PropertyRow>
               </div>
             )}
@@ -714,72 +915,133 @@ function TaskEditorInner({
         </div>
       </div>
 
-      {/* Sticky bottom action bar — duplicates the top-right cluster so save
-          is always one tap away after long scrolls. `pb-safe` covers iOS
-          home-indicator inset on responsive web. */}
-      <div className="shrink-0 border-t border-border/60 bg-card/60 backdrop-blur-sm px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center gap-1.5">
-        <Button
-          size="sm"
-          variant={completed ? "secondary" : "ghost"}
-          onClick={handleToggleComplete}
-          disabled={isOperating}
-          className="h-8 text-[11px] gap-1.5"
+      {/* Sticky bottom bar — embedded tiles: thin icon-only strip; full page keeps labels. */}
+      {embedded ? (
+        <div
+          className={cn(
+            "flex h-7 shrink-0 items-center gap-0.5 border-t border-border/60 bg-card/60",
+            compact ? "px-0" : "px-2",
+          )}
         >
-          {completed ? (
-            <>
-              <CircleDashed className="w-3.5 h-3.5" />
-              Mark incomplete
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-              Mark complete
-            </>
-          )}
-        </Button>
+          <EmbeddedToolbarButton
+            onClick={handleToggleComplete}
+            disabled={isOperating}
+            pressed={completed}
+            title={completed ? "Mark incomplete" : "Mark complete"}
+          >
+            {completed ? (
+              <CircleDashed className="size-3.5" />
+            ) : (
+              <CheckCircle2 className="size-3.5 text-green-500" />
+            )}
+          </EmbeddedToolbarButton>
 
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleDelete}
-          disabled={isDeleting || isOperating}
-          className="h-8 text-[11px] gap-1.5 text-muted-foreground hover:text-destructive"
-        >
-          {isDeleting ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Trash2 className="w-3.5 h-3.5" />
-          )}
-          Delete
-        </Button>
+          <EmbeddedToolbarButton
+            onClick={handleDelete}
+            disabled={isDeleting || isOperating}
+            title="Delete task"
+            className="text-muted-foreground hover:text-destructive"
+          >
+            {isDeleting ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="size-3.5" />
+            )}
+          </EmbeddedToolbarButton>
 
-        <div className="ml-auto flex items-center gap-1.5">
-          {isDirty && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleDiscard}
-              disabled={isSaving}
-              className="h-8 text-[11px]"
-            >
-              Discard
-            </Button>
-          )}
+          {footerAppend}
+
+          {isDirty ? (
+            <div className="ml-auto flex items-center gap-0.5">
+              <EmbeddedToolbarButton
+                onClick={handleDiscard}
+                disabled={isSaving}
+                title="Discard changes"
+              >
+                <X className="size-3.5" />
+              </EmbeddedToolbarButton>
+              <EmbeddedToolbarButton
+                onClick={handleSave}
+                disabled={isSaving}
+                title="Save changes"
+                variant="default"
+              >
+                {isSaving ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Save className="size-3.5" />
+                )}
+              </EmbeddedToolbarButton>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="shrink-0 border-t border-border/60 bg-card/60 backdrop-blur-sm px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center gap-1.5">
           <Button
             size="sm"
-            onClick={handleSave}
-            disabled={!isDirty || isSaving}
-            className="h-8 text-[11px] gap-1.5 min-w-[80px]"
+            variant={completed ? "secondary" : "ghost"}
+            onClick={handleToggleComplete}
+            disabled={isOperating}
+            className="h-8 text-[11px] gap-1.5"
           >
-            {isSaving ? (
+            {completed ? (
+              <>
+                <CircleDashed className="w-3.5 h-3.5" />
+                Mark incomplete
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                Mark complete
+              </>
+            )}
+          </Button>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleDelete}
+            disabled={isDeleting || isOperating}
+            className="h-8 text-[11px] gap-1.5 text-muted-foreground hover:text-destructive"
+          >
+            {isDeleting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <Save className="w-3.5 h-3.5" />
+              <Trash2 className="w-3.5 h-3.5" />
             )}
-            {isDirty ? "Save" : "Saved"}
+            Delete
           </Button>
+
+          {footerAppend}
+
+          <div className="ml-auto flex items-center gap-1.5">
+            {isDirty && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleDiscard}
+                disabled={isSaving}
+                className="h-8 text-[11px]"
+              >
+                Discard
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={!isDirty || isSaving}
+              className="h-8 text-[11px] gap-1.5 min-w-[80px]"
+            >
+              {isSaving ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Save className="w-3.5 h-3.5" />
+              )}
+              {isDirty ? "Save" : "Saved"}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
       <ConfirmDialog
         open={deleteConfirmOpen}
@@ -803,13 +1065,20 @@ function SectionHeader({
   icon: Icon,
   label,
   count,
+  className,
 }: {
   icon?: React.ComponentType<{ className?: string }>;
   label: string;
   count?: number;
+  className?: string;
 }) {
   return (
-    <div className="flex items-center gap-1.5 mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+    <div
+      className={cn(
+        "mb-2 flex items-center gap-1.5 pl-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground",
+        className,
+      )}
+    >
       {Icon && <Icon className="w-3 h-3" />}
       <span>{label}</span>
       {typeof count === "number" && (
@@ -825,13 +1094,29 @@ function PropertyRow({
   children,
   first,
   last,
+  compact,
 }: {
   icon?: React.ComponentType<{ className?: string }>;
   label: string;
   children: React.ReactNode;
   first?: boolean;
   last?: boolean;
+  compact?: boolean;
 }) {
+  if (compact) {
+    return (
+      <div className="flex h-7 items-center gap-1.5 pl-1.5 pr-1">
+        {Icon ? (
+          <Icon className="size-3 shrink-0 text-muted-foreground" />
+        ) : null}
+        <span className="shrink-0 text-[10px] font-medium text-muted-foreground">
+          {label}
+        </span>
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -839,40 +1124,11 @@ function PropertyRow({
         !first && "border-t border-border/40",
       )}
     >
-      <div className="flex items-center gap-1.5 w-20 shrink-0 text-[11px] font-medium text-muted-foreground">
+      <div className="flex w-20 shrink-0 items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
         {Icon && <Icon className="w-3 h-3" />}
         <span>{label}</span>
       </div>
-      <div className="flex-1 min-w-0">{children}</div>
+      <div className="min-w-0 flex-1">{children}</div>
     </div>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────── */
-
-function ProjectSelect({
-  value,
-  onChange,
-  options,
-}: {
-  value: string | null;
-  onChange: (v: string | null) => void;
-  options: { id: string; name: string }[];
-}) {
-  return (
-    <select
-      value={value ?? "__none__"}
-      onChange={(e) =>
-        onChange(e.target.value === "__none__" ? null : e.target.value)
-      }
-      className="h-8 w-full bg-card border border-border rounded-md px-2 text-xs outline-none hover:border-foreground/30 focus:border-primary/60 transition-colors"
-    >
-      <option value="__none__">Unassigned</option>
-      {options.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name}
-        </option>
-      ))}
-    </select>
   );
 }

@@ -24,6 +24,7 @@ import { generatePresentationHTML } from "./presentation-html-generator";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "sonner";
+import IconButton from "@/components/official/IconButton";
 
 interface PresentationExportMenuProps {
   presentationData: PresentationData;
@@ -384,18 +385,15 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
 
   return (
     <div className="relative">
-      <button
+      <IconButton
+        icon={isExporting ? Loader2 : Download}
+        tooltip="Export presentation"
         onClick={() => setIsOpen(!isOpen)}
         disabled={isExporting}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium transition-all shadow-sm disabled:opacity-50"
-      >
-        {isExporting ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Download className="h-3.5 w-3.5" />
-        )}
-        <span>Export</span>
-      </button>
+        size="sm"
+        variant="outline"
+        iconClassName={isExporting ? "animate-spin" : undefined}
+      />
 
       {isOpen && (
         <>

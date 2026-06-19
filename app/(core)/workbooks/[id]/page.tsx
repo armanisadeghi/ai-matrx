@@ -43,6 +43,12 @@ export default function WorkbookPage({
   const [renameSaving, setRenameSaving] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(false);
+  // Editability must be RESOLVED before the editor mounts. Univer boots once
+  // per workbookId; if `editable` flips false→true after mount, the boot
+  // effect tears down and recreates Univer, and disposing it mid-render
+  // crashes Univer's React popups — content loads, then vanishes. Gate the
+  // mount on this flag so `editable` is stable from the first frame.
+  const [permsResolved, setPermsResolved] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -71,6 +77,7 @@ export default function WorkbookPage({
         });
         setCanEdit(perm === true);
       }
+      setPermsResolved(true);
     })();
   }, [id]);
 
@@ -147,14 +154,18 @@ export default function WorkbookPage({
   return (
     <div className="flex h-page w-full flex-col p-0 sm:p-3 sm:pr-12">
       <div className="min-h-0 flex-1 overflow-hidden sm:rounded-md sm:border sm:border-border">
-        <WorkbookEditor
-          workbookId={id}
-          workbookName={workbook?.workbook_name ?? undefined}
-          editable={canEdit}
-          collab
-          toolbarLeftSlot={titleSlot}
-          toolbarRightSlot={shareSlot}
-        />
+        {permsResolved && workbook ? (
+          <WorkbookEditor
+            workbookId={id}
+            workbookName={workbook.workbook_name}
+            editable={canEdit}
+            collab
+            toolbarLeftSlot={titleSlot}
+            toolbarRightSlot={shareSlot}
+          />
+        ) : (
+          <EditorBootSpinner />
+        )}
       </div>
     </div>
   );

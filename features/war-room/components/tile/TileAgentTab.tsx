@@ -21,20 +21,36 @@ import { Loader2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectActiveAudioSessionId } from "@/features/war-room/redux/selectors";
 import { ensureTileAudioSession } from "@/features/war-room/redux/thunks";
+import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 // Code-split: TileAgentPanel pulls the Scribe Agent+ graph (agents execution +
 // TTS + working-document). Lazy so it never weighs down the room bundle; it
 // loads on demand the first time an Agent tab is opened.
-const TileAgentPanel = dynamic(() => import("./TileAgentPanel"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full items-center justify-center">
-      <Loader2 className="size-4 animate-spin text-muted-foreground" />
-    </div>
-  ),
-});
+const TileAgentPanel = dynamic(
+  () =>
+    import("./TileAgentPanel").then((m) => {
+      console.log(
+        "[Track War Room] 8b, TileAgentTab.tsx — TileAgentPanel dynamic chunk loaded",
+      );
+      return m;
+    }),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      </div>
+    ),
+  },
+);
 
-export function TileAgentTab({ tileId }: { tileId: string }) {
+export function TileAgentTab({
+  tileId,
+  compact,
+}: {
+  tileId: string;
+  compact?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const sessionId = useAppSelector(selectActiveAudioSessionId(tileId));
 
@@ -44,6 +60,18 @@ export function TileAgentTab({ tileId }: { tileId: string }) {
   useEffect(() => {
     if (!sessionId) void dispatch(ensureTileAudioSession(tileId));
   }, [sessionId, tileId, dispatch]);
+
+  useEffect(() => {
+    traceWarRoomRenderPath(7, "TileAgentTab.tsx", "mount", { tileId });
+  }, [tileId]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    traceWarRoomRenderPath(8, "TileAgentTab.tsx", "studio session ready", {
+      tileId,
+      studioSessionId: sessionId,
+    });
+  }, [tileId, sessionId]);
 
   if (!sessionId) {
     return (
@@ -56,6 +84,11 @@ export function TileAgentTab({ tileId }: { tileId: string }) {
   // Pass the tileId through so the panel can expose the tile's task / notes /
   // files to the assistant as read-only context (TileAgentPanel builds those).
   return (
-    <TileAgentPanel key={sessionId} sessionId={sessionId} tileId={tileId} />
+    <TileAgentPanel
+      key={sessionId}
+      sessionId={sessionId}
+      tileId={tileId}
+      compact={compact}
+    />
   );
 }

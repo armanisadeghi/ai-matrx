@@ -48,6 +48,14 @@ export const QUICK_ACCESS_ITEMS: OverlayMenuItemConfig[] = [
       "Pop-over chat from any page. Inherits the context you're working in, saves to your history.",
   },
   {
+    overlayId: "quickScribe",
+    icon: "Mic",
+    label: "Quick Scribe",
+    requiresAuth: true,
+    guestDescription:
+      "Capture voice from anywhere — it transcribes and cleans on the fly and auto-attaches to the project you're in.",
+  },
+  {
     overlayId: "quickData",
     icon: "Database",
     label: "Quick Data",

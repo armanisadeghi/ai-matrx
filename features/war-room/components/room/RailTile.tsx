@@ -15,7 +15,9 @@ import { useTilePulse } from "@/features/war-room/hooks/useTilePulse";
 import { useTileActions } from "@/features/war-room/hooks/useTileActions";
 import { PulseGlyph } from "../tile/PulseGlyph";
 import { TileOptionsMenu } from "../tile/TileOptionsMenu";
-import { tileKindOf } from "./tileKind";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectTileFlavor } from "@/features/war-room/redux/selectors";
+import { tileTabKind } from "./tileKind";
 
 export function RailTile({
   tileId,
@@ -30,9 +32,10 @@ export function RailTile({
 }) {
   const pulse = useTilePulse(tileId);
   const actions = useTileActions(tileId, sessionId);
+  const flavor = useAppSelector((s) => selectTileFlavor(tileId)(s));
   if (!actions) return null;
 
-  const kind = tileKindOf(pulse.activeTab);
+  const kind = tileTabKind(pulse.activeTab, flavor);
 
   return (
     <div

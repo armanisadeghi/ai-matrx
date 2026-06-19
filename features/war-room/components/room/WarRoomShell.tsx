@@ -72,14 +72,15 @@ import {
   type Density,
 } from "./roomViewContext";
 import { TILE_KIND_ORDER, tileKindOf } from "./tileKind";
+import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 // The TIER-2 ROOM agent panel pulls the whole agent execution graph (via
 // AgentConversationColumn). Lazy-load it so that heavy chunk never ships in the
 // /war-room/[id] bundle — it only loads the first time the user opens the panel.
-const RoomAgentPanel = dynamic(
-  () => import("./RoomAgentPanel"),
-  { ssr: false, loading: () => null },
-);
+const RoomAgentPanel = dynamic(() => import("./RoomAgentPanel"), {
+  ssr: false,
+  loading: () => null,
+});
 
 // The live-watch layer renders thread-agent conversations the room agent is
 // messaging (one WindowPanel per open id, driven by the shared warRoomWatch
@@ -142,6 +143,13 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
   const notFound = tilesStatus === "error" && !session;
   const ready = tilesStatus === "ready";
 
+  useEffect(() => {
+    if (!ready || mode !== "stage") return;
+    traceWarRoomRenderPath(2, "WarRoomShell.tsx", "Stage mode ready", {
+      sessionId,
+    });
+  }, [ready, mode, sessionId]);
+
   return (
     <div className="@container h-[calc(100vh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       {/* ── Header — pr-14 clears the shell's fixed top-right avatar ── */}
@@ -154,7 +162,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
         >
           <ArrowLeft className="size-4.5" />
         </button>
-        <span className="grid place-items-center size-7 rounded-md bg-primary/10 text-primary shrink-0">
+        <span className="grid place-items-center size-7 shrink-0 text-primary">
           <Gauge className="size-4" />
         </span>
 
@@ -189,7 +197,7 @@ function WarRoomShellInner({ sessionId }: { sessionId: string }) {
                 "inline-flex items-center gap-1.5 rounded-lg border px-2.5 h-7 text-xs font-medium transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 roomAgentOpen
-                  ? "border-primary/40 bg-primary/10 text-primary"
+                  ? "text-primary border border-primary/70"
                   : "border-border text-muted-foreground hover:text-foreground hover:bg-accent",
               )}
               title="Chat with an agent that sees every thread in this room"
@@ -376,12 +384,14 @@ function InstrumentProjector() {
             type="button"
             onClick={() => setProjectedTab(isOn ? null : id)}
             aria-pressed={isOn}
-            title={isOn ? `Stop projecting ${k.label}` : `Project all → ${k.label}`}
+            title={
+              isOn ? `Stop projecting ${k.label}` : `Project all → ${k.label}`
+            }
             className={cn(
               "grid place-items-center size-6 rounded transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
               isOn
-                ? cn(k.bg, k.text)
+                ? cn(k.text, "border border-current/70")
                 : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
           >
@@ -446,7 +456,9 @@ function NotFoundState() {
   return (
     <div className="h-full grid place-items-center text-center px-4">
       <div>
-        <p className="text-sm font-medium text-foreground">War Room not found</p>
+        <p className="text-sm font-medium text-foreground">
+          War Room not found
+        </p>
         <p className="mt-1 text-xs text-muted-foreground">
           It may have been deleted.
         </p>

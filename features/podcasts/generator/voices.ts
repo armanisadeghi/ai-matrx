@@ -1,111 +1,129 @@
 // features/podcasts/generator/voices.ts
 //
-// Voice catalogs for the studio's speaker picker. Pure data.
+// Cast-building helpers for the studio's speaker picker. The voice DATA now
+// lives in Supabase `public.voices` and is loaded via `useVoices` /
+// `voiceCatalog.ts` — there are no hardcoded rosters or sample URLs here
+// anymore (they drifted from the server and went stale). These helpers operate
+// on the live `Voice[]` the caller passes in.
 //
-// Two provider bands, matching the server's audio routing
-// (aidream packages/matrx-ai/matrx_ai/agent_runners/podcast_generator.py):
-//   1–2 hosts → Google Gemini TTS — voice is a prebuilt voice NAME.
-//   3–20 hosts → ElevenLabs text_to_dialogue — voice is a VOICE_ID.
-//
-// GEMINI_VOICES mirrors the server's GoogleTTSRegistry (matrx-ai
-// config/tts_config.py) — 30 prebuilt voices with their style words.
-// ELEVENLABS_VOICES mirrors the server's default premade-voice palette;
-// a curated account-specific list can replace/extend it without touching
-// any other code.
+// Provider bands mirror the server's audio routing:
+//   1–2 hosts → Google Gemini (provider "google"; voice = Gemini voice name)
+//   3–20 hosts → ElevenLabs   (provider "elevenlabs"; voice = ElevenLabs voice_id)
 
-export interface VoiceOption {
-  /** What the request sends: Gemini voice name or ElevenLabs voice_id. */
-  value: string;
-  label: string;
-  /** One-word style hint shown next to the name. */
-  style: string;
+import type { PodcastSpeaker, PodcastSpeakerGender } from "./types";
+import type { Voice, VoiceProvider } from "./voiceCatalog";
+
+export const PROVIDER_LABEL: Record<string, string> = {
+  google: "Google Gemini",
+  elevenlabs: "ElevenLabs",
+};
+
+/** The provider band a host count uses (≤2 Google, ≥3 ElevenLabs). */
+export function providerForHostCount(hostCount: number): VoiceProvider {
+  return hostCount <= 2 ? "google" : "elevenlabs";
 }
 
-export const GEMINI_VOICES: VoiceOption[] = [
-  { value: "zephyr", label: "Zephyr", style: "Bright" },
-  { value: "puck", label: "Puck", style: "Upbeat" },
-  { value: "charon", label: "Charon", style: "Informative" },
-  { value: "kore", label: "Kore", style: "Firm" },
-  { value: "fenrir", label: "Fenrir", style: "Excitable" },
-  { value: "leda", label: "Leda", style: "Youthful" },
-  { value: "orus", label: "Orus", style: "Firm" },
-  { value: "aoede", label: "Aoede", style: "Breezy" },
-  { value: "callirrhoe", label: "Callirrhoe", style: "Easy-going" },
-  { value: "autonoe", label: "Autonoe", style: "Bright" },
-  { value: "enceladus", label: "Enceladus", style: "Breathy" },
-  { value: "iapetus", label: "Iapetus", style: "Clear" },
-  { value: "umbriel", label: "Umbriel", style: "Easy-going" },
-  { value: "algieba", label: "Algieba", style: "Smooth" },
-  { value: "despina", label: "Despina", style: "Smooth" },
-  { value: "erinome", label: "Erinome", style: "Clear" },
-  { value: "algenib", label: "Algenib", style: "Gravelly" },
-  { value: "rasalgethi", label: "Rasalgethi", style: "Informative" },
-  { value: "laomedeia", label: "Laomedeia", style: "Upbeat" },
-  { value: "achernar", label: "Achernar", style: "Soft" },
-  { value: "alnilam", label: "Alnilam", style: "Firm" },
-  { value: "schedar", label: "Schedar", style: "Even" },
-  { value: "gacrux", label: "Gacrux", style: "Mature" },
-  { value: "pulcherrima", label: "Pulcherrima", style: "Forward" },
-  { value: "achird", label: "Achird", style: "Friendly" },
-  { value: "zubenelgenubi", label: "Zubenelgenubi", style: "Casual" },
-  { value: "vindemiatrix", label: "Vindemiatrix", style: "Gentle" },
-  { value: "sadachbia", label: "Sadachbia", style: "Lively" },
-  { value: "sadaltager", label: "Sadaltager", style: "Knowledgeable" },
-  { value: "sulafat", label: "Sulafat", style: "Warm" },
-];
-
-/** Default voice assignment order when the user doesn't pick (1–2 hosts) —
- *  mirrors the server's _GEMINI_DEFAULT_VOICES. */
-export const GEMINI_DEFAULT_VOICE_ORDER = ["orus", "kore", "puck", "zephyr"];
-
-export const ELEVENLABS_VOICES: VoiceOption[] = [
-  { value: "21m00Tcm4TlvDq8ikWAM", label: "Rachel", style: "Calm" },
-  { value: "pNInz6obpgDQGcFmaJgB", label: "Adam", style: "Deep" },
-  { value: "EXAVITQu4vr4xnSDxMaL", label: "Sarah", style: "Soft" },
-  { value: "ErXwobaYiN019PkySvjV", label: "Antoni", style: "Well-rounded" },
-  { value: "MF3mGyEYCl7XYWbV9V6O", label: "Elli", style: "Emotive" },
-  { value: "TxGEqnHWrfWFTfGW9XjX", label: "Josh", style: "Deep" },
-  { value: "AZnzlk1XvdvUeBnXmlld", label: "Domi", style: "Strong" },
-  { value: "VR6AewLTigWG4xSOukaG", label: "Arnold", style: "Crisp" },
-  { value: "ThT5KcBeYPX3keUQqHPh", label: "Dorothy", style: "Pleasant" },
-  { value: "yoZ06aMxZJJ28mfd3POQ", label: "Sam", style: "Raspy" },
-  { value: "jBpfuIE2acCO8z3wKNLl", label: "Gigi", style: "Childlike" },
-  { value: "onwK4e9ZLuTAKqWW03F9", label: "Daniel", style: "Authoritative" },
-  { value: "pMsXgVXv3BLzUgSXRplE", label: "Serena", style: "Pleasant" },
-  { value: "g5CIjZEefAph4nQFvHAz", label: "Ethan", style: "Whispery" },
-  { value: "oWAxZDx7w5VEj9dCyTzz", label: "Grace", style: "Southern" },
-  { value: "bVMeCyTHy58xNoL34h3p", label: "Jeremy", style: "Excited" },
-  { value: "jsCqWAovK2LkecY7zXl4", label: "Freya", style: "Expressive" },
-  { value: "ZQe5CZNOzWyzPSCn5a3c", label: "James", style: "Calm" },
-  { value: "Xb7hH8MSUJpSbSDYk0k2", label: "Alice", style: "Confident" },
-  { value: "iP95p4xoKVk53GoZ742B", label: "Chris", style: "Casual" },
-];
-
-/** The voice catalog for a given host count (provider band). */
-export function voicesForHostCount(hostCount: number): VoiceOption[] {
-  return hostCount <= 2 ? GEMINI_VOICES : ELEVENLABS_VOICES;
+/** The live voices for a host count's provider band. */
+export function voicesForBand(voices: Voice[], hostCount: number): Voice[] {
+  const provider = providerForHostCount(hostCount);
+  return voices.filter((v) => v.provider === provider);
 }
+
+/** Find a voice by its provider value (Gemini name / ElevenLabs voice_id). */
+export function voiceByValue(
+  voices: Voice[],
+  value: string | null | undefined,
+): Voice | undefined {
+  if (!value) return undefined;
+  return voices.find((v) => v.provider_voice_id === value);
+}
+
+/** Map a catalog gender (may be "unknown") onto a speaker gender. */
+export function toSpeakerGender(
+  g: string | null | undefined,
+): PodcastSpeakerGender {
+  return g === "male" || g === "female" || g === "neutral" ? g : "neutral";
+}
+
+/** Default Gemini voice order (1–2 hosts) — mirrors the server's
+ *  `_GEMINI_DEFAULT_VOICES` so the UI shows what the server would otherwise pick. */
+export const GOOGLE_DEFAULT_VOICE_ORDER = ["orus", "kore", "puck", "zephyr"];
 
 /** Default speaker names assigned in order when the user doesn't name hosts. */
 export const DEFAULT_SPEAKER_NAMES = [
-  "Alex",
-  "Sarah",
-  "Maria",
-  "Ben",
-  "Priya",
-  "Sam",
-  "Lena",
-  "Omar",
-  "Nina",
-  "David",
-  "Tara",
-  "Marcus",
-  "Ivy",
-  "Noah",
-  "Zara",
-  "Leo",
-  "Maya",
-  "Owen",
-  "Rosa",
-  "Felix",
+  "Alex", "Sarah", "Maria", "Ben", "Priya", "Sam", "Lena", "Omar", "Nina",
+  "David", "Tara", "Marcus", "Ivy", "Noah", "Zara", "Leo", "Maya", "Owen",
+  "Rosa", "Felix",
 ];
+
+export function defaultNameFor(index: number): string {
+  return DEFAULT_SPEAKER_NAMES[index % DEFAULT_SPEAKER_NAMES.length];
+}
+
+/** A partial, per-slot draft the form holds while the user edits. */
+export interface SpeakerDraft {
+  name?: string;
+  voice?: string;
+  gender?: PodcastSpeakerGender;
+}
+
+/** Pick a sensible default voice value for slot `index` from the band's live
+ *  voices. Google mirrors the server's positional order; otherwise we
+ *  gender-alternate so a default multi-host cast is gender-varied. Returns ""
+ *  when the catalog hasn't loaded — the server then fills from its own palette,
+ *  so generation is never blocked. */
+export function defaultVoiceFor(
+  index: number,
+  bandVoices: Voice[],
+  provider: VoiceProvider,
+): string {
+  if (bandVoices.length === 0) return "";
+  if (provider === "google") {
+    const want =
+      GOOGLE_DEFAULT_VOICE_ORDER[index % GOOGLE_DEFAULT_VOICE_ORDER.length];
+    if (bandVoices.some((v) => v.provider_voice_id === want)) return want;
+  }
+  const female = bandVoices.filter((v) => v.gender === "female");
+  const male = bandVoices.filter((v) => v.gender === "male");
+  if (female.length > 0 && male.length > 0) {
+    const pool = index % 2 === 0 ? female : male;
+    return pool[Math.floor(index / 2) % pool.length].provider_voice_id;
+  }
+  return bandVoices[index % bandVoices.length].provider_voice_id;
+}
+
+/** Resolve one slot's effective (filled) speaker — the draft value, else the
+ *  default. The voice is validated against the band's live voices, so a draft
+ *  holding a stale cross-band voice never leaks into the request. */
+export function resolveSpeaker(
+  index: number,
+  draft: SpeakerDraft | undefined,
+  bandVoices: Voice[],
+  provider: VoiceProvider,
+): PodcastSpeaker {
+  const draftVoiceValid =
+    !!draft?.voice && bandVoices.some((v) => v.provider_voice_id === draft.voice);
+  const voice = draftVoiceValid
+    ? draft!.voice!
+    : defaultVoiceFor(index, bandVoices, provider);
+  const name = draft?.name?.trim() || defaultNameFor(index);
+  const gender =
+    draft?.gender ?? toSpeakerGender(voiceByValue(bandVoices, voice)?.gender);
+  return { name, voice, gender };
+}
+
+/** Build the COMPLETE cast (length = host_count) the request always sends.
+ *  Every slot is filled with the user's choice or the matching default, so the
+ *  server receives an explicit name + gender + voice per host. When the catalog
+ *  hasn't loaded yet, voices come through empty and the server fills them. */
+export function buildCast(
+  hostCount: number,
+  drafts: Record<number, SpeakerDraft>,
+  voices: Voice[],
+): PodcastSpeaker[] {
+  const provider = providerForHostCount(hostCount);
+  const bandVoices = voicesForBand(voices, hostCount);
+  return Array.from({ length: hostCount }, (_, i) =>
+    resolveSpeaker(i, drafts[i], bandVoices, provider),
+  );
+}

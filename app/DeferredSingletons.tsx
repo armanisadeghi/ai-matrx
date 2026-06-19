@@ -32,10 +32,11 @@
 import "@/features/window-panels/utils/lazy-bundle-guard";
 
 import dynamic from "next/dynamic";
-import { installThirdPartyNoiseFilter } from "@/lib/console-noise";
+import { useEffect } from "react";
 import { useIdleReady, useIdleTask } from "@/utils/idle-scheduler";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { OverlayState } from "@/lib/redux/slices/overlaySlice";
+import { selectOpenInstances } from "@/lib/redux/slices/overlaySlice";
 import {
   selectUser,
   selectIsSuperAdmin,
@@ -89,11 +90,35 @@ function selectAnyOverlayOpen(state: { overlays: OverlayState }): boolean {
  * preloading the Impl chunk on idle (loadableGenerated.modules). The
  * gate prevents that prefetch until the first dispatch.
  */
-function OverlayControllerGate() {
-  const hasAny = useAppSelector(selectAnyOverlayOpen);
-  if (!hasAny) return null;
-  return <OverlayController />;
-}
+// function OverlayControllerGate() {
+//   const hasAny = useAppSelector(selectAnyOverlayOpen);
+//   const createProjectInstances = useAppSelector((s) =>
+//     selectOpenInstances(s, "createProjectWindow"),
+//   );
+
+//   useEffect(() => {
+//     if (hasAny) {
+//       console.log(
+//         "[Track New Project] 6, DeferredSingletons.tsx — OverlayControllerGate: overlay open, mounting OverlayController",
+//       );
+//     }
+//   }, [hasAny]);
+
+//   useEffect(() => {
+//     if (createProjectInstances.length > 0) {
+//       console.log(
+//         "[Track New Project] 7, DeferredSingletons.tsx — OverlayControllerGate: createProjectWindow instance(s) in Redux",
+//         {
+//           count: createProjectInstances.length,
+//           instanceIds: createProjectInstances.map((i) => i.instanceId),
+//         },
+//       );
+//     }
+//   }, [createProjectInstances]);
+
+//   if (!hasAny) return null;
+//   return <OverlayController />;
+// }
 
 // ─── Static system broker descriptors (data only) ─────────────────────────
 
@@ -125,14 +150,6 @@ const SYSTEM_BROKERS = [
 ];
 
 export default function DeferredSingletons() {
-  // Install the third-party dev-noise filter as early as possible on every
-  // authenticated route. The Filerobot image editor (which leaks
-  // styled-components props onto the DOM) mounts via several entry points —
-  // not just its edit-mode shell — so installing the filter only inside that
-  // shell missed the file-preview / org pages. Installing here covers them
-  // all. Idempotent + SSR-safe; see lib/console-noise.ts.
-  installThirdPartyNoiseFilter();
-
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
@@ -238,7 +255,7 @@ export default function DeferredSingletons() {
   return (
     <>
       <PersistentDOMConnector />
-      <OverlayControllerGate />
+      <OverlayController />
       <LegacyPromptOverlaysController />
       <LazyMessagingIsland />
       <AudioRecoveryToast />

@@ -227,6 +227,9 @@ export function ProjectFormCore({
   onClose,
   isMobile = false,
 }: ProjectFormCoreProps) {
+  console.log(
+    "[Track New Project] 17, ProjectFormCore.tsx — form render (visible UI)",
+  );
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { orgs, isLoading: orgsLoading } = useNavTree();

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Layers, Loader2, Pencil, Tag as TagIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,7 +26,6 @@ import {
 } from "@/features/scope-system/redux/scopeValuesSlice";
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { EditContextItemSheet } from "./EditContextItemSheet";
-import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
 import { ScopeGlyph } from "./ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import {
@@ -36,11 +34,9 @@ import {
 } from "@/features/scope-system/constants/scope-colors";
 import {
   contextItemsHref,
-  contextItemEditHref,
   orgScopesHref,
   scopeHref,
   scopeItemHref,
-  scopeTypeHref,
 } from "@/features/scope-system/utils/scopeRoutes";
 import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
 import type { Scope } from "@/features/agent-context/redux/scope/types";
@@ -131,25 +127,7 @@ export function ContextItemHub({
   const color = resolveColor(scopeType);
 
   return (
-    <div className="space-y-6 pr-14">
-      <ScopeBreadcrumb
-        orgSlugOrId={orgSlugOrId}
-        orgName={orgName}
-        orgIsPersonal={orgIsPersonal}
-        backHref={contextItemsHref(orgSlugOrId, scopeType)}
-        trail={[
-          {
-            label: scopeType.label_plural,
-            href: scopeTypeHref(orgSlugOrId, scopeType),
-          },
-          {
-            label: "Context items",
-            href: contextItemsHref(orgSlugOrId, scopeType),
-          },
-          { label: item.display_name },
-        ]}
-      />
-
+    <div className="space-y-6">
       {/* The THING: item identity + settings */}
       <Card className="p-6">
         <div className="flex items-start justify-between gap-4">
@@ -202,12 +180,6 @@ export function ContextItemHub({
                 title="Quick edit"
               >
                 <Pencil className="h-3.5 w-3.5" />
-              </Button>
-              <Button asChild variant="outline" size="sm">
-                <Link href={contextItemEditHref(orgSlugOrId, scopeType, item)}>
-                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                  Edit item
-                </Link>
               </Button>
             </div>
           )}

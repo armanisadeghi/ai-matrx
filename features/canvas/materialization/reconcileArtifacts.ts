@@ -4,10 +4,11 @@
  * The stream-end commit materializes artifacts live, but a stream can die, a
  * tab can close, and historical messages predate the pipeline entirely. On
  * conversation load we scan the hydrated assistant messages and materialize any
- * that still carry RAW artifact markup (no artifact_ref yet). Because
- * materialization is idempotent on the `(source_message_id, artifact_index)`
- * key and `cx_message_edit` archives the original into `content_history`, this
- * is safe to re-run and fully recoverable.
+ * that still carry RAW artifact markup (a `<artifact>` without a real canvas
+ * UUID, or a standalone fence). Already-materialized `<artifact id=uuid>` text
+ * is recognized and skipped by planMaterialization (vision R3), so re-running is
+ * idempotent — and the original is archived in `content_history`, so it's
+ * fully recoverable.
  *
  * A cheap string pre-filter avoids running the block splitter over every
  * message on every load; only messages that look like they contain a
@@ -15,36 +16,69 @@
  */
 
 import type { CxContentBlock } from "@/features/public-chat/types/cx-tables";
+import { ARTIFACT_TYPE_DEFS } from "../artifact-types/artifact-type-registry";
 import { materializeMessageArtifacts } from "./materializeMessageArtifacts";
 
 /**
  * Cheap markers that indicate a message MIGHT contain a materializable block.
  * Intentionally inclusive — the authoritative decision is planMaterialization;
  * this only avoids splitting clearly-plain messages.
+ *
+ * DERIVED FROM THE REGISTRY so a new materializable type is covered automatically
+ * (the old hand-maintained list silently missed fence-style types like ```tasks,
+ * so they never reconciled). For every type alias we match both the fence form
+ * (```alias) and the XML-tag form (<alias). JSON-object types (quiz, diagram,
+ * comparison, math_problem, decision_tree, presentation) are matched by their
+ * JSON root key too, since those carry no fence/tag.
  */
-const MATERIALIZABLE_MARKERS = [
-  "<flashcards",
-  "<artifact",
-  "quiz_title",
-  "<timeline",
-  "progress_tracker",
-  "<troubleshooting",
-  "<resources",
-  "<research",
-  "decision_tree",
-  '"diagram"',
-  '"comparison"',
-  "comparison_table",
-  "math_problem",
-  "<presentation",
-  "<cooking_recipe",
-  "```mermaid",
-  "```mmd",
-];
+const MATERIALIZABLE_MARKERS: string[] = (() => {
+  const markers = new Set<string>(["<artifact", "```mmd"]);
+  for (const def of ARTIFACT_TYPE_DEFS) {
+    for (const alias of [...def.standaloneAliases, ...def.aliases]) {
+      markers.add("```" + alias);
+      markers.add("<" + alias);
+    }
+  }
+  // JSON-root-key markers (no fence/tag) for object-payload types.
+  for (const k of [
+    "quiz_title",
+    '"decision_tree"',
+    '"diagram"',
+    '"comparison"',
+    "comparison_table",
+    "math_problem",
+    '"presentation"',
+    "progress_tracker",
+  ]) {
+    markers.add(k);
+  }
+  return [...markers];
+})();
+
+/**
+ * Build the search string from RAW block text — NOT JSON.stringify, which
+ * escapes inner quotes (`\"comparison\"`) and would defeat quote-wrapped markers
+ * like `'"comparison"'` / `'"diagram"'`, silently skipping JSON-object artifacts.
+ */
+function toSearchString(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((b) => {
+        if (typeof b === "string") return b;
+        if (b && typeof b === "object" && typeof (b as { text?: unknown }).text === "string") {
+          return (b as { text: string }).text;
+        }
+        return JSON.stringify(b);
+      })
+      .join("\n");
+  }
+  return JSON.stringify(content);
+}
 
 export function mightContainMaterializable(content: unknown): boolean {
   if (!content) return false;
-  const s = typeof content === "string" ? content : JSON.stringify(content);
+  const s = toSearchString(content);
   return MATERIALIZABLE_MARKERS.some((m) => s.includes(m));
 }
 

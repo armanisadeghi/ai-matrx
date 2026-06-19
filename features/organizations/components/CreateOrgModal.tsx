@@ -231,10 +231,12 @@ export function CreateOrgModal({
                 disabled={isSubmitting}
                 className={cn(
                   "flex-1",
-                  !slugValidation.valid || (!checkingSlug && !slugAvailable)
+                  slug &&
+                    (!slugValidation.valid ||
+                      (!checkingSlug && slugAvailable === false))
                     ? "border-red-500"
                     : "",
-                  slugAvailable && slugValidation.valid
+                  slug && slugAvailable && slugValidation.valid
                     ? "border-green-500"
                     : "",
                 )}

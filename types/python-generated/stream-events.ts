@@ -1167,6 +1167,8 @@ export interface SlideTheme {
   accentColor?: string;
   backgroundColor?: string;
   textColor?: string;
+  variant?: string;
+  font?: string | null;
 }
 
 export interface Ingredient {
@@ -1479,6 +1481,8 @@ export interface SlideTheme {
   accentColor?: string;
   backgroundColor?: string;
   textColor?: string;
+  variant?: string;
+  font?: string | null;
 }
 
 export interface PresentationBlockData {
@@ -2331,7 +2335,7 @@ export interface WebpageInputPart {
   convert_to_text?: boolean;
   optional_context?: boolean;
   keep_fresh?: boolean;
-  editable?: boolean;
+  editable?: boolean | null;
 }
 
 export interface ResourceRefInput {
@@ -2347,7 +2351,7 @@ export interface NotesInputPart {
   convert_to_text?: boolean;
   optional_context?: boolean;
   keep_fresh?: boolean;
-  editable?: boolean;
+  editable?: boolean | null;
 }
 
 export interface TaskInputPart {
@@ -2358,7 +2362,7 @@ export interface TaskInputPart {
   convert_to_text?: boolean;
   optional_context?: boolean;
   keep_fresh?: boolean;
-  editable?: boolean;
+  editable?: boolean | null;
 }
 
 export interface TableInputPart {
@@ -2368,7 +2372,7 @@ export interface TableInputPart {
   convert_to_text?: boolean;
   optional_context?: boolean;
   keep_fresh?: boolean;
-  editable?: boolean;
+  editable?: boolean | null;
 }
 
 export interface ListInputPart {
@@ -2378,7 +2382,7 @@ export interface ListInputPart {
   convert_to_text?: boolean;
   optional_context?: boolean;
   keep_fresh?: boolean;
-  editable?: boolean;
+  editable?: boolean | null;
 }
 
 export interface DataInputPart {
@@ -2388,7 +2392,7 @@ export interface DataInputPart {
   convert_to_text?: boolean;
   optional_context?: boolean;
   keep_fresh?: boolean;
-  editable?: boolean;
+  editable?: boolean | null;
 }
 
 export interface ContextInputPart {
@@ -2400,7 +2404,7 @@ export interface ContextInputPart {
   convert_to_text?: boolean;
   optional_context?: boolean;
   keep_fresh?: boolean;
-  editable?: boolean;
+  editable?: boolean | null;
 }
 
 export type MessagePart =

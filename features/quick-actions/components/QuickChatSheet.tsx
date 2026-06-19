@@ -96,7 +96,8 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
     if (!conversationId) return;
     let tries = 0;
     const id = window.setInterval(() => {
-      const ta = bodyRef.current?.querySelector<HTMLTextAreaElement>("textarea");
+      const ta =
+        bodyRef.current?.querySelector<HTMLTextAreaElement>("textarea");
       if (ta) {
         ta.focus();
         window.clearInterval(id);
@@ -215,19 +216,21 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
           </div>
         )}
 
-        <div className="min-w-0 flex-1">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {conversationId ? (
-            <AgentConversationColumn
-              key={conversationId}
-              conversationId={conversationId}
-              surfaceKey={surfaceKey}
-              constrainWidth
-              edgeToEdgeScroll
-              smartInputProps={{
-                sendButtonVariant: "blue",
-                showSubmitOnEnterToggle: false,
-              }}
-            />
+            <div className="flex min-h-0 flex-1 overflow-hidden justify-center">
+              <AgentConversationColumn
+                key={conversationId}
+                conversationId={conversationId}
+                surfaceKey={surfaceKey}
+                constrainWidth
+                edgeToEdgeScroll
+                smartInputProps={{
+                  sendButtonVariant: "blue",
+                  showSubmitOnEnterToggle: false,
+                }}
+              />
+            </div>
           ) : (
             <ChatRoomSkeleton />
           )}

@@ -267,9 +267,9 @@ export const loadConversation = createAsyncThunk<
     // canvas_items rows for someone else's conversation.
     // Persist the materialization to the DB only — do NOT dispatch the rewrite
     // into the in-memory slice. Mirroring it mid-session would flip a
-    // just-hydrated raw artifact to its artifact_ref render and REMOUNT it,
+    // just-hydrated raw artifact to its render-by-id form and REMOUNT it,
     // wiping any in-session interaction state. The DB ends up holding the
-    // artifact_ref; the NEXT fresh load hydrates and renders it by id.
+    // canonical `<artifact id>` text; the NEXT fresh load renders it by id.
     if (authedUserId && conv.user_id === authedUserId) {
       void reconcileMessagesArtifacts(
         messageRecords

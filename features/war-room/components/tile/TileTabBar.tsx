@@ -10,24 +10,29 @@
 // at a time — the busy user never hunts for which view they're in.
 
 import { cn } from "@/lib/utils";
-import type { TileTab } from "@/features/war-room/types";
-import { TILE_KIND_ORDER, tileKindOf } from "@/features/war-room/components/room/tileKind";
+import type { TileFlavor, TileTab } from "@/features/war-room/types";
+import {
+  TILE_KIND_ORDER,
+  tileTabKind,
+} from "@/features/war-room/components/room/tileKind";
 
 export function TileTabBar({
   active,
   onChange,
+  flavor,
   withLabels = false,
   size = "sm",
 }: {
   active: TileTab;
   onChange: (tab: TileTab) => void;
+  flavor?: TileFlavor;
   withLabels?: boolean;
   size?: "sm" | "md";
 }) {
   return (
     <div className="inline-flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5 shrink-0">
       {TILE_KIND_ORDER.map((id) => {
-        const k = tileKindOf(id);
+        const k = tileTabKind(id, flavor);
         const isActive = id === active;
         return (
           <button

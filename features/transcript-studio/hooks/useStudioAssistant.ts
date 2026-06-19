@@ -23,6 +23,7 @@ import type { RootState } from "@/lib/redux/store";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { StudioDocument } from "../types";
 import {
   selectAssistantConversationId,
@@ -31,6 +32,7 @@ import {
   selectWorkingDocument,
 } from "../redux/selectors";
 import { studioDocumentUpserted } from "../redux/slice";
+import { persistAssistantConversationThunk } from "../redux/assistantAgent.thunk";
 import {
   ensureAssistantConversationThunk,
   ensureWorkingDocumentThunk,
@@ -146,6 +148,30 @@ export function useStudioAssistant(
     dispatch,
     store,
   ]);
+
+  // Persist the conversation to the session row ONLY once the server confirms
+  // the turn (the request reaches "streaming" → the cx_conversation row now
+  // exists). Minting writes only Redux (optimistic); saving the client-minted
+  // placeholder id before the server creates the row is what made conversations
+  // "disappear" (loadConversation 406s on 0 rows). Idempotent, once per
+  // conversation.
+  const requestStatus = useAppSelector((s) =>
+    conversationId ? selectPrimaryRequest(conversationId)(s)?.status : undefined,
+  );
+  const persistedConvRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!sessionId || !conversationId) return;
+    if (persistedConvRef.current.has(conversationId)) return;
+    const serverConfirmed =
+      requestStatus === "streaming" ||
+      requestStatus === "awaiting-tools" ||
+      requestStatus === "complete";
+    if (!serverConfirmed) return;
+    persistedConvRef.current.add(conversationId);
+    void dispatch(
+      persistAssistantConversationThunk({ sessionId, conversationId }),
+    );
+  }, [sessionId, conversationId, requestStatus, dispatch]);
 
   const refreshContext = useCallback(() => {
     if (!sessionId || !conversationId) return;

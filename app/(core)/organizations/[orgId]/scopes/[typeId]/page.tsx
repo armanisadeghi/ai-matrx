@@ -48,7 +48,7 @@ export default function ScopeTypePage() {
 
   if (loading || !org) {
     return (
-      <div className="h-[calc(100dvh-var(--header-height))] flex items-center justify-center bg-textured">
+      <div className="h-dvh flex items-center justify-center bg-textured">
         {error ? (
           <Card className="p-8 max-w-md">
             <p className="text-sm text-muted-foreground">{error}</p>
@@ -61,8 +61,8 @@ export default function ScopeTypePage() {
   }
 
   return (
-    <div className="h-[calc(100dvh-var(--header-height))] overflow-y-auto bg-textured">
-      <div className="max-w-6xl mx-auto p-6 md:p-8">
+    <div className="h-dvh overflow-y-auto bg-textured">
+      <div className="max-w-6xl mx-auto px-6 md:px-8 pt-12 pb-12">
         <ScopesList
           orgId={org.id}
           orgSlugOrId={orgSlugOrId}

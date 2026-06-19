@@ -25,12 +25,10 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/slices/userSlice";
-import { selectProjects } from "@/features/tasks/redux/selectors";
 import {
   updateTaskFieldThunk,
   toggleTaskCompleteThunk,
   deleteTaskThunk,
-  moveTaskThunk,
 } from "@/features/tasks/redux/thunks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
 import * as taskService from "@/features/tasks/services/taskService";
@@ -57,13 +55,8 @@ import { ShareModal } from "@/features/sharing/components/ShareModal";
 import TaskAttachments from "./TaskAttachments";
 import TaskLabels from "./TaskLabels";
 import type { TaskLabel } from "@/features/tasks/services/taskService";
-import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
-import {
-  EMPTY_SELECTION,
-  type HierarchySelection,
-} from "@/features/agent-context/components/hierarchy-selection/types";
-import { ScopePicker } from "@/features/agent-context/components/ScopePicker";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { TaskContextPicker } from "./TaskContextSection";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 
 interface TaskDetailsPanelProps {
   task: any;
@@ -75,7 +68,6 @@ export default function TaskDetailsPanel({
   onClose,
 }: TaskDetailsPanelProps) {
   const dispatch = useAppDispatch();
-  const projects = useAppSelector(selectProjects);
   const refresh = () => dispatch(invalidateAndRefetchFullContext());
   const getTaskComments = (taskId: string) =>
     taskService.getTaskComments(taskId);
@@ -98,9 +90,6 @@ export default function TaskDetailsPanel({
   const [title, setTitle] = useState(task.title || "");
   const [description, setDescription] = useState(task.description || "");
   const [dueDate, setDueDate] = useState(task.dueDate || "");
-  const [projectId, setProjectId] = useState<string | null>(
-    task.projectId || null,
-  );
   const [priority, setPriority] = useState<"low" | "medium" | "high" | null>(
     task.priority || null,
   );
@@ -112,9 +101,10 @@ export default function TaskDetailsPanel({
   const [newComment, setNewComment] = useState("");
   const [isLoadingComments, setIsLoadingComments] = useState(true);
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
+  const { inputRef: subtaskInputRef, scheduleRefocus: scheduleSubtaskRefocus } =
+    useRefocusInputAfterAsync(isAddingSubtask);
   const [isAddingComment, setIsAddingComment] = useState(false);
   const { id: currentUserId } = useAppSelector(selectUser);
-  const orgId = useAppSelector(selectOrganizationId);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [idCopied, setIdCopied] = useState(false);
@@ -134,17 +124,9 @@ export default function TaskDetailsPanel({
     setTitle(task.title || "");
     setDescription(task.description || "");
     setDueDate(task.dueDate || "");
-    setProjectId(task.projectId || null);
     setPriority(task.priority || null);
     setIsDirty(false); // Reset dirty state when task updates
-  }, [
-    task.id,
-    task.title,
-    task.description,
-    task.dueDate,
-    task.projectId,
-    task.priority,
-  ]);
+  }, [task.id, task.title, task.description, task.dueDate, task.priority]);
 
   // Load comments when task changes
   useEffect(() => {
@@ -172,11 +154,6 @@ export default function TaskDetailsPanel({
 
   const handleDueDateChange = (newDate: string) => {
     setDueDate(newDate);
-    setIsDirty(true);
-  };
-
-  const handleProjectChange = (newProjectId: string) => {
-    setProjectId(newProjectId);
     setIsDirty(true);
   };
 
@@ -229,15 +206,6 @@ export default function TaskDetailsPanel({
           }),
         );
       }
-      if (projectId !== task.projectId) {
-        await dispatch(
-          moveTaskThunk({
-            taskId: task.id,
-            fromProjectId: task.projectId,
-            toProjectId: projectId,
-          }),
-        );
-      }
       if (priority !== task.priority) {
         await dispatch(
           updateTaskFieldThunk({ taskId: task.id, patch: { priority } }),
@@ -266,7 +234,7 @@ export default function TaskDetailsPanel({
     try {
       await createSubtask(task.id, newSubtask);
       setNewSubtask("");
-      // Refresh to get updated subtasks
+      scheduleSubtaskRefocus();
       await refresh();
     } catch (error) {
       console.error("Error adding subtask:", error);
@@ -510,39 +478,13 @@ export default function TaskDetailsPanel({
           />
         </div>
 
-        {/* Hierarchy: Org → Project */}
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 flex items-center gap-2">
-            <CheckSquare size={14} />
-            Project
+        {/* Context — org, scopes, project (compact) */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+            Context
           </label>
-
-          <HierarchyCascade
-            levels={["organization", "scope", "project"]}
-            value={{
-              ...EMPTY_SELECTION,
-              organizationId: null,
-              projectId: projectId || null,
-            }}
-            onChange={(sel: HierarchySelection) => {
-              if (sel.projectId !== (projectId || null)) {
-                handleProjectChange(sel.projectId ?? "");
-              }
-            }}
-            layout="vertical"
-            requireProject
-          />
+          <TaskContextPicker taskId={task.id} taskTitle={task.title} />
         </div>
-
-        {/* Scopes — tag this task with scope values for filtering / context */}
-        {orgId && (
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-              Scopes
-            </label>
-            <ScopePicker entityType="task" entityId={task.id} orgId={orgId} />
-          </div>
-        )}
 
         {/* Priority */}
         <div>
@@ -694,14 +636,19 @@ export default function TaskDetailsPanel({
             ))}
             <div className="flex items-center gap-2 mt-2">
               <Input
+                ref={subtaskInputRef}
                 value={newSubtask}
                 onChange={(e) => setNewSubtask(e.target.value)}
                 placeholder="Add a subtask..."
                 disabled={isAddingSubtask}
                 className="text-sm flex-1"
-                onKeyPress={(e) =>
-                  e.key === "Enter" && !e.shiftKey && handleAddSubtask()
-                }
+                style={{ fontSize: "16px" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void handleAddSubtask();
+                  }
+                }}
               />
               <Button
                 size="icon"

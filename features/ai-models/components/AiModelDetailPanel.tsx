@@ -623,7 +623,7 @@ function RawJsonIssuePanel({
                 </div>
               </div>
               {badLineNums.size > 0 && (
-                <div className="overflow-x-auto bg-zinc-950">
+                <div className="overflow-auto max-h-40 bg-zinc-950">
                   {lines.map((ln, i) => {
                     const isBad = badLineNums.has(i);
                     return (

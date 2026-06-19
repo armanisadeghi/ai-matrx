@@ -24,6 +24,7 @@ export const RESEARCH_ENDPOINTS = {
     search: `${BASE}/topics/${topicId}/search`,
     scrape: `${BASE}/topics/${topicId}/scrape`,
     analyzeAll: `${BASE}/topics/${topicId}/analyze-all`,
+    rankAuthority: `${BASE}/topics/${topicId}/sources/rank-authority`,
     synthesize: `${BASE}/topics/${topicId}/synthesize`,
     costs: `${BASE}/topics/${topicId}/costs`,
     links: `${BASE}/topics/${topicId}/links`,

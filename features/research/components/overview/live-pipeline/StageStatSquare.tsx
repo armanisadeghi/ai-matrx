@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  ExternalLink,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StageState } from "../../../hooks/usePipelineProgress";
 import {
@@ -13,41 +18,46 @@ import {
 } from "./stageMeta";
 
 /**
- * A finished stage, collapsed into a compact, animated stat square. As each
- * stage completes it docks into the rail (left → right in pipeline order) so
- * the active stage stays front-and-center while the finished work reads as a
- * row of "keywords → sources → scraped → analyses → syntheses" outcomes.
- * Clicking opens that stage's results.
+ * A finished stage, collapsed into a compact stat square. Click toggles inline
+ * expansion in the live drawer; the external-link affordance opens results.
  */
 export function StageStatSquare({
   stage,
   base,
+  expanded = false,
+  onToggle,
 }: {
   stage: StageState;
   base: string;
+  /** When set, the square toggles inline stage detail instead of navigating. */
+  expanded?: boolean;
+  onToggle?: () => void;
 }) {
   const Icon = STAGE_ICON[stage.kind];
   const data = stageSquareData(stage);
   const dur = stageDuration(stage);
+  const href = `${base}/${STAGE_ROUTE[stage.kind]}`;
 
   const failed = stage.status === "failed";
   const partial = stage.status === "partial";
   const StatusIcon = failed ? XCircle : partial ? AlertTriangle : CheckCircle2;
 
-  return (
-    <Link
-      href={`${base}/${STAGE_ROUTE[stage.kind]}`}
-      className={cn(
-        "animate-in fade-in zoom-in-95 duration-300",
-        "relative flex w-[8.75rem] shrink-0 flex-col gap-0.5 rounded-xl border p-2.5",
-        "backdrop-blur-sm transition-colors hover:bg-card/80",
-        failed
-          ? "border-destructive/30 bg-destructive/[0.06]"
-          : partial
-            ? "border-amber-500/30 bg-amber-500/[0.06]"
-            : "border-green-500/30 bg-green-500/[0.06]",
-      )}
-    >
+  const squareClass = cn(
+    "animate-in fade-in zoom-in-95 duration-300",
+    "relative flex w-[8.75rem] shrink-0 flex-col gap-0.5 rounded-xl border p-2.5",
+    "backdrop-blur-sm transition-colors",
+    onToggle ? "cursor-pointer" : "hover:bg-card/80",
+    expanded && onToggle && "ring-2 ring-primary/40",
+    failed
+      ? "border-destructive/30 bg-destructive/[0.06]"
+      : partial
+        ? "border-amber-500/30 bg-amber-500/[0.06]"
+        : "border-green-500/30 bg-green-500/[0.06]",
+    onToggle && !expanded && "hover:bg-card/80",
+  );
+
+  const inner = (
+    <>
       <div className="flex items-center gap-1.5">
         <Icon className="h-3 w-3 shrink-0 text-foreground/60" />
         <span className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -82,6 +92,40 @@ export function StageStatSquare({
           </span>
         )}
       </div>
+    </>
+  );
+
+  if (onToggle) {
+    return (
+      <div className="relative">
+        <button
+          type="button"
+          onClick={onToggle}
+          className={squareClass}
+          aria-expanded={expanded}
+          aria-label={
+            expanded
+              ? `Collapse ${STAGE_LABEL[stage.kind]} details`
+              : `Expand ${STAGE_LABEL[stage.kind]} details`
+          }
+        >
+          {inner}
+        </button>
+        <Link
+          href={href}
+          onClick={(e) => e.stopPropagation()}
+          className="absolute right-1.5 top-1.5 inline-flex h-5 w-5 items-center justify-center rounded-md text-muted-foreground/70 hover:bg-muted/60 hover:text-foreground"
+          aria-label={`Open ${STAGE_LABEL[stage.kind]} results`}
+        >
+          <ExternalLink className="h-2.5 w-2.5" />
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <Link href={href} className={cn(squareClass, "hover:bg-card/80")}>
+      {inner}
     </Link>
   );
 }

@@ -49,8 +49,14 @@ export interface ActiveContextButtonProps {
   /** "xs" matches 20px-tall header rows (chat); "sm" fits sidebars/toolbars. */
   size?: "xs" | "sm";
   align?: "start" | "center" | "end";
-  /** Icon-only square trigger (collapsed rails). A dot marks set context. */
+  /** Icon-only square trigger (collapsed rails). Shows a count badge when set. */
   iconOnly?: boolean;
+  /**
+   * When iconOnly and NO context is set, render a warning treatment (amber ring
+   * + alert dot) so an empty working context reads as "you need to set this".
+   * Use on surfaces where running without context is a likely mistake (Scribe).
+   */
+  warnWhenEmpty?: boolean;
   /** Max width of the trigger before the summary truncates. */
   triggerClassName?: string;
   /** Checkbox style inside the popover field. Chat uses `standard` as a trial. */
@@ -62,6 +68,7 @@ export function ActiveContextButton({
   size = "sm",
   align = "start",
   iconOnly = false,
+  warnWhenEmpty = false,
   triggerClassName,
   checkboxVariant = "custom",
   className,
@@ -83,6 +90,15 @@ export function ActiveContextButton({
   );
   const hasContext = useAppSelector(selectHasActiveContext);
 
+  // Count of set context dimensions (org + project + task + each scope) — shown
+  // as a badge in iconOnly mode so the user sees "how much" context is set.
+  const contextCount =
+    (orgId ? 1 : 0) +
+    (projectId ? 1 : 0) +
+    (taskId ? 1 : 0) +
+    scopeIds.length;
+  const warnEmpty = iconOnly && warnWhenEmpty && !hasContext;
+
   const sizeCls =
     size === "xs" ? "h-5 px-1.5 text-xs gap-1" : "h-8 px-2 text-xs gap-1.5";
 
@@ -94,20 +110,33 @@ export function ActiveContextButton({
         "inline-flex w-full min-w-0 items-center rounded-md font-medium transition-colors",
         "bg-background text-foreground/80 hover:bg-muted/50 hover:text-foreground",
         size === "sm" && "border border-border",
+        // Empty-context warning: amber ring so it reads as "set me".
+        warnEmpty &&
+          "ring-1 ring-amber-500/60 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10",
         sizeCls,
         triggerClassName,
       )}
-      title="Working context — what your agents act within"
+      title={
+        warnEmpty
+          ? "No working context set — your agents have nothing to act within"
+          : "Working context — what your agents act within"
+      }
     >
       <span className="relative inline-flex shrink-0">
         <SlidersHorizontal
           className={cn(
-            "shrink-0 text-muted-foreground",
+            "shrink-0",
+            warnEmpty ? "text-amber-500" : "text-muted-foreground",
             size === "xs" ? "h-3 w-3" : "h-3.5 w-3.5",
           )}
         />
-        {iconOnly && hasContext && (
-          <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-primary" />
+        {iconOnly && hasContext && contextCount > 0 && (
+          <span className="absolute -right-1.5 -top-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-semibold leading-none text-primary-foreground">
+            {contextCount}
+          </span>
+        )}
+        {warnEmpty && (
+          <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-amber-500" />
         )}
       </span>
       {!iconOnly &&

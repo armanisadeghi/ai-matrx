@@ -440,6 +440,15 @@ end-to-end runtime needs NER to produce live rows in both ledgers.
 
 ## Change log
 
+- `2026-06-18` — **Association-link decision card surfaces the source inline.**
+  `KgSuggestionRowItem` (association-link branch) now leads its source section
+  with an explicit "Source — where this suggestion came from" label, keeps the
+  structured `Item type` / `Item name` rows and adds a matching `Agent comments`
+  row (the `context_snippet` reasoning), then renders a real clamped preview of
+  the source body via the cached `useSourcePreviewDoc` (new `SourceItemPreview`
+  sub-component) that doubles as the link to the full source-preview panel.
+  Confidence bar + `%` + match badge moved into the bottom action row to save
+  vertical space. Slot-fill and heavy-hitter branches unchanged.
 - `2026-06-14` — **Low-confidence (<50%) suggestions are de-emphasized
   everywhere; drawer is confidence-ranked.** New shared floor
   `LOW_CONFIDENCE_THRESHOLD = 0.5` (`constants.ts`, `isLowConfidence`). The

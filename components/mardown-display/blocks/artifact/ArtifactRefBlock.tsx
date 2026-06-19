@@ -24,12 +24,15 @@ interface ArtifactRefBlockProps {
 }
 
 /**
- * Renders a materialized artifact reference (`cx_artifact_ref` content block).
+ * Renders a MATERIALIZED artifact by id (vision R3).
  *
- * Loads the persisted `canvas_items` row by id and hands its stored payload to
- * the SAME ArtifactBlock renderer used during streaming — so a reloaded
- * artifact looks identical to the live one, but loads by UUID instead of
- * re-parsing raw markdown (no regeneration, stable identity).
+ * Triggered by BlockRenderer when a `<artifact …>` tag carries a real canvas
+ * UUID (`isMaterializedArtifactId`). Loads the persisted `canvas_items` row by
+ * id and hands its stored payload to the SAME ArtifactBlock renderer used during
+ * streaming — so a reloaded artifact looks identical to the live one, but loads
+ * by UUID (the live source of truth) instead of re-parsing the inline body (no
+ * regeneration, stable identity). The inline body in the message text is the
+ * model-facing archive; the UI never renders it once an id is present.
  */
 const ArtifactRefBlock: React.FC<ArtifactRefBlockProps> = ({
     serverData,

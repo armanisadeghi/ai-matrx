@@ -61,7 +61,7 @@ export const selectProjects = createSelector(
       assigneeId: rec.assignee_id ?? null,
       parentTaskId: rec.parent_task_id ?? null,
       subtasks: [],
-      updatedAt: null,
+      updatedAt: rec.updated_at ?? null,
       userId: rec.user_id ?? null,
       isPublic: false,
       settings: ((rec.settings as { labels?: string[] } | undefined) ??

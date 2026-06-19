@@ -74,6 +74,7 @@ import { useImageActions } from "./useImageActions";
 import { useUnifiedImageUrl } from "./useUnifiedImageUrl";
 import type { ImageVariantFormat } from "./utils/render-image-variant";
 import type { UnifiedImageBlock } from "./types";
+import type { MediaExtraAction } from "../actions";
 
 export interface UnifiedImageBlockRendererProps {
   block: UnifiedImageBlock;
@@ -84,6 +85,13 @@ export interface UnifiedImageBlockRendererProps {
    * inline lightbox.
    */
   onCompactClick?: (src: string) => void;
+  /**
+   * Domain actions folded into the ONE canonical menu (dropdown, context
+   * menu, mobile drawer) as a leading group — so callers never bolt on a
+   * second "…" menu beside this one. Optional; existing call sites are
+   * unaffected.
+   */
+  extraActions?: MediaExtraAction[];
 }
 
 // ─── Format / size option tables ──────────────────────────────────────────────
@@ -191,10 +199,11 @@ function useLongPress(onLongPress: () => void, ms = 500) {
 
 export const UnifiedImageBlockRenderer: React.FC<
   UnifiedImageBlockRendererProps
-> = ({ block, variant = "inline", onCompactClick }) => {
+> = ({ block, variant = "inline", onCompactClick, extraActions }) => {
   const { src, status, isPlaceholder, fileId } = useUnifiedImageUrl(block);
   const isMobile = useIsMobile();
   const isMatrx = block.origin === "matrx";
+  const hasExtra = !!extraActions && extraActions.length > 0;
 
   const actions = useImageActions({ block, currentSrc: src, fileId });
 
@@ -281,6 +290,21 @@ export const UnifiedImageBlockRenderer: React.FC<
   // to merge them makes both worse.
   const drawerBody = (
     <div className="px-4 pb-6 flex flex-col gap-0.5">
+      {hasExtra ? (
+        <>
+          {extraActions!.map((a) => (
+            <DrawerRow
+              key={a.id}
+              icon={a.icon}
+              label={a.label}
+              onClick={a.onClick}
+              disabled={a.disabled}
+              danger={a.danger}
+            />
+          ))}
+          <DrawerSep />
+        </>
+      ) : null}
       <DrawerRow
         icon={<Expand />}
         label="View full size"
@@ -456,6 +480,30 @@ export const UnifiedImageBlockRenderer: React.FC<
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
+                  {hasExtra ? (
+                    <>
+                      {extraActions!.map((a) => (
+                        <DropdownMenuItem
+                          key={a.id}
+                          onClick={a.onClick}
+                          disabled={a.disabled}
+                          className={
+                            a.danger
+                              ? "text-destructive focus:text-destructive"
+                              : undefined
+                          }
+                        >
+                          {a.icon ? (
+                            <span className="w-4 h-4 mr-2 inline-flex items-center justify-center">
+                              {a.icon}
+                            </span>
+                          ) : null}
+                          {a.label}
+                        </DropdownMenuItem>
+                      ))}
+                      <DropdownMenuSeparator />
+                    </>
+                  ) : null}
                   <DropdownMenuItem onClick={handleExpand}>
                     <Expand className="w-4 h-4 mr-2" />
                     View full size
@@ -555,6 +603,30 @@ export const UnifiedImageBlockRenderer: React.FC<
         </ContextMenuTrigger>
 
         <ContextMenuContent className="w-56">
+          {hasExtra ? (
+            <>
+              {extraActions!.map((a) => (
+                <ContextMenuItem
+                  key={a.id}
+                  onClick={a.onClick}
+                  disabled={a.disabled}
+                  className={
+                    a.danger
+                      ? "text-destructive focus:text-destructive"
+                      : undefined
+                  }
+                >
+                  {a.icon ? (
+                    <span className="w-4 h-4 mr-2 inline-flex items-center justify-center">
+                      {a.icon}
+                    </span>
+                  ) : null}
+                  {a.label}
+                </ContextMenuItem>
+              ))}
+              <ContextMenuSeparator />
+            </>
+          ) : null}
           <ContextMenuItem onClick={handleExpand}>
             <Expand className="w-4 h-4 mr-2" />
             View full size
@@ -739,12 +811,14 @@ function DrawerRow({
   sublabel,
   onClick,
   disabled,
+  danger,
 }: {
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   label: string;
   sublabel?: string;
   onClick: () => void;
   disabled?: boolean;
+  danger?: boolean;
 }) {
   return (
     <button
@@ -753,9 +827,19 @@ function DrawerRow({
         if (!disabled) onClick();
       }}
       disabled={disabled}
-      className="flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm text-foreground hover:bg-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-left"
+      className={[
+        "flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-left",
+        danger
+          ? "text-destructive hover:bg-destructive/10"
+          : "text-foreground hover:bg-accent",
+      ].join(" ")}
     >
-      <span className="w-4 h-4 text-muted-foreground flex-shrink-0">
+      <span
+        className={[
+          "w-4 h-4 flex-shrink-0",
+          danger ? "text-destructive" : "text-muted-foreground",
+        ].join(" ")}
+      >
         {icon}
       </span>
       <span className="flex flex-1 flex-col min-w-0">

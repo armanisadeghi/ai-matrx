@@ -6,12 +6,14 @@
 // the spine of the tile accent-rail. Colors are all semantic tokens, never raw
 // hex, so dark mode and theme changes flow through automatically.
 //
-// Mapping: task → primary, notes → info, audio → warning, files → muted,
-// agent → secondary, all → success. Used by the tile accent rail, the segmented
-// tab switcher's active pip, the combined-view section rails, and the room-header
-// instrument projector.
+// Mapping: task → success (green), notes → warning (yellow), audio → secondary
+// (purple), files → info (light blue), project task section → primary (dark blue),
+// agent → secondary, all → neutral in combined stack. Used by the tile accent
+// rail, the segmented tab switcher's active pip, the combined-view section
+// rails, and the room-header instrument projector.
 
 import {
+  FolderKanban,
   ListChecks,
   NotebookPen,
   Mic,
@@ -19,7 +21,7 @@ import {
   Sparkles,
   Layers,
 } from "lucide-react";
-import type { TileTab } from "@/features/war-room/types";
+import type { TileFlavor, TileTab } from "@/features/war-room/types";
 
 export interface TileKind {
   id: TileTab;
@@ -31,6 +33,8 @@ export interface TileKind {
   bg: string;
   /** Tailwind bg class for the solid accent rail / section tick. */
   rail: string;
+  /** Combined "All" view — left spine on the section content box. */
+  sectionBorder: string;
 }
 
 export const TILE_KINDS: Record<TileTab, TileKind> = {
@@ -38,35 +42,37 @@ export const TILE_KINDS: Record<TileTab, TileKind> = {
     id: "task",
     label: "Task",
     Icon: ListChecks,
-    text: "text-primary",
-    bg: "bg-primary/10",
-    rail: "bg-primary",
+    text: "text-success",
+    bg: "bg-success/10",
+    rail: "bg-success",
+    sectionBorder: "border-l-success",
   },
   notes: {
     id: "notes",
     label: "Notes",
     Icon: NotebookPen,
-    text: "text-info",
-    bg: "bg-info/10",
-    rail: "bg-info",
+    text: "text-warning",
+    bg: "bg-warning/10",
+    rail: "bg-warning",
+    sectionBorder: "border-l-warning",
   },
   audio: {
     id: "audio",
     label: "Audio",
     Icon: Mic,
-    text: "text-warning",
-    bg: "bg-warning/10",
-    rail: "bg-warning",
+    text: "text-secondary",
+    bg: "bg-secondary/10",
+    rail: "bg-secondary",
+    sectionBorder: "border-l-secondary",
   },
   files: {
     id: "files",
     label: "Files",
     Icon: Paperclip,
-    // Muted/secondary accent — files are the calmest thread kind, and this
-    // keeps the spine distinct from success (combined) and the other accents.
-    text: "text-muted-foreground",
-    bg: "bg-muted",
-    rail: "bg-muted-foreground",
+    text: "text-info",
+    bg: "bg-info/10",
+    rail: "bg-info",
+    sectionBorder: "border-l-info",
   },
   agent: {
     id: "agent",
@@ -77,6 +83,7 @@ export const TILE_KINDS: Record<TileTab, TileKind> = {
     text: "text-secondary",
     bg: "bg-secondary/10",
     rail: "bg-secondary",
+    sectionBorder: "border-l-secondary",
   },
   combined: {
     id: "combined",
@@ -85,6 +92,7 @@ export const TILE_KINDS: Record<TileTab, TileKind> = {
     text: "text-success",
     bg: "bg-success/10",
     rail: "bg-success",
+    sectionBorder: "border-l-success",
   },
 };
 
@@ -100,3 +108,34 @@ export const TILE_KIND_ORDER: TileTab[] = [
 export function tileKindOf(tab: TileTab | string | null | undefined): TileKind {
   return TILE_KINDS[(tab as TileTab) ?? "task"] ?? TILE_KINDS.task;
 }
+
+/** Tab switcher + accent rail: project-flavor tiles label the first tab "Project". */
+export function tileTabKind(
+  tab: TileTab | string | null | undefined,
+  flavor?: TileFlavor,
+): TileKind {
+  if (tab === "task" && flavor === "project") return PROJECT_SECTION_KIND;
+  return tileKindOf(tab);
+}
+
+/** Project-flavored tiles paint the stacked Task section dark blue; otherwise task green. */
+const PROJECT_SECTION_KIND: TileKind = {
+  id: "task",
+  label: "Project",
+  Icon: FolderKanban,
+  text: "text-primary",
+  bg: "bg-primary/10",
+  rail: "bg-primary",
+  sectionBorder: "border-l-primary",
+};
+
+export function combinedSectionKind(
+  tab: "task" | "notes" | "audio" | "files",
+  flavor?: TileFlavor,
+): TileKind {
+  if (tab === "task" && flavor === "project") return PROJECT_SECTION_KIND;
+  return tileKindOf(tab);
+}
+
+// Re-export for consumers that only need the project section kind.
+export { PROJECT_SECTION_KIND };

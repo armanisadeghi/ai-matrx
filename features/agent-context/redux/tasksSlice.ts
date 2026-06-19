@@ -35,6 +35,7 @@ export interface TaskRecord {
   created_at?: string | null;
   created_by?: string | null;
   user_id?: string | null;
+  updated_at?: string | null;
 }
 
 type TaskPriority = "low" | "medium" | "high";
@@ -79,7 +80,7 @@ export const fetchTask = createAsyncThunk(
     const { data, error } = await supabase
       .from("ctx_tasks")
       .select(
-        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, user_id",
+        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, user_id",
       )
       .eq("id", taskId)
       .single();
@@ -211,7 +212,7 @@ export const createTaskThunk = createAsyncThunk(
         settings: {},
       })
       .select(
-        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, user_id",
+        "id, title, description, project_id, parent_task_id, status, priority, due_date, assignee_id, settings, created_at, updated_at, user_id",
       )
       .single();
     if (error) throw error;

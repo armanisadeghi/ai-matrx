@@ -30,7 +30,7 @@
  * DB-loaded turn:    messageId set, isStreamActive=false (no requestId).
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import MarkdownStream from "@/components/MarkdownStream";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useDebugContext } from "@/hooks/useDebugContext";
@@ -58,6 +58,12 @@ import { commitInlineContentEdit } from "@/features/agents/redux/execution-syste
 import { toast } from "sonner";
 import { useDomCapturePrint } from "@/features/conversation/hooks/useDomCapturePrint";
 import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStrip";
+import {
+  isWarRoomTileAgentSurface,
+  traceWarRoomRenderPath,
+} from "@/features/war-room/utils/renderPathTrace";
+
+const ASSISTANT_MSG_DEBUG = "[ASSISTANT MESSAGE DEBUG]";
 
 interface AgentAssistantMessageProps {
   conversationId: string;
@@ -97,6 +103,21 @@ export function AgentAssistantMessage({
   canRetry = false,
 }: AgentAssistantMessageProps) {
   useDebugContext("AgentAssistantMessage");
+
+  useEffect(() => {
+    if (!isWarRoomTileAgentSurface(surfaceKey)) return;
+    traceWarRoomRenderPath(
+      15,
+      "AgentAssistantMessage.tsx",
+      "assistant message render",
+      {
+        conversationId,
+        messageId: messageId ?? null,
+        requestId: requestId ?? null,
+        isStreamActive,
+      },
+    );
+  }, [surfaceKey, conversationId, messageId, requestId, isStreamActive]);
 
   const dispatch = useAppDispatch();
   const [retrying, setRetrying] = useState(false);
@@ -237,6 +258,142 @@ export function AgentAssistantMessage({
     flatText.length > 0 ||
     (serverProcessedBlocks?.length ?? 0) > 0 ||
     streamedBlockCount > 0;
+
+  const showBufferLoader = bufferStream && isStreamActive && !failed;
+  const showMarkdownStream = !showBufferLoader;
+  const showTrailingOrb =
+    isStreamActive &&
+    !failed &&
+    (phase === "text_streaming" || phase === "interstitial");
+  const showTrailingFailedError = !hasInlineError && failed;
+  const showFilesStrip = !!messageId;
+  const showPerMessageActionBar =
+    !hideActionBar && !isStreamActive && !failed && !!messageId;
+  const renderBranch =
+    failed && !hasBody
+      ? "error-only"
+      : showBufferLoader
+        ? "buffer-loader"
+        : "markdown-body";
+
+  const prevRenderSnapshotRef = useRef<string | null>(null);
+  useEffect(() => {
+    const snapshot = {
+      renderBranch,
+      failed,
+      hasBody,
+      isStreamActive,
+      phase,
+      bufferStream,
+      hasInlineError,
+      flatTextLength: flatText.length,
+      serverProcessedBlockCount: serverProcessedBlocks?.length ?? 0,
+      streamedBlockCount,
+      showBufferLoader,
+      showMarkdownStream,
+      showTrailingOrb,
+      showTrailingFailedError,
+      showFilesStrip,
+      showPerMessageActionBar,
+      hideActionBar,
+      canRetry,
+    };
+    const key = JSON.stringify(snapshot);
+    if (prevRenderSnapshotRef.current === key) return;
+
+    console.log(`${ASSISTANT_MSG_DEBUG} AgentAssistantMessage`, {
+      conversationId,
+      messageId: messageId ?? null,
+      requestId: requestId ?? null,
+      ...snapshot,
+      rendering: {
+        errorOnly: renderBranch === "error-only",
+        bufferLoaderOrb: showBufferLoader,
+        markdownStream: showMarkdownStream
+          ? {
+              path: requestId
+                ? "requestId-driven (streaming source)"
+                : "messageId-driven (persisted)",
+              isStreamActiveProp: isStreamActive && !failed,
+            }
+          : null,
+        trailingStreamingOrb: showTrailingOrb,
+        trailingFailedError: showTrailingFailedError,
+        messageFilesStrip: showFilesStrip,
+        actionBar: showPerMessageActionBar
+          ? "per-message AssistantActionBar"
+          : hideActionBar
+            ? "hidden (AssistantTurnGroup owns bar)"
+            : isStreamActive
+              ? "hidden (still streaming)"
+              : failed
+                ? "hidden (failed turn)"
+                : !messageId
+                  ? "hidden (no messageId yet)"
+                  : "hidden",
+      },
+      why: {
+        errorOnly:
+          failed && !hasBody ? "failed with no streamed/persisted body" : null,
+        bufferLoader: showBufferLoader
+          ? "bufferStream enabled while active stream"
+          : null,
+        trailingOrb: showTrailingOrb ? `phase=${phase}` : null,
+        suppressTrailingError: hasInlineError
+          ? "inline error already rendered in markdown"
+          : null,
+      },
+    });
+    prevRenderSnapshotRef.current = key;
+  }, [
+    conversationId,
+    messageId,
+    requestId,
+    renderBranch,
+    failed,
+    hasBody,
+    isStreamActive,
+    phase,
+    bufferStream,
+    hasInlineError,
+    flatText.length,
+    serverProcessedBlocks?.length,
+    streamedBlockCount,
+    showBufferLoader,
+    showMarkdownStream,
+    showTrailingOrb,
+    showTrailingFailedError,
+    showFilesStrip,
+    showPerMessageActionBar,
+    hideActionBar,
+    canRetry,
+  ]);
+
+  useEffect(() => {
+    if (!isWarRoomTileAgentSurface(surfaceKey)) return;
+    if (!hasBody && !failed) return;
+    traceWarRoomRenderPath(
+      16,
+      "AgentAssistantMessage.tsx",
+      "assistant message body visible",
+      {
+        conversationId,
+        messageId: messageId ?? null,
+        requestId: requestId ?? null,
+        isStreamActive,
+        hasBody,
+        failed,
+      },
+    );
+  }, [
+    surfaceKey,
+    conversationId,
+    messageId,
+    requestId,
+    isStreamActive,
+    hasBody,
+    failed,
+  ]);
 
   const failedError = failed
     ? (() => {

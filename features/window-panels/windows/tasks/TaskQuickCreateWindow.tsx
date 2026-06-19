@@ -2,12 +2,12 @@
 
 import React from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import {
-  TaskQuickCreateCore,
-  type PostSaveAction,
-  type TaskPrePopulate,
-  type TaskSourceInput,
+import type {
+  PostSaveAction,
+  TaskPrePopulate,
+  TaskSourceInput,
 } from "@/features/tasks/widgets/quick-create/TaskQuickCreateCore";
+import { TaskCreatePanel } from "@/features/tasks/widgets/quick-create/TaskCreatePanel";
 
 export interface TaskQuickCreateWindowProps {
   isOpen: boolean;
@@ -83,7 +83,7 @@ function TaskQuickCreateWindowInner({
       onClose={onClose}
     >
       <div className="h-full min-h-0 p-3">
-        <TaskQuickCreateCore
+        <TaskCreatePanel
           source={source}
           prePopulate={prePopulate}
           onSaved={handleSaved}

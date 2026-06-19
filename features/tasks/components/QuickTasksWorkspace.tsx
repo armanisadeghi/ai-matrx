@@ -32,6 +32,7 @@ import {
   setQuickTasksSelectedTaskId,
   setQuickTasksSearchQuery,
 } from "@/features/tasks/redux/quickTasksWindowSlice";
+import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import {
   selectOrganizationId,
   selectScopeSelectionsContext,
@@ -164,6 +165,10 @@ export function QuickTasksMain() {
   const selectedProjectId = useAppSelector(selectActiveProject);
   const newTaskTitle = useAppSelector(selectNewTaskTitle);
   const isCreatingTask = useAppSelector(selectIsCreatingTask);
+  const {
+    inputRef: quickAddInputRef,
+    scheduleRefocus: scheduleQuickAddRefocus,
+  } = useRefocusInputAfterAsync(isCreatingTask);
   const filtered = useAppSelector(selectFilteredTasks);
   const orgId = useAppSelector(selectOrganizationId);
   const scopeSelections = useAppSelector(selectScopeSelectionsContext);
@@ -188,7 +193,10 @@ export function QuickTasksMain() {
         scopeIds: defaultScopeIds,
       }),
     ).unwrap();
-    if (newId) dispatch(setQuickTasksSelectedTaskId(newId));
+    if (newId) {
+      dispatch(setQuickTasksSelectedTaskId(newId));
+      scheduleQuickAddRefocus();
+    }
   };
 
   if (!selectedTask) {
@@ -202,6 +210,7 @@ export function QuickTasksMain() {
 
         <form onSubmit={handleAddTask} className="flex gap-2 w-full max-w-sm">
           <Input
+            ref={quickAddInputRef}
             value={newTaskTitle}
             onChange={(e) => dispatch(setNewTaskTitle(e.target.value))}
             placeholder="Enter new task title..."

@@ -120,11 +120,14 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={htmlFor} className="text-xs font-medium text-muted-foreground">
+    <div className="min-w-0 space-y-1.5">
+      <Label
+        htmlFor={htmlFor}
+        className="text-xs font-medium text-muted-foreground"
+      >
         {label}
       </Label>
-      <div>{children}</div>
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }

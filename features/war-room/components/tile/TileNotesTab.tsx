@@ -8,12 +8,19 @@
 // editor renders below. The active note also lives on tile.note_id so note↔task
 // sync keeps working.
 //
-// Full view (Notes tab) offers Text / Matrx Split / Preview modes via the
-// canonical NoteEditorCore. Compact view (the "All" tab) is a single open
-// editor that fills its section — no double layering, switcher chrome omitted.
+// Full view: one toolbar row (icon · Text / Matrx Split / Preview · + New).
+// Compact ("All"): same merged toolbar; editor fills the section below.
 
 import { useEffect } from "react";
-import { Loader2, Type, Columns2, Eye, Plus, ChevronDown, StickyNote } from "lucide-react";
+import {
+  Loader2,
+  Type,
+  Columns2,
+  Eye,
+  Plus,
+  ChevronDown,
+  StickyNote,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -72,7 +79,7 @@ export function TileNotesTab({
     if (!noteId) void dispatch(ensureTileNote(tileId));
   }, [noteId, tileId, dispatch]);
 
-  // Compact ("All" combined view): single open editor, no switcher chrome.
+  // Compact ("All" combined view): merged toolbar + plain editor only.
   if (compact) {
     if (!noteId) {
       return (
@@ -81,60 +88,33 @@ export function TileNotesTab({
         </div>
       );
     }
-    return <TileNoteEditor noteId={noteId} compact />;
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <TileNotesToolbar
+          tileId={tileId}
+          sessionId={sessionId}
+          noteId={noteId}
+          noteIds={noteIds}
+          activeIndex={activeIndex}
+          compact
+        />
+        <div className="min-h-0 flex-1">
+          <TileNoteEditor noteId={noteId} compact />
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Session chrome — the tile owns lifecycle; the editor binds the active note. */}
-      <div className="flex shrink-0 items-center gap-1.5 border-b border-border/60 px-2 py-1.5">
-        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-          <StickyNote className="size-3.5 text-primary" />
-          Notes
-        </span>
+      <TileNotesToolbar
+        tileId={tileId}
+        sessionId={sessionId}
+        noteId={noteId}
+        noteIds={noteIds}
+        activeIndex={activeIndex}
+      />
 
-        {noteIds.length > 1 ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="ml-auto inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                title="Switch note"
-              >
-                {activeIndex >= 0 ? activeIndex + 1 : "—"}/{noteIds.length}
-                <ChevronDown className="size-3 opacity-60" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              {noteIds.map((nid, i) => (
-                <DropdownMenuItem
-                  key={nid}
-                  onClick={() => dispatch(setTileActiveNote(tileId, nid))}
-                  className={cn(nid === noteId && "text-primary")}
-                >
-                  <StickyNote className="size-3.5" />
-                  Note {i + 1}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : null}
-
-        <button
-          type="button"
-          onClick={() => void dispatch(addNoteToTile(tileId, sessionId))}
-          className={cn(
-            "inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-            noteIds.length > 1 ? "" : "ml-auto",
-          )}
-          title="Create a new note in this tile"
-        >
-          <Plus className="size-3.5" />
-          New Note
-        </button>
-      </div>
-
-      {/* The active note's editor (modes live on the editor itself). */}
       <div className="min-h-0 flex-1">
         {noteId ? (
           <TileNoteEditor noteId={noteId} />
@@ -144,6 +124,96 @@ export function TileNotesTab({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function TileNotesToolbar({
+  tileId,
+  sessionId,
+  noteId,
+  noteIds,
+  activeIndex,
+  compact,
+}: {
+  tileId: string;
+  sessionId: string;
+  noteId: string | null;
+  noteIds: string[];
+  activeIndex: number;
+  compact?: boolean;
+}) {
+  const dispatch = useAppDispatch();
+  const storedMode = useAppSelector(selectNoteEditorMode(noteId ?? ""));
+  const mode = ((storedMode as EditorMode) || "plain") as EditorMode;
+
+  return (
+    <div className="flex h-7 shrink-0 items-center gap-1 border-b border-border/60 pl-1.5 pr-1">
+      <StickyNote className="size-3.5 shrink-0 text-yellow-500" aria-hidden />
+      <span className="text-xs font-medium text-yellow-500 pr-2">Notes </span>
+
+      {noteId
+        ? MODES.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() =>
+                dispatch(setNoteEditorMode({ id: noteId, mode: id }))
+              }
+              aria-pressed={mode === id}
+              title={label}
+              className={cn(
+                "inline-flex h-6 items-center gap-1 rounded-md px-1.5 text-[10px] font-medium transition-colors",
+                mode === id
+                  ? "text-primary border border-primary/70"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+            >
+              <Icon className="size-3" />
+              {!compact ? (
+                <span className="@max-[20rem]:hidden">{label}</span>
+              ) : null}
+            </button>
+          ))
+        : null}
+
+      {noteIds.length > 1 ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex h-6 shrink-0 items-center gap-0.5 rounded-md px-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              title="Switch note"
+            >
+              {activeIndex >= 0 ? activeIndex + 1 : "—"}/{noteIds.length}
+              <ChevronDown className="size-3 opacity-60" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            {noteIds.map((nid, i) => (
+              <DropdownMenuItem
+                key={nid}
+                onClick={() => dispatch(setTileActiveNote(tileId, nid))}
+                className={cn("gap-2", nid === noteId && "text-primary")}
+              >
+                Note {i + 1}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
+
+      <span className="min-w-0 flex-1" />
+
+      <button
+        type="button"
+        onClick={() => void dispatch(addNoteToTile(tileId, sessionId))}
+        className="inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        title="Create a new note in this tile"
+      >
+        <Plus className="size-3" />
+        New
+      </button>
     </div>
   );
 }
@@ -173,7 +243,7 @@ function TileNoteEditor({
         content={content ?? ""}
         onChange={onChange}
         onChangeFlush={onChange}
-        editorMode="plain"
+        editorMode={mode}
         placeholder="Jot down anything for this thread…"
         showVoiceButton={false}
         embedded
@@ -183,39 +253,15 @@ function TileNoteEditor({
   }
 
   return (
-    <div className="flex h-full flex-col min-h-0">
-      <div className="shrink-0 flex items-center gap-0.5 px-2 py-1 border-b border-border/60">
-        {MODES.map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => dispatch(setNoteEditorMode({ id: noteId, mode: id }))}
-            aria-pressed={mode === id}
-            title={label}
-            className={cn(
-              "inline-flex items-center gap-1 rounded-md px-1.5 h-6 text-[11px] font-medium transition-colors",
-              mode === id
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-          >
-            <Icon className="size-3.5" />
-            <span className="@max-[20rem]:hidden">{label}</span>
-          </button>
-        ))}
-      </div>
-      <div className="flex-1 min-h-0">
-        <NoteEditorCore
-          content={content ?? ""}
-          onChange={onChange}
-          onChangeFlush={onChange}
-          editorMode={mode}
-          showVoiceButton
-          embedded
-          placeholder="Jot down anything for this thread…"
-          className="h-full"
-        />
-      </div>
-    </div>
+    <NoteEditorCore
+      content={content ?? ""}
+      onChange={onChange}
+      onChangeFlush={onChange}
+      editorMode={mode}
+      showVoiceButton
+      embedded
+      placeholder="Jot down anything for this thread…"
+      className="h-full"
+    />
   );
 }

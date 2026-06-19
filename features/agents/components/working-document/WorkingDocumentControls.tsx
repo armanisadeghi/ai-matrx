@@ -21,10 +21,20 @@ interface WorkingDocumentControlsProps {
 export function WorkingDocumentControls({
   conversationId,
 }: WorkingDocumentControlsProps) {
-  const { enabled, binding, setEnabled, bindToNote, unbind, openAsWindow } =
-    useWorkingDocument(conversationId);
+  const {
+    enabled,
+    binding,
+    saving,
+    setEnabled,
+    bindToNote,
+    unbind,
+    openAsWindow,
+  } = useWorkingDocument(conversationId);
 
-  const isBound = binding.kind === "note" && !!binding.id;
+  const isNoteBound = binding.kind === "note" && !!binding.id;
+  // The default chat backing is a durable `cx_working_documents` row — agent
+  // edits persist there and round-trip back. Treat it as "saved", not "unbound".
+  const isCxBacked = binding.kind === "cx_working_document" && !!binding.id;
 
   return (
     <div className="flex h-full flex-col">
@@ -45,17 +55,23 @@ export function WorkingDocumentControls({
           <Link2
             className={cn(
               "h-3.5 w-3.5 shrink-0",
-              isBound ? "text-primary" : "text-muted-foreground",
+              isNoteBound ? "text-primary" : "text-muted-foreground",
             )}
           />
           <span className="truncate text-xs text-muted-foreground">
-            {isBound ? binding.label || "Bound note" : "Unbound (not saved)"}
+            {isNoteBound
+              ? binding.label || "Bound note"
+              : isCxBacked
+                ? saving
+                  ? "Saving…"
+                  : "Auto-saved"
+                : "Preparing…"}
           </span>
-          {isBound && (
+          {isNoteBound && (
             <button
               type="button"
               onClick={unbind}
-              aria-label="Unbind note"
+              aria-label="Unbind note (revert to default working document)"
               className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
@@ -72,7 +88,7 @@ export function WorkingDocumentControls({
               disabled={!enabled}
               className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
             >
-              {isBound ? "Change" : "Bind note"}
+              {isNoteBound ? "Change" : "Bind note"}
             </button>
           }
         />

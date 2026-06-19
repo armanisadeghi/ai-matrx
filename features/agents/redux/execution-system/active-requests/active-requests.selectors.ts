@@ -144,6 +144,35 @@ export const selectAccumulatedText = (requestId: string) =>
     },
   );
 
+/**
+ * Spoken text for TTS / read-aloud — the accumulated render-block text WITHOUT
+ * the model's reasoning. Thinking blocks (`type: "thinking"`) carry the chain of
+ * thought as `content`, so `selectAccumulatedText` (which joins every block)
+ * would read it aloud — every thinking block, not just the first. Read-aloud
+ * must speak the answer, never the reasoning. `editedText` still wins.
+ */
+const NON_SPOKEN_BLOCK_TYPES = new Set(["thinking"]);
+
+export const selectSpokenText = (requestId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlockOrder,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.renderBlocks,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.editedText,
+    (order, blocks, editedText): string => {
+      if (editedText !== null && editedText !== undefined) return editedText;
+      if (!order || !blocks || order.length === 0) return "";
+      return order
+        .map((id) => blocks[id])
+        .filter((b) => b && !NON_SPOKEN_BLOCK_TYPES.has(b.type))
+        .map((b) => b?.content ?? "")
+        .filter(Boolean)
+        .join("\n");
+    },
+  );
+
 export const selectRequestConversationId =
   (requestId: string) =>
   (state: RootState): string | null => {

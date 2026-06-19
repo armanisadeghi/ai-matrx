@@ -116,6 +116,16 @@ const overlaySlice = createSlice({
         instanceId = DEFAULT_INSTANCE_ID,
         data,
       } = action.payload;
+      if (overlayId === "createProjectWindow") {
+        console.log(
+          "[Track New Project] 5, overlaySlice.ts — openOverlay reducer",
+          {
+            overlayId,
+            instanceId,
+            data,
+          },
+        );
+      }
       if (!state.overlays[overlayId]) {
         state.overlays[overlayId] = {};
       }

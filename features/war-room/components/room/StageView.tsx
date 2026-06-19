@@ -11,7 +11,7 @@
 // the rail, each rendered with the ui-sharp parked-chip treatment (live status
 // trio, restore-and-stage on click) so a parked thread still reads as alive.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronRight, EyeOff } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ import { ParkedThreadChip } from "./ParkedThreadChip";
 import { NewTile } from "../tile/NewTile";
 import { QuickAddThread } from "../tile/QuickAddThread";
 import { useRoomView, resolveStagedId } from "./roomViewContext";
+import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 
 export function StageView({ sessionId }: { sessionId: string }) {
   const visibleIds = useAppSelector(selectOrderedGalleryTileIds(sessionId));
@@ -35,6 +36,14 @@ export function StageView({ sessionId }: { sessionId: string }) {
   const [parkedOpen, setParkedOpen] = useState(false);
 
   const stagedId = resolveStagedId(chosenStageId, visibleIds);
+
+  useEffect(() => {
+    traceWarRoomRenderPath(3, "StageView.tsx", "Stage view render", {
+      sessionId,
+      stagedTileId: stagedId,
+      visibleThreadCount: visibleIds.length,
+    });
+  }, [sessionId, stagedId, visibleIds.length]);
 
   return (
     <div className="h-full flex flex-col @4xl:flex-row gap-2.5 p-2.5 min-h-0">
@@ -131,7 +140,9 @@ function EmptyStage({
   return (
     <div className="h-full grid place-items-center rounded-2xl border border-dashed border-border bg-card/30">
       <div className="text-center max-w-xs px-6">
-        <p className="text-sm font-semibold text-foreground">No thread staged</p>
+        <p className="text-sm font-semibold text-foreground">
+          No thread staged
+        </p>
         <p className="mt-1 text-xs text-muted-foreground">
           Start your first thread — it will open right here, ready to work.
         </p>

@@ -24,6 +24,7 @@ import ReactFlow, {
   Handle,
   Position,
   useReactFlow,
+  useNodesInitialized,
   getNodesBounds,
   getViewportForBounds,
 } from "reactflow";
@@ -57,6 +58,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import IconButton from "@/components/official/IconButton";
 import {
   getLayoutedElements,
   getLayoutOptionsForDiagramType,
@@ -629,8 +631,10 @@ const DiagramFlow: React.FC<{
   setBackgroundVariant,
   onExportImage,
 }) => {
-  const { fitView, getNodes } = useReactFlow();
+  const { fitView, getNodes, getEdges } = useReactFlow();
+  const nodesInitialized = useNodesInitialized();
   const hasAutoLayoutApplied = useRef(false);
+  const autoLayoutFrameRef = useRef<number | null>(null);
 
   const initialNodes = useMemo(() => buildReactFlowNodes(diagram), [diagram]);
   const initialEdges = useMemo(() => buildReactFlowEdges(diagram), [diagram]);
@@ -725,19 +729,31 @@ const DiagramFlow: React.FC<{
       .finally(() => document.body.removeChild(exportContainer));
   }, [getNodes, diagram.title, onExportImage]);
 
+  const fitViewAfterLayout = useCallback(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        fitView({ duration: 800, padding: 0.2 });
+      });
+    });
+  }, [fitView]);
+
   // ── Layout helpers ──
   const applyAutoLayout = useCallback(() => {
+    const currentNodes = getNodes();
+    const currentEdges = getEdges();
+    if (currentNodes.length === 0) return;
+
     let result: { nodes: Node[]; edges?: Edge[] };
 
     if (diagram.type === "pedigree") {
-      result = getPedigreeLayout(nodes, edges);
+      result = getPedigreeLayout(currentNodes, currentEdges);
     } else if (diagram.type === "orgchart") {
       const opts = getLayoutOptionsForDiagramType(
         diagram.type,
         diagram.nodes.length,
         diagram.layout?.direction,
       );
-      result = getOrgChartLayout(nodes, edges, opts);
+      result = getOrgChartLayout(currentNodes, currentEdges, opts);
       if (result.edges) setEdges(result.edges);
     } else {
       const opts = getLayoutOptionsForDiagramType(
@@ -745,56 +761,61 @@ const DiagramFlow: React.FC<{
         diagram.nodes.length,
         diagram.layout?.direction,
       );
-      result = getLayoutedElements(nodes, edges, opts);
+      result = getLayoutedElements(currentNodes, currentEdges, opts);
     }
 
     setNodes(result.nodes);
-    setTimeout(() => fitView({ duration: 800 }), 100);
+    fitViewAfterLayout();
     hasAutoLayoutApplied.current = true;
   }, [
-    nodes,
-    edges,
+    getNodes,
+    getEdges,
     diagram.type,
     diagram.nodes.length,
     diagram.layout?.direction,
     setNodes,
     setEdges,
-    fitView,
+    fitViewAfterLayout,
   ]);
 
   const applyRadialLayout = useCallback(() => {
-    const { nodes: laid } = getRadialLayout(nodes, edges);
+    const { nodes: laid } = getRadialLayout(getNodes(), getEdges());
     setNodes(laid);
-    setTimeout(() => fitView({ duration: 800 }), 100);
+    fitViewAfterLayout();
     hasAutoLayoutApplied.current = true;
-  }, [nodes, edges, setNodes, fitView]);
+  }, [getNodes, getEdges, setNodes, fitViewAfterLayout]);
 
   const resetLayout = useCallback(() => {
     setNodes(buildReactFlowNodes(diagram));
     setEdges(buildReactFlowEdges(diagram));
-    setTimeout(() => fitView({ duration: 800 }), 100);
+    fitViewAfterLayout();
     hasAutoLayoutApplied.current = true;
-  }, [diagram, setNodes, setEdges, fitView]);
+  }, [diagram, setNodes, setEdges, fitViewAfterLayout]);
 
-  // ── Auto-layout on mount ──
+  // Re-run auto layout when diagram data changes.
   useEffect(() => {
-    if (hasAutoLayoutApplied.current) return;
-    const delay =
-      diagram.type === "orgchart" || diagram.type === "pedigree" ? 500 : 1000;
-    const timer = setTimeout(() => {
-      const hasCustomPositions = diagram.nodes.some((n) => n.position);
-      const shouldAuto =
-        diagram.type === "orgchart" ||
-        diagram.type === "pedigree" ||
-        (!hasCustomPositions && nodes.length > 1);
-      if (shouldAuto && nodes.length > 1) {
+    hasAutoLayoutApplied.current = false;
+  }, [diagram]);
+
+  // Wait for ReactFlow to measure nodes, then force the same auto layout as the toolbar button.
+  useEffect(() => {
+    if (!nodesInitialized || hasAutoLayoutApplied.current) return;
+    if (getNodes().length <= 1) return;
+
+    autoLayoutFrameRef.current = requestAnimationFrame(() => {
+      autoLayoutFrameRef.current = requestAnimationFrame(() => {
+        if (hasAutoLayoutApplied.current) return;
         applyAutoLayout();
-        hasAutoLayoutApplied.current = true;
+      });
+    });
+
+    return () => {
+      if (autoLayoutFrameRef.current !== null) {
+        cancelAnimationFrame(autoLayoutFrameRef.current);
+        autoLayoutFrameRef.current = null;
       }
-    }, delay);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    };
+  }, [nodesInitialized, applyAutoLayout, getNodes, diagram]);
 
   return (
     <ReactFlow
@@ -804,7 +825,7 @@ const DiagramFlow: React.FC<{
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
       nodeTypes={nodeTypes}
-      fitView
+      fitView={false}
       proOptions={{ hideAttribution: true }}
       className="bg-gray-50 dark:bg-gray-900"
     >
@@ -915,91 +936,98 @@ const ALL_LEGEND_ITEMS = [
     type: "start",
     label: "Start",
     color:
-      "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300",
+      "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800",
     icon: CheckCircle2,
   },
   {
     type: "process",
     label: "Process",
-    color: "bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300",
+    color:
+      "bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800",
     icon: Settings,
   },
   {
     type: "decision",
     label: "Decision",
     color:
-      "bg-orange-100 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300",
+      "bg-orange-100 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800",
     icon: GitBranch,
   },
   {
     type: "data",
     label: "Data",
     color:
-      "bg-purple-100 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300",
+      "bg-purple-100 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800",
     icon: Database,
   },
   {
     type: "end",
     label: "End",
-    color: "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300",
+    color:
+      "bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800",
     icon: XCircle,
   },
   {
     type: "user",
     label: "User",
     color:
-      "bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300",
+      "bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800",
     icon: Users,
   },
   {
     type: "system",
     label: "System",
-    color: "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300",
+    color:
+      "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800",
     icon: Server,
   },
   {
     type: "api",
     label: "API",
-    color: "bg-teal-100 dark:bg-teal-950/30 text-teal-700 dark:text-teal-300",
+    color:
+      "bg-teal-100 dark:bg-teal-950/30 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800",
     icon: Globe,
   },
   {
     type: "compute",
     label: "Compute",
     color:
-      "bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-300",
+      "bg-yellow-100 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800",
     icon: Cpu,
   },
   {
     type: "storage",
     label: "Storage",
-    color: "bg-pink-100 dark:bg-pink-950/30 text-pink-700 dark:text-pink-300",
+    color:
+      "bg-pink-100 dark:bg-pink-950/30 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800",
     icon: HardDrive,
   },
   {
     type: "event",
     label: "Event",
-    color: "bg-cyan-100 dark:bg-cyan-950/30 text-cyan-700 dark:text-cyan-300",
+    color:
+      "bg-cyan-100 dark:bg-cyan-950/30 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800",
     icon: Clock,
   },
   {
     type: "entity",
     label: "Entity",
     color:
-      "bg-violet-100 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300",
+      "bg-violet-100 dark:bg-violet-950/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800",
     icon: Table,
   },
   {
     type: "gateway",
     label: "Gateway",
     color:
-      "bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300",
+      "bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800",
     icon: ArrowRight,
   },
   {
     type: "default",
     label: "Node",
-    color: "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300",
+    color:
+      "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800",
     icon: Square,
   },
 ] as const;
@@ -1183,7 +1211,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
           {items.map(({ type, label, color, icon: Icon }) => (
             <div
               key={type}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg ${color} text-xs font-medium`}
+              className={`flex items-center gap-1 p-1 rounded-lg ${color} text-xs font-medium`}
             >
               <Icon className="h-3 w-3" />
               <span>{label}</span>
@@ -1206,141 +1234,152 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
       )}
 
       <div
-        className={`w-full ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-4" : "py-4"}`}
+        className={`w-full border border-border rounded-xl ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-2" : "py-2"}`}
       >
         <div
-          className={`max-w-7xl mx-auto ${isFullScreen ? "bg-textured rounded-2xl shadow-2xl h-full max-h-[95dvh] w-full flex flex-col overflow-hidden" : ""}`}
+          className={`max-w-6xl mx-auto w-full ${isFullScreen ? "bg-textured rounded-xl shadow-2xl h-full max-h-[95dvh] flex flex-col overflow-hidden border border-border" : ""}`}
         >
-          {/* Header */}
-          <div
-            className={
-              isFullScreen
-                ? "flex-shrink-0 px-4 py-3 border-b border-border"
-                : ""
-            }
-          >
-            <div className="bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-purple-950/40 rounded-2xl p-4 shadow-lg border-2 border-blue-200 dark:border-blue-800/50">
-              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-blue-500 dark:bg-blue-600 rounded-lg shadow-md text-white">
-                    {getDiagramIcon(diagram.type)}
-                  </div>
-                  <div className="flex-1">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
-                      {diagram.title}
-                    </h1>
-                    {diagram.description && (
-                      <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-1">
-                        {diagram.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium">
-                        {formatDiagramType(diagram.type)}
-                      </span>
-                      {diagram.layout?.direction && (
-                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full text-xs">
-                          {diagram.layout.direction}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+          {isFullScreen && (
+            <div className="flex-shrink-0 px-3 py-2 border-b border-border flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="text-blue-600 dark:text-blue-400 flex-shrink-0 [&_svg]:h-4 [&_svg]:w-4">
+                  {getDiagramIcon(diagram.type)}
                 </div>
-
-                <div className="flex flex-col gap-2">
-                  {!isFullScreen && (
-                    <>
-                      <button
-                        onClick={triggerPrint}
-                        className="flex items-center justify-center gap-2 px-2 py-2 rounded-lg bg-slate-500 dark:bg-slate-600 text-white text-sm font-semibold shadow-md hover:bg-slate-600 dark:hover:bg-slate-700 hover:shadow-lg transform hover:scale-105 transition-all"
-                        title="Print / Save as PDF"
-                      >
-                        <Printer className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() =>
-                          openCanvas({
-                            type: "diagram",
-                            data: diagram,
-                            metadata: {
-                              title: diagram.title,
-                              sourceTaskId: taskId,
-                            },
-                          })
-                        }
-                        className="flex items-center justify-center gap-2 px-2 py-2 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transform hover:scale-105 transition-all"
-                        title="Open in side panel"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => setIsFullScreen(true)}
-                        className="flex items-center justify-center gap-2 px-2 py-2 rounded-lg bg-blue-500 dark:bg-blue-600 text-white text-sm font-semibold shadow-md hover:bg-blue-600 dark:hover:bg-blue-700 hover:shadow-lg transform hover:scale-105 transition-all"
-                        title="Fullscreen"
-                      >
-                        <Maximize2 className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
-                  {isFullScreen && (
-                    <>
-                      <button
-                        onClick={triggerPrint}
-                        className="flex items-center justify-center gap-2 px-2 py-2 rounded-lg bg-slate-500 dark:bg-slate-600 text-white text-sm font-medium transition-all shadow-sm hover:bg-slate-600 dark:hover:bg-slate-700"
-                        title="Print / Save as PDF"
-                      >
-                        <Printer className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => setIsFullScreen(false)}
-                        className="flex items-center justify-center gap-2 px-2 py-2 rounded-lg bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium transition-all shadow-sm border-border"
-                        title="Exit Fullscreen"
-                      >
-                        <Minimize2 className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
-                  <button
-                    onClick={exportDiagramJSON}
-                    className="flex items-center justify-center gap-2 px-2 py-2 bg-textured hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium border-border transition-colors"
-                    title="Export as JSON"
-                  >
-                    <Download className="h-4 w-4" />
-                  </button>
-                </div>
+                <h3 className="text-sm font-semibold text-foreground truncate">
+                  {diagram.title}
+                </h3>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <IconButton
+                  icon={Printer}
+                  tooltip="Print / Save as PDF"
+                  onClick={triggerPrint}
+                  size="sm"
+                  className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
+                />
+                <IconButton
+                  icon={Download}
+                  tooltip="Export as JSON"
+                  onClick={exportDiagramJSON}
+                  size="sm"
+                  variant="outline"
+                />
+                <IconButton
+                  icon={Minimize2}
+                  tooltip="Exit full screen"
+                  onClick={() => setIsFullScreen(false)}
+                  size="sm"
+                  variant="outline"
+                />
               </div>
             </div>
-          </div>
-
-          {/* ReactFlow Container */}
-          <div
-            ref={diagramContainerRef}
-            className={`${isFullScreen ? "flex-1" : "h-[600px] mt-4"} bg-textured rounded-xl shadow-lg border-border overflow-hidden`}
-          >
-            <ReactFlowProvider>
-              <DiagramFlow
-                diagram={diagram}
-                showMiniMap={showMiniMap}
-                setShowMiniMap={setShowMiniMap}
-                backgroundVariant={backgroundVariant}
-                setBackgroundVariant={setBackgroundVariant}
-                onExportImage={handleExportImage}
-              />
-            </ReactFlowProvider>
-          </div>
-
-          {/* Legend */}
-          {legend && (
-            <div
-              className={
-                isFullScreen
-                  ? "flex-shrink-0 px-4 py-3 border-t border-border"
-                  : "mt-4"
-              }
-            >
-              {legend}
-            </div>
           )}
+
+          <div
+            className={`${isFullScreen ? "flex-1 flex flex-col min-h-0 overflow-hidden p-2" : "p-2"}`}
+          >
+            {!isFullScreen && (
+              <div className="bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 dark:from-blue-950/40 dark:via-indigo-950/30 dark:to-purple-950/40 rounded-xl p-2 border border-blue-200 dark:border-blue-800/50 mb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2 flex-1 min-w-0">
+                    <div className="p-2 bg-blue-500 dark:bg-blue-600 rounded-lg flex-shrink-0 text-white [&_svg]:h-4 [&_svg]:w-4">
+                      {getDiagramIcon(diagram.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h1 className="text-sm font-bold text-foreground leading-tight line-clamp-2">
+                        {diagram.title}
+                      </h1>
+                      {diagram.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                          {diagram.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                        <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-full text-[10px] font-medium">
+                          {formatDiagramType(diagram.type)}
+                        </span>
+                        {diagram.layout?.direction && (
+                          <span className="px-1.5 py-0.5 bg-muted text-muted-foreground rounded-full text-[10px]">
+                            {diagram.layout.direction}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <IconButton
+                      icon={Printer}
+                      tooltip="Print / Save as PDF"
+                      onClick={triggerPrint}
+                      size="sm"
+                      className="bg-slate-500 dark:bg-slate-600 text-white hover:bg-slate-600 dark:hover:bg-slate-700"
+                    />
+                    <IconButton
+                      icon={ExternalLink}
+                      tooltip="Open Canvas"
+                      onClick={() =>
+                        openCanvas({
+                          type: "diagram",
+                          data: diagram,
+                          metadata: {
+                            title: diagram.title,
+                            sourceTaskId: taskId,
+                          },
+                        })
+                      }
+                      size="sm"
+                      className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
+                    />
+                    <IconButton
+                      icon={Maximize2}
+                      tooltip="Expand to full screen"
+                      onClick={() => setIsFullScreen(true)}
+                      size="sm"
+                      className="bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700"
+                    />
+                    <IconButton
+                      icon={Download}
+                      tooltip="Export as JSON"
+                      onClick={exportDiagramJSON}
+                      size="sm"
+                      variant="outline"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ReactFlow Container */}
+            <div
+              ref={diagramContainerRef}
+              className={`${isFullScreen ? "flex-1 min-h-0" : "h-[600px]"} bg-textured rounded-xl border border-border overflow-hidden`}
+            >
+              <ReactFlowProvider>
+                <DiagramFlow
+                  diagram={diagram}
+                  showMiniMap={showMiniMap}
+                  setShowMiniMap={setShowMiniMap}
+                  backgroundVariant={backgroundVariant}
+                  setBackgroundVariant={setBackgroundVariant}
+                  onExportImage={handleExportImage}
+                />
+              </ReactFlowProvider>
+            </div>
+
+            {/* Legend */}
+            {legend && (
+              <div
+                className={
+                  isFullScreen
+                    ? "flex-shrink-0 px-4 py-3 border-t border-border"
+                    : "mt-4"
+                }
+              >
+                {legend}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

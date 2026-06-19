@@ -27,11 +27,16 @@ export function TaskDueDatePicker({
   onChange,
   variant = "pill",
   overdue = false,
+  triggerRef,
+  onTriggerKeyDown,
 }: {
   value: string | null;
   onChange: (value: string | null) => void;
   variant?: "pill" | "field";
   overdue?: boolean;
+  /** Pill variant only — focus target for keyboard field chains. */
+  triggerRef?: React.Ref<HTMLButtonElement>;
+  onTriggerKeyDown?: React.KeyboardEventHandler<HTMLButtonElement>;
 }) {
   const [open, setOpen] = React.useState(false);
   const selected = parseDateOnly(value);
@@ -61,7 +66,9 @@ export function TaskDueDatePicker({
       </button>
     ) : (
       <button
+        ref={triggerRef}
         type="button"
+        onKeyDown={onTriggerKeyDown}
         className={cn(
           "inline-flex items-center gap-1 h-6 px-1.5 rounded-md text-[12px] transition-colors hover:bg-accent",
           value

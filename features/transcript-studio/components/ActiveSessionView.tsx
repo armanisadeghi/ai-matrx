@@ -32,7 +32,7 @@ import {
 import { ScrollSyncProvider } from "./scroll-sync/ScrollSyncProvider";
 import { SettingsSidebar } from "./settings/SettingsSidebar";
 import { StudioColumnsMobile } from "./StudioColumnsMobile";
-import { StudioHeaderPortal } from "./StudioHeaderPortal";
+import { DictionaryIndicatorButton } from "@/features/dictionary/components/DictionaryIndicatorButton";
 import { useStudioAutoLabel } from "../hooks/useStudioAutoLabel";
 import { useStudioSession } from "../hooks/useStudioSession";
 import { useStudioSettings } from "../hooks/useStudioSettings";
@@ -138,34 +138,25 @@ export function ActiveSessionView({
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col bg-textured">
-      {/* Mount the page-specific portal inside the active session — this
-          puts the title + Record + Save-as-Transcript into the global app
-          header, leaving the studio's local header for status + settings. */}
-      <StudioHeaderPortal session={session} />
-
-      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-background px-3 py-1.5 sm:px-4 sm:gap-3 md:justify-end">
-        {/* Title + actions live in the global header portal on md+; keep a
-            compact local strip on phones only. */}
-        <div className="flex min-w-0 flex-col md:hidden">
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-background px-3 py-1.5 sm:px-4 sm:gap-3">
+        <div className="flex min-w-0 flex-col gap-0.5">
           <EditableSessionTitle
             sessionId={session.id}
             title={session.title}
-            className="sm:hidden"
+            className="min-w-0 truncate text-sm font-medium"
           />
-          <p className="hidden text-[11px] text-muted-foreground sm:block">
+          <p className="hidden truncate text-[11px] text-muted-foreground sm:block">
             {subtitle}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          {/* Mobile-only — the global header isn't visible to the studio
-              tab strip on phones, so keep the action buttons here. */}
-          <div className="flex items-center gap-1.5 sm:hidden">
-            <SaveAsTranscriptButton
-              sessionId={session.id}
-              hasLinkedTranscript={Boolean(session.transcriptId)}
-            />
-            <RecordButton sessionId={session.id} />
-          </div>
+          <SaveAsTranscriptButton
+            sessionId={session.id}
+            hasLinkedTranscript={Boolean(session.transcriptId)}
+            variant="icon"
+          />
+          <RecordButton sessionId={session.id} />
+          <DictionaryIndicatorButton surfaceKey="matrx-user/transcript-studio" />
           <ProcessForRagButton
             sourceKind="transcript"
             sourceId={session.id}

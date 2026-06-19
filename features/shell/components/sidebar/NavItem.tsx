@@ -16,6 +16,26 @@ interface NavItemProps {
 }
 
 export default function NavItem({ item }: NavItemProps) {
+  if (item.external) {
+    return (
+      <a
+        href={item.href}
+        title={item.label}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shell-nav-item shell-tactile-subtle"
+      >
+        <span className="shell-nav-icon">
+          <ShellIcon name={item.iconName} size={18} strokeWidth={1.75} />
+        </span>
+        <span className="shell-nav-label">{item.label}</span>
+        <span className="shell-nav-external">
+          <ShellIcon name="ArrowUpRight" size={14} strokeWidth={1.75} />
+        </span>
+      </a>
+    );
+  }
+
   return (
     <Link
       href={item.href}

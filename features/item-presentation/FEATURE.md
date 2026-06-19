@@ -63,7 +63,7 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 - **`canOpen` does NOT gate on `notFound`** (`ItemPresentationBlock.tsx`) — deliberate; see flow 3.
 - **Reconstruct as a ```json fence** on DB round-trip — the XML-wrapper default would corrupt the block.
 - **Every recognized type is now clickable.** Bespoke windows: `agent` (run window — now seeded with the known name so the title shows instantly), `note`, `file`/`image`/`video`/`audio`, `picklist`. All others open the generic `ItemDetailWindow`. To upgrade a type to a bespoke window later, add a branch above the generic cases in `useOpenItemPresentation` — nothing else changes.
-- **`detailSource` is the only thing the generic window needs.** A type with `detailSource: { table, titleField }` gets a full-record view; a recognized type without one (`session`, `message` — no single canonical table) opens seed-only. See KNOWN_DEFECTS D7.
+- **`detailSource` is the only thing the generic window needs.** A type with `detailSource: { table, titleField }` gets a full-record view; a recognized type without one (`session`, `message` — no single canonical table) opens seed-only. See KNOWN_DEFECTS D8.
 - **Dynamic-table Supabase queries must use `string` variables, never literals.** `supabase.from("literal")` / `.select("*")` resolve the entire schema union and blow TS instantiation depth. `ItemDetailWindow` and `registry.fetchRow` both pass `string` variables to stay generic.
 
 ---

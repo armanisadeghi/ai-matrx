@@ -371,6 +371,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dictionary/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Dictionary */
+        post: operations["publish_dictionary_dictionary_publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dictionary/publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Publications */
+        get: operations["list_publications_dictionary_publications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai-tools": {
         parameters: {
             query?: never;
@@ -1405,6 +1439,55 @@ export interface paths {
         put?: never;
         /** Prompt Execution */
         post: operations["prompt_execution_ai_chat_prompt_execution_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/agents/{agent_id}/realtime-tools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Get Realtime Tools
+         * @description Resolve the agent's toolset in xAI function shape for a realtime session.
+         *
+         *     Same resolution funnel as the turn-based path (``apply_unified_tools``); no
+         *     conversation or cx_user_request side-effects. The session declares these
+         *     tools to xAI via ``session.update``; server/client/builtin classification
+         *     tells the browser loop how to dispatch each call.
+         */
+        post: operations["get_realtime_tools_ai_agents__agent_id__realtime_tools_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/tools/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Execute Realtime Tool
+         * @description Execute ONE tool for a realtime session, reusing the turn-based executor.
+         *
+         *     HTTP 200 even when the tool fails (``ok=false``) so the model can recover and
+         *     explain; only infra/auth failures raise. The cx_tool_call row written here is
+         *     identical to a turn-based one except a ``tool_origin`` provenance marker.
+         */
+        post: operations["execute_realtime_tool_ai_tools_execute_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6971,6 +7054,23 @@ export interface paths {
          *     Streams every stage's progress events on one connection.
          */
         post: operations["stage_run_all_rag_library__processed_document_id__run_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rag/sweeps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trigger Sweep */
+        post: operations["trigger_sweep_rag_sweeps_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12676,7 +12776,7 @@ export interface paths {
         put?: never;
         /**
          * Label content with GLiNER2
-         * @description Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id.
+         * @description Extract a short display label and ranked keyword list from any text. One GLiNER2 encoder call — fast and cheap. Accepts raw text, a transcript_id, or a conversation_id. Pass studio_session_id + persist_label=true to write the label to the session and any linked transcript that still has a placeholder title.
          */
         post: operations["label_content_label_post"];
         delete?: never;
@@ -15294,6 +15394,8 @@ export interface components {
             dictionary?: {
                 [key: string]: unknown;
             } | null;
+            /** Tts Quality */
+            tts_quality?: string | null;
             /** Organization Id */
             organization_id?: string | null;
             /** Project Id */
@@ -17947,6 +18049,27 @@ export interface components {
              * @enum {integer}
              */
             capture_level: 1 | 2 | 3;
+            /** Images */
+            images?: components["schemas"]["ExtensionMeasuredImage"][];
+        };
+        /**
+         * ExtensionMeasuredImage
+         * @description One image the extension measured in the live DOM.
+         *
+         *     `src` is the browser's resolved `currentSrc` (post-lazy-load); `width`/
+         *     `height` are `naturalWidth`/`naturalHeight` (true intrinsic pixels). The
+         *     server overlays these onto the HTML-parsed images so the gallery gets exact
+         *     dimensions without re-downloading — see research/media/FEATURE.md.
+         */
+        ExtensionMeasuredImage: {
+            /** Src */
+            src: string;
+            /** Alt */
+            alt?: string | null;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
         };
         /** ExtensionScrapeItem */
         ExtensionScrapeItem: {
@@ -17997,6 +18120,10 @@ export interface components {
              * @default false
              */
             server_gave_up: boolean;
+            /** Policy Category */
+            policy_category?: string | null;
+            /** Policy Reason */
+            policy_reason?: string | null;
         };
         /** ExtensionScrapeQueue */
         ExtensionScrapeQueue: {
@@ -18008,6 +18135,10 @@ export interface components {
             level_3_user_gated?: components["schemas"]["ExtensionScrapeItem"][];
             /** Level 4 Paste */
             level_4_paste?: components["schemas"]["ExtensionScrapeItem"][];
+            /** Gated Login */
+            gated_login?: components["schemas"]["ExtensionScrapeItem"][];
+            /** Low Value */
+            low_value?: components["schemas"]["ExtensionScrapeItem"][];
             /** Totals */
             totals?: {
                 [key: string]: number;
@@ -20520,6 +20651,8 @@ export interface components {
             dictionary?: {
                 [key: string]: unknown;
             } | null;
+            /** Tts Quality */
+            tts_quality?: string | null;
         };
         /** LabelCatalogEntry */
         LabelCatalogEntry: {
@@ -20578,6 +20711,13 @@ export interface components {
             conversation_id?: string | null;
             /** @default generic */
             content_type: components["schemas"]["ContentType"];
+            /** Studio Session Id */
+            studio_session_id?: string | null;
+            /**
+             * Persist Label
+             * @default false
+             */
+            persist_label: boolean;
             /**
              * Max Chars
              * @default 8000
@@ -22781,6 +22921,8 @@ export interface components {
             dictionary?: {
                 [key: string]: unknown;
             } | null;
+            /** Tts Quality */
+            tts_quality?: string | null;
         };
         /**
          * PodcastMediaUploadResponse
@@ -23205,10 +23347,50 @@ export interface components {
             /** Version */
             version?: number | null;
         };
-        /** PublishRequest */
-        PublishRequest: {
-            /** Change Note */
-            change_note?: string | null;
+        /** PublicationStatus */
+        PublicationStatus: {
+            /** Provider */
+            provider: string;
+            /** Level */
+            level: string;
+            /** Owner Id */
+            owner_id: string | null;
+            /** External Id */
+            external_id: string | null;
+            /** Version Id */
+            version_id: string | null;
+            /** Rules Hash */
+            rules_hash: string | null;
+            /** Rule Count */
+            rule_count: number;
+            /** Synced At */
+            synced_at: string | null;
+            /** Has Error */
+            has_error: boolean;
+            /** Error */
+            error: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** PublishResult */
+        PublishResult: {
+            /**
+             * Status
+             * @description unchanged | published | updated | cleared | empty
+             */
+            status: string;
+            /** Level */
+            level: string;
+            /** Owner Id */
+            owner_id: string | null;
+            /** External Id */
+            external_id: string | null;
+            /** Version Id */
+            version_id: string | null;
+            /** Rule Count */
+            rule_count: number;
+            /** Rules Hash */
+            rules_hash: string | null;
         };
         /** QuickScrapeRequest */
         QuickScrapeRequest: {
@@ -23322,6 +23504,56 @@ export interface components {
             page_count: number;
             /** Pages */
             pages: components["schemas"]["ReadingOrderPage"][];
+        };
+        /**
+         * RealtimeTool
+         * @description One tool declared to a realtime session, in xAI function shape.
+         *
+         *     ``parameters`` is the JSON Schema lifted verbatim from ``tool_def.parameters``
+         *     (the same bytes the turn-based path hands the provider) — never re-derived.
+         */
+        RealtimeTool: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Parameters */
+            parameters?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Execution
+             * @description "server" | "client" | "builtin"
+             */
+            execution: string;
+        };
+        /** RealtimeToolsRequest */
+        RealtimeToolsRequest: {
+            /**
+             * Surface
+             * @description UI surface, e.g. matrx-user/chat-voice
+             */
+            surface: string;
+            /** Added Tool Ids */
+            added_tool_ids?: string[];
+            /**
+             * Is Version
+             * @default false
+             */
+            is_version: boolean;
+            client?: components["schemas"]["ClientContext"] | null;
+        };
+        /** RealtimeToolsResponse */
+        RealtimeToolsResponse: {
+            /** Agent Id */
+            agent_id: string;
+            /** Model Supports Tools */
+            model_supports_tools: boolean;
+            /** Tools */
+            tools: components["schemas"]["RealtimeTool"][];
         };
         /**
          * RecoveryApplyAck
@@ -25684,6 +25916,12 @@ export interface components {
          * @description One requested speaker. `voice` is provider-appropriate: a Gemini
          *     prebuilt voice name for 1–2 hosts (Google TTS), an ElevenLabs voice_id for
          *     3+ hosts (dialogue TTS). Empty voice → filled from the default palette.
+         *
+         *     `gender` ("male" | "female" | "neutral" | "") drives gender-matched voice
+         *     selection on the ElevenLabs (3+) path. It is normally declared by the script
+         *     agent in its ``<speaker_settings>`` block (name + gender, never voice) so the
+         *     server owns voice selection and can rotate the pool across episodes. Empty →
+         *     treated as neutral (any voice eligible).
          */
         SpeakerSpec: {
             /** Name */
@@ -25693,6 +25931,11 @@ export interface components {
              * @default
              */
             voice: string;
+            /**
+             * Gender
+             * @default
+             */
+            gender: string;
         };
         /** SplitPartRequest */
         SplitPartRequest: {
@@ -26271,6 +26514,41 @@ export interface components {
              */
             value_bindings: string[];
         };
+        /** SweepRequest */
+        SweepRequest: {
+            /**
+             * Change Type
+             * @enum {string}
+             */
+            change_type: "context_item" | "scope" | "scope_type" | "organization";
+            /**
+             * Organization Id
+             * @description Defaults to the user's personal org.
+             */
+            organization_id?: string | null;
+            /**
+             * Scope Type Id
+             * @description Required for context_item / scope / scope_type. For organization, omit to fan out across every scope type in the org.
+             */
+            scope_type_id?: string | null;
+            /**
+             * Trigger Entity Id
+             * @description The new context_item / scope id. For scope_type, defaults to scope_type_id.
+             */
+            trigger_entity_id?: string | null;
+            /**
+             * Incremental
+             * @description False (default for manual) = full pass; True = only the delta since the group's high-water mark.
+             * @default false
+             */
+            incremental: boolean;
+            /**
+             * Trigger Type
+             * @default manual
+             * @enum {string}
+             */
+            trigger_type: "manual" | "batch";
+        };
         /** SyncClustersRequest */
         SyncClustersRequest: {
             /**
@@ -26649,6 +26927,59 @@ export interface components {
              */
             recent_failures: components["schemas"]["ToolFailureRow"][];
         };
+        /** ToolExecuteRequest */
+        ToolExecuteRequest: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** Scope Ids */
+            scope_ids?: string[] | null;
+            /** Source App */
+            source_app?: string | null;
+            /** Source Feature */
+            source_feature?: string | null;
+            /**
+             * Store
+             * @default true
+             */
+            store: boolean;
+            /** Agent Id */
+            agent_id: string;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Tool Name */
+            tool_name: string;
+            /** Arguments */
+            arguments?: {
+                [key: string]: unknown;
+            };
+            /** Call Id */
+            call_id?: string | null;
+            /**
+             * Surface
+             * @description UI surface, for allowed-set resolution
+             */
+            surface: string;
+            /**
+             * Is Version
+             * @default false
+             */
+            is_version: boolean;
+            /** Added Tool Ids */
+            added_tool_ids?: string[];
+        };
+        /** ToolExecuteResponse */
+        ToolExecuteResponse: {
+            /** Call Id */
+            call_id: string;
+            /** Ok */
+            ok: boolean;
+            /** Output */
+            output: string;
+        };
         /** ToolFailureRow */
         ToolFailureRow: {
             /** Tool Name */
@@ -27023,6 +27354,12 @@ export interface components {
              * @default 0
              */
             max_auto_tag_calls: number;
+            /** Tone Profile */
+            tone_profile?: string | null;
+            /** Outputs */
+            outputs?: {
+                [key: string]: unknown;
+            } | null;
             /** Keywords */
             keywords?: string[] | null;
         };
@@ -27058,6 +27395,12 @@ export interface components {
             max_tag_consolidations?: number | null;
             /** Max Auto Tag Calls */
             max_auto_tag_calls?: number | null;
+            /** Tone Profile */
+            tone_profile?: string | null;
+            /** Outputs */
+            outputs?: {
+                [key: string]: unknown;
+            } | null;
             /** Agent Config */
             agent_config?: {
                 [key: string]: unknown;
@@ -28438,6 +28781,19 @@ export interface components {
             /** Compaction Group Id */
             compaction_group_id: string;
         };
+        /** PublishRequest */
+        aidream__api__routers__dictionary__PublishRequest: {
+            /**
+             * Level
+             * @description global | organization | user
+             */
+            level: string;
+            /**
+             * Owner Id
+             * @description Required for non-global tiers
+             */
+            owner_id?: string | null;
+        };
         /** RestoreResponse */
         aidream__api__routers__file_analysis__RestoreResponse: {
             /** Session Id */
@@ -28658,6 +29014,11 @@ export interface components {
              * @default false
              */
             dry_run: boolean;
+        };
+        /** PublishRequest */
+        aidream__api__routers__workflow__PublishRequest: {
+            /** Change Note */
+            change_note?: string | null;
         };
         /** ScannerStatusResponse */
         matrx_scheduler__api__schemas__ScannerStatusResponse: {
@@ -29204,6 +29565,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    publish_dictionary_dictionary_publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["aidream__api__routers__dictionary__PublishRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublishResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_publications_dictionary_publications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicationStatus"][];
                 };
             };
         };
@@ -30809,6 +31223,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_realtime_tools_ai_agents__agent_id__realtime_tools_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RealtimeToolsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RealtimeToolsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    execute_realtime_tool_ai_tools_execute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolExecuteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolExecuteResponse"];
                 };
             };
             /** @description Validation Error */
@@ -41397,6 +41879,39 @@ export interface operations {
             };
         };
     };
+    trigger_sweep_rag_sweeps_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SweepRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     overview_rag_admin_overview_get: {
         parameters: {
             query?: never;
@@ -42754,7 +43269,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PublishRequest"];
+                "application/json": components["schemas"]["aidream__api__routers__workflow__PublishRequest"];
             };
         };
         responses: {

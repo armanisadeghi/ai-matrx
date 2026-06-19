@@ -60,7 +60,7 @@ export function TileContextOverride({
             className={cn(
               "grid place-items-center size-6 rounded-md transition-colors relative",
               ctx.isOverridden
-                ? "text-primary hover:bg-primary/10"
+                ? "text-primary hover:bg-accent"
                 : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
           >

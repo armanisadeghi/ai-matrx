@@ -55,9 +55,7 @@ export function parseOutputs(raw: unknown): ResearchOutputs {
     const slot = o[kind];
     if (slot && typeof slot === "object") {
       const assetsRaw = (slot as Record<string, unknown>).assets;
-      const assets = Array.isArray(assetsRaw)
-        ? assetsRaw.filter(isAsset)
-        : [];
+      const assets = Array.isArray(assetsRaw) ? assetsRaw.filter(isAsset) : [];
       out[kind] = { assets };
     }
   }
@@ -83,4 +81,11 @@ export function appendAsset(
     ...outputs,
     [kind]: { assets: [asset, ...existing] },
   };
+}
+
+/** Serialize the typed bundle for `rs_topic.outputs` (JSONB). */
+export function serializeOutputs(
+  outputs: ResearchOutputs,
+): Record<string, unknown> {
+  return outputs as unknown as Record<string, unknown>;
 }

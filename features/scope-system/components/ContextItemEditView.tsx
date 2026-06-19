@@ -3,8 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowUpRight, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -17,7 +16,6 @@ import {
   selectItemsLoadedForType,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { ContextItemSettingsForm } from "./forms/ContextItemSettingsForm";
-import { ScopeBreadcrumb } from "./ScopeBreadcrumb";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "./ScopeGlyph";
 import {
@@ -28,7 +26,6 @@ import {
   contextItemHref,
   contextItemsHref,
   orgScopesHref,
-  scopeTypeHref,
 } from "@/features/scope-system/utils/scopeRoutes";
 
 interface ContextItemEditViewProps {
@@ -105,50 +102,27 @@ export function ContextItemEditView({
   const hubHref = contextItemHref(orgSlugOrId, scopeType, item);
 
   return (
-    <div className="space-y-6 pr-14">
-      <ScopeBreadcrumb
-        orgSlugOrId={orgSlugOrId}
-        orgName={orgName}
-        orgIsPersonal={orgIsPersonal}
-        backHref={hubHref}
-        trail={[
-          {
-            label: scopeType.label_plural,
-            href: scopeTypeHref(orgSlugOrId, scopeType),
-          },
-          { label: item.display_name, href: hubHref },
-          { label: "Edit" },
-        ]}
-      />
-
+    <div className="space-y-6">
       {/* Header */}
       <Card className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 min-w-0">
-            <div
-              className={`w-11 h-11 rounded-lg ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
-            >
-              <ScopeGlyph icon={scopeType.icon} className="h-6 w-6" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {scopeType.label_singular} field
-              </p>
-              <h1 className="text-2xl font-bold text-foreground leading-tight">
-                Edit {item.display_name}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                These settings apply to{" "}
-                <strong>every {scopeType.label_singular.toLowerCase()}</strong>.
-              </p>
-            </div>
+        <div className="flex items-start gap-3 min-w-0">
+          <div
+            className={`w-11 h-11 rounded-lg ${SCOPE_ICON_SURFACE} ${color.fg} ring-1 ${color.ring} flex items-center justify-center shrink-0`}
+          >
+            <ScopeGlyph icon={scopeType.icon} className="h-6 w-6" />
           </div>
-          <Button asChild variant="outline" size="sm" className="shrink-0">
-            <Link href={hubHref}>
-              View values
-              <ArrowUpRight className="h-3.5 w-3.5 ml-1.5" />
-            </Link>
-          </Button>
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {scopeType.label_singular} field
+            </p>
+            <h1 className="text-2xl font-bold text-foreground leading-tight">
+              Edit {item.display_name}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              These settings apply to{" "}
+              <strong>every {scopeType.label_singular.toLowerCase()}</strong>.
+            </p>
+          </div>
         </div>
       </Card>
 
