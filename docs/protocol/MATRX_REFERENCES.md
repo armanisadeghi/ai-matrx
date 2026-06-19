@@ -93,10 +93,13 @@ families — never a third encoding.
 
 - **Registered + schema-gen + decode:** done (`picklist_item`, `dataset_cell`).
 - **Resolvers:** `aidream/services/references/resolvers.py` (live DB fetch).
-- **Next (migration):** wire resolvers into `aidream/api/utils/picklist_resolution.py`
-  (`resolve_and_stage` → `set_wire_swaps`) so a `matrx` fence substitutes on the wire,
-  and the FE renderer + authoring insert the fence. Until then the legacy
-  `picklist_ref` path stays live behind the back-compat allowlist.
+- **In-content substitution: done.** `aidream/services/references/substitute.py`
+  (`stage_reference_fences`, wired in `prepare_agent_run`) resolves `matrx` reference
+  fences with `purpose:substitute|expand` and merges them into the per-request wire
+  swaps (send-clone only, never persisted, re-resolved each send).
+- **FE:** `MatrxEnvelopeBlock` renders the fence (reference chips).
+- **Next (migration):** migrate the legacy `picklist_ref` *variable* path onto the
+  envelope; until then it stays live behind the parallel-encoding allowlist.
 
 ## Change Log
 
